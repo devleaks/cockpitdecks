@@ -1,0 +1,31 @@
+actions:
+  - index: 0
+    name: return
+    type: dir
+    icon: TOLISS-A321
+  - index: 1
+    name: FD 1
+    type: single
+    icon: OFF-GREEN
+    command: toliss_airbus/fd1_push
+    dataref: AirbusFBW/FD1Engage
+    dataref-states:
+      - 0.0
+      - 1.0
+    file-names:
+      - OFF-GREEN
+      - ON-GREEN
+    label: FD
+  - index: 2
+    name: LS 1
+    type: single
+    icon: OFF-GREEN
+    command: toliss_airbus/ils1_push
+    dataref: AirbusFBW/ILSonCapt
+    dataref-states:
+      - 0.0
+      - 1.0
+    file-names:
+      - OFF-GREEN
+      - ON-GREEN
+    label: LS

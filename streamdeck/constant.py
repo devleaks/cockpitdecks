@@ -11,7 +11,11 @@ ICONS_FOLDER = "icons"
 FONTS_FOLDER = "fonts"
 
 DEFAULT_LAYOUT = "default"
+
 INIT_PAGE = "index"
+WALLPAPER = "wallpaper.png"
+
+DEFAULT_SYSTEM_FONT = "arial.ttf"
 
 DEFAULT_LABEL_FONT = "DIN.ttf"
 DEFAULT_LABEL_SIZE = "12"

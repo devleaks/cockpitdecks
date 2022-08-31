@@ -1,24 +1,37 @@
 import os
+import threading
 import yaml
 import logging
 
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
 
-from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE
+from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER
+from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
 from .streamdeck import Streamdeck
 
 logger = logging.getLogger("Streamdecks")
 
 
+DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), CONFIG_DIR)
+
+
 class Streamdecks:
     """
-    Contains all streamdecks configurations for a given aircraft.
-    Is reset when aicraft changes.
+    Contains all stream deck configurations for a given aircraft.
+    Is started when aicraft is loaded and aircraft contains CONFIG_DIR folder.
     """
+    FLIP_DESCRIPTION = {
+        (False, False): "not mirrored",
+        (True, False): "mirrored horizontally",
+        (False, True): "mirrored vertically",
+        (True, True): "mirrored horizontally/vertically",
+    }
+
     def __init__(self):
+        self.disabled = False
+
         self.devices = []
-        self.loop_running = False
 
         self.acpath = None
         self.decks = {}
@@ -31,28 +44,46 @@ class Streamdecks:
         self.init()
 
     def init(self):
+        """
+        Loads all Stream Deck devices connected to this computer.
+        """
         self.devices = DeviceManager().enumerate()
         logger.info(f"init: found {len(self.devices)} decks")
 
-    def get_deck(self, req_serial: str):
-        for name, deck in enumerate(self.devices):
-            deck.open()
-            deck.reset()
-            serial = deck.get_serial_number()
+    def get_device(self, req_serial: str):
+        """
+        Get a HIDAPI device for the supplied serial number.
+        If found, the device is opened and reset and returned open.
+
+        :param      req_serial:  The request serial
+        :type       req_serial:  str
+        """
+        for name, device in enumerate(self.devices):
+            device.open()
+            device.reset()
+            serial = device.get_serial_number()
             if serial == req_serial:
-                logger.info(f"get_deck: opened {deck.deck_type()} device (serial number: {deck.get_serial_number()}, fw: {deck.get_firmware_version()})")
-                logger.info(f"get_deck: deck {name}, {deck.key_count()} keys")
-                return deck
-        logger.warning(f"get_deck: deck {req_serial} not found")
+                logger.info(f"get_device: deck {name}: opened {device.deck_type()} device (serial number: {device.get_serial_number()}, fw: {device.get_firmware_version()})")
+                logger.debug(f"get_device: deck {name}: {device.key_count()} keys, layout  {device.key_layout()[0]}×{device.key_layout()[1]}")
+                if device.is_visual():
+                    image_format = device.key_image_format()
+                    logger.debug(f"get_device: deck {name}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Streamdecks.FLIP_DESCRIPTION[image_format['flip']]}")
+                else:
+                    logger.debug(f"get_device: deck {name}: no visual")
+                return device
+        logger.warning(f"get_device: deck {req_serial} not found")
         return None
 
     def load(self, acpath: str):
         """
-        Loads stream decks for aircraft in supplied path
+        Loads stream decks for aircraft in supplied path and start listening for key presses.
         """
-        self.stop_loop()
-
+        if self.disabled:
+            logging.warning(f"load: Streamdecks is disabled")
+            return
         # Reset, if new aircraft
+        self.terminate_all()
+
         self.decks = {}
         self.icons = {}
         self.fonts = {}
@@ -63,9 +94,10 @@ class Streamdecks:
             self.load_icons()
             self.load_fonts()
             self.create_decks()
-            self.start_loop()
         else:
-            logging.error(f"load: not Stream Deck folder '{CONFIG_DIR}'' in aircraft folder")
+            logging.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
+            self.create_default_decks()
+        self.run()
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)
@@ -82,7 +114,7 @@ class Streamdecks:
                         name = f"Deck {cnt}"
                         if "serial" in d:
                             serial = d["serial"]
-                            device = self.get_deck(serial)
+                            device = self.get_device(serial)
                             if "name" in d:
                                 name = d["name"]
                             self.decks[name] = Streamdeck(name, d, self, device)
@@ -91,10 +123,29 @@ class Streamdecks:
                         else:
                             logging.error(f"load: deck {name} has no serial number, ignoring")
                 else:
-                    logging.warning(f"load: no deck in config file {fn}")
+                    logging.warning(f"load: no deck in file {fn}")
         else:
             logging.warning(f"load: no config file {fn}")
 
+    def create_default_decks(self):
+        """
+        When no Stream Deck definition is found in the aicraft folder, Streamdecks loads
+        a default X-Plane logo on all Stream Deck devices. The only active button is index 0,
+        which toggle X-Plane map on/off.
+        """
+        self.acpath = None
+        for device in self.devices:
+            device.open()
+            device.reset()
+            name = device.id()
+            config = {
+                "name": name,
+                "model": device.deck_type(),
+                "serial": device.get_serial_number(),
+                "layout": None,
+                "brightness": 75
+            }
+            self.decks[name] = Streamdeck(name, config, self, device)
 
     def load_icons(self):
         # Loading icons
@@ -105,40 +156,87 @@ class Streamdecks:
             for i in icons:
                 if i.endswith(".png") or i.endswith(".PNG"):
                     fn = os.path.join(dn, i)
-                    self.icons[i] = Image.open(fn)
-
-                # # Load a custom TrueType font and use it to overlay the key index, draw key
-                # # label onto the image a few pixels from the bottom of the key.
-                # draw = ImageDraw.Draw(image)
-
-                # global DEFAULT_FONT
-                # if label_text:
-                #     if only_uppercase and not label_text.isupper():
-                #         print("WARN: label {} is not upper case only, "
-                #               "converting to upper (to disable this check out 'config.yaml'".format(label_text))
-                #         label_text = label_text.upper()
-                #     draw.text((image.width / 2, image.height - 8), text=label_text, font=DEFAULT_FONT, anchor="ms", fill="white")
-        logging.info(f"load: {len(self.icons)} icons loaded")
+                    image = Image.open(fn)
+                    self.icons[i] = image
+        logging.info(f"load_icons: {len(self.icons)} icons loaded")
 
     def load_fonts(self):
-        # Loading fonts
+        # Loading fonts.
+        # For custom fonts (fonts found in the fonts config folder),
+        # we supply the full path for font definition to ImageFont.
+        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
+        # If the font is not found by ImageFont, we ignore it.
+        # So self.icons is a list of properly located usable fonts.
         #
+        # 1. Load fonts supplied by the user in the configuration
         dn = os.path.join(self.acpath, CONFIG_DIR, FONTS_FOLDER)
         if os.path.exists(dn):
             fonts = os.listdir(dn)
             for i in fonts:
                 if i.endswith(".ttf") or i.endswith(".otf"):
-                    self.fonts[i] = os.path.join(dn, i)
-        logging.info(f"load: {len(self.fonts)} fonts loaded")
+                    fn = os.path.join(dn, i)
+                    try:
+                        test = ImageFont.truetype("/Users/pierre/Developer/streamdecks/A321/esdconfig/fonts/DIN.ttf", self.default_size)
+                        self.fonts[i] = fn
+                    except OSError:
+                        logging.warning(f"load_fonts: custom font file {fn} not loaded")
+                        pass
 
-    def loop(self):
-        for deck in self.decks:
-            deck.update()
+        # 2. Load label default font
+        if len(self.fonts) == 0:  # No found loaded? we need at least one:
+            try:
+                test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
+                self.fonts[i] = fn
+                self.default_font = DEFAULT_LABEL_FONT
+            except OSError:
+                logging.warning(f"load_fonts: font label {fn} not loaded")
+                pass
 
-    def start_loop(self):
-        self.loop_running = True
-        logging.info(f"start_loop: started")
+        if self.default_font is None and len(self.fonts) > 0:
+            self.default_font = self.fonts[list(self.fonts.keys())[0]]
 
-    def stop_loop(self):
-        self.loop_running = False
-        logging.info(f"stop_loop: stopped")
+        # 3. If no font loaded, try DEFAULT_SYSTEM_FONT:
+        if self.default_font is None:  # No found loaded? we need at least one:
+            try:
+                test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
+                self.fonts[i] = fn
+                self.default_font = DEFAULT_LABEL_FONT
+            except OSError:
+                logging.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
+                pass
+
+        logging.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_font}")
+        print(self.fonts)
+
+    def terminate_all(self):
+        for deck in self.decks.values():
+            deck.terminate()
+        logging.info(f"terminate_all: all decks terminated")
+
+    # Plugin function
+    # (currently not used...)
+    def start():
+        logger.info(f"start: started")
+
+    def end():
+        logger.info(f"end: ended")
+
+    def enable():
+        self.disabled = False
+        logger.info(f"enable: enabled")
+
+    def disable():
+        self.disabled = True
+        self.end()
+        logger.info(f"disable: disabled")
+
+    def run(self):
+        logging.info(f"run: active")
+        for t in threading.enumerate():
+            try:
+                t.join()
+            except RuntimeError:
+                pass
+        logging.info(f"run: terminated")
+
+

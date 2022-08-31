@@ -15,7 +15,7 @@ class PythonInterface:
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
         self.menuIdx = None
-        self.streamdeck = None
+        self.streamdecks = None
         self.streamDeckCmdRef = None
 
     def XPluginStart(self):
@@ -39,10 +39,10 @@ class PythonInterface:
             self.menuIdx = None
             if self.trace:
                 print(self.Name, "PI::XPluginStop: menu removed.")
-        if self.streamdeck:
+        if self.streamdecks:
             try:
-                self.streamdeck.stop()
-                self.streamdeck = None
+                self.streamdecks.stop()
+                self.streamdecks = None
                 if self.trace:
                     print(self.Name, "PI::XPluginStop: stopped.")
             except:
@@ -53,7 +53,7 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            self.streamdeck = Streamdecks(self)
+            self.streamdecks = Streamdecks(self)
             self.enabled = True
             if self.trace:
                 print(self.Name, "PI::XPluginEnable: enabled.")
@@ -66,9 +66,9 @@ class PythonInterface:
 
     def XPluginDisable(self):
         try:
-            if self.enabled and self.streamdeck:
-                self.streamdeck.disable()
-                self.streamdeck = None
+            if self.enabled and self.streamdecks:
+                self.streamdecks.disable()
+                self.streamdecks = None
 
             self.enabled = False
             if self.trace:
@@ -84,8 +84,13 @@ class PythonInterface:
         return None
 
     def XPluginReceiveMessage(self, inFromWho, inMessage, inParam):
-        pass
-
+        XPLM_MSG_PLANE_LOADED = 102
+        if inMessage == XPLM_MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+            print(self.Name, "PI::XPluginReceiveMessage: user aircraft loaded")
+            if self.streamdecks:
+                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                acpath = os.path.split(ac[1])   # '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP'
+                self.streamdecks.load(acpath=acpath)
 
     def streamDeckCmd(self, *args, **kwargs):
         # pylint: disable=unused-argument
@@ -104,9 +109,9 @@ class PythonInterface:
         else:
             print(self.Name, "PI::streamDeckCmd: NO COMMAND PHASE", len(args))
 
-        if not self.streamdeck:
+        if not self.streamdecks:
             try:
-                self.streamdeck = Streamdecks(self)
+                self.streamdecks = Streamdecks(self)
                 if self.trace:
                     print(self.Name, "PI::streamDeckCmd: created.")
             except:
@@ -115,11 +120,11 @@ class PythonInterface:
                 print_exc()
                 return 0
 
-        if self.streamdeck and commandPhase == 0:
+        if self.streamdecks and commandPhase == 0:
             if self.trace:
                 print(self.Name, "PI::streamDeckCmd: available.")
             try:
-                self.streamdeck.start()
+                self.streamdecks.start()
                 if self.trace:
                     print(self.Name, "PI::streamDeckCmd: started.")
                 return 1
@@ -128,7 +133,7 @@ class PythonInterface:
                     print(self.Name, "PI::streamDeckCmd: exception(2).")
                 print_exc()
                 return 0
-        elif not self.streamdeck:
+        elif not self.streamdecks:
             print(self.Name, "PI::streamDeckCmd: Error: could not create StreamDeck.")
 
         return 0

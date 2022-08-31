@@ -1,3 +1,12 @@
+"""
+Different button classes for different purpose.
+Button base class does not perform any action, it mainly is an ABC.
+
+Buttons do
+1. Execute zero or more X-Plane command
+2. Optionally update their representation to confirm the action
+
+"""
 import logging
 import os
 
@@ -78,7 +87,6 @@ class Button:
         Determine if button's underlying value has changed
         """
         newval = None
-
         return self.previous_value == self.current_value
 
     def update(self, force: bool = False):
@@ -94,29 +102,67 @@ class Button:
             self.deck.set_key_image(self)
         logger.info(f"render: button {self.name} rendered")
 
-    def activate(self):
-        self.pressed_count = self.pressed_count + 1
-        logger.info(f"activate: button {self.name} activated")
+    def activate(self, state: bool):
+        if state:
+            self.pressed_count = self.pressed_count + 1
+        logger.info(f"activate: button {self.name} activated ({self.pressed_count})")
+
+    def get_image(self):
+        # Get base icon image for deck
+        if self.icon in self.deck.icons.keys():
+            image = self.deck.icons[self.icon]
+            # Add label if any
+            if self.label is not None:
+                draw = ImageDraw.Draw(image)
+                font = ImageFont.truetype("/Users/pierre/Developer/streamdecks/A321/esdconfig/fonts/DIN.ttf", 14)
+                draw.text((20,20),
+                          text=self.label,
+                          font=font,
+                          anchor="ms",
+                          fill="white")
+            return image
+        else:
+            logger.warning(f"get_icon_image: button {self.name} has no icon {self.icon}")
+        return None
 
 
 class ButtonSingle(Button):
+    """
+    Execute command once when key pressed
+    """
 
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
+
+    def activate(self, state: bool):
+        if state:
+            cmdref = xp.findCommand('sim/operation/pause_toggle')
+            xp.commandOnce(cmdref)
 
 
 class ButtonDual(Button):
+    """
+    Execute command while the key is pressed.
+    Pressing starts the command, releasing stops it.
+    """
 
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
 
+    def activate(self, state: bool):
+        if state:
+            cmdref = xp.findCommand('sim/operation/pause_toggle')
+            xp.XPLMCommandBegin(cmdref)
+        else:
+            cmdref = xp.findCommand('sim/operation/pause_toggle')
+            xp.XPLMCommandEnd(cmdref)
 
 class ButtonPage(Button):
 
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
 
-    def activate(self):
+    def activate(self, state: bool):
         super().activate()
         self.deck.change_page(self.name)
 
