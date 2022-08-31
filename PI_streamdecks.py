@@ -1,16 +1,19 @@
-# Stream Deck XP11 Python3 Plugin Interface
+# Streamdecks XP11 Python3 Plugin Interface
+# Streamdecks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
+#
 #
 from traceback import print_exc
 import xp
 from streamdeck import Streamdecks
 
-RELEASE = "0.0.1"
+RELEASE = "0.0.2"
+
 
 class PythonInterface:
 
     def __init__(self):
-        self.Name = "Stream Deck"
-        self.Sig = "streamdeck.xppython3"
+        self.Name = "Streamdecks"
+        self.Sig = "streamdecks.xppython3"
         self.Desc = "Stream Deck Controller. (Rel. " + RELEASE + ")"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
@@ -19,7 +22,7 @@ class PythonInterface:
         self.streamDeckCmdRef = None
 
     def XPluginStart(self):
-        self.streamDeckCmdRef = xp.createCommand('xppython3/streamdeck/toggle', 'Open or close Stream Deck Controller window')
+        self.streamDeckCmdRef = xp.createCommand('xppython3/streamdecks/reload', 'Reload Streamdecks for aircraft')
         xp.registerCommandHandler(self.streamDeckCmdRef, self.streamDeckCmd, 1, None)
         self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.streamDeckCmdRef)
         if self.trace:
@@ -84,6 +87,10 @@ class PythonInterface:
         return None
 
     def XPluginReceiveMessage(self, inFromWho, inMessage, inParam):
+        """
+        When we receive a message that an aircraft was loaded, if it is the user aircraft,
+        we try to load the aicraft esdconfig. If it does not exist, we default to a screen saver.
+        """
         XPLM_MSG_PLANE_LOADED = 102
         if inMessage == XPLM_MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Name, "PI::XPluginReceiveMessage: user aircraft loaded")
@@ -93,6 +100,9 @@ class PythonInterface:
                 self.streamdecks.load(acpath=acpath)
 
     def streamDeckCmd(self, *args, **kwargs):
+        """
+        Command hook to either start or reload current aircraft esdconfig.
+        """
         # pylint: disable=unused-argument
         if not self.enabled:
             print(self.Name, "PI::streamDeckCmd: not enabled.")

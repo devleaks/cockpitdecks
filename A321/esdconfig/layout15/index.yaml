@@ -1,16 +1,17 @@
+name: Index
 actions:
   - index: 0
     name: X-Plane Map
     type: single
     icon: dual.0.0
     command: sim/map/show_current
-    label: Test
+    label: X-Plane Map
   - index: 1
-    name: X-Plane Map1
-    type: single
-    icon: dual.0.0
+    name: Second Page
+    type: page
+    icon: ALTN
     command: sim/map/show_current
-    label: Label
+    label: Page Toto
   - index: 2
     type: nonexistanttype
     icon: dual.0.0
@@ -19,7 +20,7 @@ actions:
     type: single
     icon: dual.0.0
     command: sim/map/show_current
-  - index: 0
+  - index: 0  ## rejected because already defined
     name: X-Plane Map
     type: single
     icon: dual.0.0

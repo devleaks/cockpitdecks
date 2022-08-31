@@ -112,7 +112,7 @@ class Streamdeck:
         """
         Connects to device and send initial keys.
         """
-        self.change_page(self.home_page)
+        self.change_page(self.home_page.name)
         logger.info(f"init: stream deck {self.name} initialized")
         if self.device is not None:
             self.device.set_key_callback(self.key_change_callback)
@@ -307,37 +307,25 @@ class Streamdeck:
         else:
             logger.warning(f"make_icon_for_device: deck {self.name} has no device")
 
-    def change_page(self, page: Page):
-        self.previous_page = self.current_page
-        self.current_page = page
-        self.update(force=True)
+    def change_page(self, page: str):
+        logger.debug(f"change_page: deck {self.name} change page to {page}..")
+        if page in self.pages.keys():
+            self.previous_page = self.current_page
+            self.current_page = self.pages[page]
+            self.update(force=True)
+            logger.debug(f"change_page: deck {self.name} ..done")
+        else:
+            logger.warning(f"change_page: deck {self.name}: page {page} not found")
 
     def update(self, force: bool = False):
+        logger.debug(f"change_page: deck {self.name} update to page {self.current_page.name}")
         self.current_page.update(force)
-
-    def button_pressed(self, idx: int):
-        if idx >= 0 and idx < self.numkeys and idx:
-            self.current_page.activate(idx)
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("set_key_image: no device")
             return
-
-        if button.icon not in self.icons.keys():
-            logger.warning(f"set_key_image: no icon {button.icon} for button {button.name}")
-            return
-
-        image = self.icons[button.icon]
-
-        # if button.label is not None:  # overlay label on top of image
-        #     font_file_name = DEFAULT_LABEL_FONT
-        #     if self.decks.default_font in self.decks.fonts.keys():
-        #         font_file_name = self.decks.fonts[self.decks.default_font]
-        #     print(">>>>>>>>>>>>>>>", font_file_name, self.decks.default_font, self.decks.fonts.keys())
-        #     draw = ImageDraw.Draw(image)
-        #     font = ImageFont.truetype(font_file_name, self.decks.default_size)
-        #     draw.text((image.width / 2, image.height - 5), text=button.label, font=font, anchor="ms", fill="white")
+        image = button.get_image()
 
         with self.device:
             i = PILHelper.to_native_format(self.device, image)

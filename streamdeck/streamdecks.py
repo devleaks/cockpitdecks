@@ -213,23 +213,6 @@ class Streamdecks:
             deck.terminate()
         logging.info(f"terminate_all: all decks terminated")
 
-    # Plugin function
-    # (currently not used...)
-    def start():
-        logger.info(f"start: started")
-
-    def end():
-        logger.info(f"end: ended")
-
-    def enable():
-        self.disabled = False
-        logger.info(f"enable: enabled")
-
-    def disable():
-        self.disabled = True
-        self.end()
-        logger.info(f"disable: disabled")
-
     def run(self):
         logging.info(f"run: active")
         for t in threading.enumerate():
@@ -238,5 +221,24 @@ class Streamdecks:
             except RuntimeError:
                 pass
         logging.info(f"run: terminated")
+
+    # XPPython Plugin Hooks
+    #
+    def start(self):
+        self.load(self.acpath)
+        logger.info(f"start: started")
+
+    def stop(self):
+        self.terminate_all()
+        logger.info(f"end: ended")
+
+    def enable(self):
+        self.disabled = False
+        logger.info(f"enable: enabled")
+
+    def disable(self):
+        self.disabled = True
+        self.stop()
+        logger.info(f"disable: disabled")
 
 

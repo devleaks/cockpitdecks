@@ -1,0 +1,15 @@
+name: Second Page
+actions:
+  - index: 0
+    name: Toto Map
+    type: single
+    icons:
+      - OFF_WHITE
+      - "ON"
+    command: sim/map/show_current
+  - index: 1
+    name: Index
+    type: page
+    icon: OFF_ALT
+    command: sim/map/show_current
+    label: Page Index

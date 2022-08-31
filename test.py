@@ -10,5 +10,5 @@ logger = logging.getLogger("streamdecks")
 
 s = Streamdecks()
 
-s.load(os.path.join(os.path.dirname(__file__), "toto"))
+s.load(os.path.join(os.path.dirname(__file__), "A321"))
 

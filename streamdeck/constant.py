@@ -12,7 +12,7 @@ FONTS_FOLDER = "fonts"
 
 DEFAULT_LAYOUT = "default"
 
-INIT_PAGE = "index"
+INIT_PAGE = "Index"
 WALLPAPER = "wallpaper.png"
 
 DEFAULT_SYSTEM_FONT = "arial.ttf"
