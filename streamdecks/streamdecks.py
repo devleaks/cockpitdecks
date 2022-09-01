@@ -9,9 +9,10 @@ from StreamDeck.DeviceManager import DeviceManager
 from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER
 from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
 from .constant import has_ext
+from .xplane import XPlaneAPI
 from .streamdeck import Streamdeck
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("Streamdecks")
 
 
@@ -27,11 +28,12 @@ class Streamdecks:
         (False, False): "not mirrored",
         (True, False): "mirrored horizontally",
         (False, True): "mirrored vertically",
-        (True, True): "mirrored horizontally/vertically",
+        (True, True): "mirrored horizontally/vertically"
     }
 
     def __init__(self, pi):
         self.pi = pi
+        self.xp = XPlaneAPI()
 
         self.disabled = False
 
@@ -148,8 +150,8 @@ class Streamdecks:
                 "name": name,
                 "model": device.deck_type(),
                 "serial": device.get_serial_number(),
-                "layout": None,
-                "brightness": 75
+                "layout": None,   # Streamdeck will detect None layout and present default deck
+                "brightness": 75  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
             self.decks[name] = Streamdeck(name, config, self, device)
 

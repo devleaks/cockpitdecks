@@ -2,8 +2,9 @@
 # Streamdecks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
 #
 #
-from traceback import print_exc
 import xp
+from traceback import print_exc
+
 from streamdecks import Streamdecks
 
 RELEASE = "0.0.2"
@@ -91,8 +92,7 @@ class PythonInterface:
         When we receive a message that an aircraft was loaded, if it is the user aircraft,
         we try to load the aicraft esdconfig. If it does not exist, we default to a screen saver.
         """
-        XPLM_MSG_PLANE_LOADED = 102
-        if inMessage == XPLM_MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+        if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Name, "PI::XPluginReceiveMessage: user aircraft loaded")
             if self.streamdecks:
                 ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')

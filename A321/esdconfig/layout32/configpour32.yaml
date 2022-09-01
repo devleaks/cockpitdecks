@@ -1,4 +1,4 @@
-actions:
+buttons:
   - index: 0
     name: X-Plane Map
     type: single

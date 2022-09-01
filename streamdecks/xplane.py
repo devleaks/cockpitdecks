@@ -2,6 +2,7 @@ import logging
 
 import xp
 
+from .XPDref import XPDref
 logger = logging.getLogger("XplaneAPI")
 
 
@@ -17,8 +18,9 @@ class XPlaneAPI:
         logger.debug(f"commandBegin: executing {command}")
 
     def commandEnd(self, command: str):
+        # cmdref = xp.findCommand(command)
+        # xp.XPLMCommandEnd(cmdref)
         logger.debug(f"commandEnd: executing {command}")
 
     def read(self, dataref: str):
-        logger.debug(f"read: reading {dataref}")
-        return 0
+        return XPDref(dataref)

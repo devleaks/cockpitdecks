@@ -1,13 +1,16 @@
 import os
 import logging
 import yaml
+import threading
+
+from time import sleep
 
 from enum import Enum
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import DEFAULT_LAYOUT, CONFIG_DIR, INIT_PAGE, DEFAULT_LABEL_FONT, WALLPAPER
+from .constant import DEFAULT_LAYOUT, CONFIG_DIR, INIT_PAGE, DEFAULT_LABEL_FONT, WALLPAPER, MONITORING_POLL
 from .button import Button, BUTTON_TYPES
 
 logger = logging.getLogger("Streamdeck")
@@ -58,6 +61,7 @@ class Streamdeck:
         self.previous_page = None
         self.valid = True
         self.running = False
+        self.monitoring_thread = None
 
         if "serial" in config:
             self.serial = config["serial"]
@@ -107,6 +111,7 @@ class Streamdeck:
             self.make_icon_for_device()
             self.load()
             self.init()
+            self.start()
 
     def init(self):
         """
@@ -114,16 +119,13 @@ class Streamdeck:
         """
         self.change_page(self.home_page.name)
         logger.info(f"init: stream deck {self.name} initialized")
-        if self.device is not None:
-            self.device.set_key_callback(self.key_change_callback)
-            self.running = True
-        logger.info(f"init: deck {self.name} listening for key strokes")
 
 
     def load(self):
         """
         Loads Streamdeck pages during configuration
         """
+        BUTTONS = "buttons"
         if self.layout is None:
             self.load_default_page()
             return
@@ -144,7 +146,7 @@ class Streamdeck:
                     with open(fn, "r") as fp:
                         pc = yaml.safe_load(fp)
 
-                        if not "actions" in pc:
+                        if not BUTTONS in pc:
                             logger.error(f"load: {fn} has no action")
                             continue
 
@@ -154,7 +156,7 @@ class Streamdeck:
                         this_page = Page(name)
                         self.pages[name] = this_page
 
-                        for a in pc["actions"]:
+                        for a in pc[BUTTONS]:
                             button = None
                             bty = None
                             idx = None
@@ -317,6 +319,26 @@ class Streamdeck:
     def update(self, force: bool = False):
         logger.debug(f"change_page: deck {self.name} update to page {self.current_page.name}")
         self.current_page.update(force)
+
+    def start(self):
+        if self.device is not None:
+            self.device.set_key_callback(self.key_change_callback)
+            self.running = True
+            self.monitoring_thread = threading.Thread(target=self.monitor)
+            self.monitoring_thread.start()
+
+        logger.info(f"start: deck {self.name} listening for key strokes")
+
+    def monitor(self):
+        """
+        Function submitted as a thread to monitor button data changes in the simulator
+        """
+        logger.info(f"monitor: deck {self.name} started")
+        while self.running:
+            self.update()
+            sleep(MONITORING_POLL)
+            logger.debug(f"monitor: deck {self.name} updated")
+        logger.info(f"monitor: deck {self.name} terminated")
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:

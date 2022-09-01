@@ -1,47 +1,66 @@
-actions:
+name: Index
+buttons:
   - index: 0
     name: X-Plane Map
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: sim/map/show_current
   - index: 1
     name: Airport Map
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: pikitanga/AptNav/ToggleMap
   - index: 2
     name: AVS Map
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: flightfactor/avs/toggle
   - index: 3
     name: AVS Map
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: flightfactor/avs/toggle
   - index: 4
     name: X-Camera Views
     type: dir
-    icon: dual.0.0
+    icons:
+      - AVAIL
+      - "ON"
   - index: 5
     name: LiveTraffic
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: LiveTraffic/Info_Staus_Wnd/Open
   - index: 6
     name: FollowTheGreens
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: XPPython3/followthegreen/main_windown_toggle
   - index: 10
     name: GroundHandlingDeluxe
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: jd/ghd/show_widget
   - index: 11
     name: SAMGroundVehicle
-    type: single
-    icon: dual.0.0
+    type: push
+    icons:
+      - AVAIL
+      - "ON"
     command: sam/main_window
   - index: 14
     name: A321

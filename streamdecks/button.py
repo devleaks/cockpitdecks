@@ -13,7 +13,6 @@ import os
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER
-from .xplane import XPlaneAPI as xp
 
 logger = logging.getLogger("Button")
 
@@ -26,7 +25,6 @@ class Button:
         self.name = config.get("name", f"bnt-{config['index']}")
         self.index = config.get("index")
 
-
         self.pressed_count = 0
         self.label = config.get("label")
         self.label_font = config.get("label-font")
@@ -34,6 +32,7 @@ class Button:
             default_font_size = deck.decks.default_size
         self.label_size = int(config.get("label-size", default_font_size))
         self.label_position = config.get("label-position", "cm")
+        self.label_color = config.get("label-color", "white")
 
         self.command = config.get("command")
         self.commands = config.get("commands")
@@ -41,7 +40,7 @@ class Button:
         self.dataref = config.get("dataref")
         self.datarefs = config.get("datarefs")
 
-        self.icon = config.get("icon")
+        self.icon = config.get("icon", "icon")
         if self.icon is not None:
             self.icon = add_ext(self.icon, ".png")
             if self.icon not in self.deck.icons.keys():
@@ -61,6 +60,8 @@ class Button:
         # working variables
         self.previous_value = None
         self.current_value = None
+
+        self.xp = self.deck.decks.xp  # shortcut alias
 
         self.init()
 
@@ -82,9 +83,15 @@ class Button:
 
     def changed(self) -> bool:
         """
-        Determine if button's underlying value has changed
+        Fetches button latest values and return True if value has changed
         """
-        newval = None
+        self.current_value = self.fetch()
+        if self.current_value is None and self.previous_value is None:
+            return True
+        elif self.current_value is None and self.previous_value is not None:
+            return True
+        elif self.current_value is not None and self.previous_value is None:
+            return True
         return self.previous_value == self.current_value
 
     def update(self, force: bool = False):
@@ -95,25 +102,41 @@ class Button:
             self.previous_value == self.current_value
             self.render()
 
+    def fetch(self):
+        """
+        Read button value(s)
+        """
+        return 0
+
     def activate(self, state: bool):
+        """
+        Function that is executed when a button is pressed (state=True) or released (state=False)
+        """
         if state:
             self.pressed_count = self.pressed_count + 1
         logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def get_font(self):
+        """
+        Helper function to get valid font, depending on button or global preferences
+        """
         if self.label_font is not None:
             return self.deck.decks.fonts[self.label_font]
         elif self.deck.decks.default_font is not None:
             return self.deck.decks.fonts[self.deck.decks.default_font]
 
     def get_image(self):
-        # Get base icon image for deck
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation.
+        """
         if self.icon in self.deck.icons.keys():
             image = self.deck.icons[self.icon]
             # Add label if any
             if self.label is not None:
                 fontname = self.get_font()
                 logger.debug(f"get_image: font {fontname}")
+                image = image.copy()  # we will add text over it
                 draw = ImageDraw.Draw(image)
                 font = ImageFont.truetype(fontname, self.label_size)
 
@@ -136,7 +159,7 @@ class Button:
 
                 logger.debug(f"get_image: position {(w, h)}")
 
-                draw.text((image.width / 2, 15),
+                draw.text((w, h),  # (image.width / 2, 15)
                           text=self.label,
                           font=font,
                           anchor=p+"d",
@@ -153,32 +176,56 @@ class Button:
         logger.debug(f"render: button {self.name} rendered")
 
 
-class ButtonSingle(Button):
+class ButtonPage(Button):
+    """
+    When pressed, activation change to selected page.
+    If new page is not found, issues a warning and remain on current page.
+    """
+    def __init__(self, config: dict, deck: "Streamdeck"):
+        Button.__init__(self, config=config, deck=deck)
+
+    def activate(self, state: bool):
+        super().activate(state)
+        if state:
+            logger.debug(f"activate: button {self.name} change page to {self.name}")
+            self.deck.change_page(self.name)
+
+
+class ButtonPush(Button):
     """
     Execute command once when key pressed
     """
 
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
+        self.current_value = self.fetch()
 
     def is_valid(self):
         return super().is_valid() and (self.command is not None)
 
     def activate(self, state: bool):
+
         super().activate(state)
         if state:
             if self.is_valid():
-                logger.debug(f"activate: button {self.name} XPLANE EXECUTE {self.command}")
-                # cmdref = xp.findCommand(self.command)
-                # xp.commandOnce(cmdref)
-        self.render()
+                self.label = f"pressed {self.current_value}"
+                self.xp.commandOnce(self.command)
+                self.update()
+
+    def fetch(self):
+        """
+        Read button value(s)
+        """
+        if self.dataref is not None:
+            return self.xp.read(self.dataref)
+        return self.pressed_count
 
     def get_image(self):
         """
         If button has more icons, cycle through them
         """
         if self.icons is not None and len(self.icons) > 1:
-            self.icon = self.icons[ self.pressed_count % len(self.icons) ]
+            self.icon = self.icons[ self.current_value % len(self.icons) ]
             logger.debug(f"get_image: button {self.name} get cycle icon {self.icon}")
         return super().get_image()
 
@@ -198,29 +245,15 @@ class ButtonDual(Button):
     def activate(self, state: bool):
         if state:
             if self.is_valid():
-                cmdref = xp.findCommand(self.commands[0])
-                xp.XPLMCommandBegin(cmdref)
+                self.xp.commandBegin(self.commands[0])
         else:
             if self.is_valid():
-                cmdref = xp.findCommand(self.commands[1])
-                xp.XPLMCommandEnd(cmdref)
-
-class ButtonPage(Button):
-
-    def __init__(self, config: dict, deck: "Streamdeck"):
-        Button.__init__(self, config=config, deck=deck)
-
-    def activate(self, state: bool):
-        super().activate(state)
-        if state:
-            logger.warning(f"activate: button {self.name} change page to {self.name}")
-            self.deck.change_page(self.name)
-
+                self.xp.commandEnd(self.commands[1])
 
 BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
-    "single": ButtonSingle,
+    "push": ButtonPush,
     "dual": ButtonDual,
     "dir": ButtonPage
 }

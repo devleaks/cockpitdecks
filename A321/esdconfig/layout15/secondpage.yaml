@@ -1,5 +1,5 @@
 name: Second Page
-actions:
+buttons:
   - index: 0
     name: Toto Map
     type: single

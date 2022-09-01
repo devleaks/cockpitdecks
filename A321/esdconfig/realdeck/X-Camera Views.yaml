@@ -1,4 +1,4 @@
-actions:
+buttons:
   - index: 14
     name: return
     type: dir
