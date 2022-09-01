@@ -4,7 +4,7 @@
 #
 from traceback import print_exc
 import xp
-from streamdeck import Streamdecks
+from streamdecks import Streamdecks
 
 RELEASE = "0.0.2"
 
@@ -22,7 +22,7 @@ class PythonInterface:
         self.streamDeckCmdRef = None
 
     def XPluginStart(self):
-        self.streamDeckCmdRef = xp.createCommand('xppython3/streamdecks/reload', 'Reload Streamdecks for aircraft')
+        self.streamDeckCmdRef = xp.createCommand('xppython3/streamdecks/reload', 'Reload Stream Decks for aircraft')
         xp.registerCommandHandler(self.streamDeckCmdRef, self.streamDeckCmd, 1, None)
         self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.streamDeckCmdRef)
         if self.trace:

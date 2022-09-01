@@ -12,7 +12,8 @@ import os
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from .constant import CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER
+from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER
+from .xplane import XPlaneAPI as xp
 
 logger = logging.getLogger("Button")
 
@@ -41,18 +42,17 @@ class Button:
         self.datarefs = config.get("datarefs")
 
         self.icon = config.get("icon")
-        if self.icon is not None and not self.icon.endswith(".png"):  # @todo check for .PNG ok too.
-            self.icon = self.icon + ".png"
+        if self.icon is not None:
+            self.icon = add_ext(self.icon, ".png")
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found {self.icon}")
 
         self.icons = config.get("icons")
         if self.icons is not None:
             for i in range(len(self.icons)):
-                if not self.icons[i].endswith(".png"):  # @todo check for .PNG ok too.
-                    self.icons[i] = self.icons[i] + ".png"
-                    if self.icons[i] not in self.deck.icons.keys():
-                        logger.warning(f"__init__: button {self.name}: icon not found {self.icons[i]}")
+                self.icons[i] = add_ext(self.icons[i], ".png")
+                if self.icons[i] not in self.deck.icons.keys():
+                    logger.warning(f"__init__: button {self.name}: icon not found {self.icons[i]}")
 
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             logger.warning(f"__init__: button {self.name}: invalid label position code {self.label_position}, using default")

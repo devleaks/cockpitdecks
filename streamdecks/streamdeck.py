@@ -284,9 +284,6 @@ class Streamdeck:
         self.device.set_key_callback(self.key_change_callback)
         self.running = True
 
-    def make_default_icons(self):
-        pass
-
     def key_change_callback(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
@@ -330,7 +327,6 @@ class Streamdeck:
         with self.device:
             i = PILHelper.to_native_format(self.device, image)
             self.device.set_key_image(button.index, i)
-
 
     def terminate(self):
         with self.device:

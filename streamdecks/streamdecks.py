@@ -8,8 +8,10 @@ from StreamDeck.DeviceManager import DeviceManager
 
 from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER
 from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
+from .constant import has_ext
 from .streamdeck import Streamdeck
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("Streamdecks")
 
 
@@ -28,7 +30,9 @@ class Streamdecks:
         (True, True): "mirrored horizontally/vertically",
     }
 
-    def __init__(self):
+    def __init__(self, pi):
+        self.pi = pi
+
         self.disabled = False
 
         self.devices = []
@@ -115,11 +119,13 @@ class Streamdecks:
                         if "serial" in d:
                             serial = d["serial"]
                             device = self.get_device(serial)
-                            if "name" in d:
-                                name = d["name"]
-                            self.decks[name] = Streamdeck(name, d, self, device)
-                            cnt = cnt + 1
-                            logging.info(f"load: deck {name} loaded")
+                            if device is not None:
+                                if "name" in d:
+                                    name = d["name"]
+                                self.decks[name] = Streamdeck(name, d, self, device)
+                                cnt = cnt + 1
+                                logging.info(f"load: deck {name} loaded")
+                            # else:  # warning shown by get_device
                         else:
                             logging.error(f"load: deck {name} has no serial number, ignoring")
                 else:
@@ -150,11 +156,20 @@ class Streamdecks:
     def load_icons(self):
         # Loading icons
         #
+        # 1. Loading default icon
+        default_icon = "icon.png"
+        fn = os.path.join(os.path.dirname(__file__), default_icon)
+        if os.path.exists(fn):
+            image = Image.open(fn)
+            self.icons[default_icon] = image
+            logging.debug(f"load_icons: loaded default {default_icon} icon")
+
+        # 2. Loading icons folder
         dn = os.path.join(self.acpath, CONFIG_DIR, ICONS_FOLDER)
         if os.path.exists(dn):
             icons = os.listdir(dn)
             for i in icons:
-                if i.endswith(".png") or i.endswith(".PNG"):
+                if has_ext(i, "png"):
                     fn = os.path.join(dn, i)
                     image = Image.open(fn)
                     self.icons[i] = image
@@ -173,33 +188,34 @@ class Streamdecks:
         if os.path.exists(dn):
             fonts = os.listdir(dn)
             for i in fonts:
-                if i.endswith(".ttf") or i.endswith(".otf"):
+                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
                     fn = os.path.join(dn, i)
                     try:
-                        test = ImageFont.truetype("/Users/pierre/Developer/streamdecks/A321/esdconfig/fonts/DIN.ttf", self.default_size)
+                        test = ImageFont.truetype(fn, self.default_size)
                         self.fonts[i] = fn
                     except OSError:
                         logging.warning(f"load_fonts: custom font file {fn} not loaded")
-                        pass
 
         # 2. Load label default font
-        if len(self.fonts) == 0:  # No found loaded? we need at least one:
+        if DEFAULT_LABEL_FONT not in self.fonts.keys():
             try:
                 test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
-                self.fonts[i] = fn
+                self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
                 self.default_font = DEFAULT_LABEL_FONT
             except OSError:
-                logging.warning(f"load_fonts: font label {fn} not loaded")
-                pass
+                logging.warning(f"load_fonts: font {DEFAULT_LABEL_FONT} not loaded")
 
         if self.default_font is None and len(self.fonts) > 0:
-            self.default_font = self.fonts[list(self.fonts.keys())[0]]
+            if DEFAULT_LABEL_FONT in self.fonts.keys():
+                self.default_font = DEFAULT_LABEL_FONT
+            else:  # select first one
+                self.default_font = list(self.fonts.keys())[0]
 
         # 3. If no font loaded, try DEFAULT_SYSTEM_FONT:
         if self.default_font is None:  # No found loaded? we need at least one:
             try:
                 test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
-                self.fonts[i] = fn
+                self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
                 self.default_font = DEFAULT_LABEL_FONT
             except OSError:
                 logging.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
@@ -214,13 +230,16 @@ class Streamdecks:
         logging.info(f"terminate_all: all decks terminated")
 
     def run(self):
-        logging.info(f"run: active")
-        for t in threading.enumerate():
-            try:
-                t.join()
-            except RuntimeError:
-                pass
-        logging.info(f"run: terminated")
+        if len(self.decks) > 0:
+            logging.info(f"run: active")
+            for t in threading.enumerate():
+                try:
+                    t.join()
+                except RuntimeError:
+                    pass
+            logging.info(f"run: terminated")
+        else:
+            logging.warning(f"run: no deck")
 
     # XPPython Plugin Hooks
     #
