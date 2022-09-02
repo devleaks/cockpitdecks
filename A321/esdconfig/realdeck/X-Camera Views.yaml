@@ -1,5 +1,5 @@
 buttons:
   - index: 14
-    name: return
-    type: dir
+    name: Index
+    type: page
     icon: XPLANE

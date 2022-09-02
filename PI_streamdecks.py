@@ -5,9 +5,9 @@
 import xp
 from traceback import print_exc
 
-from streamdecks import Streamdecks
+from streamdecks import Streamdecks, XPlaneAPI
 
-RELEASE = "0.0.2"
+RELEASE = "0.0.3"
 
 
 class PythonInterface:
@@ -57,7 +57,7 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            self.streamdecks = Streamdecks(self)
+            self.streamdecks = Streamdecks(self, XPlaneAPI)
             self.enabled = True
             if self.trace:
                 print(self.Name, "PI::XPluginEnable: enabled.")
@@ -121,7 +121,7 @@ class PythonInterface:
 
         if not self.streamdecks:
             try:
-                self.streamdecks = Streamdecks(self)
+                self.streamdecks = Streamdecks(self, XPlaneAPI)
                 if self.trace:
                     print(self.Name, "PI::streamDeckCmd: created.")
             except:

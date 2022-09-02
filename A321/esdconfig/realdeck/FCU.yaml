@@ -1,31 +1,31 @@
 buttons:
   - index: 0
-    name: return
-    type: dir
+    name: A321
+    name: A321
+    type: page
     icon: TOLISS-A321
   - index: 1
     name: FD 1
-    type: single
+    type: push
     icon: OFF-GREEN
     command: toliss_airbus/fd1_push
     dataref: AirbusFBW/FD1Engage
     dataref-states:
       - 0.0
       - 1.0
-    file-names:
+    icons:
       - OFF-GREEN
       - ON-GREEN
     label: FD
   - index: 2
-    name: LS 1
-    type: single
+    name: FireTestAPU
+    type: push
     icon: OFF-GREEN
-    command: toliss_airbus/ils1_push
-    dataref: AirbusFBW/ILSonCapt
-    dataref-states:
-      - 0.0
-      - 1.0
-    file-names:
-      - OFF-GREEN
-      - ON-GREEN
-    label: LS
+    command: AirbusFBW/FireTestAPU/begin
+    label: Fire Begin
+  - index: 3
+    name: FireTestAPU2
+    type: push
+    icon: ON-GREEN
+    command: AirbusFBW/FireTestAPU/end
+    label: Fire End

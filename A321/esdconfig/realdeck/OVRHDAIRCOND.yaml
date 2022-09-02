@@ -1,5 +1,5 @@
 buttons:
   - index: 0
-    name: return
-    type: dir
+    name: A321
+    type: page
     icon: TOLISS-A321

@@ -1,74 +1,78 @@
 buttons:
   - index: 0
     name: MASTERCAUT
-    type: single
-    icon: MASTER_CAUT_OFF
+    type: push
+    icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
     command: sim/annunciator/clear_master_caution
   - index: 1
     name: MARTERWARN
-    type: single
-    icon: MASTER_WARN_OFF
+    type: push
+    icons:
+      - MASTER_WARN_OFF
+      - MASTER_WARN
     command: sim/annunciator/clear_master_warning
   - index: 2
     name: FCU
-    type: dir
+    type: page
     icon: NONE
     label: FCU
     label-position: cm
   - index: 3
     name: ECAM
-    type: dir
+    type: page
     icon: NONE
     label: ECAM
     label-position: cm
   - index: 4
     name: ISCS
-    type: single
+    type: push
     icon: TOLISS-OFF
     command: toliss_airbus/iscs_open
   - index: 5
     name: OVRHDFIRE
-    type: dir
+    type: page
     icon: NONE
     label: OVRHD FIRE
     label-position: cm
   - index: 6
     name: OVRHDHYD
-    type: dir
+    type: page
     icon: NONE
     label: OVRHD HYD
     label-position: cm
   - index: 7
     name: OVRHDFUEL
-    type: dir
+    type: page
     icon: NONE
     label: OVRHD FUEL
     label-position: cm
   - index: 8
     name: OVRHDELEC
-    type: dir
+    type: page
     icon: NONE
     label: OVRHD ELEC
     label-position: cm
   - index: 9
     name: OVRHDAIRCOND
-    type: dir
+    type: page
     icon: NONE
     label: "OVRHD\nAIR COND"
     label-position: cm
   - index: 10
     name: OVRHDEXTLIGHTS
-    type: dir
+    type: page
     icon: NONE
     label: EXT LIGHTS
     label-position: cm
   - index: 13
     name: OVRHDCALL
-    type: dir
+    type: page
     icon: NONE
     label: OVRHD CALL
     label-position: cm
   - index: 14
-    name: return
-    type: dir
+    name: Index
+    type: page
     icon: XPLANE

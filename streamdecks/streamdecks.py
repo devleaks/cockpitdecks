@@ -9,7 +9,6 @@ from StreamDeck.DeviceManager import DeviceManager
 from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER
 from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
 from .constant import has_ext
-from .xplane import XPlaneAPI
 from .streamdeck import Streamdeck
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -31,9 +30,9 @@ class Streamdecks:
         (True, True): "mirrored horizontally/vertically"
     }
 
-    def __init__(self, pi):
+    def __init__(self, pi, xp):
         self.pi = pi
-        self.xp = XPlaneAPI()
+        self.xp = xp(self)
 
         self.disabled = False
 
@@ -88,7 +87,7 @@ class Streamdecks:
             logging.warning(f"load: Streamdecks is disabled")
             return
         # Reset, if new aircraft
-        self.terminate_all()
+        self.terminate_this_aircraft()
 
         self.decks = {}
         self.icons = {}
@@ -226,10 +225,18 @@ class Streamdecks:
         logging.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_font}")
         print(self.fonts)
 
-    def terminate_all(self):
+    def terminate_this_aircraft(self):
+        logging.info(f"terminate_this_aircraft: terminating..")
         for deck in self.decks.values():
             deck.terminate()
-        logging.info(f"terminate_all: all decks terminated")
+        logging.info(f"terminate_this_aircraft: done")
+
+    def terminate_all(self):
+        logging.info(f"terminate_all: terminating..")
+        self.terminate_this_aircraft()
+        if self.xp is not None:
+            self.xp.terminate()
+        logging.info(f"terminate_all: done")
 
     def run(self):
         if len(self.decks) > 0:
@@ -246,12 +253,14 @@ class Streamdecks:
     # XPPython Plugin Hooks
     #
     def start(self):
+        logger.info(f"start: starting..")
         self.load(self.acpath)
-        logger.info(f"start: started")
+        logger.info(f"start: done")
 
     def stop(self):
+        logger.info(f"stop: stopping..")
         self.terminate_all()
-        logger.info(f"end: ended")
+        logger.info(f"stop: done")
 
     def enable(self):
         self.disabled = False

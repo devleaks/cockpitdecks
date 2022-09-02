@@ -25,13 +25,27 @@ class Page:
     def __init__(self, name: str):
         self.name = name
         self.buttons = {}
+        self.datarefs = {}
 
     def add_button(self, idx: int, button: Button):
         if idx in self.buttons.keys():
             loggerPage.error(f"add_button: button index {idx} already defined, ignoring {button.name}")
             return
         self.buttons[idx] = button
+        # Build page dataref list, each dataref points at the button(s) that use it
+        for d in button.get_datarefs():
+            if d not in self.datarefs:
+                self.datarefs[d] = []
+            self.datarefs[d].append(button)
         loggerPage.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
+
+    def update_dataref(self, dataref):
+        for d in self.datarefs.keys():
+            for button in self.datarefs[d]:
+                loggerPage.debug(f"update_dataref: page {self.name}: button updated because {dataref} changed")
+                button.update()
+        else:
+            loggerPage.warning(f"update_dataref: page {self.name}: not button for dataref {dataref}")
 
     def update(self, force: bool = False):
         for button in self.buttons.values():
@@ -311,6 +325,7 @@ class Streamdeck:
         if page in self.pages.keys():
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
+            self.device.reset()
             self.update(force=True)
             logger.debug(f"change_page: deck {self.name} ..done")
         else:
@@ -323,22 +338,22 @@ class Streamdeck:
     def start(self):
         if self.device is not None:
             self.device.set_key_callback(self.key_change_callback)
-            self.running = True
-            self.monitoring_thread = threading.Thread(target=self.monitor)
-            self.monitoring_thread.start()
-
+            # self.running = True
+            # self.monitoring_thread = threading.Thread(target=self.monitor)
+            # self.monitoring_thread.start()
         logger.info(f"start: deck {self.name} listening for key strokes")
 
-    def monitor(self):
-        """
-        Function submitted as a thread to monitor button data changes in the simulator
-        """
-        logger.info(f"monitor: deck {self.name} started")
-        while self.running:
-            self.update()
-            sleep(MONITORING_POLL)
-            logger.debug(f"monitor: deck {self.name} updated")
-        logger.info(f"monitor: deck {self.name} terminated")
+    # def monitor(self):
+    #     """
+    #     Function submitted as a thread to monitor button data changes in the simulator
+    #     """
+    #     logger.info(f"monitor: deck {self.name} started")
+    #     while self.running:
+    #         logger.debug(f"monitor: deck {self.name} updating..")
+    #         self.update()
+    #         logger.debug(f"monitor: deck {self.name} ..done")
+    #         sleep(MONITORING_POLL)
+    #     logger.info(f"monitor: deck {self.name} terminated")
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:

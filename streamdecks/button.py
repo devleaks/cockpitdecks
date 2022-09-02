@@ -87,7 +87,7 @@ class Button:
         """
         self.current_value = self.fetch()
         if self.current_value is None and self.previous_value is None:
-            return True
+            return False  # it hasn't really changed...
         elif self.current_value is None and self.previous_value is not None:
             return True
         elif self.current_value is not None and self.previous_value is None:
@@ -106,7 +106,7 @@ class Button:
         """
         Read button value(s)
         """
-        return 0
+        return None
 
     def activate(self, state: bool):
         """
@@ -115,6 +115,18 @@ class Button:
         if state:
             self.pressed_count = self.pressed_count + 1
         logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
+
+    def get_datarefs(self):
+        """
+        Returns all datarefs used by this button
+        """
+        r = []
+        if self.dataref is not None:
+            r.append(self.dataref)
+        if self.datarefs is not None:
+            for d in self.datarefs:
+                r.append(d)
+        return r
 
     def get_font(self):
         """
@@ -135,13 +147,11 @@ class Button:
             # Add label if any
             if self.label is not None:
                 fontname = self.get_font()
-                logger.debug(f"get_image: font {fontname}")
+                # logger.debug(f"get_image: font {fontname}")
                 image = image.copy()  # we will add text over it
                 draw = ImageDraw.Draw(image)
                 font = ImageFont.truetype(fontname, self.label_size)
-
                 inside = round(0.04 * image.width + 0.5)
-
                 w = image.width / 2
                 p = "m"
                 if self.label_position[0] == "l":
@@ -150,15 +160,12 @@ class Button:
                 elif self.label_position[0] == "r":
                     w = image.width - inside
                     p = "r"
-
                 h = image.height / 2
                 if self.label_position[1] == "t":
                     h = inside + self.label_size
                 elif self.label_position[1] == "r":
                     h = image.height - inside
-
-                logger.debug(f"get_image: position {(w, h)}")
-
+                # logger.debug(f"get_image: position {(w, h)}")
                 draw.text((w, h),  # (image.width / 2, 15)
                           text=self.label,
                           font=font,
@@ -167,7 +174,7 @@ class Button:
             return image
         else:
             logger.warning(f"get_image: button {self.name} has no icon {self.icon}")
-            logger.debug(f"{self.deck.icons.keys()}")
+            # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
     def render(self):
@@ -187,15 +194,19 @@ class ButtonPage(Button):
     def activate(self, state: bool):
         super().activate(state)
         if state:
-            logger.debug(f"activate: button {self.name} change page to {self.name}")
-            self.deck.change_page(self.name)
+            if self.name in self.deck.pages.keys():
+                logger.debug(f"activate: button {self.name} change page to {self.name}")
+                self.deck.change_page(self.name)
+                self.previous_value = self.current_value
+                self.current_value = self.name
+            else:
+                logger.warning(f"activate: button {self.name}: page not found {self.name}")
 
 
 class ButtonPush(Button):
     """
     Execute command once when key pressed
     """
-
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
         self.current_value = self.fetch()
@@ -204,28 +215,35 @@ class ButtonPush(Button):
         return super().is_valid() and (self.command is not None)
 
     def activate(self, state: bool):
-
         super().activate(state)
         if state:
             if self.is_valid():
-                self.label = f"pressed {self.current_value}"
+                # self.label = f"pressed {self.current_value}"
                 self.xp.commandOnce(self.command)
                 self.update()
 
     def fetch(self):
-        """
-        Read button value(s)
-        """
         if self.dataref is not None:
-            return self.xp.read(self.dataref)
+            logger.debug(f"fetch: button {self.name}: reading {self.dataref}")
+            x = self.xp.read(self.dataref)
+            logger.debug(f"fetch: button {self.name}: {self.dataref}={x}")
+            return x
         return self.pressed_count
 
     def get_image(self):
         """
-        If button has more icons, cycle through them
+        If button has more icons, select one from self.current_value
         """
         if self.icons is not None and len(self.icons) > 1:
-            self.icon = self.icons[ self.current_value % len(self.icons) ]
+            value = None
+            if self.dataref is not None:
+                value = int(self.current_value)
+                if value < 0 or value >= len(self.icons):
+                    logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.icons)}]")
+            else:
+                value = self.current_value % len(self.icons)
+            if value is not None:
+                self.icon = self.icons[value]
             logger.debug(f"get_image: button {self.name} get cycle icon {self.icon}")
         return super().get_image()
 
@@ -250,10 +268,12 @@ class ButtonDual(Button):
             if self.is_valid():
                 self.xp.commandEnd(self.commands[1])
 
+#
+# Mapping butween button types and classes
+#
 BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
     "push": ButtonPush,
-    "dual": ButtonDual,
-    "dir": ButtonPage
+    "dual": ButtonDual
 }

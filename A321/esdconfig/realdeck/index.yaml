@@ -30,7 +30,7 @@ buttons:
     command: flightfactor/avs/toggle
   - index: 4
     name: X-Camera Views
-    type: dir
+    type: page
     icons:
       - AVAIL
       - "ON"
@@ -64,5 +64,5 @@ buttons:
     command: sam/main_window
   - index: 14
     name: A321
-    type: dir
+    type: page
     icon: TOLISS-A321
