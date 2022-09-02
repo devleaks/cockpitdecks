@@ -2,6 +2,7 @@
 # Streamdecks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
 #
 #
+import os
 import xp
 from traceback import print_exc
 
@@ -58,7 +59,14 @@ class PythonInterface:
     def XPluginEnable(self):
         try:
             self.streamdecks = Streamdecks(self, XPlaneAPI)
-            self.enabled = True
+            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            if len(ac) == 2:
+                acpath = os.path.split(ac[1])   # '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP'
+                print(self.Name, "PI::XPluginEnable: trying", acpath[0])
+                self.streamdecks.load(acpath=acpath[0])
+                self.enabled = True
+            else:
+                print(self.Name, "PI::XPluginEnable: aircraft not loaded?", ac)
             if self.trace:
                 print(self.Name, "PI::XPluginEnable: enabled.")
             return 1
@@ -93,11 +101,21 @@ class PythonInterface:
         we try to load the aicraft esdconfig. If it does not exist, we default to a screen saver.
         """
         if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
-            print(self.Name, "PI::XPluginReceiveMessage: user aircraft loaded")
-            if self.streamdecks:
-                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
-                acpath = os.path.split(ac[1])   # '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP'
-                self.streamdecks.load(acpath=acpath)
+            print(self.Name, "PI::XPluginReceiveMessage: user aircraft received")
+            try:
+                if self.streamdecks:
+                    ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                    acpath = os.path.split(ac[1])   # '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP'
+                    self.streamdecks.load(acpath=acpath[0])
+                    print(self.Name, "PI::XPluginReceiveMessage: user aircraft loaded")
+                    self.enabled = True
+                else:
+                    print(self.Name, "PI::XPluginReceiveMessage: no Streamdecks")
+            except:
+                if self.trace:
+                    print(self.Name, "PI::XPluginDisable: exception.")
+                print_exc()
+                self.enabled = False
 
     def streamDeckCmd(self, *args, **kwargs):
         """

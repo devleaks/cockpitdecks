@@ -18,6 +18,7 @@ class XPlane:
     """
     def __init__(self, decks):
         self.decks = decks
+        self.xp = None
         self.running = False
         self.previous_values = {}
         self.current_values = {}
