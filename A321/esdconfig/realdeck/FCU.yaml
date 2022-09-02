@@ -18,14 +18,86 @@ buttons:
       - ON-GREEN
     label: FD
   - index: 2
-    name: FireTestAPU
+    name: LS 1
     type: push
-    icon: OFF-GREEN
-    command: AirbusFBW/FireTestAPU/begin
-    label: Fire Begin
-  - index: 3
-    name: FireTestAPU2
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: LS
+  - index: 4
+    name: LOC 1
     type: push
-    icon: ON-GREEN
-    command: AirbusFBW/FireTestAPU/end
-    label: Fire End
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: LOC
+  - index: 10
+    name: CSTR
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: CSTR
+  - index: 11
+    name: WPT
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: WPT
+  - index: 12
+    name: VOR.D
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: VOR.D
+  - index: 13
+    name: NDB
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: NDB
+  - index: 14
+    name: ARPT
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: ARPT
+  - index: 5
+    name: A/THR
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: A/THR
+  - index: 6
+    name: AP1
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: AP1
+  - index: 7
+    name: AP2
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: AP2
+  - index: 8
+    name: EXPED
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: EXPED
+  - index: 9
+    name: APPR
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: APPR

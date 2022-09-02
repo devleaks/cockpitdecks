@@ -40,8 +40,8 @@ class Page:
         loggerPage.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
 
     def update_dataref(self, dataref):
-        for d in self.datarefs.keys():
-            for button in self.datarefs[d]:
+        if dataref in self.datarefs.keys():
+            for button in self.datarefs[dataref]:
                 loggerPage.debug(f"update_dataref: page {self.name}: button updated because {dataref} changed")
                 button.update()
         else:
@@ -304,7 +304,7 @@ class Streamdeck:
         """
         This is the function that is called when a key is pressed.
         """
-        logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 

@@ -6,16 +6,13 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
 
-from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER
+from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME
 from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
 from .constant import has_ext
 from .streamdeck import Streamdeck
 
 # logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("Streamdecks")
-
-
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), CONFIG_DIR)
 
 
 class Streamdecks:
@@ -35,6 +32,7 @@ class Streamdecks:
         self.xp = xp(self)
 
         self.disabled = False
+        self.default_pages = None  # for debugging
 
         self.devices = []
 
@@ -91,7 +89,7 @@ class Streamdecks:
 
         self.decks = {}
         self.icons = {}
-        self.fonts = {}
+        # self.fonts = {}
         self.acpath = None
 
         if os.path.exists(os.path.join(acpath, CONFIG_DIR)):
@@ -99,6 +97,11 @@ class Streamdecks:
             self.load_icons()
             self.load_fonts()
             self.create_decks()
+            if self.default_pages is not None:
+                for name, deck in self.decks.items():
+                    if name in self.default_pages.keys():
+                        deck.change_page(self.default_pages[name])
+                self.default_pages = None
         else:
             logging.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
@@ -157,13 +160,16 @@ class Streamdecks:
     def load_icons(self):
         # Loading icons
         #
+        # Color: (30, 178, 230), #1EB2E6
         # 1. Loading default icon
-        default_icon = "icon.png"
-        fn = os.path.join(os.path.dirname(__file__), default_icon)
-        if os.path.exists(fn):
-            image = Image.open(fn)
-            self.icons[default_icon] = image
-            logging.debug(f"load_icons: loaded default {default_icon} icon")
+        # default_icon = "icon.png"
+        # fn = os.path.join(os.path.dirname(__file__), default_icon)
+        # if os.path.exists(fn):
+        #     image = Image.open(fn)
+        #     self.icons[default_icon] = image
+        #     logging.debug(f"load_icons: loaded default {default_icon} icon")
+        self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGB", size=(128, 128), color=(30, 178, 230))
+        logging.debug(f"load_icons: create default {DEFAULT_ICON_NAME} icon")
 
         # 2. Loading icons folder
         dn = os.path.join(self.acpath, CONFIG_DIR, ICONS_FOLDER)
@@ -190,21 +196,27 @@ class Streamdecks:
             fonts = os.listdir(dn)
             for i in fonts:
                 if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    fn = os.path.join(dn, i)
-                    try:
-                        test = ImageFont.truetype(fn, self.default_size)
-                        self.fonts[i] = fn
-                    except OSError:
-                        logging.warning(f"load_fonts: custom font file {fn} not loaded")
+                    if i not in self.fonts.keys():
+                        fn = os.path.join(dn, i)
+                        try:
+                            test = ImageFont.truetype(fn, self.default_size)
+                            self.fonts[i] = fn
+                        except:
+                            logging.warning(f"load_fonts: custom font file {fn} not loaded")
+                    else:
+                        logging.debug(f"load_fonts: font {i} already loaded")
 
         # 2. Load label default font
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
-            try:
-                test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
-                self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
-                self.default_font = DEFAULT_LABEL_FONT
-            except OSError:
-                logging.warning(f"load_fonts: font {DEFAULT_LABEL_FONT} not loaded")
+            if DEFAULT_LABEL_FONT not in self.fonts.keys():
+                try:
+                    test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
+                    self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
+                    self.default_font = DEFAULT_LABEL_FONT
+                except:
+                    logging.warning(f"load_fonts: font {DEFAULT_LABEL_FONT} not loaded")
+            else:
+                logging.debug(f"load_fonts: font {DEFAULT_LABEL_FONT} already loaded")
 
         if self.default_font is None and len(self.fonts) > 0:
             if DEFAULT_LABEL_FONT in self.fonts.keys():
@@ -214,16 +226,28 @@ class Streamdecks:
 
         # 3. If no font loaded, try DEFAULT_SYSTEM_FONT:
         if self.default_font is None:  # No found loaded? we need at least one:
-            try:
-                test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
-                self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
-                self.default_font = DEFAULT_LABEL_FONT
-            except OSError:
-                logging.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
-                pass
+            if DEFAULT_SYSTEM_FONT not in self.fonts:
+                try:
+                    test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
+                    self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
+                    self.default_font = DEFAULT_LABEL_FONT
+                except:
+                    logging.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
+            else:
+                logging.debug(f"load_fonts: font {DEFAULT_SYSTEM_FONT} already loaded")
 
         logging.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_font}")
-        print(self.fonts)
+
+    def reload_decks(self):
+        """
+        Development function to reload page yaml without leaving the page
+        """
+        logging.info(f"reload_decks: reloading..")
+        self.default_pages = {}
+        for name, deck in self.decks.items():
+            self.default_pages[name] = deck.current_page.name
+        self.load(self.acpath)
+        logging.info(f"reload_decks: ..done")
 
     def terminate_this_aircraft(self):
         logging.info(f"terminate_this_aircraft: terminating..")

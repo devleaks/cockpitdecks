@@ -12,7 +12,7 @@ import os
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER
+from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME
 
 logger = logging.getLogger("Button")
 
@@ -22,10 +22,13 @@ class Button:
     def __init__(self, config: dict, deck: "Streamdeck"):
 
         self.deck = deck
+        self.pressed_count = 0
+
         self.name = config.get("name", f"bnt-{config['index']}")
         self.index = config.get("index")
 
-        self.pressed_count = 0
+        self.options = config.get("options")
+
         self.label = config.get("label")
         self.label_font = config.get("label-font")
         if self.deck:
@@ -40,7 +43,7 @@ class Button:
         self.dataref = config.get("dataref")
         self.datarefs = config.get("datarefs")
 
-        self.icon = config.get("icon", "icon")
+        self.icon = config.get("icon", DEFAULT_ICON_NAME)
         if self.icon is not None:
             self.icon = add_ext(self.icon, ".png")
             if self.icon not in self.deck.icons.keys():
@@ -114,7 +117,7 @@ class Button:
         """
         if state:
             self.pressed_count = self.pressed_count + 1
-        logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
+        # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def get_datarefs(self):
         """
@@ -248,6 +251,23 @@ class ButtonPush(Button):
         return super().get_image()
 
 
+class ButtonReload(Button):
+    """
+    Execute command while the key is pressed.
+    Pressing starts the command, releasing stops it.
+    """
+
+    def __init__(self, config: dict, deck: "Streamdeck"):
+        Button.__init__(self, config=config, deck=deck)
+
+    def is_valid(self):
+        return super().is_valid()
+
+    def activate(self, state: bool):
+        if state:
+            if self.is_valid():
+                self.deck.decks.reload_decks()
+
 class ButtonDual(Button):
     """
     Execute command while the key is pressed.
@@ -275,5 +295,6 @@ BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
     "push": ButtonPush,
-    "dual": ButtonDual
+    "dual": ButtonDual,
+    "reload": ButtonReload
 }

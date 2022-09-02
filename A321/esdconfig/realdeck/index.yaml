@@ -7,6 +7,8 @@ buttons:
       - AVAIL
       - "ON"
     command: sim/map/show_current
+    label: Map
+    label-position: ct
   - index: 1
     name: Airport Map
     type: push
@@ -14,6 +16,8 @@ buttons:
       - AVAIL
       - "ON"
     command: pikitanga/AptNav/ToggleMap
+    label: Airport
+    label-position: ct
   - index: 2
     name: AVS Map
     type: push
@@ -21,19 +25,21 @@ buttons:
       - AVAIL
       - "ON"
     command: flightfactor/avs/toggle
+    label: AVS
+    label-position: ct
   - index: 3
-    name: AVS Map
+    name: AviTab
     type: push
     icons:
       - AVAIL
       - "ON"
-    command: flightfactor/avs/toggle
+    label: AviTab
+    label-position: ct
+    command: AviTab/toggle_tablet
   - index: 4
     name: X-Camera Views
     type: page
-    icons:
-      - AVAIL
-      - "ON"
+    icon: x-camera
   - index: 5
     name: LiveTraffic
     type: push
@@ -41,13 +47,24 @@ buttons:
       - AVAIL
       - "ON"
     command: LiveTraffic/Info_Staus_Wnd/Open
+    label: Live/T
+    label-position: ct
   - index: 6
     name: FollowTheGreens
     type: push
     icons:
-      - AVAIL
-      - "ON"
-    command: XPPython3/followthegreen/main_windown_toggle
+      - F.GREENS_OFF
+      - F.GREENS_ON
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-size: 10
+    label-position: ct
+  - index: 9
+    name: RELOAD
+    type: reload
+    icon: MAN
+    label: RELOAD
+    label-position: ct
   - index: 10
     name: GroundHandlingDeluxe
     type: push
@@ -55,6 +72,8 @@ buttons:
       - AVAIL
       - "ON"
     command: jd/ghd/show_widget
+    label: GHDLX
+    label-position: ct
   - index: 11
     name: SAMGroundVehicle
     type: push
@@ -62,6 +81,8 @@ buttons:
       - AVAIL
       - "ON"
     command: sam/main_window
+    label: SAM/GV
+    label-position: ct
   - index: 14
     name: A321
     type: page

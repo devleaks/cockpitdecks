@@ -3,3 +3,99 @@ buttons:
     name: A321
     type: page
     icon: TOLISS-A321
+  - index: 1
+    name: ENG
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: ENG
+  - index: 2
+    name: BLEED
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: BLEED
+  - index: 3
+    name: PRESS
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: PRESS
+  - index: 4
+    name: ELEC
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: ELEC
+  - index: 5
+    name: HYD
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: HYD
+  - index: 6
+    name: FUEL
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: FUEL
+  - index: 7
+    name: APU
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: APU
+  - index: 8
+    name: COND
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: COND
+  - index: 9
+    name: DOOR
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: DOOR
+  - index: 10
+    name: WHEEL
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: WHEEL
+  - index: 11
+    name: F/CTL
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: F/CTL
+  - index: 12
+    name: CLR
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: CLR
+  - index: 13
+    name: STS
+    type: push
+    icons:
+      - OFF-GREEN
+      - ON-GREEN
+    label: STS
+  - index: 14
+    name: ALL
+    type: push
+    icon: OFF-GREEN
+    label: ALL

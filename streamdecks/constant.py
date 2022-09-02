@@ -20,6 +20,8 @@ DEFAULT_SYSTEM_FONT = "Helvetica.ttf"  # on MacOS
 DEFAULT_LABEL_FONT = "DIN.ttf"
 DEFAULT_LABEL_SIZE = "12"
 
+DEFAULT_ICON_NAME = "_default_icon.png"
+
 MONITORING_POLL = 10.0  # seconds, 1.0 = polling every second
 
 class STREAM_DECK_MODEL(Enum):

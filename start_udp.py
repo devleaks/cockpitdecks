@@ -1,7 +1,6 @@
 import os
 import logging
-import sys
-sys.path.append('/Users/pierre/Developer/xppythonstubs')
+from time import sleep
 
 from streamdecks import Streamdecks, XPlaneUDP
 
