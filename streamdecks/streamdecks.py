@@ -261,6 +261,8 @@ class Streamdecks:
         self.terminate_this_aircraft()
         if self.xp is not None:
             self.xp.terminate()
+            del self.xp
+            self.xp = None
         logging.info(f"terminate_all: done")
 
     def run(self):

@@ -1,10 +1,10 @@
 buttons:
-  - index: 0
+  - index: 14
     name: A321
     name: A321
     type: page
     icon: TOLISS-A321
-  - index: 1
+  - index: 6
     name: FD 1
     type: push
     icon: OFF-GREEN
@@ -17,77 +17,77 @@ buttons:
       - OFF-GREEN
       - ON-GREEN
     label: FD
-  - index: 2
+  - index: 7
     name: LS 1
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: LS
-  - index: 4
+  - index: 8
     name: LOC 1
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: LOC
-  - index: 10
+  - index: 0
     name: CSTR
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: CSTR
-  - index: 11
+  - index: 1
     name: WPT
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: WPT
-  - index: 12
+  - index: 2
     name: VOR.D
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: VOR.D
-  - index: 13
+  - index: 3
     name: NDB
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: NDB
-  - index: 14
+  - index: 4
     name: ARPT
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: ARPT
-  - index: 5
+  - index: 10
     name: A/THR
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: A/THR
-  - index: 6
+  - index: 11
     name: AP1
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: AP1
-  - index: 7
+  - index: 12
     name: AP2
     type: push
     icons:
       - OFF-GREEN
       - ON-GREEN
     label: AP2
-  - index: 8
+  - index: 13
     name: EXPED
     type: push
     icons:

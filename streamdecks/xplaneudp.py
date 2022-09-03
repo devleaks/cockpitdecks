@@ -54,6 +54,7 @@ class XPlaneUDP(XPlane):
         self.defaultFreq = 1
 
         self.running = False
+        self.finished = None
         self.init()
 
     def init(self):
@@ -157,6 +158,7 @@ class XPlaneUDP(XPlane):
     def ExecuteCommand(self, command: str):
         message = 'CMND0' + command
         self.socket.sendto(message.encode("ascii"), (self.BeaconData["IP"], self.BeaconData["Port"]))
+        logger.debug(f"ExecuteCommand: executed {command}")
 
     def FindIp(self):
         '''
@@ -239,15 +241,61 @@ class XPlaneUDP(XPlane):
 
         return self.BeaconData
 
+    def loop(self):
+        logger.debug(f"loop: started")
+        # i = 0
+        while self.running:
+            nexttime = DATA_REFRESH
+            if len(self.datarefs) > 0:
+                self.current_values = self.GetValues()
+                now = time.time()
+                self.detect_changed()
+                later = time.time()
+                nexttime = DATA_REFRESH - (later - now)
+            #     if (i % 10) == 0:
+            #         logger.debug(f"get_values: . {i}")
+            # else:
+            #     if (i % 10) == 0:
+            #         logger.debug(f"get_values: no dataref to read {i}")
+            if nexttime > 0:
+                time.sleep(nexttime)
+            # i = i + 1
+        if self.finished is not None:
+            if self.finished is not None:
+                self.finished.set()
+            else:
+                logger.warning(f"loop: no event set")
+            logger.debug(f"loop: allowed deletion")
+        logger.debug(f"loop: terminated")
+
+    # ################################
+    # X-Plane Interface
+    #
+    def commandOnce(self, command: str):
+        self.ExecuteCommand(command)
+
+    def commandBegin(self, command: str):
+        self.ExecuteCommand(command+"/begin")
+
+    def commandEnd(self, command: str):
+        self.ExecuteCommand(command+"/end")
+
+    def get_value(self, dataref: str):
+        return self.xplaneValues.get(dataref)
+
     def set_datarefs(self, datarefs):
         # Clean previous values
         for i in range(len(self.datarefs)):
             self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
         # Add those to monitor
-        for d in datarefs.keys():
+        self.datarefs_to_monitor = datarefs
+        for d in self.datarefs_to_monitor.keys():
             self.AddDataRef(d, freq=DATA_SENT)
         logger.debug(f"set_datarefs: set {datarefs.keys()}")
 
+    # ################################
+    # Streamdecks interface
+    #
     def start(self):
         if "IP" in self.BeaconData:
             self.thread = threading.Thread(target=self.loop)
@@ -256,26 +304,10 @@ class XPlaneUDP(XPlane):
         else:
             logger.debug(f"start: no IP address. could not start.")
 
-    def loop(self):
-        logger.debug(f"get_values: started")
-        while self.running:
-            self.current_values = self.GetValues()
-            now = time.time()
-            self.notify_changed()
-            later = time.time()
-            nexttime = DATA_REFRESH - (later - now)
-            if nexttime > 0:
-                time.sleep(nexttime)
-        if self.finished is not None:
-            self.finished.set()
-            logger.debug(f"get_values: allowed deletion")
-        logger.debug(f"get_values: terminated")
-
     def terminate(self):
         if self.running:
             self.finished = threading.Event()
             self.running = False
             logger.debug(f"terminate: wait permission to delete")
-            self.finished.wait(timeout=10)
-            del self.xp
+            self.finished.wait(timeout=20*DATA_REFRESH)
         logger.debug(f"terminate: XPlaneUDP terminated")
