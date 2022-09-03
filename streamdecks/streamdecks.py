@@ -11,7 +11,7 @@ from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FON
 from .constant import has_ext
 from .streamdeck import Streamdeck
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("Streamdecks")
 
 
@@ -241,6 +241,7 @@ class Streamdecks:
     def reload_decks(self):
         """
         Development function to reload page yaml without leaving the page
+        Should not be used in production...
         """
         logging.info(f"reload_decks: reloading..")
         self.default_pages = {}
@@ -264,6 +265,7 @@ class Streamdecks:
 
     def run(self):
         if len(self.decks) > 0:
+            self.xp.start()
             logging.info(f"run: active")
             for t in threading.enumerate():
                 try:
@@ -278,7 +280,7 @@ class Streamdecks:
     #
     def start(self):
         logger.info(f"start: starting..")
-        self.load(self.acpath)
+        # do nothing, started in when enabled
         logger.info(f"start: done")
 
     def stop(self):
@@ -287,12 +289,13 @@ class Streamdecks:
         logger.info(f"stop: done")
 
     def enable(self):
+        self.load(self.acpath)
         self.disabled = False
         logger.info(f"enable: enabled")
 
     def disable(self):
+        self.terminate_this_aircraft()
         self.disabled = True
-        self.stop()
         logger.info(f"disable: disabled")
 
 

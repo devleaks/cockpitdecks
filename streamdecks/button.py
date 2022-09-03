@@ -27,7 +27,7 @@ class Button:
         self.name = config.get("name", f"bnt-{config['index']}")
         self.index = config.get("index")
 
-        self.options = config.get("options")
+        self.options = config.get("options", ["counter"])
 
         self.label = config.get("label")
         self.label_font = config.get("label-font")
@@ -66,6 +66,11 @@ class Button:
 
         self.xp = self.deck.decks.xp  # shortcut alias
 
+
+        self.dataref_values = {}
+        for d in self.get_datarefs():
+            self.dataref_values[self.dataref] = None
+
         self.init()
 
     @classmethod
@@ -83,41 +88,6 @@ class Button:
         Validate button data once and for all
         """
         return (self.deck is not None) and (self.index is not None) and (self.icon is not None)
-
-    def changed(self) -> bool:
-        """
-        Fetches button latest values and return True if value has changed
-        """
-        self.current_value = self.fetch()
-        if self.current_value is None and self.previous_value is None:
-            return False  # it hasn't really changed...
-        elif self.current_value is None and self.previous_value is not None:
-            return True
-        elif self.current_value is not None and self.previous_value is None:
-            return True
-        return self.previous_value == self.current_value
-
-    def update(self, force: bool = False):
-        """
-        Renders button if it has changed
-        """
-        if force or self.changed():
-            self.previous_value == self.current_value
-            self.render()
-
-    def fetch(self):
-        """
-        Read button value(s)
-        """
-        return None
-
-    def activate(self, state: bool):
-        """
-        Function that is executed when a button is pressed (state=True) or released (state=False)
-        """
-        if state:
-            self.pressed_count = self.pressed_count + 1
-        # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def get_datarefs(self):
         """
@@ -180,6 +150,26 @@ class Button:
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
+    def dataref_changed(self, dataref, value):
+        """
+        One of its dataref has changed, records its value and provoke an update of its representation.
+        """
+        if dataref in self.dataref_values:
+            if self.dataref_values[dataref] != value:
+                self.dataref_values[dataref] = value
+        else:
+            logger.warning(f"dataref_changed: {dataref} not registered")
+            self.dataref_values[dataref] = value
+        self.render()
+
+    def activate(self, state: bool):
+        """
+        Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device
+        """
+        if state:
+            self.pressed_count = self.pressed_count + 1
+        # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
+
     def render(self):
         if self.deck is not None:
             self.deck.set_key_image(self)
@@ -212,10 +202,40 @@ class ButtonPush(Button):
     """
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
-        self.current_value = self.fetch()
 
     def is_valid(self):
         return super().is_valid() and (self.command is not None)
+
+    def button_value(self):
+        """
+        Button ultimately returns one value that is either directly extracted from a single dataref,
+        or computed from several dataref values (later).
+        """
+        if self.dataref is not None and self.dataref in self.dataref_values.keys():
+            return self.dataref_values[self.dataref]
+        elif "counter" in self.options:
+            logger.debug(f"get_image: button {self.name} get cycle icon")
+            return self.pressed_count
+        return None
+
+    def get_image(self):
+        """
+        If button has more icons, select one from button current value
+        """
+        if self.icons is not None and len(self.icons) > 1:
+            value = self.button_value()
+            if value is None:
+                logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
+                value = 0
+
+            value = int(value)
+            if value < 0 or value >= len(self.icons):
+                logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.icons)}], default to 0")
+                value = 0
+            else:
+                value = value % len(self.icons)
+            self.icon = self.icons[value]
+        return super().get_image()
 
     def activate(self, state: bool):
         super().activate(state)
@@ -223,32 +243,7 @@ class ButtonPush(Button):
             if self.is_valid():
                 # self.label = f"pressed {self.current_value}"
                 self.xp.commandOnce(self.command)
-                self.update()
-
-    def fetch(self):
-        if self.dataref is not None:
-            logger.debug(f"fetch: button {self.name}: reading {self.dataref}")
-            x = self.xp.read(self.dataref)
-            logger.debug(f"fetch: button {self.name}: {self.dataref}={x}")
-            return x
-        return self.pressed_count
-
-    def get_image(self):
-        """
-        If button has more icons, select one from self.current_value
-        """
-        if self.icons is not None and len(self.icons) > 1:
-            value = None
-            if self.dataref is not None:
-                value = int(self.current_value)
-                if value < 0 or value >= len(self.icons):
-                    logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.icons)}]")
-            else:
-                value = self.current_value % len(self.icons)
-            if value is not None:
-                self.icon = self.icons[value]
-            logger.debug(f"get_image: button {self.name} get cycle icon {self.icon}")
-        return super().get_image()
+                self.render()
 
 
 class ButtonReload(Button):
@@ -287,6 +282,7 @@ class ButtonDual(Button):
         else:
             if self.is_valid():
                 self.xp.commandEnd(self.commands[1])
+        self.render()
 
 #
 # Mapping butween button types and classes

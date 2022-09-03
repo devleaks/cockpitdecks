@@ -10,7 +10,7 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import DEFAULT_LAYOUT, CONFIG_DIR, INIT_PAGE, DEFAULT_LABEL_FONT, WALLPAPER, MONITORING_POLL
+from .constant import DEFAULT_LAYOUT, CONFIG_DIR, INIT_PAGE, DEFAULT_LABEL_FONT, WALLPAPER, MONITORING_POLL, DEFAULT_ICON_NAME
 from .button import Button, BUTTON_TYPES
 
 logger = logging.getLogger("Streamdeck")
@@ -39,23 +39,29 @@ class Page:
             self.datarefs[d].append(button)
         loggerPage.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
 
-    def update_dataref(self, dataref):
-        if dataref in self.datarefs.keys():
-            for button in self.datarefs[dataref]:
-                loggerPage.debug(f"update_dataref: page {self.name}: button updated because {dataref} changed")
-                button.update()
+    def dataref_changed(self, dataref, value):
+        """
+        For each button on this page, notifies the button if a dataref used by that button has changed.
+        """
+        if dataref in self.datarefs:
+            for b in self.datarefs[dataref]:
+                b.dataref_changed(dataref, value)
         else:
-            loggerPage.warning(f"update_dataref: page {self.name}: not button for dataref {dataref}")
-
-    def update(self, force: bool = False):
-        for button in self.buttons.values():
-            button.update(force)
+            loggerPage.debug(f"dataref_changed: page {self.name}: dataref {dataref} not found")
 
     def activate(self, idx: int):
         if idx in self.buttons.keys():
             self.buttons[idx].activate()
         else:
             loggerPage.error(f"activate: page {self.name}: invalid button index {idx}")
+
+    def render(self):
+        """
+        Renders this page on the deck
+        """
+        for button in self.buttons.values():
+            button.render()
+            loggerPage.debug(f"render: page {self.name}: button {button.name} rendered")
 
 
 class Streamdeck:
@@ -287,12 +293,12 @@ class Streamdeck:
         # Add index 0 only button:
         DEFAULT_PAGE_NAME = "X-Plane"
         this_page = Page(DEFAULT_PAGE_NAME)
-        button0 = BUTTON_TYPES["single"].new(config={ "index": 0,
+        button0 = BUTTON_TYPES["push"].new(config={ "index": 0,
                                                       "name": "X-Plane Map",
-                                                      "type": "single",
+                                                      "type": "push",
                                                       "command": "sim/map/show_current",
                                                       "label": "Map",
-                                                      "icon": "icon.png"
+                                                      "icon": DEFAULT_ICON_NAME
                                                     }, deck=self)
         this_page.add_button(0, button0)
         self.pages = { DEFAULT_PAGE_NAME: this_page }
@@ -326,34 +332,18 @@ class Streamdeck:
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.device.reset()
-            self.update(force=True)
+            self.decks.xp.set_datarefs(self.current_page.datarefs)  # set which datarefs to monitor
+            self.current_page.render()
             logger.debug(f"change_page: deck {self.name} ..done")
         else:
             logger.warning(f"change_page: deck {self.name}: page {page} not found")
 
-    def update(self, force: bool = False):
-        logger.debug(f"change_page: deck {self.name} update to page {self.current_page.name}")
-        self.current_page.update(force)
 
     def start(self):
         if self.device is not None:
             self.device.set_key_callback(self.key_change_callback)
-            # self.running = True
-            # self.monitoring_thread = threading.Thread(target=self.monitor)
-            # self.monitoring_thread.start()
         logger.info(f"start: deck {self.name} listening for key strokes")
 
-    # def monitor(self):
-    #     """
-    #     Function submitted as a thread to monitor button data changes in the simulator
-    #     """
-    #     logger.info(f"monitor: deck {self.name} started")
-    #     while self.running:
-    #         logger.debug(f"monitor: deck {self.name} updating..")
-    #         self.update()
-    #         logger.debug(f"monitor: deck {self.name} ..done")
-    #         sleep(MONITORING_POLL)
-    #     logger.info(f"monitor: deck {self.name} terminated")
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:

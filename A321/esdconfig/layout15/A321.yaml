@@ -1,0 +1,48 @@
+buttons:
+  - index: 0
+    name: MASTERCAUT
+    type: push
+    icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
+    command: sim/annunciator/clear_master_caution
+  - index: 1
+    name: MARTERWARN
+    type: push
+    icons:
+      - MASTER_WARN_OFF
+      - MASTER_WARN
+    command: sim/annunciator/clear_master_warning
+  - index: 4
+    name: ISCS
+    type: push
+    icon: TOLISS-OFF
+    command: toliss_airbus/iscs_open
+  - index: 5
+    name: FCU
+    type: page
+    icon: NONE
+    label: FCU
+    label-position: cm
+  - index: 6
+    name: ECAM
+    type: page
+    icon: NONE
+    label: ECAM
+    label-position: cm
+  - index: 7
+    name: OVERHEAD
+    type: page
+    icon: NONE
+    label: OVERHEAD
+    label-position: cm
+  - index: 8
+    name: PIEDESTAL
+    type: page
+    icon: NONE
+    label: PIEDESTAL
+    label-position: cm
+  - index: 14
+    name: Index
+    type: page
+    icon: XPLANE

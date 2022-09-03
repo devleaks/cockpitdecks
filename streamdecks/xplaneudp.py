@@ -4,11 +4,18 @@
 import socket
 import struct
 import binascii
-from time import sleep
 import platform
+import threading
 import logging
+import time
 
-logger = logging.getLogger("XPlaneUdp")
+from .xplane import XPlane
+
+logger = logging.getLogger("XPlaneUDP")
+
+
+DATA_REFRESH = 0.1 # secs
+DATA_SENT    = 10  # times per second, UDP specific
 
 
 class XPlaneIpNotFound(Exception):
@@ -21,7 +28,7 @@ class XPlaneVersionNotSupported(Exception):
     args = "XPlane version not supported."
 
 
-class XPlaneUdp:
+class XPlaneUDP(XPlane):
     '''
     Get data from XPlane via network.
     Use a class to implement RAI Pattern for the UDP socket.
@@ -32,7 +39,9 @@ class XPlaneUdp:
     MCAST_PORT = 49707 # (MCAST_PORT was 49000 for XPlane10)
     BEACON_TIMEOUT = 3.0  # seconds
 
-    def __init__(self):
+    def __init__(self, decks):
+        XPlane.__init__(self, decks=decks)
+
         # Open a UDP Socket to receive on Port 49000
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.settimeout(self.BEACON_TIMEOUT)
@@ -43,6 +52,20 @@ class XPlaneUdp:
         self.BeaconData = {}
         self.xplaneValues = {}
         self.defaultFreq = 1
+
+        self.running = False
+        self.init()
+
+    def init(self):
+        try:
+            beacon = self.FindIp()
+            logger.info(beacon)
+        except XPlaneVersionNotSupported:
+            self.BeaconData = {}
+            logger.error("init: XPlane Version not supported.")
+        except XPlaneIpNotFound:
+            self.BeaconData = {}
+            logger.error("init: XPlane IP not found. Probably there is no XPlane running in your local network.")
 
     def __del__(self):
         for i in range(len(self.datarefs)):
@@ -156,13 +179,13 @@ class XPlaneUdp:
         # receive data
         try:
             packet, sender = sock.recvfrom(1472)
-            logger.debug(f"XPlane Beacon: {packet.hex()}")
+            logger.debug(f"FindIp: XPlane Beacon: {packet.hex()}")
 
             # decode data
             # * Header
             header = packet[0:5]
             if header != b"BECN\x00":
-                logger.warning(f"Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
+                logger.warning(f"FindIp: Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
                 logger.warning(packet)
                 logger.warning(binascii.hexlify(packet))
 
@@ -203,15 +226,56 @@ class XPlaneUdp:
                     self.BeaconData["hostname"] = hostname.decode()
                     self.BeaconData["XPlaneVersion"] = xplane_version_number
                     self.BeaconData["role"] = role
-                    logger.info(f"XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                    logger.info(f"FindIp: XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
                 else:
-                    logger.warning(f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                    logger.warning(f"FindIp: XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
                     raise XPlaneVersionNotSupported()
 
         except socket.timeout:
-            logger.error("XPlane IP not found.")
+            logger.error("FindIp: XPlane IP not found.")
             raise XPlaneIpNotFound()
         finally:
             sock.close()
 
         return self.BeaconData
+
+    def set_datarefs(self, datarefs):
+        # Clean previous values
+        for i in range(len(self.datarefs)):
+            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
+        # Add those to monitor
+        for d in datarefs.keys():
+            self.AddDataRef(d, freq=DATA_SENT)
+        logger.debug(f"set_datarefs: set {datarefs.keys()}")
+
+    def start(self):
+        if "IP" in self.BeaconData:
+            self.thread = threading.Thread(target=self.loop)
+            self.running = True
+            self.thread.start()
+        else:
+            logger.debug(f"start: no IP address. could not start.")
+
+    def loop(self):
+        logger.debug(f"get_values: started")
+        while self.running:
+            self.current_values = self.GetValues()
+            now = time.time()
+            self.notify_changed()
+            later = time.time()
+            nexttime = DATA_REFRESH - (later - now)
+            if nexttime > 0:
+                time.sleep(nexttime)
+        if self.finished is not None:
+            self.finished.set()
+            logger.debug(f"get_values: allowed deletion")
+        logger.debug(f"get_values: terminated")
+
+    def terminate(self):
+        if self.running:
+            self.finished = threading.Event()
+            self.running = False
+            logger.debug(f"terminate: wait permission to delete")
+            self.finished.wait(timeout=10)
+            del self.xp
+        logger.debug(f"terminate: XPlaneUDP terminated")
