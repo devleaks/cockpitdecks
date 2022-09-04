@@ -3,7 +3,7 @@ buttons:
   - index: 0
     name: X-Plane Map
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     command: sim/map/show_current
@@ -12,7 +12,7 @@ buttons:
   - index: 1
     name: Airport Map
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     command: pikitanga/AptNav/ToggleMap
@@ -21,7 +21,7 @@ buttons:
   - index: 2
     name: AVS Map
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     command: flightfactor/avs/toggle
@@ -30,7 +30,7 @@ buttons:
   - index: 3
     name: AviTab
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     label: AviTab
@@ -43,7 +43,7 @@ buttons:
   - index: 5
     name: LiveTraffic
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     command: LiveTraffic/Info_Staus_Wnd/Open
@@ -52,7 +52,7 @@ buttons:
   - index: 6
     name: FollowTheGreens
     type: push
-    icons:
+    multi-icons:
       - F.GREENS_OFF
       - F.GREENS_ON
     command: XPPython3/followthegreens/main_windown_toggle
@@ -68,7 +68,7 @@ buttons:
   - index: 10
     name: GroundHandlingDeluxe
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     command: jd/ghd/show_widget
@@ -77,7 +77,7 @@ buttons:
   - index: 11
     name: SAMGroundVehicle
     type: push
-    icons:
+    multi-icons:
       - AVAIL
       - "ON"
     command: sam/main_window

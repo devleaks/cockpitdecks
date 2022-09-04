@@ -4,6 +4,8 @@ Application constants
 """
 from enum import Enum
 
+EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
+
 CONFIG_DIR = "esdconfig"
 CONFIG_FILE = "config.yaml"
 
@@ -11,11 +13,13 @@ ICONS_FOLDER = "icons"
 FONTS_FOLDER = "fonts"
 
 DEFAULT_LAYOUT = "default"
+DEFAULT_COLOR = (255, 255, 255)
 
 INIT_PAGE = "Index"
 WALLPAPER = "wallpaper.png"
+DEFAULT_LOGO = "logo-airbus.png"
 
-DEFAULT_SYSTEM_FONT = "Helvetica.ttf"  # on MacOS
+DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS
 
 DEFAULT_LABEL_FONT = "DIN.ttf"
 DEFAULT_LABEL_SIZE = "12"
@@ -23,13 +27,6 @@ DEFAULT_LABEL_SIZE = "12"
 DEFAULT_ICON_NAME = "_default_icon.png"
 
 MONITORING_POLL = 10.0  # seconds, 1.0 = polling every second
-
-class STREAM_DECK_MODEL(Enum):
-    STREAM_DECK_XL = 0
-    STREAM_DECK = 1
-    STREAM_DECK_MK_2 = 2
-    STREAM_DECK_MINI = 3
-    STREAM_DECK_PEDAL = 4
 
 def add_ext(name: str, ext: str):
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any

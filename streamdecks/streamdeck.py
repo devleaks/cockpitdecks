@@ -10,7 +10,8 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import DEFAULT_LAYOUT, CONFIG_DIR, INIT_PAGE, DEFAULT_LABEL_FONT, WALLPAPER, MONITORING_POLL, DEFAULT_ICON_NAME
+from .constant import CONFIG_DIR, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import DEFAULT_LABEL_FONT, WALLPAPER, MONITORING_POLL, DEFAULT_ICON_NAME, DEFAULT_COLOR, DEFAULT_LOGO
 from .button import Button, BUTTON_TYPES
 
 logger = logging.getLogger("Streamdeck")
@@ -137,7 +138,8 @@ class Streamdeck:
         """
         Connects to device and send initial keys.
         """
-        self.change_page(self.home_page.name)
+        if self.home_page is not None:
+            self.change_page(self.home_page.name)
         logger.info(f"init: stream deck {self.name} initialized")
 
 
@@ -145,15 +147,15 @@ class Streamdeck:
         """
         Loads Streamdeck pages during configuration
         """
-        BUTTONS = "buttons"
+        BUTTONS = "buttons"  # keywork in yaml file
         if self.layout is None:
             self.load_default_page()
             return
 
         dn = os.path.join(self.decks.acpath, CONFIG_DIR, self.layout)
         if not os.path.exists(dn):
-            self.valid = False
-            logger.error(f"__init__: stream deck has no layout folder {self.layout}, cannot load")
+            logger.warning(f"load: stream deck has no layout folder '{self.layout}', loading default page")
+            self.load_default_page()
             return
 
         pages = os.listdir(dn)
@@ -243,7 +245,17 @@ class Streamdeck:
             # Resize the image to suit the StreamDeck's full image size. We use the
             # helper function in Pillow's ImageOps module so that the image's aspect
             # ratio is preserved.
-            image = Image.open(image_filename).convert("RGBA")
+            image = None
+            if os.path.exists(image_filename):
+                image = Image.open(image_filename).convert("RGBA")
+            else:
+                logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
+                image = Image.new(mode="RGBA", size=(2000, 2000), color=DEFAULT_COLOR)
+                fn = os.path.join(os.path.dirname(__file__), DEFAULT_LOGO)
+                if os.path.exists(fn):
+                    logo = Image.open(fn).convert("RGBA")
+                    image.paste(logo, (500, 500), logo)
+
             image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             return image
 
@@ -292,7 +304,7 @@ class Streamdeck:
 
         # Add index 0 only button:
         DEFAULT_PAGE_NAME = "X-Plane"
-        this_page = Page(DEFAULT_PAGE_NAME)
+        page0 = Page(DEFAULT_PAGE_NAME)
         button0 = BUTTON_TYPES["push"].new(config={ "index": 0,
                                                       "name": "X-Plane Map",
                                                       "type": "push",
@@ -300,9 +312,10 @@ class Streamdeck:
                                                       "label": "Map",
                                                       "icon": DEFAULT_ICON_NAME
                                                     }, deck=self)
-        this_page.add_button(0, button0)
-        self.pages = { DEFAULT_PAGE_NAME: this_page }
-        self.home_page = self.pages[DEFAULT_PAGE_NAME]
+        page0.add_button(0, button0)
+        self.pages = { DEFAULT_PAGE_NAME: page0 }
+        self.home_page = None
+        self.current_page = page0
         self.device.set_key_callback(self.key_change_callback)
         self.running = True
 
@@ -350,6 +363,9 @@ class Streamdeck:
             logger.warning("set_key_image: no device")
             return
         image = button.get_image()
+        if image is None:
+            logger.warning("set_key_image: button returned no image, using default")
+            image = self.icons[DEFAULT_ICON_NAME]
 
         with self.device:
             i = PILHelper.to_native_format(self.device, image)

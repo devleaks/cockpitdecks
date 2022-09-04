@@ -6,7 +6,7 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
 
-from .constant import CONFIG_DIR, CONFIG_FILE, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME
+from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME, DEFAULT_COLOR
 from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
 from .constant import has_ext
 from .streamdeck import Streamdeck
@@ -52,6 +52,14 @@ class Streamdecks:
         """
         self.devices = DeviceManager().enumerate()
         logger.info(f"init: found {len(self.devices)} decks")
+        for name, device in enumerate(self.devices):
+            device.open()
+            serial = device.get_serial_number()
+            device.close()
+            if serial in EXCLUDE_DECKS:
+                logger.warning(f"get_device: deck {serial} excluded")
+                del self.devices[name]
+        logger.info(f"init: using {len(self.devices)} decks")
 
     def get_device(self, req_serial: str):
         """
@@ -63,7 +71,6 @@ class Streamdecks:
         """
         for name, device in enumerate(self.devices):
             device.open()
-            device.reset()
             serial = device.get_serial_number()
             if serial == req_serial:
                 logger.info(f"get_device: deck {name}: opened {device.deck_type()} device (serial number: {device.get_serial_number()}, fw: {device.get_firmware_version()})")
@@ -73,6 +80,7 @@ class Streamdecks:
                     logger.debug(f"get_device: deck {name}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Streamdecks.FLIP_DESCRIPTION[image_format['flip']]}")
                 else:
                     logger.debug(f"get_device: deck {name}: no visual")
+                device.reset()
                 return device
         logger.warning(f"get_device: deck {req_serial} not found")
         return None
@@ -92,6 +100,8 @@ class Streamdecks:
         # self.fonts = {}
         self.acpath = None
 
+        self.load_defaults()
+
         if os.path.exists(os.path.join(acpath, CONFIG_DIR)):
             self.acpath = acpath
             self.load_icons()
@@ -100,12 +110,71 @@ class Streamdecks:
             if self.default_pages is not None:
                 for name, deck in self.decks.items():
                     if name in self.default_pages.keys():
-                        deck.change_page(self.default_pages[name])
+                        if deck.home_page is not None:  # do not refresh default pages
+                            deck.change_page(self.default_pages[name])
                 self.default_pages = None
         else:
             logging.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
         self.run()
+
+    def load_defaults(self):
+        # 1. Loading default icon
+        # default_icon = "icon.png"
+        # fn = os.path.join(os.path.dirname(__file__), default_icon)
+        # if os.path.exists(fn):
+        #     image = Image.open(fn)
+        #     self.icons[default_icon] = image
+        #     logging.debug(f"load_icons: loaded default {default_icon} icon")
+        self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_COLOR)
+        logging.debug(f"load_defaults: create default {DEFAULT_ICON_NAME} icon")
+
+        # 2. Load label default font
+        if DEFAULT_LABEL_FONT not in self.fonts.keys():
+            try:
+                test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
+                self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
+                self.default_font = DEFAULT_LABEL_FONT
+            except:
+                logging.warning(f"load_defaults: font {DEFAULT_LABEL_FONT} not loaded")
+        else:
+            logging.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} already loaded")
+
+        if DEFAULT_LABEL_FONT not in self.fonts.keys():
+            fn = None
+            try:
+                fn = os.path.join(os.path.dirname(__file__), DEFAULT_LABEL_FONT)
+                test = ImageFont.truetype(fn, self.default_size)
+                self.fonts[DEFAULT_LABEL_FONT] = fn
+                self.default_font = DEFAULT_LABEL_FONT
+                logging.debug(f"load_defaults: font {fn} found locally")
+            except:
+                logging.warning(f"load_defaults: font {fn} not found locally")
+
+        if self.default_font is None and len(self.fonts) > 0:
+            if DEFAULT_LABEL_FONT in self.fonts.keys():
+                self.default_font = DEFAULT_LABEL_FONT
+            else:  # select first one
+                self.default_font = list(self.fonts.keys())[0]
+
+        # If no font loaded, try DEFAULT_SYSTEM_FONT:
+        if self.default_font is None:  # No found loaded? we need at least one:
+            if DEFAULT_SYSTEM_FONT not in self.fonts:
+                try:
+                    test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
+                    self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
+                    self.default_font = DEFAULT_LABEL_FONT
+                except:
+                    logging.error(f"load_defaults: font default {DEFAULT_SYSTEM_FONT} not loaded")
+            else:
+                logging.debug(f"load_defaults: font {DEFAULT_SYSTEM_FONT} already loaded")
+
+        if self.default_font is None:
+            logging.error(f"load_defaults: no default font")
+
+        # 3. report summary
+        logging.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font}")
+        logging.debug(f"load_defaults: default icons {self.icons.keys()}, default={DEFAULT_ICON_NAME}")
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)
@@ -160,18 +229,6 @@ class Streamdecks:
     def load_icons(self):
         # Loading icons
         #
-        # Color: (30, 178, 230), #1EB2E6
-        # 1. Loading default icon
-        # default_icon = "icon.png"
-        # fn = os.path.join(os.path.dirname(__file__), default_icon)
-        # if os.path.exists(fn):
-        #     image = Image.open(fn)
-        #     self.icons[default_icon] = image
-        #     logging.debug(f"load_icons: loaded default {default_icon} icon")
-        self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGB", size=(128, 128), color=(30, 178, 230))
-        logging.debug(f"load_icons: create default {DEFAULT_ICON_NAME} icon")
-
-        # 2. Loading icons folder
         dn = os.path.join(self.acpath, CONFIG_DIR, ICONS_FOLDER)
         if os.path.exists(dn):
             icons = os.listdir(dn)

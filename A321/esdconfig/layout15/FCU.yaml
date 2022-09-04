@@ -13,91 +13,91 @@ buttons:
     dataref-states:
       - 0.0
       - 1.0
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: FD
   - index: 7
     name: LS 1
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: LS
   - index: 8
     name: LOC 1
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: LOC
   - index: 0
     name: CSTR
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: CSTR
   - index: 1
     name: WPT
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: WPT
   - index: 2
     name: VOR.D
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: VOR.D
   - index: 3
     name: NDB
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: NDB
   - index: 4
     name: ARPT
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: ARPT
   - index: 10
     name: A/THR
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: A/THR
   - index: 11
     name: AP1
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: AP1
   - index: 12
     name: AP2
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: AP2
   - index: 13
     name: EXPED
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: EXPED
   - index: 9
     name: APPR
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: APPR

@@ -1,12 +1,12 @@
 buttons:
   - index: 0
     name: X-Plane Map
-    type: single
+    type: push
     icon: dual.0.0
     command: sim/map/show_current
   - index: 1
     name: X-Plane Map1
-    type: single
+    type: push
     icon: dual.0.0
     command: sim/map/show_current
   - index: 2
@@ -14,11 +14,11 @@ buttons:
     icon: dual.0.0
     command: sim/map/show_current
   - name: No Index
-    type: single
+    type: push
     icon: dual.0.0
     command: sim/map/show_current
   - index: 33
     name: X-Plane Map
-    type: single
+    type: push
     icon: dual.0.0
     command: sim/map/show_current

@@ -65,13 +65,8 @@ class PythonInterface:
     def XPluginEnable(self):
         try:
             if self.streamdecks is None:
-                self.streamdecks = Streamdecks(self, XPlaneAPI)
-            ac = xp.getNthAircraftModel(0)      # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
-            if len(ac) == 2:
-                acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
-                print(self.Name, "PI::XPluginEnable: trying", acpath[0] + "..")
-                self.streamdecks.load(acpath=acpath[0])
-                print(self.Name, "PI::XPluginEnable: ", acpath[0] + "done.")
+                self.streamdecks = Streamdecks(self, XPlaneSDK)
+            if self.loadCurrentAircraft():
                 self.enabled = True
                 xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Checked)
                 if self.trace:
@@ -108,12 +103,8 @@ class PythonInterface:
             print(self.Name, "PI::XPluginReceiveMessage: user aircraft received")
             try:
                 if self.streamdecks:
-                    ac = xp.getNthAircraftModel(0)
-                    acpath = os.path.split(ac[1])
-                    print(self.Name, "PI::XPluginReceiveMessage: trying", acpath[0] + "..")
-                    self.streamdecks.load(acpath=acpath[0])
-                    print(self.Name, "PI::XPluginReceiveMessage: ", acpath[0] + "done.")
-                    self.enabled = True
+                    if self.loadCurrentAircraft():
+                        self.enabled = True
                 else:
                     print(self.Name, "PI::XPluginReceiveMessage: no Streamdecks")
             except:
@@ -121,6 +112,18 @@ class PythonInterface:
                     print(self.Name, "PI::XPluginDisable: exception.")
                 print_exc()
                 self.enabled = False
+
+    def loadCurrentAircraft(self):
+        ac = xp.getNthAircraftModel(0)      # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+        if len(ac) == 2:
+            acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+            print(self.Name, "PI::loadCurrentAircraft: trying", acpath[0] + "..")
+            self.streamdecks.load(acpath=acpath[0])
+            print(self.Name, "PI::loadCurrentAircraft: ", acpath[0] + "done.")
+            return True
+        print(self.Name, "PI::loadCurrentAircraft: not found.")
+        return False
+
 
     def streamDeckCmd(self, *args, **kwargs):
         """
@@ -144,7 +147,7 @@ class PythonInterface:
 
         if not self.streamdecks:
             try:
-                self.streamdecks = Streamdecks(self, XPlaneAPI)
+                self.streamdecks = Streamdecks(self, XPlaneSDK)
                 if self.trace:
                     print(self.Name, "PI::streamDeckCmd: created.")
             except:
@@ -157,14 +160,13 @@ class PythonInterface:
             if self.trace:
                 print(self.Name, "PI::streamDeckCmd: available.")
             try:
-                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
-                acpath = os.path.split(ac[1])   # '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP'
-                print(self.Name, "PI::streamDeckCmd: trying", acpath[0] + "..")
-                self.streamdecks.load(acpath=acpath[0])
-                print(self.Name, "PI::streamDeckCmd: ", acpath[0] + "done.")
+                if self.loadCurrentAircraft():
+                    if self.trace:
+                        print(self.Name, "PI::streamDeckCmd: started.")
+                    return 1
                 if self.trace:
-                    print(self.Name, "PI::streamDeckCmd: started.")
-                return 1
+                    print(self.Name, "PI::streamDeckCmd: aircraft not found.")
+                return 0
             except:
                 if self.trace:
                     print(self.Name, "PI::streamDeckCmd: exception(loading).")

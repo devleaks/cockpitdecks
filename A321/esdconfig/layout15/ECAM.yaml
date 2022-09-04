@@ -6,91 +6,91 @@ buttons:
   - index: 0
     name: ENG
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: ENG
   - index: 1
     name: BLEED
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: BLEED
   - index: 2
     name: PRESS
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: PRESS
   - index: 3
     name: ELEC
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: ELEC
   - index: 4
     name: HYD
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: HYD
   - index: 5
     name: FUEL
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: FUEL
   - index: 6
     name: APU
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: APU
   - index: 7
     name: COND
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: COND
   - index: 8
     name: DOOR
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: DOOR
   - index: 9
     name: WHEEL
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: WHEEL
   - index: 10
     name: F/CTL
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: F/CTL
   - index: 11
     name: CLR
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: CLR
   - index: 12
     name: STS
     type: push
-    icons:
+    multi-icons:
       - OFF-GREEN
       - ON-GREEN
     label: STS

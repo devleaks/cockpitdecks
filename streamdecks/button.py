@@ -49,13 +49,15 @@ class Button:
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found {self.icon}")
 
-        self.icons = config.get("icons")
-        if self.icons is not None:
-            for i in range(len(self.icons)):
-                self.icons[i] = add_ext(self.icons[i], ".png")
-                if self.icons[i] not in self.deck.icons.keys():
-                    logger.warning(f"__init__: button {self.name}: icon not found {self.icons[i]}")
+        self.multi_icons = config.get("multi-icons")
+        if self.multi_icons is not None:
+            for i in range(len(self.multi_icons)):
+                self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
+                if self.multi_icons[i] not in self.deck.icons.keys():
+                    logger.warning(f"__init__: button {self.name}: icon not found {self.multi_icons[i]}")
 
+        self.key_icon = self.icon  # Working icon that will be displayed, default to self.icon
+                                   # If key icon should come from icons, will be selected later
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             logger.warning(f"__init__: button {self.name}: invalid label position code {self.label_position}, using default")
             self.label_position = "cm"
@@ -105,48 +107,55 @@ class Button:
         """
         Helper function to get valid font, depending on button or global preferences
         """
-        if self.label_font is not None:
+        if self.label_font is not None and self.label_font in self.deck.decks.fonts.keys():
             return self.deck.decks.fonts[self.label_font]
-        elif self.deck.decks.default_font is not None:
+        elif self.deck.decks.default_font is not None and self.deck.decks.default_font in self.deck.decks.fonts.keys():
+            logger.warning(f"get_font: label font not found, using {self.deck.decks.default_font}")
             return self.deck.decks.fonts[self.deck.decks.default_font]
+        else:
+            logger.error(f"get_font: font not found, tried {self.label_font}, {self.deck.decks.default_font}")
+        return None
 
     def get_image(self):
         """
         Helper function to get button image and overlay label on top of it.
         Label may be updated at each activation.
         """
-        if self.icon in self.deck.icons.keys():
-            image = self.deck.icons[self.icon]
+        if self.key_icon in self.deck.icons.keys():
+            image = self.deck.icons[self.key_icon]
             # Add label if any
             if self.label is not None:
                 fontname = self.get_font()
-                # logger.debug(f"get_image: font {fontname}")
-                image = image.copy()  # we will add text over it
-                draw = ImageDraw.Draw(image)
-                font = ImageFont.truetype(fontname, self.label_size)
-                inside = round(0.04 * image.width + 0.5)
-                w = image.width / 2
-                p = "m"
-                if self.label_position[0] == "l":
-                    w = inside
-                    p = "l"
-                elif self.label_position[0] == "r":
-                    w = image.width - inside
-                    p = "r"
-                h = image.height / 2
-                if self.label_position[1] == "t":
-                    h = inside + self.label_size
-                elif self.label_position[1] == "r":
-                    h = image.height - inside
-                # logger.debug(f"get_image: position {(w, h)}")
-                draw.text((w, h),  # (image.width / 2, 15)
-                          text=self.label,
-                          font=font,
-                          anchor=p+"d",
-                          fill="white")
+                if fontname is None:
+                    logger.warning(f"get_image: no font, cannot overlay label")
+                else:
+                    # logger.debug(f"get_image: font {fontname}")
+                    image = image.copy()  # we will add text over it
+                    draw = ImageDraw.Draw(image)
+                    font = ImageFont.truetype(fontname, self.label_size)
+                    inside = round(0.04 * image.width + 0.5)
+                    w = image.width / 2
+                    p = "m"
+                    if self.label_position[0] == "l":
+                        w = inside
+                        p = "l"
+                    elif self.label_position[0] == "r":
+                        w = image.width - inside
+                        p = "r"
+                    h = image.height / 2
+                    if self.label_position[1] == "t":
+                        h = inside + self.label_size
+                    elif self.label_position[1] == "r":
+                        h = image.height - inside
+                    # logger.debug(f"get_image: position {(w, h)}")
+                    draw.text((w, h),  # (image.width / 2, 15)
+                              text=self.label,
+                              font=font,
+                              anchor=p+"d",
+                              fill="white")
             return image
         else:
-            logger.warning(f"get_image: button {self.name} has no icon {self.icon}")
+            logger.warning(f"get_image: button {self.name}: icon {self.key_icon} not found")
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
@@ -173,7 +182,7 @@ class Button:
     def render(self):
         if self.deck is not None:
             self.deck.set_key_image(self)
-        logger.debug(f"render: button {self.name} rendered")
+        # logger.debug(f"render: button {self.name} rendered")
 
 
 class ButtonPage(Button):
@@ -222,19 +231,21 @@ class ButtonPush(Button):
         """
         If button has more icons, select one from button current value
         """
-        if self.icons is not None and len(self.icons) > 1:
+        if self.multi_icons is not None and len(self.multi_icons) > 1:
             value = self.button_value()
             if value is None:
                 logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
                 value = 0
 
             value = int(value)
-            if value < 0 or value >= len(self.icons):
-                logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.icons)}], default to 0")
+            if value < 0 or value >= len(self.multi_icons):
+                logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.multi_icons)}], default to 0")
                 value = 0
             else:
-                value = value % len(self.icons)
-            self.icon = self.icons[value]
+                value = value % len(self.multi_icons)
+            self.key_icon = self.multi_icons[value]
+        else:
+            self.key_icon = self.icon
         return super().get_image()
 
     def activate(self, state: bool):

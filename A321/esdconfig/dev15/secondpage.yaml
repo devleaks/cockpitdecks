@@ -3,7 +3,7 @@ buttons:
   - index: 0
     name: Toto Map
     type: single
-    icons:
+    multi-icons:
       - OFF_WHITE
       - "ON"
     command: sim/map/show_current

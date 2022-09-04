@@ -247,7 +247,10 @@ class XPlaneUDP(XPlane):
         while self.running:
             nexttime = DATA_REFRESH
             if len(self.datarefs) > 0:
-                self.current_values = self.GetValues()
+                try:
+                    self.current_values = self.GetValues()
+                except XPlaneTimeout:
+                    logger.warning(f"loop: XPlaneTimeout")  # ignore
                 now = time.time()
                 self.detect_changed()
                 later = time.time()
@@ -284,14 +287,17 @@ class XPlaneUDP(XPlane):
         return self.xplaneValues.get(dataref)
 
     def set_datarefs(self, datarefs):
-        # Clean previous values
-        for i in range(len(self.datarefs)):
-            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
-        # Add those to monitor
-        self.datarefs_to_monitor = datarefs
-        for d in self.datarefs_to_monitor.keys():
-            self.AddDataRef(d, freq=DATA_SENT)
-        logger.debug(f"set_datarefs: set {datarefs.keys()}")
+        if "IP" in self.BeaconData:
+            # Clean previous values
+            for i in range(len(self.datarefs)):
+                self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
+            # Add those to monitor
+            self.datarefs_to_monitor = datarefs
+            for d in self.datarefs_to_monitor.keys():
+                self.AddDataRef(d, freq=DATA_SENT)
+            logger.debug(f"set_datarefs: set {datarefs.keys()}")
+        else:
+            logger.warning(f"set_datarefs: no IP connection")
 
     # ################################
     # Streamdecks interface

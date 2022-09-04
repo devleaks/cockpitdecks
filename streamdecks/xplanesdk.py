@@ -26,7 +26,7 @@ class XPlaneSDK(XPlane):
         # values from xplane
         self.xplaneValues = {}
         self.defaultFreq = 1
-        self.thread = None
+        self.ref = "Streamdecks:loop"
 
     def __del__(self):
         pass
@@ -84,7 +84,11 @@ class XPlaneSDK(XPlane):
         self.datarefs_to_monitor = datarefs
         self.datarefs = {}
         for d in self.datarefs_to_monitor:
-            self.datarefs[d] = XPDref(d)
+            ref = xp.findDataRef(d)
+            if ref is not None:
+                self.datarefs[d] = XPDref(d)
+            else:
+                logger.warning(f"set_datarefs: {d} not found")
         logger.debug(f"set_datarefs: set {datarefs.keys()}")
 
     # ################################

@@ -2,14 +2,14 @@ buttons:
   - index: 0
     name: MASTERCAUT
     type: push
-    icons:
+    multi-icons:
       - MASTER_CAUT_OFF
       - MASTER_CAUT
     command: sim/annunciator/clear_master_caution
   - index: 1
     name: MARTERWARN
     type: push
-    icons:
+    multi-icons:
       - MASTER_WARN_OFF
       - MASTER_WARN
     command: sim/annunciator/clear_master_warning
