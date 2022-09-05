@@ -1,19 +1,31 @@
 name: Index
 buttons:
+  - index: 2
+    name: ADIRS_FAST_ALIGN
+    type: push
+    icon: P_NONE
+    command: AirbusFBW/ADIRU_fast_align
+    label: ADIR F/ALIGN
   - index: 8
-    name: ADIRS1_BUTTON
+    name: ADIRS1_INDICATOR
     type: push
     multi-icons:
+      - NONE_NONE
+      - NONE_ALIGN_LIGHT_AMBER
       - FAULT_ALIGN
-      - ALIGN
+    dataref: AirbusFBW/OHPLightsATA34[6]
+    dataref-rpn: 2 * floor
   - index: 16
     name: ADIRS1
-    type: push
+    type: updown
     multi-icons:
       - ADIRS_OFF
       - ADIRS_NAV
       - ADIRS_ATT
-    command: sim/map/show_current
+    commands:
+      - toliss_airbus/adirucommands/ADIRU1SwitchUp
+      - toliss_airbus/adirucommands/ADIRU1SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[0]
     options: bounce
     label: IR1
     label-position: ct
@@ -21,51 +33,72 @@ buttons:
     name: ADIRS1_OFF_BUTTON
     type: push
     multi-icons:
+      - NONE_OFF_LIGHTAMBER
+      - NONE_NONE
       - FAULT_OFF
-      - "ON"
+    dataref: AirbusFBW/ADIRUSwitchAnims[3]
+    dataref-rpn: 4 * floor
   - index: 9
-    name: ADIRS2_BUTTON
+    name: ADIRS3_INDICATOR
     type: push
     multi-icons:
+      - NONE_NONE
+      - NONE_ALIGN_LIGHT_AMBER
       - FAULT_ALIGN
-      - ALIGN
-  - index: 17
+    dataref: AirbusFBW/OHPLightsATA34[10]
+    dataref-rpn: 2 * floor
+  - index: 18
     name: ADIRS2
-    type: push
+    type: updown
     multi-icons:
       - ADIRS_OFF
       - ADIRS_NAV
       - ADIRS_ATT
-    command: sim/map/show_current
+    commands:
+      - toliss_airbus/adirucommands/ADIRU2SwitchUp
+      - toliss_airbus/adirucommands/ADIRU2SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[1]
     options: bounce
     label: IR2
     label-position: ct
   - index: 25
-    name: ADIRS2_OFF_BUTTON
+    name: ADIRS3_OFF_BUTTON
     type: push
     multi-icons:
+      - NONE_OFF_LIGHTAMBER
+      - NONE_NONE
       - FAULT_OFF
-      - "ON"
+    dataref: AirbusFBW/ADIRUSwitchAnims[4]
+    dataref-rpn: 4 * floor
   - index: 10
-    name: ADIRS3_BUTTON
+    name: ADIRS2_INDICATOR
     type: push
     multi-icons:
+      - NONE_NONE
+      - NONE_ALIGN_LIGHT_AMBER
       - FAULT_ALIGN
-      - ALIGN
-  - index: 18
+    dataref: AirbusFBW/OHPLightsATA34[8]
+    dataref-rpn: 2 * floor
+  - index: 17
     name: ADIRS3
-    type: push
+    type: updown
     multi-icons:
       - ADIRS_OFF
       - ADIRS_NAV
       - ADIRS_ATT
-    command: sim/map/show_current
+    commands:
+      - toliss_airbus/adirucommands/ADIRU3SwitchUp
+      - toliss_airbus/adirucommands/ADIRU3SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[2]
     options: bounce
     label: IR3
     label-position: ct
   - index: 26
-    name: ADIRS3_OFF_BUTTON
+    name: ADIRS2_OFF_BUTTON
     type: push
+    dataref: AirbusFBW/ADIRUSwitchAnims[3]
+    dataref-rpn: 4 * floor
     multi-icons:
+      - NONE_OFF_LIGHTAMBER
+      - NONE_NONE
       - FAULT_OFF
-      - "ON"

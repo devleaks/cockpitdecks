@@ -17,6 +17,7 @@ from math import floor
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME
+from .rpc import RPC
 
 logger = logging.getLogger("Button")
 
@@ -47,6 +48,7 @@ class Button:
 
         self.dataref = config.get("dataref")
         self.datarefs = config.get("datarefs")
+        self.dataref_rpn = config.get("dataref-rpn")
 
         self.icon = config.get("icon", DEFAULT_ICON_NAME)
         if self.icon is not None:
@@ -88,13 +90,43 @@ class Button:
         """
         Install button
         """
-        pass
+        if self.has_option("bounce"):
+            stops = self.option_value(len(self.multi_icons))
+            self.bounce_arr = self.make_bounce_array(stops)
 
     def is_valid(self) -> bool:
         """
         Validate button data once and for all
         """
-        return (self.deck is not None) and (self.index is not None)
+        r = (self.deck is not None) and (self.index is not None)
+        if not r:
+            logger.warning(f"is_valid: button {self.name} is invalid")
+        return r
+
+    def has_option(self, opt):
+        for opt in self.options:
+            opt = opt.split("=")
+            name = opt[0]
+            name = name.strip()
+            if name == opt:
+                return True
+        return False
+
+    def option_value(self, opt, default = None):
+        for opt in self.options:
+            opt = opt.strip()
+            opt = opt.replace(" =", "=")  # fails if two spaces, should write reexp (@todo)
+            opt = opt.replace("= ", "=")
+            if opt.startswith(opt+"="):
+                optarr = opt.split("=")
+                return optarr[1]
+        return default
+
+    def make_bounce_array(self, stops: int):
+        af = list(range(stops - 1))
+        ab = af.copy()
+        ab.reverse()
+        return af + [stops-1] + ab[:-1]
 
     def get_datarefs(self):
         """
@@ -155,14 +187,14 @@ class Button:
                         p = "r"
                     h = image.height / 2
                     if self.label_position[1] == "t":
-                        h = inside + self.label_size
+                        h = inside + self.label_size / 2
                     elif self.label_position[1] == "r":
-                        h = image.height - inside
+                        h = image.height - inside - self.label_size / 2
                     # logger.debug(f"get_image: position {(w, h)}")
                     draw.text((w, h),  # (image.width / 2, 15)
                               text=self.label,
                               font=font,
-                              anchor=p+"d",
+                              anchor=p+"m",
                               fill="white")
             return image
         else:
@@ -170,16 +202,27 @@ class Button:
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
+    def compute_dataref(self, dataref, value):
+        if self.dataref_rpn is not None:
+            expr = f"{value} {self.dataref_rpn}"
+            r = RPC(expr)
+            r1 = r.calculate()
+            # logger.debug(f"compute_dataref: button {self.name}: {dataref}: {expr} = {r1}")
+            logger.debug(f"compute_dataref: button {self.name}: {dataref}: {value} => {r1}")
+            return r1
+        return value
+
     def dataref_changed(self, dataref, value):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
+        newval = self.compute_dataref(dataref, value)
         if dataref in self.dataref_values:
             if self.dataref_values[dataref] != value:
-                self.dataref_values[dataref] = value
+                self.dataref_values[dataref] = newval
         else:
             logger.warning(f"dataref_changed: {dataref} not registered")
-            self.dataref_values[dataref] = value
+            self.dataref_values[dataref] = newval
         self.render()
 
     def activate(self, state: bool):
@@ -216,6 +259,27 @@ class ButtonPage(Button):
                 logger.warning(f"activate: button {self.name}: page not found {self.name}")
 
 
+class ButtonReload(Button):
+    """
+    Execute command while the key is pressed.
+    Pressing starts the command, releasing stops it.
+    """
+
+    def __init__(self, config: dict, deck: "Streamdeck"):
+        Button.__init__(self, config=config, deck=deck)
+
+    def is_valid(self):
+        return super().is_valid()
+
+    def activate(self, state: bool):
+        if state:
+            if self.is_valid():
+                self.deck.decks.reload_decks()
+
+
+# ###########################@
+#
+#
 class ButtonPush(Button):
     """
     Execute command once when key pressed
@@ -232,6 +296,7 @@ class ButtonPush(Button):
         or computed from several dataref values (later).
         """
         if self.dataref is not None and self.dataref in self.dataref_values.keys():
+            logger.debug(f"button_value: button {self.name}: {self.dataref}={self.dataref_values[self.dataref]}")
             return self.dataref_values[self.dataref]
         elif "counter" in self.options or "bounce" in self.options:
             # logger.debug(f"get_image: button {self.name} get cycle icon")
@@ -248,17 +313,13 @@ class ButtonPush(Button):
             if value is None:
                 logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
                 value = 0
-
-            value = int(value)
+            else:
+                value = int(value)
+            logger.debug(f"get_image: button {self.name}: value={value}")
             if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
                 value = value % num_icons
 
             elif "bounce" in self.options and num_icons > 0:  # "bounce": 0-1-2-1-0-1-2-1-0-1-2-1-0
-                if self.bounce_arr is None:  # cache it
-                    af = list(range(num_icons - 1))
-                    ab = af.copy()
-                    ab.reverse()
-                    self.bounce_arr = af + [num_icons-1] + ab[:-1]
                 value = self.bounce_arr[value % len(self.bounce_arr)]
 
             if value < 0 or value >= num_icons:
@@ -277,24 +338,6 @@ class ButtonPush(Button):
                 if self.command is not None:
                     self.xp.commandOnce(self.command)
                 self.render()
-
-
-class ButtonReload(Button):
-    """
-    Execute command while the key is pressed.
-    Pressing starts the command, releasing stops it.
-    """
-
-    def __init__(self, config: dict, deck: "Streamdeck"):
-        Button.__init__(self, config=config, deck=deck)
-
-    def is_valid(self):
-        return super().is_valid()
-
-    def activate(self, state: bool):
-        if state:
-            if self.is_valid():
-                self.deck.decks.reload_decks()
 
 
 class ButtonGreens(Button):
@@ -363,7 +406,37 @@ class ButtonDual(Button):
                 self.xp.commandEnd(self.commands[1])
         self.render()
 
+# ###########################@
 #
+class ButtonUpDown(ButtonPush):
+
+
+    def __init__(self, config: dict, deck: "Streamdeck"):
+        Button.__init__(self, config=config, deck=deck)
+        self.current_value = 0
+        self.stops = self.option_value("stops", len(self.multi_icons))
+        self.bounce_arr = self.make_bounce_array(self.stops)
+        # logger.debug(f"__init__: button {self.name}: {self.stops}, {self.bounce_arr}")
+
+    def is_valid(self):
+        return (self.commands is not None) and (len(self.commands) > 1)
+
+    def activate(self, state: bool):
+        super().activate(state)
+        value = self.bounce_arr[self.pressed_count % len(self.bounce_arr)]
+        if state:
+            if self.is_valid():
+                if value > self.current_value:
+                    self.xp.commandOnce(self.commands[0])  # up
+                else:
+                    self.xp.commandOnce(self.commands[1])  # down
+                self.current_value = value
+            else:
+                logger.warning(f"activate: button {self.name}: invalid {self.commands}")
+        self.render()
+
+
+# ###########################@
 # Mapping butween button types and classes
 #
 BUTTON_TYPES = {
@@ -371,6 +444,7 @@ BUTTON_TYPES = {
     "page": ButtonPage,
     "push": ButtonPush,
     "dual": ButtonDual,
+    "updown": ButtonUpDown,
     "green": ButtonGreens,
     "reload": ButtonReload
 }

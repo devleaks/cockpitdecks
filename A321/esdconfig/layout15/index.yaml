@@ -4,8 +4,8 @@ buttons:
     name: X-Plane Map
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     command: sim/map/show_current
     label: Map
     label-position: ct
@@ -13,8 +13,8 @@ buttons:
     name: Airport Map
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     command: pikitanga/AptNav/ToggleMap
     label: Airport
     label-position: ct
@@ -22,8 +22,8 @@ buttons:
     name: AVS Map
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     command: flightfactor/avs/toggle
     label: AVS
     label-position: ct
@@ -31,8 +31,8 @@ buttons:
     name: AviTab
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     label: AviTab
     label-position: ct
     command: AviTab/toggle_tablet
@@ -44,8 +44,8 @@ buttons:
     name: LiveTraffic
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     command: LiveTraffic/Info_Staus_Wnd/Open
     label: Live/T
     label-position: ct
@@ -71,18 +71,25 @@ buttons:
   #   label: F.GREENS
   #   label-size: 10
   #   label-position: ct
+  - index: 8
+    name: DATAREFTOOL
+    type: push
+    icon: NONE
+    label: DataRefTool
+    command: leecbaker/datareftool/new_search_window
+    label-position: cm
   - index: 9
     name: RELOAD
     type: reload
-    icon: MAN
+    icon: NONE_MAN_WHITE
     label: RELOAD
     label-position: ct
   - index: 10
     name: GroundHandlingDeluxe
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     command: jd/ghd/show_widget
     label: GHDLX
     label-position: ct
@@ -90,8 +97,8 @@ buttons:
     name: SAMGroundVehicle
     type: push
     multi-icons:
-      - AVAIL
-      - "ON"
+      - AVAIL_NONE
+      - NONE_ON_BLUE
     command: sam/main_window
     label: SAM/GV
     label-position: ct
