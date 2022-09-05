@@ -156,9 +156,12 @@ class XPlaneUDP(XPlane):
         return self.xplaneValues
 
     def ExecuteCommand(self, command: str):
-        message = 'CMND0' + command
-        self.socket.sendto(message.encode("ascii"), (self.BeaconData["IP"], self.BeaconData["Port"]))
-        logger.debug(f"ExecuteCommand: executed {command}")
+        if "IP" in self.BeaconData:
+            message = 'CMND0' + command
+            self.socket.sendto(message.encode("ascii"), (self.BeaconData["IP"], self.BeaconData["Port"]))
+            logger.debug(f"ExecuteCommand: executed {command}")
+        else:
+            logger.warning(f"ExecuteCommand: no IP connection")
 
     def FindIp(self):
         '''

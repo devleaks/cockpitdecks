@@ -3,11 +3,12 @@ decks:
   - name: XPDeck
     serial: DL16L1A81614
     layout: layout15
-    brightness: 100
+    brightness: 50
     default-label-font: DIN.ttf
     default-label-size: 14
   - name: XPDeckXL
     serial: CL16L2A09596
-    brightness: 100
+    layout: layout32
+    brightness: 70
     default-label-font: DIN.ttf
     default-label-size: 14

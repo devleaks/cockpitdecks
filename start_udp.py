@@ -4,6 +4,7 @@ from time import sleep
 
 from streamdecks import Streamdecks, XPlaneUDP
 
+# logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("streamdecks")
 

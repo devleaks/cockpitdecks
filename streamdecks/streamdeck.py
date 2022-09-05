@@ -77,7 +77,7 @@ class Streamdeck:
         self.device = device
         self.pages = {}
         self.icons = {}  # icons ready for this deck
-        self.home_page = None
+        self.home_page = None       # if None means deck has loaded default wallpaper only.
         self.current_page = None
         self.previous_page = None
         self.valid = True
@@ -94,29 +94,29 @@ class Streamdeck:
         if device is not None:
             self.numkeys = device.key_count()
             logger.info(f"__init__: stream deck {self.name} has {self.numkeys} keys")
-        elif "model" in config:
-            MAX_STREAM_DECK_MODEL_KEYS = {
-                "STREAM_DECK_XL": 32,
-                "STREAM_DECK": 15,
-                "STREAM_DECK_MK_2": 15,
-                "STREAM_DECK_MINI": 6
-            }
-            if config["model"] in MAX_STREAM_DECK_MODEL_KEYS:
-                self.model = config["model"]
-                self.numkeys = MAX_STREAM_DECK_MODEL_KEYS[config["model"]]
-                logger.info(f"__init__: stream deck {self.name} model {config['model']} has {self.numkeys} keys")
-            else:
-                self.valid = False
-                logger.error(f"__init__: stream deck has invalid model {config['model']}, cannot use")
+        # elif "model" in config:
+        #     MAX_STREAM_DECK_MODEL_KEYS = {
+        #         "STREAM_DECK_XL": 32,
+        #         "STREAM_DECK": 15,
+        #         "STREAM_DECK_MK_2": 15,
+        #         "STREAM_DECK_MINI": 6
+        #     }
+        #     if config["model"] in MAX_STREAM_DECK_MODEL_KEYS:
+        #         self.model = config["model"]
+        #         self.numkeys = MAX_STREAM_DECK_MODEL_KEYS[config["model"]]
+        #         logger.info(f"__init__: stream deck {self.name} model {config['model']} has {self.numkeys} keys")
+        #     else:
+        #         self.valid = False
+        #         logger.error(f"__init__: stream deck has invalid model {config['model']}, cannot use")
         else:
             self.valid = False
-            logger.error(f"__init__: stream deck has no model, cannot use")
+            logger.error(f"__init__: cannot determine key count")
 
         self.brightness = 100
         if "brightness" in config:
             self.brightness = int(config["brightness"])
             if self.device is not None:
-                self.device.set_brightness(30)
+                self.device.set_brightness(self.brightness)
 
         if self.device is not None:
             self.device.set_poll_frequency(10)

@@ -2,11 +2,14 @@
 # Streamdecks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
 #
 #
+import logging
 import os
 import xp
 from traceback import print_exc
 
 from streamdecks import Streamdecks, XPlaneSDK, __version__ as RELEASE
+
+logging.basicConfig(level=logging.DEBUG, filename="Streamdecks.log", filemode='a')
 
 
 class PythonInterface:

@@ -1,0 +1,71 @@
+name: Index
+buttons:
+  - index: 8
+    name: ADIRS1_BUTTON
+    type: push
+    multi-icons:
+      - FAULT_ALIGN
+      - ALIGN
+  - index: 16
+    name: ADIRS1
+    type: push
+    multi-icons:
+      - ADIRS_OFF
+      - ADIRS_NAV
+      - ADIRS_ATT
+    command: sim/map/show_current
+    options: bounce
+    label: IR1
+    label-position: ct
+  - index: 24
+    name: ADIRS1_OFF_BUTTON
+    type: push
+    multi-icons:
+      - FAULT_OFF
+      - "ON"
+  - index: 9
+    name: ADIRS2_BUTTON
+    type: push
+    multi-icons:
+      - FAULT_ALIGN
+      - ALIGN
+  - index: 17
+    name: ADIRS2
+    type: push
+    multi-icons:
+      - ADIRS_OFF
+      - ADIRS_NAV
+      - ADIRS_ATT
+    command: sim/map/show_current
+    options: bounce
+    label: IR2
+    label-position: ct
+  - index: 25
+    name: ADIRS2_OFF_BUTTON
+    type: push
+    multi-icons:
+      - FAULT_OFF
+      - "ON"
+  - index: 10
+    name: ADIRS3_BUTTON
+    type: push
+    multi-icons:
+      - FAULT_ALIGN
+      - ALIGN
+  - index: 18
+    name: ADIRS3
+    type: push
+    multi-icons:
+      - ADIRS_OFF
+      - ADIRS_NAV
+      - ADIRS_ATT
+    command: sim/map/show_current
+    options: bounce
+    label: IR3
+    label-position: ct
+  - index: 26
+    name: ADIRS3_OFF_BUTTON
+    type: push
+    multi-icons:
+      - FAULT_OFF
+      - "ON"

@@ -27,7 +27,6 @@ class Button:
 
         self.deck = deck
         self.pressed_count = 0
-        self.bounce_arr = None
 
         self.name = config.get("name", f"bnt-{config['index']}")
         self.index = config.get("index")
@@ -234,7 +233,7 @@ class ButtonPush(Button):
         if self.dataref is not None and self.dataref in self.dataref_values.keys():
             return self.dataref_values[self.dataref]
         elif "counter" in self.options or "bounce" in self.options:
-            # logger.debug(f"get_image: button {self.name} get cycle icon")
+            logger.debug(f"get_image: button {self.name} get cycle icon")
             return self.pressed_count
         return None
 
@@ -254,12 +253,15 @@ class ButtonPush(Button):
                 value = value % num_icons
 
             elif "bounce" in self.options and num_icons > 0:  # "bounce": 0-1-2-1-0-1-2-1-0-1-2-1-0
-                if self.bounce_arr is None:  # cache it
-                    af = list(range(num_icons - 1))
-                    ab = af.copy()
-                    ab.reverse()
-                    self.bounce_arr = af + [num_icons-1] + ab[:-1]
-                value = self.bounce_arr[value % len(self.bounce_arr)]
+                cycle = num_icons + floor(num_icons/2)
+                if num_icons == 2:
+                    cycle = 2  # special case
+                before = value % cycle
+                if before >= num_icons:
+                    value = cycle - before
+                else:
+                    value = before
+                logger.debug(f"get_image: cycle {cycle}, value {before}, bounce={value}")
 
             if value < 0 or value >= num_icons:
                 logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.multi_icons)}], default to 0")

@@ -11,7 +11,6 @@ from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FON
 from .constant import has_ext
 from .streamdeck import Streamdeck
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("Streamdecks")
 
 
@@ -93,7 +92,8 @@ class Streamdecks:
             logging.warning(f"load: Streamdecks is disabled")
             return
         # Reset, if new aircraft
-        self.terminate_this_aircraft()
+        if len(self.decks) > 0:
+            self.terminate_this_aircraft()
 
         self.decks = {}
         self.icons = {}
