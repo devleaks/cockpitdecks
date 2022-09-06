@@ -34,7 +34,8 @@ class Page:
             return
         self.buttons[idx] = button
         # Build page dataref list, each dataref points at the button(s) that use it
-        for d in button.get_datarefs():
+        loggerPage.debug(f"add_button: page {self.name}: button {button.name}: datarefs: {button.dataref_values.keys()}")
+        for d in button.dataref_values.keys():
             if d not in self.datarefs:
                 self.datarefs[d] = []
             self.datarefs[d].append(button)
@@ -383,7 +384,7 @@ class Streamdeck:
         image = button.get_image()
         if image is None:
             logger.warning("set_key_image: button returned no image, using default")
-            image = self.icons[DEFAULT_ICON_NAME]
+            image = self.icons[self.default_icon_name]
 
         with self.device:
             i = PILHelper.to_native_format(self.device, image)

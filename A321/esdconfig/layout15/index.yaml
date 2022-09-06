@@ -4,7 +4,7 @@ buttons:
     name: X-Plane Map
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: sim/map/show_current
     label: Map
@@ -13,7 +13,7 @@ buttons:
     name: Airport Map
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: pikitanga/AptNav/ToggleMap
     label: Airport
@@ -22,7 +22,7 @@ buttons:
     name: AVS Map
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: flightfactor/avs/toggle
     label: AVS
@@ -31,7 +31,7 @@ buttons:
     name: AviTab
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     label: AviTab
     label-position: ct
@@ -44,7 +44,7 @@ buttons:
     name: LiveTraffic
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: LiveTraffic/Info_Staus_Wnd/Open
     label: Live/T
@@ -89,7 +89,7 @@ buttons:
     name: GroundHandlingDeluxe
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: jd/ghd/show_widget
     label: GHDLX
@@ -98,7 +98,7 @@ buttons:
     name: SAMGroundVehicle
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: sam/main_window
     label: SAM/GV

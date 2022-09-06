@@ -49,3 +49,10 @@ def convert_color(instr: str):
         a = instr.replace("(", "").replace(")", "").split(",")
         return tuple([int(e) for e in a])
     return instr
+
+def make_icon_name(top_txt, top_color, bot_txt, bot_color, bot_framed=False):
+    r = [top_txt.upper(), top_color.upper(), bot_txt.upper()]
+    if bot_framed:
+        r.append("FR")
+    r.append(bot_color.upper())
+    return "_".join(r)

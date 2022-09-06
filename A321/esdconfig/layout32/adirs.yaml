@@ -14,7 +14,7 @@ buttons:
       - NONE_ALIGN_LIGHT_AMBER
       - FAULT_ALIGN
     dataref: AirbusFBW/OHPLightsATA34[6]
-    dataref-rpn: 2 * floor
+    dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
   - index: 16
     name: ADIRS1
     type: updown
@@ -37,7 +37,7 @@ buttons:
       - NONE_NONE
       - FAULT_OFF
     dataref: AirbusFBW/ADIRUSwitchAnims[3]
-    dataref-rpn: 4 * floor
+    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[3]} 4 * floor
   - index: 9
     name: ADIRS3_INDICATOR
     type: push
@@ -46,7 +46,7 @@ buttons:
       - NONE_ALIGN_LIGHT_AMBER
       - FAULT_ALIGN
     dataref: AirbusFBW/OHPLightsATA34[10]
-    dataref-rpn: 2 * floor
+    dataref-rpn: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
   - index: 18
     name: ADIRS2
     type: updown
@@ -69,7 +69,7 @@ buttons:
       - NONE_NONE
       - FAULT_OFF
     dataref: AirbusFBW/ADIRUSwitchAnims[4]
-    dataref-rpn: 4 * floor
+    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[4]} 4 * floor
   - index: 10
     name: ADIRS2_INDICATOR
     type: push
@@ -78,7 +78,7 @@ buttons:
       - NONE_ALIGN_LIGHT_AMBER
       - FAULT_ALIGN
     dataref: AirbusFBW/OHPLightsATA34[8]
-    dataref-rpn: 2 * floor
+    dataref-rpn: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
   - index: 17
     name: ADIRS3
     type: updown
@@ -97,7 +97,7 @@ buttons:
     name: ADIRS2_OFF_BUTTON
     type: push
     dataref: AirbusFBW/ADIRUSwitchAnims[3]
-    dataref-rpn: 4 * floor
+    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[3]} 4 * floor
     multi-icons:
       - NONE_OFF_LIGHTAMBER
       - NONE_NONE

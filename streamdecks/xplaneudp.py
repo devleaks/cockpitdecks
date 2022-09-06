@@ -203,7 +203,7 @@ class XPlaneUDP(XPlane):
     def ExecuteCommand(self, command: str):
         if "IP" in self.BeaconData:
             message = 'CMND0' + command
-            self.socket.sendto(message.encode("ascii"), (self.BeaconData["IP"], self.BeaconData["Port"]))
+            self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
             logger.debug(f"ExecuteCommand: executed {command}")
         else:
             logger.warning(f"ExecuteCommand: no IP connection")
@@ -336,6 +336,7 @@ class XPlaneUDP(XPlane):
 
     def set_datarefs(self, datarefs):
         if "IP" in self.BeaconData:
+            logger.debug(f"set_datarefs: setting {datarefs.keys()}")
             # Clean previous values
             for i in range(len(self.datarefs)):
                 self.AddDataRef(next(iter(self.datarefs.values())), freq=0)

@@ -24,6 +24,10 @@ class XPlane:  # (abc.ABC)
         """
         for d in self.current_values.keys():
             if d not in self.previous_values.keys() or self.current_values[d] != self.previous_values[d]:
+                if d not in self.previous_values.keys():
+                    logger.debug(f"detect_changed: {d}: no value => {self.current_values[d]}")
+                else:
+                    logger.debug(f"detect_changed: {d}: {self.previous_values[d]} => {self.current_values[d]}")
                 self.notify_changed(d, self.current_values[d])
         self.previous_values = self.current_values.copy()
 

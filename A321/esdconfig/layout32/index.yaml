@@ -5,7 +5,7 @@ buttons:
     name: X-Plane Map
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: sim/map/show_current
     label: Map
@@ -14,7 +14,7 @@ buttons:
     name: Airport Map
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: pikitanga/AptNav/ToggleMap
     label: Airport
@@ -23,7 +23,7 @@ buttons:
     name: AVS Map
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: flightfactor/avs/toggle
     label: AVS
@@ -32,7 +32,7 @@ buttons:
     name: AviTab
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     label: AviTab
     label-position: ct
@@ -51,7 +51,7 @@ buttons:
     name: LiveTraffic
     type: push
     multi-icons:
-      - AVAIL_NONE
+      - AVAIL_GREEN_NONE
       - NONE_ON_BLUE
     command: LiveTraffic/Info_Staus_Wnd/Open
     label: Live/T
@@ -219,12 +219,6 @@ buttons:
     icon: NONE
     label: "OVERHEAD\nCALL"
     label-position: cm
-  - index: 29
-    name: OVRHDAPU
-    type: page
-    icon: NONE
-    label: "APU"
-    label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: FD
@@ -243,6 +237,18 @@ buttons:
     type: page
     icon: P_NONE
     label: PIEDESTAL
+    label-position: cm
+  - index: 28
+    name: adirs
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nADIRS"
+    label-position: cm
+  - index: 29
+    name: APU
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nAPU"
     label-position: cm
   - index: 30
     name: DATAREFTOOL

@@ -24,6 +24,7 @@ class Button:
 
     def __init__(self, config: dict, deck: "Streamdeck"):
         self.deck = deck
+        self.xp = self.deck.decks.xp  # shortcut alias
         self.pressed_count = 0
         self.bounce_arr = None
 
@@ -41,9 +42,11 @@ class Button:
         self.commands = config.get("commands")
 
         self.dataref = config.get("dataref")
-        self.datarefs = config.get("datarefs")
+        self.datarefs = config.get("multi-datarefs")
         self.dataref_rpn = config.get("dataref-rpn")
-
+        self.dataref_values = dict( [ (d, None) for d in self.get_datarefs() ] )
+        # for d in self.get_datarefs():
+        #     self.dataref_values[d] = None
 
         old = ""
         new = config.get("options", "counter")
@@ -74,13 +77,6 @@ class Button:
         # working variables
         self.previous_value = None
         self.current_value = None
-
-        self.xp = self.deck.decks.xp  # shortcut alias
-
-
-        self.dataref_values = {}
-        for d in self.get_datarefs():
-            self.dataref_values[self.dataref] = None
 
         self.init()
 
@@ -140,8 +136,8 @@ class Button:
         if self.dataref is not None:
             r.append(self.dataref)
         if self.datarefs is not None:
-            for d in self.datarefs:
-                r.append(d)
+            r = r + self.datarefs
+        logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
         return r
 
     def get_font(self):
@@ -215,27 +211,49 @@ class Button:
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
-    def compute_dataref(self, dataref, value):
+    def compute_button_value(self):
         if self.dataref_rpn is not None:
-            expr = f"{value} {self.dataref_rpn}"
+            expr = self.dataref_rpn
+            nice = self.dataref_rpn
+            for dataref, value in self.dataref_values.items():
+                expr = expr.replace(f"${{{dataref}}}", str(value) if value is not None else "0.0")
+                nice = nice.replace(f"${{{dataref}}}", str(round(value, 4)) if value is not None else "0.0")
             r = RPC(expr)
             r1 = r.calculate()
-            # logger.debug(f"compute_dataref: button {self.name}: {dataref}: {expr} = {r1}")
-            logger.debug(f"compute_dataref: button {self.name}: {dataref}: {value} => {r1}")
+            # logger.debug(f"compute_button_value: button {self.name}: {dataref}: {expr} = {r1}")
+            logger.debug(f"compute_button_value: button {self.name}: {self.dataref_rpn} => {nice}:  => {r1}")
             return r1
         return value
+
+    def button_value(self):
+        """
+        Button ultimately returns one value that is either directly extracted from a single dataref,
+        or computed from several dataref values (later).
+        """
+        # 1. Unique dataref
+        if self.dataref is not None and self.dataref in self.dataref_values.keys() and len(self.dataref_values.keys()) == 1:
+            if self.dataref_rpn is None:
+                return self.dataref_values[self.dataref]
+            else:
+                return self.compute_button_value()
+        # 2. Multiple datarefs
+        elif len(self.dataref_values.keys()) > 1:
+            return self.compute_button_value()
+        elif "counter" in self.options or "bounce" in self.options:
+            # logger.debug(f"get_image: button {self.name} get cycle icon")
+            return self.pressed_count
+        return None
 
     def dataref_changed(self, dataref, value):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        newval = self.compute_dataref(dataref, value)
         if dataref in self.dataref_values:
             if self.dataref_values[dataref] != value:
-                self.dataref_values[dataref] = newval
+                self.dataref_values[dataref] = value
         else:
             logger.warning(f"dataref_changed: {dataref} not registered")
-            self.dataref_values[dataref] = newval
+            self.dataref_values[dataref] = value
         self.render()
 
     def activate(self, state: bool):
@@ -308,19 +326,6 @@ class ButtonPush(Button):
 
     def is_valid(self):
         return super().is_valid() and (self.command is not None)
-
-    def button_value(self):
-        """
-        Button ultimately returns one value that is either directly extracted from a single dataref,
-        or computed from several dataref values (later).
-        """
-        if self.dataref is not None and self.dataref in self.dataref_values.keys():
-            logger.debug(f"button_value: button {self.name}: {self.dataref}={self.dataref_values[self.dataref]}")
-            return self.dataref_values[self.dataref]
-        elif "counter" in self.options or "bounce" in self.options:
-            # logger.debug(f"get_image: button {self.name} get cycle icon")
-            return self.pressed_count
-        return None
 
     def get_image(self):
         """
