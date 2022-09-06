@@ -6,13 +6,16 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
 
-from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME, DEFAULT_COLOR
-from .constant import DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_SYSTEM_FONT
-from .constant import has_ext
+from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER
+from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR
+from .constant import has_ext, convert_color
+
 from .streamdeck import Streamdeck
 
 logger = logging.getLogger("Streamdecks")
 
+#
 
 class Streamdecks:
     """
@@ -37,11 +40,18 @@ class Streamdecks:
 
         self.acpath = None
         self.decks = {}
-        self.icons = {}
-        self.fonts = {}
 
-        self.default_font = None
-        self.default_size = 12
+        self.default_logo = DEFAULT_LOGO
+        self.default_wallpaper = DEFAULT_WALLPAPER
+
+        self.fonts = {}
+        self.default_label_font = DEFAULT_LABEL_FONT
+        self.default_label_size = DEFAULT_LABEL_SIZE
+        self.default_label_color = convert_color(DEFAULT_LABEL_COLOR)
+
+        self.icons = {}
+        self.default_icon_name = DEFAULT_ICON_NAME
+        self.default_icon_color = DEFAULT_ICON_COLOR
 
         self.init()
 
@@ -126,15 +136,15 @@ class Streamdecks:
         #     image = Image.open(fn)
         #     self.icons[default_icon] = image
         #     logging.debug(f"load_icons: loaded default {default_icon} icon")
-        self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_COLOR)
+        self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
         logging.debug(f"load_defaults: create default {DEFAULT_ICON_NAME} icon")
 
         # 2. Load label default font
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
             try:
-                test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
+                test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_label_size)
                 self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
-                self.default_font = DEFAULT_LABEL_FONT
+                self.default_label_font = DEFAULT_LABEL_FONT
             except:
                 logging.warning(f"load_defaults: font {DEFAULT_LABEL_FONT} not loaded")
         else:
@@ -144,36 +154,36 @@ class Streamdecks:
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), DEFAULT_LABEL_FONT)
-                test = ImageFont.truetype(fn, self.default_size)
+                test = ImageFont.truetype(fn, self.default_label_size)
                 self.fonts[DEFAULT_LABEL_FONT] = fn
-                self.default_font = DEFAULT_LABEL_FONT
+                self.default_label_font = DEFAULT_LABEL_FONT
                 logging.debug(f"load_defaults: font {fn} found locally")
             except:
                 logging.warning(f"load_defaults: font {fn} not found locally")
 
-        if self.default_font is None and len(self.fonts) > 0:
+        if self.default_label_font is None and len(self.fonts) > 0:
             if DEFAULT_LABEL_FONT in self.fonts.keys():
-                self.default_font = DEFAULT_LABEL_FONT
+                self.default_label_font = DEFAULT_LABEL_FONT
             else:  # select first one
-                self.default_font = list(self.fonts.keys())[0]
+                self.default_label_font = list(self.fonts.keys())[0]
 
         # If no font loaded, try DEFAULT_SYSTEM_FONT:
-        if self.default_font is None:  # No found loaded? we need at least one:
+        if self.default_label_font is None:  # No found loaded? we need at least one:
             if DEFAULT_SYSTEM_FONT not in self.fonts:
                 try:
-                    test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
+                    test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_label_size)
                     self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
-                    self.default_font = DEFAULT_LABEL_FONT
+                    self.default_label_font = DEFAULT_LABEL_FONT
                 except:
                     logging.error(f"load_defaults: font default {DEFAULT_SYSTEM_FONT} not loaded")
             else:
                 logging.debug(f"load_defaults: font {DEFAULT_SYSTEM_FONT} already loaded")
 
-        if self.default_font is None:
+        if self.default_label_font is None:
             logging.error(f"load_defaults: no default font")
 
         # 3. report summary
-        logging.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font}")
+        logging.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_label_font}")
         logging.debug(f"load_defaults: default icons {self.icons.keys()}, default={DEFAULT_ICON_NAME}")
 
     def create_decks(self):
@@ -182,8 +192,13 @@ class Streamdecks:
             with open(fn, "r") as fp:
                 config = yaml.safe_load(fp)
 
-                self.default_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
-                self.default_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
+                self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
+                self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
+                self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
+                self.default_icon_name = DEFAULT_ICON_NAME
+                self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
+                self.default_logo = config.get("default-wallpaper-logo", DEFAULT_LOGO)
+                self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
 
                 if "decks" in config:
                     cnt = 0
@@ -256,7 +271,7 @@ class Streamdecks:
                     if i not in self.fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.default_size)
+                            test = ImageFont.truetype(fn, self.default_label_size)
                             self.fonts[i] = fn
                         except:
                             logging.warning(f"load_fonts: custom font file {fn} not loaded")
@@ -267,33 +282,33 @@ class Streamdecks:
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
             if DEFAULT_LABEL_FONT not in self.fonts.keys():
                 try:
-                    test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_size)
+                    test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_label_size)
                     self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
-                    self.default_font = DEFAULT_LABEL_FONT
+                    self.default_label_font = DEFAULT_LABEL_FONT
                 except:
                     logging.warning(f"load_fonts: font {DEFAULT_LABEL_FONT} not loaded")
             else:
                 logging.debug(f"load_fonts: font {DEFAULT_LABEL_FONT} already loaded")
 
-        if self.default_font is None and len(self.fonts) > 0:
+        if self.default_label_font is None and len(self.fonts) > 0:
             if DEFAULT_LABEL_FONT in self.fonts.keys():
-                self.default_font = DEFAULT_LABEL_FONT
+                self.default_label_font = DEFAULT_LABEL_FONT
             else:  # select first one
-                self.default_font = list(self.fonts.keys())[0]
+                self.default_label_font = list(self.fonts.keys())[0]
 
         # 3. If no font loaded, try DEFAULT_SYSTEM_FONT:
-        if self.default_font is None:  # No found loaded? we need at least one:
+        if self.default_label_font is None:  # No found loaded? we need at least one:
             if DEFAULT_SYSTEM_FONT not in self.fonts:
                 try:
-                    test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_size)
+                    test = ImageFont.truetype(DEFAULT_SYSTEM_FONT, self.default_label_size)
                     self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
-                    self.default_font = DEFAULT_LABEL_FONT
+                    self.default_label_font = DEFAULT_LABEL_FONT
                 except:
                     logging.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
             else:
                 logging.debug(f"load_fonts: font {DEFAULT_SYSTEM_FONT} already loaded")
 
-        logging.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_font}")
+        logging.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_label_font}")
 
     def reload_decks(self):
         """

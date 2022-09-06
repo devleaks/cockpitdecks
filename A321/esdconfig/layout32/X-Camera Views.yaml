@@ -1,0 +1,5 @@
+buttons:
+  - index: 31
+    name: Index
+    type: page
+    icon: XPLANE

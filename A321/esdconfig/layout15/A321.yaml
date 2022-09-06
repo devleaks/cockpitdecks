@@ -16,7 +16,7 @@ buttons:
   - index: 4
     name: ISCS
     type: push
-    multi_icons:
+    multi-icons:
       - P_TOLISS_ISCS_OFF
       - P_TOLISS_ISCS_ON
     command: toliss_airbus/iscs_open

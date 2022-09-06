@@ -1,6 +1,7 @@
 # Stolen from another project :-). Without permission. 8-(.
 # Good artists copy, great artists steal. Picasso.
 #
+import logging
 from decimal import Decimal as D
 
 from XPLMDataAccess import *
@@ -8,6 +9,7 @@ from XPLMPlugin import *
 
 MSG_ADD_DATAREF = 0x01000000
 
+logger = logging.getLogger("XPDRef")
 
 class XPCustomDRef(object):
 
@@ -253,7 +255,7 @@ class XPDref:
             dref_mapping = self.dref_mapping
 
         if dref_type not in dref_mapping:
-            print("ERROR: invalid DataRef type", dref_type)
+            logger.error("ERROR: invalid DataRef type", dref_type)
             return
 
         if dref_type == "string":
@@ -265,7 +267,7 @@ class XPDref:
 
         self.dref = XPLMFindDataRef(signature)
         if not self.dref:
-            print("Can't find DataRef " + signature)
+            logger.error("ERROR: can't find DataRef " + signature)
             return
 
         self.is_decimal = is_decimal

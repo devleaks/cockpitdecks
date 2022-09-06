@@ -14,6 +14,10 @@ logger = logging.getLogger("XPlaneSDK")
 DATA_REFRESH = 5   # secs
 
 
+class ButtonAnimate:
+    def __init__(self, config: dict, deck: "Streamdeck"):
+        pass
+
 class XPlaneSDK(XPlane):
     '''
     Get data from XPlane via direct API calls.
@@ -30,6 +34,9 @@ class XPlaneSDK(XPlane):
 
     def __del__(self):
         pass
+
+    def get_button_animate(self):
+        return ButtonAnimate
 
     def WriteDataRef(self, dataref, value, vtype='float'):
         '''

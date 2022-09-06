@@ -9,22 +9,22 @@ EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 CONFIG_DIR = "esdconfig"
 CONFIG_FILE = "config.yaml"
 
-ICONS_FOLDER = "icons"
-FONTS_FOLDER = "fonts"
-
 DEFAULT_LAYOUT = "default"
-DEFAULT_COLOR = (255, 255, 255)
-
 INIT_PAGE = "Index"
-WALLPAPER = "wallpaper.png"
-DEFAULT_LOGO = "logo-airbus.png"
 
+FONTS_FOLDER = "fonts"
 DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS
-
 DEFAULT_LABEL_FONT = "DIN.ttf"
-DEFAULT_LABEL_SIZE = "12"
+DEFAULT_LABEL_SIZE = 12
+DEFAULT_LABEL_COLOR = "white"
 
+ICONS_FOLDER = "icons"
 DEFAULT_ICON_NAME = "_default_icon.png"
+DEFAULT_ICON_COLOR = (0, 0, 150)
+
+DEFAULT_WALLPAPER = "wallpaper.png"
+DEFAULT_LOGO = "logo.png"
+
 
 MONITORING_POLL = 10.0  # seconds, 1.0 = polling every second
 
@@ -43,3 +43,9 @@ def has_ext(name: str, ext: str):
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")
     return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
+
+def convert_color(instr: str):
+    if "," in instr:
+        a = instr.replace("(", "").replace(")", "").split(",")
+        return tuple([int(e) for e in a])
+    return instr

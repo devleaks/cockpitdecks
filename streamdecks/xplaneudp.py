@@ -10,12 +10,53 @@ import logging
 import time
 
 from .xplane import XPlane
+from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
 
 
 DATA_REFRESH = 0.1 # secs
 DATA_SENT    = 10  # times per second, UDP specific
+
+class ButtonAnimate(Button):
+    """
+    """
+    def __init__(self, config: dict, deck: "Streamdeck"):
+        Button.__init__(self, config=config, deck=deck)
+        self.thread = None
+        self.running = False
+        self.speed = float(self.option_value("animation_speed", 1))
+        self.counter = 0
+
+    def greens(self):
+        while self.running:
+            self.render()
+            self.counter = self.counter + 1
+            time.sleep(self.speed)
+
+    def get_image(self):
+        """
+        If button has more icons, select one from button current value
+        """
+        if self.running:
+            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
+        else:
+            self.key_icon = self.icon  # off
+        return super().get_image()
+
+    def activate(self, state: bool):
+        super().activate(state)
+        if state:
+            if self.is_valid():
+                # self.label = f"pressed {self.current_value}"
+                self.xp.commandOnce(self.command)
+                if self.pressed_count % 2 == 0:
+                    self.running = False
+                    self.render()
+                else:
+                    self.running = True
+                    self.thread = threading.Thread(target=self.greens)
+                    self.thread.start()
 
 
 class XPlaneIpNotFound(Exception):
@@ -50,6 +91,7 @@ class XPlaneUDP(XPlane):
         self.datarefs = {} # key = idx, value = dataref
         # values from xplane
         self.BeaconData = {}
+        self.UDP_PORT = None
         self.xplaneValues = {}
         self.defaultFreq = 1
 
@@ -72,6 +114,9 @@ class XPlaneUDP(XPlane):
         for i in range(len(self.datarefs)):
             self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
         self.socket.close()
+
+    def get_button_animate(self):
+        return ButtonAnimate
 
     def WriteDataRef(self, dataref, value, vtype='float'):
         '''
@@ -121,7 +166,7 @@ class XPlaneUDP(XPlane):
         assert(len(message)==413)
         self.socket.sendto(message, (self.BeaconData["IP"], self.BeaconData["Port"]))
         if self.datarefidx%100 == 0:
-            sleep(0.2)
+            time.sleep(0.2)
 
     def GetValues(self):
         """

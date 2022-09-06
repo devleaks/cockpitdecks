@@ -10,13 +10,11 @@ Buttons do
 import os
 import logging
 
-from threading import Thread
-from time import sleep
 from math import floor
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME
+from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME, convert_color
 from .rpc import RPC
 
 logger = logging.getLogger("Button")
@@ -25,7 +23,6 @@ logger = logging.getLogger("Button")
 class Button:
 
     def __init__(self, config: dict, deck: "Streamdeck"):
-
         self.deck = deck
         self.pressed_count = 0
         self.bounce_arr = None
@@ -33,15 +30,12 @@ class Button:
         self.name = config.get("name", f"bnt-{config['index']}")
         self.index = config.get("index")
 
-        self.options = config.get("options", "counter").split(",")
-
         self.label = config.get("label")
-        self.label_font = config.get("label-font")
-        if self.deck:
-            default_font_size = deck.decks.default_size
-        self.label_size = int(config.get("label-size", default_font_size))
+        self.label_font = config.get("label-font", deck.default_label_font)
+        self.label_size = int(config.get("label-size", deck.default_label_size))
+        self.label_color = config.get("label-color", deck.default_label_color)
+        self.label_color = convert_color(self.label_color)
         self.label_position = config.get("label-position", "cm")
-        self.label_color = config.get("label-color", "white")
 
         self.command = config.get("command")
         self.commands = config.get("commands")
@@ -50,7 +44,15 @@ class Button:
         self.datarefs = config.get("datarefs")
         self.dataref_rpn = config.get("dataref-rpn")
 
-        self.icon = config.get("icon", DEFAULT_ICON_NAME)
+
+        old = ""
+        new = config.get("options", "counter")
+        while len(old) != len(new):
+            old = new
+            new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
+        self.options = [a.strip() for a in new.split(",")]
+
+        self.icon = config.get("icon", deck.default_icon_name)
         if self.icon is not None:
             self.icon = add_ext(self.icon, ".png")
             if self.icon not in self.deck.icons.keys():
@@ -90,8 +92,8 @@ class Button:
         """
         Install button
         """
-        if self.has_option("bounce"):
-            stops = self.option_value(len(self.multi_icons))
+        if self.has_option("bounce") and self.multi_icons is not None and len(self.multi_icons) > 0:
+            stops = self.option_value(option="stops", default=len(self.multi_icons))
             self.bounce_arr = self.make_bounce_array(stops)
 
     def is_valid(self) -> bool:
@@ -103,30 +105,32 @@ class Button:
             logger.warning(f"is_valid: button {self.name} is invalid")
         return r
 
-    def has_option(self, opt):
+    def has_option(self, option):
         for opt in self.options:
             opt = opt.split("=")
             name = opt[0]
             name = name.strip()
-            if name == opt:
-                return True
+            return name == option
         return False
 
-    def option_value(self, opt, default = None):
+    def option_value(self, option, default = None):
         for opt in self.options:
-            opt = opt.strip()
-            opt = opt.replace(" =", "=")  # fails if two spaces, should write reexp (@todo)
-            opt = opt.replace("= ", "=")
-            if opt.startswith(opt+"="):
-                optarr = opt.split("=")
-                return optarr[1]
+            opt = opt.split("=")
+            name = opt[0]
+            if name == option:
+                if len(opt) > 1:
+                    return opt[1]
+                else:  # found just the name, so it may be a boolean, True if present
+                    return True
         return default
 
     def make_bounce_array(self, stops: int):
-        af = list(range(stops - 1))
-        ab = af.copy()
-        ab.reverse()
-        return af + [stops-1] + ab[:-1]
+        if stops > 1:
+            af = list(range(stops - 1))
+            ab = af.copy()
+            ab.reverse()
+            return af + [stops-1] + ab[:-1]
+        return [0]
 
     def get_datarefs(self):
         """
@@ -144,19 +148,24 @@ class Button:
         """
         Helper function to get valid font, depending on button or global preferences
         """
-        if self.label_font is None and self.deck.decks.default_font is not None and self.deck.decks.default_font in self.deck.decks.fonts.keys():
-            return self.deck.decks.fonts[self.deck.decks.default_font]
-
+        fonts_available = self.deck.decks.fonts.keys()
+        # 1. Tries button specific font
         if self.label_font is not None:
-            if self.label_font in self.deck.decks.fonts.keys():
+            if self.label_font in fonts_available:
                 return self.deck.decks.fonts[self.label_font]
             else:
-                logger.warning(f"get_font: label font '{self.label_font}' not found")
-
-        if self.deck.decks.default_font in self.deck.decks.fonts.keys():
-            return self.deck.decks.fonts[self.deck.decks.default_font]
-
-        logger.error(f"get_font: font not found, tried {self.label_font}, {self.deck.decks.default_font}")
+                logger.warning(f"get_font: button label font '{self.label_font}' not found")
+        # 2. Tries deck default font
+        if self.deck.default_label_font is not None and self.deck.default_label_font in fonts_available:
+            logger.info(f"get_font: using deck default font '{self.deck.default_label_font}'")
+            return self.deck.decks.fonts[self.deck.default_label_font]
+        else:
+            logger.warning(f"get_font: deck default label font '{self.label_font}' not found")
+        # 3. Tries streamdecks default font
+        if self.deck.decks.default_label_font is not None and self.deck.decks.default_label_font in fonts_available:
+            logger.info(f"get_font: using streamdecks default font '{self.deck.decks.default_label_font}'")
+            return self.deck.decks.fonts[self.deck.decks.default_label_font]
+        logger.error(f"get_font: streamdecks default label font not found, tried {self.label_font}, {self.deck.default_label_font}, {self.deck.decks.default_label_font}")
         return None
 
     def get_image(self):
@@ -179,23 +188,27 @@ class Button:
                     inside = round(0.04 * image.width + 0.5)
                     w = image.width / 2
                     p = "m"
+                    a = "center"
                     if self.label_position[0] == "l":
                         w = inside
                         p = "l"
+                        a = "left"
                     elif self.label_position[0] == "r":
                         w = image.width - inside
                         p = "r"
+                        a = "right"
                     h = image.height / 2
                     if self.label_position[1] == "t":
                         h = inside + self.label_size / 2
                     elif self.label_position[1] == "r":
                         h = image.height - inside - self.label_size / 2
                     # logger.debug(f"get_image: position {(w, h)}")
-                    draw.text((w, h),  # (image.width / 2, 15)
+                    draw.multiline_text((w, h),  # (image.width / 2, 15)
                               text=self.label,
                               font=font,
                               anchor=p+"m",
-                              fill="white")
+                              align=a,
+                              fill=self.label_color)
             return image
         else:
             logger.warning(f"get_image: button {self.name}: icon {self.key_icon} not found")
@@ -246,6 +259,12 @@ class ButtonPage(Button):
     """
     def __init__(self, config: dict, deck: "Streamdeck"):
         Button.__init__(self, config=config, deck=deck)
+        if self.name is None:
+            logger.error(f"__init__: page button has no name")
+        # We cannot change page validity because target page might not already be loaded.
+
+    def is_valid(self):
+        return super().is_valid() and self.name is not None and self.name in self.deck.pages.keys()
 
     def activate(self, state: bool):
         super().activate(state)
@@ -340,51 +359,6 @@ class ButtonPush(Button):
                 self.render()
 
 
-class ButtonGreens(Button):
-    """
-    Can be used as the basis of a animated-type button.
-    New just an Easter egg for FollowTheGreens.
-    """
-    def __init__(self, config: dict, deck: "Streamdeck"):
-        Button.__init__(self, config=config, deck=deck)
-        self.thread = None
-
-        self.running = False
-
-        self.speed = 0.5  # seconds, should not be too fast...
-        self.counter = 0
-
-    def greens(self):
-        while self.running:
-            self.render()
-            self.counter = self.counter + 1
-            sleep(self.speed)
-
-    def get_image(self):
-        """
-        If button has more icons, select one from button current value
-        """
-        if self.running:
-            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
-        else:
-            self.key_icon = self.icon  # off
-        return super().get_image()
-
-    def activate(self, state: bool):
-        super().activate(state)
-        if state:
-            if self.is_valid():
-                # self.label = f"pressed {self.current_value}"
-                self.xp.commandOnce(self.command)
-                if self.pressed_count % 2 == 0:
-                    self.running = False
-                    self.render()
-                else:
-                    self.running = True
-                    self.thread = Thread(target=self.greens)
-                    self.thread.start()
-
-
 class ButtonDual(Button):
     """
     Execute command while the key is pressed.
@@ -445,6 +419,6 @@ BUTTON_TYPES = {
     "push": ButtonPush,
     "dual": ButtonDual,
     "updown": ButtonUpDown,
-    "green": ButtonGreens,
+    "animate": None,
     "reload": ButtonReload
 }

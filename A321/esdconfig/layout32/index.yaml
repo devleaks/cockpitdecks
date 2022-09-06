@@ -1,104 +1,264 @@
 name: Index
 buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: X-Plane Map
+    type: push
+    multi-icons:
+      - AVAIL_NONE
+      - NONE_ON_BLUE
+    command: sim/map/show_current
+    label: Map
+    label-position: ct
+  - index: 1
+    name: Airport Map
+    type: push
+    multi-icons:
+      - AVAIL_NONE
+      - NONE_ON_BLUE
+    command: pikitanga/AptNav/ToggleMap
+    label: Airport
+    label-position: ct
   - index: 2
-    name: ADIRS_FAST_ALIGN
+    name: AVS Map
     type: push
-    icon: P_NONE
-    command: AirbusFBW/ADIRU_fast_align
-    label: ADIR F/ALIGN
+    multi-icons:
+      - AVAIL_NONE
+      - NONE_ON_BLUE
+    command: flightfactor/avs/toggle
+    label: AVS
+    label-position: ct
+  - index: 3
+    name: AviTab
+    type: push
+    multi-icons:
+      - AVAIL_NONE
+      - NONE_ON_BLUE
+    label: AviTab
+    label-position: ct
+    command: AviTab/toggle_tablet
+  # - index: 4
+  #   name: Ground Services
+  #   type: page
+  #   label: Ground Services
+  - index: 4
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
+  - index: 5
+    name: LiveTraffic
+    type: push
+    multi-icons:
+      - AVAIL_NONE
+      - NONE_ON_BLUE
+    command: LiveTraffic/Info_Staus_Wnd/Open
+    label: Live/T
+    label-position: ct
+  # - index: 6
+  #   name: FollowTheGreens
+  #   type: push
+  #   multi-icons:
+  #     - F.GREENS_OFF
+  #     - F.GREENS_ON
+  #   command: XPPython3/followthegreens/main_windown_toggle
+  #   label: F.GREENS
+  #   label-size: 10
+  #   label-position: ct
+  - index: 6
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    multi-icons:
+      - F.GREENS_ON1
+      - F.GREENS_ON2
+      - F.GREENS_ON3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-size: 10
+    label-position: ct
+    options: animation_speed=0.5
+  - index: 7
+    name: X-Camera Views
+    type: page
+    icon: x-camera
+# ### LINE 2 ###  8-15 ######################################################
   - index: 8
-    name: ADIRS1_INDICATOR
+    name: FD 1
     type: push
+    icon: OFF-GREEN
+    command: toliss_airbus/fd1_push
+    dataref: AirbusFBW/FD1Engage
+    dataref-states:
+      - 0.0
+      - 1.0
     multi-icons:
-      - NONE_NONE
-      - NONE_ALIGN_LIGHT_AMBER
-      - FAULT_ALIGN
-    dataref: AirbusFBW/OHPLightsATA34[6]
-    dataref-rpn: 2 * floor
-  - index: 16
-    name: ADIRS1
-    type: updown
-    multi-icons:
-      - ADIRS_OFF
-      - ADIRS_NAV
-      - ADIRS_ATT
-    commands:
-      - toliss_airbus/adirucommands/ADIRU1SwitchUp
-      - toliss_airbus/adirucommands/ADIRU1SwitchDown
-    dataref: AirbusFBW/ADIRUSwitchArray[0]
-    options: bounce
-    label: IR1
-    label-position: ct
-  - index: 24
-    name: ADIRS1_OFF_BUTTON
-    type: push
-    multi-icons:
-      - NONE_OFF_LIGHTAMBER
-      - NONE_NONE
-      - FAULT_OFF
-    dataref: AirbusFBW/ADIRUSwitchAnims[3]
-    dataref-rpn: 4 * floor
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: FD
   - index: 9
-    name: ADIRS3_INDICATOR
+    name: LS 1
     type: push
     multi-icons:
-      - NONE_NONE
-      - NONE_ALIGN_LIGHT_AMBER
-      - FAULT_ALIGN
-    dataref: AirbusFBW/OHPLightsATA34[10]
-    dataref-rpn: 2 * floor
-  - index: 18
-    name: ADIRS2
-    type: updown
-    multi-icons:
-      - ADIRS_OFF
-      - ADIRS_NAV
-      - ADIRS_ATT
-    commands:
-      - toliss_airbus/adirucommands/ADIRU2SwitchUp
-      - toliss_airbus/adirucommands/ADIRU2SwitchDown
-    dataref: AirbusFBW/ADIRUSwitchArray[1]
-    options: bounce
-    label: IR2
-    label-position: ct
-  - index: 25
-    name: ADIRS3_OFF_BUTTON
-    type: push
-    multi-icons:
-      - NONE_OFF_LIGHTAMBER
-      - NONE_NONE
-      - FAULT_OFF
-    dataref: AirbusFBW/ADIRUSwitchAnims[4]
-    dataref-rpn: 4 * floor
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: LS
   - index: 10
-    name: ADIRS2_INDICATOR
+    name: LOC 1
     type: push
     multi-icons:
-      - NONE_NONE
-      - NONE_ALIGN_LIGHT_AMBER
-      - FAULT_ALIGN
-    dataref: AirbusFBW/OHPLightsATA34[8]
-    dataref-rpn: 2 * floor
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/LOCbutton
+    label: LOC
+  - index: 11
+    name: A/THR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/ATHRbutton
+    label: A/THR
+  - index: 12
+    name: AP1
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP1
+  - index: 13
+    name: AP2
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP2
+  - index: 14
+    name: EXPED
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/EXPEDbutton
+    label: EXPED
+  - index: 15
+    name: APPR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/APPRbutton
+    label: APPR
+# ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    name: MASTERCAUT
+    type: animate
+    icon: MASTER_CAUT_OFF
+    multi-icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+    options: animation_speed=0.5
   - index: 17
-    name: ADIRS3
-    type: updown
+    name: MARTERWARN
+    type: animate
+    icon: MASTER_WARN_OFF
     multi-icons:
-      - ADIRS_OFF
-      - ADIRS_NAV
-      - ADIRS_ATT
-    commands:
-      - toliss_airbus/adirucommands/ADIRU3SwitchUp
-      - toliss_airbus/adirucommands/ADIRU3SwitchDown
-    dataref: AirbusFBW/ADIRUSwitchArray[2]
-    options: bounce
-    label: IR3
-    label-position: ct
+      - MASTER_WARN_OFF
+      - MASTER_WARN
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+    options: animation_speed=0.5
+  - index: 16
+    name: adirs
+    type: page
+    icon: P_NONE
+    label: "OVERHEAD\nADIRS"
+    label-position: cm
+  - index: 17
+    name: OVRHDFIRE
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nFIRE"
+    label-position: cm
+  - index: 18
+    name: OVRHDHYD
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nHYD"
+    label-position: cm
+  - index: 19
+    name: OVRHDFUEL
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nFUEL"
+    label-position: cm
+  - index: 20
+    name: OVRHDELEC
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nELEC"
+    label-position: cm
+  - index: 21
+    name: OVRHDAIRCOND
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nAIR COND"
+    label-position: cm
+  - index: 22
+    name: OVRHDEXTLIGHTS
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nEXT LIGHTS"
+    label-position: cm
+  - index: 23
+    name: OVRHDCALL
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nCALL"
+    label-position: cm
+  - index: 29
+    name: OVRHDAPU
+    type: page
+    icon: NONE
+    label: "APU"
+    label-position: cm
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 24
+    name: FD
+    type: page
+    icon: P_NONE
+    label: FD
+    label-position: cm
+  - index: 25
+    name: ECAM
+    type: page
+    icon: P_NONE
+    label: ECAM
+    label-position: cm
   - index: 26
-    name: ADIRS2_OFF_BUTTON
+    name: PIEDESTAL
+    type: page
+    icon: P_NONE
+    label: PIEDESTAL
+    label-position: cm
+  - index: 30
+    name: DATAREFTOOL
     type: push
-    dataref: AirbusFBW/ADIRUSwitchAnims[3]
-    dataref-rpn: 4 * floor
+    icon: NONE
+    label: DataRefTool
+    command: leecbaker/datareftool/new_search_window
+    label-position: cm
+  - index: 31
+    name: ISCS
+    type: push
     multi-icons:
-      - NONE_OFF_LIGHTAMBER
-      - NONE_NONE
-      - FAULT_OFF
+      - P_TOLISS_ISCS_OFF
+      - P_TOLISS_ISCS_ON
+    command: toliss_airbus/iscs_open
+  # - index: 31
+  #   name: A321
+  #   type: page
+  #   icon: TOLISS-A321

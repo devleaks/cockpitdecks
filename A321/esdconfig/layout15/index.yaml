@@ -59,18 +59,19 @@ buttons:
     label: F.GREENS
     label-size: 10
     label-position: ct
-  # - index: 7
-  #   name: FollowTheGreens
-  #   type: green
-  #   icon: F.GREENS_OFF
-  #   multi-icons:
-  #     - F.GREENS_ON1
-  #     - F.GREENS_ON2
-  #     - F.GREENS_ON3
-  #   command: XPPython3/followthegreens/main_windown_toggle
-  #   label: F.GREENS
-  #   label-size: 10
-  #   label-position: ct
+  - index: 7
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    multi-icons:
+      - F.GREENS_ON1
+      - F.GREENS_ON2
+      - F.GREENS_ON3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-size: 10
+    label-position: ct
+    options: animation_speed=0.5
   - index: 8
     name: DATAREFTOOL
     type: push
@@ -81,7 +82,7 @@ buttons:
   - index: 9
     name: RELOAD
     type: reload
-    icon: NONE_MAN_WHITE
+    icon: RELOAD
     label: RELOAD
     label-position: ct
   - index: 10

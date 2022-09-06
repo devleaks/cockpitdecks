@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, INIT_PAGE, DEFAULT_LAYOUT
-from .constant import DEFAULT_LABEL_FONT, WALLPAPER, MONITORING_POLL, DEFAULT_ICON_NAME, DEFAULT_COLOR, DEFAULT_LOGO
+from .constant import DEFAULT_LABEL_FONT, MONITORING_POLL, convert_color
 from .button import Button, BUTTON_TYPES
 
 logger = logging.getLogger("Streamdeck")
@@ -84,12 +84,21 @@ class Streamdeck:
         self.running = False
         self.monitoring_thread = None
 
+        self.default_label_font = config.get("default-label-font", decks.default_label_font)
+        self.default_label_size = config.get("default-label-size", decks.default_label_size)
+        self.default_label_color = config.get("default-label-color", decks.default_label_color)
+        self.default_label_color = convert_color(self.default_label_color)
+        self.default_icon_name = config.get("default-icon-color", name + decks.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", decks.default_icon_color)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.logo = config.get("default-wallpaper-logo", decks.default_logo)
+        self.wallpaper = config.get("default-wallpaper", decks.default_wallpaper)
+
         if "serial" in config:
             self.serial = config["serial"]
         else:
             self.valid = False
             logger.error(f"__init__: stream deck has no serial number, cannot use")
-
 
         if device is not None:
             self.numkeys = device.key_count()
@@ -127,6 +136,10 @@ class Streamdeck:
         else:
             self.layout = DEFAULT_LAYOUT
             logger.warning(f"__init__: stream deck has no layout, using default")
+
+        # Add default icon for this deck
+        self.icons[self.default_icon_name] = PILHelper.create_image(deck=self.device, background=self.default_icon_color)
+        logging.debug(f"__init__: create default {self.default_icon_name} icon")
 
         if self.valid:
             self.make_icon_for_device()
@@ -196,7 +209,12 @@ class Streamdeck:
                                 bty = a["type"]
 
                             if bty in BUTTON_TYPES.keys():
-                                button = BUTTON_TYPES[bty].new(config=a, deck=self)
+                                button = None
+                                if bty == "animate":
+                                    ButtonAnimate = self.decks.xp.get_button_animate()
+                                    button = ButtonAnimate(config=a, deck=self)
+                                else:
+                                    button = BUTTON_TYPES[bty].new(config=a, deck=self)
                                 this_page.add_button(idx, button)
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
