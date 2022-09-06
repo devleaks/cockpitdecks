@@ -424,6 +424,6 @@ BUTTON_TYPES = {
     "push": ButtonPush,
     "dual": ButtonDual,
     "updown": ButtonUpDown,
-    "animate": None,
+    "animate": None,  # loaded from xplaneudp/xplanesdk depending on integration
     "reload": ButtonReload
 }

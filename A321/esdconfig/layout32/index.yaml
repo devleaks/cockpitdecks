@@ -217,7 +217,7 @@ buttons:
     name: OVRHDCALL
     type: page
     icon: NONE
-    label: "OVERHEAD\nCALL"
+    label: "OVERHEAD\nCALL AND\nINT.LIGHTS"
     label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
