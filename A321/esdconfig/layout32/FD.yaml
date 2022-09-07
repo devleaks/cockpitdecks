@@ -2,7 +2,7 @@ buttons:
   - index: 0
     name: FD 1
     type: push
-    icon: OFF-GREEN
+    icon: P_1_GREEN_OFF
     command: toliss_airbus/fd1_push
     dataref: AirbusFBW/FD1Engage
     dataref-states:

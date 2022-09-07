@@ -5,7 +5,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: sam/main_window
     label: SAM/GV
     label-position: ct
@@ -14,7 +14,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: jd/ghd/show_widget
     label: GHDLX
     label-position: ct

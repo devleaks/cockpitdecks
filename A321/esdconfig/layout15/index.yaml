@@ -5,7 +5,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: sim/map/show_current
     label: Map
     label-position: ct
@@ -14,7 +14,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: pikitanga/AptNav/ToggleMap
     label: Airport
     label-position: ct
@@ -23,7 +23,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: flightfactor/avs/toggle
     label: AVS
     label-position: ct
@@ -32,7 +32,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     label: AviTab
     label-position: ct
     command: AviTab/toggle_tablet
@@ -45,7 +45,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: LiveTraffic/Info_Staus_Wnd/Open
     label: Live/T
     label-position: ct
@@ -64,9 +64,9 @@ buttons:
     type: animate
     icon: F.GREENS_OFF
     multi-icons:
-      - F.GREENS_ON1
-      - F.GREENS_ON2
-      - F.GREENS_ON3
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
     command: XPPython3/followthegreens/main_windown_toggle
     label: F.GREENS
     label-size: 10
@@ -90,7 +90,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: jd/ghd/show_widget
     label: GHDLX
     label-position: ct
@@ -99,7 +99,7 @@ buttons:
     type: push
     multi-icons:
       - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     command: sam/main_window
     label: SAM/GV
     label-position: ct

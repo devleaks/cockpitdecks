@@ -13,6 +13,7 @@ import logging
 from math import floor
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME, convert_color
 from .rpc import RPC
@@ -37,6 +38,7 @@ class Button:
         self.label_color = config.get("label-color", deck.default_label_color)
         self.label_color = convert_color(self.label_color)
         self.label_position = config.get("label-position", "cm")
+        self.icon_color = config.get("icon-color")
 
         self.command = config.get("command")
         self.commands = config.get("commands")
@@ -55,9 +57,23 @@ class Button:
             new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
         self.options = [a.strip() for a in new.split(",")]
 
-        self.icon = config.get("icon", deck.default_icon_name)
+        self.icon = config.get("icon")
         if self.icon is not None:
             self.icon = add_ext(self.icon, ".png")
+            if self.icon not in self.deck.icons.keys():
+                logger.warning(f"__init__: button {self.name}: icon not found {self.icon}")
+        elif self.icon_color is not None:  # create one
+            self.icon_color = convert_color(self.icon_color)
+            logger.debug(f"__init__: button {self.name}: creating icon with color {self.icon_color}")
+            self.default_icon_image = PILHelper.create_image(deck=self.deck.device, background=self.icon_color)
+            self.default_icon = "_default_button_icon_" + self.name + ".png"
+            # register it globally
+            self.deck.decks.icons[self.default_icon] = self.default_icon_image
+            # add it to icon for this deck too
+            self.deck.icons[self.default_icon] = self.default_icon_image
+            self.icon = self.default_icon
+        else:
+            self.icon = add_ext(deck.default_icon_name, ".png")
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found {self.icon}")
 
@@ -137,7 +153,7 @@ class Button:
             r.append(self.dataref)
         if self.datarefs is not None:
             r = r + self.datarefs
-        logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
+        # logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
         return r
 
     def get_font(self):
@@ -325,7 +341,7 @@ class ButtonPush(Button):
         Button.__init__(self, config=config, deck=deck)
 
     def is_valid(self):
-        return super().is_valid() and (self.command is not None)
+        return super().is_valid() and ((self.command is not None) or self.has_option("counter"))
 
     def get_image(self):
         """

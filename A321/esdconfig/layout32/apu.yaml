@@ -6,7 +6,7 @@ buttons:
     type: push
     multi-icons:
       - NONE_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
       - AVAIL_GREEN_NONE
     command: toliss_airbus/eleccommands/ExtPowToggle
     dataref: AirbusFBW/ExtPowOHPArray[0]
@@ -32,7 +32,7 @@ buttons:
     type: push
     multi-icons:
       - NONE_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
     dataref: AirbusFBW/APUMaster
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
@@ -43,7 +43,7 @@ buttons:
     type: push
     multi-icons:
       - NONE_NONE
-      - NONE_ON_BLUE
+      - NONE_ON_BLUE_FR
       - AVAIL_GREEN_NONE
     command: toliss_airbus/apucommands/StarterToggle
     multi-datarefs:

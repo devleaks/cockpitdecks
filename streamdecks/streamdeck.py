@@ -34,7 +34,7 @@ class Page:
             return
         self.buttons[idx] = button
         # Build page dataref list, each dataref points at the button(s) that use it
-        loggerPage.debug(f"add_button: page {self.name}: button {button.name}: datarefs: {button.dataref_values.keys()}")
+        # loggerPage.debug(f"add_button: page {self.name}: button {button.name}: datarefs: {button.dataref_values.keys()}")
         for d in button.dataref_values.keys():
             if d not in self.datarefs:
                 self.datarefs[d] = []
@@ -270,7 +270,7 @@ class Streamdeck:
             else:
                 logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
                 image = Image.new(mode="RGBA", size=(2000, 2000), color=DEFAULT_COLOR)
-                fn = os.path.join(os.path.dirname(__file__), DEFAULT_LOGO)
+                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DEFAULT_LOGO)
                 if os.path.exists(fn):
                     logo = Image.open(fn).convert("RGBA")
                     image.paste(logo, (500, 500), logo)
@@ -307,7 +307,7 @@ class Streamdeck:
 
             return PILHelper.to_native_format(deck, key_image)
 
-        fn = os.path.join(os.path.dirname(__file__), WALLPAPER)
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, WALLPAPER)
         key_spacing = (36, 36)
         image = create_full_deck_sized_image(self.device, key_spacing, fn)
         key_images = dict()

@@ -6,7 +6,7 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
 
-from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER
+from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR
 from .constant import has_ext, convert_color
@@ -129,13 +129,7 @@ class Streamdecks:
         self.run()
 
     def load_defaults(self):
-        # 1. Loading default icon
-        # default_icon = "icon.png"
-        # fn = os.path.join(os.path.dirname(__file__), default_icon)
-        # if os.path.exists(fn):
-        #     image = Image.open(fn)
-        #     self.icons[default_icon] = image
-        #     logging.debug(f"load_icons: loaded default {default_icon} icon")
+        # 1. Loading/creating default icon
         self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
         logging.debug(f"load_defaults: create default {DEFAULT_ICON_NAME} icon")
 
@@ -153,7 +147,7 @@ class Streamdecks:
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
             fn = None
             try:
-                fn = os.path.join(os.path.dirname(__file__), DEFAULT_LABEL_FONT)
+                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DEFAULT_LABEL_FONT)
                 test = ImageFont.truetype(fn, self.default_label_size)
                 self.fonts[DEFAULT_LABEL_FONT] = fn
                 self.default_label_font = DEFAULT_LABEL_FONT
