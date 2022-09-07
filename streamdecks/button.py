@@ -15,7 +15,7 @@ from math import floor
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, DEFAULT_ICON_NAME, convert_color
+from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, convert_color
 from .rpc import RPC
 
 logger = logging.getLogger("Button")
@@ -193,7 +193,7 @@ class Button:
                 if fontname is None:
                     logger.warning(f"get_image: no font, cannot overlay label")
                 else:
-                    # logger.debug(f"get_image: font {fontname}")
+                    logger.debug(f"get_image: font {fontname}")
                     image = image.copy()  # we will add text over it
                     draw = ImageDraw.Draw(image)
                     font = ImageFont.truetype(fontname, self.label_size)

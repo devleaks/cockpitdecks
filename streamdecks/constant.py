@@ -26,9 +26,6 @@ DEFAULT_ICON_COLOR = (0, 0, 150)
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"
 
-
-MONITORING_POLL = 10.0  # seconds, 1.0 = polling every second
-
 def add_ext(name: str, ext: str):
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")

@@ -10,12 +10,14 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, INIT_PAGE, DEFAULT_LAYOUT
-from .constant import DEFAULT_LABEL_FONT, MONITORING_POLL, convert_color
+from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_WALLPAPER, DEFAULT_LOGO, DEFAULT_ICON_COLOR
+from .constant import convert_color
 from .button import Button, BUTTON_TYPES
 
 logger = logging.getLogger("Streamdeck")
 loggerPage = logging.getLogger("Page")
+
+DEFAULT_PAGE_NAME = "X-Plane"
 
 
 class Page:
@@ -269,7 +271,7 @@ class Streamdeck:
                 image = Image.open(image_filename).convert("RGBA")
             else:
                 logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
-                image = Image.new(mode="RGBA", size=(2000, 2000), color=DEFAULT_COLOR)
+                image = Image.new(mode="RGBA", size=(2000, 2000), color=DEFAULT_ICON_COLOR)
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DEFAULT_LOGO)
                 if os.path.exists(fn):
                     logo = Image.open(fn).convert("RGBA")
@@ -307,7 +309,7 @@ class Streamdeck:
 
             return PILHelper.to_native_format(deck, key_image)
 
-        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, WALLPAPER)
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DEFAULT_WALLPAPER)
         key_spacing = (36, 36)
         image = create_full_deck_sized_image(self.device, key_spacing, fn)
         key_images = dict()
@@ -322,14 +324,13 @@ class Streamdeck:
                 self.device.set_key_image(k, key_image)
 
         # Add index 0 only button:
-        DEFAULT_PAGE_NAME = "X-Plane"
         page0 = Page(DEFAULT_PAGE_NAME)
         button0 = BUTTON_TYPES["push"].new(config={ "index": 0,
                                                       "name": "X-Plane Map",
                                                       "type": "push",
                                                       "command": "sim/map/show_current",
                                                       "label": "Map",
-                                                      "icon": DEFAULT_ICON_NAME
+                                                      "icon": self.default_icon_name
                                                     }, deck=self)
         page0.add_button(0, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }

@@ -118,6 +118,7 @@ class Streamdecks:
             self.load_fonts()
             self.create_decks()
             if self.default_pages is not None:
+                logging.debug(f"load: default_pages {self.default_pages.keys()}")
                 for name, deck in self.decks.items():
                     if name in self.default_pages.keys():
                         if deck.home_page is not None:  # do not refresh default pages
@@ -129,9 +130,12 @@ class Streamdecks:
         self.run()
 
     def load_defaults(self):
+        """
+        Loads default values for font, icon, etc. They will be used if no layout is found.
+        """
         # 1. Loading/creating default icon
-        self.icons[DEFAULT_ICON_NAME] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
-        logging.debug(f"load_defaults: create default {DEFAULT_ICON_NAME} icon")
+        self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
+        logging.debug(f"load_defaults: create default {self.default_icon_name} icon")
 
         # 2. Load label default font
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
@@ -176,9 +180,9 @@ class Streamdecks:
         if self.default_label_font is None:
             logging.error(f"load_defaults: no default font")
 
-        # 3. report summary
+        # 3. report summary if debugging
         logging.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_label_font}")
-        logging.debug(f"load_defaults: default icons {self.icons.keys()}, default={DEFAULT_ICON_NAME}")
+        logging.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)

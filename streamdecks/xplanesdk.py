@@ -1,17 +1,20 @@
 # Class to get dataref values from XPlane Flight Simulator via network. 
 # License: GPLv3
 import logging
+from traceback import print_exc
+from datetime import datetime
 
 import sys
 sys.path.append('/Users/pierre/Developer/xppythonstubs')
 import xp
 
 from .xplane import XPlane
+from .button import Button
 from .XPDref import XPDref
 
 logger = logging.getLogger("XPlaneSDK")
 
-DATA_REFRESH = 5   # secs
+DATA_REFRESH = 5.0   # secs
 
 
 class ButtonAnimate(Button):
@@ -26,9 +29,15 @@ class ButtonAnimate(Button):
         self.ref = "Streamdecks:button"+self.name+":loop"
 
     def loop(self):
-        if self.running:
-            self.render()
-            self.counter = self.counter + 1
+        try:
+            if self.running:
+                self.render()
+                self.counter = self.counter + 1
+        except:
+            logging.error(f"loop: has exception ({self.name})")
+            print_exc()
+            # return 0.0
+
         return self.sleep
 
     def get_image(self):
@@ -94,9 +103,16 @@ class XPlaneSDK(XPlane):
         return self.xplaneValues
 
     def loop(self):
-        if len(self.datarefs) > 0:
-            self.current_values = self.GetValues()
-            self.detect_changed()
+        # try:
+        #     if len(self.datarefs) > 0:
+        #         self.current_values = self.GetValues()
+        #         self.detect_changed()
+        # except:
+        #     logging.error(f"loop: has exception")
+        #     print_exc()
+        #     # return 0
+        logging.debug(f"loop: completed at {datetime.now()}")
+
         return DATA_REFRESH  # next iteration in DATA_REFRESH seconds
 
     # ################################
@@ -105,21 +121,21 @@ class XPlaneSDK(XPlane):
     def commandOnce(self, command: str):
         cmdref = xp.findCommand(command)
         if cmdref is not None:
-            xp.XPLMCommandOnce(cmdref)
+            xp.commandOnce(cmdref)
         else:
             logging.warning(f"commandOnce: command {command} not found")
 
     def commandBegin(self, command: str):
         cmdref = xp.findCommand(command)
         if cmdref is not None:
-            xp.XPLMCommandBegin(cmdref)
+            xp.commandBegin(cmdref)
         else:
             logging.warning(f"commandBegin: command {command} not found")
 
     def commandEnd(self, command: str):
         cmdref = xp.findCommand(command)
         if cmdref is not None:
-            xp.XPLMCommandEnd(cmdref)
+            xp.commandEnd(cmdref)
         else:
             logging.warning(f"XPLMCommandEnd: command {command} not found")
 
@@ -130,22 +146,25 @@ class XPlaneSDK(XPlane):
         self.datarefs_to_monitor = datarefs
         self.datarefs = {}
         for d in self.datarefs_to_monitor:
-            ref = xp.findDataRef(d)
-            if ref is not None:
-                self.datarefs[d] = XPDref(d)
-            else:
-                logger.warning(f"set_datarefs: {d} not found")
+            try:
+                ref = xp.findDataRef(d)
+                if ref is not None:
+                    self.datarefs[d] = XPDref(d)
+                else:
+                    logger.warning(f"set_datarefs: {d} not found")
+            except:
+                logging.error(f"set_datarefs: has exception ({d})")
+                print_exc()
+
         logger.debug(f"set_datarefs: set {datarefs.keys()}")
 
     # ################################
     # Streamdecks interface
     #
     def start(self):
-        phase = xp.FlightLoop_Phase_AfterFlightModel
         if not self.running:
-            params = [phase, self.loop, self.ref]
-            self.fl = xp.createFlightLoop(params)
-            xp.scheduleFlightLoop(self.fl, DATA_REFRESH, 1)
+            self.fl = xp.createFlightLoop([xp.FlightLoop_Phase_AfterFlightModel, self.loop, self.ref])
+            # xp.scheduleFlightLoop(self.fl, DATA_REFRESH, 0)
             self.running = True
             logging.debug("start: flight loop started.")
         else:
