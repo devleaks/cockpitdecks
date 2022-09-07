@@ -8,6 +8,7 @@ Buttons do
 
 """
 import os
+import re
 import logging
 
 from math import floor
@@ -33,6 +34,7 @@ class Button:
         self.index = config.get("index")
 
         self.label = config.get("label")
+        self.label_format = config.get("label-format")
         self.label_font = config.get("label-font", deck.default_label_font)
         self.label_size = int(config.get("label-size", deck.default_label_size))
         self.label_color = config.get("label-color", deck.default_label_color)
@@ -47,8 +49,9 @@ class Button:
         self.datarefs = config.get("multi-datarefs")
         self.dataref_rpn = config.get("dataref-rpn")
         self.dataref_values = dict( [ (d, None) for d in self.get_datarefs() ] )
-        # for d in self.get_datarefs():
-        #     self.dataref_values[d] = None
+
+        if len(self.dataref_values) > 1:
+            logger.debug(f"__init__: button {self.name}: using datarefs {self.dataref_values.keys()}")
 
         old = ""
         new = config.get("options", "counter")
@@ -151,10 +154,25 @@ class Button:
         r = []
         if self.dataref is not None:
             r.append(self.dataref)
+            # logger.debug(f"get_datarefs: button {self.name}: added single dataref {self.dataref}")
         if self.datarefs is not None:
             r = r + self.datarefs
+            # logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {self.datarefs}")
         # logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
-        return r
+        # Use of datarefs in label:
+        if self.label is not None:
+            datarefs = re.findall("\\${(.+?)}", self.label)
+            if len(datarefs) > 0:
+                r = r + datarefs
+                # logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
+        # Use of datarefs in formulae:
+        if self.dataref_rpn is not None:
+            datarefs = re.findall("\\${(.+?)}", self.dataref_rpn)
+            if len(datarefs) > 0:
+                r = r + datarefs
+                # logger.debug(f"get_datarefs: button {self.name}: added formulae datarefs {datarefs}")
+
+        return set(r)  # removes deplicates
 
     def get_font(self):
         """
@@ -180,6 +198,24 @@ class Button:
         logger.error(f"get_font: streamdecks default label font not found, tried {self.label_font}, {self.deck.default_label_font}, {self.deck.decks.default_label_font}")
         return None
 
+    def get_label(self):
+        if self.label is not None:
+            if self.label.startswith("${") and self.label.endswith("}"):  # ${dataref-name}
+                dataref = self.label[2:-1]
+                if dataref in self.dataref_values.keys():
+                    value = self.dataref_values[dataref]
+                    if value is not None and self.label_format is not None:
+                        label = self.label_format.format(value)
+                        return label
+                    else:
+                        return value
+                else:
+                    logger.warning(f"get_image: button {self.name}: dataref in label not found")
+                    return None
+            else:
+                return self.label
+        return None
+
     def get_image(self):
         """
         Helper function to get button image and overlay label on top of it.
@@ -188,12 +224,13 @@ class Button:
         if self.key_icon in self.deck.icons.keys():
             image = self.deck.icons[self.key_icon]
             # Add label if any
-            if self.label is not None:
+            label = self.get_label()
+            if label is not None:
                 fontname = self.get_font()
                 if fontname is None:
                     logger.warning(f"get_image: no font, cannot overlay label")
                 else:
-                    logger.debug(f"get_image: font {fontname}")
+                    # logger.debug(f"get_image: font {fontname}")
                     image = image.copy()  # we will add text over it
                     draw = ImageDraw.Draw(image)
                     font = ImageFont.truetype(fontname, self.label_size)
@@ -216,7 +253,7 @@ class Button:
                         h = image.height - inside - self.label_size / 2
                     # logger.debug(f"get_image: position {(w, h)}")
                     draw.multiline_text((w, h),  # (image.width / 2, 15)
-                              text=self.label,
+                              text=label,
                               font=font,
                               anchor=p+"m",
                               align=a,

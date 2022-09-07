@@ -239,7 +239,7 @@ buttons:
     label: PIEDESTAL
     label-position: cm
   - index: 28
-    name: adirs
+    name: ADIRS
     type: page
     icon: NONE
     label: "OVERHEAD\nADIRS"

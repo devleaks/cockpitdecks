@@ -222,7 +222,7 @@ class Streamdeck:
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
 
-                        logger.info(f"load: page {name} added (from file {fn})")
+                        logger.info(f"load: page {name} added (from file {fn.replace(self.decks.acpath, '... ')})")
                 else:
                     logger.warning(f"load: file {p} not found")
 
