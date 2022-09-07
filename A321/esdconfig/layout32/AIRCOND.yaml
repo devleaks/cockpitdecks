@@ -1,7 +1,94 @@
 name: OVRHDAIRCOND
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    type: push
+    multi-icons:
+      - NONE_NONE
+      - NONE_ON_BLUE_FR
+    label: ECON FLOW
+    label-position: ct
+    command: toliss_airbus/aircondcommands/EconFlowToggle
+    dataref: AirbusFBW/AirCondSwitchAnims[13]
+  - index: 1
+    name: ACCOCKPIT
+    type: updown
+    label: COCKPIT
+    label-position: ct
+    multi-icons:
+      - AC_0
+      - AC_1
+      - AC_2
+      - AC_3
+      - AC_4
+      - AC_5
+      - AC_6
+    dataref: AirbusFBW/AirCondSwitchAnims[12]
+    dataref-rpn: ${AirbusFBW/AirCondSwitchAnims[12]} 16 - 2 /
+    options: bounce
+  - index: 5
+    type: push
+    multi-icons:
+      - NONE_NONE
+      - NONE_ON_BLUE_FR
+    label: HOT AIR
+    label-position: ct
+    command: toliss_airbus/aircondcommands/EconFlowToggle
+    dataref: AirbusFBW/AirCondSwitchAnims[13]
 # ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    type: push
+    multi-icons:
+      - NONE_OFF_WHITE_FR
+      - FAULT_AMBER_NONE
+      - NONE_ON_BLUE_FR
+    label: PACK 1
+    label-position: ct
+    command: toliss_airbus/aircondcommands/Pack1Toggle
+    dataref: AirbusFBW/AirCondSwitchAnims[0]
+    dataref-rpn: ${AirbusFBW/AirCondSwitchAnims[0]} 0.035 + 3 * floor
+  - index: 9
+    type: push
+    multi-icons:
+      - NONE_OFF_WHITE_FR
+      - FAULT_AMBER_NONE
+      - NONE_ON_BLUE_FR
+    label: ENG 1 BLEED
+    label-position: ct
+    command: toliss_airbus/apucommands/BleedToggle
+  - index: 10
+    type: push
+    multi-icons:
+      - NONE_OFF_WHITE_FR
+      - FAULT_AMBER_NONE
+      - NONE_ON_BLUE_FR
+    label: APU BLEED
+    label-position: ct
+    command: toliss_airbus/apucommands/BleedToggle
+  - index: 11
+    type: none
+    icon-color: grey
+    label: X BLEED
+  - index: 12
+    type: push
+    multi-icons:
+      - NONE_OFF_WHITE_FR
+      - FAULT_AMBER_NONE
+      - NONE_ON_BLUE_FR
+    label: ENG 2 BLEED
+    label-position: ct
+    command: toliss_airbus/apucommands/BleedToggle
+  - index: 13
+    type: push
+    multi-icons:
+      - NONE_OFF_WHITE_FR
+      - FAULT_AMBER_NONE
+      - NONE_ON_BLUE_FR
+    label: PACK 2
+    label-position: ct
+    command: toliss_airbus/aircondcommands/Pack2Toggle
+    dataref: AirbusFBW/AirCondSwitchAnims[1]
+    dataref-rpn: ${AirbusFBW/AirCondSwitchAnims[1]} 0.035 + 3 * floor
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31

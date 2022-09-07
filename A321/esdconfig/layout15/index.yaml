@@ -76,7 +76,7 @@ buttons:
     name: DATAREFTOOL
     type: push
     icon: NONE
-    label: DataRefTool
+    label: "Data\nRef\nTool"
     command: leecbaker/datareftool/new_search_window
     label-position: cm
   - index: 9
@@ -103,6 +103,11 @@ buttons:
     command: sam/main_window
     label: SAM/GV
     label-position: ct
+  - index: 13
+    name: PAUSE
+    type: push
+    icon: PANIC
+    command: sim/operation/pause_toggle
   - index: 14
     name: A321
     type: page

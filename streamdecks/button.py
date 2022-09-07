@@ -28,7 +28,9 @@ class Button:
         self.deck = deck
         self.xp = self.deck.decks.xp  # shortcut alias
         self.pressed_count = 0
+        self.inited = False
         self.bounce_arr = None
+        self.bounce_idx = 0
 
         self.name = config.get("name", f"bnt-{config['index']}")
         self.index = config.get("index")
@@ -210,7 +212,7 @@ class Button:
                     else:
                         return value
                 else:
-                    logger.warning(f"get_image: button {self.name}: dataref in label not found")
+                    logger.warning(f"get_label: button {self.name}: dataref in label not found")
                     return None
             else:
                 return self.label
@@ -264,7 +266,7 @@ class Button:
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
-    def compute_button_value(self):
+    def execute_formula(self):
         if self.dataref_rpn is not None:
             expr = self.dataref_rpn
             nice = self.dataref_rpn
@@ -273,8 +275,8 @@ class Button:
                 nice = nice.replace(f"${{{dataref}}}", str(round(value, 4)) if value is not None else "0.0")
             r = RPC(expr)
             r1 = r.calculate()
-            # logger.debug(f"compute_button_value: button {self.name}: {dataref}: {expr} = {r1}")
-            logger.debug(f"compute_button_value: button {self.name}: {self.dataref_rpn} => {nice}:  => {r1}")
+            # logger.debug(f"execute_formula: button {self.name}: {dataref}: {expr} = {r1}")
+            logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {nice}:  => {r1}")
             return r1
         return value
 
@@ -288,10 +290,10 @@ class Button:
             if self.dataref_rpn is None:
                 return self.dataref_values[self.dataref]
             else:
-                return self.compute_button_value()
+                return self.execute_formula()
         # 2. Multiple datarefs
         elif len(self.dataref_values.keys()) > 1:
-            return self.compute_button_value()
+            return self.execute_formula()
         elif "counter" in self.options or "bounce" in self.options:
             # logger.debug(f"get_image: button {self.name} get cycle icon")
             return self.pressed_count
@@ -307,6 +309,10 @@ class Button:
         else:
             logger.warning(f"dataref_changed: {dataref} not registered")
             self.dataref_values[dataref] = value
+
+        self.previous_value = self.current_value
+        self.current_value = self.button_value()
+
         self.render()
 
     def activate(self, state: bool):
@@ -386,13 +392,13 @@ class ButtonPush(Button):
         """
         if self.multi_icons is not None and len(self.multi_icons) > 1:
             num_icons = len(self.multi_icons)
-            value = self.button_value()
+            value = self.current_value
             if value is None:
                 logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
                 value = 0
             else:
                 value = int(value)
-            logger.debug(f"get_image: button {self.name}: value={value}")
+            # logger.debug(f"get_image: button {self.name}: value={value}")
             if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
                 value = value % num_icons
 
@@ -444,25 +450,30 @@ class ButtonUpDown(ButtonPush):
 
 
     def __init__(self, config: dict, deck: "Streamdeck"):
-        Button.__init__(self, config=config, deck=deck)
-        self.current_value = 0
+        ButtonPush.__init__(self, config=config, deck=deck)
         self.stops = self.option_value("stops", len(self.multi_icons))
         self.bounce_arr = self.make_bounce_array(self.stops)
-        # logger.debug(f"__init__: button {self.name}: {self.stops}, {self.bounce_arr}")
+        self.start_value = 0
 
     def is_valid(self):
         return (self.commands is not None) and (len(self.commands) > 1)
 
     def activate(self, state: bool):
         super().activate(state)
-        value = self.bounce_arr[self.pressed_count % len(self.bounce_arr)]
+        # if self.start_value is None:
+        #     if self.current_value is not None:
+        #         self.start_value = int(self.current_value)
+        #     else:
+        #         self.start_value = 0
         if state:
+            value = self.bounce_arr[(self.start_value + self.pressed_count) % len(self.bounce_arr)]
+            print(f">>>>>>>>>>  counter={self.start_value + self.pressed_count} = start={self.start_value} + press={self.pressed_count} curr={self.current_value} last={self.bounce_idx} value={value} arr={self.bounce_arr} dir={value > self.bounce_idx}")
             if self.is_valid():
-                if value > self.current_value:
+                if value > self.bounce_idx:
                     self.xp.commandOnce(self.commands[0])  # up
                 else:
                     self.xp.commandOnce(self.commands[1])  # down
-                self.current_value = value
+                self.bounce_idx = value
             else:
                 logger.warning(f"activate: button {self.name}: invalid {self.commands}")
         self.render()
