@@ -14,9 +14,48 @@ logger = logging.getLogger("XPlaneSDK")
 DATA_REFRESH = 5   # secs
 
 
-class ButtonAnimate:
+class ButtonAnimate(Button):
+    """
+    """
     def __init__(self, config: dict, deck: "Streamdeck"):
-        pass
+        Button.__init__(self, config=config, deck=deck)
+        self.thread = None
+        self.running = False
+        self.speed = float(self.option_value("animation_speed", 1))
+        self.counter = 0  # loop over images
+        self.ref = "Streamdecks:button"+self.name+":loop"
+
+    def loop(self):
+        if self.running:
+            self.render()
+            self.counter = self.counter + 1
+        return self.sleep
+
+    def get_image(self):
+        """
+        If button has more icons, select one from button current value
+        """
+        if self.running:
+            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
+        else:
+            self.key_icon = self.icon  # off
+        return super().get_image()
+
+    def activate(self, state: bool):
+        super().activate(state)
+        if state:
+            if self.is_valid():
+                # self.label = f"pressed {self.current_value}"
+                self.xp.commandOnce(self.command)
+                if self.pressed_count % 2 == 0:
+                    xp.destroyFlightLoop(self.thread)
+                    self.running = False
+                    self.render()
+                else:
+                    self.thread = xp.createFlightLoop([xp.FlightLoop_Phase_AfterFlightModel, self.loop, self.ref])
+                    xp.scheduleFlightLoop(self.thread, self.speed, 1)
+                    self.running = True
+
 
 class XPlaneSDK(XPlane):
     '''

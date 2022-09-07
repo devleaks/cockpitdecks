@@ -3,15 +3,14 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     type: none
-    icon: NONE
+    icon: NO_BUTTON
     label: "ENG 1\nL TK PUMPS"
   - index: 3
     type: none
     icon: OPEN_GREEN_ON_WHITE_FR
-    label: "ENG 2\nR TK PUMPS"
   - index: 6
     type: none
-    icon: NONE
+    icon: NO_BUTTON
     label: "ENG 2\nR TK PUMPS"
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
@@ -23,6 +22,26 @@ buttons:
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: "2"
+    label-position: ct
+  - index: 10
+    type: none
+    icon: FAULT_AMBER_FWD_BLUE_FR
+    label: ACT
+    label-position: ct
+  - index: 11
+    type: none
+    icon: FAULT_AMBER_OFF_WHITE_FR
+    label: L XFR
+    label-position: ct
+  - index: 12
+    type: none
+    icon: FAULT_AMBER_MAN_WHITE_FR
+    label: MODE SEL
+    label-position: ct
+  - index: 13
+    type: none
+    icon: FAULT_AMBER_OFF_WHITE_FR
+    label: R XFR
     label-position: ct
   - index: 14
     type: none

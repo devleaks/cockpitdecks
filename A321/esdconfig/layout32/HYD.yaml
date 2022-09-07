@@ -3,17 +3,17 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     type: none
-    icon: NONE
+    icon: NO_BUTTON
     label: GREEN
     label-color: green
   - index: 2
     type: none
-    icon: NONE
+    icon: NO_BUTTON
     label: BLUE
     label-color: blue
   - index: 4
     type: none
-    icon: NONE
+    icon: NO_BUTTON
     label: YELLOW
     label-color: yellow
 # ### LINE 2 ###  8-15 ######################################################

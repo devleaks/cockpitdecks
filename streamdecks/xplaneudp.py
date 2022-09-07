@@ -28,7 +28,7 @@ class ButtonAnimate(Button):
         self.speed = float(self.option_value("animation_speed", 1))
         self.counter = 0
 
-    def greens(self):
+    def loop(self):
         while self.running:
             self.render()
             self.counter = self.counter + 1
@@ -55,7 +55,7 @@ class ButtonAnimate(Button):
                     self.render()
                 else:
                     self.running = True
-                    self.thread = threading.Thread(target=self.greens)
+                    self.thread = threading.Thread(target=self.loop)
                     self.thread.start()
 
 
