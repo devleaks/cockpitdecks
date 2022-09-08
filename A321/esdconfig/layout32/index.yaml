@@ -238,17 +238,23 @@ buttons:
     icon: P_NONE
     label: PIEDESTAL
     label-position: cm
-  - index: 28
+  - index: 27
     name: ADIRS
     type: page
     icon: NONE
     label: "OVERHEAD\nADIRS"
     label-position: cm
-  - index: 29
+  - index: 28
     name: APU
     type: page
     icon: NONE
     label: "OVERHEAD\nAPU"
+    label-position: cm
+  - index: 29
+    name: APU
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nOTHER"
     label-position: cm
   - index: 30
     name: DATAREFTOOL

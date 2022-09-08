@@ -28,7 +28,7 @@ class ButtonAnimate(Button):
         self.counter = 0  # loop over images
         self.ref = "Streamdecks:button"+self.name+":loop"
 
-    def loop(self):
+    def loop(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
         try:
             if self.running:
                 self.render()
@@ -36,9 +36,9 @@ class ButtonAnimate(Button):
         except:
             logging.error(f"loop: has exception ({self.name})")
             print_exc()
-            # return 0.0
+            return 0.0
 
-        return self.sleep
+        return self.speed
 
     def get_image(self):
         """
@@ -102,17 +102,17 @@ class XPlaneSDK(XPlane):
             self.xplaneValues[d] = self.datarefs[d].value
         return self.xplaneValues
 
-    def loop(self):
-        # try:
-        #     if len(self.datarefs) > 0:
-        #         self.current_values = self.GetValues()
-        #         self.detect_changed()
-        # except:
-        #     logging.error(f"loop: has exception")
-        #     print_exc()
-        #     # return 0
-        logging.debug(f"loop: completed at {datetime.now()}")
+    def loop(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
+        try:
+            if len(self.datarefs) > 0:
+                self.current_values = self.GetValues()
+                self.detect_changed()
+        except:
+            logging.error(f"loop: has exception")
+            print_exc()
+            return 0
 
+        logging.debug(f"loop: completed at {datetime.now()}")
         return DATA_REFRESH  # next iteration in DATA_REFRESH seconds
 
     # ################################

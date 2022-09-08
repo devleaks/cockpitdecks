@@ -52,6 +52,7 @@ class Streamdecks:
         self.icons = {}
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
+        self.fill_empty = None
 
         self.init()
 
@@ -197,6 +198,7 @@ class Streamdecks:
                 self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
                 self.default_logo = config.get("default-wallpaper-logo", DEFAULT_LOGO)
                 self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
+                self.fill_empty = config.get("fill-empty-keys")
 
                 if "decks" in config:
                     cnt = 0

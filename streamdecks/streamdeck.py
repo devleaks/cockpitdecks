@@ -25,10 +25,12 @@ class Page:
     A Page is a collection of buttons.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, deck: "Streamdeck"):
         self.name = name
+        self.deck = deck
         self.buttons = {}
         self.datarefs = {}
+        self.fill_empty = None
 
     def add_button(self, idx: int, button: Button):
         if idx in self.buttons.keys():
@@ -63,9 +65,24 @@ class Page:
         """
         Renders this page on the deck
         """
+        loggerPage.debug(f"render: page {self.name}: fill {self.fill_empty}")
         for button in self.buttons.values():
             button.render()
             loggerPage.debug(f"render: page {self.name}: button {button.name} rendered")
+        if self.fill_empty is not None:
+            icon = None
+            if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
+                colors = convert_color(self.fill_empty)
+                icon = PILHelper.create_image(deck=self.deck.device, background=colors)
+            elif self.fill_empty in self.deck.icons.keys():
+                icon = self.deck.icons[self.fill_empty]
+            if icon is not None:
+                image = PILHelper.to_native_format(self.deck.device, icon)
+                for i in range(self.deck.device.key_count()):
+                    if i not in self.buttons.keys():
+                        self.deck.device.set_key_image(i, image)
+            else:
+                loggerPage.warning(f"render: page {self.name}: fill image {self.fill_empty} not found")
 
 
 class Streamdeck:
@@ -94,6 +111,7 @@ class Streamdeck:
         self.default_icon_name = config.get("default-icon-color", name + decks.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", decks.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
+        self.fill_empty = config.get("fill-empty-keys", decks.fill_empty)
         self.logo = config.get("default-wallpaper-logo", decks.default_logo)
         self.wallpaper = config.get("default-wallpaper", decks.default_wallpaper)
 
@@ -191,7 +209,9 @@ class Streamdeck:
                         if "name" in pc:
                             name = pc["name"]
 
-                        this_page = Page(name)
+                        this_page = Page(name, self)
+
+                        this_page.fill_empty = pc["fill-empty-keys"] if "fill-empty-keys" in pc else self.fill_empty
                         self.pages[name] = this_page
 
                         for a in pc[BUTTONS]:

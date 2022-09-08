@@ -11,8 +11,6 @@ import os
 import re
 import logging
 
-from math import floor
-
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
@@ -124,10 +122,8 @@ class Button:
 
     def has_option(self, option):
         for opt in self.options:
-            opt = opt.split("=")
-            name = opt[0]
-            name = name.strip()
-            return name == option
+            if opt.split("=")[0].strip() == option:
+                return True
         return False
 
     def option_value(self, option, default = None):
@@ -200,31 +196,71 @@ class Button:
         logger.error(f"get_font: streamdecks default label font not found, tried {self.label_font}, {self.deck.default_label_font}, {self.deck.decks.default_label_font}")
         return None
 
-    def get_label(self):
-        if self.label is not None:
-            if self.label.startswith("${") and self.label.endswith("}"):  # ${dataref-name}
-                dataref = self.label[2:-1]
-                if dataref in self.dataref_values.keys():
-                    value = self.dataref_values[dataref]
-                    if value is not None and self.label_format is not None:
-                        label = self.label_format.format(value)
-                        return label
-                    else:
-                        return value
-                else:
-                    logger.warning(f"get_label: button {self.name}: dataref in label not found")
-                    return None
+    def substitute_dataref_values(self, message: str, formatting = None, default: str = "0.0"):
+        """
+        Replaces ${dataref} with value of dataref in labels and execution formula.
+        """
+        datarefs = re.findall("\\${(.+?)}", message)
+        if len(datarefs) == 0:
+            return message
+        if formatting is not None:
+            if type(formatting) == list:
+                if len(datarefs) != len(formatting):
+                    logger.warning(f"substitute_dataref_values: button {self.name}: number of datarefs {len(datarefs)} not equal to the number of format {len(formatting)}, cannot proceed.")
+                    return message
+            elif type(formatting) != str:
+                logger.warning(f"substitute_dataref_values: button {self.name}: single format is not a string, cannot proceed.")
+                return message
+        retmsg = message
+        cnt = 0
+        for dataref in datarefs:
+            value = self.dataref_values.get(dataref)
+            value_str = ""
+            if formatting is not None and value is not None:
+                if type(formatting) == list:
+                    value_str = formatting[cnt].format(value)
+                elif formatting is not None:
+                    value_str = formatting.format(value)
             else:
-                return self.label
-        return None
+                value_str = str(value) if value is not None else default
+            retmsg = retmsg.replace(f"${{{dataref}}}", value_str)
+            cnt = cnt + 1
+        return retmsg
+
+    def get_label(self):
+        """
+        Returns label, if any, with substitution of datarefs if any
+        """
+        label = self.label
+        if self.label is not None:
+            label = self.substitute_dataref_values(self.label, formatting=self.label_format, default="<no-value>")
+        return label
+
+    def execute_formula(self, default):
+        """
+        replace datarefs variables with their (numeric) value and execute formula.
+        Returns formula result.
+        """
+        if self.dataref_rpn is not None:
+            expr = self.substitute_dataref_values(self.dataref_rpn)
+            r = RPC(expr)
+            value = r.calculate()
+            # logger.debug(f"execute_formula: button {self.name}: {dataref}: {expr} = {r1}")
+            logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {expr}:  => {value}")
+            return value
+        elif len(self.dataref_values.keys()) > 1:
+            logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
+        return default
 
     def get_image(self):
         """
         Helper function to get button image and overlay label on top of it.
-        Label may be updated at each activation.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         if self.key_icon in self.deck.icons.keys():
             image = self.deck.icons[self.key_icon]
+            draw = None
             # Add label if any
             label = self.get_label()
             if label is not None:
@@ -260,25 +296,20 @@ class Button:
                               anchor=p+"m",
                               align=a,
                               fill=self.label_color)
+            # Add little check mark if not valid/fake
+            if not self.is_valid() or self.has_option("placeholder"):
+                if draw is None:  # no label
+                    image = image.copy()  # we will add text over it
+                    draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.1 * image.width)   # size
+                pologon = ( (c, c), (c, c-s), (c-s, c) )  # lower right corner
+                draw.polygon(pologon, fill="red", outline="white")
             return image
         else:
             logger.warning(f"get_image: button {self.name}: icon {self.key_icon} not found")
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
-
-    def execute_formula(self):
-        if self.dataref_rpn is not None:
-            expr = self.dataref_rpn
-            nice = self.dataref_rpn
-            for dataref, value in self.dataref_values.items():
-                expr = expr.replace(f"${{{dataref}}}", str(value) if value is not None else "0.0")
-                nice = nice.replace(f"${{{dataref}}}", str(round(value, 4)) if value is not None else "0.0")
-            r = RPC(expr)
-            r1 = r.calculate()
-            # logger.debug(f"execute_formula: button {self.name}: {dataref}: {expr} = {r1}")
-            logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {nice}:  => {r1}")
-            return r1
-        return value
 
     def button_value(self):
         """
@@ -286,16 +317,17 @@ class Button:
         or computed from several dataref values (later).
         """
         # 1. Unique dataref
-        if self.dataref is not None and self.dataref in self.dataref_values.keys() and len(self.dataref_values.keys()) == 1:
-            if self.dataref_rpn is None:
-                return self.dataref_values[self.dataref]
+        if len(self.dataref_values.keys()) == 1:
+            if self.dataref is not None and self.dataref in self.dataref_values.keys():
+                return self.execute_formula(default=self.dataref_values[self.dataref])
             else:
-                return self.execute_formula()
+                logger.warning(f"button_value: button {self.name}: {self.dataref} not in {self.dataref_values.keys()}")
+                return None
         # 2. Multiple datarefs
         elif len(self.dataref_values.keys()) > 1:
-            return self.execute_formula()
+            return self.execute_formula(default=0.0)
         elif "counter" in self.options or "bounce" in self.options:
-            # logger.debug(f"get_image: button {self.name} get cycle icon")
+            # logger.debug(f"button_value: button {self.name} get counter: {self.pressed_count}")
             return self.pressed_count
         return None
 
@@ -375,7 +407,6 @@ class ButtonReload(Button):
 
 # ###########################@
 #
-#
 class ButtonPush(Button):
     """
     Execute command once when key pressed
@@ -398,7 +429,7 @@ class ButtonPush(Button):
                 value = 0
             else:
                 value = int(value)
-            # logger.debug(f"get_image: button {self.name}: value={value}")
+            logger.debug(f"get_image: button {self.name}: value={value}")
             if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
                 value = value % num_icons
 
@@ -433,16 +464,17 @@ class ButtonDual(Button):
         Button.__init__(self, config=config, deck=deck)
 
     def is_valid(self):
-        return super().is_valid() and (self.commands is not None) and (len(self.commands) > 1)
+        return super().is_valid() and (self.command is not None)
 
     def activate(self, state: bool):
         if state:
             if self.is_valid():
-                self.xp.commandBegin(self.commands[0])
+                self.xp.commandBegin(self.command)
         else:
             if self.is_valid():
-                self.xp.commandEnd(self.commands[1])
+                self.xp.commandEnd(self.command)
         self.render()
+
 
 # ###########################@
 #
@@ -460,6 +492,7 @@ class ButtonUpDown(ButtonPush):
 
     def activate(self, state: bool):
         super().activate(state)
+        # We need to do something if button does not start in status 0. @todo
         # if self.start_value is None:
         #     if self.current_value is not None:
         #         self.start_value = int(self.current_value)
@@ -467,7 +500,7 @@ class ButtonUpDown(ButtonPush):
         #         self.start_value = 0
         if state:
             value = self.bounce_arr[(self.start_value + self.pressed_count) % len(self.bounce_arr)]
-            print(f">>>>>>>>>>  counter={self.start_value + self.pressed_count} = start={self.start_value} + press={self.pressed_count} curr={self.current_value} last={self.bounce_idx} value={value} arr={self.bounce_arr} dir={value > self.bounce_idx}")
+            logger.debug(f"activate: counter={self.start_value + self.pressed_count} = start={self.start_value} + press={self.pressed_count} curr={self.current_value} last={self.bounce_idx} value={value} arr={self.bounce_arr} dir={value > self.bounce_idx}")
             if self.is_valid():
                 if value > self.bounce_idx:
                     self.xp.commandOnce(self.commands[0])  # up

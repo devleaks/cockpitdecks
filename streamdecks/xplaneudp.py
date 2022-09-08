@@ -202,6 +202,9 @@ class XPlaneUDP(XPlane):
 
     def ExecuteCommand(self, command: str):
         if "IP" in self.BeaconData:
+            if command.lower() in ["none", "placeholder"]:
+                logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
+                return
             message = 'CMND0' + command
             self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
             logger.debug(f"ExecuteCommand: executed {command}")
