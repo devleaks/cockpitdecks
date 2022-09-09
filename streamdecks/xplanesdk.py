@@ -3,6 +3,7 @@
 import logging
 from traceback import print_exc
 from datetime import datetime
+import re
 
 import sys
 sys.path.append('/Users/pierre/Developer/xppythonstubs')
@@ -66,6 +67,15 @@ class ButtonAnimate(Button):
                     self.running = True
 
 
+DATAREF_TYPES = {
+    "AirbusFBW/APUMaster": ('int', False),
+    "AirbusFBW/SDExtPowBox": ('int[4]', False),
+    "AirbusFBW/APUStarter": ('int', False),
+    "AirbusFBW/APUAvail": ('int', False)
+}
+
+
+
 class XPlaneSDK(XPlane):
     '''
     Get data from XPlane via direct API calls.
@@ -99,14 +109,33 @@ class XPlaneSDK(XPlane):
         Gets the values from X-Plane for each dataref in self.datarefs.
         """
         for d in self.datarefs.keys():
-            self.xplaneValues[d] = self.datarefs[d].value
+            logging.debug(f"loop: getting {d}..")
+            value = self.datarefs[d].value
+            if type(value) == list:
+                m = re.match("\\[(.+?)]", d)
+                if m is None:
+                    logging.warning(f"loop: dataref {d}: cannot find index")
+                    continue
+                else:
+                    idx = m.group(1)
+                    if idx < len(value):
+                        self.xplaneValues[d] = value[d]
+                    else:
+                        logging.warning(f"loop: index {idx} out of range of {len(value)} ({value})")
+            else:
+                self.xplaneValues[d] = value
+            logging.debug(f"loop: .. got {d} = {self.xplaneValues[d] if self.xplaneValues[d] is not None else 'None'}.")
         return self.xplaneValues
 
     def loop(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
         try:
             if len(self.datarefs) > 0:
+                logging.debug(f"loop: getting values..")
                 self.current_values = self.GetValues()
+                logging.debug(f"loop: ..done")
                 self.detect_changed()
+            else:
+                logging.debug(f"loop: no dataref")
         except:
             logging.error(f"loop: has exception")
             print_exc()
@@ -145,18 +174,27 @@ class XPlaneSDK(XPlane):
     def set_datarefs(self, datarefs):
         self.datarefs_to_monitor = datarefs
         self.datarefs = {}
-        for d in self.datarefs_to_monitor:
+        logger.debug(f"set_datarefs: need to set {self.datarefs_to_monitor.keys()}")
+        for d in self.datarefs_to_monitor.keys():
             try:
-                ref = xp.findDataRef(d)
+                name = d
+                if "[" in d:   # dataref[4]
+                    name = d[:d.find("[")]
+                ref = xp.findDataRef(name)
                 if ref is not None:
-                    self.datarefs[d] = XPDref(d)
+                    if name in DATAREF_TYPES.keys():
+                        self.datarefs[d] = XPDref(name, DATAREF_TYPES[d][0], DATAREF_TYPES[d][1])
+                        # we keep dataref[4] in dataref name because XPDRef will return an array of values
+                        # and we need to fetch index 4 of that array.
+                    else:
+                        self.datarefs[d] = XPDref(name)  # we don't know its type, we assume defaults
                 else:
-                    logger.warning(f"set_datarefs: {d} not found")
+                    logger.warning(f"set_datarefs: {name} not found")
             except:
                 logging.error(f"set_datarefs: has exception ({d})")
                 print_exc()
 
-        logger.debug(f"set_datarefs: set {datarefs.keys()}")
+        logger.debug(f"set_datarefs: set {self.datarefs.keys()}")
 
     # ################################
     # Streamdecks interface
@@ -164,7 +202,7 @@ class XPlaneSDK(XPlane):
     def start(self):
         if not self.running:
             self.fl = xp.createFlightLoop([xp.FlightLoop_Phase_AfterFlightModel, self.loop, self.ref])
-            # xp.scheduleFlightLoop(self.fl, DATA_REFRESH, 0)
+            xp.scheduleFlightLoop(self.fl, DATA_REFRESH, 0)
             self.running = True
             logging.debug("start: flight loop started.")
         else:

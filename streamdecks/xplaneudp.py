@@ -21,8 +21,8 @@ DATA_SENT    = 10  # times per second, UDP specific
 class ButtonAnimate(Button):
     """
     """
-    def __init__(self, config: dict, deck: "Streamdeck"):
-        Button.__init__(self, config=config, deck=deck)
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
         self.thread = None
         self.running = False
         self.speed = float(self.option_value("animation_speed", 1))
@@ -117,6 +117,9 @@ class XPlaneUDP(XPlane):
 
     def get_button_animate(self):
         return ButtonAnimate
+
+    def dataref(self, path: str):
+        return XPDRef(path)
 
     def WriteDataRef(self, dataref, value, vtype='float'):
         '''
@@ -338,18 +341,22 @@ class XPlaneUDP(XPlane):
         return self.xplaneValues.get(dataref)
 
     def set_datarefs(self, datarefs):
-        if "IP" in self.BeaconData:
-            logger.debug(f"set_datarefs: setting {datarefs.keys()}")
-            # Clean previous values
-            for i in range(len(self.datarefs)):
-                self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
-            # Add those to monitor
-            self.datarefs_to_monitor = datarefs
-            for d in self.datarefs_to_monitor.keys():
-                self.AddDataRef(d, freq=DATA_SENT)
-            logger.debug(f"set_datarefs: set {datarefs.keys()}")
-        else:
+        """
+        datarefs is a dict of Dataref objects.
+        """
+        if "IP" not in self.BeaconData:
             logger.warning(f"set_datarefs: no IP connection")
+            return
+
+        logger.debug(f"set_datarefs: setting {datarefs.keys()}")
+        # Clean previous values
+        for i in range(len(self.datarefs)):
+            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
+        # Add those to monitor
+        self.datarefs_to_monitor = datarefs
+        for d in self.datarefs_to_monitor.values():
+            self.AddDataRef(d.path, freq=DATA_SENT)
+        logger.debug(f"set_datarefs: set {datarefs.keys()}")
 
     # ################################
     # Streamdecks interface

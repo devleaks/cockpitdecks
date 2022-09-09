@@ -13,7 +13,6 @@ decks:
     default-label-font: DIN Bold.ttf
     default-label-size: 16
 # This is at global level
-default-icon-color: (0, 0, 100)
 default-wallpaper-logo: logo.png
 default-label-color: white
 default-label-font: DIN.ttf

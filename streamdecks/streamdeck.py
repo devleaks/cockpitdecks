@@ -16,8 +16,56 @@ from .button import Button, BUTTON_TYPES
 
 logger = logging.getLogger("Streamdeck")
 loggerPage = logging.getLogger("Page")
-
+loggerDataref = logging.getLogger("Dataref")
 DEFAULT_PAGE_NAME = "X-Plane"
+
+
+class Dataref:
+
+    def __init__(self, path: str):
+        self.path = path            # some/path/values[6]
+        self.dataref = path         # some/path/values
+        self.index = 0              # 6
+        self.length = 0             # length of some/path/values array, if available.
+        self.data_type = "float"    # int, float, byte
+        self.is_array = False       # array of above
+        self.previous_value = None
+        self.current_value = None
+        self.current_array = []
+        self.listeners = []         # buttons using this dataref, will get notified if changes.
+
+        # is dataref a path to an array element?
+        if "[" in path:  # sim/some/values[4]
+            self.dataref = self.path[:self.path.find("[")]
+            self.index = self.path[self.path.find("[")+1:self.path.find("]")]
+            self.is_array = True
+
+    def changed(self):
+        if self.previous_value is None and self.current_value is None:
+            return False
+        elif self.previous_value is None and self.current_value is not None:
+            return True
+        elif self.previous_value is not None and self.current_value is None:
+            return True
+        return self.current_value != self.previous_value
+
+    def update_value(self, new_value, cascade: bool = False):
+        self.previous_value = self.current_value
+        self.current_value = new_value
+        if cascade:
+            if self.changed():
+                self.notify()
+        #     else:
+        #         loggerDataref.error(f"update_value: dataref {self.path} not changed")
+        # loggerDataref.error(f"update_value: dataref {self.path} updated")
+
+    def add_listener(self, obj):
+        self.listeners.append(obj)
+
+    def notify(self):
+        if self.changed():
+            for l in self.listeners:
+                l.dataref_changed(self)
 
 
 class Page:
@@ -39,21 +87,20 @@ class Page:
         self.buttons[idx] = button
         # Build page dataref list, each dataref points at the button(s) that use it
         # loggerPage.debug(f"add_button: page {self.name}: button {button.name}: datarefs: {button.dataref_values.keys()}")
-        for d in button.dataref_values.keys():
+        for d in button.get_datarefs():
             if d not in self.datarefs:
-                self.datarefs[d] = []
-            self.datarefs[d].append(button)
+                self.datarefs[d] = Dataref(d)
+            self.datarefs[d].add_listener(button)
         loggerPage.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
 
-    def dataref_changed(self, dataref, value):
+    def dataref_changed(self, dataref):
         """
         For each button on this page, notifies the button if a dataref used by that button has changed.
         """
-        if dataref in self.datarefs:
-            for b in self.datarefs[dataref]:
-                b.dataref_changed(dataref, value)
+        if dataref.path in self.datarefs.keys():
+            self.datarefs[dataref].notify()
         else:
-            loggerPage.debug(f"dataref_changed: page {self.name}: dataref {dataref} not found")
+            loggerPage.warning(f"dataref_changed: page {self.name}: dataref {dataref.path} not found")
 
     def activate(self, idx: int):
         if idx in self.buttons.keys():
@@ -68,7 +115,7 @@ class Page:
         loggerPage.debug(f"render: page {self.name}: fill {self.fill_empty}")
         for button in self.buttons.values():
             button.render()
-            loggerPage.debug(f"render: page {self.name}: button {button.name} rendered")
+            # loggerPage.debug(f"render: page {self.name}: button {button.name} rendered")
         if self.fill_empty is not None:
             icon = None
             if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
@@ -235,9 +282,9 @@ class Streamdeck:
                                 button = None
                                 if bty == "animate":
                                     ButtonAnimate = self.decks.xp.get_button_animate()
-                                    button = ButtonAnimate(config=a, deck=self)
+                                    button = ButtonAnimate(config=a, page=this_page)
                                 else:
-                                    button = BUTTON_TYPES[bty].new(config=a, deck=self)
+                                    button = BUTTON_TYPES[bty].new(config=a, page=this_page)
                                 this_page.add_button(idx, button)
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
@@ -344,14 +391,16 @@ class Streamdeck:
                 self.device.set_key_image(k, key_image)
 
         # Add index 0 only button:
-        page0 = Page(DEFAULT_PAGE_NAME)
-        button0 = BUTTON_TYPES["push"].new(config={ "index": 0,
-                                                      "name": "X-Plane Map",
-                                                      "type": "push",
-                                                      "command": "sim/map/show_current",
-                                                      "label": "Map",
-                                                      "icon": self.default_icon_name
-                                                    }, deck=self)
+        page0 = Page(name=DEFAULT_PAGE_NAME, deck=self)
+        button0 = BUTTON_TYPES["push"].new(config={
+                                                "index": 0,
+                                                "page": DEFAULT_PAGE_NAME,
+                                                "name": "X-Plane Map",
+                                                "type": "push",
+                                                "command": "sim/map/show_current",
+                                                "label": "Map",
+                                                "icon": self.default_icon_name
+                                            }, deck=self)
         page0.add_button(0, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None

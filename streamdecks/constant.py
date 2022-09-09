@@ -21,7 +21,7 @@ DEFAULT_LABEL_COLOR = "white"
 
 ICONS_FOLDER = "icons"
 DEFAULT_ICON_NAME = "_default_icon.png"
-DEFAULT_ICON_COLOR = (0, 0, 150)
+DEFAULT_ICON_COLOR = (0, 0, 100)
 
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"

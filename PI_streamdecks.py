@@ -28,14 +28,14 @@ class PythonInterface:
         self.streamDeckCmdRef = xp.createCommand('xppython3/streamdecks/reload', 'Reload Stream Decks for aircraft')
         xp.registerCommandHandler(self.streamDeckCmdRef, self.streamDeckCmd, 1, None)
         if self.trace:
-            print(self.Name, "PI::XPluginStop: command added.")
+            print(self.Name, "PI::XPluginStart: command added.")
         self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.streamDeckCmdRef)
         if self.menuIdx > -1:
             xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Unchecked)
             if self.trace:
-                print(self.Name, "PI::XPluginStop: menu added.")
+                print(self.Name, "PI::XPluginStart: menu added.")
         else:
-            print(self.Name, "PI::XPluginStop: menu not added.")
+            print(self.Name, "PI::XPluginStart: menu not added.")
         if self.trace:
             print(self.Name, "PI::XPluginStart: started.")
         return self.Name, self.Sig, self.Desc
@@ -112,7 +112,7 @@ class PythonInterface:
                     print(self.Name, "PI::XPluginReceiveMessage: no Streamdecks")
             except:
                 if self.trace:
-                    print(self.Name, "PI::XPluginDisable: exception.")
+                    print(self.Name, "PI::XPluginReceiveMessage: exception.")
                 print_exc()
                 self.enabled = False
 

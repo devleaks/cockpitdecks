@@ -82,7 +82,7 @@ buttons:
   - index: 7
     name: X-Camera Views
     type: page
-    icon: x-camera
+    icon: VIEWS
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: FD 1
