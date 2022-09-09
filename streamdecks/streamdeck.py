@@ -241,12 +241,7 @@ class Streamdeck:
                                 bty = a["type"]
 
                             if bty in BUTTON_TYPES.keys():
-                                button = None
-                                if bty == "animate":
-                                    ButtonAnimate = self.decks.xp.get_button_animate()
-                                    button = ButtonAnimate(config=a, page=this_page)
-                                else:
-                                    button = BUTTON_TYPES[bty].new(config=a, page=this_page)
+                                button = BUTTON_TYPES[bty].new(config=a, page=this_page)
                                 this_page.add_button(idx, button)
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")

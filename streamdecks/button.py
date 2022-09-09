@@ -10,6 +10,7 @@ Buttons do
 import os
 import re
 import logging
+import threading
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
@@ -495,6 +496,47 @@ class ButtonDual(Button):
         self.render()
 
 
+class ButtonAnimate(Button):
+    """
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+        self.thread = None
+        self.running = False
+        self.speed = float(self.option_value("animation_speed", 1))
+        self.counter = 0
+
+    def loop(self):
+        while self.running:
+            self.render()
+            self.counter = self.counter + 1
+            time.sleep(self.speed)
+
+    def get_image(self):
+        """
+        If button has more icons, select one from button current value
+        """
+        if self.running:
+            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
+        else:
+            self.key_icon = self.icon  # off
+        return super().get_image()
+
+    def activate(self, state: bool):
+        super().activate(state)
+        if state:
+            if self.is_valid():
+                # self.label = f"pressed {self.current_value}"
+                self.xp.commandOnce(self.command)
+                if self.pressed_count % 2 == 0:
+                    self.running = False
+                    self.render()
+                else:
+                    self.running = True
+                    self.thread = threading.Thread(target=self.loop)
+                    self.thread.start()
+
+
 # ###########################@
 #
 class ButtonUpDown(ButtonPush):
@@ -540,6 +582,6 @@ BUTTON_TYPES = {
     "push": ButtonPush,
     "dual": ButtonDual,
     "updown": ButtonUpDown,
-    "animate": None,  # loaded from xplaneudp/xplanesdk depending on integration
+    "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
     "reload": ButtonReload
 }

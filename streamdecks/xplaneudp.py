@@ -15,48 +15,8 @@ from .button import Button
 logger = logging.getLogger("XPlaneUDP")
 
 
-DATA_REFRESH = 0.1 # secs we poll for data every x seconds, must be < 0.1
+DATA_REFRESH = 2 # secs we poll for data every x seconds, must be < 0.1
 DATA_SENT    = 10  # times per second, UDP specific
-
-class ButtonAnimate(Button):
-    """
-    """
-    def __init__(self, config: dict, page: "Page"):
-        Button.__init__(self, config=config, page=page)
-        self.thread = None
-        self.running = False
-        self.speed = float(self.option_value("animation_speed", 1))
-        self.counter = 0
-
-    def loop(self):
-        while self.running:
-            self.render()
-            self.counter = self.counter + 1
-            time.sleep(self.speed)
-
-    def get_image(self):
-        """
-        If button has more icons, select one from button current value
-        """
-        if self.running:
-            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
-        else:
-            self.key_icon = self.icon  # off
-        return super().get_image()
-
-    def activate(self, state: bool):
-        super().activate(state)
-        if state:
-            if self.is_valid():
-                # self.label = f"pressed {self.current_value}"
-                self.xp.commandOnce(self.command)
-                if self.pressed_count % 2 == 0:
-                    self.running = False
-                    self.render()
-                else:
-                    self.running = True
-                    self.thread = threading.Thread(target=self.loop)
-                    self.thread.start()
 
 
 class XPlaneIpNotFound(Exception):
@@ -114,9 +74,6 @@ class XPlaneUDP(XPlane):
         for i in range(len(self.datarefs)):
             self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
         self.socket.close()
-
-    def get_button_animate(self):
-        return ButtonAnimate
 
     def get_dataref(self, path):
         return Dataref(path=path)
