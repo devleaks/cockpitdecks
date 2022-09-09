@@ -42,11 +42,13 @@ def has_ext(name: str, ext: str):
     narr = name.split(".")
     return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
 
-def convert_color(instr: str):
-    if "," in instr:
+def convert_color(instr):
+    if type(instr) != str:
+        return instr  # (255, 7, 2)
+    if "," in instr:  # "(255, 7, 2)"
         a = instr.replace("(", "").replace(")", "").split(",")
         return tuple([int(e) for e in a])
-    return instr
+    return instr  # white, blue...
 
 def make_icon_name(top_txt, top_color, bot_txt, bot_color, bot_framed=False):
     r = [top_txt.upper(), top_color.upper(), bot_txt.upper()]

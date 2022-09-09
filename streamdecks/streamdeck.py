@@ -10,7 +10,7 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_WALLPAPER, DEFAULT_LOGO, DEFAULT_ICON_COLOR
+from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
 from .constant import convert_color
 from .button import Button, BUTTON_TYPES
 
@@ -162,7 +162,7 @@ class Streamdeck:
 
         self.layout = None
         if "layout" in config:
-            self.layout = config["layout"]
+            self.layout = config["layout"]  # config["layout"] may be None to choose no layout
         else:
             self.layout = DEFAULT_LAYOUT
             logger.warning(f"__init__: stream deck has no layout, using default")
@@ -300,11 +300,13 @@ class Streamdeck:
                 image = Image.open(image_filename).convert("RGBA")
             else:
                 logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
-                image = Image.new(mode="RGBA", size=(2000, 2000), color=DEFAULT_ICON_COLOR)
-                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DEFAULT_LOGO)
+                image = Image.new(mode="RGBA", size=(2000, 2000), color=self.default_icon_color)
+                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
                     logo = Image.open(fn).convert("RGBA")
                     image.paste(logo, (500, 500), logo)
+                else:
+                    logger.warning(f"load_default_page: deck {self.name}: no logo image {fn} found, using default")
 
             image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             return image
@@ -338,7 +340,7 @@ class Streamdeck:
 
             return PILHelper.to_native_format(deck, key_image)
 
-        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DEFAULT_WALLPAPER)
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
         key_spacing = (36, 36)
         image = create_full_deck_sized_image(self.device, key_spacing, fn)
         key_images = dict()

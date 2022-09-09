@@ -141,6 +141,14 @@ class Streamdecks:
             with open(fn, "r") as fp:
                 self.default_config = yaml.safe_load(fp)
                 logging.debug(f"load_defaults: loaded default config {fn}")
+        if self.default_config is not None:
+            self.default_logo = self.default_config.get("default-wallpaper-logo", DEFAULT_LOGO)
+            self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
+            self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
+            self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
+            self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
+            self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
+            self.fill_empty = self.default_config.get("fill-empty")
 
         # 1. Loading/creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)

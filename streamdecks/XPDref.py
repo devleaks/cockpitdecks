@@ -16,15 +16,34 @@ class XPDref(Dataref):
     Extends dataref to read (and write disabled) dataref through X-Plane SDK API.
     """
 
-    def __init__(self, dataref: Dataref, ref):
-        Dataref.__init__(self, path=dataref.path, is_decimal=dataref.is_decimal, is_string=dataref.is_string, length=dataref.length)
+    def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
+        Dataref.__init__(self, path=path, is_decimal=is_decimal, is_string=is_string, length=length)
 
-        self.ref = ref
-        self.xp_datatype = xp.getDataRefTypes(ref)
+        self.ref = None
+        self.inited = False
 
-        logger.debug(f"__init__: dataref {dataref.dataref} of type {self.xp_datatype} ({self.xp_datatype :b})")
+        self.xp_datatype = None
+        self.dr_get = None
+        self.dr_set = None
+        self.dr_cast = None
+        self.xp_vale = None
 
-        if dataref.is_array:
+        self.init()
+
+    def init(self):
+        if self.inited:
+            return
+
+        self.ref = xp.findDataRef(self.dataref)
+        if self.ref is None:
+            logger.warning(f"exists: dataref {self.dataref} not found")
+            return
+
+        self.xp_datatype = xp.getDataRefTypes(self.ref)
+
+        logger.debug(f"__init__: dataref {self.dataref} of type {self.xp_datatype} ({self.xp_datatype :b})")
+
+        if self.is_array:
             if self.xp_datatype & xp.Type_IntArray:
                 self.dr_get = xp.getDatavi
                 self.dr_set = xp.setDatavi
@@ -59,14 +78,21 @@ class XPDref(Dataref):
         if self.dr_get is None:
             logger.error(f"__init__: dataref {self.path}: no data handler found for type {self.xp_datatype} ({self.xp_datatype})")
 
+        self.inited = True
+        logger.debug(f"__init__: dataref {self.path} ready")
+
         # force the initial value
         self.xp_value = self.value
         logger.debug(f"__init__: dataref {self.path}: initial value {self.xp_value}")
 
     def exists(self) -> bool:
-        if self.ref is None:
+        if not self.inited:
             self.ref = xp.findDataRef(self.dataref)
-        return self.ref is not None
+            if self.ref is not None:
+                self.init()
+            else:
+                logger.warning(f"exists: dataref {self.dataref} not found")
+        return self.inited
     # def set(self, value):
     #     if self.is_array:
     #         self.dr_set(self.ref, value, self.index, len(value))
