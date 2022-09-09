@@ -134,6 +134,13 @@ class Streamdecks:
         """
         Loads default values for font, icon, etc. They will be used if no layout is found.
         """
+        # 0. Some variables defaults?
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
+        if os.path.exists(fn):
+            with open(fn, "r") as fp:
+                config = yaml.safe_load(fp)
+                logging.debug(f"load_defaults: loaded {fn}")
+
         # 1. Loading/creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
         logging.debug(f"load_defaults: create default {self.default_icon_name} icon")

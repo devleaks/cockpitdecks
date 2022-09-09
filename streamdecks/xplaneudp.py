@@ -309,11 +309,6 @@ class XPlaneUDP(XPlane):
                 self.detect_changed()
                 later = time.time()
                 nexttime = DATA_REFRESH - (later - now)
-            #     if (i % 10) == 0:
-            #         logger.debug(f"get_values: . {i}")
-            # else:
-            #     if (i % 10) == 0:
-            #         logger.debug(f"get_values: no dataref to read {i}")
             if nexttime > 0:
                 time.sleep(nexttime)
             # i = i + 1
@@ -336,9 +331,6 @@ class XPlaneUDP(XPlane):
 
     def commandEnd(self, command: str):
         self.ExecuteCommand(command+"/end")
-
-    def get_value(self, dataref: str):
-        return self.xplaneValues.get(dataref)
 
     def set_datarefs(self, datarefs):
         """

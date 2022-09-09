@@ -17,18 +17,22 @@ from .button import Button, BUTTON_TYPES
 logger = logging.getLogger("Streamdeck")
 loggerPage = logging.getLogger("Page")
 loggerDataref = logging.getLogger("Dataref")
+
 DEFAULT_PAGE_NAME = "X-Plane"
 
 
 class Dataref:
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
         self.path = path            # some/path/values[6]
         self.dataref = path         # some/path/values
         self.index = 0              # 6
-        self.length = 0             # length of some/path/values array, if available.
+        self.length = length        # length of some/path/values array, if available.
+        self.xp_datatype = None
         self.data_type = "float"    # int, float, byte
         self.is_array = False       # array of above
+        self.is_decimal = is_decimal
+        self.is_string = is_string
         self.previous_value = None
         self.current_value = None
         self.current_array = []
@@ -37,8 +41,12 @@ class Dataref:
         # is dataref a path to an array element?
         if "[" in path:  # sim/some/values[4]
             self.dataref = self.path[:self.path.find("[")]
-            self.index = self.path[self.path.find("[")+1:self.path.find("]")]
+            self.index = int(self.path[self.path.find("[")+1:self.path.find("]")])
             self.is_array = True
+            if self.length is None:
+                self.length = self.index + 1  # at least that many values
+            if self.index >= self.length:
+                loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
 
     def changed(self):
         if self.previous_value is None and self.current_value is None:
@@ -394,13 +402,12 @@ class Streamdeck:
         page0 = Page(name=DEFAULT_PAGE_NAME, deck=self)
         button0 = BUTTON_TYPES["push"].new(config={
                                                 "index": 0,
-                                                "page": DEFAULT_PAGE_NAME,
                                                 "name": "X-Plane Map",
                                                 "type": "push",
                                                 "command": "sim/map/show_current",
                                                 "label": "Map",
                                                 "icon": self.default_icon_name
-                                            }, deck=self)
+                                            }, page=page0)
         page0.add_button(0, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None

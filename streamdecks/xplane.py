@@ -60,7 +60,3 @@ class XPlane:  # (abc.ABC)
 
     def commandEnd(self, command: str):
         logger.debug(f"commandEnd: not implemented")
-
-    def get_value(self, dataref: str):
-        logger.debug(f"get_value: not implemented")
-        return None

@@ -120,9 +120,9 @@ class PythonInterface:
         ac = xp.getNthAircraftModel(0)      # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
         if len(ac) == 2:
             acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
-            print(self.Name, "PI::loadCurrentAircraft: trying", acpath[0] + "..")
+            print(self.Name, "PI::loadCurrentAircraft: trying " + acpath[0] + "..")
             self.streamdecks.load(acpath=acpath[0])
-            print(self.Name, "PI::loadCurrentAircraft: ", acpath[0] + "done.")
+            print(self.Name, "PI::loadCurrentAircraft: .. " + acpath[0] + " done.")
             return True
         print(self.Name, "PI::loadCurrentAircraft: not found.")
         return False
