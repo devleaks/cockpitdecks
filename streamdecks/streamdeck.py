@@ -19,62 +19,7 @@ loggerPage = logging.getLogger("Page")
 loggerDataref = logging.getLogger("Dataref")
 
 DEFAULT_PAGE_NAME = "X-Plane"
-
-
-class Dataref:
-
-    def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
-        self.path = path            # some/path/values[6]
-        self.dataref = path         # some/path/values
-        self.index = 0              # 6
-        self.length = length        # length of some/path/values array, if available.
-        self.xp_datatype = None
-        self.data_type = "float"    # int, float, byte
-        self.is_array = False       # array of above
-        self.is_decimal = is_decimal
-        self.is_string = is_string
-        self.previous_value = None
-        self.current_value = None
-        self.current_array = []
-        self.listeners = []         # buttons using this dataref, will get notified if changes.
-
-        # is dataref a path to an array element?
-        if "[" in path:  # sim/some/values[4]
-            self.dataref = self.path[:self.path.find("[")]
-            self.index = int(self.path[self.path.find("[")+1:self.path.find("]")])
-            self.is_array = True
-            if self.length is None:
-                self.length = self.index + 1  # at least that many values
-            if self.index >= self.length:
-                loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
-
-    def changed(self):
-        if self.previous_value is None and self.current_value is None:
-            return False
-        elif self.previous_value is None and self.current_value is not None:
-            return True
-        elif self.previous_value is not None and self.current_value is None:
-            return True
-        return self.current_value != self.previous_value
-
-    def update_value(self, new_value, cascade: bool = False):
-        self.previous_value = self.current_value
-        self.current_value = new_value
-        if cascade:
-            if self.changed():
-                self.notify()
-        #     else:
-        #         loggerDataref.error(f"update_value: dataref {self.path} not changed")
-        # loggerDataref.error(f"update_value: dataref {self.path} updated")
-
-    def add_listener(self, obj):
-        self.listeners.append(obj)
-
-    def notify(self):
-        if self.changed():
-            for l in self.listeners:
-                l.dataref_changed(self)
-
+POLL_FREQ = 5  # default is 20
 
 class Page:
     """
@@ -84,9 +29,13 @@ class Page:
     def __init__(self, name: str, deck: "Streamdeck"):
         self.name = name
         self.deck = deck
+        self.xp = self.deck.decks.xp  # shortcut alias
+
+        self.fill_empty = None
+
         self.buttons = {}
         self.datarefs = {}
-        self.fill_empty = None
+
 
     def add_button(self, idx: int, button: Button):
         if idx in self.buttons.keys():
@@ -95,10 +44,15 @@ class Page:
         self.buttons[idx] = button
         # Build page dataref list, each dataref points at the button(s) that use it
         # loggerPage.debug(f"add_button: page {self.name}: button {button.name}: datarefs: {button.dataref_values.keys()}")
+
         for d in button.get_datarefs():
             if d not in self.datarefs:
-                self.datarefs[d] = Dataref(d)
-            self.datarefs[d].add_listener(button)
+                ref = self.xp.get_dataref(d)
+                if ref is not None:
+                    self.datarefs[d] = ref
+                    self.datarefs[d].add_listener(button)
+                else:
+                    loggerPage.warning(f"add_button: page {self.name}: button {button.name}: failed to create dataref {d}")
         loggerPage.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
 
     def dataref_changed(self, dataref):
@@ -412,6 +366,7 @@ class Streamdeck:
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None
         self.current_page = page0
+        self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
         self.device.set_key_callback(self.key_change_callback)
         self.running = True
 
@@ -450,6 +405,7 @@ class Streamdeck:
 
     def start(self):
         if self.device is not None:
+            self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
             self.device.set_key_callback(self.key_change_callback)
         logger.info(f"start: deck {self.name} listening for key strokes")
 

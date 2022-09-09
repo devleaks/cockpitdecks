@@ -41,6 +41,7 @@ class Streamdecks:
         self.acpath = None
         self.decks = {}
 
+        self.default_config = None
         self.default_logo = DEFAULT_LOGO
         self.default_wallpaper = DEFAULT_WALLPAPER
 
@@ -138,8 +139,8 @@ class Streamdecks:
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
         if os.path.exists(fn):
             with open(fn, "r") as fp:
-                config = yaml.safe_load(fp)
-                logging.debug(f"load_defaults: loaded {fn}")
+                self.default_config = yaml.safe_load(fp)
+                logging.debug(f"load_defaults: loaded default config {fn}")
 
         # 1. Loading/creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)

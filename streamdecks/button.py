@@ -366,6 +366,8 @@ class Button:
         """
         if state:
             self.pressed_count = self.pressed_count + 1
+            self.previous_value = self.current_value
+            self.current_value = self.button_value()
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def render(self):

@@ -6,7 +6,7 @@ import logging
 import xp
 
 from decimal import Decimal as D
-from .streamdeck import Dataref
+from .xplane import Dataref
 
 logger = logging.getLogger("XPDref")
 
@@ -63,6 +63,10 @@ class XPDref(Dataref):
         self.xp_value = self.value
         logger.debug(f"__init__: dataref {self.path}: initial value {self.xp_value}")
 
+    def exists(self) -> bool:
+        if self.ref is None:
+            self.ref = xp.findDataRef(self.dataref)
+        return self.ref is not None
     # def set(self, value):
     #     if self.is_array:
     #         self.dr_set(self.ref, value, self.index, len(value))
@@ -70,19 +74,22 @@ class XPDref(Dataref):
     #         self.dr_set(self.ref, self.dr_cast(value))
 
     def get(self):
-        if self.dr_cast is None:
-            logger.error(f"get: dataref {self.path}: no data handler found for type {self.xp_datatype} ({self.xp_datatype})")
-            return None
-        if self.is_array:
-            values = []
-            self.dr_get(self.ref, values=values, offset=self.index, count=1)
-            if self.is_string:
-                return bytearray([x for x in values if x]).decode('utf-8')
+        if self.exists():
+            if self.dr_cast is None:
+                logger.error(f"get: dataref {self.path}: no data handler found for type {self.xp_datatype} ({self.xp_datatype})")
+                return None
+            if self.is_array:
+                values = []
+                self.dr_get(self.ref, values=values, offset=self.index, count=1)
+                if self.is_string:
+                    return bytearray([x for x in values if x]).decode('utf-8')
+                else:
+                    logger.debug(f"get: dataref {self.path}: got array {values}")
+                    return values[0] if len(values) > 0 else None
             else:
-                logger.debug(f"get: dataref {self.path}: got array {values}")
-                return values[0] if len(values) > 0 else None
+                return self.dr_get(self.ref)
         else:
-            return self.dr_get(self.ref)
+            logger.error(f"get: dataref {self.dataref}: cannot find")
 
     @property
     def value(self):

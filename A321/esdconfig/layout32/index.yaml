@@ -270,6 +270,7 @@ buttons:
       - P_TOLISS_ISCS_OFF
       - P_TOLISS_ISCS_ON
     command: toliss_airbus/iscs_open
+    options: counter
   # - index: 31
   #   name: A321
   #   type: page

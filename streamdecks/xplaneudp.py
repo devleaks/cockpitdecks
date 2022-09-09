@@ -9,13 +9,13 @@ import threading
 import logging
 import time
 
-from .xplane import XPlane
+from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
 
 
-DATA_REFRESH = 0.1 # secs
+DATA_REFRESH = 0.1 # secs we poll for data every x seconds, must be < 0.1
 DATA_SENT    = 10  # times per second, UDP specific
 
 class ButtonAnimate(Button):
@@ -83,19 +83,19 @@ class XPlaneUDP(XPlane):
     def __init__(self, decks):
         XPlane.__init__(self, decks=decks)
 
+        self.defaultFreq = 1
+
         # Open a UDP Socket to receive on Port 49000
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.settimeout(self.BEACON_TIMEOUT)
-        # list of requested datarefs with index number
-        self.datarefidx = 0
-        self.datarefs = {} # key = idx, value = dataref
         # values from xplane
         self.BeaconData = {}
         self.UDP_PORT = None
-        self.xplaneValues = {}
-        self.defaultFreq = 1
 
-        self.running = False
+        # list of requested datarefs with index number
+        self.datarefidx = 0
+        self.datarefs = {} # key = idx, value = dataref
+
         self.finished = None
         self.init()
 
@@ -118,8 +118,8 @@ class XPlaneUDP(XPlane):
     def get_button_animate(self):
         return ButtonAnimate
 
-    def dataref(self, path: str):
-        return XPDRef(path)
+    def get_dataref(self, path):
+        return Dataref(path=path)
 
     def WriteDataRef(self, dataref, value, vtype='float'):
         '''
@@ -174,6 +174,7 @@ class XPlaneUDP(XPlane):
     def GetValues(self):
         """
         Gets the values from X-Plane for each dataref in self.datarefs.
+        On returns {dataref-name: value} dict.
         """
         try:
             # Receive packet
@@ -311,14 +312,15 @@ class XPlaneUDP(XPlane):
                 nexttime = DATA_REFRESH - (later - now)
             if nexttime > 0:
                 time.sleep(nexttime)
-            # i = i + 1
+
+        logger.debug(f"loop: ended but not terminated. Terminating..")
         if self.finished is not None:
             if self.finished is not None:
                 self.finished.set()
             else:
                 logger.warning(f"loop: no event set")
             logger.debug(f"loop: allowed deletion")
-        logger.debug(f"loop: terminated")
+        logger.debug(f"loop: ..terminated")
 
     # ################################
     # X-Plane Interface
