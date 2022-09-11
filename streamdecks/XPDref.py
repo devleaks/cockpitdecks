@@ -23,10 +23,11 @@ class XPDref(Dataref):
         self.inited = False
 
         self.xp_datatype = None
+        self.xp_datatype_str = None
+        self.xp_value = None
         self.dr_get = None
         self.dr_set = None
         self.dr_cast = None
-        self.xp_vale = None
 
         self.init()
 
@@ -48,14 +49,17 @@ class XPDref(Dataref):
                 self.dr_get = xp.getDatavi
                 self.dr_set = xp.setDatavi
                 self.dr_cast = int
+                self.xp_datatype_str = "IntArray"
             elif self.xp_datatype & xp.Type_FloatArray:
                 self.dr_get = xp.getDatavf
                 self.dr_set = xp.setDatavf
                 self.dr_cast = float
+                self.xp_datatype_str = "FloatArray"
             elif self.xp_datatype & xp.Type_Data:
                 self.dr_get = xp.getDatab
                 self.dr_set = xp.setDatab
                 self.dr_cast = bytearray
+                self.xp_datatype_str = "ByteArray"
 
             if self.dr_get:
                 self.xp_length = self.dr_get(self.ref, None)
@@ -66,24 +70,39 @@ class XPDref(Dataref):
                 self.dr_get = xp.getDatai
                 self.dr_set = xp.setDatai
                 self.dr_cast = int
+                self.xp_datatype_str = "Int"
             elif self.xp_datatype & xp.Type_Float:
                 self.dr_get = xp.getDataf
                 self.dr_set = xp.setDataf
                 self.dr_cast = float
+                self.xp_datatype_str = "Float"
             elif self.xp_datatype & xp.Type_Double:
                 self.dr_get = xp.getDatad
                 self.dr_set = xp.setDatad
-                self.dr_cast = float
+                self.dr_cast = bytearray
+                self.xp_datatype_str = "Byte"
 
         if self.dr_get is None:
             logger.error(f"__init__: dataref {self.path}: no data handler found for type {self.xp_datatype} ({self.xp_datatype})")
 
         self.inited = True
-        logger.debug(f"__init__: dataref {self.path} ready")
+        logger.debug(f"__init__: dataref {self.path} ({self.get_datatype()}) ready")
 
         # force the initial value
         self.xp_value = self.value
         logger.debug(f"__init__: dataref {self.path}: initial value {self.xp_value}")
+
+    def get_datatype(self, long:bool = False):
+        s = self.xp_datatype_str
+        if s.endswith("Array"):
+            s = s + f"[{self.xp_length}]"
+        if self.is_decimal:
+            s = s + ", decimal"
+        if self.is_string:
+            s = s + ", string"
+        if long:
+            s = s + f" ({self.xp_datatype} ({self.xp_datatype :b}))"
+        return s
 
     def exists(self) -> bool:
         if not self.inited:

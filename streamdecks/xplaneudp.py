@@ -15,8 +15,8 @@ from .button import Button
 logger = logging.getLogger("XPlaneUDP")
 
 
-DATA_REFRESH = 2 # secs we poll for data every x seconds, must be < 0.1
-DATA_SENT    = 10  # times per second, UDP specific
+DATA_REFRESH = 0.1 # secs we poll for data every x seconds, must be < 0.1 for UDP
+DATA_SENT    = 10  # times per second, X-Plane send that data on UDP every that often.
 
 
 class XPlaneIpNotFound(Exception):

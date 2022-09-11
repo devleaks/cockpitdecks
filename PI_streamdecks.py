@@ -7,6 +7,12 @@ import os
 import xp
 from traceback import print_exc
 
+# we prepend our own implementation of StreamDeck package
+# with a flightloop rather than a threading.Thread + time.sleep.
+# import sys
+# sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib", "StreamDeck"))
+
+
 from streamdecks import Streamdecks, XPlaneSDK, __version__ as RELEASE
 
 logging.basicConfig(level=logging.DEBUG, filename="Streamdecks.log", filemode='a')

@@ -45,10 +45,7 @@ class Dataref:
         self.previous_value = self.current_value
         self.current_value = new_value
         if cascade:
-            if self.changed():
-                self.notify()
-        #     else:
-        #         loggerDataref.error(f"update_value: dataref {self.path} not changed")
+            self.notify()
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
 
     def add_listener(self, obj):
@@ -58,9 +55,11 @@ class Dataref:
         if self.changed():
             for l in self.listeners:
                 l.dataref_changed(self)
+        # else:
+        #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 
 
-class XPlane:  # (abc.ABC)
+class XPlane:
     """
     Abstract class for execution of operations in X-Plane
     """
@@ -69,7 +68,7 @@ class XPlane:  # (abc.ABC)
         self.running = False
 
         self.datarefs_to_monitor = {}  # list of datarefs to monitor and buttons attached to each
-        self.xplaneValues = {}      # key = dataref-path, value = value
+        self.xplaneValues = {}         # key = dataref-path, value = value
 
         # Values of datarefs
         self.previous_values = {}

@@ -1,5 +1,5 @@
-# Creates pair of commands for commandBegin/CommentEnd for some commands.
-# New commands are command/begin and command/end.
+# Creates pair of commandBegin/commandEnd for some commands.
+# New commands for "command" are "command/begin" and "command/end".
 #
 # Principle:
 # def a(b: str):
@@ -16,8 +16,11 @@ from traceback import print_exc
 from streamdecks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
 
 
-RELEASE = "0.0.10"  # local version number
+RELEASE = "0.0.14"  # local version number
 
+REF = "cmdref"
+FUN = "cmdfun"
+HDL = "cmdhdl"
 
 class PythonInterface:
 
@@ -36,12 +39,13 @@ class PythonInterface:
         """
         if self.trace:
             print(self.Info, f"PI::XPluginStart: started.")
-
         return self.Name, self.Sig, self.Desc
 
     def XPluginStop(self):
         for k, v in self.commands.items():
-            xp.unregisterCommandHandler(v["cmdRef"], v["cmd"], 1, None)
+            xp.unregisterCommandHandler(v[REF], v[FUN], 1, None)
+            if self.trace:
+                print(self.Info, "PI::XPluginStop: unregistered", k)
         if self.trace:
             print(self.Info, "PI::XPluginStop: stopped.")
         return None
@@ -51,9 +55,9 @@ class PythonInterface:
             ac = xp.getNthAircraftModel(0)      # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
                 acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
-                print(self.Info, "PI::XPluginEnable: trying", acpath[0] + "..")
+                print(self.Info, "PI::XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
-                print(self.Info, "PI::XPluginEnable: ", acpath[0] + "done.")
+                print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
                 self.enabled = True
                 return 1
             print(self.Info, "PI::XPluginEnable: not found.")
@@ -83,10 +87,10 @@ class PythonInterface:
                 if len(ac) == 2:
                     acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
-                        print(self.Info, "PI::XPluginReceiveMessage: trying", acpath[0] + "..")
+                        print(self.Info, "PI::XPluginReceiveMessage: trying " + acpath[0] + "..")
                     self.load(acpath=acpath[0])
                     if self.trace:
-                        print(self.Info, "PI::XPluginReceiveMessage: ", acpath[0] + "done.")
+                        print(self.Info, "PI::XPluginReceiveMessage: .. " + acpath[0] + " done.")
                     return None
                 print(self.Info, "PI::XPluginReceiveMessage: aircraft not found.")
             except:
@@ -94,16 +98,40 @@ class PythonInterface:
                     print(self.Info, "PI::XPluginReceiveMessage: exception.")
                 print_exc()
                 self.enabled = False
-        return False
+        return None
+
+    def command(self, command: str, begin: bool) -> int:
+        try:
+            if command in self.commands:
+                if begin:
+                    xp.commandBegin(self.commands[command][REF])
+                else:
+                    xp.commandEnd(self.commands[command][REF])
+            else:
+                cmdref = xp.findCommand(command)
+                if cmdref is not None:
+                    self.commands[command] = {}  # cache it
+                    self.commands[command][REF] = cmdref
+                    if begin:
+                        xp.commandBegin(self.commands[command][REF])
+                    else:
+                        xp.commandEnd(self.commands[command][REF])
+                else:
+                    print(self.Info, f"PI::command: {command} not found")
+        except:
+            if self.trace:
+                print(self.Info, "PI::command: exception:")
+            print_exc()
+        return 0  # callback must return 0 or 1.
 
     def load(self, acpath):
 
         # remove previous command set
         for k, v in self.commands.items():
             try:
-                xp.unregisterCommandHandler(v["cmdRef"], v["fun"], 1, None)
+                xp.unregisterCommandHandler(v[REF], v[RUN], 1, None)
                 if self.trace:
-                    print(self.Info, f"PI::load: removed {k}")
+                    print(self.Info, f"PI::load: unregistered {k}")
             except:
                 if self.trace:
                     print(self.Info, "PI::load: exception:")
@@ -115,26 +143,31 @@ class PythonInterface:
         if len(commands) > 0:
             for command in commands:
                 try:
-                    cmdref = xp.findCommand(command)
+                    # cmdref = xp.findCommand(command)
+                    # if cmdref is not None:
+                    # As such, we only check for command existence at execution time.
                     cmd = command + '/begin'
                     self.commands[cmd] = {}
-                    self.commands[cmd]["cmdRef"] = xp.createCommand(cmd, 'Begin '+cmd)
-                    self.commands[cmd]["fun"] = lambda: xp.XPLMCommandBegin(cmdref)
-                    self.commands[cmd]["cmdHdl"] = xp.registerCommandHandler(self.commands[cmd]["cmdRef"], self.commands[cmd]["fun"], 1, None)
+                    self.commands[cmd][REF] = xp.createCommand(cmd, 'Begin '+cmd)
+                    self.commands[cmd][FUN] = lambda *args: self.command(command, True)
+                    # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
                     cmd = command + '/end'
                     self.commands[cmd] = {}
-                    self.commands[cmd]["cmdRef"] = xp.createCommand(cmd, 'End '+cmd)
-                    self.commands[cmd]["fun"] = lambda: xp.XPLMCommandEnd(cmdref)
-                    self.commands[cmd]["cmdHdl"] = xp.registerCommandHandler(self.commands[cmd]["cmdRef"], self.commands[cmd]["fun"], 1, None)
+                    self.commands[cmd][REF] = xp.createCommand(cmd, 'End '+cmd)
+                    self.commands[cmd][FUN] = lambda *args: self.command(command, False)
+                    # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
-                except:
+                    # else:
+                    #     print(self.Info, f"PI::load: {command} not found")
+                except Exception as e:
                     if self.trace:
                         print(self.Info, "PI::load: exception:")
                     print_exc()
-                    continue
         else:
             if self.trace:
                 print(self.Info, f"PI::load: no command to add.")
@@ -144,12 +177,13 @@ class PythonInterface:
 
 
     def get_beginend_commands(self, acpath):
-        # Constants
-        BUTTONS = "buttons"  # keywork in yaml file
+        # Constants (keywords in yaml file)
+        BUTTONS = "buttons"
         DECKS = "decks"
         LAYOUT = "layout"
         COMMAND = "command"
         MULTI_COMMANDS = "commands"
+        # Type of commands for which we need to create a pair of commands
         NOTICABLE_BUTTON_TYPES = ["dual"]
 
         commands = []

@@ -11,6 +11,7 @@ import os
 import re
 import logging
 import threading
+import time
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
@@ -185,12 +186,9 @@ class Button:
 
         return list(set(r))  # removes duplicates
 
-    def get_dataref(self, dataref):
-        return self.page.datarefs.get(dataref)
-
-    def get_dataref_value(self, dataref):
+    def get_dataref_value(self, dataref, default = None):
         d = self.page.datarefs.get(dataref)
-        return d.current_value if d is not None else None
+        return d.current_value if d is not None else default
 
     def substitute_dataref_values(self, message: str, formatting = None, default: str = "0.0"):
         """
@@ -358,6 +356,7 @@ class Button:
         """
         self.previous_value = self.current_value
         self.current_value = self.button_value()
+        # logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
         self.render()
 
     def activate(self, state: bool):
@@ -503,14 +502,34 @@ class ButtonAnimate(Button):
         Button.__init__(self, config=config, page=page)
         self.thread = None
         self.running = False
+        self.finished = None
         self.speed = float(self.option_value("animation_speed", 1))
         self.counter = 0
 
     def loop(self):
+        self.finished = threading.Event()
         while self.running:
             self.render()
             self.counter = self.counter + 1
             time.sleep(self.speed)
+        self.finished.set()
+
+    def anim_start(self):
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self.loop)
+            self.thread.start()
+        else:
+            logger.warning(f"anim_start: button {self.name}: already started")
+
+    def anim_stop(self):
+        if self.running:
+            self.running = False
+            if not self.finished.wait(timeout=2*self.speed):
+                logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
+            self.render()
+        else:
+            logger.warning(f"anim_stop: button {self.name}: already stopped")
 
     def get_image(self):
         """
@@ -522,6 +541,7 @@ class ButtonAnimate(Button):
             self.key_icon = self.icon  # off
         return super().get_image()
 
+    # Works with activation on/off
     def activate(self, state: bool):
         super().activate(state)
         if state:
@@ -529,13 +549,25 @@ class ButtonAnimate(Button):
                 # self.label = f"pressed {self.current_value}"
                 self.xp.commandOnce(self.command)
                 if self.pressed_count % 2 == 0:
-                    self.running = False
+                    self.anim_stop()
                     self.render()
                 else:
-                    self.running = True
-                    self.thread = threading.Thread(target=self.loop)
-                    self.thread.start()
+                    self.anim_start()
 
+    # Works if underlying dataref changed
+    def dataref_changed(self, dataref: "Dataref"):
+        """
+        One of its dataref has changed, records its value and provoke an update of its representation.
+        """
+        self.previous_value = self.current_value
+        self.current_value = self.button_value()
+        print(f"{self.name}: {self.previous_value} -> {self.current_value}")
+        if self.current_value is not None and self.current_value == 1:
+            self.anim_start()
+        else:
+            if self.running:
+                self.anim_stop()
+            self.render()
 
 # ###########################@
 #
