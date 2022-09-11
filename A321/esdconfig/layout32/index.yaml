@@ -153,14 +153,14 @@ buttons:
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: MASTERCAUT
-    type: animate
+    type: push
     icon: MASTER_CAUT_OFF
     multi-icons:
       - MASTER_CAUT_OFF
       - MASTER_CAUT
     command: sim/annunciator/clear_master_caution
     dataref: AirbusFBW/MasterCaut
-    options: animation_speed=0.5
+    # options: animation_speed=0.5
   - index: 17
     name: MARTERWARN
     type: animate

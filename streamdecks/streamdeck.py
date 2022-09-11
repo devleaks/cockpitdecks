@@ -93,6 +93,12 @@ class Page:
             else:
                 loggerPage.warning(f"render: page {self.name}: fill image {self.fill_empty} not found")
 
+    def clean(self):
+        """
+        Ask each button to stop rendering and clean its mess.
+        """
+        for button in self.buttons.values():
+            button.clean()
 
 class Streamdeck:
     """
@@ -390,6 +396,8 @@ class Streamdeck:
     def change_page(self, page: str):
         logger.debug(f"change_page: deck {self.name} change page to {page}..")
         if page in self.pages.keys():
+            if self.current_page is not None:
+                self.current_page.clean()
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.device.reset()

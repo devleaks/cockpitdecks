@@ -379,6 +379,9 @@ class Button:
             self.deck.set_key_image(self)
         # logger.debug(f"render: button {self.name} rendered")
 
+    def clean(self):
+        pass
+
 
 class ButtonPage(Button):
     """
@@ -568,6 +571,9 @@ class ButtonAnimate(Button):
             if self.running:
                 self.anim_stop()
             self.render()
+
+    def clean(self):
+        self.anim_stop()
 
 # ###########################@
 #
