@@ -16,7 +16,7 @@ from traceback import print_exc
 from streamdecks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
 
 
-RELEASE = "0.0.14"  # local version number
+RELEASE = "0.0.15"  # local version number
 
 REF = "cmdref"
 FUN = "cmdfun"
@@ -43,7 +43,8 @@ class PythonInterface:
 
     def XPluginStop(self):
         for k, v in self.commands.items():
-            xp.unregisterCommandHandler(v[REF], v[FUN], 1, None)
+            if FUN in v:  # cached commands have no FUN
+                xp.unregisterCommandHandler(v[REF], v[FUN], 1, None)
             if self.trace:
                 print(self.Info, "PI::XPluginStop: unregistered", k)
         if self.trace:
@@ -129,7 +130,8 @@ class PythonInterface:
         # remove previous command set
         for k, v in self.commands.items():
             try:
-                xp.unregisterCommandHandler(v[REF], v[RUN], 1, None)
+                if FUN in v:  # cached commands have no FUN
+                    xp.unregisterCommandHandler(v[REF], v[RUN], 1, None)
                 if self.trace:
                     print(self.Info, f"PI::load: unregistered {k}")
             except:

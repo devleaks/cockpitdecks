@@ -16,7 +16,7 @@ buttons:
     # dataref-rpn: ${AirbusFBW/EnableExternalPower} ${sim/cockpit2/switches/avionics_power_on} +
     label: EXT PWR
     label-position: ct
-  - index: 7
+  - index: 6
     name: APU_AVAILABLE
     type: push
     icon: NONE_NONE
@@ -26,6 +26,12 @@ buttons:
     dataref: AirbusFBW/SDExtPowBox
     label: "APU\nCONNECTED"
     label-color: black
+  - index: 7
+    name: X-Camera Views
+    type: page
+    icon: VIEWS
+    label: VIEWS
+    label-position: ct
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: APUMASTER
@@ -37,7 +43,25 @@ buttons:
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
     label-position: ct
-# ### LINE 3 ### 16-23 ######################################################
+  - index: 10
+    type: dual
+    icon: TEST
+    label: "ENG 1\nTEST"
+    label-position: ct
+    command: AirbusFBW/FireTestENG1
+  - index: 11
+    type: dual
+    icon: TEST
+    label: "APU\nTEST"
+    label-position: ct
+    command: AirbusFBW/FireTestAPU
+  - index: 12
+    type: dual
+    icon: TEST
+    label: "ENG 2\nTEST"
+    label-position: ct
+    command: AirbusFBW/FireTestENG2
+  # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: APUSTART
     type: push

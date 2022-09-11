@@ -34,6 +34,13 @@ buttons:
     icon-color: (0,0,100)
     label: Radios
     command: SRS/X-Camera/Select_View_ID_7
+  - index: 7
+    name: back
+    type: page
+    icon: BACK
+    label: BACK
+    label-position: ct
+    command: SRS/X-Camera/Select_View_ID_7
   - index: 31
     name: Index
     type: page

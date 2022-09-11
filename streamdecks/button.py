@@ -400,7 +400,7 @@ class ButtonPage(Button):
     def activate(self, state: bool):
         super().activate(state)
         if state:
-            if self.name in self.deck.pages.keys():
+            if self.name == "back" or self.name in self.deck.pages.keys():
                 logger.debug(f"activate: button {self.name} change page to {self.name}")
                 self.deck.change_page(self.name)
                 self.previous_value = self.current_value

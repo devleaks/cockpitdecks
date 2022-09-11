@@ -115,6 +115,7 @@ class Streamdeck:
         self.home_page = None       # if None means deck has loaded default wallpaper only.
         self.current_page = None
         self.previous_page = None
+        self.page_history = []
         self.valid = True
         self.running = False
         self.monitoring_thread = None
@@ -190,7 +191,6 @@ class Streamdeck:
         if self.home_page is not None:
             self.change_page(self.home_page.name)
         logger.info(f"init: stream deck {self.name} initialized")
-
 
     def load(self):
         """
@@ -395,11 +395,19 @@ class Streamdeck:
 
     def change_page(self, page: str):
         logger.debug(f"change_page: deck {self.name} change page to {page}..")
+        if page == "back":
+            if len(self.page_history) > 1:
+                page = self.page_history.pop()  # this page
+                page = self.page_history.pop()  # previous one
+            else:
+                page = self.home_page.name
+            logger.debug(f"change_page: deck {self.name} change page to {page}..")
         if page in self.pages.keys():
             if self.current_page is not None:
                 self.current_page.clean()
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
+            self.page_history.append(self.current_page.name)
             self.device.reset()
             self.decks.xp.set_datarefs(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
