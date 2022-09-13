@@ -26,7 +26,7 @@ class PythonInterface:
 
     def __init__(self):
         self.Name = "Streamdecks Helper"
-        self.Sig = "commandbeginend.xppython3"
+        self.Sig = "streamdeckhelper.xppython3"
         self.Desc = f"Decompose commands in begin and end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False

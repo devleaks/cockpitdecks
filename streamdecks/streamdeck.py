@@ -120,6 +120,9 @@ class Streamdeck:
         self.running = False
         self.monitoring_thread = None
 
+        self.previous_key_values = {}
+        self.current_key_values = {}
+
         self.default_label_font = config.get("default-label-font", decks.default_label_font)
         self.default_label_size = config.get("default-label-size", decks.default_label_size)
         self.default_label_color = config.get("default-label-color", decks.default_label_color)
@@ -165,7 +168,7 @@ class Streamdeck:
                 self.device.set_brightness(self.brightness)
 
         if self.device is not None:
-            self.device.set_poll_frequency(10)
+            self.device.set_poll_frequency(POLL_FREQ)
 
         self.layout = None
         if "layout" in config:
@@ -378,6 +381,18 @@ class Streamdeck:
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
+        if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+            self.decks.xp.events.put([self.name, key, state])
+            logger.debug(f"key_change_callback: {key} {state} enqueued")
+        else:
+            # logger.debug(f"key_change_callback: {key} {state}")
+            self.key_change_processing(deck, key, state)
+
+    def key_change_processing(self, deck, key, state):
+        """
+        This is the function that is called when a key is pressed.
+        """
+        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 

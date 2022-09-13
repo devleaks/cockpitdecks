@@ -35,7 +35,7 @@ buttons:
     multi-icons:
       - NONE_OFF_LIGHT_AMBER_FR
       - NONE_NONE
-      - FAULT_OFF
+      - FAULT_AMBER_OFF_LIGHT_AMBER_FR
     dataref: AirbusFBW/ADIRUSwitchAnims[3]
     dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[3]} 4 * floor
   - index: 9
@@ -67,7 +67,7 @@ buttons:
     multi-icons:
       - NONE_OFF_LIGHT_AMBER_FR
       - NONE_NONE
-      - FAULT_OFF
+      - FAULT_AMBER_OFF_LIGHT_AMBER_FR
     dataref: AirbusFBW/ADIRUSwitchAnims[4]
     dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[4]} 4 * floor
   - index: 10
@@ -101,7 +101,7 @@ buttons:
     multi-icons:
       - NONE_OFF_LIGHT_AMBER_FR
       - NONE_NONE
-      - FAULT_OFF
+      - FAULT_AMBER_OFF_LIGHT_AMBER_FR
   - index: 31
     name: Index
     type: page

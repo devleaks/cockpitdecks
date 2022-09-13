@@ -163,7 +163,7 @@ buttons:
     dataref: AirbusFBW/MasterCaut
     # options: animation_speed=0.5
   - index: 17
-    name: MARTERWARN
+    name: MASTERWARN
     type: animate
     icon: MASTER_WARN_OFF
     multi-icons:
@@ -172,18 +172,6 @@ buttons:
     command: sim/annunciator/clear_master_warning
     dataref: AirbusFBW/MasterWarn
     options: animation_speed=0.5
-  - index: 16
-    name: adirs
-    type: page
-    icon: P_NONE
-    label: "OVERHEAD\nADIRS"
-    label-position: cm
-  - index: 17
-    name: OVRHDFIRE
-    type: page
-    icon: NONE
-    label: "OVERHEAD\nFIRE"
-    label-position: cm
   - index: 18
     name: OVRHDHYD
     type: page
@@ -257,6 +245,13 @@ buttons:
     icon: NONE
     label: "OVERHEAD\nOTHER"
     label-position: cm
+  - index: 30
+    name: XP PYTHON
+    type: push
+    icon: XP-PYTHON
+    command: XPPython3/reloadScripts
+    label: XPPython3
+    label-position: ct
   # - index: 30
   #   name: DATAREFTOOL
   #   type: push

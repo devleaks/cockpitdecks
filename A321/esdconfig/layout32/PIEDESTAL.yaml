@@ -19,7 +19,7 @@ buttons:
     dataref: AirbusFBW/MasterCaut
     options: animation_speed=0.5
   - index: 17
-    name: MARTERWARN
+    name: MASTERWARN
     type: animate
     icon: MASTER_WARN_OFF
     multi-icons:

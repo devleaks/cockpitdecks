@@ -76,11 +76,21 @@ class Button:
             self.label_position = "cm"
 
         # Icons
+        self.multi_icons = config.get("multi-icons")
+        if self.multi_icons is not None:
+            for i in range(len(self.multi_icons)):
+                self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
+                if self.multi_icons[i] not in self.deck.icons.keys():
+                    logger.warning(f"__init__: button {self.name}: icon not found {self.multi_icons[i]}")
+
         self.icon = config.get("icon")
         if self.icon is not None:
             self.icon = add_ext(self.icon, ".png")
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found {self.icon}")
+        elif self.multi_icons is not None and len(self.multi_icons) > 0:
+            self.icon = self.multi_icons[0]
+            logger.debug(f"__init__: button {self.name}: icon not found but has multi-icons. Using {self.icon}.")
         elif self.icon_color is not None:  # create one
             self.icon_color = convert_color(self.icon_color)
             self.default_icon_image = PILHelper.create_image(deck=self.deck.device, background=self.icon_color)
@@ -94,16 +104,9 @@ class Button:
             self.icon = self.default_icon
         else:
             self.icon = add_ext(self.deck.default_icon_name, ".png")
-            logger.warning(f"__init__: button {self.name}: not icon, no icon-color, using deck default icon {self.icon}")
+            logger.warning(f"__init__: button {self.name}: no icon, no icon-color, using deck default icon {self.icon}")
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found in deck {self.icon}")
-
-        self.multi_icons = config.get("multi-icons")
-        if self.multi_icons is not None:
-            for i in range(len(self.multi_icons)):
-                self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
-                if self.multi_icons[i] not in self.deck.icons.keys():
-                    logger.warning(f"__init__: button {self.name}: icon not found {self.multi_icons[i]}")
 
         self.key_icon = self.icon  # Working icon that will be displayed, default to self.icon
                                    # If key icon should come from icons, will be selected later
@@ -564,7 +567,7 @@ class ButtonAnimate(Button):
         """
         self.previous_value = self.current_value
         self.current_value = self.button_value()
-        print(f"{self.name}: {self.previous_value} -> {self.current_value}")
+        logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
         if self.current_value is not None and self.current_value == 1:
             self.anim_start()
         else:

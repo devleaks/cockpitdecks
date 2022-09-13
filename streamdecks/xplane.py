@@ -65,6 +65,7 @@ class XPlane:
     """
     def __init__(self, decks):
         self.decks = decks
+        self.use_flight_loop = False
         self.running = False
 
         self.datarefs_to_monitor = {}  # list of datarefs to monitor and buttons attached to each

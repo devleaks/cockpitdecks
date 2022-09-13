@@ -24,7 +24,7 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_NONE
       - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_OFF_WHITE
+      - FAULT_AMBER_OFF_WHITE_FR
     label: ENG 1 PUMP
     label-position: ct
     options: counter
@@ -45,7 +45,7 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_NONE
       - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_OFF_WHITE
+      - FAULT_AMBER_OFF_WHITE_FR
     label: ELEC PUMP
     label-position: ct
   - index: 11
@@ -55,7 +55,7 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_NONE
       - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_OFF_WHITE
+      - FAULT_AMBER_OFF_WHITE_FR
     label: PTU
     label-position: ct
   - index: 12
@@ -65,7 +65,7 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_NONE
       - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_OFF_WHITE
+      - FAULT_AMBER_OFF_WHITE_FR
     label: ENG 2 PUMP
     label-position: ct
   - index: 13
@@ -75,7 +75,7 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_NONE
       - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_OFF_WHITE
+      - FAULT_AMBER_OFF_WHITE_FR
     label: ELEC PUMP
     label-position: ct
 # ### LINE 3 ### 16-23 ######################################################

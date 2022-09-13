@@ -150,21 +150,23 @@ class Streamdecks:
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.fill_empty = self.default_config.get("fill-empty")
 
-        # 1. Loading/creating default icon
+        # 1. Creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
         logging.debug(f"load_defaults: create default {self.default_icon_name} icon")
 
         # 2. Load label default font
+        # 2.1 Try system fonts first
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
             try:
                 test = ImageFont.truetype(DEFAULT_LABEL_FONT, self.default_label_size)
                 self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
                 self.default_label_font = DEFAULT_LABEL_FONT
             except:
-                logging.warning(f"load_defaults: font {DEFAULT_LABEL_FONT} not loaded")
+                logging.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} not found on computer")
         else:
             logging.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} already loaded")
 
+        # 2.2 Try to load from streamdecks resources folder
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
             fn = None
             try:
@@ -174,15 +176,17 @@ class Streamdecks:
                 self.default_label_font = DEFAULT_LABEL_FONT
                 logging.debug(f"load_defaults: font {fn} found locally")
             except:
-                logging.warning(f"load_defaults: font {fn} not found locally")
+                logging.warning(f"load_defaults: font {fn} not found locally or on computer")
 
+        # 2.3 Set defaults from what we have so far
         if self.default_label_font is None and len(self.fonts) > 0:
             if DEFAULT_LABEL_FONT in self.fonts.keys():
                 self.default_label_font = DEFAULT_LABEL_FONT
             else:  # select first one
                 self.default_label_font = list(self.fonts.keys())[0]
 
-        # If no font loaded, try DEFAULT_SYSTEM_FONT:
+        # If we still haven't found a font...
+        # 3. ... try to load "system font" from system
         if self.default_label_font is None:  # No found loaded? we need at least one:
             if DEFAULT_SYSTEM_FONT not in self.fonts:
                 try:
@@ -197,7 +201,7 @@ class Streamdecks:
         if self.default_label_font is None:
             logging.error(f"load_defaults: no default font")
 
-        # 3. report summary if debugging
+        # 4. report summary if debugging
         logging.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_label_font}")
         logging.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
 
@@ -357,12 +361,13 @@ class Streamdecks:
         if len(self.decks) > 0:
             self.xp.start()
             logging.info(f"run: active")
-            for t in threading.enumerate():
-                try:
-                    t.join()
-                except RuntimeError:
-                    pass
-            logging.info(f"run: terminated")
+            if not self.xp.use_flight_loop:
+                for t in threading.enumerate():
+                    try:
+                        t.join()
+                    except RuntimeError:
+                        pass
+                logging.info(f"run: terminated")
         else:
             logging.warning(f"run: no deck")
 

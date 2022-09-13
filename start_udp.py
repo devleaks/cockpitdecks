@@ -7,7 +7,7 @@ sys.path.append('/Users/pierre/Developer/xppythonstubs')
 from streamdecks import Streamdecks, XPlaneUDP
 
 # logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("streamdecks")
 
 s = None

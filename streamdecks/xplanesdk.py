@@ -1,8 +1,8 @@
 # Class to get dataref values from XPlane Flight Simulator via network. 
 # License: GPLv3
 import logging
-from traceback import print_exc
 from datetime import datetime
+from queue import Queue, Empty
 import re
 
 import xp
@@ -14,9 +14,6 @@ from .xpdref import XPDref
 logger = logging.getLogger("XPlaneSDK")
 
 
-DATA_REFRESH = 3.0   # secs, we poll for data every 3 seconds.
-
-
 class XPlaneSDK(XPlane):
     '''
     Get data from XPlane via direct API calls.
@@ -24,8 +21,14 @@ class XPlaneSDK(XPlane):
 
     def __init__(self, decks):
         XPlane.__init__(self, decks=decks)
+        self.use_flight_loop = True
+        self.events = Queue()
 
-        self.defaultFreq = DATA_REFRESH
+        self.drflref = None
+        self.procflref = None
+
+        self.drflfreq = 1.0
+        self.procflfreq = 0.5
 
         self.datarefs = {}          # key = dataref-path, value = Dataref()
 
@@ -42,31 +45,49 @@ class XPlaneSDK(XPlane):
         """
         self.xplaneValues = {}
         for dataref in self.datarefs.values():
-            # logging.debug(f"loop: getting {dataref.path}..")
+            # logger.debug(f"GetValues: getting {dataref.path}.")
             self.xplaneValues[dataref.path] = dataref.value
-            # logging.debug(f"loop: .. got {dataref.path} = {self.xplaneValues[dataref.path]}.")
+            # logger.debug(f"GetValues: .. got {dataref.path} = {self.xplaneValues[dataref.path]}")
         return self.xplaneValues
 
-    def loop(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
-        while self.running:
-            try:
-                if len(self.datarefs) > 0:
-                    # logging.debug(f"loop: getting values..")
-                    self.current_values = self.GetValues()
-                    # logging.debug(f"loop: ..done")
-                    self.detect_changed()
-                else:
-                    logging.debug(f"loop: no dataref")
-            except:
-                logging.error(f"loop: has exception")
-                print_exc()
-                logging.error(f"loop: stopped scheduling (no more schedule)")
-                return 0
+    def dataref_fl(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
+        if not self.running:
+            logger.info(f"dataref_fl: stopped scheduling (no more schedule)")
+            return 0
 
-            # logging.debug(f"loop: completed at {datetime.now()}")
-            return self.defaultFreq  # next iteration in self.defaultFreq seconds
-        logging.info(f"loop: stopped scheduling (no more schedule)")
-        return 0
+        try:
+            if len(self.datarefs) > 0:
+                # logger.debug(f"dataref_fl: getting values..")
+                self.current_values = self.GetValues()
+                # logger.debug(f"dataref_fl: ..done")
+                self.detect_changed()
+            else:
+                logger.debug(f"dataref_fl: no dataref")
+        except:
+            logger.error(f"dataref_fl: exception:", exc_info=1)
+            logger.error(f"dataref_fl: stopped scheduling (no more schedule)")
+            return 0
+
+        # logger.debug(f"dataref_fl: completed at {datetime.now()}")
+        return self.drflfreq  # next iteration in self.drflfreq seconds
+
+    def processing_fl(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
+        if not self.running:
+            logger.info(f"processing_fl: stopped scheduling (no more schedule)")
+            return 0
+
+        while not self.events.empty():
+            e = self.events.get()
+            # logger.debug(f"processing_fl: processing {e}")
+            try:
+                deck = self.decks.decks[e[0]]
+                deck.key_change_processing(deck.device, e[1], e[2])
+            except:
+                logger.error(f"processing_fl: exception:", exc_info=1)
+                logger.error(f"processing_fl: continuing")
+
+        # logger.debug(f"processing_fl: completed at {datetime.now()}")
+        return self.procflfreq
 
     # ################################
     # X-Plane Interface
@@ -76,24 +97,24 @@ class XPlaneSDK(XPlane):
         if cmdref is not None:
             xp.commandOnce(cmdref)
         else:
-            logging.warning(f"commandOnce: command {command} not found")
+            logger.warning(f"commandOnce: command {command} not found")
 
     def commandBegin(self, command: str):
         cmdref = xp.findCommand(command)
         if cmdref is not None:
             xp.commandBegin(cmdref)
         else:
-            logging.warning(f"commandBegin: command {command} not found")
+            logger.warning(f"commandBegin: command {command} not found")
 
     def commandEnd(self, command: str):
         cmdref = xp.findCommand(command)
         if cmdref is not None:
             xp.commandEnd(cmdref)
         else:
-            logging.warning(f"XPLMCommandEnd: command {command} not found")
+            logger.warning(f"XPLMCommandEnd: command {command} not found")
 
     def set_datarefs(self, datarefs):
-        logger.debug(f"set_datarefs: need to set {self.datarefs_to_monitor.keys()}")
+        # logger.debug(f"set_datarefs: need to set {self.datarefs_to_monitor.keys()}")
         self.datarefs_to_monitor = datarefs
         self.datarefs = {}
         for d in self.datarefs_to_monitor.values():
@@ -106,17 +127,20 @@ class XPlaneSDK(XPlane):
     #
     def start(self):
         if not self.running:
-            self.fl = xp.createFlightLoop([xp.FlightLoop_Phase_AfterFlightModel, self.loop, None])
             self.running = True
-            xp.scheduleFlightLoop(self.fl, self.defaultFreq, 0)
-            logging.debug("start: flight loop started.")
+            self.drflref = xp.createFlightLoop([xp.FlightLoop_Phase_AfterFlightModel, self.dataref_fl, None])
+            xp.scheduleFlightLoop(self.drflref, self.drflfreq, 0)
+            self.procflref = xp.createFlightLoop([xp.FlightLoop_Phase_AfterFlightModel, self.processing_fl, None])
+            xp.scheduleFlightLoop(self.procflref, self.procflfreq, 0)
+            logger.debug("start: flight loops started")
         else:
-            logging.debug("start: flight loop running.")
+            logger.debug("start: flight loops running")
 
     def terminate(self):
         if self.running:
             self.running = False
-            xp.destroyFlightLoop(self.fl)
-            logging.debug("stop: flight loop stopped.")
+            xp.destroyFlightLoop(self.drflref)
+            xp.destroyFlightLoop(self.procflref)
+            logger.debug("stop: flight loops stopped")
         else:
-            logging.debug("stop: flight loop not running.")
+            logger.debug("stop: flight loops not running")

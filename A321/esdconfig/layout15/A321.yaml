@@ -7,7 +7,7 @@ buttons:
       - MASTER_CAUT
     command: sim/annunciator/clear_master_caution
   - index: 1
-    name: MARTERWARN
+    name: MASTERWARN
     type: push
     multi-icons:
       - MASTER_WARN_OFF

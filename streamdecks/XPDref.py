@@ -42,7 +42,7 @@ class XPDref(Dataref):
 
         self.xp_datatype = xp.getDataRefTypes(self.ref)
 
-        logger.debug(f"__init__: dataref {self.dataref} of type {self.xp_datatype} ({self.xp_datatype :b})")
+        # logger.debug(f"__init__: dataref {self.dataref} of type {self.xp_datatype} ({self.xp_datatype :b})")
 
         if self.is_array:
             if self.xp_datatype & xp.Type_IntArray:
@@ -63,7 +63,7 @@ class XPDref(Dataref):
 
             if self.dr_get:
                 self.xp_length = self.dr_get(self.ref, None)
-                logger.debug(f"__init__: dataref {self.path}: array length {self.xp_length}")
+                # logger.debug(f"__init__: dataref {self.path}: array length {self.xp_length}")
 
         else:
             if self.xp_datatype & xp.Type_Int:
@@ -82,7 +82,7 @@ class XPDref(Dataref):
                 self.dr_cast = bytearray
                 self.xp_datatype_str = "Byte"
 
-        if self.dr_get is None:
+        if self.dr_get is None:  # this is the only one we use so far
             logger.error(f"__init__: dataref {self.path}: no data handler found for type {self.xp_datatype} ({self.xp_datatype})")
 
         self.inited = True
@@ -129,7 +129,7 @@ class XPDref(Dataref):
                 if self.is_string:
                     return bytearray([x for x in values if x]).decode('utf-8')
                 else:
-                    logger.debug(f"get: dataref {self.path}: got array {values}")
+                    # logger.debug(f"get: dataref {self.path}: got array {values}")
                     return values[0] if len(values) > 0 else None
             else:
                 return self.dr_get(self.ref)
