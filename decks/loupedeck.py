@@ -21,7 +21,13 @@ from .Loupedeck.Devices.constants import BUTTONS as LOUPEDECK_BUTTON_NAMES
 logger = logging.getLogger("Loupedeck")
 
 DEFAULT_PAGE_NAME = "X-Plane"
-POLL_FREQ = 5  # default is 20
+
+VALID_STATE = {
+    "down": 1,
+    "up": 0,
+    "left": 2,
+    "right": 3
+}
 
 
 class Loupedeck(Streamdeck):
@@ -36,6 +42,7 @@ class Loupedeck(Streamdeck):
         self.name = name
         self.decks = decks
         self.device = device  # no longer None after Streamdeck.__init__()
+        self.pil_helper = PILHelper
         self.pages = {}
         self.icons = {}  # icons ready for this deck
         self.home_page = None       # if None means deck has loaded default wallpaper only.
@@ -116,18 +123,33 @@ class Loupedeck(Streamdeck):
                             button = None
                             bty = None
                             idx = None
+
+                            if "type" in a:
+                                bty = a["type"]
+
                             if "index" in a:
-                                idx = a["index"]  # DO NOT cast to int()
+                                idx = a["index"]
+                                try:
+                                    idx = int(idx)
+                                except ValueError:
+                                    pass
                             else:
                                 logger.error(f"load: page {name}: button {a} has no index, ignoring")
                                 continue
 
-                            if idx not in LOUPEDECK_BUTTON_NAMES.values():
-                                logger.error(f"load: page {name}: button {a} has index invalid for LoupedeckLive Device (keys={LOUPEDECK_BUTTON_NAMES.values()}), ignoring")
-                                continue
-
-                            if "type" in a:
-                                bty = a["type"]
+                            if bty == "knob":
+                                if idx not in list(LOUPEDECK_BUTTON_NAMES.values())[0:6]:
+                                    logger.error(f"load: page {name}: button {a} has index '{idx}' ({type(idx)}) invalid for LoupedeckLive Device (keys={LOUPEDECK_BUTTON_NAMES.values()[:-7]}), ignoring")
+                                    continue
+                                idx = f"K{idx}"
+                            elif bty == "button":
+                                if idx < 0 or idx > 7:  # buttons are 0 to 7, circle is an alias for B0
+                                    logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
+                                    continue
+                                if idx == 0:
+                                    idx = "circle"
+                                else:
+                                    idx = f"B{idx}"
 
                             if bty in BUTTON_TYPES.keys():
                                 button = BUTTON_TYPES[bty].new(config=a, page=this_page)
@@ -205,27 +227,54 @@ class Loupedeck(Streamdeck):
         self.device.set_callback(self.key_change_callback)
         self.running = True
 
-
     def key_change_callback(self, deck, msg):
         """
         This is the function that is called when a key is pressed.
         """
+        # logger.debug(f"key_change_callback: {msg}")
         if "action" not in msg or "id" not in msg:
             logger.debug(f"key_change_callback: invalid message {msg}")
             return
 
-        if msg["action"] == "push":
+        key = msg["id"]
+        action = msg["action"]
+
+        if action == "push":
             state = 1 if msg["state"] == "down" else 0
-            key = msg["id"]
+            num = -1
+            try:
+                num = int(key)
+                if num == 0:
+                    key = "circle"
+                elif num > 0:
+                    key = f"B{key}"
+                else:
+                    logger.warning(f"key_change_callback: invalid button key {key}")
+            except ValueError:
+                pass
             if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
                 self.decks.xp.events.put([self.name, key, state])
                 logger.debug(f"key_change_callback: {key} {state} enqueued")
             else:
                 # logger.debug(f"key_change_callback: {key} {state}")
                 self.key_change_processing(deck, key, state)
-        elif msg["action"] == "touchstart":  # we don't deal with slides now, just push on key
+
+        elif action == "rotate":
+            state = 2 if msg["state"] == "left" else 3
+            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                self.decks.xp.events.put([self.name, key, state])
+                logger.debug(f"key_change_callback: {key} {state} enqueued")
+            else:
+                # logger.debug(f"key_change_callback: {key} {state}")
+                self.key_change_processing(deck, key, state)
+
+        elif action == "touchstart":  # we don't deal with slides now, just push on key
             state = 1
             key = msg["key"]
+            try:
+                key = int(key)
+            except ValueError:
+                logger.warning(f"key_change_callback: invalid button key {key} {msg}")
             self.touches[msg["id"]] = msg
             if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
                 self.decks.xp.events.put([self.name, key, state])
@@ -233,7 +282,8 @@ class Loupedeck(Streamdeck):
             else:
                 # logger.debug(f"key_change_callback: {key} {state}")
                 self.key_change_processing(deck, key, state)
-        elif msg["action"] == "touchend":  # since user can "release" touch in another key, we send the touchstart one.
+
+        elif action == "touchend":  # since user can "release" touch in another key, we send the touchstart one.
             state = 0
             if msg["id"] in self.touches:
                 key = self.touches[msg["id"]]["key"]
@@ -247,37 +297,58 @@ class Loupedeck(Streamdeck):
             else:
                 logger.error(f"key_change_callback: received touchend but no matching touchstart found")
         else:
-            logger.debug(f"key_change_callback: unprocessed {msg}")
+            if action != "touchmove":
+                logger.debug(f"key_change_callback: unprocessed {msg}")
 
     def key_change_processing(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
+        logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
     def make_icon_for_device(self):
         """
         Each device model requires a different icon format (size).
-        We could build a set per Stream Deck model rather than loupedeck instance...
+        We could build a set per Stream Deck model rather than stream deck instance...
         """
-        pass
-
-    def change_page(self, page: str):
-        logger.debug(f"change_page: deck {self.name} change page to {page}..")
+        logger.info(f"make_icon_for_device: deck {self.name}..")
+        if self.device is not None:
+            for k, v in self.decks.icons.items():
+                self.icons[k] = PILHelper.create_scaled_image("button", v)  # 90x90
+            logger.info(f"make_icon_for_device: deck {self.name} icons ready")
+        else:
+            logger.warning(f"make_icon_for_device: deck {self.name} has no device")
 
     def start(self):
         if self.device is not None:
             self.device.set_callback(self.key_change_callback)
         logger.info(f"start: loupedeck {self.name} listening for key strokes")
 
-
-        logger.info(f"start: loupedeck {self.name} listening for key strokes")
-
-
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
-        pass
+        if self.device is None:
+            logger.warning("set_key_image: no device")
+            return
+        image = button.get_image()
+        if image is None:
+            logger.warning("set_key_image: button returned no image, using default")
+            image = self.icons[self.default_icon_name]
+
+        with self.device:
+            i = PILHelper.to_native_format(self.device, image)
+            self.device.set_key_image(button.index, i)
+
+    def set_button_color(self, button: Button): # idx: int, image: str, label: str = None):
+        if self.device is None:
+            logger.warning("set_key_image: no device")
+            return
+        color = button.get_color()
+        if color is None:
+            logger.warning("set_key_image: button returned no image, using default")
+            color = (240, 240, 240)
+        self.device.set_button_color(str(button.index), color)
+
 
     def terminate(self):
         logger.info(f"terminate: deck {self.name} terminated")

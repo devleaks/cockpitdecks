@@ -1,4 +1,5 @@
 name: ADIRS
+# To do: AirbusFBW/ADIRUOnBat
 buttons:
   - index: 2
     name: ADIRS_FAST_ALIGN

@@ -12,7 +12,7 @@ import time
 from datetime import datetime
 from queue import Queue
 
-from PIL import Image, ImageColor
+from PIL import Image
 from ..ImageHelpers import PILHelper
 from .Loupedeck import Loupedeck
 
@@ -80,6 +80,9 @@ class LoupedeckLive(Loupedeck):
             self.do_action(HEADERS["SERIAL_OUT"], track=True)
             self.do_action(HEADERS["VERSION_OUT"], track=True)
 
+    def id(self):
+        return self.serial
+
     def key_layout(self):
         return (4, 3)
 
@@ -93,7 +96,7 @@ class LoupedeckLive(Loupedeck):
         :param      buffer:  The buffer
         :type       buffer:  { type_description }
         """
-        logger.debug(f"send: to send: len={len(buff)}, raw={raw}, {print_bytes(buff)}")
+        # logger.debug(f"send: to send: len={len(buff)}, raw={raw}, {print_bytes(buff)}")
         if not raw:
             prep = None
             if len(buff) > 0x80:
@@ -107,10 +110,10 @@ class LoupedeckLive(Loupedeck):
                 prep[0] = 0x82
                 prep[1] = 0x80 + len(buff)
                 # prep.insert(2, buff_length.to_bytes(4, "big", False))
-            logger.debug(f"send: PREP: len={len(buff)}: {prep}")
+            # logger.debug(f"send: PREP: len={len(buff)}: {prep}")
             self.connection.write(prep)
 
-        logger.debug(f"send: buff: len={len(buff)}, {print_bytes(buff)}") # {buff},
+        # logger.debug(f"send: buff: len={len(buff)}, {print_bytes(buff)}") # {buff},
         self.connection.write(buff)
 
     # #########################################@
@@ -212,26 +215,26 @@ class LoupedeckLive(Loupedeck):
     #
     def do_action(self, action, data:bytearray = None, track:bool = False):
         if not self.inited:
-            logger.debug(f"do_action: not started")
+            logger.warning(f"do_action: not started")
             return
 
         if data is not None and type(data) != bytearray and type(data) != bytes:
             data = data.to_bytes(1, BIG_ENDIAN)
-            logger.debug(f"do_action: converted data") #  '{data}'")
+            # logger.debug(f"do_action: converted data") #  '{data}'")
 
-        logger.debug(f"do_action: {action:04x}, {print_bytes(data)}")
+        # logger.debug(f"do_action: {action:04x}, {print_bytes(data)}")
         self.transaction_id = (self.transaction_id + 1) % MAX_TRANSACTIONS
         if self.transaction_id == 0:  # Skip transaction ID's of zero since the device seems to ignore them
              self.transaction_id = self.transaction_id + 1
         header = action.to_bytes(2, BIG_ENDIAN) + self.transaction_id.to_bytes(1, BIG_ENDIAN)
-        logger.debug(f"do_action: id={self.transaction_id}, header={header}, track={track}")
+        # logger.debug(f"do_action: id={self.transaction_id}, header={header}, track={track}")
         payload = header
         if data is not None:
-            logger.debug(f"do_action: has data {payload} + '{print_bytes(data)}'")
+            # logger.debug(f"do_action: has data {payload} + '{print_bytes(data)}'")
             payload = payload + data
 
         if track:
-            logger.debug(f"do_action: tracking {self.transaction_id}")
+            # logger.debug(f"do_action: tracking {self.transaction_id}")
             self.pendingTransactions[self.transaction_id] = action
         self.send(payload)
 
@@ -342,31 +345,32 @@ class LoupedeckLive(Loupedeck):
         if brightness > MAX_BRIGHTNESS:
             brightness = MAX_BRIGHTNESS
         self.do_action(HEADERS["SET_BRIGHTNESS"], brightness.to_bytes(1, BIG_ENDIAN))
-        logger.debug(f"set_brightness: sent {brightness}")
+        # logger.debug(f"set_brightness: sent {brightness}")
 
-    def set_button_color(self, name: str, color):
+    def set_button_color(self, name: str, color: tuple):
         keys = list(filter(lambda k: BUTTONS[k] == name, BUTTONS))
         if len(keys) != 1:
             logger.info(f"set_button_color: invalid button key {name}")
+            return
         key = keys[0]
-        (r, g, b) = ImageColor.getrgb(color)
+        (r, g, b) = color
         data = bytearray([key, r, g, b])
         self.do_action(HEADERS["SET_COLOR"], data)
-        logger.debug(f"set_button_color: sent {name}, {color}")
+        # logger.debug(f"set_button_color: sent {name}, {color}")
 
     def vibrate(self, pattern = "SHORT"):
         if pattern not in HAPTIC.keys():
             logger.error(f"vibrate: invalid pattern {pattern}")
             return
         self.do_action(HEADERS["SET_VIBRATION"], HAPTIC[pattern])
-        logger.debug(f"vibrate: sent {pattern}")
+        # logger.debug(f"vibrate: sent {pattern}")
 
     # Image display functions
     #
     def refresh(self, display:int):
         display_info = DISPLAYS[display]
         self.do_action(HEADERS["DRAW"], display_info["id"], track=True)
-        logger.debug("refresh: refreshed")
+        # logger.debug("refresh: refreshed")
 
     def draw_buffer(self, buff, display:str, width: int = None, height: int = None, x:int = 0, y:int = 0, auto_refresh:bool = True):
         display_info = DISPLAYS[display]
@@ -378,7 +382,7 @@ class LoupedeckLive(Loupedeck):
         if len(buff) != expected:
             logger.error(f"draw_buffer: invalid buffer {len(buff)}, expected={expected}")
 
-        logger.debug(f"draw_buffer: o={x},{y}, dim={width},{height}")
+        # logger.debug(f"draw_buffer: o={x},{y}, dim={width},{height}")
 
         header = x.to_bytes(2, BIG_ENDIAN)
         header = header + y.to_bytes(2, BIG_ENDIAN)
@@ -386,7 +390,7 @@ class LoupedeckLive(Loupedeck):
         header = header + height.to_bytes(2, BIG_ENDIAN)
         payload = display_info["id"] + header + buff
         self.do_action(HEADERS["WRITE_FRAMEBUFF"], payload, track=True)
-        logger.debug(f"draw_buffer: buffer sent {len(buff)} bytes")
+        # logger.debug(f"draw_buffer: buffer sent {len(buff)} bytes")
         if auto_refresh:
             self.refresh(display)
 
@@ -410,6 +414,14 @@ class LoupedeckLive(Loupedeck):
             self.draw_buffer(image, display="center", width=width, height=height, x=x, y=y, auto_refresh=True)
         else: # type(image) == PIL.Image.Image
             self.draw_image(image, display="center", width=width, height=height, x=x, y=y, auto_refresh=True)
+
+    def reset(self):
+        image = Image.new("RGBA", (60, 270), "cyan")
+        self.draw_image(image, display="left", auto_refresh=True)
+        self.draw_image(image, display="right", auto_refresh=True)
+        image = Image.new("RGBA", (360, 270), "blue")
+        self.draw_image(image, display="center", auto_refresh=True)
+
 
     # #########################################@
     # Development and testing

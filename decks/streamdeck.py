@@ -30,6 +30,7 @@ class Streamdeck:
         self.name = name
         self.decks = decks
         self.device = device
+        self.pil_helper = PILHelper
         self.pages = {}
         self.icons = {}  # icons ready for this deck
         self.home_page = None       # if None means deck has loaded default wallpaper only.
@@ -116,7 +117,7 @@ class Streamdeck:
         """
         if self.home_page is not None:
             self.change_page(self.home_page.name)
-        logger.info(f"init: stream deck {self.name} initialized")
+        logger.info(f"init: deck {self.name} initialized")
 
     def load(self):
         """

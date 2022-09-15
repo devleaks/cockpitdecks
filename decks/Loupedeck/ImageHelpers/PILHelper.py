@@ -38,8 +38,6 @@ def create_image(deck, background='black'):
     """
     from PIL import Image
 
-    image_format = deck.key_image_format()
-
     return Image.new("RGB", get_dimentions(deck), background)
 
 

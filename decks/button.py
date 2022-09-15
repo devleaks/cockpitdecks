@@ -12,9 +12,9 @@ import re
 import logging
 import threading
 import time
+import random
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, convert_color
 from .rpc import RPC
@@ -93,7 +93,7 @@ class Button:
             logger.debug(f"__init__: button {self.name}: icon not found but has multi-icons. Using {self.icon}.")
         elif self.icon_color is not None:  # create one
             self.icon_color = convert_color(self.icon_color)
-            self.default_icon_image = PILHelper.create_image(deck=self.deck.device, background=self.icon_color)
+            self.default_icon_image = self.deck.pil_helper.create_image(deck=self.deck.device, background=self.icon_color)
             self.default_icon = f"_default_{self.page.name}_{self.name}_icon.png"
             # self.default_icon = add_ext(self.default_icon, ".png")
             # logger.debug(f"__init__: button {self.name}: creating icon '{self.default_icon}' with color {self.icon_color}")
@@ -151,6 +151,9 @@ class Button:
                 else:  # found just the name, so it may be a boolean, True if present
                     return True
         return default
+
+    def is_pushed(self):
+        return (self.pressed_count % 2) == 1
 
     def make_bounce_array(self, stops: int):
         if stops > 1:
@@ -473,6 +476,7 @@ class ButtonPush(Button):
         return super().get_image()
 
     def activate(self, state: bool):
+        # logger.debug(f"activate: button {self.name}: {state}")
         super().activate(state)
         if state:
             if self.is_valid():
@@ -615,9 +619,61 @@ class ButtonUpDown(ButtonPush):
                 logger.warning(f"activate: button {self.name}: invalid {self.commands}")
         self.render()
 
+# ###########################@
+# Loupedeck Specials
+#
+class ButtonButton(ButtonPush):
+    """
+    A Push button. We can only change the color of the button.
+    """
+
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def render(self):
+        """
+        Ask deck to set this button's image on the deck.
+        set_key_image will call this button get_button function to get the icon to display with label, etc.
+        """
+        self.deck.set_button_color(self)
+        # logger.debug(f"render: button {self.name} rendered")
+
+    def get_color(self):
+        return self.icon_color if self.icon_color is not None else [random.randint(0,255) for _ in range(3)]
+
+
+class ButtonKnob(ButtonPush):
+    """
+    A Push button that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        return len(self.commands) == 2 or len(self.commands) == 4
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            logger.debug(f"activate: button {self.name} rotate left")
+        elif state == 3:  # rotate right
+            logger.debug(f"activate: button {self.name} rotate right")
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        Ask deck to set this button's image on the deck.
+        set_key_image will call this button get_button function to get the icon to display with label, etc.
+        """
+        pass
+        # logger.debug(f"render: button {self.name} rendered")
+
+
 
 # ###########################@
-# Mapping butween button types and classes
+# Mapping between button types and classes
 #
 BUTTON_TYPES = {
     "none": Button,
@@ -626,5 +682,7 @@ BUTTON_TYPES = {
     "dual": ButtonDual,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
+    "knob": ButtonKnob,
+    "button": ButtonButton,
     "reload": ButtonReload
 }

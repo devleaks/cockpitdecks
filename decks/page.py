@@ -1,7 +1,5 @@
 import logging
 
-from StreamDeck.ImageHelpers import PILHelper
-
 from .constant import convert_color
 from .button import Button
 
@@ -69,11 +67,11 @@ class Page:
             icon = None
             if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
                 colors = convert_color(self.fill_empty)
-                icon = PILHelper.create_image(deck=self.deck.device, background=colors)
+                icon = self.deck.pil_helper.create_image(deck=self.deck.device, background=colors)
             elif self.fill_empty in self.deck.icons.keys():
                 icon = self.deck.icons[self.fill_empty]
             if icon is not None:
-                image = PILHelper.to_native_format(self.deck.device, icon)
+                image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                 for i in range(self.deck.device.key_count()):
                     if i not in self.buttons.keys():
                         self.deck.device.set_key_image(i, image)

@@ -14,6 +14,7 @@ decks:
     default-label-size: 16
 loupes:
   - name: Live
+    layout: live
     serial: LDD2001014021450700730B0009
     brightness: 70
 # This is at global level
