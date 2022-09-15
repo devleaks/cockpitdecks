@@ -11,13 +11,23 @@ buttons:
     commands:
       - sim/map/show_current
       - sim/map/show_current
+  - index: 5
+    name: MoreLess
+    type: push
+    icon: MASTER_WARN
+    commands:
+      - sim/map/show_current
+      - sim/map/show_current
   # - index: 1
   #   type: dual
   #   icon: TEST
   #   label: "APU\nTEST"
   #   label-position: ct
   #   command: AirbusFBW/FireTestAPU
-  # - index: 11
-  #   name: A321
-  #   type: page
-  #   icon: TOLISS-A321
+  - index: 11
+    name: A321
+    type: page
+    icon: TOLISS-A321
+  # - index: 0
+  #   type: buzz
+  #   pattern: ASCEND_SLOW

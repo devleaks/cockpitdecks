@@ -1,12 +1,10 @@
-# Streamdecks
+# Welcome to Cockpit Deck
 
-X-Plane Stream Deck Plugin
+Cockpit Deck is a XPPython3 plugin to interface
 
-Streamdecks allows you to use one or more Elgato Stream Deck devices
-with the X-Plane flight simulator.
+- Elgato Stream Decks
+- Loupedeck LoupedeckLive
 
-Streamdecks comes in two flavor
-1. An external process that connects to X-Plane through UDP (with some limitations),
-1. A XPPython Plugin that connects to X-Plane through X-Plane SDK API.
+with X-Plane flight simulator.
 
-Streamdecks development started Sept. 1rst 2022 and is in active development.
+The project just started and is in active development.
