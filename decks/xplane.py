@@ -2,6 +2,7 @@ import threading
 import logging
 import time
 
+loggerDataref = logging.getLogger("Dataref")
 logger = logging.getLogger("XPlane")
 
 
@@ -92,7 +93,7 @@ class XPlane:
         self.previous_values = self.current_values.copy()
 
     # ################################
-    # Streamdecks interface
+    # Decks interface
     #
     def set_datarefs(self, datarefs):
         logger.debug(f"set_datarefs: not implemented")

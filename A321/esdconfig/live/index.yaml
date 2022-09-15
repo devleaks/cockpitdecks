@@ -1,0 +1,21 @@
+name: Index
+buttons:
+  - index: 0
+    name: X-Plane Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sim/map/show_current
+    label: Map
+    label-position: ct
+  - index: 1
+    type: dual
+    icon: TEST
+    label: "APU\nTEST"
+    label-position: ct
+    command: AirbusFBW/FireTestAPU
+  - index: 11
+    name: A321
+    type: page
+    icon: TOLISS-A321

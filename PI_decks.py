@@ -1,5 +1,5 @@
-# Streamdecks XP11 Python3 Plugin Interface
-# Streamdecks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
+# Decks XP11 Python3 Plugin Interface
+# Decks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
 #
 #
 import logging
@@ -13,29 +13,29 @@ from traceback import print_exc
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib", "StreamDeck"))
 
 
-from streamdecks import Streamdecks, XPlaneSDK, __version__ as RELEASE
+from decks import Decks, XPlaneSDK, __version__ as RELEASE
 
-logging.basicConfig(level=logging.DEBUG, filename="Streamdecks.log", filemode='a')
+logging.basicConfig(level=logging.DEBUG, filename="decks.log", filemode='a')
 
 
 class PythonInterface:
 
     def __init__(self):
-        self.Name = "Streamdecks"
-        self.Sig = "streamdecks.xppython3"
-        self.Desc = "Stream Deck Controller. (Rel. " + RELEASE + ")"
+        self.Name = "Decks"
+        self.Sig = "decks.xppython3"
+        self.Desc = "Elgato Stream Deck and Loupedeck LoupedeckLive Controller. (Rel. " + RELEASE + ")"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
         self.menuIdx = None
-        self.streamdecks = None
-        self.streamDeckCmdRef = None
+        self.decks = None
+        self.decksCmdRef = None
 
     def XPluginStart(self):
-        self.streamDeckCmdRef = xp.createCommand('xppython3/streamdecks/reload', 'Reload Stream Decks for aircraft')
-        xp.registerCommandHandler(self.streamDeckCmdRef, self.streamDeckCmd, 1, None)
+        self.decksCmdRef = xp.createCommand('xppython3/decks/reload', 'Reload Stream Decks for aircraft')
+        xp.registerCommandHandler(self.decksCmdRef, self.decksCmd, 1, None)
         if self.trace:
             print(self.Name, "PI::XPluginStart: command added.")
-        self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.streamDeckCmdRef)
+        self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.decksCmdRef)
         if self.menuIdx > -1:
             xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Unchecked)
             if self.trace:
@@ -52,17 +52,17 @@ class PythonInterface:
             self.menuIdx = None
             if self.trace:
                 print(self.Name, "PI::XPluginStop: menu removed.")
-        if self.streamDeckCmdRef:
-            xp.unregisterCommandHandler(self.streamDeckCmdRef,
-                                        self.streamDeckCmd,
+        if self.decksCmdRef:
+            xp.unregisterCommandHandler(self.decksCmdRef,
+                                        self.decksCmd,
                                         1, None)
-            self.streamDeckCmdRef = None
+            self.decksCmdRef = None
             if self.trace:
                 print(self.Name, "PI::XPluginStop: command removed.")
-        if self.streamdecks:
+        if self.decks:
             try:
-                self.streamdecks.stop()
-                self.streamdecks = None
+                self.decks.stop()
+                self.decks = None
                 if self.trace:
                     print(self.Name, "PI::XPluginStop: stopped.")
             except:
@@ -73,8 +73,8 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            if self.streamdecks is None:
-                self.streamdecks = Streamdecks(self, XPlaneSDK)
+            if self.decks is None:
+                self.decks = Decks(self, XPlaneSDK)
             if self.loadCurrentAircraft():
                 self.enabled = True
                 xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Checked)
@@ -91,8 +91,8 @@ class PythonInterface:
 
     def XPluginDisable(self):
         try:
-            if self.enabled and self.streamdecks:
-                self.streamdecks.disable()
+            if self.enabled and self.decks:
+                self.decks.disable()
         except:
             if self.trace:
                 print(self.Name, "PI::XPluginDisable: exception.")
@@ -111,11 +111,11 @@ class PythonInterface:
         if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Name, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                if self.streamdecks:
+                if self.decks:
                     if self.loadCurrentAircraft():
                         self.enabled = True
                 else:
-                    print(self.Name, "PI::XPluginReceiveMessage: no Streamdecks")
+                    print(self.Name, "PI::XPluginReceiveMessage: no Decks")
             except:
                 if self.trace:
                     print(self.Name, "PI::XPluginReceiveMessage: exception.")
@@ -127,20 +127,20 @@ class PythonInterface:
         if len(ac) == 2:
             acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
             print(self.Name, "PI::loadCurrentAircraft: trying " + acpath[0] + "..")
-            self.streamdecks.load(acpath=acpath[0])
+            self.decks.load(acpath=acpath[0])
             print(self.Name, "PI::loadCurrentAircraft: .. " + acpath[0] + " done.")
             return True
         print(self.Name, "PI::loadCurrentAircraft: not found.")
         return False
 
 
-    def streamDeckCmd(self, *args, **kwargs):
+    def decksCmd(self, *args, **kwargs):
         """
         Command hook to either start or reload current aircraft esdconfig.
         """
         # pylint: disable=unused-argument
         if not self.enabled:
-            print(self.Name, "PI::streamDeckCmd: not enabled.")
+            print(self.Name, "PI::decksCmd: not enabled.")
             return 0
 
         # When mapped on a keystroke, StreamDeck only starts on begin of command (phase=0).
@@ -150,38 +150,38 @@ class PythonInterface:
         if len(args) > 2:
             commandPhase = args[1]
             if self.trace:
-                print(self.Name, "PI::streamDeckCmd: command phase", commandPhase)
+                print(self.Name, "PI::decksCmd: command phase", commandPhase)
         else:
-            print(self.Name, "PI::streamDeckCmd: no command phase", len(args))
+            print(self.Name, "PI::decksCmd: no command phase", len(args))
 
-        if not self.streamdecks:
+        if not self.decks:
             try:
-                self.streamdecks = Streamdecks(self, XPlaneSDK)
+                self.decks = Decks(self, XPlaneSDK)
                 if self.trace:
-                    print(self.Name, "PI::streamDeckCmd: created.")
+                    print(self.Name, "PI::decksCmd: created.")
             except:
                 if self.trace:
-                    print(self.Name, "PI::streamDeckCmd: exception(creating).")
+                    print(self.Name, "PI::decksCmd: exception(creating).")
                 print_exc()
                 return 0
 
-        if self.streamdecks and commandPhase == 0:
+        if self.decks and commandPhase == 0:
             if self.trace:
-                print(self.Name, "PI::streamDeckCmd: available.")
+                print(self.Name, "PI::decksCmd: available.")
             try:
                 if self.loadCurrentAircraft():
                     if self.trace:
-                        print(self.Name, "PI::streamDeckCmd: started.")
+                        print(self.Name, "PI::decksCmd: started.")
                     return 1
                 if self.trace:
-                    print(self.Name, "PI::streamDeckCmd: aircraft not found.")
+                    print(self.Name, "PI::decksCmd: aircraft not found.")
                 return 0
             except:
                 if self.trace:
-                    print(self.Name, "PI::streamDeckCmd: exception(loading).")
+                    print(self.Name, "PI::decksCmd: exception(loading).")
                 print_exc()
                 return 0
-        elif not self.streamdecks:
-            print(self.Name, "PI::streamDeckCmd: Error: could not create Streamdecks.")
+        elif not self.decks:
+            print(self.Name, "PI::decksCmd: Error: could not create Decks.")
 
         return 0

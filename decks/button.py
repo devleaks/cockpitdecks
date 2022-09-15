@@ -123,6 +123,8 @@ class Button:
         if self.has_option("bounce") and self.multi_icons is not None and len(self.multi_icons) > 0:
             stops = self.option_value(option="stops", default=len(self.multi_icons))
             self.bounce_arr = self.make_bounce_array(stops)
+        # test: we try to immediately get a first value
+        self.current_value = self.button_value()
 
     def is_valid(self) -> bool:
         """

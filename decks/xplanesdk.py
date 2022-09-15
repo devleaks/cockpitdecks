@@ -123,7 +123,7 @@ class XPlaneSDK(XPlane):
         logger.debug(f"set_datarefs: set {self.datarefs.keys()}")
 
     # ################################
-    # Streamdecks interface
+    # Decks interface
     #
     def start(self):
         if not self.running:

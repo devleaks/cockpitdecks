@@ -13,7 +13,7 @@ import os
 import yaml
 import xp
 from traceback import print_exc
-from streamdecks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
+from decks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
 
 
 RELEASE = "0.0.15"  # local version number
@@ -25,7 +25,7 @@ HDL = "cmdhdl"
 class PythonInterface:
 
     def __init__(self):
-        self.Name = "Streamdecks Helper"
+        self.Name = "Decks Helper"
         self.Sig = "streamdeckhelper.xppython3"
         self.Desc = f"Decompose commands in begin and end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"

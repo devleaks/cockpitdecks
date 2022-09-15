@@ -12,12 +12,14 @@ from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZ
 from .constant import has_ext, convert_color
 
 from .streamdeck import Streamdeck
+from .loupedeck import Loupedeck
+from .Loupedeck import DeviceManager as LoupedeckDeviceManager
 
-logger = logging.getLogger("Streamdecks")
+logger = logging.getLogger("Decks")
 
 #
 
-class Streamdecks:
+class Decks:
     """
     Contains all stream deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_DIR folder.
@@ -37,6 +39,7 @@ class Streamdecks:
         self.default_pages = None  # for debugging
 
         self.devices = []
+        self.lldevices = []
 
         self.acpath = None
         self.decks = {}
@@ -68,9 +71,12 @@ class Streamdecks:
             serial = device.get_serial_number()
             device.close()
             if serial in EXCLUDE_DECKS:
-                logger.warning(f"get_device: deck {serial} excluded")
+                logger.warning(f"init: deck {serial} excluded")
                 del self.devices[name]
         logger.info(f"init: using {len(self.devices)} decks")
+
+        # Now also look for LoupedeckLive devices:
+        self.lldevices = LoupedeckDeviceManager().enumerate()
 
     def get_device(self, req_serial: str):
         """
@@ -88,7 +94,7 @@ class Streamdecks:
                 logger.debug(f"get_device: deck {name}: {device.key_count()} keys, layout  {device.key_layout()[0]}×{device.key_layout()[1]}")
                 if device.is_visual():
                     image_format = device.key_image_format()
-                    logger.debug(f"get_device: deck {name}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Streamdecks.FLIP_DESCRIPTION[image_format['flip']]}")
+                    logger.debug(f"get_device: deck {name}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Decks.FLIP_DESCRIPTION[image_format['flip']]}")
                 else:
                     logger.debug(f"get_device: deck {name}: no visual")
                 device.reset()
@@ -96,12 +102,19 @@ class Streamdecks:
         logger.warning(f"get_device: deck {req_serial} not found")
         return None
 
+    def get_loupe_device(self, req_serial: str):
+        for loupe in self.lldevices:
+            if loupe.get_serial_number() ==  req_serial:
+                return loupe
+        logger.warning(f"get_loupe_device: loupe {req_serial} not found")
+        return None
+
     def load(self, acpath: str):
         """
         Loads stream decks for aircraft in supplied path and start listening for key presses.
         """
         if self.disabled:
-            logging.warning(f"load: Streamdecks is disabled")
+            logger.warning(f"load: Decks is disabled")
             return
         # Reset, if new aircraft
         if len(self.decks) > 0:
@@ -120,14 +133,14 @@ class Streamdecks:
             self.load_fonts()
             self.create_decks()
             if self.default_pages is not None:
-                logging.debug(f"load: default_pages {self.default_pages.keys()}")
+                logger.debug(f"load: default_pages {self.default_pages.keys()}")
                 for name, deck in self.decks.items():
                     if name in self.default_pages.keys():
                         if deck.home_page is not None:  # do not refresh default pages
                             deck.change_page(self.default_pages[name])
                 self.default_pages = None
         else:
-            logging.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
+            logger.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
         self.run()
 
@@ -140,7 +153,7 @@ class Streamdecks:
         if os.path.exists(fn):
             with open(fn, "r") as fp:
                 self.default_config = yaml.safe_load(fp)
-                logging.debug(f"load_defaults: loaded default config {fn}")
+                logger.debug(f"load_defaults: loaded default config {fn}")
         if self.default_config is not None:
             self.default_logo = self.default_config.get("default-wallpaper-logo", DEFAULT_LOGO)
             self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
@@ -152,7 +165,7 @@ class Streamdecks:
 
         # 1. Creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
-        logging.debug(f"load_defaults: create default {self.default_icon_name} icon")
+        logger.debug(f"load_defaults: create default {self.default_icon_name} icon")
 
         # 2. Load label default font
         # 2.1 Try system fonts first
@@ -162,9 +175,9 @@ class Streamdecks:
                 self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
                 self.default_label_font = DEFAULT_LABEL_FONT
             except:
-                logging.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} not found on computer")
+                logger.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} not found on computer")
         else:
-            logging.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} already loaded")
+            logger.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} already loaded")
 
         # 2.2 Try to load from streamdecks resources folder
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
@@ -174,9 +187,9 @@ class Streamdecks:
                 test = ImageFont.truetype(fn, self.default_label_size)
                 self.fonts[DEFAULT_LABEL_FONT] = fn
                 self.default_label_font = DEFAULT_LABEL_FONT
-                logging.debug(f"load_defaults: font {fn} found locally")
+                logger.debug(f"load_defaults: font {fn} found locally")
             except:
-                logging.warning(f"load_defaults: font {fn} not found locally or on computer")
+                logger.warning(f"load_defaults: font {fn} not found locally or on computer")
 
         # 2.3 Set defaults from what we have so far
         if self.default_label_font is None and len(self.fonts) > 0:
@@ -194,16 +207,16 @@ class Streamdecks:
                     self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
                     self.default_label_font = DEFAULT_LABEL_FONT
                 except:
-                    logging.error(f"load_defaults: font default {DEFAULT_SYSTEM_FONT} not loaded")
+                    logger.error(f"load_defaults: font default {DEFAULT_SYSTEM_FONT} not loaded")
             else:
-                logging.debug(f"load_defaults: font {DEFAULT_SYSTEM_FONT} already loaded")
+                logger.debug(f"load_defaults: font {DEFAULT_SYSTEM_FONT} already loaded")
 
         if self.default_label_font is None:
-            logging.error(f"load_defaults: no default font")
+            logger.error(f"load_defaults: no default font")
 
         # 4. report summary if debugging
-        logging.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_label_font}")
-        logging.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
+        logger.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_label_font}")
+        logger.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)
@@ -230,20 +243,42 @@ class Streamdecks:
                             if device is not None:
                                 if "name" in d:
                                     name = d["name"]
+                                # should check name does not already exist...
                                 self.decks[name] = Streamdeck(name, d, self, device)
                                 cnt = cnt + 1
-                                logging.info(f"load: deck {name} loaded")
+                                logger.info(f"load: deck {name} loaded")
                             # else:  # warning shown by get_device
                         else:
-                            logging.error(f"load: deck {name} has no serial number, ignoring")
+                            logger.error(f"load: deck {name} has no serial number, ignoring")
                 else:
-                    logging.warning(f"load: no deck in file {fn}")
+                    logger.warning(f"load: no deck in file {fn}")
+
+                if "loupes" in config:
+                    cnt = 0
+                    for d in config["loupes"]:
+                        name = f"Loupe {cnt}"
+                        if "serial" in d:
+                            serial = d["serial"]
+                            device = self.get_loupe_device(serial)
+                            if device is not None:
+                                if "name" in d:
+                                    name = d["name"]
+                                # should check name does not already exist...
+                                self.decks[name] = Loupedeck(name, d, self, device)
+                                cnt = cnt + 1
+                                logger.info(f"load: loupe {name} loaded")
+                            # else:  # warning shown by get_device
+                        else:
+                            logger.error(f"load: loupe {name} has no serial number, ignoring")
+                else:
+                    logger.warning(f"load: no loupe in file {fn}")
+
         else:
-            logging.warning(f"load: no config file {fn}")
+            logger.warning(f"load: no config file {fn}")
 
     def create_default_decks(self):
         """
-        When no Stream Deck definition is found in the aicraft folder, Streamdecks loads
+        When no Stream Deck definition is found in the aicraft folder, Decks loads
         a default X-Plane logo on all Stream Deck devices. The only active button is index 0,
         which toggle X-Plane map on/off.
         """
@@ -272,7 +307,7 @@ class Streamdecks:
                     fn = os.path.join(dn, i)
                     image = Image.open(fn)
                     self.icons[i] = image
-        logging.info(f"load_icons: {len(self.icons)} icons loaded")
+        logger.info(f"load_icons: {len(self.icons)} icons loaded")
 
     def load_fonts(self):
         # Loading fonts.
@@ -294,9 +329,9 @@ class Streamdecks:
                             test = ImageFont.truetype(fn, self.default_label_size)
                             self.fonts[i] = fn
                         except:
-                            logging.warning(f"load_fonts: custom font file {fn} not loaded")
+                            logger.warning(f"load_fonts: custom font file {fn} not loaded")
                     else:
-                        logging.debug(f"load_fonts: font {i} already loaded")
+                        logger.debug(f"load_fonts: font {i} already loaded")
 
         # 2. Load label default font
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
@@ -306,9 +341,9 @@ class Streamdecks:
                     self.fonts[DEFAULT_LABEL_FONT] = DEFAULT_LABEL_FONT
                     self.default_label_font = DEFAULT_LABEL_FONT
                 except:
-                    logging.warning(f"load_fonts: font {DEFAULT_LABEL_FONT} not loaded")
+                    logger.warning(f"load_fonts: font {DEFAULT_LABEL_FONT} not loaded")
             else:
-                logging.debug(f"load_fonts: font {DEFAULT_LABEL_FONT} already loaded")
+                logger.debug(f"load_fonts: font {DEFAULT_LABEL_FONT} already loaded")
 
         if self.default_label_font is None and len(self.fonts) > 0:
             if DEFAULT_LABEL_FONT in self.fonts.keys():
@@ -324,52 +359,52 @@ class Streamdecks:
                     self.fonts[DEFAULT_SYSTEM_FONT] = DEFAULT_SYSTEM_FONT
                     self.default_label_font = DEFAULT_LABEL_FONT
                 except:
-                    logging.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
+                    logger.error(f"load_fonts: font default {DEFAULT_SYSTEM_FONT} not loaded")
             else:
-                logging.debug(f"load_fonts: font {DEFAULT_SYSTEM_FONT} already loaded")
+                logger.debug(f"load_fonts: font {DEFAULT_SYSTEM_FONT} already loaded")
 
-        logging.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_label_font}")
+        logger.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_label_font}")
 
     def reload_decks(self):
         """
         Development function to reload page yaml without leaving the page
         Should not be used in production...
         """
-        logging.info(f"reload_decks: reloading..")
+        logger.info(f"reload_decks: reloading..")
         self.default_pages = {}
         for name, deck in self.decks.items():
             self.default_pages[name] = deck.current_page.name
         self.load(self.acpath)
-        logging.info(f"reload_decks: ..done")
+        logger.info(f"reload_decks: ..done")
 
     def terminate_this_aircraft(self):
-        logging.info(f"terminate_this_aircraft: terminating..")
+        logger.info(f"terminate_this_aircraft: terminating..")
         for deck in self.decks.values():
             deck.terminate()
-        logging.info(f"terminate_this_aircraft: done")
+        logger.info(f"terminate_this_aircraft: done")
 
     def terminate_all(self):
-        logging.info(f"terminate_all: terminating..")
+        logger.info(f"terminate_all: terminating..")
         self.terminate_this_aircraft()
         if self.xp is not None:
             self.xp.terminate()
             del self.xp
             self.xp = None
-        logging.info(f"terminate_all: done")
+        logger.info(f"terminate_all: done")
 
     def run(self):
         if len(self.decks) > 0:
             self.xp.start()
-            logging.info(f"run: active")
+            logger.info(f"run: active")
             if not self.xp.use_flight_loop:
                 for t in threading.enumerate():
                     try:
                         t.join()
                     except RuntimeError:
                         pass
-                logging.info(f"run: terminated")
+                logger.info(f"run: terminated")
         else:
-            logging.warning(f"run: no deck")
+            logger.warning(f"run: no deck")
 
     # XPPython Plugin Hooks
     #

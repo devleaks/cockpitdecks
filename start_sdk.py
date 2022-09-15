@@ -12,7 +12,7 @@ from time import sleep
 from PI_streamdecks import PythonInterface
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("streamdecks")
+logger = logging.getLogger("decks_sdk")
 
 pi = None
 try:

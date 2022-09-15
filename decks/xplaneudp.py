@@ -310,7 +310,7 @@ class XPlaneUDP(XPlane):
         logger.debug(f"set_datarefs: set {datarefs.keys()}")
 
     # ################################
-    # Streamdecks interface
+    # Decks interface
     #
     def start(self):
         if "IP" in self.BeaconData:

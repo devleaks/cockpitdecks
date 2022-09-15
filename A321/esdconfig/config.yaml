@@ -12,6 +12,11 @@ decks:
     brightness: 70
     default-label-font: DIN Bold.ttf
     default-label-size: 16
+loupes:
+  - name: Live
+    serial: LDD2001014021450700730B0009
+    layout: live
+    brightness: 70
 # This is at global level
 default-wallpaper-logo: logo.png
 default-label-color: white
