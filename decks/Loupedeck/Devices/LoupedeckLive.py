@@ -80,6 +80,9 @@ class LoupedeckLive(Loupedeck):
             self.do_action(HEADERS["SERIAL_OUT"], track=True)
             self.do_action(HEADERS["VERSION_OUT"], track=True)
 
+    def key_layout(self):
+        return (4, 3)
+
     # #########################################@
     # Serial Connection
     #

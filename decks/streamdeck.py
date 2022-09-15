@@ -122,7 +122,7 @@ class Streamdeck:
         """
         Loads Streamdeck pages during configuration
         """
-        BUTTONS = "buttons"  # keywork in yaml file
+        YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
         if self.layout is None:
             self.load_default_page()
             return
@@ -143,7 +143,7 @@ class Streamdeck:
                     with open(fn, "r") as fp:
                         pc = yaml.safe_load(fp)
 
-                        if not BUTTONS in pc:
+                        if not YAML_BUTTONS_KW in pc:
                             logger.error(f"load: {fn} has no action")
                             continue
 
@@ -155,7 +155,7 @@ class Streamdeck:
                         this_page.fill_empty = pc["fill-empty-keys"] if "fill-empty-keys" in pc else self.fill_empty
                         self.pages[name] = this_page
 
-                        for a in pc[BUTTONS]:
+                        for a in pc[YAML_BUTTONS_KW]:
                             button = None
                             bty = None
                             idx = None

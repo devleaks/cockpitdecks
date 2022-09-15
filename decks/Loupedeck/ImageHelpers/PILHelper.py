@@ -13,6 +13,9 @@ def get_dimentions(deck):
     if deck in DISPLAYS.keys():
         width = DISPLAYS[deck]["width"]
         height = DISPLAYS[deck]["height"]
+    elif deck == "full":
+        width = DISPLAYS["left"]["width"] + DISPLAYS["center"]["width"] + DISPLAYS["right"]["width"]
+        height = DISPLAYS["left"]["height"] + DISPLAYS["center"]["height"] + DISPLAYS["right"]["height"]
     elif deck != "button":
         print(f"invalid deck '{deck}', assuming button size")
     return (width, height)

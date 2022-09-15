@@ -8,6 +8,7 @@ from time import sleep
 from enum import Enum
 
 from .Loupedeck.ImageHelpers import PILHelper
+from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
 from .constant import convert_color
@@ -43,6 +44,7 @@ class Loupedeck(Streamdeck):
         self.page_history = []
         self.valid = True
         self.running = False
+        self.touches = {}
         self.monitoring_thread = None
 
         self.previous_key_values = {}
@@ -77,7 +79,7 @@ class Loupedeck(Streamdeck):
         """
         Loads Streamdeck pages during configuration
         """
-        BUTTONS = "buttons"  # keywork in yaml file
+        YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
         if self.layout is None:
             self.load_default_page()
             return
@@ -98,7 +100,7 @@ class Loupedeck(Streamdeck):
                     with open(fn, "r") as fp:
                         pc = yaml.safe_load(fp)
 
-                        if not BUTTONS in pc:
+                        if not YAML_BUTTONS_KW in pc:
                             logger.error(f"load: {fn} has no action")
                             continue
 
@@ -110,7 +112,7 @@ class Loupedeck(Streamdeck):
                         this_page.fill_empty = pc["fill-empty-keys"] if "fill-empty-keys" in pc else self.fill_empty
                         self.pages[name] = this_page
 
-                        for a in pc[BUTTONS]:
+                        for a in pc[YAML_BUTTONS_KW]:
                             button = None
                             bty = None
                             idx = None
@@ -154,21 +156,98 @@ class Loupedeck(Streamdeck):
         # Generates an image that is correctly sized to fit across all keys of a given
         #
         # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
-        pass
+        # Generates an image that is correctly sized to fit across all keys of a given
+        #
+        # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
+        def create_full_deck_sized_image(image_filename):
+            deck_width, deck_height = (60 + 4*90 + 60, 270)
+            image = None
+            if os.path.exists(image_filename):
+                image = Image.open(image_filename).convert("RGBA")
+            else:
+                logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
+                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
+                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
+                if os.path.exists(fn):
+                    inside = 20
+                    logo = Image.open(fn).convert("RGBA")
+                    logo2 = ImageOps.fit(logo, (deck_width - 2*inside, deck_height - 2*inside), Image.LANCZOS)
+                    image.paste(logo2, (inside, inside), logo2)
+                else:
+                    logger.warning(f"load_default_page: deck {self.name}: no logo image {fn} found, using default")
+
+            image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
+            return image
+
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
+        image = create_full_deck_sized_image(fn)
+        image_left = image.copy().crop((0, 0, 60, image.height))
+        self.device.draw_image(image_left, display="left")
+        image_center = image.copy().crop((60, 0, 420, image.height))
+        self.device.draw_image(image_center, display="center")
+        image_right = image.copy().crop((image.width-60, 0, image.width, image.height))
+        self.device.draw_image(image_right, display="right")
+
+        # Add index 0 only button:
+        page0 = Page(name=DEFAULT_PAGE_NAME, deck=self)
+        button0 = BUTTON_TYPES["push"].new(config={
+                                                "index": "key0",
+                                                "name": "X-Plane Map",
+                                                "type": "push",
+                                                "command": "sim/map/show_current",
+                                                "label": "Map",
+                                                "icon": self.default_icon_name
+                                            }, page=page0)
+        page0.add_button(0, button0)
+        self.pages = { DEFAULT_PAGE_NAME: page0 }
+        self.home_page = None
+        self.current_page = page0
+        self.device.set_callback(self.key_change_callback)
+        self.running = True
+
 
     def key_change_callback(self, deck, msg):
         """
         This is the function that is called when a key is pressed.
         """
-        logger.debug(f"key_change_callback: {msg}")
-        return
-        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
-        if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-            self.decks.xp.events.put([self.name, key, state])
-            logger.debug(f"key_change_callback: {key} {state} enqueued")
+        if "action" not in msg or "id" not in msg:
+            logger.debug(f"key_change_callback: invalid message {msg}")
+            return
+
+        if msg["action"] == "push":
+            state = 1 if msg["state"] == "down" else 0
+            key = msg["id"]
+            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                self.decks.xp.events.put([self.name, key, state])
+                logger.debug(f"key_change_callback: {key} {state} enqueued")
+            else:
+                # logger.debug(f"key_change_callback: {key} {state}")
+                self.key_change_processing(deck, key, state)
+        elif msg["action"] == "touchstart":  # we don't deal with slides now, just push on key
+            state = 1
+            key = msg["key"]
+            self.touches[msg["id"]] = msg
+            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                self.decks.xp.events.put([self.name, key, state])
+                logger.debug(f"key_change_callback: {key} {state} enqueued")
+            else:
+                # logger.debug(f"key_change_callback: {key} {state}")
+                self.key_change_processing(deck, key, state)
+        elif msg["action"] == "touchend":  # since user can "release" touch in another key, we send the touchstart one.
+            state = 0
+            if msg["id"] in self.touches:
+                key = self.touches[msg["id"]]["key"]
+                del self.touches[msg["id"]]
+                if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                    self.decks.xp.events.put([self.name, key, state])
+                    logger.debug(f"key_change_callback: {key} {state} enqueued")
+                else:
+                    # logger.debug(f"key_change_callback: {key} {state}")
+                    self.key_change_processing(deck, key, state)
+            else:
+                logger.error(f"key_change_callback: received touchend but no matching touchstart found")
         else:
-            # logger.debug(f"key_change_callback: {key} {state}")
-            self.key_change_processing(deck, key, state)
+            logger.debug(f"key_change_callback: unprocessed {msg}")
 
     def key_change_processing(self, deck, key, state):
         """

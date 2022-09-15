@@ -15,7 +15,6 @@ decks:
 loupes:
   - name: Live
     serial: LDD2001014021450700730B0009
-    layout: live
     brightness: 70
 # This is at global level
 default-wallpaper-logo: logo.png
