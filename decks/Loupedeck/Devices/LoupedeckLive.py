@@ -18,7 +18,7 @@ from .Loupedeck import Loupedeck
 
 
 from .constants import BIG_ENDIAN, WS_UPGRADE_HEADER, WS_UPGRADE_RESPONSE
-from .constants import HEADERS, BUTTONS, HAPTIC, MAX_BRIGHTNESS, DISPLAYS
+from .constants import HEADERS, BUTTONS, HAPTIC, MAX_BRIGHTNESS, DISPLAYS, BUTTON_SIZES
 from .. import __NAME__, __version__
 
 logger = logging.getLogger("LoupedeckLive")
@@ -407,20 +407,37 @@ class LoupedeckLive(Loupedeck):
         else: # type(image) == PIL.Image.Image
             self.draw_image(image, display=display, auto_refresh=auto_refresh)
 
-    def set_key_image(self, idx: int, image):
+    def set_key_image(self, idx: str, image):
         # Get offset x/y for key index
-        width = 90
-        height = 90
-        x = idx % 4 * width
-        y = math.floor(idx / 4) * height
+        if idx == "left":
+            display = idx
+            x = 0
+            y = 0
+        elif idx == "right":
+            display = idx
+            x = 420
+            y = 0
+        else:
+            display = "center"
+            idx = int(idx)
+            width = BUTTON_SIZES[display][0]
+            height = BUTTON_SIZES[display][1]
+            x = idx % 4 * width
+            y = math.floor(idx / 4) * height
+
+        width = BUTTON_SIZES[display][0]
+        height = BUTTON_SIZES[display][1]
+        # logger.info(f"set_key_image: key {idx}: {x}, {y}, {width}, {height}")
+
         if type(image) == bytearray:
-            self.draw_buffer(image, display="center", width=width, height=height, x=x, y=y, auto_refresh=True)
+            self.draw_buffer(image, display=display, width=width, height=height, x=x, y=y, auto_refresh=True)
         else: # type(image) == PIL.Image.Image
-            self.draw_image(image, display="center", width=width, height=height, x=x, y=y, auto_refresh=True)
+            self.draw_image(image, display=display, width=width, height=height, x=x, y=y, auto_refresh=True)
 
     def reset(self):
-        image = Image.new("RGBA", (60, 270), "cyan")
+        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), "cyan")
         self.draw_image(image, display="left", auto_refresh=True)
+        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), "magenta")
         self.draw_image(image, display="right", auto_refresh=True)
         image = Image.new("RGBA", (360, 270), "blue")
         self.draw_image(image, display="center", auto_refresh=True)

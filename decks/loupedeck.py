@@ -151,6 +151,10 @@ class Loupedeck(Streamdeck):
                                     idx = "circle"
                                 else:
                                     idx = f"B{idx}"
+                            elif bty == "side":
+                                if idx not in ["left", "right"]:  # large, side buttons
+                                    logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
+                                    continue
 
                             if bty in BUTTON_TYPES.keys():
                                 button = BUTTON_TYPES[bty].new(config=a, page=this_page)
@@ -232,7 +236,7 @@ class Loupedeck(Streamdeck):
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"key_change_callback: {msg}")
+        logger.debug(f"key_change_callback: {msg}")
         if "action" not in msg or "id" not in msg:
             logger.debug(f"key_change_callback: invalid message {msg}")
             return
@@ -314,7 +318,7 @@ class Loupedeck(Streamdeck):
         """
         This is the function that is called when a key is pressed.
         """
-        #logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
+        logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
@@ -322,6 +326,8 @@ class Loupedeck(Streamdeck):
         """
         Each device model requires a different icon format (size).
         We could build a set per Stream Deck model rather than stream deck instance...
+        This makes the square icons for all square keys.
+        Side keys (left and right) are treated separatey.
         """
         dn = self.decks.icon_folder
         if dn is not None:
@@ -335,7 +341,7 @@ class Loupedeck(Streamdeck):
         logger.info(f"make_icon_for_device: deck {self.name}..")
         if self.device is not None:
             for k, v in self.decks.icons.items():
-                self.icons[k] = PILHelper.create_scaled_image("button", v)  # 90x90
+                self.icons[k] = self.pil_helper.create_scaled_image("button", v)  # 90x90
             if dn is not None:
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
                 with open(cache, "wb") as fp:

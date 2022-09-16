@@ -68,6 +68,12 @@ DISPLAYS = {
     "right":  { "id": bytes('\x00R'.encode("ascii")), "width": 60,  "height": 270 }, # "R"
 }
 
+BUTTON_SIZES = {
+    "center": [90, 90],
+    "left":   [60, 270],
+    "right":  [60, 270]
+}
+
 # Haptic feedbacks
 HAPTIC = {
     "SHORT": 0x01,

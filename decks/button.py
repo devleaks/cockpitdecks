@@ -42,6 +42,7 @@ class Button:
 
         # Parameters
         self.label = config.get("label")
+        self.labels = config.get("labels")
         self.label_format = config.get("label-format")
         self.label_font = config.get("label-font", self.deck.default_label_font)
         self.label_size = int(config.get("label-size", self.deck.default_label_size))
@@ -93,7 +94,9 @@ class Button:
             logger.debug(f"__init__: button {self.name}: icon not found but has multi-icons. Using {self.icon}.")
         elif self.icon_color is not None:  # create one
             self.icon_color = convert_color(self.icon_color)
-            self.default_icon_image = self.deck.pil_helper.create_image(deck=self.deck.device, background=self.icon_color)
+            # the icon size varies for center "buttons" and left and right side "buttons".
+            imgtype = "button" if self.index not in ["left", "right"] else self.index
+            self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
             self.default_icon = f"_default_{self.page.name}_{self.name}_icon.png"
             # self.default_icon = add_ext(self.default_icon, ".png")
             # logger.debug(f"__init__: button {self.name}: creating icon '{self.default_icon}' with color {self.icon_color}")
@@ -245,13 +248,16 @@ class Button:
             logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
         return default
 
-    def get_label(self):
+    def get_label(self, label = None, label_format = None):
         """
         Returns label, if any, with substitution of datarefs if any
         """
-        label = self.label
-        if self.label is not None:
-            label = self.substitute_dataref_values(self.label, formatting=self.label_format, default="<no-value>")
+        if label is None:
+            label = self.label
+        if label_format is None:
+            label_format = self.label_format
+        if label is not None:
+            label = self.substitute_dataref_values(label, formatting=label_format, default="<no-value>")
         return label
 
     def get_image(self):
@@ -260,9 +266,14 @@ class Button:
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        if self.key_icon in self.deck.icons.keys():
-            # logger.debug(f"get_image: using {self.key_icon}")
+        image = None
+        if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
+        elif self.key_icon in self.deck.decks.icons.keys(): # then icon, but need to resize it if necessary
+            image = self.deck.decks.icons[self.key_icon]
+            image = self.deck.pil_helper.create_scaled_image("button", image)
+
+        if image is not None:
             draw = None
             # Add label if any
             label = self.get_label()
@@ -314,28 +325,30 @@ class Button:
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
-    def get_font(self):
+    def get_font(self, fontname = None):
         """
         Helper function to get valid font, depending on button or global preferences
         """
+        if fontname == None:
+            fontname = self.label_font
         fonts_available = self.deck.decks.fonts.keys()
         # 1. Tries button specific font
-        if self.label_font is not None:
-            if self.label_font in fonts_available:
-                return self.deck.decks.fonts[self.label_font]
+        if fontname is not None:
+            if fontname in fonts_available:
+                return self.deck.decks.fonts[fontname]
             else:
-                logger.warning(f"get_font: button label font '{self.label_font}' not found")
+                logger.warning(f"get_font: button label font '{fontname}' not found")
         # 2. Tries deck default font
         if self.deck.default_label_font is not None and self.deck.default_label_font in fonts_available:
             logger.info(f"get_font: using deck default font '{self.deck.default_label_font}'")
             return self.deck.decks.fonts[self.deck.default_label_font]
         else:
-            logger.warning(f"get_font: deck default label font '{self.label_font}' not found")
+            logger.warning(f"get_font: deck default label font '{fontname}' not found")
         # 3. Tries streamdecks default font
         if self.deck.decks.default_label_font is not None and self.deck.decks.default_label_font in fonts_available:
             logger.info(f"get_font: using streamdecks default font '{self.deck.decks.default_label_font}'")
             return self.deck.decks.fonts[self.deck.decks.default_label_font]
-        logger.error(f"get_font: streamdecks default label font not found, tried {self.label_font}, {self.deck.default_label_font}, {self.deck.decks.default_label_font}")
+        logger.error(f"get_font: streamdecks default label font not found, tried {fontname}, {self.deck.default_label_font}, {self.deck.decks.default_label_font}")
         return None
 
     def button_value(self):
@@ -671,6 +684,124 @@ class ButtonKnob(ButtonPush):
         # logger.debug(f"render: button {self.name} rendered")
 
 
+class ButtonSide(ButtonPush):
+    """
+    A ButtonPush that has very special size (60x270), end therefore very special button rendering
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def get_image(self):
+        """
+        Helper function to get button image and overlay label on top of it for SIDE keys (60x270).
+        """
+        image = None
+        if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
+            image = self.deck.icons[self.key_icon]
+        elif self.key_icon in self.deck.decks.icons.keys(): # then icon, but need to resize it if necessary
+            image = self.deck.decks.icons[self.key_icon]
+            image = self.deck.pil_helper.create_scaled_image("button", image)
+
+        if image is not None:
+            draw = None
+            # Add label if any
+            if self.labels is not None:
+                image = image.copy()  # we will add text over it
+                draw = ImageDraw.Draw(image)
+                inside = round(0.04 * image.width + 0.5)
+                vcenter = [43, 135, 227]  # this determines the number of acceptable labels, organized vertically
+                vheight = 38 - inside
+
+                li = 0
+                for label in self.labels:
+                    txt = label.get("label")
+                    if li >= len(vcenter) or txt is None:
+                        continue
+                    fontname = self.get_font(label.get("label-font", self.label_font))
+                    if fontname is None:
+                        logger.warning(f"get_image: no font, cannot overlay label")
+                    else:
+                        # logger.debug(f"get_image: font {fontname}")
+                        lsize = label.get("label-size", self.label_size)
+                        font = ImageFont.truetype(fontname, lsize)
+                        # Horizontal centering is not an issue...
+                        label_position = label.get("label-position", self.label_position)
+                        w = image.width / 2
+                        p = "m"
+                        a = "center"
+                        if label_position == "l":
+                            w = inside
+                            p = "l"
+                            a = "left"
+                        elif label_position == "r":
+                            w = image.width - inside
+                            p = "r"
+                            a = "right"
+                        # Vertical centering is black magic...
+                        h = vcenter[li] - lsize / 2
+                        if label_position[1] == "t":
+                            h = vcenter[li] - vheight
+                        elif label_position[1] == "b":
+                            h = vcenter[li] + vheight - lsize
+
+                        logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
+                        draw.multiline_text((w, h),  # (image.width / 2, 15)
+                                  text=txt,
+                                  font=font,
+                                  anchor=p+"m",
+                                  align=a,
+                                  fill=label.get("label-color", self.label_color))
+                    li = li + 1
+            elif self.label is not None:
+                fontname = self.get_font()
+                if fontname is None:
+                    logger.warning(f"get_image: no font, cannot overlay label")
+                else:
+                    # logger.debug(f"get_image: font {fontname}")
+                    image = image.copy()  # we will add text over it
+                    draw = ImageDraw.Draw(image)
+                    font = ImageFont.truetype(fontname, self.label_size)
+                    inside = round(0.04 * image.width + 0.5)
+                    w = image.width / 2
+                    p = "m"
+                    a = "center"
+                    if self.label_position[0] == "l":
+                        w = inside
+                        p = "l"
+                        a = "left"
+                    elif self.label_position[0] == "r":
+                        w = image.width - inside
+                        p = "r"
+                        a = "right"
+                    h = image.height / 2 - self.label_size / 2
+                    if self.label_position[1] == "t":
+                        h = inside + self.label_size / 2
+                    elif self.label_position[1] == "r":
+                        h = image.height - inside - self.label_size
+                    # logger.debug(f"get_image: position {self.label_position}: {(w, h)}")
+                    draw.multiline_text((w, h),  # (image.width / 2, 15)
+                              text=label,
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=self.label_color)
+
+
+
+            # Add little check mark if not valid/fake
+            if not self.is_valid() or self.has_option("placeholder"):
+                if draw is None:  # no label
+                    image = image.copy()  # we will add text over it
+                    draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.1 * image.width)   # size
+                pologon = ( (c, c), (c, c-s), (c-s, c) )  # lower right corner
+                draw.polygon(pologon, fill="red", outline="white")
+            return image
+        else:
+            logger.warning(f"get_image: button {self.name}: icon {self.key_icon} not found")
+            # logger.debug(f"{self.deck.icons.keys()}")
+        return None
 
 # ###########################@
 # Mapping between button types and classes
@@ -684,5 +815,6 @@ BUTTON_TYPES = {
     "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
     "knob": ButtonKnob,
     "button": ButtonButton,
+    "side": ButtonSide,
     "reload": ButtonReload
 }

@@ -18,6 +18,21 @@ buttons:
     commands:
       - sim/map/show_current
       - sim/map/show_current
+  - index: right
+    name: RSide
+    type: side
+    icon-color: (200, 200, 0)
+    labels:
+      - label: top
+        label-position: lb
+        label-color: red
+      - label: Center
+        label-position: cm
+        label-color: green
+      - label: tom
+        label-position: rt
+        label-color: blue
+        label-size: 16
   # - index: 1
   #   type: dual
   #   icon: TEST
