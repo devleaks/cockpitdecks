@@ -410,6 +410,7 @@ class Decks:
             self.xp.start()
             logger.info(f"run: active")
             if not self.xp.use_flight_loop:
+                logger.info(f"run: {len(threading.enumerate())} threads")
                 for t in threading.enumerate():
                     try:
                         t.join()

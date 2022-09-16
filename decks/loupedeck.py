@@ -381,4 +381,5 @@ class Loupedeck(Streamdeck):
 
 
     def terminate(self):
+        self.device.stop()
         logger.info(f"terminate: deck {self.name} terminated")

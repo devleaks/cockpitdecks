@@ -257,6 +257,7 @@ class XPlaneUDP(XPlane):
         logger.debug(f"loop: started")
         # i = 0
         while self.running:
+            print(">.")
             nexttime = DATA_REFRESH
             if len(self.datarefs) > 0:
                 try:
@@ -272,11 +273,10 @@ class XPlaneUDP(XPlane):
 
         logger.debug(f"loop: ended but not terminated. Terminating..")
         if self.finished is not None:
-            if self.finished is not None:
-                self.finished.set()
-            else:
-                logger.warning(f"loop: no event set")
-            logger.debug(f"loop: allowed deletion")
+            self.finished.set()
+        else:
+            logger.warning(f"loop: no event set")
+        logger.debug(f"loop: allowed deletion")
         logger.debug(f"loop: ..terminated")
 
     # ################################

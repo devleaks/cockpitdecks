@@ -43,6 +43,8 @@ class LoupedeckLive(Loupedeck):
         self.auto_start = auto_start
         self.reading_thread = None  # read
         self.process_thread = None  # messages
+        self.reading_finished = None
+        self.process_finished = None
         self.touches = {}
 
         self.handlers = {
@@ -131,13 +133,13 @@ class LoupedeckLive(Loupedeck):
             logger.warning("start: cannot start, not initialized")
 
     def stop(self):
+        self.reading_finished = threading.Event()
+        self.process_finished = threading.Event()
         self.running = False
-        for t in threading.enumerate():
-            try:
-                t.join()
-            except RuntimeError:
-                pass
-        logging.info(f"stop: terminated")
+        logger.info("stop: requested threads to stop, waiting..")
+        self.reading_finished.wait(timeout=2)   # sloppy but ok.
+        self.process_finished.wait(timeout=2)
+        logger.info("stop: ..stopped")
 
     def _read_serial(self):
 
@@ -186,7 +188,13 @@ class LoupedeckLive(Loupedeck):
                 logger.error(f"_read_serial: exception:", exc_info=1)
                 logger.error(f"_read_serial: resuming")
 
+        if self.reading_finished is not None:
+            self.reading_finished.set()
+        else:
+            logger.warning(f"_read_serial: no event set")
+
         logger.debug("_read_serial: terminated")
+
 
     def _process_messages(self):
 
@@ -210,6 +218,11 @@ class LoupedeckLive(Loupedeck):
                 except:
                     logger.error(f"_process_messages: exception:", exc_info=1)
                     logger.error(f"_process_messages: resuming")
+
+        if self.process_finished is not None:
+            self.process_finished.set()
+        else:
+            logger.warning(f"_process_messages: no event set")
 
         logger.debug("_process_messages: terminated")
 
