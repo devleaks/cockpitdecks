@@ -2,6 +2,7 @@ import os
 import logging
 import yaml
 import threading
+import pickle
 
 from time import sleep
 
@@ -325,9 +326,22 @@ class Streamdeck:
         Each device model requires a different icon format (size).
         We could build a set per Stream Deck model rather than stream deck instance...
         """
+        dn = self.decks.icon_folder
+        if dn is not None:
+            cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
+            if os.path.exists(cache):
+                with open(cache, "rb") as fp:
+                    self.icons = pickle.load(fp)
+                logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
+                return
+
         if self.device is not None:
             for k, v in self.decks.icons.items():
                 self.icons[k] = PILHelper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
+            if dn is not None:
+                cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
+                with open(cache, "wb") as fp:
+                    pickle.dump(self.icons, fp)
             logger.info(f"make_icon_for_device: deck {self.name} icons ready")
         else:
             logger.warning(f"make_icon_for_device: deck {self.name} has no device")

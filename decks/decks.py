@@ -2,6 +2,7 @@ import os
 import threading
 import yaml
 import logging
+import pickle
 
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
@@ -53,6 +54,7 @@ class Decks:
         self.default_label_size = DEFAULT_LABEL_SIZE
         self.default_label_color = convert_color(DEFAULT_LABEL_COLOR)
 
+        self.icon_folder = None
         self.icons = {}
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
@@ -301,13 +303,22 @@ class Decks:
         #
         dn = os.path.join(self.acpath, CONFIG_DIR, ICONS_FOLDER)
         if os.path.exists(dn):
-            icons = os.listdir(dn)
-            for i in icons:
-                if has_ext(i, "png"):
-                    fn = os.path.join(dn, i)
-                    image = Image.open(fn)
-                    self.icons[i] = image
-        logger.info(f"load_icons: {len(self.icons)} icons loaded")
+            self.icon_folder = dn
+            cache = os.path.join(dn, "_icon_cache.pickle")
+            if os.path.exists(cache):
+                with open(cache, "rb") as fp:
+                    self.icons = pickle.load(fp)
+                logger.info(f"load_icons: {len(self.icons)} icons loaded from cache")
+            else:
+                icons = os.listdir(dn)
+                for i in icons:
+                    if has_ext(i, "png"):
+                        fn = os.path.join(dn, i)
+                        image = Image.open(fn)
+                        self.icons[i] = image
+                with open(cache, "wb") as fp:
+                    pickle.dump(self.icons, fp)
+                logger.info(f"load_icons: {len(self.icons)} icons loaded")
 
     def load_fonts(self):
         # Loading fonts.

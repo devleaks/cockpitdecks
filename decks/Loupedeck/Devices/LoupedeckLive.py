@@ -120,11 +120,15 @@ class LoupedeckLive(Loupedeck):
     # Threading
     #
     def start(self):
-        self.reading_thread = threading.Thread(target=self._read_serial)
-        self.process_thread = threading.Thread(target=self._process_messages)
-        self.running = True
-        self.process_thread.start()
-        self.reading_thread.start()
+        if self.inited:
+            self.reading_thread = threading.Thread(target=self._read_serial)
+            self.process_thread = threading.Thread(target=self._process_messages)
+            self.running = True
+            self.process_thread.start()
+            self.reading_thread.start()
+            logger.info("start: started")
+        else:
+            logger.warning("start: cannot start, not initialized")
 
     def stop(self):
         self.running = False
@@ -173,15 +177,14 @@ class LoupedeckLive(Loupedeck):
 
         logger.debug("_read_serial: starting")
 
-        while self.running and self.inited:
-            raw_byte = b""
-            if self.inited:
+        while self.running:
+            try:
                 raw_byte = self.connection.read()
-            else:
-                raw_byte = self.connection.readline()
-            if raw_byte != b"":
-                # logger.debug(f"raw_byte: {raw_byte}")
-                magic_byte_length_parser(raw_byte)
+                if raw_byte != b"":
+                    magic_byte_length_parser(raw_byte)
+            except:
+                logger.error(f"_read_serial: exception:", exc_info=1)
+                logger.error(f"_read_serial: resuming")
 
         logger.debug("_read_serial: terminated")
 
