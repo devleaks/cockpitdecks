@@ -12,6 +12,7 @@ class Page:
     """
 
     def __init__(self, name: str, deck: "Streamdeck"):
+        self._config = {}
         self.name = name
         self.deck = deck
         self.xp = self.deck.decks.xp  # shortcut alias

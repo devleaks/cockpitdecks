@@ -35,6 +35,7 @@ class Decks:
     def __init__(self, pi, xp):
         self.pi = pi
         self.xp = xp(self)
+        self._config = None
 
         self.disabled = False
         self.default_pages = None  # for debugging
@@ -226,6 +227,7 @@ class Decks:
             with open(fn, "r") as fp:
                 config = yaml.safe_load(fp)
 
+                self._config = config
                 self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
                 self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
                 self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)

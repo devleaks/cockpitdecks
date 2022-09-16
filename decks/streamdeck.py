@@ -28,6 +28,7 @@ class Streamdeck:
     """
 
     def __init__(self, name: str, config: dict, decks: "Decks", device = None):
+        self._config = config
         self.name = name
         self.decks = decks
         self.device = device

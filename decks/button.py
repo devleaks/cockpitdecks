@@ -27,6 +27,7 @@ class Button:
     def __init__(self, config: dict, page: "Page"):
 
         # Definition and references
+        self._config = config
         self.page = page
         self.deck = page.deck
         self.xp = self.deck.decks.xp  # shortcut alias
@@ -113,7 +114,7 @@ class Button:
 
         self.key_icon = self.icon  # Working icon that will be displayed, default to self.icon
                                    # If key icon should come from icons, will be selected later
-        logger.debug(f"__init__: button {self.name}: key icon {self.key_icon}, icon {self.icon}")
+        # logger.debug(f"__init__: button {self.name}: key icon {self.key_icon}, icon {self.icon}")
         self.init()
 
     @classmethod
@@ -690,11 +691,11 @@ class ButtonKnob(ButtonPush):
 
     def render(self):
         """
-        Ask deck to set this button's image on the deck.
-        set_key_image will call this button get_button function to get the icon to display with label, etc.
+        No rendering for knobs, but render screen next to it in case it carries status.
         """
-        pass
-        # logger.debug(f"render: button {self.name} rendered")
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            self.page.buttons[disp].render()
 
 
 class ButtonSide(ButtonPush):
@@ -724,11 +725,21 @@ class ButtonSide(ButtonPush):
                 draw = ImageDraw.Draw(image)
                 inside = round(0.04 * image.width + 0.5)
                 vcenter = [43, 135, 227]  # this determines the number of acceptable labels, organized vertically
+                vposition = "TCB"
                 vheight = 38 - inside
 
                 li = 0
                 for label in self.labels:
                     txt = label.get("label")
+                    knob = "knob" + vposition[li] + self.index[0].upper()
+                    logger.debug(f"get_image: watching {knob}")
+                    if knob in self.page.buttons.keys():
+                        corrknob = self.page.buttons[knob]
+                        if corrknob.has_option("dual"):
+                            if corrknob.is_pushed():
+                                txt = txt + "\nPUSHED"
+                            else:
+                                txt = txt + "\nPULLED"
                     if li >= len(vcenter) or txt is None:
                         continue
                     fontname = self.get_font(label.get("label-font", self.label_font))
