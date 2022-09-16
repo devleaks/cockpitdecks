@@ -1,23 +1,75 @@
 name: Index
 buttons:
-  - index: 1
-    name: X-Plane Map
-    type: button
-    command: sim/map/show_current
-    icon-color: (200, 0, 0)
+#
+# KNOB
+#
   - index: knobTL
-    name: MoreLess
     type: knob
     commands:
-      - sim/map/show_current
-      - sim/map/show_current
-  - index: 5
-    name: MoreLess
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+#
+# BUTTONS
+#
+  - index: 1
+    type: button
+    icon-color: (200, 20, 20)
+    command: sim/map/show_current
+#
+# KEYS
+#
+  - index: 0
+    type: none
+    label: ${AirbusFBW/RMP1StbyFreq}
+    label-format: "{:3.3f}"
+    label-color: white
+    label-size: 20
+    label-font: Seven Segment.ttf
+    icon-color: (40, 40, 40)
+  - index: 1
+    name: X-Plane Map
     type: push
-    icon: MASTER_WARN
-    commands:
-      - sim/map/show_current
-      - sim/map/show_current
+    command: sim/map/show_current
+    icon-color: (200, 0, 0)
+    label: "SHOW\nMAP"
+    label-size: 20
+  # - index: knobTL
+  #   name: MoreLess
+  #   type: knob
+  #   commands:
+  #     - sim/map/show_current
+  #     - sim/map/show_current
+  # - index: 2
+  #   type: none
+  #   label: ${AirbusFBW/BatVolts[0]}
+  #   label-format: "{:2.1f}"
+  #   label-color: white
+  #   label-size: 40
+  #   label-font: Seven Segment.ttf
+  #   icon-color: (40, 40, 40)
+  # - index: 5
+  #   name: MoreLess
+  #   type: push
+  #   icon: MASTER_WARN
+  #   commands:
+  #     - sim/map/show_current
+  #     - sim/map/show_current
+  # - index: 11
+  #   name: A321
+  #   type: page
+  #   icon: TOLISS-A321
+#
+# SIDE KEYS
+#
+# Note: For type side, you MUST give either an icon at proper size or a icon-color.
+  - index: left
+    type: side
+    labels:
+      - label: FREQ
+    icon-color: (100, 100, 200)
   - index: right
     name: RSide
     type: side
@@ -39,10 +91,6 @@ buttons:
   #   label: "APU\nTEST"
   #   label-position: ct
   #   command: AirbusFBW/FireTestAPU
-  - index: 11
-    name: A321
-    type: page
-    icon: TOLISS-A321
   # - index: 0
   #   type: buzz
   #   pattern: ASCEND_SLOW

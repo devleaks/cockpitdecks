@@ -113,6 +113,7 @@ class Button:
 
         self.key_icon = self.icon  # Working icon that will be displayed, default to self.icon
                                    # If key icon should come from icons, will be selected later
+        logger.debug(f"__init__: button {self.name}: key icon {self.key_icon}, icon {self.icon}")
         self.init()
 
     @classmethod
@@ -489,13 +490,15 @@ class ButtonPush(Button):
         return super().get_image()
 
     def activate(self, state: bool):
-        # logger.debug(f"activate: button {self.name}: {state}")
+        logger.debug(f"activate: button {self.name}: {state}")
         super().activate(state)
         if state:
             if self.is_valid():
                 if self.command is not None:
                     self.xp.commandOnce(self.command)
                 self.render()
+            else:
+                logger.warning(f"activate: button {self.name} is invalid")
 
 
 class ButtonDual(Button):
@@ -663,15 +666,25 @@ class ButtonKnob(ButtonPush):
         ButtonPush.__init__(self, config=config, page=page)
 
     def is_valid(self):
-        return len(self.commands) == 2 or len(self.commands) == 4
+        if self.has_option("dual"):
+            return len(self.commands) == 4
+        return len(self.commands) == 2
 
     def activate(self, state):
         if state < 2:
             super().activate(state)
         elif state == 2:  # rotate left
-            logger.debug(f"activate: button {self.name} rotate left")
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[0])
+                else:
+                    self.xp.commandOnce(self.commands[2])
         elif state == 3:  # rotate right
-            logger.debug(f"activate: button {self.name} rotate right")
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[1])
+                else:
+                    self.xp.commandOnce(self.commands[3])
         else:
             logger.warning(f"activate: button {self.name} invalid state {state}")
 
@@ -695,6 +708,7 @@ class ButtonSide(ButtonPush):
         """
         Helper function to get button image and overlay label on top of it for SIDE keys (60x270).
         """
+        logger.debug(f"get_image: key icon {self.key_icon}")
         image = None
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]

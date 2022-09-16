@@ -142,7 +142,6 @@ class Loupedeck(Streamdeck):
                                 if idx not in list(LOUPEDECK_BUTTON_NAMES.values())[0:6]:
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' ({type(idx)}) invalid for LoupedeckLive Device (keys={LOUPEDECK_BUTTON_NAMES.values()[:-7]}), ignoring")
                                     continue
-                                idx = f"K{idx}"
                             elif bty == "button":
                                 if idx < 0 or idx > 7:  # buttons are 0 to 7, circle is an alias for B0
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
@@ -155,6 +154,8 @@ class Loupedeck(Streamdeck):
                                 if idx not in ["left", "right"]:  # large, side buttons
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
                                     continue
+
+                            a["index"] = idx # place adjusted index
 
                             if bty in BUTTON_TYPES.keys():
                                 button = BUTTON_TYPES[bty].new(config=a, page=this_page)
@@ -321,6 +322,8 @@ class Loupedeck(Streamdeck):
         logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
+        else:
+            logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
 
     def make_icon_for_device(self):
         """
@@ -374,7 +377,7 @@ class Loupedeck(Streamdeck):
         if color is None:
             logger.warning("set_key_image: button returned no image, using default")
             color = (240, 240, 240)
-        self.device.set_button_color(str(button.index), color)
+        self.device.set_button_color(button.index.replace("B", ""), color)
 
 
     def terminate(self):
