@@ -32,8 +32,7 @@ class Decks:
         (True, True): "mirrored horizontally/vertically"
     }
 
-    def __init__(self, pi, xp):
-        self.pi = pi
+    def __init__(self, xp):
         self.xp = xp(self)
         self._config = None
 

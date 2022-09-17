@@ -88,6 +88,9 @@ class LoupedeckLive(Loupedeck):
     def key_layout(self):
         return (4, 3)
 
+    def key_count():
+        return 4 * 3
+
     # #########################################@
     # Serial Connection
     #

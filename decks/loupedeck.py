@@ -75,6 +75,19 @@ class Loupedeck(Streamdeck):
             self.valid = False
             logger.error(f"__init__: loupedeck has no serial number, cannot use")
 
+        self.brightness = 100
+        if "brightness" in config:
+            self.brightness = int(config["brightness"])
+            if self.device is not None:
+                self.device.set_brightness(self.brightness)
+
+        self.layout = None
+        if "layout" in config:
+            self.layout = config["layout"]  # config["layout"] may be None to choose no layout
+        else:
+            self.layout = DEFAULT_LAYOUT
+            logger.warning(f"__init__: stream deck has no layout, using default")
+
         self.valid = True
 
         if self.valid:
@@ -155,7 +168,8 @@ class Loupedeck(Streamdeck):
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
                                     continue
 
-                            a["index"] = idx # place adjusted index
+                            a["index"] = idx  # place adjusted index @todo: remove this
+                            a["_key"]  = idx  # place adjusted index
 
                             if bty in LOUPEDECK_BUTTON_TYPES.keys():
                                 button = LOUPEDECK_BUTTON_TYPES[bty].new(config=a, page=this_page)

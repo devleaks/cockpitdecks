@@ -82,7 +82,7 @@ class XPlane:
         """
         for d in self.current_values.keys():
             if d not in self.previous_values.keys() or self.current_values[d] != self.previous_values[d]:
-                # logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
+                logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
                 if d in self.datarefs_to_monitor.keys():
                     self.datarefs_to_monitor[d].update_value(self.current_values[d], cascade=True)
                 else:

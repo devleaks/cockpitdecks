@@ -10,7 +10,6 @@ class Page:
     """
     A Page is a collection of buttons.
     """
-
     def __init__(self, name: str, deck: "Streamdeck"):
         self._config = {}
         self.name = name
@@ -22,8 +21,7 @@ class Page:
         self.buttons = {}
         self.datarefs = {}
 
-
-    def add_button(self, idx: int, button: Button):
+    def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():
             logger.error(f"add_button: button index {idx} already defined, ignoring {button.name}")
             return

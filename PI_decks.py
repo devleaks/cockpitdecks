@@ -13,7 +13,8 @@ from traceback import print_exc
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib", "StreamDeck"))
 
 
-from decks import Decks, XPlaneSDK, __version__ as RELEASE
+from decks import Decks, __version__ as RELEASE
+from decks.xplanesdk import XPlaneSDK
 
 logging.basicConfig(level=logging.DEBUG, filename="decks.log", filemode='a')
 
@@ -23,7 +24,7 @@ class PythonInterface:
     def __init__(self):
         self.Name = "Decks"
         self.Sig = "decks.xppython3"
-        self.Desc = "Elgato Stream Deck and Loupedeck LoupedeckLive Controller. (Rel. " + RELEASE + ")"
+        self.Desc = "Elgato Stream Deck and Loupedeck LoupedeckLive Controller. for X-Plane (Rel. " + RELEASE + ")"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
         self.menuIdx = None
@@ -74,7 +75,7 @@ class PythonInterface:
     def XPluginEnable(self):
         try:
             if self.decks is None:
-                self.decks = Decks(self, XPlaneSDK)
+                self.decks = Decks(XPlaneSDK)
             if self.loadCurrentAircraft():
                 self.enabled = True
                 xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Checked)
@@ -156,7 +157,7 @@ class PythonInterface:
 
         if not self.decks:
             try:
-                self.decks = Decks(self, XPlaneSDK)
+                self.decks = Decks(XPlaneSDK)
                 if self.trace:
                     print(self.Name, "PI::decksCmd: created.")
             except:

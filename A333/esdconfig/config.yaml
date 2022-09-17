@@ -16,9 +16,9 @@ loupes:
   - name: Live
     layout: live
     serial: LDD2001014021450700730B0009
-    brightness: 70
+    brightness: 50
 # This is at global level
 default-wallpaper-logo: logo.png
 default-label-color: white
 default-label-font: DIN.ttf
-default-label-size: 14
+default-label-size: 12

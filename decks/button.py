@@ -31,9 +31,9 @@ class Button:
         self.page = page
         self.deck = page.deck
         self.xp = self.deck.decks.xp  # shortcut alias
-        self.name = config.get("name", f"bnt-{config['index']}")
+        self.name = config.get("name", f"{type(self).__name__}-{config['index']}")
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
-        self._key = None  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
+        self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
         # Working variables
         self.pressed_count = 0
@@ -97,8 +97,13 @@ class Button:
         elif self.icon_color is not None:  # create one
             self.icon_color = convert_color(self.icon_color)
             # the icon size varies for center "buttons" and left and right side "buttons".
-            imgtype = "button" if self.index not in ["left", "right"] else self.index
+            if type(self.deck.device).__name__.startswith("StreamDeck"):
+                imgtype = self.deck.device
+            else:
+                imgtype = "button" if self.index not in ["left", "right"] else self.index
+            # self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
             self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
+
             self.default_icon = f"_default_{self.page.name}_{self.name}_icon.png"
             # self.default_icon = add_ext(self.default_icon, ".png")
             # logger.debug(f"__init__: button {self.name}: creating icon '{self.default_icon}' with color {self.icon_color}")
@@ -263,6 +268,30 @@ class Button:
             label = self.substitute_dataref_values(label, formatting=label_format, default="<no-value>")
         return label
 
+    def set_key_icon(self):
+        if self.multi_icons is not None and len(self.multi_icons) > 1:
+            num_icons = len(self.multi_icons)
+            value = self.current_value
+            if value is None:
+                logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
+                value = 0
+            else:
+                value = int(value)
+            # logger.debug(f"get_image: button {self.name}: value={value}")
+            if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
+                value = value % num_icons
+
+            elif "bounce" in self.options and num_icons > 0:  # "bounce": 0-1-2-1-0-1-2-1-0-1-2-1-0
+                value = self.bounce_arr[value % len(self.bounce_arr)]
+
+            if value < 0 or value >= num_icons:
+                logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.multi_icons)}], default to 0")
+                value = 0
+
+            self.key_icon = self.multi_icons[value]
+        else:
+            self.key_icon = self.icon
+
     def get_image_for_icon(self):
         image = None
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
@@ -278,6 +307,7 @@ class Button:
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
+        self.set_key_icon()
         image = self.get_image_for_icon()
 
         if image is not None:
@@ -471,28 +501,6 @@ class ButtonPush(Button):
         """
         If button has more icons, select one from button current value
         """
-        if self.multi_icons is not None and len(self.multi_icons) > 1:
-            num_icons = len(self.multi_icons)
-            value = self.current_value
-            if value is None:
-                logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
-                value = 0
-            else:
-                value = int(value)
-            # logger.debug(f"get_image: button {self.name}: value={value}")
-            if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
-                value = value % num_icons
-
-            elif "bounce" in self.options and num_icons > 0:  # "bounce": 0-1-2-1-0-1-2-1-0-1-2-1-0
-                value = self.bounce_arr[value % len(self.bounce_arr)]
-
-            if value < 0 or value >= num_icons:
-                logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.multi_icons)}], default to 0")
-                value = 0
-
-            self.key_icon = self.multi_icons[value]
-        else:
-            self.key_icon = self.icon
         return super().get_image()
 
     def activate(self, state: bool):
@@ -779,7 +787,7 @@ class ButtonSide(ButtonPush):
                         elif label_position[1] == "b":
                             h = vcenter[li] + vheight - lsize
 
-                        logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
+                        # logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
                         draw.multiline_text((w, h),  # (image.width / 2, 15)
                                   text=txt,
                                   font=font,

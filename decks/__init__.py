@@ -12,5 +12,3 @@ __author__ = "Pierre M <pierre@devleaks.be>"
 __authorurl__ = "https://github.com/devleaks/streamdecks"
 
 from .decks import Decks
-from .xplaneudp import XPlaneUDP
-from .xplanesdk import XPlaneSDK

@@ -105,8 +105,9 @@ buttons:
       - F.GREENS_ON_3
     command: XPPython3/followthegreens/main_windown_toggle
     label: F.GREENS
+    label-size: 10
     label-position: ct
-    options: animation_speed=0.5
+    options: animation_speed=0.3
   - index: 8
     name: MASTERCAUT
     type: push

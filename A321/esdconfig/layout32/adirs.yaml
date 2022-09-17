@@ -1,21 +1,31 @@
 name: ADIRS
 # To do: AirbusFBW/ADIRUOnBat
 buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: ADIRS_ON_BAT
+    type: none
+    multi-icons:
+      - NONE_NONE
+      - ONBAT_AMBER_NONE
+    dataref: AirbusFBW/ADIRUOnBat
   - index: 2
     name: ADIRS_FAST_ALIGN
     type: push
     icon: P_TOLISS_ISCS_OFF
     command: AirbusFBW/ADIRU_fast_align
     label: ADIR F/ALIGN
+# ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: ADIRS1_INDICATOR
-    type: push
+    type: none
     multi-icons:
       - NONE_NONE
       - NONE_ALIGN_LIGHT_AMBER
       - FAULT_AMBER_ALIGN_LIGHT_AMBER
     dataref: AirbusFBW/OHPLightsATA34[6]
     dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
+# ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: ADIRS1
     type: updown
@@ -30,6 +40,7 @@ buttons:
     options: bounce
     label: IR1
     label-position: ct
+# ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: ADIRS1_OFF_BUTTON
     type: push
@@ -41,7 +52,7 @@ buttons:
     dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[3]} 4 * floor
   - index: 9
     name: ADIRS3_INDICATOR
-    type: push
+    type: none
     multi-icons:
       - NONE_NONE
       - NONE_ALIGN_LIGHT_AMBER
@@ -69,11 +80,11 @@ buttons:
       - NONE_OFF_LIGHT_AMBER_FR
       - NONE_NONE
       - FAULT_AMBER_OFF_LIGHT_AMBER_FR
-    dataref: AirbusFBW/ADIRUSwitchAnims[4]
-    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[4]} 4 * floor
+    dataref: AirbusFBW/ADIRUSwitchAnims[5]
+    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[5]} 4 * floor
   - index: 10
     name: ADIRS2_INDICATOR
-    type: push
+    type: none
     multi-icons:
       - NONE_NONE
       - NONE_ALIGN_LIGHT_AMBER
@@ -97,8 +108,8 @@ buttons:
   - index: 26
     name: ADIRS2_OFF_BUTTON
     type: push
-    dataref: AirbusFBW/ADIRUSwitchAnims[3]
-    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[3]} 4 * floor
+    dataref: AirbusFBW/ADIRUSwitchAnims[4]
+    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[4]} 4 * floor
     multi-icons:
       - NONE_OFF_LIGHT_AMBER_FR
       - NONE_NONE
