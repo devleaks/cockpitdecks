@@ -32,7 +32,8 @@ class Button:
         self.deck = page.deck
         self.xp = self.deck.decks.xp  # shortcut alias
         self.name = config.get("name", f"bnt-{config['index']}")
-        self.index = config.get("index")
+        self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
+        self._key = None  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
         # Working variables
         self.pressed_count = 0
@@ -244,7 +245,7 @@ class Button:
             r = RPC(expr)
             value = r.calculate()
             # logger.debug(f"execute_formula: button {self.name}: {dataref}: {expr} = {r1}")
-            logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {expr}:  => {value}")
+            # logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {expr}:  => {value}")
             return value
         elif len(self.all_datarefs) > 1:
             logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
@@ -262,18 +263,22 @@ class Button:
             label = self.substitute_dataref_values(label, formatting=label_format, default="<no-value>")
         return label
 
-    def get_image(self):
-        """
-        Helper function to get button image and overlay label on top of it.
-        Label may be updated at each activation since it can contain datarefs.
-        Also add a little marker on placeholder/invalid buttons that will do nothing.
-        """
+    def get_image_for_icon(self):
         image = None
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
         elif self.key_icon in self.deck.decks.icons.keys(): # then icon, but need to resize it if necessary
             image = self.deck.decks.icons[self.key_icon]
             image = self.deck.pil_helper.create_scaled_image("button", image)
+        return image
+
+    def get_image(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        image = self.get_image_for_icon()
 
         if image is not None:
             draw = None
@@ -705,17 +710,22 @@ class ButtonSide(ButtonPush):
     def __init__(self, config: dict, page: "Page"):
         ButtonPush.__init__(self, config=config, page=page)
 
+    def activate(self, state):
+        if type(state) == int:
+            super().activate(state)
+            return
+        # else, swipe event
+        logger.debug(f"activate: side bar swipe event unprocessed {state} ")
+
     def get_image(self):
         """
         Helper function to get button image and overlay label on top of it for SIDE keys (60x270).
         """
-        logger.debug(f"get_image: key icon {self.key_icon}")
         image = None
-        if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
-            image = self.deck.icons[self.key_icon]
-        elif self.key_icon in self.deck.decks.icons.keys(): # then icon, but need to resize it if necessary
+        # we can't get "button-resized-ready" deck icon, we need to start from original icon stored in decks.
+        if self.key_icon in self.deck.decks.icons.keys():
             image = self.deck.decks.icons[self.key_icon]
-            image = self.deck.pil_helper.create_scaled_image("button", image)
+            image = self.deck.pil_helper.create_scaled_image(self.index, image)
 
         if image is not None:
             draw = None
@@ -831,7 +841,7 @@ class ButtonSide(ButtonPush):
 # ###########################@
 # Mapping between button types and classes
 #
-BUTTON_TYPES = {
+LOUPEDECK_BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
     "push": ButtonPush,
@@ -843,3 +853,13 @@ BUTTON_TYPES = {
     "side": ButtonSide,
     "reload": ButtonReload
 }
+STREAM_DECK_BUTTON_TYPES = {
+    "none": Button,
+    "page": ButtonPage,
+    "push": ButtonPush,
+    "dual": ButtonDual,
+    "updown": ButtonUpDown,
+    "animate": ButtonAnimate,
+    "reload": ButtonReload
+}
+

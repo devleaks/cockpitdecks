@@ -2,6 +2,7 @@
 Loupedeck base class. Kind of ABC for future loupedeck devices.
 """
 import logging
+import threading
 from queue import Queue
 
 logger = logging.getLogger("Loupedeck")
@@ -23,6 +24,30 @@ class Loupedeck:
         self.transaction_id = 0
 
         self.callback = None
+
+        self.update_lock = threading.RLock()
+
+    def __del__(self):
+        try:
+            self.connection.close()
+        except:
+            pass
+
+    def __enter__(self):
+        """
+        Enter handler for the StreamDeck, taking the exclusive update lock on
+        the deck. This can be used in a `with` statement to ensure that only one
+        thread is currently updating the deck, even if it is doing multiple
+        operations (e.g. setting the image on multiple keys).
+        """
+        self.update_lock.acquire()
+
+    def __exit__(self, type, value, traceback):
+        """
+        Exit handler for the StreamDeck, releasing the exclusive update lock on
+        the deck.
+        """
+        self.update_lock.release()
 
     def get_info(self):
         if self.inited:

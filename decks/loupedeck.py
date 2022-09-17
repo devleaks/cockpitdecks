@@ -13,7 +13,7 @@ from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
 from .constant import convert_color
-from .button import Button, BUTTON_TYPES
+from .button import Button, LOUPEDECK_BUTTON_TYPES
 from .page import Page
 
 from .streamdeck import Streamdeck
@@ -157,8 +157,8 @@ class Loupedeck(Streamdeck):
 
                             a["index"] = idx # place adjusted index
 
-                            if bty in BUTTON_TYPES.keys():
-                                button = BUTTON_TYPES[bty].new(config=a, page=this_page)
+                            if bty in LOUPEDECK_BUTTON_TYPES.keys():
+                                button = LOUPEDECK_BUTTON_TYPES[bty].new(config=a, page=this_page)
                                 this_page.add_button(idx, button)
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
@@ -218,7 +218,7 @@ class Loupedeck(Streamdeck):
 
         # Add index 0 only button:
         page0 = Page(name=DEFAULT_PAGE_NAME, deck=self)
-        button0 = BUTTON_TYPES["push"].new(config={
+        button0 = LOUPEDECK_BUTTON_TYPES["push"].new(config={
                                                 "index": "key0",
                                                 "name": "X-Plane Map",
                                                 "type": "push",
@@ -237,7 +237,15 @@ class Loupedeck(Streamdeck):
         """
         This is the function that is called when a key is pressed.
         """
-        logger.debug(f"key_change_callback: {msg}")
+        def transfer(this_deck, this_key, this_state):
+            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                self.decks.xp.events.put([self.name, this_key, this_state])
+                logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
+            else:
+                # logger.debug(f"key_change_callback: {key} {state}")
+                self.key_change_processing(this_deck, this_key, this_state)
+
+        # logger.debug(f"key_change_callback: {msg}")
         if "action" not in msg or "id" not in msg:
             logger.debug(f"key_change_callback: invalid message {msg}")
             return
@@ -258,21 +266,11 @@ class Loupedeck(Streamdeck):
                     logger.warning(f"key_change_callback: invalid button key {key}")
             except ValueError:
                 pass
-            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                self.decks.xp.events.put([self.name, key, state])
-                logger.debug(f"key_change_callback: {key} {state} enqueued")
-            else:
-                # logger.debug(f"key_change_callback: {key} {state}")
-                self.key_change_processing(deck, key, state)
+            transfer(deck, key, state)
 
         elif action == "rotate":
             state = 2 if msg["state"] == "left" else 3
-            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                self.decks.xp.events.put([self.name, key, state])
-                logger.debug(f"key_change_callback: {key} {state} enqueued")
-            else:
-                # logger.debug(f"key_change_callback: {key} {state}")
-                self.key_change_processing(deck, key, state)
+            transfer(deck, key, state)
 
         elif action == "touchstart":  # we don't deal with slides now, just push on key
             state = 1
@@ -283,12 +281,7 @@ class Loupedeck(Streamdeck):
                 except ValueError:
                     logger.warning(f"key_change_callback: invalid button key {key} {msg}")
                 self.touches[msg["id"]] = msg
-                if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                    self.decks.xp.events.put([self.name, key, state])
-                    logger.debug(f"key_change_callback: {key} {state} enqueued")
-                else:
-                    # logger.debug(f"key_change_callback: {key} {state}")
-                    self.key_change_processing(deck, key, state)
+                transfer(deck, key, state)
             else:
                 self.touches[msg["id"]] = msg
                 logger.warning(f"key_change_callback: side bar touched, no processing")
@@ -299,31 +292,33 @@ class Loupedeck(Streamdeck):
                 if "key" in self.touches[msg["id"]] and self.touches[msg["id"]]["key"] is not None:
                     key = self.touches[msg["id"]]["key"]
                     del self.touches[msg["id"]]
-                    if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                        self.decks.xp.events.put([self.name, key, state])
-                        logger.debug(f"key_change_callback: {key} {state} enqueued")
-                    else:
-                        # logger.debug(f"key_change_callback: {key} {state}")
-                        self.key_change_processing(deck, key, state)
+                    transfer(deck, key, state)
                 else:
                     dx = msg["x"] - self.touches[msg["id"]]["x"]
                     dy = msg["y"] - self.touches[msg["id"]]["y"]
-                    logger.warning(f"key_change_callback: side bar touched, no processing delta=({dx}, {dy})")
+                    kstart = msg["key"] if msg["key"] is not None else msg["screen"]
+                    kend = self.touches[msg["id"]]["key"] if self.touches[msg["id"]]["key"] is not None else self.touches[msg["id"]]["screen"]
+                    same_key = kstart == kend
+                    event = [self.touches[msg["id"]]["x"], self.touches[msg["id"]]["y"], kstart]
+                    event = event + [msg["x"], msg["y"], kend]
+                    event = event + [dx, dy, same_key]
+                    # logger.debug(f"key_change_callback: side bar touched, no processing event={event}")
+                    transfer(deck, kstart, event)
             else:
                 logger.error(f"key_change_callback: received touchend but no matching touchstart found")
         else:
             if action != "touchmove":
                 logger.debug(f"key_change_callback: unprocessed {msg}")
 
-    def key_change_processing(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-        if key in self.current_page.buttons.keys():
-            self.current_page.buttons[key].activate(state)
-        else:
-            logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
+    # def key_change_processing(self, deck, key, state):
+    #     """
+    #     This is the function that is called when a key is pressed.
+    #     """
+    #     logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
+    #     if key in self.current_page.buttons.keys():
+    #         self.current_page.buttons[key].activate(state)
+    #     else:
+    #         logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
 
     def make_icon_for_device(self):
         """
@@ -363,11 +358,14 @@ class Loupedeck(Streamdeck):
             logger.warning("set_key_image: no device")
             return
         image = button.get_image()
-        if image is None:
+        if image is None and button.index not in ["left", "right"]:
             logger.warning("set_key_image: button returned no image, using default")
             image = self.icons[self.default_icon_name]
 
-        self.device.set_key_image(button.index, image)
+        if image is not None:
+            self.device.set_key_image(button.index, image)
+        else:
+            logger.warning(f"set_key_image: no image for {button.name}")
 
     def set_button_color(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:

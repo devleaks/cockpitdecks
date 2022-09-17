@@ -35,10 +35,11 @@ def print_bytes(buff, begin:int = 18, end:int = 10):
 class LoupedeckLive(Loupedeck):
 
 
-    def __init__(self, path:str, baudrate:int = 256000, timeout:int = 2, auto_start:bool = True):
+    def __init__(self, path:str, baudrate:int = 460800, timeout:int = 2, auto_start:bool = True):
         Loupedeck.__init__(self)
 
         self.path = path
+        # See https://lucidar.me/en/serialib/most-used-baud-rates-table/ for baudrates
         self.connection = serial.Serial(port=path, baudrate=baudrate, timeout=timeout)
         self.auto_start = auto_start
         self.reading_thread = None  # read
@@ -63,16 +64,15 @@ class LoupedeckLive(Loupedeck):
         self.init_ws()
         if self.auto_start:
             self.start()
-            self.info()
+            self.info()  # this is more to test it is working...
 
     def init_ws(self):
         self.send(WS_UPGRADE_HEADER, raw=True)
         while True and not self.inited:
             raw_byte = self.connection.readline()
             logger.debug(raw_byte)
-            if raw_byte == b"\r\n":  # got WS_UPGRADE_RESPONSE
+            if raw_byte == b"\r\n":  # got entire WS_UPGRADE_RESPONSE
                 self.inited = True
-            time.sleep(0.1)
         logger.debug(f"init_ws: inited")
 
     def info(self):
@@ -113,10 +113,13 @@ class LoupedeckLive(Loupedeck):
                 prep[1] = 0x80 + len(buff)
                 # prep.insert(2, buff_length.to_bytes(4, "big", False))
             # logger.debug(f"send: PREP: len={len(buff)}: {prep}")
-            self.connection.write(prep)
-
-        # logger.debug(f"send: buff: len={len(buff)}, {print_bytes(buff)}") # {buff},
-        self.connection.write(buff)
+            with self:
+                self.connection.write(prep)
+                self.connection.write(buff)
+        else:
+            with self:
+                # logger.debug(f"send: buff: len={len(buff)}, {print_bytes(buff)}") # {buff},
+                self.connection.write(buff)
 
     # #########################################@
     # Threading
@@ -192,7 +195,6 @@ class LoupedeckLive(Loupedeck):
             self.reading_finished.set()
         else:
             logger.warning(f"_read_serial: no event set")
-
         logger.debug("_read_serial: terminated")
 
 
@@ -397,6 +399,7 @@ class LoupedeckLive(Loupedeck):
         expected = width * height * 2
         if len(buff) != expected:
             logger.error(f"draw_buffer: invalid buffer {len(buff)}, expected={expected}")
+            return  # don't do anything because it breaks the connection to send invalid length buffer
 
         # logger.debug(f"draw_buffer: o={x},{y}, dim={width},{height}")
 
@@ -448,11 +451,12 @@ class LoupedeckLive(Loupedeck):
             self.draw_image(image, display=display, width=width, height=height, x=x, y=y, auto_refresh=True)
 
     def reset(self):
-        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), "cyan")
+        colors = ["cyan", "magenta", "blue"]
+        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), colors[0])
         self.draw_image(image, display="left", auto_refresh=True)
-        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), "magenta")
+        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), colors[1])
         self.draw_image(image, display="right", auto_refresh=True)
-        image = Image.new("RGBA", (360, 270), "blue")
+        image = Image.new("RGBA", (360, 270), colors[2])
         self.draw_image(image, display="center", auto_refresh=True)
 
 
@@ -467,12 +471,12 @@ class LoupedeckLive(Loupedeck):
         self.vibrate("LONG")
         self.set_brightness(50)
         self.set_button_color("1", "red")
-        # self.set_button_color("2", "orange")
-        # self.set_button_color("3", "yellow")
-        # self.set_button_color("4", "green")
-        # self.set_button_color("5", "blue")
-        # self.set_button_color("6", "purple")
-        # self.set_button_color("7", "white")
+        self.set_button_color("2", "orange")
+        self.set_button_color("3", "yellow")
+        self.set_button_color("4", "green")
+        self.set_button_color("5", "blue")
+        self.set_button_color("6", "purple")
+        self.set_button_color("7", "white")
         self.test_image()
 
     def test_image(self):

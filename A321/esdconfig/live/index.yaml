@@ -94,3 +94,23 @@ buttons:
   # - index: 0
   #   type: buzz
   #   pattern: ASCEND_SLOW
+  - index: 8
+    name: MASTERCAUT
+    type: push
+    icon: MASTER_CAUT_OFF
+    multi-icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+    # options: animation_speed=0.5
+  - index: 9
+    name: MASTERWARN
+    type: animate
+    icon: MASTER_WARN_OFF
+    multi-icons:
+      - MASTER_WARN_OFF
+      - MASTER_WARN
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+    options: animation_speed=0.5

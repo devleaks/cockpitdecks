@@ -13,7 +13,7 @@ from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
 from .constant import convert_color
-from .button import Button, BUTTON_TYPES
+from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
 
 logger = logging.getLogger("Streamdeck")
@@ -175,8 +175,8 @@ class Streamdeck:
                             if "type" in a:
                                 bty = a["type"]
 
-                            if bty in BUTTON_TYPES.keys():
-                                button = BUTTON_TYPES[bty].new(config=a, page=this_page)
+                            if bty in STREAM_DECK_BUTTON_TYPES.keys():
+                                button = STREAM_DECK_BUTTON_TYPES[bty].new(config=a, page=this_page)
                                 this_page.add_button(idx, button)
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")

@@ -37,5 +37,7 @@ class RPC:
                 stack.append(math.floor(stack.pop()))
             elif token == "ceil":
                 stack.append(math.ceil(stack.pop()))
+            elif token == "round":
+                stack.append(round(stack.pop(), 0))
 
         return stack if return_stack else stack.pop()

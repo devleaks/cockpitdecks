@@ -257,7 +257,6 @@ class XPlaneUDP(XPlane):
         logger.debug(f"loop: started")
         # i = 0
         while self.running:
-            print(">.")
             nexttime = DATA_REFRESH
             if len(self.datarefs) > 0:
                 try:
@@ -307,7 +306,7 @@ class XPlaneUDP(XPlane):
         self.datarefs_to_monitor = datarefs
         for d in self.datarefs_to_monitor.values():
             self.AddDataRef(d.path, freq=DATA_SENT)
-        logger.debug(f"set_datarefs: set {datarefs.keys()}")
+        logger.debug(f"set_datarefs: monitoring {list(self.datarefs.values())}")
 
     # ################################
     # Decks interface
