@@ -65,7 +65,7 @@ class XPlane:
     Abstract class for execution of operations in X-Plane
     """
     def __init__(self, decks):
-        self.decks = decks
+        self.cockpit = decks
         self.use_flight_loop = False
         self.running = False
 
@@ -93,7 +93,7 @@ class XPlane:
         self.previous_values = self.current_values.copy()
 
     # ################################
-    # Decks interface
+    # Cockpit interface
     #
     def set_datarefs(self, datarefs):
         logger.debug(f"set_datarefs: not implemented")

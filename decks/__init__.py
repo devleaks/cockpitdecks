@@ -11,4 +11,4 @@ __version_name__ = "development"
 __author__ = "Pierre M <pierre@devleaks.be>"
 __authorurl__ = "https://github.com/devleaks/streamdecks"
 
-from .decks import Decks
+from .cockpit import Cockpit

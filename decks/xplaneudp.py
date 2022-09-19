@@ -17,7 +17,7 @@ logger = logging.getLogger("XPlaneUDP")
 
 DATA_REFRESH = 0.1 # secs we poll for data every x seconds, must be < 0.1 for UDP
 DATA_SENT    = 10  # times per second, X-Plane send that data on UDP every that often.
-
+LOOP_ALIVE   = 1000
 
 class XPlaneIpNotFound(Exception):
     args = "Could not find any running XPlane instance in network."
@@ -255,9 +255,12 @@ class XPlaneUDP(XPlane):
 
     def loop(self):
         logger.debug(f"loop: started")
-        # i = 0
+        i = 0
         while self.running:
             nexttime = DATA_REFRESH
+            i = i + 1
+            if i % LOOP_ALIVE == 0:
+                logger.debug(f"loop: {i}")
             if len(self.datarefs) > 0:
                 try:
                     self.current_values = self.GetValues()
@@ -309,13 +312,17 @@ class XPlaneUDP(XPlane):
         logger.debug(f"set_datarefs: monitoring {list(self.datarefs.values())}")
 
     # ################################
-    # Decks interface
+    # Cockpit interface
     #
     def start(self):
         if "IP" in self.BeaconData:
-            self.thread = threading.Thread(target=self.loop)
-            self.running = True
-            self.thread.start()
+            if not self.running:
+                self.thread = threading.Thread(target=self.loop)
+                self.thread.name = f"dataref reader"
+                self.running = True
+                self.thread.start()
+            else:
+                logger.debug(f"start: XPlaneUDP already running.")
         else:
             logger.debug(f"start: no IP address. could not start.")
 

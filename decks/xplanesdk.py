@@ -80,7 +80,7 @@ class XPlaneSDK(XPlane):
             e = self.events.get()
             # logger.debug(f"processing_fl: processing {e}")
             try:
-                deck = self.decks.decks[e[0]]
+                deck = self.cockpit.cockpit[e[0]]
                 deck.key_change_processing(deck.device, e[1], e[2])
             except:
                 logger.error(f"processing_fl: exception:", exc_info=1)
@@ -123,7 +123,7 @@ class XPlaneSDK(XPlane):
         logger.debug(f"set_datarefs: set {self.datarefs.keys()}")
 
     # ################################
-    # Decks interface
+    # Cockpit interface
     #
     def start(self):
         if not self.running:

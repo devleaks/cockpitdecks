@@ -6,6 +6,14 @@ Buttons do
 1. Execute zero or more X-Plane command
 2. Optionally update their representation to confirm the action
 
+Button phases:
+1. button_value() compute the unique value that will become an index in an array.
+   Value is stored in current_value
+2. if current_value has changed, provoke render()
+3. render: set_key_icon(): get the key icon from the array of available icons and the index (current_value)
+   render: get_image(): builds an image from the key icon and text overlay(s)
+   render returns the image to the deck for display in the proper key.
+
 """
 import os
 import re
@@ -30,7 +38,7 @@ class Button:
         self._config = config
         self.page = page
         self.deck = page.deck
-        self.xp = self.deck.decks.xp  # shortcut alias
+        self.xp = self.deck.cockpit.xp  # shortcut alias
         self.name = config.get("name", f"{type(self).__name__}-{config['index']}")
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
@@ -41,8 +49,11 @@ class Button:
         self.bounce_idx = 0
         self.current_value = None
         self.previous_value = None
+        self.initial_value = config.get("initial-value")
+        self._first_value = None    # first value the button will get
 
-        # Parameters
+
+        # Labels
         self.label = config.get("label")
         self.labels = config.get("labels")
         self.label_format = config.get("label-format")
@@ -53,8 +64,9 @@ class Button:
         self.label_position = config.get("label-position", "cm")
         self.icon_color = config.get("icon-color")
 
-        self.command = config.get("command")
-        self.commands = config.get("commands")
+        if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
+            logger.warning(f"__init__: button {self.name}: invalid label position code {self.label_position}, using default")
+            self.label_position = "cm"
 
         # Datarefs
         self.dataref = config.get("dataref")
@@ -62,6 +74,11 @@ class Button:
         self.dataref_rpn = config.get("dataref-rpn")
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
+
+        # Commands
+        self.command = config.get("command")
+        self.commands = config.get("commands")
+        self.view = config.get("view")
 
         # Options
         self.options = []
@@ -73,12 +90,9 @@ class Button:
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
             self.options = [a.strip() for a in new.split(",")]
 
-        # Labels
-        if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
-            logger.warning(f"__init__: button {self.name}: invalid label position code {self.label_position}, using default")
-            self.label_position = "cm"
-
         # Icons
+        # 1. Collect multi icons
+        # Each icon in muti icon lust be an image for now (later could be a (background) color only)
         self.multi_icons = config.get("multi-icons")
         if self.multi_icons is not None:
             for i in range(len(self.multi_icons)):
@@ -86,15 +100,13 @@ class Button:
                 if self.multi_icons[i] not in self.deck.icons.keys():
                     logger.warning(f"__init__: button {self.name}: icon not found {self.multi_icons[i]}")
 
+        # 2. Find the main icon for button
         self.icon = config.get("icon")
-        if self.icon is not None:
+        if self.icon is not None:  # 2.1 if supplied, use it
             self.icon = add_ext(self.icon, ".png")
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found {self.icon}")
-        elif self.multi_icons is not None and len(self.multi_icons) > 0:
-            self.icon = self.multi_icons[0]
-            logger.debug(f"__init__: button {self.name}: icon not found but has multi-icons. Using {self.icon}.")
-        elif self.icon_color is not None:  # create one
+        elif self.icon_color is not None:  # 2.2 if no icon, but an icon-color, create one
             self.icon_color = convert_color(self.icon_color)
             # the icon size varies for center "buttons" and left and right side "buttons".
             if type(self.deck.device).__name__.startswith("StreamDeck"):
@@ -108,19 +120,26 @@ class Button:
             # self.default_icon = add_ext(self.default_icon, ".png")
             # logger.debug(f"__init__: button {self.name}: creating icon '{self.default_icon}' with color {self.icon_color}")
             # register it globally
-            self.deck.decks.icons[self.default_icon] = self.default_icon_image
+            self.deck.cockpit.icons[self.default_icon] = self.default_icon_image
             # add it to icon for this deck too since it was created at proper size
             self.deck.icons[self.default_icon] = self.default_icon_image
             self.icon = self.default_icon
-        else:
+        elif self.multi_icons is not None and len(self.multi_icons) > 0:  # 2.3 multiicons, take the first one
+            self.icon = self.multi_icons[0]
+            logger.debug(f"__init__: button {self.name}: icon not found but has multi-icons. Using {self.icon}.")
+        else:  # 2.4 lastly, use the default deck icon (later, could be a default icon per page?)
             self.icon = add_ext(self.deck.default_icon_name, ".png")
             logger.warning(f"__init__: button {self.name}: no icon, no icon-color, using deck default icon {self.icon}")
             if self.icon not in self.deck.icons.keys():
                 logger.warning(f"__init__: button {self.name}: icon not found in deck {self.icon}")
 
+        # 3. The key icon is the one that is displayed when render() called.
         self.key_icon = self.icon  # Working icon that will be displayed, default to self.icon
                                    # If key icon should come from icons, will be selected later
         # logger.debug(f"__init__: button {self.name}: key icon {self.key_icon}, icon {self.icon}")
+
+        self.all_icons = self.get_icons()  # simplification for later refactoring
+
         self.init()
 
     @classmethod
@@ -134,8 +153,15 @@ class Button:
         if self.has_option("bounce") and self.multi_icons is not None and len(self.multi_icons) > 0:
             stops = self.option_value(option="stops", default=len(self.multi_icons))
             self.bounce_arr = self.make_bounce_array(stops)
+
         # test: we try to immediately get a first value
-        self.current_value = self.button_value()
+        if self.initial_value is not None:
+            self.current_value = self.initial_value
+            self._first_value = self.initial_value
+        else:
+            self.current_value = self.button_value()
+        if self._first_value is None and self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # won't get a value from datarefs
+            self._first_value = self.current_value
 
     def is_valid(self) -> bool:
         """
@@ -174,6 +200,16 @@ class Button:
             return af + [stops-1] + ab[:-1]
         return [0]
 
+    def get_icons(self):
+        # temporary, will return appropriate image immediately of course...
+        icons = {}
+        if self.icon is not None:
+            icons[self.icon] = self.icon
+        if self.multi_icons is not None:
+            for i in self.multi_icons:
+                icons[i] = i
+        return icons
+
     def get_datarefs(self):
         """
         Returns all datarefs used by this button from label, computed datarefs, and explicitely
@@ -205,6 +241,9 @@ class Button:
 
         return list(set(r))  # removes duplicates
 
+    # ##################################
+    # Dataref processing
+    #
     def get_dataref_value(self, dataref, default = None):
         d = self.page.datarefs.get(dataref)
         return d.current_value if d is not None else default
@@ -256,6 +295,35 @@ class Button:
             logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
         return default
 
+    # ##################################
+    # Icon image and label(s)
+    #
+    def get_font(self, fontname = None):
+        """
+        Helper function to get valid font, depending on button or global preferences
+        """
+        if fontname == None:
+            fontname = self.label_font
+        fonts_available = self.deck.cockpit.fonts.keys()
+        # 1. Tries button specific font
+        if fontname is not None:
+            if fontname in fonts_available:
+                return self.deck.cockpit.fonts[fontname]
+            else:
+                logger.warning(f"get_font: button label font '{fontname}' not found")
+        # 2. Tries deck default font
+        if self.deck.default_label_font is not None and self.deck.default_label_font in fonts_available:
+            logger.info(f"get_font: using deck default font '{self.deck.default_label_font}'")
+            return self.deck.cockpit.fonts[self.deck.default_label_font]
+        else:
+            logger.warning(f"get_font: deck default label font '{fontname}' not found")
+        # 3. Tries streamdecks default font
+        if self.deck.cockpit.default_label_font is not None and self.deck.cockpit.default_label_font in fonts_available:
+            logger.info(f"get_font: using streamdecks default font '{self.deck.cockpit.default_label_font}'")
+            return self.deck.cockpit.fonts[self.deck.cockpit.default_label_font]
+        logger.error(f"get_font: streamdecks default label font not found, tried {fontname}, {self.deck.default_label_font}, {self.deck.cockpit.default_label_font}")
+        return None
+
     def get_label(self, label = None, label_format = None):
         """
         Returns label, if any, with substitution of datarefs if any
@@ -268,36 +336,12 @@ class Button:
             label = self.substitute_dataref_values(label, formatting=label_format, default="<no-value>")
         return label
 
-    def set_key_icon(self):
-        if self.multi_icons is not None and len(self.multi_icons) > 1:
-            num_icons = len(self.multi_icons)
-            value = self.current_value
-            if value is None:
-                logger.debug(f"get_image: button {self.name}: current value is null, default to 0")
-                value = 0
-            else:
-                value = int(value)
-            # logger.debug(f"get_image: button {self.name}: value={value}")
-            if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
-                value = value % num_icons
-
-            elif "bounce" in self.options and num_icons > 0:  # "bounce": 0-1-2-1-0-1-2-1-0-1-2-1-0
-                value = self.bounce_arr[value % len(self.bounce_arr)]
-
-            if value < 0 or value >= num_icons:
-                logger.debug(f"get_image: button {self.name} invalid icon key {value} not in [0,{len(self.multi_icons)}], default to 0")
-                value = 0
-
-            self.key_icon = self.multi_icons[value]
-        else:
-            self.key_icon = self.icon
-
     def get_image_for_icon(self):
         image = None
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
-        elif self.key_icon in self.deck.decks.icons.keys(): # then icon, but need to resize it if necessary
-            image = self.deck.decks.icons[self.key_icon]
+        elif self.key_icon in self.deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
+            image = self.deck.cockpit.icons[self.key_icon]
             image = self.deck.pil_helper.create_scaled_image("button", image)
         return image
 
@@ -307,7 +351,6 @@ class Button:
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        self.set_key_icon()
         image = self.get_image_for_icon()
 
         if image is not None:
@@ -362,31 +405,32 @@ class Button:
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
-    def get_font(self, fontname = None):
-        """
-        Helper function to get valid font, depending on button or global preferences
-        """
-        if fontname == None:
-            fontname = self.label_font
-        fonts_available = self.deck.decks.fonts.keys()
-        # 1. Tries button specific font
-        if fontname is not None:
-            if fontname in fonts_available:
-                return self.deck.decks.fonts[fontname]
+    # ##################################
+    # Value and icon
+    #
+    def set_key_icon(self):
+        if self.multi_icons is not None and len(self.multi_icons) > 1:
+            num_icons = len(self.multi_icons)
+            value = self.current_value
+            if value is None:
+                logger.debug(f"set_key_icon: button {self.name}: current value is null, default to 0")
+                value = 0
             else:
-                logger.warning(f"get_font: button label font '{fontname}' not found")
-        # 2. Tries deck default font
-        if self.deck.default_label_font is not None and self.deck.default_label_font in fonts_available:
-            logger.info(f"get_font: using deck default font '{self.deck.default_label_font}'")
-            return self.deck.decks.fonts[self.deck.default_label_font]
+                value = int(value)
+            # logger.debug(f"get_image: button {self.name}: value={value}")
+            if "counter" in self.options and num_icons > 0:  # modulo: 0-1-2-0-1-2...
+                value = value % num_icons
+
+            elif "bounce" in self.options and num_icons > 0:  # "bounce": 0-1-2-1-0-1-2-1-0-1-2-1-0
+                value = self.bounce_arr[value % len(self.bounce_arr)]
+
+            if value < 0 or value >= num_icons:
+                logger.debug(f"set_key_icon: button {self.name} invalid icon key {value} not in [0,{len(self.multi_icons)}], default to 0")
+                value = 0
+
+            self.key_icon = self.multi_icons[value]
         else:
-            logger.warning(f"get_font: deck default label font '{fontname}' not found")
-        # 3. Tries streamdecks default font
-        if self.deck.decks.default_label_font is not None and self.deck.decks.default_label_font in fonts_available:
-            logger.info(f"get_font: using streamdecks default font '{self.deck.decks.default_label_font}'")
-            return self.deck.decks.fonts[self.deck.decks.default_label_font]
-        logger.error(f"get_font: streamdecks default label font not found, tried {fontname}, {self.deck.default_label_font}, {self.deck.decks.default_label_font}")
-        return None
+            self.key_icon = self.icon
 
     def button_value(self):
         """
@@ -404,16 +448,21 @@ class Button:
         elif len(self.all_datarefs) > 1:
             return self.execute_formula(default=0.0)
         elif "counter" in self.options or "bounce" in self.options:
-            # logger.debug(f"button_value: button {self.name} get counter: {self.pressed_count}")
+            # logger.debug(f"button_value: button {self.name} get counter: {self.pressed_count}")pmUageOra-1
             return self.pressed_count
         return None
 
+    # ##################################
+    # External API
+    #
     def dataref_changed(self, dataref: "Dataref"):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
         self.previous_value = self.current_value
         self.current_value = self.button_value()
+        if self._first_value is None:  # store first non None value received from datarefs
+            self._first_value = self.current_value
         # logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
         self.render()
 
@@ -426,6 +475,8 @@ class Button:
             self.pressed_count = self.pressed_count + 1
             self.previous_value = self.current_value
             self.current_value = self.button_value()
+            if self.view:
+                self.xp.commandOnce(self.view)
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def render(self):
@@ -438,9 +489,12 @@ class Button:
         # logger.debug(f"render: button {self.name} rendered")
 
     def clean(self):
-        pass
+        self.previous_value = None  # this will provoke a refresh of the value on data reload
 
 
+# ###########################
+# Deck manipulation functions
+#
 class ButtonPage(Button):
     """
     When pressed, activation change to selected page.
@@ -482,14 +536,15 @@ class ButtonReload(Button):
     def activate(self, state: bool):
         if state:
             if self.is_valid():
-                self.deck.decks.reload_decks()
+                self.deck.cockpit.reload_decks()
 
 
-# ###########################@
+# ###########################
+#
 #
 class ButtonPush(Button):
     """
-    Execute command once when key pressed
+    Execute command once when key pressed. Nothing is done when button is released.
     """
     def __init__(self, config: dict, page: "Page"):
         Button.__init__(self, config=config, page=page)
@@ -517,8 +572,7 @@ class ButtonPush(Button):
 
 class ButtonDual(Button):
     """
-    Execute command while the key is pressed.
-    Pressing starts the command, releasing stops it.
+    Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
 
     def __init__(self, config: dict, page: "Page"):
@@ -537,88 +591,11 @@ class ButtonDual(Button):
         self.render()
 
 
-class ButtonAnimate(Button):
-    """
-    """
-    def __init__(self, config: dict, page: "Page"):
-        Button.__init__(self, config=config, page=page)
-        self.thread = None
-        self.running = False
-        self.finished = None
-        self.speed = float(self.option_value("animation_speed", 1))
-        self.counter = 0
-
-    def loop(self):
-        self.finished = threading.Event()
-        while self.running:
-            self.render()
-            self.counter = self.counter + 1
-            time.sleep(self.speed)
-        self.finished.set()
-
-    def anim_start(self):
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.start()
-        else:
-            logger.warning(f"anim_start: button {self.name}: already started")
-
-    def anim_stop(self):
-        if self.running:
-            self.running = False
-            if not self.finished.wait(timeout=2*self.speed):
-                logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
-            self.render()
-        else:
-            logger.warning(f"anim_stop: button {self.name}: already stopped")
-
-    def get_image(self):
-        """
-        If button has more icons, select one from button current value
-        """
-        if self.running:
-            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
-        else:
-            self.key_icon = self.icon  # off
-        return super().get_image()
-
-    # Works with activation on/off
-    def activate(self, state: bool):
-        super().activate(state)
-        if state:
-            if self.is_valid():
-                # self.label = f"pressed {self.current_value}"
-                self.xp.commandOnce(self.command)
-                if self.pressed_count % 2 == 0:
-                    self.anim_stop()
-                    self.render()
-                else:
-                    self.anim_start()
-
-    # Works if underlying dataref changed
-    def dataref_changed(self, dataref: "Dataref"):
-        """
-        One of its dataref has changed, records its value and provoke an update of its representation.
-        """
-        self.previous_value = self.current_value
-        self.current_value = self.button_value()
-        logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
-        if self.current_value is not None and self.current_value == 1:
-            self.anim_start()
-        else:
-            if self.running:
-                self.anim_stop()
-            self.render()
-
-    def clean(self):
-        self.anim_stop()
-
-# ###########################@
-#
 class ButtonUpDown(ButtonPush):
-
-
+    # Execute a first command when button value increases, execute a second command when button value decreases.
+    # Button value runs between 2 values.
+    # It can either always increase: 0-1-2-3-0-1-2-3-0-1...
+    # or increase and decrease: 0-1-2-3-2-1-0-1-2-3-2-1-0...
     def __init__(self, config: dict, page: "Page"):
         ButtonPush.__init__(self, config=config, page=page)
         self.stops = self.option_value("stops", len(self.multi_icons))
@@ -649,8 +626,8 @@ class ButtonUpDown(ButtonPush):
                 logger.warning(f"activate: button {self.name}: invalid {self.commands}")
         self.render()
 
-# ###########################@
-# Loupedeck Specials
+# ###########################
+# Loupedeck specials buttons
 #
 class ButtonButton(ButtonPush):
     """
@@ -731,8 +708,8 @@ class ButtonSide(ButtonPush):
         """
         image = None
         # we can't get "button-resized-ready" deck icon, we need to start from original icon stored in decks.
-        if self.key_icon in self.deck.decks.icons.keys():
-            image = self.deck.decks.icons[self.key_icon]
+        if self.key_icon in self.deck.cockpit.icons.keys():
+            image = self.deck.cockpit.icons[self.key_icon]
             image = self.deck.pil_helper.create_scaled_image(self.index, image)
 
         if image is not None:
@@ -755,9 +732,9 @@ class ButtonSide(ButtonPush):
                         corrknob = self.page.buttons[knob]
                         if corrknob.has_option("dual"):
                             if corrknob.is_pushed():
-                                txt = txt + "\nPUSHED"
+                                txt = txt + "\n•"
                             else:
-                                txt = txt + "\nPULLED"
+                                txt = txt + "\n"
                     if li >= len(vcenter) or txt is None:
                         continue
                     fontname = self.get_font(label.get("label-font", self.label_font))
@@ -846,7 +823,88 @@ class ButtonSide(ButtonPush):
             # logger.debug(f"{self.deck.icons.keys()}")
         return None
 
-# ###########################@
+# #################################
+# Special button rendering
+#
+class ButtonAnimate(Button):
+    """
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+        self.thread = None
+        self.running = False
+        self.finished = None
+        self.speed = float(self.option_value("animation_speed", 1))
+        self.counter = 0
+
+    def loop(self):
+        self.finished = threading.Event()
+        while self.running:
+            self.render()
+            self.counter = self.counter + 1
+            time.sleep(self.speed)
+        self.finished.set()
+
+    def anim_start(self):
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self.loop)
+            self.thread.name = f"button {self.name} animation"
+            self.thread.start()
+        else:
+            logger.warning(f"anim_start: button {self.name}: already started")
+
+    def anim_stop(self):
+        if self.running:
+            self.running = False
+            if not self.finished.wait(timeout=2*self.speed):
+                logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
+            self.render()
+        else:
+            logger.debug(f"anim_stop: button {self.name}: already stopped")
+
+    def get_image(self):
+        """
+        If button has more icons, select one from button current value
+        """
+        if self.running:
+            self.key_icon = self.multi_icons[self.counter % len(self.multi_icons)]
+        else:
+            self.key_icon = self.icon  # off
+        return super().get_image()
+
+    # Works with activation on/off
+    def activate(self, state: bool):
+        super().activate(state)
+        if state:
+            if self.is_valid():
+                # self.label = f"pressed {self.current_value}"
+                self.xp.commandOnce(self.command)
+                if self.pressed_count % 2 == 0:
+                    self.anim_stop()
+                    self.render()
+                else:
+                    self.anim_start()
+
+    # Works if underlying dataref changed
+    def dataref_changed(self, dataref: "Dataref"):
+        """
+        One of its dataref has changed, records its value and provoke an update of its representation.
+        """
+        self.previous_value = self.current_value
+        self.current_value = self.button_value()
+        logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
+        if self.current_value is not None and self.current_value == 1:
+            self.anim_start()
+        else:
+            if self.running:
+                self.anim_stop()
+            self.render()
+
+    def clean(self):
+        self.anim_stop()
+
+# ###########################
 # Mapping between button types and classes
 #
 LOUPEDECK_BUTTON_TYPES = {

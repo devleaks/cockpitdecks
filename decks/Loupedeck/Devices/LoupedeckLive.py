@@ -41,9 +41,12 @@ class LoupedeckLive(Loupedeck):
         self.path = path
         # See https://lucidar.me/en/serialib/most-used-baud-rates-table/ for baudrates
         self.connection = serial.Serial(port=path, baudrate=baudrate, timeout=timeout)
+        logger.debug(f"__init__: connection opened")
         self.auto_start = auto_start
         self.reading_thread = None  # read
         self.process_thread = None  # messages
+        self.reading_running = False
+        self.process_running = False
         self.reading_finished = None
         self.process_finished = None
         self.touches = {}
@@ -59,6 +62,17 @@ class LoupedeckLive(Loupedeck):
         }
 
         self.init()
+
+    def __del__(self):
+        """
+        Delete handler for the automatically closing the serial port.
+        """
+        try:
+            if self.connection is not None:
+                self.connection.close()
+                logger.debug(f"__del__: connection closed")
+        except:
+            logger.error(f"__del__: exception:", exc_info=1)
 
     def init(self):
         self.init_ws()
@@ -88,8 +102,13 @@ class LoupedeckLive(Loupedeck):
     def key_layout(self):
         return (4, 3)
 
-    def key_count():
+    def key_count(self):
         return 4 * 3
+
+    def key_names(self, big: bool = False):
+        if big:
+            return ["left", "center", "right"]
+        return ["left", "right"] + list(range(self.key_count()))
 
     # #########################################@
     # Serial Connection
@@ -129,12 +148,24 @@ class LoupedeckLive(Loupedeck):
     #
     def start(self):
         if self.inited:
-            self.reading_thread = threading.Thread(target=self._read_serial)
-            self.process_thread = threading.Thread(target=self._process_messages)
             self.running = True
-            self.process_thread.start()
-            self.reading_thread.start()
-            logger.info("start: started")
+            if not self.reading_running:
+                self.reading_thread = threading.Thread(target=self._read_serial)
+                self.reading_thread.name = "Serial reader"
+                self.reading_running = True
+                self.reading_thread.start()
+                logger.debug("start: read started")
+            else:
+                logger.warning("start: read already running")
+            if not self.process_running:
+                self.process_thread = threading.Thread(target=self._process_messages)
+                self.process_thread.name = "Loupedeck processor"
+                self.process_running = True
+                self.process_thread.start()
+                logger.debug("start: process started")
+            else:
+                logger.warning("start: process already running")
+            logger.debug("start: started")
         else:
             logger.warning("start: cannot start, not initialized")
 
@@ -143,8 +174,12 @@ class LoupedeckLive(Loupedeck):
         self.process_finished = threading.Event()
         self.running = False
         logger.info("stop: requested threads to stop, waiting..")
-        self.reading_finished.wait(timeout=2)   # sloppy but ok.
-        self.process_finished.wait(timeout=2)
+        if not self.reading_finished.wait(timeout=2):   # sloppy but ok.
+            logger.warning("stop: reader thread did not finish cleanly")
+
+        if not self.process_finished.wait(timeout=2):
+            logger.warning("stop: process thread did not finish cleanly")
+
         logger.info("stop: ..stopped")
 
     def _read_serial(self):
@@ -194,10 +229,13 @@ class LoupedeckLive(Loupedeck):
                 logger.error(f"_read_serial: exception:", exc_info=1)
                 logger.error(f"_read_serial: resuming")
 
+        self.reading_running = False
+
         if self.reading_finished is not None:
             self.reading_finished.set()
         else:
             logger.warning(f"_read_serial: no event set")
+
         logger.debug("_read_serial: terminated")
 
 
@@ -207,9 +245,9 @@ class LoupedeckLive(Loupedeck):
 
         while self.running:
             while not self._messages.empty():
-                buff = self._messages.get()
                 # logger.debug(f"_process_messages: {buff}")
                 try:
+                    buff = self._messages.get()
                     header = int.from_bytes(buff[0:2], BIG_ENDIAN)
                     handler = self.handlers[header] if header in self.handlers else None
                     transaction_id = buff[2]
@@ -223,6 +261,8 @@ class LoupedeckLive(Loupedeck):
                 except:
                     logger.error(f"_process_messages: exception:", exc_info=1)
                     logger.error(f"_process_messages: resuming")
+
+        self.process_running = False
 
         if self.process_finished is not None:
             self.process_finished.set()

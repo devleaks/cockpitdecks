@@ -70,6 +70,7 @@ buttons:
     name: FollowTheGreens
     type: animate
     icon: F.GREENS_OFF
+    initial-value: 0
     multi-icons:
       - F.GREENS_ON_1
       - F.GREENS_ON_2

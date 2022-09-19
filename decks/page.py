@@ -10,13 +10,20 @@ class Page:
     """
     A Page is a collection of buttons.
     """
-    def __init__(self, name: str, deck: "Streamdeck"):
+    def __init__(self, name: str, config: dict, deck: "Streamdeck"):
         self._config = {}
-        self.name = name
+        self.name = config.get("name")
         self.deck = deck
-        self.xp = self.deck.decks.xp  # shortcut alias
+        self.xp = self.deck.cockpit.xp  # shortcut alias
 
-        self.fill_empty = None
+        self.default_label_font = config.get("default-label-font", deck.default_label_font)
+        self.default_label_size = config.get("default-label-size", deck.default_label_size)
+        self.default_label_color = config.get("default-label-color", deck.default_label_color)
+        self.default_label_color = convert_color(self.default_label_color)
+        self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.fill_empty = config.get("fill-empty-keys", deck.fill_empty)
 
         self.buttons = {}
         self.datarefs = {}
@@ -63,17 +70,18 @@ class Page:
             button.render()
             # logger.debug(f"render: page {self.name}: button {button.name} rendered")
         if self.fill_empty is not None:
-            icon = None
-            if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
-                colors = convert_color(self.fill_empty)
-                icon = self.deck.pil_helper.create_image(deck=self.deck.device, background=colors)
-            elif self.fill_empty in self.deck.icons.keys():
-                icon = self.deck.icons[self.fill_empty]
-            if icon is not None:
-                image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
-                for i in range(self.deck.device.key_count()):
-                    if i not in self.buttons.keys():
-                        self.deck.device.set_key_image(i, image)
+            logger.debug(f"render: page {self.name}: fill empty keys {self.fill_empty}")
+            for key in self.deck.available_keys:
+                if key not in self.buttons.keys():
+                    icon = None
+                    if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
+                        colors = convert_color(self.fill_empty)
+                        icon = self.deck.create_icon_for_key(key, colors=colors)
+                    elif self.fill_empty in self.deck.icons.keys():
+                        icon = self.deck.icons[self.fill_empty]
+                    if icon is not None:
+                        image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
+                        self.deck.device.set_key_image(key, image)
             else:
                 logger.warning(f"render: page {self.name}: fill image {self.fill_empty} not found")
 

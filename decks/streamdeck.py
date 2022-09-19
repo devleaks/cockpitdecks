@@ -15,22 +15,24 @@ from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
 from .constant import convert_color
 from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
+from .deck import Deck
 
 logger = logging.getLogger("Streamdeck")
 
 DEFAULT_PAGE_NAME = "X-Plane"
 POLL_FREQ = 5  # default is 20
 
-class Streamdeck:
+class Streamdeck(Deck):
     """
     Loads the configuration of a Stream Deck.
     A Streamdeck has a collection of Pages, and knows which one is currently being displayed.
     """
 
-    def __init__(self, name: str, config: dict, decks: "Decks", device = None):
+    def __init__(self, name: str, config: dict, decks: "Cockpit", device = None):
+        Deck.__init__(self, name=name, config=config, decks=decks, device=None)
         self._config = config
         self.name = name
-        self.decks = decks
+        self.cockpit = decks
         self.device = device
         self.pil_helper = PILHelper
         self.pages = {}
@@ -42,6 +44,8 @@ class Streamdeck:
         self.valid = True
         self.running = False
         self.monitoring_thread = None
+        if device is not None:
+            self.available_keys = range(device.key_count())
 
         self.previous_key_values = {}
         self.current_key_values = {}
@@ -130,7 +134,7 @@ class Streamdeck:
             self.load_default_page()
             return
 
-        dn = os.path.join(self.decks.acpath, CONFIG_DIR, self.layout)
+        dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
         if not os.path.exists(dn):
             logger.warning(f"load: stream deck has no layout folder '{self.layout}', loading default page")
             self.load_default_page()
@@ -144,21 +148,21 @@ class Streamdeck:
 
                 if os.path.exists(fn):
                     with open(fn, "r") as fp:
-                        pc = yaml.safe_load(fp)
+                        page_config = yaml.safe_load(fp)
 
-                        if not YAML_BUTTONS_KW in pc:
+                        if not YAML_BUTTONS_KW in page_config:
                             logger.error(f"load: {fn} has no action")
                             continue
 
-                        if "name" in pc:
-                            name = pc["name"]
+                        if "name" in page_config:
+                            name = page_config["name"]
 
-                        this_page = Page(name, self)
+                        this_page = Page(name, page_config, self)
 
-                        this_page.fill_empty = pc["fill-empty-keys"] if "fill-empty-keys" in pc else self.fill_empty
+                        this_page.fill_empty = page_config["fill-empty-keys"] if "fill-empty-keys" in page_config else self.fill_empty
                         self.pages[name] = this_page
 
-                        for a in pc[YAML_BUTTONS_KW]:
+                        for a in page_config[YAML_BUTTONS_KW]:
                             button = None
                             bty = None
                             idx = None
@@ -181,7 +185,7 @@ class Streamdeck:
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
 
-                        logger.info(f"load: page {name} added (from file {fn.replace(self.decks.acpath, '... ')})")
+                        logger.info(f"load: page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
                 else:
                     logger.warning(f"load: file {p} not found")
 
@@ -307,8 +311,8 @@ class Streamdeck:
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
-        if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-            self.decks.xp.events.put([self.name, key, state])
+        if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+            self.cockpit.xp.events.put([self.name, key, state])
             logger.debug(f"key_change_callback: {key} {state} enqueued")
         else:
             # logger.debug(f"key_change_callback: {key} {state}")
@@ -322,12 +326,15 @@ class Streamdeck:
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
+    def create_icon_for_key(self, button, colors):
+        return self.pil_helper.create_image(deck=self.device, background=colors)
+
     def make_icon_for_device(self):
         """
         Each device model requires a different icon format (size).
         We could build a set per Stream Deck model rather than stream deck instance...
         """
-        dn = self.decks.icon_folder
+        dn = self.cockpit.icon_folder
         if dn is not None:
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
             if os.path.exists(cache):
@@ -337,8 +344,8 @@ class Streamdeck:
                 return
 
         if self.device is not None:
-            for k, v in self.decks.icons.items():
-                self.icons[k] = PILHelper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
+            for k, v in self.cockpit.icons.items():
+                self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
             if dn is not None:
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
                 with open(cache, "wb") as fp:
@@ -363,7 +370,7 @@ class Streamdeck:
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
             self.device.reset()
-            self.decks.xp.set_datarefs(self.current_page.datarefs)  # set which datarefs to monitor
+            self.cockpit.xp.set_datarefs(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
             logger.debug(f"change_page: deck {self.name} ..done")
         else:

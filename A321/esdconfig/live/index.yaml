@@ -11,31 +11,78 @@ buttons:
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
     options: dual
+  - index: knobCL
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+  - index: knobTR
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+  - index: knobCR
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
 #
 # BUTTONS
 #
-  - index: 1
-    type: button
-    icon-color: (200, 20, 20)
-    command: sim/map/show_current
+  # - index: 1
+  #   type: button
+  #   icon-color: (200, 20, 20)
+  #   command: sim/map/show_current
 #
 # KEYS
 #
   - index: 0
     type: none
-    label: ${AirbusFBW/RMP1StbyFreq}
-    label-format: "{:3.3f}"
+    label: ${sim/cockpit/autopilot/speed}
+    label-format: "{: 3.0f}"
     label-color: white
     label-size: 20
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
-  - index: 1
-    name: X-Plane Map
-    type: push
-    command: sim/map/show_current
-    icon-color: (200, 0, 0)
-    label: "SHOW\nMAP"
+  - index: 2
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
+  - index: 3
+    type: none
+    label: ${sim/cockpit2/autopilot/altitude_dial_ft}
+    label-format: "{:05.0f}"
+    label-color: white
     label-size: 20
+    label-font: Seven Segment.ttf
+    icon-color: (40, 40, 40)
+  - index: 4
+    type: none
+    label: ${sim/cockpit/autopilot/heading_mag}
+    label-format: "{:03.0f}"
+    label-color: white
+    label-size: 20
+    label-font: Seven Segment.ttf
+    icon-color: (40, 40, 40)
+  - index: 7
+    type: none
+    label: ${sim/cockpit/autopilot/vertical_velocity}
+    label-format: "{:04.0f}"
+    label-color: white
+    label-size: 20
+    label-font: Seven Segment.ttf
+    icon-color: (40, 40, 40)
   # - index: knobTL
   #   name: MoreLess
   #   type: knob
@@ -67,24 +114,18 @@ buttons:
 # Note: For type side, you MUST give either an icon at proper size or a icon-color.
   - index: left
     type: side
+    label-size: 18
     labels:
-      - label: FREQ
-    icon-color: (100, 100, 200)
+      - label: SPD
+      - label: HDG
+    icon-color: (94, 111, 130)
   - index: right
-    name: RSide
     type: side
-    icon-color: (200, 200, 0)
+    label-size: 18
     labels:
-      - label: top
-        label-position: lb
-        label-color: red
-      - label: Center
-        label-position: cm
-        label-color: green
-      - label: tom
-        label-position: rt
-        label-color: blue
-        label-size: 16
+      - label: ALT
+      - label: V/S
+    icon-color: (94, 111, 130)
   # - index: 1
   #   type: dual
   #   icon: TEST
@@ -114,3 +155,5 @@ buttons:
     command: sim/annunciator/clear_master_warning
     dataref: AirbusFBW/MasterWarn
     options: animation_speed=0.5
+includes: views
+fill-empty-keys: (94, 111, 130)

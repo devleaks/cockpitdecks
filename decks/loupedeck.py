@@ -16,7 +16,7 @@ from .constant import convert_color
 from .button import Button, LOUPEDECK_BUTTON_TYPES
 from .page import Page
 
-from .streamdeck import Streamdeck
+from .deck import Deck
 from .Loupedeck.Devices.constants import BUTTONS as LOUPEDECK_BUTTON_NAMES
 
 logger = logging.getLogger("Loupedeck")
@@ -31,17 +31,17 @@ VALID_STATE = {
 }
 
 
-class Loupedeck(Streamdeck):
+class Loupedeck(Deck):
     """
     Loads the configuration of a Loupedeck.
     A Loupedeck has a collection of Pages, and knows which one is currently being displayed.
     """
 
-    def __init__(self, name: str, config: dict, decks: "Decks", device = None):
-        Streamdeck.__init__(self, name=name, config=config, decks=decks, device=None)
+    def __init__(self, name: str, config: dict, decks: "Cockpit", device = None):
+        Deck.__init__(self, name=name, config=config, decks=decks, device=None)
 
         self.name = name
-        self.decks = decks
+        self.cockpit = decks
         self.device = device  # no longer None after Streamdeck.__init__()
         self.pil_helper = PILHelper
         self.pages = {}
@@ -54,6 +54,8 @@ class Loupedeck(Streamdeck):
         self.running = False
         self.touches = {}
         self.monitoring_thread = None
+        if device is not None:
+            self.available_keys = device.key_names()
 
         self.previous_key_values = {}
         self.current_key_values = {}
@@ -101,11 +103,12 @@ class Loupedeck(Streamdeck):
         Loads Streamdeck pages during configuration
         """
         YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
+        YAML_INCLUDE_KW = "includes"
         if self.layout is None:
             self.load_default_page()
             return
 
-        dn = os.path.join(self.decks.acpath, CONFIG_DIR, self.layout)
+        dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
         if not os.path.exists(dn):
             logger.warning(f"load: loupedeck has no layout folder '{self.layout}', loading default page")
             self.load_default_page()
@@ -119,21 +122,36 @@ class Loupedeck(Streamdeck):
 
                 if os.path.exists(fn):
                     with open(fn, "r") as fp:
-                        pc = yaml.safe_load(fp)
+                        page_config = yaml.safe_load(fp)
 
-                        if not YAML_BUTTONS_KW in pc:
+                        if not YAML_BUTTONS_KW in page_config:
                             logger.error(f"load: {fn} has no action")
                             continue
 
-                        if "name" in pc:
-                            name = pc["name"]
+                        button_indices = [(b["type"],b["index"]) for b in page_config[YAML_BUTTONS_KW]]
+                        if YAML_INCLUDE_KW in page_config:
+                            includes = page_config[YAML_INCLUDE_KW]
+                            if type(page_config[YAML_INCLUDE_KW]) == str:
+                                includes = [includes]
+                            for inc in includes:
+                                fni = os.path.join(dn, inc + ".yaml")
+                                with open(fni, "r") as fpi:
+                                    inc_config = yaml.safe_load(fpi)
+                                    # how to merge? for now, just merge buttons
+                                    if YAML_BUTTONS_KW in inc_config:
+                                        for add_button in inc_config[YAML_BUTTONS_KW]:
+                                            if "index" in add_button and "type" in add_button and (add_button["type"],add_button["index"]) not in button_indices:
+                                                # Add it if there is no button of that type with same index in page
+                                                page_config[YAML_BUTTONS_KW].append(add_button)
+                                                logger.debug(f"load: includes: added {add_button['type']} {add_button['index']} from {inc} to page {name}")
 
-                        this_page = Page(name, self)
+                        if "name" in page_config:
+                            name = page_config["name"]
 
-                        this_page.fill_empty = pc["fill-empty-keys"] if "fill-empty-keys" in pc else self.fill_empty
+                        this_page = Page(name, page_config, self)
                         self.pages[name] = this_page
 
-                        for a in pc[YAML_BUTTONS_KW]:
+                        for a in page_config[YAML_BUTTONS_KW]:
                             button = None
                             bty = None
                             idx = None
@@ -177,7 +195,7 @@ class Loupedeck(Streamdeck):
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
 
-                        logger.info(f"load: page {name} added (from file {fn.replace(self.decks.acpath, '... ')})")
+                        logger.info(f"load: page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
                 else:
                     logger.warning(f"load: file {p} not found")
 
@@ -252,8 +270,8 @@ class Loupedeck(Streamdeck):
         This is the function that is called when a key is pressed.
         """
         def transfer(this_deck, this_key, this_state):
-            if self.decks.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                self.decks.xp.events.put([self.name, this_key, this_state])
+            if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                self.cockpit.xp.events.put([self.name, this_key, this_state])
                 logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
             else:
                 # logger.debug(f"key_change_callback: {key} {state}")
@@ -334,6 +352,9 @@ class Loupedeck(Streamdeck):
     #     else:
     #         logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
 
+    def create_icon_for_key(self, button, colors):
+        return self.pil_helper.create_image(deck=button, background=colors)
+
     def make_icon_for_device(self):
         """
         Each device model requires a different icon format (size).
@@ -341,7 +362,7 @@ class Loupedeck(Streamdeck):
         This makes the square icons for all square keys.
         Side keys (left and right) are treated separatey.
         """
-        dn = self.decks.icon_folder
+        dn = self.cockpit.icon_folder
         if dn is not None:
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
             if os.path.exists(cache):
@@ -352,7 +373,7 @@ class Loupedeck(Streamdeck):
 
         logger.info(f"make_icon_for_device: deck {self.name}..")
         if self.device is not None:
-            for k, v in self.decks.icons.items():
+            for k, v in self.cockpit.icons.items():
                 self.icons[k] = self.pil_helper.create_scaled_image("button", v)  # 90x90
             if dn is not None:
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
@@ -361,11 +382,6 @@ class Loupedeck(Streamdeck):
             logger.info(f"make_icon_for_device: deck {self.name} icons ready")
         else:
             logger.warning(f"make_icon_for_device: deck {self.name} has no device")
-
-    def start(self):
-        if self.device is not None:
-            self.device.set_callback(self.key_change_callback)
-        logger.info(f"start: loupedeck {self.name} listening for key strokes")
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
@@ -392,6 +408,15 @@ class Loupedeck(Streamdeck):
         self.device.set_button_color(button.index.replace("B", ""), color)
 
 
+    def start(self):
+        if self.device is not None:
+            self.device.set_callback(self.key_change_callback)
+            self.device.start()  # restart it if it was terminated
+        logger.info(f"start: loupedeck {self.name} listening for key strokes")
+
     def terminate(self):
-        self.device.stop()
+        self.device.stop()  # stops our threads (reading, processing)
+        # logger.debug(f"terminate: closing {type(self.device).__name__}..")
+        # del self.device     # closes connection and stop serial _read thread
+        # logger.debug(f"terminate: closed")
         logger.info(f"terminate: deck {self.name} terminated")
