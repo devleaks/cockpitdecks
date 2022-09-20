@@ -82,8 +82,8 @@ class Page:
                     if icon is not None:
                         image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                         self.deck.device.set_key_image(key, image)
-            else:
-                logger.warning(f"render: page {self.name}: fill image {self.fill_empty} not found")
+        else:
+            logger.warning(f"render: page {self.name}: fill image {self.fill_empty} not found")
 
     def clean(self):
         """

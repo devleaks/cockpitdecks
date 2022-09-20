@@ -559,7 +559,7 @@ class ButtonPush(Button):
         return super().get_image()
 
     def activate(self, state: bool):
-        logger.debug(f"activate: button {self.name}: {state}")
+        # logger.debug(f"ButtonPush::activate: button {self.name}: {state}")
         super().activate(state)
         if state:
             if self.is_valid():
@@ -629,7 +629,7 @@ class ButtonUpDown(ButtonPush):
 # ###########################
 # Loupedeck specials buttons
 #
-class ButtonButton(ButtonPush):
+class ColoredButton(ButtonPush):
     """
     A Push button. We can only change the color of the button.
     """
@@ -915,7 +915,7 @@ LOUPEDECK_BUTTON_TYPES = {
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
     "knob": ButtonKnob,
-    "button": ButtonButton,
+    "button": ColoredButton,
     "side": ButtonSide,
     "reload": ButtonReload
 }

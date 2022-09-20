@@ -116,6 +116,13 @@ class Cockpit:
         """
         Loads stream decks for aircraft in supplied path and start listening for key presses.
         """
+        self.load_aircraft(acpath)
+        self.run()
+
+    def load_aircraft(self, acpath: str):
+        """
+        Loads stream decks for aircraft in supplied path and start listening for key presses.
+        """
         if self.disabled:
             logger.warning(f"load: Cockpit is disabled")
             return
@@ -145,7 +152,6 @@ class Cockpit:
         else:
             logger.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
-        self.run()
 
     def load_defaults(self):
         """
@@ -387,7 +393,7 @@ class Cockpit:
         self.default_pages = {}
         for name, deck in self.cockpit.items():
             self.default_pages[name] = deck.current_page.name
-        self.load(self.acpath)
+        self.load_aircraft(self.acpath)
         logger.info(f"reload_decks: ..done")
 
     def terminate_this_aircraft(self):

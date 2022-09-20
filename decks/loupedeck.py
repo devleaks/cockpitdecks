@@ -353,6 +353,8 @@ class Loupedeck(Deck):
     #         logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
 
     def create_icon_for_key(self, button, colors):
+        if button not in ["full", "center", "left", "right"]:
+            button = "button"
         return self.pil_helper.create_image(deck=button, background=colors)
 
     def make_icon_for_device(self):
