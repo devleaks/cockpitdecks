@@ -1,0 +1,1 @@
+from .xtouchmini import XTouchMini

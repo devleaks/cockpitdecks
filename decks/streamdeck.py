@@ -28,12 +28,10 @@ class Streamdeck(Deck):
     A Streamdeck has a collection of Pages, and knows which one is currently being displayed.
     """
 
-    def __init__(self, name: str, config: dict, decks: "Cockpit", device = None):
-        Deck.__init__(self, name=name, config=config, decks=decks, device=None)
-        self._config = config
-        self.name = name
-        self.cockpit = decks
-        self.device = device
+    def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
+
+        Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
+
         self.pil_helper = PILHelper
         self.pages = {}
         self.icons = {}  # icons ready for this deck
@@ -50,16 +48,16 @@ class Streamdeck(Deck):
         self.previous_key_values = {}
         self.current_key_values = {}
 
-        self.default_label_font = config.get("default-label-font", decks.default_label_font)
-        self.default_label_size = config.get("default-label-size", decks.default_label_size)
-        self.default_label_color = config.get("default-label-color", decks.default_label_color)
+        self.default_label_font = config.get("default-label-font", cockpit.default_label_font)
+        self.default_label_size = config.get("default-label-size", cockpit.default_label_size)
+        self.default_label_color = config.get("default-label-color", cockpit.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = config.get("default-icon-color", name + decks.default_icon_name)
-        self.default_icon_color = config.get("default-icon-color", decks.default_icon_color)
+        self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.fill_empty = config.get("fill-empty-keys", decks.fill_empty)
-        self.logo = config.get("default-wallpaper-logo", decks.default_logo)
-        self.wallpaper = config.get("default-wallpaper", decks.default_wallpaper)
+        self.fill_empty = config.get("fill-empty-keys", cockpit.fill_empty)
+        self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
+        self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
 
         if "serial" in config:
             self.serial = config["serial"]

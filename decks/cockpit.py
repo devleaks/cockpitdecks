@@ -5,17 +5,14 @@ import logging
 import pickle
 
 from PIL import Image, ImageDraw, ImageFont
-from StreamDeck.DeviceManager import DeviceManager
 
 from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR
 from .constant import has_ext, convert_color
 
-from .streamdeck import Streamdeck
-from .loupedeck import Loupedeck
+from .devices import DECK_TYPES
 
-from .Loupedeck import DeviceManager as LoupedeckDeviceManager
 
 logger = logging.getLogger("Cockpit")
 
@@ -67,21 +64,29 @@ class Cockpit:
         """
         Loads all Stream Deck devices connected to this computer.
         """
-        self.devices = DeviceManager().enumerate()
-        logger.info(f"init: found {len(self.devices)} decks")
-        for name, device in enumerate(self.devices):
-            device.open()
-            serial = device.get_serial_number()
-            device.close()
-            if serial in EXCLUDE_DECKS:
-                logger.warning(f"init: deck {serial} excluded")
-                del self.devices[name]
-        logger.info(f"init: using {len(self.devices)} decks")
+        self.scan_devices()
 
-        # Now also look for LoupedeckLive devices:
-        self.lldevices = LoupedeckDeviceManager().enumerate()
 
-    def get_device(self, req_serial: str):
+    def scan_devices(self):
+        for decktype, builder in DECK_TYPES.items():
+            decks = builder[1]().enumerate()
+            logger.info(f"init: found {len(decks)} {decktype}")
+            for name, device in enumerate(decks):
+                device.open()
+                serial = device.get_serial_number()
+                device.close()
+                if serial in EXCLUDE_DECKS:
+                    logger.warning(f"init: deck {serial} excluded")
+                    del decks[name]
+                self.devices.append({
+                    "type": decktype,
+                    "device": device,
+                    "serial_number": serial
+                })
+            logger.info(f"init: using {len(decks)} {decktype}")
+
+
+    def get_device(self, req_serial: str, req_type: str):
         """
         Get a HIDAPI device for the supplied serial number.
         If found, the device is opened and reset and returned open.
@@ -89,17 +94,15 @@ class Cockpit:
         :param      req_serial:  The request serial
         :type       req_serial:  str
         """
-        for name, device in enumerate(self.devices):
-            device.open()
-            serial = device.get_serial_number()
-            if serial == req_serial:
-                logger.info(f"get_device: deck {name}: opened {device.deck_type()} device (serial number: {device.get_serial_number()}, fw: {device.get_firmware_version()})")
-                logger.debug(f"get_device: deck {name}: {device.key_count()} keys, layout  {device.key_layout()[0]}×{device.key_layout()[1]}")
+        for deck in self.devices:
+            if deck["serial_number"] == req_serial:
+                device = deck["device"]
+                device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
-                    logger.debug(f"get_device: deck {name}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Cockpit.FLIP_DESCRIPTION[image_format['flip']]}")
+                    logger.debug(f"get_device: deck {deck['serial_number']}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Cockpit.FLIP_DESCRIPTION[image_format['flip']] if image_format['flip'] is not None else 'None'}")
                 else:
-                    logger.debug(f"get_device: deck {name}: no visual")
+                    logger.debug(f"get_device: deck {deck['serial_number']}: no visual")
                 device.reset()
                 return device
         logger.warning(f"get_device: deck {req_serial} not found")
@@ -245,21 +248,25 @@ class Cockpit:
 
                 if "decks" in config:
                     cnt = 0
-                    for d in config["decks"]:
+                    for deck_config in config["decks"]:
                         name = f"Deck {cnt}"
-                        if "serial" in d:
-                            serial = d["serial"]
-                            device = self.get_device(serial)
+                        if "serial" in deck_config:
+                            serial = deck_config["serial"]
+                            decktype = deck_config.get("type")
+                            if decktype not in DECK_TYPES.keys():
+                                logger.warning(f"create_decks: invalid deck type {decktype}, ignoring")
+                                continue
+                            device = self.get_device(req_serial=serial, req_type=deck_config["type"])
                             if device is not None:
-                                if "name" in d:
-                                    name = d["name"]
+                                if "name" in deck_config:
+                                    name = deck_config["name"]
                                 # should check name does not already exist...
-                                self.cockpit[name] = Streamdeck(name, d, self, device)
+                                self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
                                 cnt = cnt + 1
-                                logger.info(f"load: deck {name} loaded")
+                                logger.info(f"load: deck {decktype} {name} loaded")
                             # else:  # warning shown by get_device
                         else:
-                            logger.error(f"load: deck {name} has no serial number, ignoring")
+                            logger.error(f"load: deck {decktype} {name} has no serial number, ignoring")
                 else:
                     logger.warning(f"load: no deck in file {fn}")
 
@@ -448,5 +455,4 @@ class Cockpit:
         self.terminate_this_aircraft()
         self.disabled = True
         logger.info(f"disable: disabled")
-
 

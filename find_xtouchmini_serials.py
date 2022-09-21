@@ -1,11 +1,11 @@
 import os
 import sys
 
-from decks.Loupedeck.DeviceManager import DeviceManager
+from decks.XTouchMini.DeviceManager import DeviceManager
 
 devices = DeviceManager().enumerate()
 
-print(f"found {len(devices)} loupedeck(s):")
+print(f"found {len(devices)} XTouch Mini(s):")
 for name, device in enumerate(devices):
     serial = device.get_serial_number()
     print(f"deck {name}: {serial}")

@@ -78,6 +78,23 @@ class LoupedeckLive(Loupedeck):
         except:
             logger.error(f"__del__: exception:", exc_info=1)
 
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
+    def is_visual(self):
+        return True
+
+    def key_image_format(self):
+        return {
+            'size': (90, 90),
+            'format': "RGB565",
+            'flip': None,
+            'rotation': None,
+        }
+
     def init(self):
         self.init_ws()
         if self.auto_start:
