@@ -1,3 +1,5 @@
+# List known deck types, their contructor, and their device manager for emuneration
+#
 from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
 
 from .streamdeck import Streamdeck

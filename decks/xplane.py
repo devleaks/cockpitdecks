@@ -1,3 +1,5 @@
+# Base class for interface with X-Plane
+#
 import threading
 import logging
 import time

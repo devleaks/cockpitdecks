@@ -1,13 +1,17 @@
-import mido
+# Deck controller for Behringer X-Touch Mini devices
+#
 import time
 import logging
 import threading
 import random
-import time
+import mido
+
 
 logger = logging.getLogger("XTouchMini")
 
+GLOBAL_CHANNEL = 0
 CHANNEL = 10
+
 
 class XTouchMini:
 
@@ -74,7 +78,7 @@ class XTouchMini:
 
     def send(self, message: mido.Message):
         self._write(message)
-        logger.debug(f"send: sent: {message}")
+        # logger.debug(f"send: sent: {message}")
 
     def start(self) -> None:
         self.running = True
@@ -106,8 +110,13 @@ class XTouchMini:
     # ##########################################
     # User Interface
     #
-    def set_key(self, key: int, on:bool):
-        m = mido.Message(type="note_on" if on else "note_off", note=key, velocity=127, channel=CHANNEL)
+    def set_key(self, key: int, on:bool=False, blink:bool=False):
+        velocity = 0
+        if on:
+            velocity = 1
+        elif blink:
+            velocity = 2
+        m = mido.Message(type="note_on", note=key, velocity=velocity)
         self.send(m)
 
     # Modes: There are 11 LEDs
@@ -117,25 +126,55 @@ class XTouchMini:
     # Spread: 00011111000 (Values 48 - 59)
     #
     def set_control(self, key: int, value:int, mode: str = "single"):
-        if value < 12 and mode != "single":
-            if mode == "trim":
-                value = value + 16
-            elif mode == "fan":
-                value = value + 32
-            elif mode == "spread":
-                value = value + 48
-        elif mode == "single" and value < 0 or value > 11:
-            logger.warning(f"set_control: invalid value {value}")
-        elif value < 0 or value > 127:
-            logger.warning(f"set_control: invalid value {value}")
+        def decode_value(v):
+            if v == 0:
+                return "all off"
+            elif v < 14:
+                return f"single {v} on"
+            elif v > 13 and v < 27:
+                return f"single {v - 13} blink"
+            elif v == 27:
+                return "all on"
+            elif v == 28:
+                return "all blink"
+            else:
+                return "ignored"
 
-        m = mido.Message(type="control_change", control=key, value=value, channel=CHANNEL)
+        mode_num = 0
+        if mode == "pan":
+            mode_num = 1
+        elif mode == "fan":
+            mode_num = 2
+        elif mode == "spread":
+            mode_num = 3
+        elif mode == "trim":
+            mode_num = 4
+
+        m = mido.Message(type="control_change", control=key, value=mode_num)
         self.send(m)
+        m = mido.Message(type="control_change", control=8+key, value=value)
+        self.send(m)
+        logger.debug(f"set_control: encoder {key}: {mode}: {decode_value(value)}")
 
 
     def test(self):
-        for i in range(8, 24):
-            self.set_key(i, on=random.choice([True, False]))
+        m = mido.Message(type="control_change", control=127, value=1)
+        self.send(m)
+        time.sleep(1)
+        m = mido.Message(type="control_change", control=127, value=0)
+        self.send(m)
+        time.sleep(1)
+
+        for i in range(16):
+            self.set_key(i, on=random.choice([True, False]), blink=random.choice([True, False, False, False, False, False, False, False]))
 
         for i in range(1, 9):
-            self.set_control(i, value=random.randrange(127), mode=None)
+            self.set_control(i, value=random.randrange(29), mode=random.choice(["single", "pan", "fan", "spread", "trim"]))
+
+        # for k in range(5):
+        #     for i in range(60):
+        #         m = mido.Message(type="control_change", control=8, value=4)
+        #         self.send(m)
+        #         m = mido.Message(type="control_change", control=16, value=i)
+        #         self.send(m)
+        #         time.sleep(0.2)

@@ -1,3 +1,5 @@
+# Behringer X-Touch Mini deck
+#
 import logging
 
 logger = logging.getLogger("XTouchMini")

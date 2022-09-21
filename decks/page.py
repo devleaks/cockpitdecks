@@ -1,3 +1,5 @@
+# Set of buttons for a deck
+#
 import logging
 
 from .constant import convert_color

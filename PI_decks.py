@@ -1,6 +1,5 @@
-# Decks XP11 Python3 Plugin Interface
-# Decks is a XPPython Plugin to configure and use Elgato Stream Decks in X-Plane
-#
+# Cockpit Python3 Plugin Interface
+# Cockpit is a XPPython Plugin to configure and use Elgato Stream Decks, Loupedeck LoupedeckLive, and Behringer X-Touch Mini in X-Plane
 #
 import logging
 import os
@@ -13,7 +12,7 @@ from traceback import print_exc
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib", "StreamDeck"))
 
 
-from decks import Decks, __version__ as RELEASE
+from decks import Cockpit, __version__ as RELEASE
 from decks.xplanesdk import XPlaneSDK
 
 logging.basicConfig(level=logging.DEBUG, filename="decks.log", filemode='a')
@@ -22,21 +21,21 @@ logging.basicConfig(level=logging.DEBUG, filename="decks.log", filemode='a')
 class PythonInterface:
 
     def __init__(self):
-        self.Name = "Decks"
-        self.Sig = "decks.xppython3"
-        self.Desc = "Elgato Stream Deck and Loupedeck LoupedeckLive Controller. for X-Plane (Rel. " + RELEASE + ")"
+        self.Name = "Cockpitdecks"
+        self.Sig = "cockpitdecks.xppython3"
+        self.Desc = "Elgato Stream Deck, Loupedeck LoupedeckLive, and X-Touch Mini controllers for X-Plane (Rel. " + RELEASE + ")"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
         self.menuIdx = None
         self.decks = None
-        self.decksCmdRef = None
+        self.cockpitCmdRef = None
 
     def XPluginStart(self):
-        self.decksCmdRef = xp.createCommand('xppython3/decks/reload', 'Reload Stream Decks for aircraft')
-        xp.registerCommandHandler(self.decksCmdRef, self.decksCmd, 1, None)
+        self.cockpitCmdRef = xp.createCommand('xppython3/decks/reload', 'Reload decks for aircraft')
+        xp.registerCommandHandler(self.cockpitCmdRef, self.cockpitCmd, 1, None)
         if self.trace:
             print(self.Name, "PI::XPluginStart: command added.")
-        self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.decksCmdRef)
+        self.menuIdx = xp.appendMenuItemWithCommand(xp.findPluginsMenu(), self.Name, self.cockpitCmdRef)
         if self.menuIdx > -1:
             xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Unchecked)
             if self.trace:
@@ -53,11 +52,11 @@ class PythonInterface:
             self.menuIdx = None
             if self.trace:
                 print(self.Name, "PI::XPluginStop: menu removed.")
-        if self.decksCmdRef:
-            xp.unregisterCommandHandler(self.decksCmdRef,
-                                        self.decksCmd,
+        if self.cockpitCmdRef:
+            xp.unregisterCommandHandler(self.cockpitCmdRef,
+                                        self.cockpitCmd,
                                         1, None)
-            self.decksCmdRef = None
+            self.cockpitCmdRef = None
             if self.trace:
                 print(self.Name, "PI::XPluginStop: command removed.")
         if self.decks:
@@ -75,7 +74,7 @@ class PythonInterface:
     def XPluginEnable(self):
         try:
             if self.decks is None:
-                self.decks = Decks(XPlaneSDK)
+                self.decks = Cockpit(XPlaneSDK)
             if self.loadCurrentAircraft():
                 self.enabled = True
                 xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Checked)
@@ -116,7 +115,7 @@ class PythonInterface:
                     if self.loadCurrentAircraft():
                         self.enabled = True
                 else:
-                    print(self.Name, "PI::XPluginReceiveMessage: no Decks")
+                    print(self.Name, "PI::XPluginReceiveMessage: no Cockpit")
             except:
                 if self.trace:
                     print(self.Name, "PI::XPluginReceiveMessage: exception.")
@@ -135,13 +134,13 @@ class PythonInterface:
         return False
 
 
-    def decksCmd(self, *args, **kwargs):
+    def cockpitCmd(self, *args, **kwargs):
         """
         Command hook to either start or reload current aircraft esdconfig.
         """
         # pylint: disable=unused-argument
         if not self.enabled:
-            print(self.Name, "PI::decksCmd: not enabled.")
+            print(self.Name, "PI::cockpitCmd: not enabled.")
             return 0
 
         # When mapped on a keystroke, StreamDeck only starts on begin of command (phase=0).
@@ -151,38 +150,38 @@ class PythonInterface:
         if len(args) > 2:
             commandPhase = args[1]
             if self.trace:
-                print(self.Name, "PI::decksCmd: command phase", commandPhase)
+                print(self.Name, "PI::cockpitCmd: command phase", commandPhase)
         else:
-            print(self.Name, "PI::decksCmd: no command phase", len(args))
+            print(self.Name, "PI::cockpitCmd: no command phase", len(args))
 
         if not self.decks:
             try:
-                self.decks = Decks(XPlaneSDK)
+                self.decks = Cockpit(XPlaneSDK)
                 if self.trace:
-                    print(self.Name, "PI::decksCmd: created.")
+                    print(self.Name, "PI::cockpitCmd: created.")
             except:
                 if self.trace:
-                    print(self.Name, "PI::decksCmd: exception(creating).")
+                    print(self.Name, "PI::cockpitCmd: exception(creating).")
                 print_exc()
                 return 0
 
         if self.decks and commandPhase == 0:
             if self.trace:
-                print(self.Name, "PI::decksCmd: available.")
+                print(self.Name, "PI::cockpitCmd: available.")
             try:
                 if self.loadCurrentAircraft():
                     if self.trace:
-                        print(self.Name, "PI::decksCmd: started.")
+                        print(self.Name, "PI::cockpitCmd: started.")
                     return 1
                 if self.trace:
-                    print(self.Name, "PI::decksCmd: aircraft not found.")
+                    print(self.Name, "PI::cockpitCmd: aircraft not found.")
                 return 0
             except:
                 if self.trace:
-                    print(self.Name, "PI::decksCmd: exception(loading).")
+                    print(self.Name, "PI::cockpitCmd: exception(loading).")
                 print_exc()
                 return 0
         elif not self.decks:
-            print(self.Name, "PI::decksCmd: Error: could not create Decks.")
+            print(self.Name, "PI::cockpitCmd: Error: could not create Cockpit.")
 
         return 0

@@ -1,3 +1,5 @@
+# Base class for all decks
+#
 import os
 import logging
 import yaml

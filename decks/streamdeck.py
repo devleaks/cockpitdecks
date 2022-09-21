@@ -1,3 +1,5 @@
+# Elgato Streamdeck deck
+#
 import os
 import logging
 import yaml
@@ -21,6 +23,12 @@ logger = logging.getLogger("Streamdeck")
 
 DEFAULT_PAGE_NAME = "X-Plane"
 POLL_FREQ = 5  # default is 20
+FLIP_DESCRIPTION = {
+    (False, False): "not mirrored",
+    (True, False): "mirrored horizontally",
+    (False, True): "mirrored vertically",
+    (True, True): "mirrored horizontally/vertically"
+}
 
 class Streamdeck(Deck):
     """

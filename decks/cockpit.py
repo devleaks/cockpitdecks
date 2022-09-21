@@ -1,10 +1,12 @@
+# Main container for all decks
+#
 import os
 import threading
 import yaml
 import logging
 import pickle
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
 
 from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER
@@ -12,6 +14,7 @@ from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZ
 from .constant import has_ext, convert_color
 
 from .devices import DECK_TYPES
+from .streamdeck import FLIP_DESCRIPTION
 
 
 logger = logging.getLogger("Cockpit")
@@ -23,13 +26,6 @@ class Cockpit:
     Contains all stream deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_DIR folder.
     """
-    FLIP_DESCRIPTION = {
-        (False, False): "not mirrored",
-        (True, False): "mirrored horizontally",
-        (False, True): "mirrored vertically",
-        (True, True): "mirrored horizontally/vertically"
-    }
-
     def __init__(self, xp):
         self.xp = xp(self)
         self._config = None
@@ -100,7 +96,7 @@ class Cockpit:
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
-                    logger.debug(f"get_device: deck {deck['serial_number']}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {Cockpit.FLIP_DESCRIPTION[image_format['flip']] if image_format['flip'] is not None else 'None'}")
+                    logger.debug(f"get_device: deck {deck['serial_number']}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {FLIP_DESCRIPTION[image_format['flip']] if image_format['flip'] is not None else 'None'}")
                 else:
                     logger.debug(f"get_device: deck {deck['serial_number']}: no visual")
                 device.reset()

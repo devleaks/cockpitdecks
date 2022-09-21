@@ -1,5 +1,6 @@
-# Class to get dataref values from XPlane Flight Simulator via network. 
-# License: GPLv3
+# Class for interface with X-Plane using X-Plane SDK
+# To be used when run as a XPPython3 plugin.
+#
 import logging
 from datetime import datetime
 from queue import Queue, Empty

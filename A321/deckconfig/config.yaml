@@ -1,14 +1,14 @@
+# Definition of decks for Toliss A321
+#
 aicraft: Toliss A321
 decks:
   - name: XPDeck
-    serial: DL16L1A81614
     type: streamdeck
     layout: layout15
     brightness: 30
     default-label-font: DIN Medium.ttf
     default-label-size: 13
   - name: XPDeckXL
-    serial: CL16L2A09596
     layout: layout32
     type: streamdeck
     brightness: 70
@@ -17,12 +17,10 @@ decks:
   - name: Live
     type: loupedeck
     layout: live
-    serial: LDD2001014021450700730B0009
     brightness: 70
   - name: XTouch
     type: xtouchmini
     layout: live
-    serial: X-TOUCH MINI
     brightness: 70
 # This is at global level
 default-wallpaper-logo: logo.png
