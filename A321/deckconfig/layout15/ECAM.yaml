@@ -1,0 +1,130 @@
+name: ECAM
+version: 1.0.0
+description: ECAM display selector
+buttons:
+  - index: 14
+    name: A321
+    type: page
+    icon: TOLISS-A321
+  - index: 0
+    name: ENG
+    dataref: AirbusFBW/SDENG
+    command: AirbusFBW/ECP/SelectEnginePage
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: ENG
+  - index: 1
+    name: BLEED
+    type: push
+    command: AirbusFBW/ECP/SelectBleedPage
+    dataref: AirbusFBW/SDBLEED
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: BLEED
+  - index: 2
+    name: PRESS
+    type: push
+    command: AirbusFBW/ECP/SelectPressPage
+    dataref: AirbusFBW/SDPRESS
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: PRESS
+  - index: 3
+    name: ELEC
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    dataref: AirbusFBW/SDELEC
+    command: AirbusFBW/ECP/SelectElecPage
+    label: ELEC
+  - index: 4
+    name: HYD
+    type: push
+    dataref: AirbusFBW/SDHYD
+    command: AirbusFBW/ECP/SelectHydraulicPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: HYD
+  - index: 5
+    name: FUEL
+    type: push
+    dataref: AirbusFBW/SDFUEL
+    command: AirbusFBW/ECP/SelectFuelPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: FUEL
+  - index: 6
+    name: APU
+    type: push
+    dataref: AirbusFBW/SDAPU
+    command: AirbusFBW/ECP/SelectAPUPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: APU
+  - index: 7
+    name: COND
+    type: push
+    dataref: AirbusFBW/SDCOND
+    command: AirbusFBW/ECP/SelectConditioningPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: COND
+  - index: 8
+    name: DOOR
+    type: push
+    dataref: AirbusFBW/SDDOOR
+    command: AirbusFBW/ECP/SelectDoorOxyPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: DOOR
+  - index: 9
+    name: WHEEL
+    type: push
+    dataref: AirbusFBW/SDWHEEL
+    command: AirbusFBW/ECP/SelectWheelPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: WHEEL
+  - index: 10
+    name: F/CTL
+    type: push
+    dataref: AirbusFBW/SDFCTL
+    command: AirbusFBW/ECP/SelectFlightControlPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: F/CTL
+  - index: 11
+    name: CLR
+    type: push
+    dataref: AirbusFBW/SDSTATUS
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: CLR
+  - index: 12
+    name: STS
+    type: push
+    dataref: AirbusFBW/SDSTATUS
+    command: AirbusFBW/ECP/SelectStatusPage
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: STS
+  - index: 13
+    name: ALL
+    type: push
+    icon: P_NONE
+    command: AirbusFBW/ECAMAll
+    label: ALL

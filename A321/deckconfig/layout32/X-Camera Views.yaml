@@ -1,0 +1,47 @@
+buttons:
+  - index: 0
+    type: push
+    icon-color: (100,0,0)
+    label: Pilot View
+    command: SRS/X-Camera/Select_View_ID_3
+  - index: 1
+    type: push
+    icon-color: (0,0,100)
+    label: "Overhead\nPanel"
+    command: SRS/X-Camera/Select_View_ID_1
+  - index: 2
+    type: push
+    icon-color: (0,0,100)
+    label: FCU
+    command: SRS/X-Camera/Select_View_ID_2
+  - index: 3
+    type: push
+    icon-color: (0,0,100)
+    label: PFD / ND
+    command: SRS/X-Camera/Select_View_ID_4
+  - index: 4
+    type: push
+    icon-color: (0,0,100)
+    label: ECAM
+    command: SRS/X-Camera/Select_View_ID_5
+  - index: 5
+    type: push
+    icon-color: (0,0,100)
+    label: FMC
+    command: SRS/X-Camera/Select_View_ID_6
+  - index: 6
+    type: push
+    icon-color: (0,0,100)
+    label: Radios
+    command: SRS/X-Camera/Select_View_ID_7
+  - index: 7
+    name: back
+    type: page
+    icon: BACK
+    label: BACK
+    label-position: ct
+    command: SRS/X-Camera/Select_View_ID_7
+  - index: 31
+    name: Index
+    type: page
+    icon: XPLANE

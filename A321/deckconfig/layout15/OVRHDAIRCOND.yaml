@@ -1,0 +1,5 @@
+buttons:
+  - index: 0
+    name: A321
+    type: page
+    icon: TOLISS-A321

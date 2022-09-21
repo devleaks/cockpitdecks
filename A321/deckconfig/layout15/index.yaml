@@ -1,0 +1,114 @@
+name: Index
+buttons:
+  - index: 0
+    name: X-Plane Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sim/map/show_current
+    label: Map
+    label-position: ct
+  - index: 1
+    name: Airport Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: pikitanga/AptNav/ToggleMap
+    label: Airport
+    label-position: ct
+  - index: 2
+    name: AVS Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: flightfactor/avs/toggle
+    label: AVS
+    label-position: ct
+  - index: 3
+    name: AviTab
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    label: AviTab
+    label-position: ct
+    command: AviTab/toggle_tablet
+  - index: 4
+    name: X-Camera Views
+    type: page
+    icon: x-camera
+  - index: 5
+    name: LiveTraffic
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: LiveTraffic/Info_Staus_Wnd/Open
+    label: Live/T
+    label-position: ct
+  - index: 6
+    name: FollowTheGreens
+    type: push
+    multi-icons:
+      - F.GREENS_OFF
+      - F.GREENS_ON
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-size: 10
+    label-position: ct
+  - index: 7
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    multi-icons:
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-size: 10
+    label-position: ct
+    options: animation_speed=0.5
+  - index: 8
+    name: DATAREFTOOL
+    type: push
+    icon: NONE
+    label: "Data\nRef\nTool"
+    command: leecbaker/datareftool/new_search_window
+    label-position: cm
+  - index: 9
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
+  - index: 10
+    name: GroundHandlingDeluxe
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: jd/ghd/show_widget
+    label: GHDLX
+    label-position: ct
+  - index: 11
+    name: SAMGroundVehicle
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sam/main_window
+    label: SAM/GV
+    label-position: ct
+  - index: 13
+    name: PAUSE
+    type: push
+    icon: PANIC
+    command: sim/operation/pause_toggle
+  - index: 14
+    name: A321
+    type: page
+    icon: TOLISS-A321

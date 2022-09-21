@@ -1,0 +1,24 @@
+name: Ground Services
+buttons:
+  - index: 0
+    name: SAMGroundVehicle
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sam/main_window
+    label: SAM/GV
+    label-position: ct
+  - index: 1
+    name: GroundHandlingDeluxe
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: jd/ghd/show_widget
+    label: GHDLX
+    label-position: ct
+  - index: 31
+    name: Index
+    type: page
+    icon: XPLANE

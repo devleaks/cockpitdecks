@@ -37,10 +37,13 @@ class DeviceManager:
         devices = list()
 
         names = DeviceManager.list()
+        has_one = False
         # @todo: List loupedeck live devices only
         for n in names:
             name = list(n)
-            l = XTouchMini(input_device_name=name[1], output_device_name=name[1])
-            devices.append(l)
+            if name[1].startswith("X-TOUCH MINI") and not has_one:
+                has_one = True
+                l = XTouchMini(input_device_name=name[1], output_device_name=name[1])
+                devices.append(l)
 
         return devices

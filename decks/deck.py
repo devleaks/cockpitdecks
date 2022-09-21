@@ -62,7 +62,7 @@ class Deck:
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
+        logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
         if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
             self.cockpit.xp.events.put([self.name, key, state])
             logger.debug(f"key_change_callback: {key} {state} enqueued")
@@ -75,7 +75,7 @@ class Deck:
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-        if key in self.current_page.buttons.keys():
+        if self.current_page is not None and key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
     def create_icon_for_key(self, button, colors):

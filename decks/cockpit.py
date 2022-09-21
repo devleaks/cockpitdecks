@@ -269,27 +269,6 @@ class Cockpit:
                             logger.error(f"load: deck {decktype} {name} has no serial number, ignoring")
                 else:
                     logger.warning(f"load: no deck in file {fn}")
-
-                if "loupes" in config:
-                    cnt = 0
-                    for d in config["loupes"]:
-                        name = f"Loupe {cnt}"
-                        if "serial" in d:
-                            serial = d["serial"]
-                            device = self.get_loupe_device(serial)
-                            if device is not None:
-                                if "name" in d:
-                                    name = d["name"]
-                                # should check name does not already exist...
-                                self.cockpit[name] = Loupedeck(name, d, self, device)
-                                cnt = cnt + 1
-                                logger.info(f"load: loupe {name} loaded")
-                            # else:  # warning shown by get_device
-                        else:
-                            logger.error(f"load: loupe {name} has no serial number, ignoring")
-                else:
-                    logger.warning(f"load: no loupe in file {fn}")
-
         else:
             logger.warning(f"load: no config file {fn}")
 

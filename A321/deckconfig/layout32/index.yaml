@@ -1,0 +1,274 @@
+name: Index
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: X-Plane Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sim/map/show_current
+    label: Map
+    label-position: ct
+  - index: 1
+    name: Airport Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: pikitanga/AptNav/ToggleMap
+    label: Airport
+    label-position: ct
+  - index: 2
+    name: AVS Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: flightfactor/avs/toggle
+    label: AVS
+    label-position: ct
+  - index: 3
+    name: AviTab
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    label: AviTab
+    label-position: ct
+    command: AviTab/toggle_tablet
+  # - index: 4
+  #   name: Ground Services
+  #   type: page
+  #   label: Ground Services
+  - index: 4
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
+  - index: 5
+    name: LiveTraffic
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: LiveTraffic/Info_Staus_Wnd/Open
+    label: Live/T
+    label-position: ct
+  # - index: 6
+  #   name: FollowTheGreens
+  #   type: push
+  #   multi-icons:
+  #     - F.GREENS_OFF
+  #     - F.GREENS_ON
+  #   command: XPPython3/followthegreens/main_windown_toggle
+  #   label: F.GREENS
+  #   label-size: 10
+  #   label-position: ct
+  - index: 6
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    initial-value: 0
+    multi-icons:
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-position: ct
+    options: animation_speed=0.5
+  - index: 7
+    name: X-Camera Views
+    type: page
+    icon: VIEWS
+    label: VIEWS
+    label-position: ct
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    name: FD 1
+    type: push
+    icon: P_1_GREEN_OFF
+    command: toliss_airbus/fd1_push
+    dataref: AirbusFBW/FD1Engage
+    dataref-states:
+      - 0.0
+      - 1.0
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: FD
+  - index: 9
+    name: LS 1
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: LS
+  - index: 10
+    name: LOC 1
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/LOCbutton
+    label: LOC
+  - index: 11
+    name: A/THR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/ATHRbutton
+    label: A/THR
+  - index: 12
+    name: AP1
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP1
+  - index: 13
+    name: AP2
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP2
+  - index: 14
+    name: EXPED
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/EXPEDbutton
+    label: EXPED
+  - index: 15
+    name: APPR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/APPRbutton
+    label: APPR
+# ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    name: MASTERCAUT
+    type: push
+    icon: MASTER_CAUT_OFF
+    multi-icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+    # options: animation_speed=0.5
+  - index: 17
+    name: MASTERWARN
+    type: animate
+    icon: MASTER_WARN_OFF
+    multi-icons:
+      - MASTER_WARN_OFF
+      - MASTER_WARN
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+    options: animation_speed=0.5
+  - index: 18
+    name: OVRHDHYD
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nHYD"
+    label-position: cm
+  - index: 19
+    name: OVRHDFUEL
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nFUEL"
+    label-position: cm
+  - index: 20
+    name: OVRHDELEC
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nELEC"
+    label-position: cm
+  - index: 21
+    name: OVRHDAIRCOND
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nAIR COND"
+    label-position: cm
+  - index: 22
+    name: OVRHDEXTLIGHTS
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nEXT LIGHTS"
+    label-position: cm
+  - index: 23
+    name: OVRHDCALL
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nCALL AND\nINT.LIGHTS"
+    label-position: cm
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 24
+    name: FD
+    type: page
+    icon: P_NONE
+    label: FD
+    label-position: cm
+  - index: 25
+    name: ECAM
+    type: page
+    icon: P_NONE
+    label: ECAM
+    label-position: cm
+  - index: 26
+    name: PIEDESTAL
+    type: page
+    icon: P_NONE
+    label: PIEDESTAL
+    label-position: cm
+  - index: 27
+    name: ADIRS
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nADIRS"
+    label-position: cm
+  - index: 28
+    name: APU
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nAPU & FIRE"
+    label-position: cm
+  - index: 29
+    name: APU
+    type: page
+    icon: NONE
+    label: "OVERHEAD\nOTHER"
+    label-position: cm
+  - index: 30
+    name: XP PYTHON
+    type: push
+    icon: XP-PYTHON
+    command: XPPython3/reloadScripts
+    label: XPPython3
+    label-position: ct
+  # - index: 30
+  #   name: DATAREFTOOL
+  #   type: push
+  #   icon: NONE
+  #   label: DataRefTool
+  #   command: leecbaker/datareftool/new_search_window
+  #   label-position: cm
+  - index: 31
+    name: ISCS
+    type: push
+    multi-icons:
+      - P_TOLISS_ISCS_OFF
+      - P_TOLISS_ISCS_ON
+    command: toliss_airbus/iscs_open
+    options: counter
+  # - index: 31
+  #   name: A321
+  #   type: page
+  #   icon: TOLISS-A321

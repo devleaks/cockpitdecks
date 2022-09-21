@@ -1,0 +1,132 @@
+name: Index
+buttons:
+#
+# KNOB
+#
+  - index: knobTL
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+#
+# BUTTONS
+#
+  - index: 1
+    type: button
+    icon-color: (200, 20, 20)
+    command: sim/map/show_current
+#
+# KEYS
+#
+  - index: 0
+    type: none
+    label: ${AirbusFBW/RMP1StbyFreq}
+    label-format: "{:3.3f}"
+    label-color: white
+    label-size: 20
+    label-font: Seven Segment.ttf
+    icon-color: (40, 40, 40)
+  - index: 1
+    name: X-Plane Map
+    type: push
+    command: sim/map/show_current
+    icon-color: (200, 0, 0)
+    label: "SHOW\nMAP"
+    label-size: 20
+  # - index: knobTL
+  #   name: MoreLess
+  #   type: knob
+  #   commands:
+  #     - sim/map/show_current
+  #     - sim/map/show_current
+  # - index: 2
+  #   type: none
+  #   label: ${AirbusFBW/BatVolts[0]}
+  #   label-format: "{:2.1f}"
+  #   label-color: white
+  #   label-size: 40
+  #   label-font: Seven Segment.ttf
+  #   icon-color: (40, 40, 40)
+  # - index: 5
+  #   name: MoreLess
+  #   type: push
+  #   icon: MASTER_WARN
+  #   commands:
+  #     - sim/map/show_current
+  #     - sim/map/show_current
+  # - index: 11
+  #   name: A321
+  #   type: page
+  #   icon: TOLISS-A321
+#
+# SIDE KEYS
+#
+# Note: For type side, you MUST give either an icon at proper size or a icon-color.
+  - index: left
+    type: side
+    labels:
+      - label: FREQ
+    icon-color: (100, 100, 200)
+  - index: right
+    name: RSide
+    type: side
+    icon: SATURNV
+    # icon-color: (200, 200, 0)
+    labels:
+      - label: top
+        label-position: lb
+        label-color: red
+      - label: Center
+        label-position: cm
+        label-color: green
+      - label: tom
+        label-position: rt
+        label-color: blue
+        label-size: 16
+  # - index: 1
+  #   type: dual
+  #   icon: TEST
+  #   label: "APU\nTEST"
+  #   label-position: ct
+  #   command: AirbusFBW/FireTestAPU
+  # - index: 0
+  #   type: buzz
+  #   pattern: ASCEND_SLOW
+  - index: 3
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    multi-icons:
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-size: 10
+    label-position: ct
+    options: animation_speed=0.3
+  - index: 8
+    name: MASTERCAUT
+    type: push
+    icon: MASTER_CAUT_OFF
+    multi-icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
+    command: sim/annunciator/clear_master_caution
+    dataref: laminar/A333/annun/master_caution
+    # options: animation_speed=0.5
+  - index: 9
+    name: MASTERWARN
+    type: push
+    icon: MASTER_WARN_OFF
+    multi-icons:
+      - MASTER_WARN_OFF
+      - MASTER_WARN
+    command: sim/annunciator/clear_master_warning
+    dataref: laminar/A333/annun/master_warning
+# dataref oscillates between 0 and 1 for
+    dataref-rpn: ${laminar/A333/annun/master_warning} round
+    options: animation_speed=0.5

@@ -1,0 +1,29 @@
+buttons:
+  - index: 0
+    name: X-Plane Map
+    type: push
+    icon: dual.0.0
+    command: sim/map/show_current
+  - index: 1
+    name: X-Plane Map1
+    type: push
+    icon: dual.0.0
+    command: sim/map/show_current
+  - index: 2
+    type: nonexistanttype
+    icon: dual.0.0
+    command: sim/map/show_current
+  - name: No Index
+    type: push
+    icon: dual.0.0
+    command: sim/map/show_current
+  - index: 33
+    name: X-Plane Map
+    type: push
+    icon: dual.0.0
+    command: sim/map/show_current
+  - index: 24
+    type: none
+    icon-color: (200, 0, 0)
+    label: PANIC
+    label-size: 24
