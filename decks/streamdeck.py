@@ -41,95 +41,19 @@ class Streamdeck(Deck):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.pil_helper = PILHelper
-        self.pages = {}
-        self.icons = {}  # icons ready for this deck
-        self.home_page = None       # if None means deck has loaded default wallpaper only.
-        self.current_page = None
-        self.previous_page = None
-        self.page_history = []
-        self.valid = True
-        self.running = False
+
         self.monitoring_thread = None
-        if device is not None:
-            self.available_keys = range(device.key_count())
-
-        self.previous_key_values = {}
-        self.current_key_values = {}
-
-        self.default_label_font = config.get("default-label-font", cockpit.default_label_font)
-        self.default_label_size = config.get("default-label-size", cockpit.default_label_size)
-        self.default_label_color = config.get("default-label-color", cockpit.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
-        self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.fill_empty = config.get("fill-empty-keys", cockpit.fill_empty)
-        self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
-        self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
-
-        if "serial" in config:
-            self.serial = config["serial"]
-        else:
-            self.valid = False
-            logger.error(f"__init__: stream deck has no serial number, cannot use")
-
-        if device is not None:
-            self.numkeys = device.key_count()
-            logger.info(f"__init__: stream deck {self.name} has {self.numkeys} keys")
-        # elif "model" in config:
-        #     MAX_STREAM_DECK_MODEL_KEYS = {
-        #         "STREAM_DECK_XL": 32,
-        #         "STREAM_DECK": 15,
-        #         "STREAM_DECK_MK_2": 15,
-        #         "STREAM_DECK_MINI": 6
-        #     }
-        #     if config["model"] in MAX_STREAM_DECK_MODEL_KEYS:
-        #         self.model = config["model"]
-        #         self.numkeys = MAX_STREAM_DECK_MODEL_KEYS[config["model"]]
-        #         logger.info(f"__init__: stream deck {self.name} model {config['model']} has {self.numkeys} keys")
-        #     else:
-        #         self.valid = False
-        #         logger.error(f"__init__: stream deck has invalid model {config['model']}, cannot use")
-        else:
-            self.valid = False
-            logger.error(f"__init__: cannot determine key count")
-
-        self.brightness = 100
-        if "brightness" in config:
-            self.brightness = int(config["brightness"])
-            if self.device is not None:
-                self.device.set_brightness(self.brightness)
+        self.valid = True
 
         if self.device is not None:
             self.device.set_poll_frequency(POLL_FREQ)
 
-        self.layout = None
-        if "layout" in config:
-            self.layout = config["layout"]  # config["layout"] may be None to choose no layout
-        else:
-            self.layout = DEFAULT_LAYOUT
-            logger.warning(f"__init__: stream deck has no layout, using default")
-
-        # Add default icon for this deck
-        if self.device is not None:
-            self.icons[self.default_icon_name] = PILHelper.create_image(deck=self.device, background=self.default_icon_color)
-        else:
-            self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=self.default_icon_color)
-        logger.debug(f"__init__: create default {self.default_icon_name} icon")
-
         if self.valid:
+            self.make_default_icon()
             self.make_icon_for_device()
             self.load()
             self.init()
             self.start()
-
-    def init(self):
-        """
-        Connects to device and send initial keys.
-        """
-        if self.home_page is not None:
-            self.change_page(self.home_page.name)
-        logger.info(f"init: deck {self.name} initialized")
 
     def load(self):
         """
@@ -295,8 +219,11 @@ class Streamdeck(Deck):
                 self.device.set_key_image(k, key_image)
 
         # Add index 0 only button:
-        page0 = Page(name=DEFAULT_PAGE_NAME, deck=self)
-        button0 = BUTTON_TYPES["push"].new(config={
+        page_config = {
+            "name": DEFAULT_PAGE_NAME
+        }
+        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
+        button0 = STREAM_DECK_BUTTON_TYPES["push"].new(config={
                                                 "index": 0,
                                                 "name": "X-Plane Map",
                                                 "type": "push",
@@ -304,7 +231,7 @@ class Streamdeck(Deck):
                                                 "label": "Map",
                                                 "icon": self.default_icon_name
                                             }, page=page0)
-        page0.add_button(0, button0)
+        page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None
         self.current_page = page0
@@ -345,7 +272,8 @@ class Streamdeck(Deck):
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
             if os.path.exists(cache):
                 with open(cache, "rb") as fp:
-                    self.icons = pickle.load(fp)
+                    icons_temp = pickle.load(fp)
+                    self.icons.update(icons_temp)
                 logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
                 return
 

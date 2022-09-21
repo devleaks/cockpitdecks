@@ -34,11 +34,62 @@ class Deck:
         self.name = name
         self.cockpit = cockpit
         self.device = device
+
+        self.default_label_font = config.get("default-label-font", cockpit.default_label_font)
+        self.default_label_size = config.get("default-label-size", cockpit.default_label_size)
+        self.default_label_color = config.get("default-label-color", cockpit.default_label_color)
+        self.default_label_color = convert_color(self.default_label_color)
+        self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.fill_empty = config.get("fill-empty-keys", cockpit.fill_empty)
+        self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
+        self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
+
+        self.pil_helper = None
+        self.icons = {}  # icons ready for this deck
+
+        self.pages = {}
         self.home_page = None
         self.current_page = None
         self.previous_page = None
         self.page_history = []
-        self.pil_helper = None
+
+        self.valid = False
+        self.running = False
+
+        self.previous_key_values = {}
+        self.current_key_values = {}
+
+        if "serial" in config:
+            self.serial = config["serial"]
+        else:
+            self.valid = False
+            logger.error(f"__init__: loupedeck has no serial number, cannot use")
+
+        if device is not None and hasattr(device, "key_names"):
+            self.available_keys = device.key_names()
+        else:
+            self.valid = False
+            logger.error(f"__init__: cannot determine key count")
+
+        if device is not None and hasattr(device, "key_count"):
+            self.numkeys = device.key_count()
+
+        self.brightness = 100
+        if "brightness" in config:
+            self.brightness = int(config["brightness"])
+            if self.device is not None:
+                self.device.set_brightness(self.brightness)
+
+        self.layout = None
+        if "layout" in config:
+            self.layout = config["layout"]  # config["layout"] may be None to choose no layout
+        else:
+            self.layout = DEFAULT_LAYOUT
+            logger.warning(f"__init__: stream deck has no layout, using default")
+
+        self.valid = True
 
     def init(self):
         """
@@ -64,7 +115,7 @@ class Deck:
         """
         This is the function that is called when a key is pressed.
         """
-        logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
         if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
             self.cockpit.xp.events.put([self.name, key, state])
             logger.debug(f"key_change_callback: {key} {state} enqueued")
@@ -77,6 +128,7 @@ class Deck:
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         if self.current_page is not None and key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
@@ -84,6 +136,19 @@ class Deck:
         if self.pil_helper is not None:
             return self.pil_helper.create_image(deck=self.device, background=colors)
         return None
+
+    def make_default_icon(self):
+        """
+        Connects to device and send initial keys.
+        """
+        # Add default icon for this deck
+        if self.device is not None:
+            self.icons[self.default_icon_name] = PILHelper.create_image(deck=self.device, background=self.default_icon_color)
+        else:
+            self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=self.default_icon_color)
+        # copy it at highest level too
+        # self.cockpit.icons[self.default_icon_name] = self.icons[self.default_icon_name]
+        logger.debug(f"make_default_icon: create default {self.default_icon_name} icon ({self.icons.keys()})")
 
     def make_icon_for_device(self):
         """

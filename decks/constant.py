@@ -8,6 +8,7 @@ EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
 CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
+SERIAL_FILE = "secret.yaml"
 RESOURCES_FOLDER = "resources"
 
 DEFAULT_LAYOUT = "default"

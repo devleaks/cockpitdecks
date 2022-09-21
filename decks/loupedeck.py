@@ -44,55 +44,14 @@ class Loupedeck(Deck):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.pil_helper = PILHelper
-        self.pages = {}
-        self.icons = {}  # icons ready for this deck
-        self.home_page = None       # if None means deck has loaded default wallpaper only.
-        self.current_page = None
-        self.previous_page = None
-        self.page_history = []
-        self.valid = True
-        self.running = False
+
         self.touches = {}
         self.monitoring_thread = None
-        if device is not None:
-            self.available_keys = device.key_names()
-
-        self.previous_key_values = {}
-        self.current_key_values = {}
-
-        self.default_label_font = config.get("default-label-font", cockpit.default_label_font)
-        self.default_label_size = config.get("default-label-size", cockpit.default_label_size)
-        self.default_label_color = config.get("default-label-color", cockpit.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
-        self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.fill_empty = config.get("fill-empty-keys", cockpit.fill_empty)
-        self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
-        self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
-
-        if "serial" in config:
-            self.serial = config["serial"]
-        else:
-            self.valid = False
-            logger.error(f"__init__: loupedeck has no serial number, cannot use")
-
-        self.brightness = 100
-        if "brightness" in config:
-            self.brightness = int(config["brightness"])
-            if self.device is not None:
-                self.device.set_brightness(self.brightness)
-
-        self.layout = None
-        if "layout" in config:
-            self.layout = config["layout"]  # config["layout"] may be None to choose no layout
-        else:
-            self.layout = DEFAULT_LAYOUT
-            logger.warning(f"__init__: stream deck has no layout, using default")
 
         self.valid = True
 
         if self.valid:
+            self.make_default_icon()
             self.make_icon_for_device()
             self.load()
             self.init()
@@ -249,16 +208,19 @@ class Loupedeck(Deck):
         self.device.draw_image(image_right, display="right")
 
         # Add index 0 only button:
-        page0 = Page(name=DEFAULT_PAGE_NAME, deck=self)
+        page_config = {
+            "name": DEFAULT_PAGE_NAME
+        }
+        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
         button0 = LOUPEDECK_BUTTON_TYPES["push"].new(config={
-                                                "index": "key0",
+                                                "index": 0,
                                                 "name": "X-Plane Map",
                                                 "type": "push",
                                                 "command": "sim/map/show_current",
                                                 "label": "Map",
                                                 "icon": self.default_icon_name
                                             }, page=page0)
-        page0.add_button(0, button0)
+        page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None
         self.current_page = page0
@@ -369,7 +331,8 @@ class Loupedeck(Deck):
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
             if os.path.exists(cache):
                 with open(cache, "rb") as fp:
-                    self.icons = pickle.load(fp)
+                    icons_temp = pickle.load(fp)
+                    self.icons.update(icons_temp)
                 logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
                 return
 

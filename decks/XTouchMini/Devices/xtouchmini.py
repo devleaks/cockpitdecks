@@ -5,13 +5,19 @@ import logging
 import threading
 import random
 import mido
-
+from enum import Enum
 
 logger = logging.getLogger("XTouchMini")
 
 GLOBAL_CHANNEL = 0
 CHANNEL = 10
 
+class LED_MODE(Enum):
+    SINGLE = 0
+    PAN = 1
+    FAN = 2
+    SPREAD = 3
+    TRIM = 4
 
 class XTouchMini:
 
@@ -27,7 +33,6 @@ class XTouchMini:
         self.timeout = 10
         self.wait_finished = None
 
-        self.test()
 
     def id(self):
         return self.name
@@ -39,13 +44,22 @@ class XTouchMini:
         pass
 
     def reset(self):
-        pass
+        for i in range(16):
+            self.set_key(i)
+        for i in range(1, 9):
+            self.set_control(i, value=0)
 
     def is_visual(self):
         return False
 
     def get_serial_number(self):
         return self.input_device_name
+
+    def key_names(self):
+        a = [i for i in range(16)]
+        for i in range(1, 9):
+            a.append(f"Knob{i}")
+        return a
 
     def set_callback(self, callback: callable):
         self.callback = callback
@@ -81,7 +95,14 @@ class XTouchMini:
         # logger.debug(f"send: sent: {message}")
 
     def start(self) -> None:
+        logger.debug(f"start: starting {self.name}..")
         self.running = True
+        t = threading.Thread(target=self.loop)
+        t.name = "XTouchMini::loop"
+        t.start()
+        logger.debug(f"start: ..started")
+
+    def loop(self) -> None:
         m = None
         try:
             logger.debug(f'start: opening MIDI device: "{self.name}"..')
@@ -100,16 +121,21 @@ class XTouchMini:
 
 
     def stop(self) -> None:
+        logger.debug(f"stop: stopping {self.name}..")
         self.wait_finished = threading.Event()
         self.running = False
         if not self.wait_finished.wait(2 * self.timeout):
             logger.warning(f"stop: did not stop cleanly")
         self.wait_finished = None
+        logger.debug(f"stop: ..stopped")
 
 
     # ##########################################
     # User Interface
     #
+    def set_brightness(self, brightness: int):
+        pass
+
     def set_key(self, key: int, on:bool=False, blink:bool=False):
         velocity = 0
         if on:
@@ -125,7 +151,7 @@ class XTouchMini:
     # Fan:    00111100000 (Values 32 - 43)
     # Spread: 00011111000 (Values 48 - 59)
     #
-    def set_control(self, key: int, value:int, mode: str = "single"):
+    def set_control(self, key: int, value:int, mode: LED_MODE = LED_MODE.SINGLE):
         def decode_value(v):
             if v == 0:
                 return "all off"
@@ -140,21 +166,11 @@ class XTouchMini:
             else:
                 return "ignored"
 
-        mode_num = 0
-        if mode == "pan":
-            mode_num = 1
-        elif mode == "fan":
-            mode_num = 2
-        elif mode == "spread":
-            mode_num = 3
-        elif mode == "trim":
-            mode_num = 4
-
-        m = mido.Message(type="control_change", control=key, value=mode_num)
+        m = mido.Message(type="control_change", control=key, value=mode.value)
         self.send(m)
         m = mido.Message(type="control_change", control=8+key, value=value)
         self.send(m)
-        logger.debug(f"set_control: encoder {key}: {mode}: {decode_value(value)}")
+        logger.debug(f"set_control: encoder {key}: {mode.name}: {decode_value(value)}")
 
 
     def test(self):
@@ -169,7 +185,7 @@ class XTouchMini:
             self.set_key(i, on=random.choice([True, False]), blink=random.choice([True, False, False, False, False, False, False, False]))
 
         for i in range(1, 9):
-            self.set_control(i, value=random.randrange(29), mode=random.choice(["single", "pan", "fan", "spread", "trim"]))
+            self.set_control(i, value=random.randrange(29), mode=random.choice(list(LED_MODE)))
 
         # for k in range(5):
         #     for i in range(60):

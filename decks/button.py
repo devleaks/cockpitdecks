@@ -338,6 +338,9 @@ class Button:
 
     def get_image_for_icon(self):
         image = None
+        if self.key_icon not in self.deck.icons.keys():  # look for properly sized image first...
+            print(">>>>>>>>>", self.deck.name, self.key_icon, self.deck.icons.keys())
+
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
         elif self.key_icon in self.deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
@@ -907,6 +910,16 @@ class ButtonAnimate(Button):
 # ###########################
 # Mapping between button types and classes
 #
+STREAM_DECK_BUTTON_TYPES = {
+    "none": Button,
+    "page": ButtonPage,
+    "push": ButtonPush,
+    "dual": ButtonDual,
+    "updown": ButtonUpDown,
+    "animate": ButtonAnimate,
+    "reload": ButtonReload
+}
+
 LOUPEDECK_BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
@@ -919,13 +932,11 @@ LOUPEDECK_BUTTON_TYPES = {
     "side": ButtonSide,
     "reload": ButtonReload
 }
-STREAM_DECK_BUTTON_TYPES = {
+
+XTOUCH_MINI_BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
     "push": ButtonPush,
     "dual": ButtonDual,
-    "updown": ButtonUpDown,
-    "animate": ButtonAnimate,
-    "reload": ButtonReload
+    "updown": ButtonUpDown
 }
-

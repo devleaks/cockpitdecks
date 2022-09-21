@@ -8,7 +8,7 @@ import pickle
 
 from PIL import Image, ImageFont
 
-from .constant import CONFIG_DIR, CONFIG_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
+from .constant import CONFIG_DIR, CONFIG_FILE, SERIAL_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR
 from .constant import has_ext, convert_color
@@ -34,7 +34,6 @@ class Cockpit:
         self.default_pages = None  # for debugging
 
         self.devices = []
-        self.lldevices = []
 
         self.acpath = None
         self.cockpit = {}
@@ -104,23 +103,16 @@ class Cockpit:
         logger.warning(f"get_device: deck {req_serial} not found")
         return None
 
-    def get_loupe_device(self, req_serial: str):
-        for loupe in self.lldevices:
-            if loupe.get_serial_number() ==  req_serial:
-                return loupe
-        logger.warning(f"get_loupe_device: loupe {req_serial} not found")
-        return None
-
     def load(self, acpath: str):
         """
-        Loads stream decks for aircraft in supplied path and start listening for key presses.
+        Loads decks for aircraft in supplied path and start listening for key presses.
         """
         self.load_aircraft(acpath)
         self.run()
 
     def load_aircraft(self, acpath: str):
         """
-        Loads stream decks for aircraft in supplied path and start listening for key presses.
+        Loads decks for aircraft in supplied path.
         """
         if self.disabled:
             logger.warning(f"load: Cockpit is disabled")
@@ -228,6 +220,12 @@ class Cockpit:
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)
+        sn = os.path.join(self.acpath, CONFIG_DIR, SERIAL_FILE)
+        serial_numbers = {}
+        if os.path.exists(sn):
+            with open(sn, "r") as fp:
+                serial_numbers = yaml.safe_load(fp)
+
         if os.path.exists(fn):
             with open(fn, "r") as fp:
                 config = yaml.safe_load(fp)
@@ -245,22 +243,33 @@ class Cockpit:
                 if "decks" in config:
                     cnt = 0
                     for deck_config in config["decks"]:
-                        name = f"Deck {cnt}"
-                        if "serial" in deck_config:
-                            serial = deck_config["serial"]
-                            decktype = deck_config.get("type")
-                            if decktype not in DECK_TYPES.keys():
-                                logger.warning(f"create_decks: invalid deck type {decktype}, ignoring")
-                                continue
-                            device = self.get_device(req_serial=serial, req_type=deck_config["type"])
+                        name = deck_config.get("name", f"Deck {cnt}")
+
+                        disabled = deck_config.get("disabled")
+                        if type(disabled) == str and disabled.upper() in ["YES", "TRUE"] or disabled:
+                            logger.info(f"create_decks: deck {name} disabled, ignoring")
+                            continue
+
+                        decktype = deck_config.get("type")
+                        if decktype not in DECK_TYPES.keys():
+                            logger.warning(f"create_decks: invalid deck type {decktype}, ignoring")
+                            continue
+
+                        serial = deck_config.get("serial")
+                        if serial is None:  # get it from the secret file
+                            serial = serial_numbers[name] if name in serial_numbers.keys() else None
+
+                        if serial is not None:
+                            device = self.get_device(req_serial=serial, req_type=decktype)
                             if device is not None:
-                                if "name" in deck_config:
-                                    name = deck_config["name"]
-                                # should check name does not already exist...
-                                self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
-                                cnt = cnt + 1
-                                logger.info(f"load: deck {decktype} {name} loaded")
-                            # else:  # warning shown by get_device
+                                #
+                                deck_config["serial"] = serial
+                                if name not in self.cockpit.keys():
+                                    self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
+                                    cnt = cnt + 1
+                                    logger.info(f"load: deck {decktype} {name} added")
+                                else:
+                                    logger.warning(f"create_decks: deck {name} already exist, ignoring")
                         else:
                             logger.error(f"load: deck {decktype} {name} has no serial number, ignoring")
                 else:
@@ -275,7 +284,15 @@ class Cockpit:
         which toggle X-Plane map on/off.
         """
         self.acpath = None
-        for device in self.devices:
+
+        # {
+        #     "type": decktype,
+        #     "device": device,
+        #     "serial_number": serial
+        # }
+        for deck in self.devices:
+            device = deck["device"]
+
             device.open()
             device.reset()
             name = device.id()
@@ -288,6 +305,9 @@ class Cockpit:
             }
             self.cockpit[name] = Streamdeck(name, config, self, device)
 
+    # #########################################################
+    # Cockpit data caches
+    #
     def load_icons(self):
         # Loading icons
         #
@@ -366,6 +386,9 @@ class Cockpit:
 
         logger.info(f"load_fonts: {len(self.fonts)} fonts loaded, default is {self.default_label_font}")
 
+    # #########################################################
+    # Cockpit start/stop/reload procedures
+    #
     def reload_decks(self):
         """
         Development function to reload page yaml without leaving the page
@@ -392,6 +415,10 @@ class Cockpit:
             del self.xp
             self.xp = None
         logger.info(f"terminate_all: done")
+        left = len(threading.enumerate())
+        if left > 1:  # [MainThread]
+            logger.error(f"terminate_all: {left} threads remaining")
+            logger.error(f"terminate_all: {[t.name for t in threading.enumerate()]}")
 
     def run(self):
         if len(self.cockpit) > 0:
@@ -409,6 +436,7 @@ class Cockpit:
         else:
             logger.warning(f"run: no deck")
 
+    # #########################################################
     # XPPython Plugin Hooks
     #
     def start(self):

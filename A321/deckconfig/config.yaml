@@ -14,14 +14,15 @@ decks:
     brightness: 70
     default-label-font: DIN Bold.ttf
     default-label-size: 16
-  - name: Live
+  - name: XPLive
     type: loupedeck
     layout: live
     brightness: 70
-  - name: XTouch
+  - name: XPTouch
     type: xtouchmini
     layout: live
     brightness: 70
+    disabled: True
 # This is at global level
 default-wallpaper-logo: logo.png
 default-label-color: white
