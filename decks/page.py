@@ -35,9 +35,9 @@ class Page:
             logger.error(f"add_button: button index {idx} already defined, ignoring {button.name}")
             return
         self.buttons[idx] = button
-        # Build page dataref list, each dataref points at the button(s) that use it
-        # logger.debug(f"add_button: page {self.name}: button {button.name}: datarefs: {button.dataref_values.keys()}")
+        logger.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
 
+    def register_datarefs(self, button: Button):
         for d in button.get_datarefs():
             if d not in self.datarefs:
                 ref = self.xp.get_dataref(d)
@@ -45,8 +45,8 @@ class Page:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
                 else:
-                    logger.warning(f"add_button: page {self.name}: button {button.name}: failed to create dataref {d}")
-        logger.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
+                    logger.warning(f"register_datarefs: page {self.name}: button {button.name}: failed to create dataref {d}")
+        logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered")
 
     def dataref_changed(self, dataref):
         """

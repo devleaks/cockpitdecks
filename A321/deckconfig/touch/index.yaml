@@ -1,0 +1,51 @@
+name: Index
+buttons:
+#
+# KNOB
+#
+  - index: knob1
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+  - index: knob2
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+  - index: knob3
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+  - index: knob4
+    type: knob
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    options: dual
+#
+# BUTTONS
+#
+  - index: 6
+    name: MASTERCAUT
+    type: push
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+  - index: 7
+    name: MASTERWARN
+    type: push
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+includes: views

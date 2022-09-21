@@ -180,11 +180,10 @@ class Deck:
             logger.warning(f"change_page: deck {self.name}: page {page} not found")
 
 
-    def start(self):
+    def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         pass
 
-
-    def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
+    def start(self):
         pass
 
     def terminate(self):

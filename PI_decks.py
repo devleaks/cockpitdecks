@@ -15,7 +15,7 @@ from traceback import print_exc
 from decks import Cockpit, __version__ as RELEASE
 from decks.xplanesdk import XPlaneSDK
 
-logging.basicConfig(level=logging.DEBUG, filename="decks.log", filemode='a')
+logging.basicConfig(level=logging.DEBUG, filename=os.path.basename(__file__)+".log", filemode='a')
 
 
 class PythonInterface:
@@ -23,11 +23,11 @@ class PythonInterface:
     def __init__(self):
         self.Name = "Cockpitdecks"
         self.Sig = "cockpitdecks.xppython3"
-        self.Desc = "Elgato Stream Deck, Loupedeck LoupedeckLive, and X-Touch Mini controllers for X-Plane (Rel. " + RELEASE + ")"
+        self.Desc = "Elgato Stream Deck, Loupedeck LoupedeckLive, and Behringer X-Touch Mini controllers for X-Plane (Rel. " + RELEASE + ")"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
         self.menuIdx = None
-        self.decks = None
+        self.cockpit = None
         self.cockpitCmdRef = None
 
     def XPluginStart(self):
@@ -59,10 +59,10 @@ class PythonInterface:
             self.cockpitCmdRef = None
             if self.trace:
                 print(self.Name, "PI::XPluginStop: command removed.")
-        if self.decks:
+        if self.cockpit:
             try:
-                self.decks.stop()
-                self.decks = None
+                self.cockpit.stop()
+                self.cockpit = None
                 if self.trace:
                     print(self.Name, "PI::XPluginStop: stopped.")
             except:
@@ -73,8 +73,8 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            if self.decks is None:
-                self.decks = Cockpit(XPlaneSDK)
+            if self.cockpit is None:
+                self.cockpit = Cockpit(XPlaneSDK)
             if self.loadCurrentAircraft():
                 self.enabled = True
                 xp.checkMenuItem(xp.findPluginsMenu(), self.menuIdx, xp.Menu_Checked)
@@ -91,8 +91,8 @@ class PythonInterface:
 
     def XPluginDisable(self):
         try:
-            if self.enabled and self.decks:
-                self.decks.disable()
+            if self.enabled and self.cockpit:
+                self.cockpit.disable()
         except:
             if self.trace:
                 print(self.Name, "PI::XPluginDisable: exception.")
@@ -111,7 +111,7 @@ class PythonInterface:
         if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Name, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                if self.decks:
+                if self.cockpit:
                     if self.loadCurrentAircraft():
                         self.enabled = True
                 else:
@@ -127,7 +127,7 @@ class PythonInterface:
         if len(ac) == 2:
             acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
             print(self.Name, "PI::loadCurrentAircraft: trying " + acpath[0] + "..")
-            self.decks.load(acpath=acpath[0])
+            self.cockpit.load(acpath=acpath[0])
             print(self.Name, "PI::loadCurrentAircraft: .. " + acpath[0] + " done.")
             return True
         print(self.Name, "PI::loadCurrentAircraft: not found.")
@@ -154,9 +154,9 @@ class PythonInterface:
         else:
             print(self.Name, "PI::cockpitCmd: no command phase", len(args))
 
-        if not self.decks:
+        if not self.cockpit:
             try:
-                self.decks = Cockpit(XPlaneSDK)
+                self.cockpit = Cockpit(XPlaneSDK)
                 if self.trace:
                     print(self.Name, "PI::cockpitCmd: created.")
             except:
@@ -165,7 +165,7 @@ class PythonInterface:
                 print_exc()
                 return 0
 
-        if self.decks and commandPhase == 0:
+        if self.cockpit and commandPhase == 0:
             if self.trace:
                 print(self.Name, "PI::cockpitCmd: available.")
             try:
@@ -181,7 +181,7 @@ class PythonInterface:
                     print(self.Name, "PI::cockpitCmd: exception(loading).")
                 print_exc()
                 return 0
-        elif not self.decks:
+        elif not self.cockpit:
             print(self.Name, "PI::cockpitCmd: Error: could not create Cockpit.")
 
         return 0

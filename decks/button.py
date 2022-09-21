@@ -74,6 +74,8 @@ class Button:
         self.dataref_rpn = config.get("dataref-rpn")
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
+        if len(self.all_datarefs) > 0:
+            self.page.register_datarefs(self)
 
         # Commands
         self.command = config.get("command")
@@ -114,16 +116,16 @@ class Button:
             else:
                 imgtype = "button" if self.index not in ["left", "right"] else self.index
             # self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
-            self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
-
-            self.default_icon = f"_default_{self.page.name}_{self.name}_icon.png"
+            if self.deck.pil_helper is not None:
+                self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
+                self.default_icon = f"_default_{self.page.name}_{self.name}_icon.png"
             # self.default_icon = add_ext(self.default_icon, ".png")
             # logger.debug(f"__init__: button {self.name}: creating icon '{self.default_icon}' with color {self.icon_color}")
             # register it globally
-            self.deck.cockpit.icons[self.default_icon] = self.default_icon_image
+                self.deck.cockpit.icons[self.default_icon] = self.default_icon_image
             # add it to icon for this deck too since it was created at proper size
-            self.deck.icons[self.default_icon] = self.default_icon_image
-            self.icon = self.default_icon
+                self.deck.icons[self.default_icon] = self.default_icon_image
+                self.icon = self.default_icon
         elif self.multi_icons is not None and len(self.multi_icons) > 0:  # 2.3 multiicons, take the first one
             self.icon = self.multi_icons[0]
             logger.debug(f"__init__: button {self.name}: icon not found but has multi-icons. Using {self.icon}.")
@@ -221,23 +223,23 @@ class Button:
         r = []
         if self.dataref is not None:
             r.append(self.dataref)
-            # logger.debug(f"get_datarefs: button {self.name}: added single dataref {self.dataref}")
+            logger.debug(f"get_datarefs: button {self.name}: added single dataref {self.dataref}")
         if self.datarefs is not None:
             r = r + self.datarefs
-            # logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {self.datarefs}")
+            logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {self.datarefs}")
         # logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
         # Use of datarefs in label:
         if self.label is not None:
             datarefs = re.findall("\\${(.+?)}", self.label)
             if len(datarefs) > 0:
                 r = r + datarefs
-                # logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
+                logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
         # Use of datarefs in formulae:
         if self.dataref_rpn is not None:
             datarefs = re.findall("\\${(.+?)}", self.dataref_rpn)
             if len(datarefs) > 0:
                 r = r + datarefs
-                # logger.debug(f"get_datarefs: button {self.name}: added formulae datarefs {datarefs}")
+                logger.debug(f"get_datarefs: button {self.name}: added formulae datarefs {datarefs}")
 
         return list(set(r))  # removes duplicates
 
@@ -338,9 +340,6 @@ class Button:
 
     def get_image_for_icon(self):
         image = None
-        if self.key_icon not in self.deck.icons.keys():  # look for properly sized image first...
-            print(">>>>>>>>>", self.deck.name, self.key_icon, self.deck.icons.keys())
-
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
         elif self.key_icon in self.deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
@@ -938,5 +937,6 @@ XTOUCH_MINI_BUTTON_TYPES = {
     "page": ButtonPage,
     "push": ButtonPush,
     "dual": ButtonDual,
+    "knob": ButtonKnob,
     "updown": ButtonUpDown
 }

@@ -293,10 +293,14 @@ class LoupedeckLive(Loupedeck):
 
     def stop(self):
         self.reading_finished = threading.Event()
+        self.process_finished = threading.Event()
         self.reading_running = False
+        self.process_running = False
         logger.info("stop: requested threads to stop, waiting..")
         # self._messages.put("__STOP__")
         if not self.reading_finished.wait(timeout=2*READING_TIMEOUT):   # sloppy but ok.
+            logger.warning("stop: reader thread did not finish cleanly")
+        if not self.process_finished.wait(timeout=2*self.get_timeout):
             logger.warning("stop: reader thread did not finish cleanly")
 
         logger.info("stop: ..stopped")

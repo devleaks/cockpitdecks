@@ -66,8 +66,7 @@ class XTouchMini:
 
 
     def _read(self, msg: mido.Message) -> None:
-        logger.debug(f"_read: {msg}")
-
+        # logger.debug(f"_read: {msg}")
         payload = None
         if msg.type == "note_on":
             payload = { "key": msg.note, "state": 1 }
