@@ -44,6 +44,8 @@ def has_ext(name: str, ext: str):
     return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
 
 def convert_color(instr):
+    # convert a string (1, 2, 3) to a tuple of integers.
+    # (Could be extended and generalized with ast.literal_eval...)
     if type(instr) != str:
         return instr  # (255, 7, 2)
     if "," in instr:  # "(255, 7, 2)"

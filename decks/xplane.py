@@ -58,6 +58,7 @@ class Dataref:
         if self.changed():
             for l in self.listeners:
                 l.dataref_changed(self)
+                # loggerDataref.error(f"notify: notified {l}")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 

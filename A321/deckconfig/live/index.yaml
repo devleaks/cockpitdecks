@@ -53,12 +53,26 @@ buttons:
     label-size: 20
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
+  - index: 1
+    name: MASTERCAUT
+    type: push
+    icon: MASTER_CAUT_OFF
+    multi-icons:
+      - MASTER_CAUT_OFF
+      - MASTER_CAUT
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+    # options: animation_speed=0.5
   - index: 2
-    name: RELOAD
-    type: reload
-    icon: RELOAD
-    label: RELOAD
-    label-position: ct
+    name: MASTERWARN
+    type: animate
+    icon: MASTER_WARN_OFF
+    multi-icons:
+      - MASTER_WARN_OFF
+      - MASTER_WARN
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+    options: animation_speed=0.5
   - index: 3
     type: none
     label: ${sim/cockpit2/autopilot/altitude_dial_ft}
@@ -75,6 +89,23 @@ buttons:
     label-size: 20
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
+  - index: 5
+    name: A/THR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/ATHRbutton
+    label: A/THR
+  - index: 6
+    name: AP1
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP1
+    dataref: AirbusFBW/AP1Engage
+    command: toliss_airbus/ap1_push
   - index: 7
     type: none
     label: ${sim/cockpit/autopilot/vertical_velocity}
@@ -83,6 +114,34 @@ buttons:
     label-size: 20
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
+  - index: 9
+    name: FD 1
+    type: push
+    icon: P_1_GREEN_OFF
+    command: toliss_airbus/fd1_push
+    dataref: AirbusFBW/FD1Engage
+    dataref-states:
+      - 0.0
+      - 1.0
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: FD
+  - index: 10
+    name: AP2
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP2
+    dataref: AirbusFBW/AP2Engage
+    command: toliss_airbus/ap2_push
+  - index: 11
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
   # - index: knobTL
   #   name: MoreLess
   #   type: knob
@@ -116,6 +175,7 @@ buttons:
     type: side
     label-size: 18
     labels:
+      - centers: (15, 58, 94)
       - label: SPD
       - label: HDG
     icon-color: (94, 111, 130)
@@ -135,25 +195,5 @@ buttons:
   # - index: 0
   #   type: buzz
   #   pattern: ASCEND_SLOW
-  - index: 8
-    name: MASTERCAUT
-    type: push
-    icon: MASTER_CAUT_OFF
-    multi-icons:
-      - MASTER_CAUT_OFF
-      - MASTER_CAUT
-    command: sim/annunciator/clear_master_caution
-    dataref: AirbusFBW/MasterCaut
-    # options: animation_speed=0.5
-  - index: 9
-    name: MASTERWARN
-    type: animate
-    icon: MASTER_WARN_OFF
-    multi-icons:
-      - MASTER_WARN_OFF
-      - MASTER_WARN
-    command: sim/annunciator/clear_master_warning
-    dataref: AirbusFBW/MasterWarn
-    options: animation_speed=0.5
 includes: views
 fill-empty-keys: (94, 111, 130)

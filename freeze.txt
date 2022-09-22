@@ -1,8 +1,0 @@
-future==0.18.2
-iso8601==1.0.2
-mido==1.2.10
-Pillow==9.2.0
-pyserial==3.5
-python-rtmidi==1.4.9
-PyYAML==6.0
-streamdeck==0.9.1

@@ -465,7 +465,8 @@ class Button:
         self.current_value = self.button_value()
         if self._first_value is None:  # store first non None value received from datarefs
             self._first_value = self.current_value
-        # logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
+        logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
+        self.set_key_icon()
         self.render()
 
     def activate(self, state: bool):
@@ -721,12 +722,16 @@ class ButtonSide(ButtonPush):
                 image = image.copy()  # we will add text over it
                 draw = ImageDraw.Draw(image)
                 inside = round(0.04 * image.width + 0.5)
-                vcenter = [43, 135, 227]  # this determines the number of acceptable labels, organized vertically
+                vcenter = [43, 150, 227]  # this determines the number of acceptable labels, organized vertically
                 vposition = "TCB"
                 vheight = 38 - inside
 
                 li = 0
                 for label in self.labels:
+                    cnt = label.get("centers")
+                    if cnt is not None:
+                        vcenter = [round(270 * i / 100, 0) for i in convert_color(cnt)]  # !
+                        continue
                     txt = label.get("label")
                     knob = "knob" + vposition[li] + self.index[0].upper()
                     logger.debug(f"get_image: watching {knob}")

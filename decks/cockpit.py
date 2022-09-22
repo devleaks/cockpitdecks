@@ -291,8 +291,11 @@ class Cockpit:
         #     "serial_number": serial
         # }
         for deck in self.devices:
+            decktype = deck.get("type")
+            if decktype not in DECK_TYPES.keys():
+                logger.warning(f"create_decks: invalid deck type {decktype}, ignoring")
+                continue
             device = deck["device"]
-
             device.open()
             device.reset()
             name = device.id()
@@ -303,7 +306,7 @@ class Cockpit:
                 "layout": None,   # Streamdeck will detect None layout and present default deck
                 "brightness": 75  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
-            self.cockpit[name] = Streamdeck(name, config, self, device)
+            self.cockpit[name] = DECK_TYPES[decktype][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches
