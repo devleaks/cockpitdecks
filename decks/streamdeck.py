@@ -10,7 +10,7 @@ from time import sleep
 
 from enum import Enum
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT

@@ -5,7 +5,7 @@ decks:
   - name: XPDeck
     type: streamdeck
     layout: layout15
-    brightness: 30
+    brightness: 80
     default-label-font: DIN Medium.ttf
     default-label-size: 13
   - name: XPDeckXL

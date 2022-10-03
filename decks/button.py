@@ -21,8 +21,11 @@ import logging
 import threading
 import time
 import random
+import colorsys
+# import pprint
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
+from mergedeep import merge
 
 from .constant import add_ext, CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, convert_color
 from .rpc import RPC
@@ -911,6 +914,256 @@ class ButtonAnimate(Button):
     def clean(self):
         self.anim_stop()
 
+
+class ButtonAirbus(Button):
+    """
+    An airbus button is not a button, but rather an icon builder for Airbus style buttons.
+
+    Example of YAML configuration:
+
+airbus-defaults:
+    background: (r, g, b)
+    color: (r, g, b)
+    title:
+      font: DIN
+      size: 12
+      color: (r, g, b)
+    text:
+      font: DIN
+      size: 12
+      color: (r, g, b)
+
+background: (r, g, b)
+type:
+size: large
+title:
+  text: ENG 1
+  position: {center|left|right}
+  font: DIN
+  size: 12
+  color: (r, g, b)
+text:
+  text: AVAIL
+  font: DIN
+  size: 12
+  color: (r, g, b)
+dual:
+  text: OFF
+  font: DIN
+  size: 14
+  color: (r, g, b)
+  framed: True
+options: grid|gard
+
+May be vertical text possible? Or text on side of button?
+
+    """
+    AIRBUS_DEFAULTS = {
+        "background": (94, 111, 130),       # Button frame color
+        "color": (20, 20, 20),              # Button background color
+        "blurr": 16,
+        "title": {                          # This is printed on top of the button
+            "font": "DIN.ttf",
+            "size": 42,                     # 3/16
+            "color": "white"
+        },
+        "display": {                        # This is what is display on the button, text or LED for now
+            "font": "DIN.ttf",
+            "size": 64,
+            "color": (0, 0, 220)
+        },
+        "dual": {                           # This is what is printed on the button
+            "font": "DIN Bold.ttf",
+            "size": 80,
+            "color": "deepskyblue"
+        }
+    }
+
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+
+        self.airbus = merge({}, ButtonAirbus.AIRBUS_DEFAULTS, config)
+
+    def get_image(self):
+        return self.mk_airbus(lit_display=True, lit_dual=True)
+
+    def mk_airbus(self, lit_display=True, lit_dual=True):
+        # If the display or dual is not lit, a darker version is printed unless dark option is added to button
+        # in which case nothing gets added to the button.
+
+        def light_off(color, lightness: float = 0.10):
+            # Darkens (or lighten) a color
+            if type(color) == str:
+                color = ImageColor.getrgb(color)
+            a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
+            a[1] = lightness
+            return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
+
+        ICON_SIZE = 256  # px
+        inside = ICON_SIZE / 32 # 8px
+
+        # Button
+        # Overall button size: large, medium, small, or full.
+        # A button is always square.
+        #
+        size = self.airbus.get("size", "large")
+        if size == "small":  # about 1/2, starts at 128
+            top_button = ICON_SIZE / 2
+            led_offset = 20
+        elif size == "medium":  # about 2/3, starts at 96
+            top_button = 6 * ICON_SIZE / 16
+            led_offset = 20
+        elif size == "full":  # starts at 0
+            top_button = 0
+            led_offset = 40
+        else:  # "large", full size, default, starts at 48
+            top_button = 3 * ICON_SIZE / 16
+            led_offset = 40
+        button = ((0, top_button), (ICON_SIZE, ICON_SIZE))
+        # later: center smaller buttons, currently at bottom of icon
+
+        # PART 1:
+        # Texts that will glow
+        glow = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(0, 0, 0, 0))
+        draw = ImageDraw.Draw(glow)
+
+        # First/top/main item (called "display")
+        display = self.airbus.get("display")
+        dual    = self.airbus.get("dual")
+
+        if display is not None:
+            display_pos = display.get("position", "mm")
+            text = display.get("text")
+            if text is not None:
+                fontname = self.get_font(display.get("font"))
+                font = ImageFont.truetype(fontname, display.get("size"))
+                w = glow.width / 2
+                p = "m"
+                a = "center"
+                if display_pos[0] == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif display_pos[0] == "r":
+                    w = glow.width - inside
+                    p = "r"
+                    a = "right"
+                h = top_button + (ICON_SIZE - top_button) / 2 + inside
+                if dual is not None and dual.get("text") is not None: # if one item, always in middle of button...
+                    h = top_button + display.get("size") / 2 + 3 * inside
+                # logger.debug(f"mk_airbus: position {display_pos}: {(w, h)}, {top_button}, {dual}")
+                color = display.get("color")
+                if not lit_display:
+                    color = display.get("off-color", light_off(color))
+                if not self.has_option("dark"):
+                    draw.multiline_text((w, h),  # (glow.width / 2, 15)
+                              text=display.get("text"),
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=color)
+                else:
+                    logger.debug("mk_airbus: full dark display")
+            else:  # 3 horizontal leds
+                start = top_button + led_offset
+                thick = 10
+                e = ICON_SIZE / 8
+                color = display.get("color")
+                if not lit_display:
+                    color = display.get("off-color", light_off(color))
+                for i in range(3):
+                    s = start + i * 16
+                    frame = ((e, s), (glow.width - e, s+thick))
+                    draw.rectangle(frame, fill=color)
+
+        # Optional second/bottom item (called "dual")
+        if dual is not None:
+            dual_pos = dual.get("position", "mm")
+            text = dual.get("text")
+            if text is not None:
+                fontname = self.get_font(dual.get("font"))
+                font = ImageFont.truetype(fontname, dual.get("size"))
+                w = glow.width / 2
+                p = "m"
+                a = "center"
+                if dual_pos[0] == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif dual_pos[0] == "r":
+                    w = glow.width - inside
+                    p = "r"
+                    a = "right"
+                # h = top_button + (glow.height - top_button) / 2 + dual.get("size") / 2 + inside
+                h = glow.height - 1.5 * inside - dual.get("size") / 2
+                # logger.debug(f"mk_airbus: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
+
+                if not self.has_option("dark"):
+                    color = dual.get("color")
+                    if not lit_dual:
+                        color = dual.get("off-color", light_off(color))
+
+                    draw.multiline_text((w, h),  # (glow.width / 2, 15)
+                              text=dual.get("text"),
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=color)
+                    framed = dual.get("framed")
+                    if type(framed) == str:
+                        framed = framed.lower() in ["true", "on", "yes"]
+                    if framed:
+                        start = 160
+                        height = 96
+                        thick = 12
+                        e = ICON_SIZE / 8
+                        frame = ((e, start), (glow.width-e, start + height))
+                        draw.rectangle(frame, outline=color, width=thick)
+                else:
+                    logger.debug("mk_airbus: full dark dual display")
+
+
+        # Background
+        image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.airbus.get("background", "lightsteelblue"))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle(button, fill=self.airbus.get("color", "black"))
+
+        # Title
+        title = self.airbus.get("title")
+        if title is not None and title.get("text") is not None:
+            title_pos = title.get("position", "mm")
+            fontname = self.get_font(title.get("font"))
+            font = ImageFont.truetype(fontname, title.get("size"))
+            w = image.width / 2
+            p = "m"
+            a = "center"
+            if title_pos[0] == "l":
+                w = inside
+                p = "l"
+                a = "left"
+            elif title_pos[0] == "r":
+                w = image.width - inside
+                p = "r"
+                a = "right"
+            h = top_button / 2 if top_button > 0 else (inside + title.get("size") / 2)
+            # h = inside + title.get("size") / 2  # title always at top for now...
+            # logger.debug(f"mk_airbus: position {title_pos}: {(w, h)}")
+            draw.multiline_text((w, h),  # (image.width / 2, 15)
+                      text=title.get("text"),
+                      font=font,
+                      anchor=p+"m",
+                      align=a,
+                      fill=title.get("color"))
+
+        # Glowing texts, later because not nicely perfect.
+        # if not self.has_option("no_blurr") or self.has_option("sharp"):
+        #     blurred_image = glow.filter(ImageFilter.GaussianBlur(self.airbus.get("blurr")))
+        #     glow.alpha_composite(blurred_image)
+        #     # logger.debug("mk_airbus: blurred")
+        image.paste(glow, mask=glow)
+        return image
+
+
 # ###########################
 # Mapping between button types and classes
 #
@@ -921,7 +1174,8 @@ STREAM_DECK_BUTTON_TYPES = {
     "dual": ButtonDual,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,
-    "reload": ButtonReload
+    "reload": ButtonReload,
+    "airbus": ButtonAirbus
 }
 
 LOUPEDECK_BUTTON_TYPES = {

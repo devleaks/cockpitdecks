@@ -1,114 +1,166 @@
 name: Index
 buttons:
   - index: 0
-    name: X-Plane Map
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: sim/map/show_current
-    label: Map
-    label-position: ct
+    type: airbus
+    title:
+      text: Caution
+    display:
+      text: "MASTER\nCAUT"
+      color: orange
+      font: DIN Bold.ttf
   - index: 1
-    name: Airport Map
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: pikitanga/AptNav/ToggleMap
-    label: Airport
-    label-position: ct
+    type: airbus
+    size: full
+    # title:
+    #   text: Warning
+    display:
+      text: "MASTER\nWARN"
+      color: red
+      font: DIN Bold.ttf
   - index: 2
-    name: AVS Map
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: flightfactor/avs/toggle
-    label: AVS
-    label-position: ct
+    type: airbus
+    title:
+      text: FD
+    display:
+#      text: "AVAIL"
+      color: lime
+    dual:
+      text: "FD"
+      color: white
+      size: 90
   - index: 3
-    name: AviTab
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    label: AviTab
-    label-position: ct
-    command: AviTab/toggle_tablet
+    type: airbus
+    size: medium
+    title:
+      text: FD
+    display:
+#      text: "AVAIL"
+      color: lime
+    dual:
+      text: "FD"
+      color: white
   - index: 4
-    name: X-Camera Views
-    type: page
-    icon: x-camera
+    type: airbus
+    size: small
+    title:
+      text: FD
+    display:
+#      text: "AVAIL"
+      color: lime
+    dual:
+      text: "FD"
+      color: white
+      size: 48
   - index: 5
-    name: LiveTraffic
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: LiveTraffic/Info_Staus_Wnd/Open
-    label: Live/T
-    label-position: ct
+    type: airbus
+    title:
+      text: SQUIB
+    display:
+      text: "SQUIB"
+      size: 56
+      font: DIN Bold.ttf
+      color: peachpuff
+    dual:
+      text: "DISCH"
+      font: DIN Bold.ttf
+      size: 60
+      color: darkorange
+      framed: True
+    options: sharp
   - index: 6
-    name: FollowTheGreens
-    type: push
-    multi-icons:
-      - F.GREENS_OFF
-      - F.GREENS_ON
-    command: XPPython3/followthegreens/main_windown_toggle
-    label: F.GREENS
-    label-size: 10
-    label-position: ct
+    type: airbus
+    title:
+      text: Avail+None
+    display:
+      text: "AVAIL"
+      color: lime
+    dual:
+      text: ""
   - index: 7
-    name: FollowTheGreens
-    type: animate
-    icon: F.GREENS_OFF
-    multi-icons:
-      - F.GREENS_ON_1
-      - F.GREENS_ON_2
-      - F.GREENS_ON_3
-    command: XPPython3/followthegreens/main_windown_toggle
-    label: F.GREENS
-    label-size: 10
-    label-position: ct
-    options: animation_speed=0.5
+    type: airbus
+    title:
+      text: Fail/OFF
+    display:
+      text: "FAIL"
+      color: darkorange
+      font: DIN Bold.ttf
+      size: 56
+    dual:
+      text: "OFF"
+      color: peachpuff
+      framed: True
   - index: 8
-    name: DATAREFTOOL
-    type: push
-    icon: NONE
-    label: "Data\nRef\nTool"
-    command: leecbaker/datareftool/new_search_window
-    label-position: cm
+    type: airbus
+    title:
+      text: Bot FAIL only
+    display:
+      text: ""
+      color: lime
+    dual:
+      text: "FAIL"
+      color: darkorange
+      size: 56
+      font: DIN Bold.ttf
   - index: 9
+    type: airbus
+    title:
+      text: AVAIL/ON
+    display:
+      text: "AVAIL"
+      color: lime
+    dual:
+      text: "ON"
+      framed: True
+      color: deepskyblue
+  - index: 10
+    type: airbus
+    title:
+      text: Avail/OFF
+    display:
+      text: "AVAIL"
+      color: lime
+    dual:
+      text: "OFF"
+      framed: True
+      color: white
+    options: no_blurr
+  - index: 11
+    type: airbus
+    title:
+      text: Fail/OFF
+    display:
+      text: "FAIL"
+      color: darkorange
+      font: DIN Bold.ttf
+      size: 56
+    dual:
+      text: "OFF"
+      color: peachpuff
+      framed: True
+  - index: 12
+    type: airbus
+    size: small
+    title:
+      text: ON BAT
+    display:
+      text: "ON BAT"
+      font: DIN Bold.ttf
+      color: darkorange
+      size: 56
+  - index: 13
+    type: airbus
+    size: medium
+    title:
+      text: ON BAT
+    display:
+      text: "ON BAT"
+      font: DIN Bold.ttf
+      color: darkorange
+      size: 56
+  - index: 14
     name: RELOAD
     type: reload
     icon: RELOAD
     label: RELOAD
     label-position: ct
-  - index: 10
-    name: GroundHandlingDeluxe
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: jd/ghd/show_widget
-    label: GHDLX
-    label-position: ct
-  - index: 11
-    name: SAMGroundVehicle
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: sam/main_window
-    label: SAM/GV
-    label-position: ct
-  - index: 13
-    name: PAUSE
-    type: push
-    icon: PANIC
-    command: sim/operation/pause_toggle
-  - index: 14
-    name: A321
-    type: page
-    icon: TOLISS-A321
+
