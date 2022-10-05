@@ -87,7 +87,7 @@ buttons:
         label-color: blue
         label-size: 16
   # - index: 1
-  #   type: dual
+  #   type: long-press
   #   icon: TEST
   #   label: "APU\nTEST"
   #   label-position: ct

@@ -44,9 +44,12 @@ class Page:
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
-                    logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for dataref {d}")
+                    logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"register_datarefs: page {self.name}: button {button.name}: failed to create dataref {d}")
+            else:
+                self.datarefs[d].add_listener(button)
+                logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for existing dataref {d}")
         logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered")
 
     def dataref_changed(self, dataref):

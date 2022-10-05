@@ -22,7 +22,7 @@ decks:
     type: xtouchmini
     layout: touch
     brightness: 70
-#    disabled: True
+    disabled: True
 # This is at global level
 default-wallpaper-logo: logo.png
 default-label-color: white

@@ -44,19 +44,19 @@ buttons:
     label: MASTER SW
     label-position: ct
   - index: 10
-    type: dual
+    type: long-press
     icon: TEST
     label: "ENG 1\nTEST"
     label-position: ct
     command: AirbusFBW/FireTestENG1
   - index: 11
-    type: dual
+    type: long-press
     icon: TEST
     label: "APU\nTEST"
     label-position: ct
     command: AirbusFBW/FireTestAPU
   - index: 12
-    type: dual
+    type: long-press
     icon: TEST
     label: "ENG 2\nTEST"
     label-position: ct

@@ -2,7 +2,7 @@ name: PIEDESTAL
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
-    type: dual
+    type: long-press
     icon-color: (200, 0, 0)
     label: FIRE TEST
     command: AirbusFBW/FireTestAPU

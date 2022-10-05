@@ -111,9 +111,8 @@ buttons:
     icon-color: (40, 40, 40)
   - index: 8
     type: none
-#     label: ${sim/cockpit/misc/barometer_setting}
-    label-rpn: ${sim/cockpit/misc/barometer_setting} 33.8639 *
-    label-format: "{: 4.0f}"
+    label: ${sim/cockpit/misc/barometer_setting}
+    label-format: "{:02.2f}"
     label-color: white
     label-size: 20
     label-font: Seven Segment.ttf

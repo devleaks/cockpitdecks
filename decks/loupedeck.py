@@ -234,7 +234,7 @@ class Loupedeck(Deck):
         def transfer(this_deck, this_key, this_state):
             if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
                 self.cockpit.xp.events.put([self.name, this_key, this_state])
-                logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
+                # logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
             else:
                 # logger.debug(f"key_change_callback: {key} {state}")
                 self.key_change_processing(this_deck, this_key, this_state)
@@ -356,6 +356,10 @@ class Loupedeck(Deck):
         if image is None and button.index not in ["left", "right"]:
             logger.warning("set_key_image: button returned no image, using default")
             image = self.icons[self.default_icon_name]
+
+        if image is not None and button.index in ["left", "right"]:
+                self.device.set_key_image(button.index, image)
+                return
 
         if image is not None:
             sizes = self.device.key_image_format()

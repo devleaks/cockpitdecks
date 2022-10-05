@@ -60,6 +60,7 @@ class Button:
         # Labels
         self.label = config.get("label")
         self.labels = config.get("labels")
+        self.label_rpn = config.get("label-rpn")
         self.label_format = config.get("label-format")
         self.label_font = config.get("label-font", self.deck.default_label_font)
         self.label_size = int(config.get("label-size", self.deck.default_label_size))
@@ -75,7 +76,7 @@ class Button:
         # Datarefs
         self.dataref = config.get("dataref")
         self.datarefs = config.get("multi-datarefs")
-        self.dataref_rpn = config.get("dataref-rpn")
+        self.dataref_rpn = config.get("label-rpn")
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
         if len(self.all_datarefs) > 0:
@@ -346,7 +347,19 @@ class Button:
         Returns label, if any, with substitution of datarefs if any
         """
         if label is None:
-            label = self.label
+            if self.label_rpn is not None:
+                todo = self.substitute_dataref_values(self.label_rpn)
+                rpc = RPC(todo)
+                res = rpc.calculate()  # to be formatted
+                logger.debug(f"get_label: button {self.name} execute_formula: {self.label_rpn}=>{todo}={res}")
+                if label_format is None:
+                    label_format = self.label_format
+                if label_format is not None:
+                    label = label_format.format(res)
+                else:
+                    label = str(res)
+            else:
+                label = self.label
         if label_format is None:
             label_format = self.label_format
         if label is not None:
@@ -604,28 +617,28 @@ class AirbusButton(Button):
         inside = ICON_SIZE / 32 # 8px
 
         # Button
-        # Overall button size: large, medium, small, or full.
-        # A button is always square.
+        #
+        # Overall button size: full, large, medium, small.
         #
         size = self.airbus.get("size", "large")
         if size == "small":  # about 1/2, starts at 128
-            top_button = ICON_SIZE / 2
-            led_offset = 20
+            button_height = int(ICON_SIZE / 2)
+            box = (0, int(ICON_SIZE/4))
         elif size == "medium":  # about 2/3, starts at 96
-            top_button = 6 * ICON_SIZE / 16
-            led_offset = 20
+            button_height = int(10 * ICON_SIZE / 16)
+            box = (0, int(3 * ICON_SIZE / 16))
         elif size == "full":  # starts at 0
-            top_button = 0
-            led_offset = 40
+            button_height = ICON_SIZE
+            box = (0, 0)
         else:  # "large", full size, default, starts at 48
-            top_button = 3 * ICON_SIZE / 16
-            led_offset = 40
-        button = ((0, top_button), (ICON_SIZE, ICON_SIZE))
-        # later: center smaller buttons, currently at bottom of icon
+            button_height = int(13 * ICON_SIZE / 16)
+            box = (0, int(3 * ICON_SIZE / 16))
+
+        led_offset = inside
 
         # PART 1:
         # Texts that will glow
-        glow = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(0, 0, 0, 0))
+        glow = Image.new(mode="RGBA", size=(ICON_SIZE, button_height), color=(0, 0, 0, 0))
         draw = ImageDraw.Draw(glow)
 
         # First/top/main item (called "display")
@@ -649,10 +662,10 @@ class AirbusButton(Button):
                     w = glow.width - inside
                     p = "r"
                     a = "right"
-                h = top_button + (ICON_SIZE - top_button) / 2 + inside
-                if dual is not None and dual.get("text") is not None: # if one item, always in middle of button...
-                    h = top_button + display.get("size") / 2 + 3 * inside
-                # logger.debug(f"mk_airbus: position {display_pos}: {(w, h)}, {top_button}, {dual}")
+                h = int(button_height / 2)  # center of button
+                if dual is not None and dual.get("text") is not None: # middle of top part
+                    h = int(button_height / 4)
+                # logger.debug(f"mk_airbus: position {display_pos}: {(w, h)}, {dual}")
                 color = display.get("color")
                 if not self.lit_display:
                     color = display.get("off-color", light_off(color))
@@ -666,9 +679,9 @@ class AirbusButton(Button):
                 else:
                     logger.debug("mk_airbus: full dark display")
             else:  # 3 horizontal leds
-                start = top_button + led_offset
-                thick = 10
-                e = ICON_SIZE / 8
+                e = ICON_SIZE / 8      # space left and right of LED
+                thick = 10             # LED thickness
+                start = button_height / 4 - 1.5 * thick - (16 - thick)
                 color = display.get("color")
                 if not self.lit_display:
                     color = display.get("off-color", light_off(color))
@@ -695,8 +708,7 @@ class AirbusButton(Button):
                     w = glow.width - inside
                     p = "r"
                     a = "right"
-                # h = top_button + (glow.height - top_button) / 2 + dual.get("size") / 2 + inside
-                h = glow.height - 1.5 * inside - dual.get("size") / 2
+                h = int(3 * button_height / 4)  # middle of bottom part
                 # logger.debug(f"mk_airbus: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
 
                 if not self.has_option("dark"):
@@ -714,8 +726,8 @@ class AirbusButton(Button):
                     if type(framed) == str:
                         framed = framed.lower() in ["true", "on", "yes"]
                     if framed:
-                        start = 160
-                        height = 96
+                        start = button_height / 2 + inside
+                        height = button_height / 2 - 2 * inside
                         thick = 12
                         e = ICON_SIZE / 8
                         frame = ((e, start), (glow.width-e, start + height))
@@ -723,11 +735,19 @@ class AirbusButton(Button):
                 else:
                     logger.debug("mk_airbus: full dark dual display")
 
+        # Glowing texts, later because not nicely perfect.
+        # if not self.has_option("no_blurr") or self.has_option("sharp"):
+        #     blurred_image = glow.filter(ImageFilter.GaussianBlur(self.airbus.get("blurr")))
+        #     glow.alpha_composite(blurred_image)
+        #     # logger.debug("mk_airbus: blurred")
+
+        # We paste the transparent glow into a button:
+        button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=self.airbus.get("color", "black"))
+        button.paste(glow, mask=glow)
 
         # Background
         image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.airbus.get("background", "lightsteelblue"))
         draw = ImageDraw.Draw(image)
-        draw.rectangle(button, fill=self.airbus.get("color", "black"))
 
         # Title
         title = self.airbus.get("title")
@@ -746,8 +766,7 @@ class AirbusButton(Button):
                 w = image.width - inside
                 p = "r"
                 a = "right"
-            h = top_button / 2 if top_button > 0 else (inside + title.get("size") / 2)
-            # h = inside + title.get("size") / 2  # title always at top for now...
+            h = inside + title.get("size") / 2
             # logger.debug(f"mk_airbus: position {title_pos}: {(w, h)}")
             draw.multiline_text((w, h),  # (image.width / 2, 15)
                       text=title.get("text"),
@@ -756,12 +775,9 @@ class AirbusButton(Button):
                       align=a,
                       fill=title.get("color"))
 
-        # Glowing texts, later because not nicely perfect.
-        # if not self.has_option("no_blurr") or self.has_option("sharp"):
-        #     blurred_image = glow.filter(ImageFilter.GaussianBlur(self.airbus.get("blurr")))
-        #     glow.alpha_composite(blurred_image)
-        #     # logger.debug("mk_airbus: blurred")
-        image.paste(glow, mask=glow)
+        # Button
+        image.paste(button, box=box)
+
         return image
 
 # ###########################
@@ -877,11 +893,10 @@ class AirbusButtonPush(AirbusButton):
                 logger.warning(f"activate: button {self.name} is invalid")
 
 
-class ButtonDual(Button):
+class ButtonLongpress(Button):
     """
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
-
     def __init__(self, config: dict, page: "Page"):
         Button.__init__(self, config=config, page=page)
 
@@ -898,6 +913,32 @@ class ButtonDual(Button):
         else:
             if self.is_valid():
                 self.xp.commandEnd(self.command)
+        self.render()
+
+
+class ButtonDual(Button):
+    """
+    Execute two commands in alternance.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if self.commands is None:
+            logger.warning(f"is_valid: button {self.name} has no command")
+            return False
+        if len(self.commands) < 2:
+            logger.warning(f"is_valid: button {self.name} has not enough commands (two needed)")
+            return False
+        return super().is_valid()
+
+    def activate(self, state: bool):
+        if state:
+            if self.is_valid():
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[0])
+                else:
+                    self.xp.commandOnce(self.commands[1])
         self.render()
 
 
@@ -972,12 +1013,12 @@ class ButtonKnob(ButtonPush):
 
     def is_valid(self):
         if self.has_option("dual") and len(self.commands) != 4:
-            logger.warning(f"is_valid: button {self.name} must have at least 4 commands for dual mode")
+            logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
             return False
         elif len(self.commands) != 2:
-            logger.warning(f"is_valid: button {self.name} must have at least 2 commands")
+            logger.warning(f"is_valid: button {self.name} must have 2 commands")
             return False
-        return super().is_valid()
+        return True  # super().is_valid()
 
     def activate(self, state):
         if state < 2:
@@ -988,12 +1029,16 @@ class ButtonKnob(ButtonPush):
                     self.xp.commandOnce(self.commands[0])
                 else:
                     self.xp.commandOnce(self.commands[2])
+            else:
+                self.xp.commandOnce(self.commands[0])
         elif state == 3:  # rotate right
             if self.has_option("dual"):
                 if self.is_pushed():
                     self.xp.commandOnce(self.commands[1])
                 else:
                     self.xp.commandOnce(self.commands[3])
+            else:
+                self.xp.commandOnce(self.commands[1])
         else:
             logger.warning(f"activate: button {self.name} invalid state {state}")
 
@@ -1003,6 +1048,55 @@ class ButtonKnob(ButtonPush):
         """
         disp = "left" if self.index[-1] == "L" else "right"
         if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class ButtonKnobPushPull(ButtonDual):
+    """
+    A Push button that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonDual.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if self.has_option("dual") and len(self.commands) != 6:
+            logger.warning(f"is_valid: button {self.name} must have 6 commands for dual mode")
+            return False
+        elif len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.name} must have 4 commands")
+            return False
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[2])
+                else:
+                    self.xp.commandOnce(self.commands[4])
+            else:
+                self.xp.commandOnce(self.commands[2])
+        elif state == 3:  # rotate right
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[3])
+                else:
+                    self.xp.commandOnce(self.commands[5])
+            else:
+                self.xp.commandOnce(self.commands[3])
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
             self.page.buttons[disp].render()
 
 
@@ -1012,6 +1106,9 @@ class ButtonSide(ButtonPush):
     """
     def __init__(self, config: dict, page: "Page"):
         ButtonPush.__init__(self, config=config, page=page)
+
+    def is_valid(self):  # @todo with precision...
+        return True
 
     def activate(self, state):
         if type(state) == int:
@@ -1315,6 +1412,7 @@ STREAM_DECK_BUTTON_TYPES = {
     "page": ButtonPage,
     "push": ButtonPush,
     "dual": ButtonDual,
+    "long-press": ButtonLongpress,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,
     "airbus": AirbusButton,
@@ -1328,9 +1426,11 @@ LOUPEDECK_BUTTON_TYPES = {
     "page": ButtonPage,
     "push": ButtonPush,
     "dual": ButtonDual,
+    "long-press": ButtonLongpress,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
     "knob": ButtonKnob,
+    "knob-push-pull": ButtonKnobPushPull,
     "button": ColoredButton,
     "side": ButtonSide,
     "airbus": AirbusButton,
@@ -1341,9 +1441,9 @@ LOUPEDECK_BUTTON_TYPES = {
 
 XTOUCH_MINI_BUTTON_TYPES = {
     "none": Button,
-    "page": ButtonPage,
     "push": ButtonPush,
     "dual": ButtonDual,
+    "long-press": ButtonLongpress,
     "knob": ButtonKnob,
-    "updown": ButtonUpDown
+    "knob-push-pull": ButtonKnobPushPull
 }
