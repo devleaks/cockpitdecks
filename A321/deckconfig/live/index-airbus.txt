@@ -33,7 +33,7 @@ buttons:
         text: "FD"
         color: white
         size: 90
-        dataref-rpn: ${AirbusFBW/FD1Engage}
+        dataref-rpn: ${AirbusFBW/APUStarter}
   - index: 3
     type: airbus-push
     airbus:
@@ -49,17 +49,18 @@ buttons:
   - index: 4
     type: airbus-push
     airbus:
-      size: medium
+      size: small
+      title:
+        text: FD
       display:
+  #      text: "AVAIL"
         color: lime
-        dataref-rpn: ${AirbusFBW/FD1Engage}
+        dataref-rpn: "1"
       dual:
         text: "FD"
         color: white
-        size: 60
+        size: 48
         dataref-rpn: "1"
-    command: toliss_airbus/fd1_push
-    dataref: AirbusFBW/FD1Engage
   - index: 5
     type: airbus-push
     airbus:
@@ -135,40 +136,40 @@ buttons:
         framed: True
         color: white
       options: no_blurr
+  # - index: 11
+  #   type: airbus-push
+  #   airbus:
+  #     title:
+  #       text: Fail/OFF
+  #     display:
+  #       text: "FAIL"
+  #       color: darkorange
+  #       size: 56
+  #     dual:
+  #       text: "OFF"
+  #       color: peachpuff
+  #       framed: True
+  # - index: 12
+  #   type: airbus-push
+  #   airbus:
+  #     size: small
+  #     title:
+  #       text: ON BAT
+  #     display:
+  #       text: "ON BAT"
+  #       color: darkorange
+  #       size: 56
+  # - index: 13
+  #   type: airbus-push
+  #   airbus:
+  #     size: medium
+  #     title:
+  #       text: ON BAT
+  #     display:
+  #       text: "ON BAT"
+  #       color: darkorange
+  #       size: 56
   - index: 11
-    type: airbus-push
-    airbus:
-      title:
-        text: Fail/OFF
-      display:
-        text: "FAIL"
-        color: darkorange
-        size: 56
-      dual:
-        text: "OFF"
-        color: peachpuff
-        framed: True
-  - index: 12
-    type: airbus-push
-    airbus:
-      size: small
-      title:
-        text: ON BAT
-      display:
-        text: "ON BAT"
-        color: darkorange
-        size: 56
-  - index: 13
-    type: airbus-push
-    airbus:
-      size: medium
-      title:
-        text: ON BAT
-      display:
-        text: "ON BAT"
-        color: darkorange
-        size: 56
-  - index: 14
     name: RELOAD
     type: reload
     icon: RELOAD

@@ -76,7 +76,9 @@ class XPlaneUDP(XPlane):
         self.socket.close()
 
     def get_dataref(self, path):
-        return Dataref(path=path)
+        if path in self.all_datarefs.keys():
+            return self.all_datarefs[path]
+        return self.register(Dataref(path))
 
     def WriteDataRef(self, dataref, value, vtype='float'):
         '''
@@ -103,9 +105,7 @@ class XPlaneUDP(XPlane):
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         '''
-
         idx = -9999
-
         if freq is None:
             freq = self.defaultFreq
 
@@ -293,23 +293,31 @@ class XPlaneUDP(XPlane):
     def commandEnd(self, command: str):
         self.ExecuteCommand(command+"/end")
 
-    def set_datarefs(self, datarefs):
-        """
-        datarefs is a dict of Dataref objects.
-        """
+    def clean_datarefs_to_monitor(self):
+        for i in range(len(self.datarefs)):
+            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
+        super().clean_datarefs_to_monitor()
+        logger.debug(f"clean_datarefs_to_monitor: done")
+
+    def add_datarefs_to_monitor(self, datarefs):
         if "IP" not in self.BeaconData:
             logger.warning(f"set_datarefs: no IP connection")
             return
-
-        logger.debug(f"set_datarefs: setting {datarefs.keys()}")
-        # Clean previous values
-        for i in range(len(self.datarefs)):
-            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
         # Add those to monitor
-        self.datarefs_to_monitor = datarefs
-        for d in self.datarefs_to_monitor.values():
+        super().add_datarefs_to_monitor(datarefs)
+        for d in datarefs.values():
             self.AddDataRef(d.path, freq=DATA_SENT)
-        logger.debug(f"set_datarefs: monitoring {list(self.datarefs.values())}")
+        logger.debug(f"add_datarefs_to_monitor: added {list(self.datarefs.values())}")
+
+    def remove_datarefs_to_monitor(self, datarefs):
+        if "IP" not in self.BeaconData:
+            logger.warning(f"set_datarefs: no IP connection")
+            return
+        # Add those to monitor
+        for d in datarefs.values():
+            self.AddDataRef(d.path, freq=0)
+        super().remove_datarefs_to_monitor(datarefs)
+        logger.debug(f"remove_datarefs_to_monitor: removed {list(self.datarefs.values())}")
 
     # ################################
     # Cockpit interface

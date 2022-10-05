@@ -35,6 +35,9 @@ class Dataref:
             if self.index >= self.length:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
 
+    def exists(self):
+        return self.path is not None
+
     def changed(self):
         if self.previous_value is None and self.current_value is None:
             return False
@@ -53,6 +56,7 @@ class Dataref:
 
     def add_listener(self, obj):
         self.listeners.append(obj)
+        loggerDataref.debug(f"add_listener: {self.dataref} added {obj.name} ({len(self.listeners)})")
 
     def notify(self):
         if self.changed():
@@ -71,8 +75,9 @@ class XPlane:
         self.cockpit = decks
         self.use_flight_loop = False
         self.running = False
+        self.all_datarefs = {}
 
-        self.datarefs_to_monitor = {}  # list of datarefs to monitor and buttons attached to each
+        self.datarefs_to_monitor = {}  # dataref path and number of objects monitoring
         self.xplaneValues = {}         # key = dataref-path, value = value
 
         # Values of datarefs
@@ -87,7 +92,7 @@ class XPlane:
             if d not in self.previous_values.keys() or self.current_values[d] != self.previous_values[d]:
                 logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
                 if d in self.datarefs_to_monitor.keys():
-                    self.datarefs_to_monitor[d].update_value(self.current_values[d], cascade=True)
+                    self.all_datarefs[d].update_value(self.current_values[d], cascade=True)
                 else:
                     logger.warning(f"detect_changed: updated dataref not in dataref to monitor (was {self.datarefs_to_monitor.keys()})")
                 # logger.debug(f"detect_changed: ..done")
@@ -95,20 +100,42 @@ class XPlane:
             #     logger.debug(f"detect_changed: {d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
         self.previous_values = self.current_values.copy()
 
+    def register(self, dataref):
+        if dataref.path not in self.all_datarefs:
+            if dataref.exists():
+                self.all_datarefs[dataref.path] = dataref
+            else:
+                logger.warning(f"register: invalid dataref {dataref.path}")
+        return dataref
+
+
     # ################################
     # Cockpit interface
     #
-    def set_datarefs(self, datarefs):
-        logger.debug(f"set_datarefs: not implemented")
-        pass
+    def clean_datarefs_to_monitor(self):
+        self.datarefs_to_monitor = {}
+
+    def add_datarefs_to_monitor(self, datarefs: dict):
+        for d in datarefs.values():
+            if d.path not in self.datarefs_to_monitor.keys():
+                self.datarefs_to_monitor[d.path] = 1
+            else:
+                self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] + 1
+
+    def remove_datarefs_to_monitor(self, datarefs):
+        for d in datarefs.values():
+            if d.path in self.datarefs_to_monitor.keys():
+                self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] - 1
+                if self.datarefs_to_monitor[d.path] == 0:
+                    del self.datarefs_to_monitor[d.path]
+            else:
+                logger.warning(f"remove_datarefs_to_monitor: dataref {d.path} not monitored")
 
     def start(self):
         logger.debug(f"start: not implemented")
-        pass
 
     def terminate(self):
         logger.debug(f"terminate: not implemented")
-        pass
 
     # ################################
     # X-Plane Interface

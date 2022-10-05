@@ -162,3 +162,76 @@ HAPTIC = {
     "RUMBLE1": 0x7b,
     "VERY_LONG": 0x76, # 10 sec high freq (!)
 }
+
+
+# ################################
+# AIRBUS_DEFAULTS
+#
+AIRBUS_DEFAULTS = {                     # May be externalized (constant) one day...
+    "background": (94, 111, 130),       # Button frame color, light blueish airbus dashboard. Needs tuning.
+    "color": (20, 20, 20),              # Button background color
+    "blurr": 16,
+    "title": {                          # This is printed on top of the button
+        "font": "DIN.ttf",
+        "size": 42,                     # ~3/16
+        "color": "white"
+    },
+    "display": {                        # This is what is display on the button, text or LED for now
+        "font": "DIN Bold.ttf",
+        "size": 64,                     # 4/16
+        "color": (0, 0, 220)
+    },
+    "dual": {                           # This is what is printed on the button
+        "font": "DIN Bold.ttf",
+        "size": 80,                     # 5/16
+        "color": "deepskyblue"
+    }
+}
+
+
+AIRBUS_DEFAULTS_STREAMDECK = {                     # May be externalized (constant) one day...
+    "background": (94, 111, 130),       # Button frame color, light blueish airbus dashboard. Needs tuning.
+    "color": (20, 20, 20),              # Button background color
+    "blurr": 16,
+    "title": {                          # This is printed on top of the button
+        "font": "DIN.ttf",
+        "size": 42,                     # ~3/16
+        "color": "white"
+    },
+    "display": {                        # This is what is display on the button, text or LED for now
+        "font": "DIN Bold.ttf",
+        "size": 64,                     # 4/16
+        "color": (0, 0, 220)
+    },
+    "dual": {                           # This is what is printed on the button
+        "font": "DIN Bold.ttf",
+        "size": 80,                     # 5/16
+        "color": "deepskyblue"
+    }
+}
+
+AIRBUS_DEFAULTS_LOUPEDECK = {                     # May be externalized (constant) one day...
+    "background": (94, 111, 130),       # Button frame color, light blueish airbus dashboard. Needs tuning.
+    "color": (20, 20, 20),              # Button background color
+    "blurr": 16,
+    "title": {                          # This is printed on top of the button
+        "font": "DIN.ttf",
+        "size": 42,                     # ~3/16
+        "color": "white"
+    },
+    "display": {                        # This is what is display on the button, text or LED for now
+        "font": "DIN Bold.ttf",
+        "size": 64,                     # 4/16
+        "color": (0, 0, 220)
+    },
+    "dual": {                           # This is what is printed on the button
+        "font": "DIN Bold.ttf",
+        "size": 80,                     # 5/16
+        "color": "deepskyblue"
+    }
+}
+
+AIRBUS_DEFAULTS_ALL = {
+    "streamdeck": AIRBUS_DEFAULTS_STREAMDECK,
+    "loupedeck": AIRBUS_DEFAULTS_LOUPEDECK
+}

@@ -34,7 +34,9 @@ class XPlaneSDK(XPlane):
         self.datarefs = {}          # key = dataref-path, value = Dataref()
 
     def get_dataref(self, path):
-        return XPDref(path)
+        if path in self.all_datarefs.keys():
+            return self.all_datarefs[path]
+        return self.register(XPDref(path))
 
     # ################################
     # Dataref values reading (poll loop)
@@ -114,14 +116,24 @@ class XPlaneSDK(XPlane):
         else:
             logger.warning(f"XPLMCommandEnd: command {command} not found")
 
-    def set_datarefs(self, datarefs):
-        # logger.debug(f"set_datarefs: need to set {self.datarefs_to_monitor.keys()}")
-        self.datarefs_to_monitor = datarefs
+    def clean_datarefs_to_monitor(self):
         self.datarefs = {}
-        for d in self.datarefs_to_monitor.values():
+        super().clean_datarefs_to_monitor()
+        logger.debug(f"clean_datarefs_to_monitor: done")
+
+    def add_datarefs_to_monitor(self, datarefs):
+        super().add_datarefs_to_monitor(datarefs)
+        for d in datarefs.values():
             if d.exists():
                 self.datarefs[d.path] = d
-        logger.debug(f"set_datarefs: set {self.datarefs.keys()}")
+        logger.debug(f"add_datarefs_to_monitor: added {self.datarefs.keys()}")
+
+    def remove_datarefs_to_monitor(self, datarefs):
+        for d in datarefs.values():
+            if d.path in self.datarefs:
+                del self.datarefs[d.path]
+        super().remove_datarefs_to_monitor(datarefs)
+        logger.debug(f"remove_datarefs_to_monitor: removed {self.datarefs.keys()}")
 
     # ################################
     # Cockpit interface

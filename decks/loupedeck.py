@@ -358,6 +358,19 @@ class Loupedeck(Deck):
             image = self.icons[self.default_icon_name]
 
         if image is not None:
+            sizes = self.device.key_image_format()
+            if sizes is not None:
+                sizes = sizes.get("size")
+                if sizes is not None:
+                    sizes = list(sizes)
+                    mw = sizes[0]
+                    mh = sizes[1]
+                    if image.width > mw or image.height > mh:
+                        image = self.pil_helper.create_scaled_image("button", image)
+                else:
+                    logger.warning("set_key_image: cannot get device key image size")
+            else:
+                logger.warning("set_key_image: cannot get device key image format")
             self.device.set_key_image(button.index, image)
         else:
             logger.warning(f"set_key_image: no image for {button.name}")

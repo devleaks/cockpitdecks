@@ -168,12 +168,13 @@ class Deck:
             logger.debug(f"change_page: deck {self.name} change page to {page}..")
         if page in self.pages.keys():
             if self.current_page is not None:
+                self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
                 self.current_page.clean()
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
             self.device.reset()
-            self.cockpit.xp.set_datarefs(self.current_page.datarefs)  # set which datarefs to monitor
+            self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
             logger.debug(f"change_page: deck {self.name} ..done")
         else:

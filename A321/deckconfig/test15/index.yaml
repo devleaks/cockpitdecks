@@ -1,0 +1,22 @@
+name: Index
+buttons:
+  - index: 4
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/FD1Engage}
+      dual:
+        text: "FD"
+        color: white
+        size: 60
+        dataref-rpn: "1"
+    command: toliss_airbus/fd1_push
+    dataref: AirbusFBW/FD1Engage
+  - index: 14
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct

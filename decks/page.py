@@ -40,12 +40,13 @@ class Page:
     def register_datarefs(self, button: Button):
         for d in button.get_datarefs():
             if d not in self.datarefs:
-                ref = self.xp.get_dataref(d)
+                ref = self.xp.get_dataref(d)  # creates or return already defined dataref
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
+                    logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for dataref {d}")
                 else:
-                    logger.warning(f"register_datarefs: page {self.name}: button {button.name}: failed to create dataref {d}")
+                    logger.error(f"register_datarefs: page {self.name}: button {button.name}: failed to create dataref {d}")
         logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered")
 
     def dataref_changed(self, dataref):

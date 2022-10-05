@@ -325,7 +325,7 @@ class Cockpit:
             else:
                 icons = os.listdir(dn)
                 for i in icons:
-                    if has_ext(i, "png"):
+                    if has_ext(i, "png"):  # later, might load JPG as well.
                         fn = os.path.join(dn, i)
                         image = Image.open(fn)
                         self.icons[i] = image
