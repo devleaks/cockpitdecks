@@ -1,0 +1,179 @@
+name: EFIS
+version: 2.0.0
+description: EFIS display selector + some FCU commands
+note: final version for Streamdeck 15 keys
+buttons:
+  - index: 14
+    name: ECAM
+    type: page
+    icon: TOLISS-A321
+  - index: 5
+    type: push
+    command: AirbusFBW/CaptChronoButton
+    icon: TEST
+    label: CHRONO
+    label-size: 10
+    label-position: ct
+  - index: 6
+    name: FD 1
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/FD1Engage}
+      dual:
+        text: FD
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/FD1Engage
+    command: toliss_airbus/fd1_push
+  - index: 7
+    name: LS 1
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/ILSonCapt}
+      dual:
+        text: LS
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptLSButtonPush
+    dataref: AirbusFBW/ILSonCapt
+  - index: 8
+    name: LOC 1
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/LOCilluminated}
+      dual:
+        text: LOC
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    command: AirbusFBW/LOCbutton
+    dataref: AirbusFBW/LOCilluminated
+  - index: 9
+    name: SPD/MACH
+    type: push
+    label: SPD/MACH
+    label-position: ct
+    label-size: 10
+    command: sim/autopilot/knots_mach_toggle
+    dataref: sim/cockpit/autopilot/airspeed_is_mach
+    multi-icons:
+      - SWITCH_ROUND_TOP
+      - SWITCH_ROUND_BOT
+  - index: 0
+    name: CSTR
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
+      dual:
+        text: CSTR
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptCstrPushButton
+    dataref: AirbusFBW/NDShowCSTRCapt
+  - index: 1
+    name: WPT
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
+      dual:
+        text: WPT
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptWptPushButton
+    dataref: AirbusFBW/NDShowWPTCapt
+    label: WPT
+  - index: 2
+    name: VOR.D
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
+      dual:
+        text: VOR.D
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptVorDPushButton
+    dataref: AirbusFBW/NDShowVORDCapt
+  - index: 3
+    name: NDB
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
+      dual:
+        text: NDB
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptNdbPushButton
+    dataref: AirbusFBW/NDShowNDBCapt
+  - index: 4
+    name: ARPT
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
+      dual:
+        text: ARPT
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptArptPushButton
+    dataref: AirbusFBW/NDShowARPTCapt
+  - index: 10
+    name: A/THR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/ATHRbutton
+    label: A/THR
+  - index: 11
+    name: AP1
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    label: AP1
+  - index: 12
+    name: APPR
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/APPRbutton
+    label: APPR
+  - index: 13
+    name: EXPED
+    type: push
+    multi-icons:
+      - P_1_GREEN_OFF
+      - P_1_GREEN_ON
+    command: AirbusFBW/EXPEDbutton
+    label: EXPED

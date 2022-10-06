@@ -22,7 +22,6 @@ import threading
 import time
 import random
 import colorsys
-# import pprint
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
@@ -49,6 +48,7 @@ class Button:
 
         # Working variables
         self.pressed_count = 0
+        self.pressed = False
         self.bounce_arr = None
         self.bounce_idx = 0
         self.current_value = None
@@ -153,6 +153,9 @@ class Button:
     def new(cls, config: dict, page: "Page"):
         return cls(config=config, page=page)
 
+    def id(self):
+        return ":".join([self.deck.name, self.page.name, self.name])
+
     def init(self):
         """
         Install button
@@ -204,6 +207,19 @@ class Button:
     def is_pushed(self):
         # Starts raised, True is pushed an odd number of times.
         return (self.pressed_count % 2) == 1
+
+    def is_dotted(self, label: str):
+        # check dataref status
+        # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
+        # AirbusFBW/SPDmanaged, and AirbusFBW/BaroStdCapt
+        hack = "AirbusFBW/BaroStdCapt" if label == "QNH" else f"AirbusFBW/{label}managed"
+        status = self.is_pushed()
+        if hack in self.xp.all_datarefs.keys():
+            # logger.debug(f"is_dotted: {hack} = {self.xp.all_datarefs[hack].value()}")
+            status = self.xp.all_datarefs[hack].value() == 1
+        else:
+            logger.warning(f"is_dotted: button {self.name} dataref {hack} not found")
+        return status
 
     def make_bounce_array(self, stops: int):
         # Builds an array like 0-1-2-3-2-1-0 for a 4 stops button.
@@ -501,13 +517,17 @@ class Button:
         """
         Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device.
         Default is to tally number of times this button was pressed. It should have been released as many times :-D.
+        **** No command gets executed here **** except if there is an associated view with the button.
         """
         if state:
+            self.pressed = True
             self.pressed_count = self.pressed_count + 1
             self.previous_value = self.current_value
             self.current_value = self.button_value()
             if self.view:
                 self.xp.commandOnce(self.view)
+        else:
+            self.pressed = False
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def render(self):
@@ -678,17 +698,23 @@ class AirbusButton(Button):
                               fill=color)
                 else:
                     logger.debug("mk_airbus: full dark display")
-            else:  # 3 horizontal leds
-                e = ICON_SIZE / 8      # space left and right of LED
-                thick = 10             # LED thickness
-                start = button_height / 4 - 1.5 * thick - (16 - thick)
+            else:
+                e = ICON_SIZE / 4      # space left and right of LED
                 color = display.get("color")
                 if not self.lit_display:
                     color = display.get("off-color", light_off(color))
-                for i in range(3):
-                    s = start + i * 16
-                    frame = ((e, s), (glow.width - e, s+thick))
+                if size == "small":  # 1 horizontal leds
+                    thick = 30             # LED thickness
+                    start = button_height / 2 - thick
+                    frame = ((e, start), (glow.width - e, start+thick))
                     draw.rectangle(frame, fill=color)
+                else:  # 3 horizontal leds
+                    thick = 10             # LED thickness
+                    start = button_height / 4 - 1.5 * thick - (16 - thick)
+                    for i in range(3):
+                        s = start + i * 16
+                        frame = ((e, s), (glow.width - e, s+thick))
+                        draw.rectangle(frame, fill=color)
 
         # Optional second/bottom item (called "dual")
         if dual is not None:
@@ -928,11 +954,12 @@ class ButtonDual(Button):
             logger.warning(f"is_valid: button {self.name} has no command")
             return False
         if len(self.commands) < 2:
-            logger.warning(f"is_valid: button {self.name} has not enough commands (two needed)")
+            logger.warning(f"is_valid: button {self.name} has not enough commands (at least two needed)")
             return False
         return super().is_valid()
 
     def activate(self, state: bool):
+        super().activate(state)
         if state:
             if self.is_valid():
                 if self.is_pushed():
@@ -1015,7 +1042,7 @@ class ButtonKnob(ButtonPush):
         if self.has_option("dual") and len(self.commands) != 4:
             logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
             return False
-        elif len(self.commands) != 2:
+        elif not self.has_option("dual") and len(self.commands) != 2:
             logger.warning(f"is_valid: button {self.name} must have 2 commands")
             return False
         return True  # super().is_valid()
@@ -1100,6 +1127,98 @@ class ButtonKnobPushPull(ButtonDual):
             self.page.buttons[disp].render()
 
 
+class ButtonKnobPushTurnRelease(ButtonPush):
+    """
+    A know button that can turn left/right either when pressed or released.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
+            return False
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            if self.pressed:
+                self.xp.commandOnce(self.commands[2])
+            else:
+                self.xp.commandOnce(self.commands[0])
+        elif state == 3:  # rotate right
+            if self.pressed:
+                self.xp.commandOnce(self.commands[3])
+            else:
+                self.xp.commandOnce(self.commands[1])
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class ButtonKnobDataref(ButtonPush):
+    """
+    A knob button that writes directly to a dataref.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+        self.step = config.get("step")
+        self.stepxl = config.get("stepxl")
+        self.value = config.get("value")
+        self.value_min = config.get("value-min")
+        self.value_max = config.get("value-max")
+
+    def is_valid(self):
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            step = self.step
+            if self.has_option("dual") and self.is_pushed():
+                step = self.stepxl
+            self.value = self.value - step
+            if self.value < self.value_min:
+                self.value = self.value_min
+            if self.dataref in self.xp.all_datarefs:
+                self.xp.all_datarefs[self.dataref].save(self)
+            else:
+                logger.warning(f"activate: button {self.name} dataref {self.dataref} not found")
+        elif state == 3:  # rotate right
+            step = self.step
+            if self.has_option("dual") and self.is_pushed():
+                step = self.stepxl
+            self.value = self.value + step
+            if self.value > self.value_max:
+                self.value = self.value_max
+            if self.dataref in self.xp.all_datarefs:
+                self.xp.all_datarefs[self.dataref].save(self)
+            else:
+                logger.warning(f"activate: button {self.name} dataref {self.dataref} not found")
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
 class ButtonSide(ButtonPush):
     """
     A ButtonPush that has very special size (60x270), end therefore very special button rendering
@@ -1149,11 +1268,11 @@ class ButtonSide(ButtonPush):
                     logger.debug(f"get_image: watching {knob}")
                     if knob in self.page.buttons.keys():
                         corrknob = self.page.buttons[knob]
-                        if corrknob.has_option("dual"):
-                            if corrknob.is_pushed():
-                                txt = txt + "\n•"
+                        if corrknob.has_option("dot"):
+                            if corrknob.is_dotted(txt):
+                                txt = txt + "•"  # \n•"
                             else:
-                                txt = txt + "\n"
+                                txt = txt + ""   # \n"
                     if li >= len(vcenter) or txt is None:
                         continue
                     fontname = self.get_font(label.get("label-font", self.label_font))
@@ -1431,6 +1550,8 @@ LOUPEDECK_BUTTON_TYPES = {
     "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
     "knob": ButtonKnob,
     "knob-push-pull": ButtonKnobPushPull,
+    "knob-push-turn-release": ButtonKnobPushTurnRelease,
+    "knob-dataref": ButtonKnobDataref,
     "button": ColoredButton,
     "side": ButtonSide,
     "airbus": AirbusButton,

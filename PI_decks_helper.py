@@ -186,7 +186,7 @@ class PythonInterface:
         COMMAND = "command"
         MULTI_COMMANDS = "commands"
         # Type of commands for which we need to create a pair of commands
-        NOTICABLE_BUTTON_TYPES = ["dual"]
+        NOTICABLE_BUTTON_TYPES = ["long-press"]
 
         commands = []
 

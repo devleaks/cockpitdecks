@@ -530,13 +530,13 @@ class LoupedeckLive(Loupedeck):
             self.draw_image(image, display=display, width=width, height=height, x=x, y=y, auto_refresh=True)
 
     def reset(self):
-        colors = ["cyan", "magenta", "blue"]
+        colors = ["black" for i in range(3)]  # ["cyan", "magenta", "blue"]
         image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), colors[0])
         self.draw_image(image, display="left", auto_refresh=True)
-        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), colors[1])
-        self.draw_image(image, display="right", auto_refresh=True)
         image = Image.new("RGBA", (360, 270), colors[2])
         self.draw_image(image, display="center", auto_refresh=True)
+        image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), colors[1])
+        self.draw_image(image, display="right", auto_refresh=True)
 
 
     # #########################################@

@@ -170,7 +170,7 @@ class XPlaneUDP(XPlane):
             self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
             logger.debug(f"ExecuteCommand: executed {command}")
         else:
-            logger.warning(f"ExecuteCommand: no IP connection")
+            logger.warning(f"ExecuteCommand: no IP connection ({command})")
 
     def FindIp(self):
         '''
@@ -315,7 +315,9 @@ class XPlaneUDP(XPlane):
             return
         # Add those to monitor
         for d in datarefs.values():
-            self.AddDataRef(d.path, freq=0)
+            if d.path in self.datarefs.keys():
+                if self.datarefs[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
+                    self.AddDataRef(d.path, freq=0)
         super().remove_datarefs_to_monitor(datarefs)
         logger.debug(f"remove_datarefs_to_monitor: removed {list(self.datarefs.values())}")
 

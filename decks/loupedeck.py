@@ -397,7 +397,12 @@ class Loupedeck(Deck):
         logger.info(f"start: loupedeck {self.name} listening for key strokes")
 
     def terminate(self):
-        self.device.stop()  # stops our threads (reading, processing)
+        with self.device:
+            self.device.set_callback(None)
+            self.device.reset()
+            self.device.stop()  # terminates the loop.
+            self.running = False
+
         # logger.debug(f"terminate: closing {type(self.device).__name__}..")
         # del self.device     # closes connection and stop serial _read thread
         # logger.debug(f"terminate: closed")

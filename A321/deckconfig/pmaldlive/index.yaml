@@ -37,8 +37,8 @@ buttons:
   - index: knobCR
     type: knob-dataref
     dataref: dataref/path
-    step: 10
-    stepxl: 100
+    step: 100
+    stepxl: 1000
     value: 0
     value-min: -6000
     value-max: 6000

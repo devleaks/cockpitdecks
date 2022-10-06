@@ -35,6 +35,9 @@ class Dataref:
             if self.index >= self.length:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
 
+    def value(self):
+        return self.current_value
+
     def exists(self):
         return self.path is not None
 
@@ -55,7 +58,8 @@ class Dataref:
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
 
     def add_listener(self, obj):
-        self.listeners.append(obj)
+        if obj not in self.listeners:
+            self.listeners.append(obj)
         loggerDataref.debug(f"add_listener: {self.dataref} added {obj.name} ({len(self.listeners)})")
 
     def notify(self):
@@ -65,6 +69,9 @@ class Dataref:
                 loggerDataref.debug(f"notify: notified {l.name}")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
+
+    def save(self, button):
+        loggerDataref.debug(f"save: {self.path} not saved to X-Plane (value={button.value})")
 
 
 class XPlane:
