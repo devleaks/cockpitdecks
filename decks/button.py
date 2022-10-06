@@ -868,12 +868,6 @@ class ButtonPush(Button):
                 return False
         return super().is_valid()
 
-    def get_image(self):
-        """
-        If button has more icons, select one from button current value
-        """
-        return super().get_image()
-
     def activate(self, state: bool):
         # logger.debug(f"ButtonPush::activate: button {self.name}: {state}")
         super().activate(state)
@@ -900,12 +894,6 @@ class AirbusButtonPush(AirbusButton):
                 logger.warning(f"is_valid: button {self.name} has no command or counter option")
                 return False
         return super().is_valid()
-
-    def get_image(self):
-        """
-        If button has more icons, select one from button current value
-        """
-        return super().get_image()
 
     def activate(self, state: bool):
         # logger.debug(f"ButtonPush::activate: button {self.name}: {state}")
@@ -1192,7 +1180,9 @@ class ButtonKnobDataref(ButtonPush):
             if self.value < self.value_min:
                 self.value = self.value_min
             if self.dataref in self.xp.all_datarefs:
-                self.xp.all_datarefs[self.dataref].save(self)
+                vs = float(self.value)
+                self.xp.WriteDataRef(dataref=self.dataref, value=vs, vtype='float')
+                logger.debug(f"activate: button {self.name} dataref {self.dataref} = {vs} written")
             else:
                 logger.warning(f"activate: button {self.name} dataref {self.dataref} not found")
         elif state == 3:  # rotate right
@@ -1202,12 +1192,21 @@ class ButtonKnobDataref(ButtonPush):
             self.value = self.value + step
             if self.value > self.value_max:
                 self.value = self.value_max
-            if self.dataref in self.xp.all_datarefs:
-                self.xp.all_datarefs[self.dataref].save(self)
+            if self.dataref in self.xp.all_datarefs:  # need to be there at least because we also read it...
+                vs = float(self.value)
+                self.xp.WriteDataRef(dataref=self.dataref, value=vs, vtype='float')
+                logger.debug(f"activate: button {self.name} dataref {self.dataref} = {vs} written")
             else:
                 logger.warning(f"activate: button {self.name} dataref {self.dataref} not found")
         else:
             logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def dataref_changed(self, dataref: "Dataref"):
+        """
+        One of its dataref has changed, records its value and provoke an update of its representation.
+        """
+        super().dataref_changed(dataref)
+        self.value = self.current_value
 
     def render(self):
         """

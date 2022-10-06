@@ -70,10 +70,6 @@ class Dataref:
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 
-    def save(self, button):
-        loggerDataref.debug(f"save: {self.path} not saved to X-Plane (value={button.value})")
-
-
 class XPlane:
     """
     Abstract class for execution of operations in X-Plane

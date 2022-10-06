@@ -36,7 +36,7 @@ buttons:
     options: dot
   - index: knobCR
     type: knob-dataref
-    dataref: dataref/path
+    dataref: sim/cockpit/autopilot/vertical_velocity
     step: 100
     stepxl: 1000
     value: 0
@@ -51,8 +51,6 @@ buttons:
     commands:
       - sim/autopilot/altitude_down
       - sim/autopilot/altitude_up
-      - sim/autopilot/altitude_down2
-      - sim/autopilot/altitude_up2
 #
 # BUTTONS
 #

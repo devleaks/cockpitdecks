@@ -50,7 +50,7 @@ class XPlaneUDP(XPlane):
         self.socket.settimeout(self.BEACON_TIMEOUT)
         # values from xplane
         self.BeaconData = {}
-        self.UDP_PORT = None
+        self.UDP_PORT = 49000
 
         # list of requested datarefs with index number
         self.datarefidx = 0
@@ -98,6 +98,7 @@ class XPlaneUDP(XPlane):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert(len(message)==509)
+        logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.UDP_PORT}): {dataref}={value}")
         self.socket.sendto(message, (self.BeaconData["IP"], self.UDP_PORT))
 
     def AddDataRef(self, dataref, freq = None):
