@@ -1,4 +1,4 @@
-# Creates pair of commandBegin/commandEnd for some commands.
+  # Creates pair of commandBegin/commandEnd for some commands.
 # New commands for "command" are "command/begin" and "command/end".
 #
 import xp
