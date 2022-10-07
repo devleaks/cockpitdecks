@@ -12,7 +12,8 @@ from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
 from .XTouchMini.Devices.xtouchmini import LED_MODE
 
 logger = logging.getLogger("XTouchMini")
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.DEBUG)
+
 
 DEFAULT_PAGE_NAME = "X-Plane"
 

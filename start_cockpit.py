@@ -6,7 +6,7 @@ from decks import Cockpit
 from decks.xplaneudp import XPlaneUDP
 
 # logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cockpitdecks")
 
 s = None

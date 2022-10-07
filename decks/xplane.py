@@ -8,7 +8,7 @@ loggerDataref = logging.getLogger("Dataref")
 loggerDataref.setLevel(logging.INFO)
 
 logger = logging.getLogger("XPlane")
-
+# logger.setLevel(logging.DEBUG)
 
 class Dataref:
 

@@ -31,7 +31,7 @@ from .constant import CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, AIRBUS_DEFAULTS
 from .rpc import RPC
 
 logger = logging.getLogger("Button")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class Button:
 
@@ -81,7 +81,7 @@ class Button:
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
         if len(self.all_datarefs) > 0:
-            self.page.register_datarefs(self)
+            self.page.register_datarefs(self)   # when the button's page is loaded, we monitor these datarefs
 
         # Commands
         self.command = config.get("command")
@@ -157,6 +157,9 @@ class Button:
     def id(self):
         return ":".join([self.deck.name, self.page.name, self.name])
 
+    def on_current_page(self):
+        return self.deck.current_page == self.page
+
     def init(self):
         """
         Install button
@@ -167,12 +170,31 @@ class Button:
 
         # test: we try to immediately get a first value
         if self.initial_value is not None:
-            self.current_value = self.initial_value
+            self.set_current_value(self.initial_value)
             self._first_value = self.initial_value
         else:
-            self.current_value = self.button_value()
+            self.set_current_value(self.button_value())
         if self._first_value is None and self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # won't get a value from datarefs
             self._first_value = self.current_value
+        logger.debug(f"init: button {self.name} has value {self.current_value}")
+        self.set_key_icon()
+
+    def set_current_value(self, value):
+        self.previous_value = self.current_value
+        self.current_value = value
+        self.set_key_icon()
+
+    def get_current_value(self):
+        return self.current_value
+
+    def value_has_changed(self) -> bool:
+        if self.previous_value is None and self.current_value is None:
+            return False
+        elif self.previous_value is None and self.current_value is not None:
+            return True
+        elif self.previous_value is not None and self.current_value is None:
+            return True
+        return self.current_value != self.previous_value
 
     def is_valid(self) -> bool:
         """
@@ -250,20 +272,35 @@ class Button:
             return self.all_datarefs
 
         r = []
+        # Use of datarefs in button:
+        # 1. RAW datarefs
+        # 1.1 Single
         if self.dataref is not None:
             r.append(self.dataref)
             logger.debug(f"get_datarefs: button {self.name}: added single dataref {self.dataref}")
+        # 1.2 Multiple
         if self.datarefs is not None:
             r = r + self.datarefs
             logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {self.datarefs}")
         # logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
+
         # Use of datarefs in label:
+        # 2. LABEL datarefs
+        # 2.1 Label
         if self.label is not None:
             datarefs = re.findall("\\${(.+?)}", self.label)
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
+        # 2.2 Label formulae
+        if self.label_rpn is not None:
+            datarefs = re.findall("\\${(.+?)}", self.label_rpn)
+            if len(datarefs) > 0:
+                r = r + datarefs
+                logger.debug(f"get_datarefs: button {self.name}: added label formulae datarefs {datarefs}")
+
         # Use of datarefs in formulae:
+        # 3. Formulae datarefs
         if self.dataref_rpn is not None:
             datarefs = re.findall("\\${(.+?)}", self.dataref_rpn)
             if len(datarefs) > 0:
@@ -384,6 +421,7 @@ class Button:
         return label
 
     def get_image_for_icon(self):
+        logger.warning(f"get_image_for_icon: in.. {self.key_icon}")
         image = None
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
@@ -398,6 +436,7 @@ class Button:
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
+        logger.warning(f"get_image: in..")
         image = self.get_image_for_icon()
 
         if image is not None:
@@ -456,6 +495,7 @@ class Button:
     # Value and icon
     #
     def set_key_icon(self):
+        logger.debug(f"set_key_icon: button {self.name}: in..   ******************* ")
         if self.multi_icons is not None and len(self.multi_icons) > 1:
             num_icons = len(self.multi_icons)
             value = self.current_value
@@ -487,16 +527,19 @@ class Button:
         # 1. Unique dataref
         if len(self.all_datarefs) == 1:
             # if self.all_datarefs[0] in self.page.datarefs.keys():  # unnecessary check
+            logger.debug(f"button_value: button {self.name} get dataref")
             return self.execute_formula(default=self.get_dataref_value(self.all_datarefs[0]))
             # else:
             #     logger.warning(f"button_value: button {self.name}: {self.all_datarefs[0]} not in {self.page.datarefs.keys()}")
             #     return None
         # 2. Multiple datarefs
         elif len(self.all_datarefs) > 1:
+            logger.debug(f"button_value: button {self.name} get formula")
             return self.execute_formula(default=0.0)
         elif "counter" in self.options or "bounce" in self.options:
-            # logger.debug(f"button_value: button {self.name} get counter: {self.pressed_count}")pmUageOra-1
+            logger.debug(f"button_value: button {self.name} get counter: {self.pressed_count}")
             return self.pressed_count
+        logger.debug(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None")
         return None
 
     # ##################################
@@ -506,12 +549,10 @@ class Button:
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        self.previous_value = self.current_value
-        self.current_value = self.button_value()
+        self.set_current_value(self.button_value())
         if self._first_value is None:  # store first non None value received from datarefs
             self._first_value = self.current_value
         logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
-        self.set_key_icon()
         self.render()
 
     def activate(self, state: bool):
@@ -523,8 +564,7 @@ class Button:
         if state:
             self.pressed = True
             self.pressed_count = self.pressed_count + 1
-            self.previous_value = self.current_value
-            self.current_value = self.button_value()
+            self.set_current_value(self.button_value())
             if self.view:
                 self.xp.commandOnce(self.view)
         else:
@@ -536,9 +576,15 @@ class Button:
         Ask deck to set this button's image on the deck.
         set_key_image will call this button get_button function to get the icon to display with label, etc.
         """
+        logger.debug(f"render: button {self.name} rendering...")
         if self.deck is not None:
-            self.deck.set_key_image(self)
-        # logger.debug(f"render: button {self.name} rendered")
+            if self.on_current_page():
+                self.deck.set_key_image(self)
+                logger.debug(f"render: button {self.name} rendered")
+            else:
+                logger.debug(f"render: button {self.name} not on current page")
+        else:
+            logger.debug(f"render: button {self.name} has no deck")
 
     def clean(self):
         self.previous_value = None  # this will provoke a refresh of the value on data reload
@@ -563,8 +609,10 @@ class AirbusButton(Button):
 
         Button.__init__(self, config=config, page=page)
 
-        if self.airbus is not None and (self.icon is not None or self.multi_icons is not None):
+        if self.airbus is not None and (config.get("icon") is not None or config.get("multi-icons") is not None):
             logger.warning(f"__init__: button {self.name}: has airbus property with icon/multi-icons, ignoring icons")
+
+        if self.airbus is not None:
             self.icon = None
             self.multi_icons = None
 
@@ -807,6 +855,7 @@ class AirbusButton(Button):
 
         return image
 
+
 # ###########################
 # Deck manipulation functions
 #
@@ -830,8 +879,7 @@ class ButtonPage(Button):
             if self.name == "back" or self.name in self.deck.pages.keys():
                 logger.debug(f"activate: button {self.name} change page to {self.name}")
                 self.deck.change_page(self.name)
-                self.previous_value = self.current_value
-                self.current_value = self.name
+                self.set_current_value(self.name)
             else:
                 logger.warning(f"activate: button {self.name}: page not found {self.name}")
 
@@ -1430,8 +1478,7 @@ class ButtonAnimate(Button):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        self.previous_value = self.current_value
-        self.current_value = self.button_value()
+        self.set_current_value(self.button_value())
         logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
         if self.current_value is not None and self.current_value == 1:
             self.anim_start()
@@ -1509,8 +1556,7 @@ class AirbusButtonAnimate(AirbusButton):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        self.previous_value = self.current_value
-        self.current_value = self.button_value()
+        self.set_current_value(self.button_value())
         logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
         if self.current_value is not None and self.current_value == 1:
             self.anim_start()
@@ -1547,7 +1593,7 @@ LOUPEDECK_BUTTON_TYPES = {
     "dual": ButtonDual,
     "long-press": ButtonLongpress,
     "updown": ButtonUpDown,
-    "animate": ButtonAnimate,  # loaded from xplaneudp/xplanesdk depending on integration
+    "animate": ButtonAnimate,
     "knob": ButtonKnob,
     "knob-push-pull": ButtonKnobPushPull,
     "knob-push-turn-release": ButtonKnobPushTurnRelease,

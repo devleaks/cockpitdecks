@@ -13,7 +13,12 @@ import os
 import yaml
 import xp
 from traceback import print_exc
-from decks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
+
+# from decks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
+# Copied here to make this script independent
+CONFIG_DIR = "deckconfig"
+CONFIG_FILE = "config.yaml"
+DEFAULT_LAYOUT = "default"
 
 
 RELEASE = "0.0.15"  # local version number
@@ -25,9 +30,9 @@ HDL = "cmdhdl"
 class PythonInterface:
 
     def __init__(self):
-        self.Name = "Decks Helper"
-        self.Sig = "streamdeckhelper.xppython3"
-        self.Desc = f"Decompose commands in begin and end. (Rel. {RELEASE})"
+        self.Name = "Cockpitdecks Helper"
+        self.Sig = "cockpitdeckshelper.xppython3"
+        self.Desc = f"Decompose long press commands in begin and end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
         self.trace = True  # produces extra print/debugging in XPPython3.log for this class

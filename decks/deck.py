@@ -19,6 +19,7 @@ from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
 
 logger = logging.getLogger("Deck")
+# logger.setLevel(logging.DEBUG)
 
 DEFAULT_PAGE_NAME = "X-Plane"
 
@@ -65,19 +66,20 @@ class Deck:
             self.serial = config["serial"]
         else:
             self.valid = False
-            logger.error(f"__init__: loupedeck has no serial number, cannot use")
+            logger.error(f"__init__: {self.name}: has no serial number, cannot use")
 
         self.available_keys = None
         if device is not None and hasattr(device, "key_names"):
             self.available_keys = device.key_names()
-        else:
-            self.valid = False
-            logger.error(f"__init__: cannot determine key count")
 
         if device is not None and hasattr(device, "key_count"):
             self.numkeys = device.key_count()
             if self.available_keys is None:
                 self.available_keys = list(range(self.numkeys))
+
+        if self.available_keys is None:
+            self.valid = False
+            logger.error(f"__init__: {self.name}: cannot determine available keys")
 
         self.brightness = 100
         if "brightness" in config:

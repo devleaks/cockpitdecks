@@ -1,0 +1,227 @@
+name: ECAM
+version: 2.0.0
+description: ECAM display selector
+note: final version for Streamdeck 15 keys
+buttons:
+  - index: 14
+    name: EFIS
+    type: page
+    icon: TOLISS-A321
+  - index: 0
+    name: END
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDENG}
+      dual:
+        text: ENG
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDENG
+    command: AirbusFBW/ECP/SelectEnginePage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 1
+    name: BLEED
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDBLEED}
+      dual:
+        text: BLEED
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    command: AirbusFBW/ECP/SelectBleedPage
+    dataref: AirbusFBW/SDBLEED
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 2
+    name: PRESS
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDPRESS}
+      dual:
+        text: PRESS
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    command: AirbusFBW/ECP/SelectPressPage
+    dataref: AirbusFBW/SDPRESS
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 3
+    name: ELEC
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDELEC}
+      dual:
+        text: ELEC
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDELEC
+    command: AirbusFBW/ECP/SelectElecPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 4
+    name: HYD
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDHYD}
+      dual:
+        text: HYD
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDHYD
+    command: AirbusFBW/ECP/SelectHydraulicPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 5
+    name: FUEL
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDFUEL}
+      dual:
+        text: FUEL
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDFUEL
+    command: AirbusFBW/ECP/SelectFuelPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 6
+    name: APU
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDAPU}
+      dual:
+        text: APU
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDAPU
+    command: AirbusFBW/ECP/SelectAPUPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 7
+    name: COND
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDCOND}
+      dual:
+        text: COND
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDCOND
+    command: AirbusFBW/ECP/SelectConditioningPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 8
+    name: DOOR
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDDOOR}
+      dual:
+        text: DOOR
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDDOOR
+    command: AirbusFBW/ECP/SelectDoorOxyPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 9
+    name: WHEEL
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDWHEEL}
+      dual:
+        text: WHEEL
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDWHEEL
+    command: AirbusFBW/ECP/SelectWheelPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 10
+    name: F/CTL
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDFCTL}
+      dual:
+        text: F/CTL
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDFCTL
+    command: AirbusFBW/ECP/SelectFlightControlPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 11
+    name: CLR
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/CLRillum}
+      dual:
+        text: CLR
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/CLRillum
+    command: AirbusFBW/ECP/CaptainClear
+  - index: 12
+    name: STS
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        color: greenyellow
+        dataref-rpn: ${AirbusFBW/SDSTATUS}
+      dual:
+        text: STS
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    dataref: AirbusFBW/SDSTATUS
+    command: AirbusFBW/ECP/SelectStatusPage
+    view: SRS/X-Camera/Select_View_ID_6
+  - index: 13
+    name: ALL
+    type: airbus-push
+    airbus:
+      size: medium
+      display:
+        text: ALL
+        color: white
+        size: 48
+        dataref-rpn: "1"
+    command: AirbusFBW/ECAMAll

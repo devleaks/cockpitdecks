@@ -9,10 +9,12 @@ import threading
 import logging
 import time
 
+from .constant import UDP_PORT
 from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
+# logger.setLevel(logging.DEBUG)
 
 
 DATA_REFRESH = 0.1 # secs we poll for data every x seconds, must be < 0.1 for UDP
@@ -50,7 +52,7 @@ class XPlaneUDP(XPlane):
         self.socket.settimeout(self.BEACON_TIMEOUT)
         # values from xplane
         self.BeaconData = {}
-        self.UDP_PORT = 49000
+        self.UDP_PORT = UDP_PORT
 
         # list of requested datarefs with index number
         self.datarefidx = 0

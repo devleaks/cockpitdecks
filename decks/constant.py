@@ -27,6 +27,8 @@ DEFAULT_ICON_COLOR = (0, 0, 100)
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"
 
+UDP_PORT = 49000
+
 def add_ext(name: str, ext: str):
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")

@@ -6,7 +6,7 @@ from .constant import convert_color
 from .button import Button
 
 logger = logging.getLogger("Page")
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.DEBUG)
 
 
 class Page:
@@ -72,7 +72,6 @@ class Page:
         """
         Renders this page on the deck
         """
-        logger.debug(f"render: page {self.name}: fill {self.fill_empty}")
         for button in self.buttons.values():
             button.render()
             # logger.debug(f"render: page {self.name}: button {button.name} rendered")
@@ -90,7 +89,7 @@ class Page:
                         image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                         self.deck.device.set_key_image(key, image)
         else:
-            logger.warning(f"render: page {self.name}: fill image {self.fill_empty} not found")
+            logger.warning(f"render: page {self.name}: no fill icon")
 
     def clean(self):
         """

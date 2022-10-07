@@ -36,9 +36,9 @@ buttons:
     options: dot
   - index: knobCR
     type: knob-dataref
-    dataref: sim/cockpit/autopilot/vertical_velocity
-    step: 100
-    stepxl: 1000
+    dataref: dataref/path
+    step: 10
+    stepxl: 100
     value: 0
     value-min: -6000
     value-max: 6000
@@ -51,13 +51,8 @@ buttons:
     commands:
       - sim/autopilot/altitude_down
       - sim/autopilot/altitude_up
-#
-# BUTTONS
-#
-  # - index: 1
-  #   type: button
-  #   icon-color: (200, 20, 20)
-  #   command: sim/map/show_current
+      - sim/autopilot/altitude_down2
+      - sim/autopilot/altitude_up2
 #
 # KEYS
 #
@@ -168,19 +163,6 @@ buttons:
         dataref-rpn: "1"
     command: AirbusFBW/LOCbutton
     dataref: AirbusFBW/LOCilluminated
-  # - index: 9
-  #   name: FD 1
-  #   type: push
-  #   icon: P_1_GREEN_OFF
-  #   command: toliss_airbus/fd1_push
-  #   dataref: AirbusFBW/FD1Engage
-  #   dataref-states:
-  #     - 0.0
-  #     - 1.0
-  #   multi-icons:
-  #     - P_1_GREEN_OFF
-  #     - P_1_GREEN_ON
-  #   label: FD
   - index: 10
     name: APPR
     type: airbus-push
@@ -202,31 +184,6 @@ buttons:
     icon: RELOAD
     label: RELOAD
     label-position: ct
-  # - index: knobTL
-  #   name: MoreLess
-  #   type: knob
-  #   commands:
-  #     - sim/map/show_current
-  #     - sim/map/show_current
-  # - index: 2
-  #   type: none
-  #   label: ${AirbusFBW/BatVolts[0]}
-  #   label-format: "{:2.1f}"
-  #   label-color: white
-  #   label-size: 40
-  #   label-font: Seven Segment.ttf
-  #   icon-color: (40, 40, 40)
-  # - index: 5
-  #   name: MoreLess
-  #   type: push
-  #   icon: MASTER_WARN
-  #   commands:
-  #     - sim/map/show_current
-  #     - sim/map/show_current
-  # - index: 11
-  #   name: A321
-  #   type: page
-  #   icon: TOLISS-A321
 #
 # SIDE KEYS
 #
@@ -254,14 +211,8 @@ buttons:
     icon-color: (94, 111, 130)
     multi-datarefs:
       - AirbusFBW/ALTmanaged
-  # - index: 1
-  #   type: dual
-  #   icon: TEST
-  #   label: "APU\nTEST"
-  #   label-position: ct
-  #   command: AirbusFBW/FireTestAPU
-  # - index: 0
-  #   type: buzz
-  #   pattern: ASCEND_SLOW
+#
+# BUTTONS
+#
 includes: views
 fill-empty-keys: (94, 111, 130)

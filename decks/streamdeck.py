@@ -20,7 +20,7 @@ from .page import Page
 from .deck import Deck
 
 logger = logging.getLogger("Streamdeck")
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.DEBUG)
 
 DEFAULT_PAGE_NAME = "X-Plane"
 POLL_FREQ = 5  # default is 20

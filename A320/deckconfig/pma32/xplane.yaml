@@ -83,6 +83,11 @@ buttons:
     command: jd/ghd/show_widget
     label: GHDLX
     label-position: ct
+  - index: 13
+    name: XPLANEDATA
+    type: push
+    command: sim/operation/toggle_data_output_cockpit
+    label: "XPLANE\nCOCKPIT\nDATA"
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: XTouchMini

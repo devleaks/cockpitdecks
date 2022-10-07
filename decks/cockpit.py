@@ -18,8 +18,8 @@ from .streamdeck import FLIP_DESCRIPTION
 
 
 logger = logging.getLogger("Cockpit")
+# logger.setLevel(logging.DEBUG)
 
-#
 
 class Cockpit:
     """

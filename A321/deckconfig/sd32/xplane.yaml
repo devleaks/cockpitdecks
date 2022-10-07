@@ -1,0 +1,122 @@
+name: xplane
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: X-Plane Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sim/map/show_current
+    label: Map
+    label-position: ct
+    options: counter
+  - index: 1
+    name: Airport Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: pikitanga/AptNav/ToggleMap
+    label: Airport
+    label-position: ct
+    options: counter
+  - index: 2
+    name: AVS Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: flightfactor/avs/toggle
+    label: AVS
+    label-position: ct
+    options: counter
+  - index: 3
+    name: AviTab
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    label: AviTab
+    label-position: ct
+    command: AviTab/toggle_tablet
+    options: counter
+  # - index: 4
+  #   name: Ground Services
+  #   type: page
+  #   label: Ground Services
+  - index: 5
+    name: LiveTraffic
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: LiveTraffic/Info_Staus_Wnd/Open
+    label: Live/T
+    label-position: ct
+    options: counter
+  - index: 6
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    initial-value: 0
+    multi-icons:
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-position: ct
+    options: animation_speed=0.5
+
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    name: SAMGroundVehicle
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sam/main_window
+    label: SAM/GV
+    label-position: ct
+    options: counter
+  - index: 9
+    name: GroundHandlingDeluxe
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: jd/ghd/show_widget
+    label: GHDLX
+    label-position: ct
+    options: counter
+  - index: 13
+    name: XPLANEDATA
+    type: push
+    command: sim/operation/toggle_data_output_cockpit
+    label: "XPLANE\nCOCKPIT\nDATA"
+    options: counter
+# ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    name: XTouchMini
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: SRS/X-Camera/Toggle_Control_Panel_on_or_off
+    label: X-Camera
+    label-position: ct
+  - index: 17
+    name: X-ATC
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: SRS/X-ATC-Chatter/Toggle_Control_Panel
+    label: X-ATC
+    label-position: ct
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 31
+    name: Index
+    type: page
+    icon: TOLISS-A321
