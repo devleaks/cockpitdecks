@@ -31,7 +31,7 @@ from .constant import CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, AIRBUS_DEFAULTS
 from .rpc import RPC
 
 logger = logging.getLogger("Button")
-
+logger.setLevel(logging.INFO)
 
 class Button:
 
@@ -67,7 +67,7 @@ class Button:
         self.label_color = config.get("label-color", self.deck.default_label_color)
         self.label_color = convert_color(self.label_color)
         self.label_position = config.get("label-position", "cm")
-        self.icon_color = config.get("icon-color")
+        self.icon_color = config.get("icon-color", page.default_icon_color)
 
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             logger.warning(f"__init__: button {self.name}: invalid label position code {self.label_position}, using default")
@@ -76,7 +76,8 @@ class Button:
         # Datarefs
         self.dataref = config.get("dataref")
         self.datarefs = config.get("multi-datarefs")
-        self.dataref_rpn = config.get("label-rpn")
+        self.dataref_rpn = config.get("dataref-rpn")
+
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
         if len(self.all_datarefs) > 0:
@@ -91,7 +92,7 @@ class Button:
         self.options = []
         new = config.get("options")
         if new is not None:  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
-            old = ""
+            old = ""         # a, c, d are options, b, e are option values. c option value is boolean True.
             while len(old) != len(new):
                 old = new
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
@@ -99,7 +100,7 @@ class Button:
 
         # Icon(s)
         # 1. Collect multi icons
-        # Each icon in muti icon lust be an image for now (later could be a (background) color only)
+        # Each icon in multi-icons must be an image for now (later could be a (background) color only)
         self.multi_icons = config.get("multi-icons")
         if self.multi_icons is not None:
             for i in range(len(self.multi_icons)):
@@ -319,7 +320,7 @@ class Button:
             r = RPC(expr)
             value = r.calculate()
             # logger.debug(f"execute_formula: button {self.name}: {dataref}: {expr} = {r1}")
-            # logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {expr}:  => {value}")
+            logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {expr}:  => {value}")
             return value
         elif len(self.all_datarefs) > 1:
             logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
@@ -972,7 +973,7 @@ class ButtonUpDown(ButtonPush):
         if self.commands is None or len(self.commands) < 2:
             logger.warning(f"is_valid: button {self.name} must have at least 2 commands")
             return False
-        return super().is_valid()
+        return True
 
     def activate(self, state: bool):
         super().activate(state)

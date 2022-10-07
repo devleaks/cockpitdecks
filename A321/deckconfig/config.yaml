@@ -25,6 +25,7 @@ decks:
     disabled: True
 # This is at global level
 default-wallpaper-logo: logo.png
+default-icon-color: (94, 111, 130)
 default-label-color: white
 default-label-font: DIN.ttf
 default-label-size: 14

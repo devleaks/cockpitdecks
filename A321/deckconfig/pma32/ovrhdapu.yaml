@@ -16,22 +16,6 @@ buttons:
     # dataref-rpn: ${AirbusFBW/EnableExternalPower} ${sim/cockpit2/switches/avionics_power_on} +
     label: EXT PWR
     label-position: ct
-  - index: 6
-    name: APU_AVAILABLE
-    type: push
-    icon: NONE_NONE
-    multi-icons:
-      - P_TOLISS_ISCS_OFF
-      - P_TOLISS_ISCS_ON
-    dataref: AirbusFBW/SDExtPowBox
-    label: "APU\nCONNECTED"
-    label-color: black
-  - index: 7
-    name: X-Camera Views
-    type: page
-    icon: VIEWS
-    label: VIEWS
-    label-position: ct
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: APUMASTER

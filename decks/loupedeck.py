@@ -22,6 +22,7 @@ from .deck import Deck
 from .Loupedeck.Devices.constants import BUTTONS as LOUPEDECK_BUTTON_NAMES
 
 logger = logging.getLogger("Loupedeck")
+logger.setLevel(logging.INFO)
 
 DEFAULT_PAGE_NAME = "X-Plane"
 

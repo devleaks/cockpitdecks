@@ -5,6 +5,8 @@ import logging
 import time
 
 loggerDataref = logging.getLogger("Dataref")
+loggerDataref.setLevel(logging.INFO)
+
 logger = logging.getLogger("XPlane")
 
 
@@ -93,11 +95,12 @@ class XPlane:
         """
         for d in self.current_values.keys():
             if d not in self.previous_values.keys() or self.current_values[d] != self.previous_values[d]:
-                logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
+                # logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
                 if d in self.datarefs_to_monitor.keys():
                     self.all_datarefs[d].update_value(self.current_values[d], cascade=True)
                 else:
-                    logger.warning(f"detect_changed: updated dataref not in dataref to monitor (was {self.datarefs_to_monitor.keys()})")
+                    self.all_datarefs[d].update_value(self.current_values[d], cascade=False)  # we just update the value but no notification
+                    logger.warning(f"detect_changed: updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
                 # logger.debug(f"detect_changed: ..done")
             # else:
             #     logger.debug(f"detect_changed: {d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
@@ -119,20 +122,28 @@ class XPlane:
         self.datarefs_to_monitor = {}
 
     def add_datarefs_to_monitor(self, datarefs: dict):
+        prnt = []
         for d in datarefs.values():
             if d.path not in self.datarefs_to_monitor.keys():
                 self.datarefs_to_monitor[d.path] = 1
+                prnt.append(d.path)
             else:
                 self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] + 1
+        logger.debug(f"add_datarefs_to_monitor: added {prnt}")
+        logger.debug(f"add_datarefs_to_monitor: currently monitoring {self.datarefs_to_monitor}")
 
     def remove_datarefs_to_monitor(self, datarefs):
+        prnt = []
         for d in datarefs.values():
             if d.path in self.datarefs_to_monitor.keys():
                 self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] - 1
                 if self.datarefs_to_monitor[d.path] == 0:
+                    prnt.append(d.path)
                     del self.datarefs_to_monitor[d.path]
             else:
                 logger.warning(f"remove_datarefs_to_monitor: dataref {d.path} not monitored")
+        logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
+        logger.debug(f"remove_datarefs_to_monitor: currently monitoring {self.datarefs_to_monitor}")
 
     def start(self):
         logger.debug(f"start: not implemented")

@@ -147,33 +147,22 @@ buttons:
     command: toliss_airbus/dispcommands/CaptArptPushButton
     dataref: AirbusFBW/NDShowARPTCapt
   - index: 10
-    name: A/THR
+    name: EFIS MODE -
     type: push
-    multi-icons:
-      - P_1_GREEN_OFF
-      - P_1_GREEN_ON
-    command: AirbusFBW/ATHRbutton
-    label: A/THR
+    command: sim/instruments/EFIS_mode_dn
+    label: "EFIS\nMODE -"
   - index: 11
-    name: AP1
+    name: EFIS MODE +
     type: push
-    multi-icons:
-      - P_1_GREEN_OFF
-      - P_1_GREEN_ON
-    label: AP1
+    command: sim/instruments/EFIS_mode_up
+    label: "EFIS\nMODE +"
   - index: 12
-    name: APPR
+    name: EFIS ZOOM IN
     type: push
-    multi-icons:
-      - P_1_GREEN_OFF
-      - P_1_GREEN_ON
-    command: AirbusFBW/APPRbutton
-    label: APPR
+    command: sim/instruments/map_zoom_in
+    label: "EFIS\nZOOM IN"
   - index: 13
-    name: EXPED
+    name: EFIS ZOOM OUT
     type: push
-    multi-icons:
-      - P_1_GREEN_OFF
-      - P_1_GREEN_ON
-    command: AirbusFBW/EXPEDbutton
-    label: EXPED
+    command: sim/instruments/map_zoom_out
+    label: "EFIS\nZOOM OUT"

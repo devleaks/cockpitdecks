@@ -6,6 +6,7 @@ from .constant import convert_color
 from .button import Button
 
 logger = logging.getLogger("Page")
+logger.setLevel(logging.INFO)
 
 
 class Page:
@@ -97,3 +98,17 @@ class Page:
         """
         for button in self.buttons.values():
             button.clean()
+        # Next, we clean all icons
+        if self.fill_empty is None:
+            self.fill_empty = "(0, 0, 0)"
+
+        for key in self.buttons.keys():
+            icon = None
+            if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
+                colors = convert_color(self.fill_empty)
+                icon = self.deck.create_icon_for_key(key, colors=colors)
+            elif self.fill_empty in self.deck.icons.keys():
+                icon = self.deck.icons[self.fill_empty]
+            if icon is not None:
+                image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
+                self.deck.device.set_key_image(key, image)

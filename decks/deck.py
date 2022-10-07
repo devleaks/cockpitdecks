@@ -67,6 +67,7 @@ class Deck:
             self.valid = False
             logger.error(f"__init__: loupedeck has no serial number, cannot use")
 
+        self.available_keys = None
         if device is not None and hasattr(device, "key_names"):
             self.available_keys = device.key_names()
         else:
@@ -75,6 +76,8 @@ class Deck:
 
         if device is not None and hasattr(device, "key_count"):
             self.numkeys = device.key_count()
+            if self.available_keys is None:
+                self.available_keys = list(range(self.numkeys))
 
         self.brightness = 100
         if "brightness" in config:

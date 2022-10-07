@@ -22,6 +22,7 @@ from .constants import HEADERS, BUTTONS, HAPTIC, MAX_BRIGHTNESS, DISPLAYS, BUTTO
 from .. import __NAME__, __version__
 
 logger = logging.getLogger("LoupedeckLive")
+logger.setLevel(logging.INFO)
 
 MAX_TRANSACTIONS = 256
 READING_TIMEOUT = 1     # seconds

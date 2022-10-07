@@ -20,6 +20,7 @@ from .page import Page
 from .deck import Deck
 
 logger = logging.getLogger("Streamdeck")
+logger.setLevel(logging.INFO)
 
 DEFAULT_PAGE_NAME = "X-Plane"
 POLL_FREQ = 5  # default is 20
@@ -287,29 +288,6 @@ class Streamdeck(Deck):
             logger.info(f"make_icon_for_device: deck {self.name} icons ready")
         else:
             logger.warning(f"make_icon_for_device: deck {self.name} has no device")
-
-    def change_page(self, page: str):
-        logger.debug(f"change_page: deck {self.name} change page to {page}..")
-        if page == "back":
-            if len(self.page_history) > 1:
-                page = self.page_history.pop()  # this page
-                page = self.page_history.pop()  # previous one
-            else:
-                page = self.home_page.name
-            logger.debug(f"change_page: deck {self.name} change page to {page}..")
-        if page in self.pages.keys():
-            if self.current_page is not None:
-                self.current_page.clean()
-            self.previous_page = self.current_page
-            self.current_page = self.pages[page]
-            self.page_history.append(self.current_page.name)
-            self.device.reset()
-            self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
-            self.current_page.render()
-            logger.debug(f"change_page: deck {self.name} ..done")
-        else:
-            logger.warning(f"change_page: deck {self.name}: page {page} not found")
-
 
     def start(self):
         if self.device is not None:

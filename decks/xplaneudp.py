@@ -302,25 +302,33 @@ class XPlaneUDP(XPlane):
 
     def add_datarefs_to_monitor(self, datarefs):
         if "IP" not in self.BeaconData:
-            logger.warning(f"set_datarefs: no IP connection")
+            logger.warning(f"add_datarefs_to_monitor: no IP connection")
             return
         # Add those to monitor
         super().add_datarefs_to_monitor(datarefs)
+        prnt = []
         for d in datarefs.values():
             self.AddDataRef(d.path, freq=DATA_SENT)
-        logger.debug(f"add_datarefs_to_monitor: added {list(self.datarefs.values())}")
+            prnt.append(d.path)
+        logger.debug(f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
         if "IP" not in self.BeaconData:
-            logger.warning(f"set_datarefs: no IP connection")
+            logger.warning(f"remove_datarefs_to_monitor: no IP connection")
             return
         # Add those to monitor
+        prnt = []
         for d in datarefs.values():
-            if d.path in self.datarefs.keys():
-                if self.datarefs[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
+            if d.path in self.datarefs_to_monitor.keys():
+                if self.datarefs_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
                     self.AddDataRef(d.path, freq=0)
+                    prnt.append(d.path)
+                else:
+                    logger.debug(f"remove_datarefs_to_monitor: {d.path} monitored {self.datarefs_to_monitor[d.path]} times")
+            else:
+                logger.debug(f"remove_datarefs_to_monitor: no need to remove {d.path}")
+        logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
         super().remove_datarefs_to_monitor(datarefs)
-        logger.debug(f"remove_datarefs_to_monitor: removed {list(self.datarefs.values())}")
 
     # ################################
     # Cockpit interface
