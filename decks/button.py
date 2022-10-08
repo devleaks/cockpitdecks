@@ -263,49 +263,58 @@ class Button:
                 icons[i] = i
         return icons
 
-    def get_datarefs(self):
+    def get_datarefs(self, base:dict = None):
         """
         Returns all datarefs used by this button from label, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
+        This can be applied to the entire button or to a subset (airbus display and airbus dual)
         """
         if self.all_datarefs is not None:  # cached
             return self.all_datarefs
 
         r = []
+
+        if base is None:
+            base = self._config
         # Use of datarefs in button:
         # 1. RAW datarefs
         # 1.1 Single
-        if self.dataref is not None:
-            r.append(self.dataref)
-            logger.debug(f"get_datarefs: button {self.name}: added single dataref {self.dataref}")
+        dataref = base.get("dataref")
+        if dataref is not None:
+            r.append(dataref)
+            logger.debug(f"get_datarefs: button {self.name}: added single dataref {dataref}")
         # 1.2 Multiple
-        if self.datarefs is not None:
-            r = r + self.datarefs
-            logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {self.datarefs}")
-        # logger.debug(f"get_datarefs: button {self.name}: {r}, {self.datarefs}")
+        datarefs = base.get("datarefs")
+        if datarefs is not None:
+            r = r + datarefs
+            logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {datarefs}")
+        # logger.debug(f"get_datarefs: button {base.name}: {r}, {base.datarefs}")
+
+        # Use of datarefs in formula:
+        # 2. Formulae datarefs
+        dataref_rpn = base.get("dataref-rpn")
+        if dataref_rpn is not None:
+            datarefs = re.findall("\\${(.+?)}", dataref_rpn)
+            if len(datarefs) > 0:
+                r = r + datarefs
+                logger.debug(f"get_datarefs: button {self.name}: added formula datarefs {datarefs}")
 
         # Use of datarefs in label:
-        # 2. LABEL datarefs
-        # 2.1 Label
-        if self.label is not None:
-            datarefs = re.findall("\\${(.+?)}", self.label)
+        # 3. LABEL datarefs
+        # 3.1 Label
+        label = base.get("label")
+        if label is not None:
+            datarefs = re.findall("\\${(.+?)}", label)
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
-        # 2.2 Label formulae
-        if self.label_rpn is not None:
-            datarefs = re.findall("\\${(.+?)}", self.label_rpn)
+        # 3.2 Label formula
+        label_rpn = base.get("label-rpn")
+        if label_rpn is not None:
+            datarefs = re.findall("\\${(.+?)}", label_rpn)
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added label formulae datarefs {datarefs}")
-
-        # Use of datarefs in formulae:
-        # 3. Formulae datarefs
-        if self.dataref_rpn is not None:
-            datarefs = re.findall("\\${(.+?)}", self.dataref_rpn)
-            if len(datarefs) > 0:
-                r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added formulae datarefs {datarefs}")
+                logger.debug(f"get_datarefs: button {self.name}: added label formula datarefs {datarefs}")
 
         return list(set(r))  # removes duplicates
 
@@ -347,17 +356,18 @@ class Button:
             cnt = cnt + 1
         return retmsg
 
-    def execute_formula(self, default):
+    def execute_formula(self, default, formula: str = None):
         """
         replace datarefs variables with their (numeric) value and execute formula.
         Returns formula result.
         """
-        if self.dataref_rpn is not None:
-            expr = self.substitute_dataref_values(self.dataref_rpn)
+        if formula is None:
+            formula = self.dataref_rpn
+        if formula is not None:
+            expr = self.substitute_dataref_values(formula)
             r = RPC(expr)
             value = r.calculate()
-            # logger.debug(f"execute_formula: button {self.name}: {dataref}: {expr} = {r1}")
-            logger.debug(f"execute_formula: button {self.name}: {self.dataref_rpn} => {expr}:  => {value}")
+            logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
             return value
         elif len(self.all_datarefs) > 1:
             logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
@@ -396,32 +406,35 @@ class Button:
         logger.error(f"get_font: streamdecks default label font not found, tried {fontname}, {self.deck.default_label_font}, {self.deck.cockpit.default_label_font}")
         return None
 
-    def get_label(self, label = None, label_format = None):
+    def get_label(self, base: dict = None, label_format: str = None):
         """
         Returns label, if any, with substitution of datarefs if any
         """
-        if label is None:
-            if self.label_rpn is not None:
-                todo = self.substitute_dataref_values(self.label_rpn)
-                rpc = RPC(todo)
-                res = rpc.calculate()  # to be formatted
-                logger.debug(f"get_label: button {self.name} execute_formula: {self.label_rpn}=>{todo}={res}")
-                if label_format is None:
-                    label_format = self.label_format
-                if label_format is not None:
-                    label = label_format.format(res)
-                else:
-                    label = str(res)
+        if base is None:
+            base = self._config
+        label = None
+
+        label_rpn = base.get("label_rpn")
+        if label_rpn is not None:
+            expr = self.substitute_dataref_values(label_rpn)
+            rpc = RPC(expr)
+            res = rpc.calculate()  # to be formatted
+            if label_format is None:
+                label_format = base.get("label_format")
+            if label_format is not None:
+                label = label_format.format(res)
             else:
-                label = self.label
+                label = str(res)
+            return label
+
+        label = base.get("label")
         if label_format is None:
-            label_format = self.label_format
+            label_format = base.get("label_format")
         if label is not None:
             label = self.substitute_dataref_values(label, formatting=label_format, default="<no-value>")
         return label
 
     def get_image_for_icon(self):
-        logger.warning(f"get_image_for_icon: in.. {self.key_icon}")
         image = None
         if self.key_icon in self.deck.icons.keys():  # look for properly sized image first...
             image = self.deck.icons[self.key_icon]
@@ -436,7 +449,6 @@ class Button:
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        logger.warning(f"get_image: in..")
         image = self.get_image_for_icon()
 
         if image is not None:
@@ -495,7 +507,6 @@ class Button:
     # Value and icon
     #
     def set_key_icon(self):
-        logger.debug(f"set_key_icon: button {self.name}: in..   ******************* ")
         if self.multi_icons is not None and len(self.multi_icons) > 1:
             num_icons = len(self.multi_icons)
             value = self.current_value
@@ -534,12 +545,12 @@ class Button:
             #     return None
         # 2. Multiple datarefs
         elif len(self.all_datarefs) > 1:
-            logger.debug(f"button_value: button {self.name} get formula")
+            logger.debug(f"button_value: button {self.name} getting formula since more than one dataref")
             return self.execute_formula(default=0.0)
         elif "counter" in self.options or "bounce" in self.options:
-            logger.debug(f"button_value: button {self.name} get counter: {self.pressed_count}")
+            logger.debug(f"button_value: button {self.name} has counter or bounce: {self.pressed_count}")
             return self.pressed_count
-        logger.debug(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None")
+        logger.warning(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None")
         return None
 
     # ##################################
@@ -576,11 +587,10 @@ class Button:
         Ask deck to set this button's image on the deck.
         set_key_image will call this button get_button function to get the icon to display with label, etc.
         """
-        logger.debug(f"render: button {self.name} rendering...")
         if self.deck is not None:
             if self.on_current_page():
                 self.deck.set_key_image(self)
-                logger.debug(f"render: button {self.name} rendered")
+                # logger.debug(f"render: button {self.name} rendered")
             else:
                 logger.debug(f"render: button {self.name} not on current page")
         else:
@@ -616,7 +626,7 @@ class AirbusButton(Button):
             self.icon = None
             self.multi_icons = None
 
-    def get_datarefs(self):
+    def get_datarefs(self, base:dict = None):
         """
         Complement button datarefs with airbus special lit datarefs
         """
@@ -626,13 +636,10 @@ class AirbusButton(Button):
         r = super().get_datarefs()
         for key in ["display", "dual"]:
             if key in self.airbus:
-                c = self.airbus[key]
-                if "dataref-rpn" in c:
-                    calc = c["dataref-rpn"]
-                    datarefs = re.findall("\\${(.+?)}", calc)
-                    if len(datarefs) > 0:
-                        r = r + datarefs
-                        logger.debug(f"get_datarefs: button {self.name}: added {key} datarefs {datarefs}")
+                datarefs = super().get_datarefs(base=self.airbus[key])
+                if len(datarefs) > 1:
+                    r = r + datarefs
+                    logger.debug(f"get_datarefs: button {self.name}: added {key} datarefs {datarefs}")
         return r
 
     def button_value(self):
@@ -646,11 +653,10 @@ class AirbusButton(Button):
                 c = self.airbus[key]
                 if "dataref-rpn" in c:
                     calc = c["dataref-rpn"]
-                    todo = self.substitute_dataref_values(calc)
-                    rpc = RPC(todo)
+                    expr = self.substitute_dataref_values(calc)
+                    rpc = RPC(expr)
                     res = rpc.calculate()
                     r.append(1 if (res is not None and res > 0) else 0)
-                    # logger.debug(f"airbus_button_value: button {self.name} execute_formula: {calc}=>{todo}={res}")
                 else:
                     r.append(0)
             else:
@@ -870,6 +876,9 @@ class ButtonPage(Button):
             logger.error(f"__init__: page button has no name")
         # We cannot change page validity because target page might not already be loaded.
 
+    def button_value(self):
+        return None
+
     def is_valid(self):
         return super().is_valid() and self.name is not None and self.name in self.deck.pages.keys()
 
@@ -892,6 +901,9 @@ class ButtonReload(Button):
 
     def __init__(self, config: dict, page: "Page"):
         Button.__init__(self, config=config, page=page)
+
+    def button_value(self):
+        return None
 
     def activate(self, state: bool):
         if state:
@@ -1068,7 +1080,7 @@ class ColoredButton(ButtonPush):
         return self.icon_color if self.icon_color is not None else [random.randint(0,255) for _ in range(3)]
 
 
-class ButtonKnob(ButtonPush):
+class KnobPush(ButtonPush):
     """
     A Push button that can turn left/right.
     """
@@ -1116,7 +1128,7 @@ class ButtonKnob(ButtonPush):
             self.page.buttons[disp].render()
 
 
-class ButtonKnobPushPull(ButtonDual):
+class KnobPushPull(ButtonDual):
     """
     A Push button that can turn left/right.
     """
@@ -1164,7 +1176,7 @@ class ButtonKnobPushPull(ButtonDual):
             self.page.buttons[disp].render()
 
 
-class ButtonKnobPushTurnRelease(ButtonPush):
+class KnobPushTurnRelease(ButtonPush):
     """
     A know button that can turn left/right either when pressed or released.
     """
@@ -1203,7 +1215,7 @@ class ButtonKnobPushTurnRelease(ButtonPush):
             self.page.buttons[disp].render()
 
 
-class ButtonKnobDataref(ButtonPush):
+class KnobDataref(ButtonPush):
     """
     A knob button that writes directly to a dataref.
     """
@@ -1287,6 +1299,8 @@ class ButtonSide(ButtonPush):
     def get_image(self):
         """
         Helper function to get button image and overlay label on top of it for SIDE keys (60x270).
+        Side keys can have 3 labels placed in front of each knob.
+        (Currently those labels are static only. Working to make them dynamic.)
         """
         image = None
         # we can't get "button-resized-ready" deck icon, we need to start from original icon stored in decks.
@@ -1313,7 +1327,6 @@ class ButtonSide(ButtonPush):
                         continue
                     txt = label.get("label")
                     knob = "knob" + vposition[li] + self.index[0].upper()
-                    logger.debug(f"get_image: watching {knob}")
                     if knob in self.page.buttons.keys():
                         corrknob = self.page.buttons[knob]
                         if corrknob.has_option("dot"):
@@ -1321,6 +1334,9 @@ class ButtonSide(ButtonPush):
                                 txt = txt + "•"  # \n•"
                             else:
                                 txt = txt + ""   # \n"
+                        logger.debug(f"get_image: watching {knob}")
+                    else:
+                        logger.debug(f"get_image: not watching {knob}")
                     if li >= len(vcenter) or txt is None:
                         continue
                     fontname = self.get_font(label.get("label-font", self.label_font))
@@ -1594,10 +1610,10 @@ LOUPEDECK_BUTTON_TYPES = {
     "long-press": ButtonLongpress,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,
-    "knob": ButtonKnob,
-    "knob-push-pull": ButtonKnobPushPull,
-    "knob-push-turn-release": ButtonKnobPushTurnRelease,
-    "knob-dataref": ButtonKnobDataref,
+    "knob": KnobPush,
+    "knob-push-pull": KnobPushPull,
+    "knob-push-turn-release": KnobPushTurnRelease,
+    "knob-dataref": KnobDataref,
     "button": ColoredButton,
     "side": ButtonSide,
     "airbus": AirbusButton,
@@ -1611,6 +1627,6 @@ XTOUCH_MINI_BUTTON_TYPES = {
     "push": ButtonPush,
     "dual": ButtonDual,
     "long-press": ButtonLongpress,
-    "knob": ButtonKnob,
-    "knob-push-pull": ButtonKnobPushPull
+    "knob": KnobPush,
+    "knob-push-pull": KnobPushPull
 }
