@@ -2,16 +2,19 @@ name: ovrhdelec
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
+    name: COMMERCIAL
     type: none
     icon: NONE_NONE
     label: COMMERCIAL
     label-position: ct
   - index: 1
+    name: GALLEY
     type: none
     icon: NONE_NONE
     label: GALLEY
     label-position: ct
   - index: 2
+    name: BAT_VOLT_1
     type: none
     label: ${AirbusFBW/BatVolts[0]}
     label-format: "{:2.1f}"
@@ -20,6 +23,7 @@ buttons:
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 3
+    name: BAT_1
     type: push
     multi-icons:
       - NONE_OFF_WHITE_FR
@@ -31,6 +35,7 @@ buttons:
     command: toliss_airbus/eleccommands/Bat1Toggle
   - index: 4
     type: push
+    name: BAT_2
     multi-icons:
       - NONE_OFF_WHITE_FR
       - NONE_NONE
@@ -41,6 +46,7 @@ buttons:
     command: toliss_airbus/eleccommands/Bat2Toggle
   - index: 5
     type: none
+    name: BAT_VOLT_2
     label: ${AirbusFBW/BatVolts[1]}
     label-format: "{:2.1f}"
     label-color: white
@@ -48,6 +54,7 @@ buttons:
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 6
+    name: AC ESS FEED
     type: none
     icon: NONE_NONE
     label: AC ESS FEED

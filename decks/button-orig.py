@@ -15,20 +15,23 @@ Button phases:
    render returns the image to the deck for display in the proper key.
 
 """
+import os
 import re
 import logging
 import threading
 import time
+import random
+import colorsys
 
-from PIL import ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
+from mergedeep import merge
 
-from .constant import add_ext, convert_color
+from .constant import add_ext, has_ext, convert_color
+from .constant import CONFIG_DIR, ICONS_FOLDER, FONTS_FOLDER, AIRBUS_DEFAULTS
 from .rpc import RPC
-
 
 logger = logging.getLogger("Button")
 logger.setLevel(logging.DEBUG)
-
 
 class Button:
 
@@ -53,7 +56,6 @@ class Button:
         self.initial_value = config.get("initial-value")
         self._first_value = None    # first value the button will get
 
-        self.guarded = None          # None: No guard, True: Guarded, closed. False: Guarded, open, ready to be used.
 
         # Labels
         self.label = config.get("label")
@@ -175,17 +177,7 @@ class Button:
         if self._first_value is None and self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # won't get a value from datarefs
             self._first_value = self.current_value
         logger.debug(f"init: button {self.name} has value {self.current_value}")
-
-        if self.has_option("guarded"):
-            self.guarded = True   # guard type is option value: guarded=cover or grid.
-
         self.set_key_icon()
-
-    def has_key_image(self):
-        return True  # default
-
-    def guard(self):
-        return self.guarded if self.guarded is not None else False
 
     def set_current_value(self, value):
         self.previous_value = self.current_value
@@ -420,15 +412,15 @@ class Button:
         """
         if base is None:
             base = self._config
-
         label = None
-        label_rpn = base.get("label-rpn")
+
+        label_rpn = base.get("label_rpn")
         if label_rpn is not None:
             expr = self.substitute_dataref_values(label_rpn)
             rpc = RPC(expr)
             res = rpc.calculate()  # to be formatted
             if label_format is None:
-                label_format = base.get("label-format")
+                label_format = base.get("label_format")
             if label_format is not None:
                 label = label_format.format(res)
             else:
@@ -437,9 +429,9 @@ class Button:
 
         label = base.get("label")
         if label_format is None:
-            label_format = base.get("label-format")
+            label_format = base.get("label_format")
         if label is not None:
-            label = self.substitute_dataref_values(label, formatting=label_format, default="---")
+            label = self.substitute_dataref_values(label, formatting=label_format, default="<no-value>")
         return label
 
     def get_image_for_icon(self):
@@ -546,7 +538,7 @@ class Button:
         # 1. Unique dataref
         if len(self.all_datarefs) == 1:
             # if self.all_datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            logger.debug(f"button_value: button {self.name} get single dataref {self.all_datarefs[0]}")
+            logger.debug(f"button_value: button {self.name} get dataref")
             return self.execute_formula(default=self.get_dataref_value(self.all_datarefs[0]))
             # else:
             #     logger.warning(f"button_value: button {self.name}: {self.all_datarefs[0]} not in {self.page.datarefs.keys()}")
@@ -583,10 +575,6 @@ class Button:
         if state:
             self.pressed = True
             self.pressed_count = self.pressed_count + 1
-            if self.guarded is not None:
-                if self.guarded:
-                    self.guarded = False
-                    return
             self.set_current_value(self.button_value())
             if self.view:
                 self.xp.commandOnce(self.view)
@@ -612,6 +600,266 @@ class Button:
         self.previous_value = None  # this will provoke a refresh of the value on data reload
 
 
+class AirbusButton(Button):
+
+    def __init__(self, config: dict, page: "Page"):
+
+        self.lit_display = False
+        self.lit_dual = False
+
+        self.multi_icons = config.get("multi-icons")
+        self.icon = config.get("icon")
+
+        self.airbus = None                   # working def
+        self._airbus = config.get("airbus")  # keep raw
+        if self._airbus is not None:
+            self.airbus = merge({}, AIRBUS_DEFAULTS, self._airbus)
+        else:
+            logger.error(f"__init__: button {self.name}: has no airbus property")
+
+        Button.__init__(self, config=config, page=page)
+
+        if self.airbus is not None and (config.get("icon") is not None or config.get("multi-icons") is not None):
+            logger.warning(f"__init__: button {self.name}: has airbus property with icon/multi-icons, ignoring icons")
+
+        if self.airbus is not None:
+            self.icon = None
+            self.multi_icons = None
+
+    def get_datarefs(self, base:dict = None):
+        """
+        Complement button datarefs with airbus special lit datarefs
+        """
+        if self.all_datarefs is not None:  # cached
+            return self.all_datarefs
+
+        r = super().get_datarefs()
+        for key in ["display", "dual"]:
+            if key in self.airbus:
+                datarefs = super().get_datarefs(base=self.airbus[key])
+                if len(datarefs) > 0:
+                    r = r + datarefs
+                    logger.debug(f"get_datarefs: button {self.name}: added {key} datarefs {datarefs}")
+        return r
+
+    def button_value(self):
+        """
+        Same as button value, but exclusively for Airbus-type buttons.
+        We basically check with the supplied dataref-rpn that the button is lit or not.
+        """
+        r = []
+        for key in ["display", "dual"]:
+            if key in self.airbus:
+                c = self.airbus[key]
+                if "dataref-rpn" in c:
+                    calc = c["dataref-rpn"]
+                    expr = self.substitute_dataref_values(calc)
+                    rpc = RPC(expr)
+                    res = rpc.calculate()
+                    r.append(1 if (res is not None and res > 0) else 0)
+                else:
+                    r.append(0)
+            else:
+                r.append(0)
+        # logger.debug(f"airbus_button_value: button {self.name} returning: {r}")
+        return r
+
+    def set_key_icon(self):
+        if self.current_value is not None and type(self.current_value) == list and len(self.current_value) > 1:
+            self.lit_display = (self.current_value[0] != 0)
+            self.lit_dual = (self.current_value[1] != 0)
+        # else: leave untouched
+
+    def get_image(self):
+        """
+        """
+        self.set_key_icon()
+        return self.mk_airbus()
+
+    def mk_airbus(self):
+        # If the display or dual is not lit, a darker version is printed unless dark option is added to button
+        # in which case nothing gets added to the button.
+
+        def light_off(color, lightness: float = 0.10):
+            # Darkens (or lighten) a color
+            if type(color) == str:
+                color = ImageColor.getrgb(color)
+            a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
+            a[1] = lightness
+            return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
+
+        ICON_SIZE = 256  # px
+        inside = ICON_SIZE / 32 # 8px
+
+        # Button
+        #
+        # Overall button size: full, large, medium, small.
+        #
+        size = self.airbus.get("size", "large")
+        if size == "small":  # about 1/2, starts at 128
+            button_height = int(ICON_SIZE / 2)
+            box = (0, int(ICON_SIZE/4))
+        elif size == "medium":  # about 2/3, starts at 96
+            button_height = int(10 * ICON_SIZE / 16)
+            box = (0, int(3 * ICON_SIZE / 16))
+        elif size == "full":  # starts at 0
+            button_height = ICON_SIZE
+            box = (0, 0)
+        else:  # "large", full size, default, starts at 48
+            button_height = int(13 * ICON_SIZE / 16)
+            box = (0, int(3 * ICON_SIZE / 16))
+
+        led_offset = inside
+
+        # PART 1:
+        # Texts that will glow
+        glow = Image.new(mode="RGBA", size=(ICON_SIZE, button_height), color=(0, 0, 0, 0))
+        draw = ImageDraw.Draw(glow)
+
+        # First/top/main item (called "display")
+        display = self.airbus.get("display")
+        dual    = self.airbus.get("dual")
+
+        if display is not None:
+            display_pos = display.get("position", "mm")
+            text = display.get("text")
+            if text is not None:
+                fontname = self.get_font(display.get("font"))
+                font = ImageFont.truetype(fontname, display.get("size"))
+                w = glow.width / 2
+                p = "m"
+                a = "center"
+                if display_pos[0] == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif display_pos[0] == "r":
+                    w = glow.width - inside
+                    p = "r"
+                    a = "right"
+                h = int(button_height / 2)  # center of button
+                if dual is not None and dual.get("text") is not None: # middle of top part
+                    h = int(button_height / 4)
+                # logger.debug(f"mk_airbus: position {display_pos}: {(w, h)}, {dual}")
+                color = display.get("color")
+                if not self.lit_display:
+                    color = display.get("off-color", light_off(color))
+                if not self.has_option("dark"):
+                    draw.multiline_text((w, h),  # (glow.width / 2, 15)
+                              text=display.get("text"),
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=color)
+                else:
+                    logger.debug("mk_airbus: full dark display")
+            else:
+                e = ICON_SIZE / 4      # space left and right of LED
+                color = display.get("color")
+                if not self.lit_display:
+                    color = display.get("off-color", light_off(color))
+                if size == "small":  # 1 horizontal leds
+                    thick = 30             # LED thickness
+                    start = button_height / 2 - thick
+                    frame = ((e, start), (glow.width - e, start+thick))
+                    draw.rectangle(frame, fill=color)
+                else:  # 3 horizontal leds
+                    thick = 10             # LED thickness
+                    start = button_height / 4 - 1.5 * thick - (16 - thick)
+                    for i in range(3):
+                        s = start + i * 16
+                        frame = ((e, s), (glow.width - e, s+thick))
+                        draw.rectangle(frame, fill=color)
+
+        # Optional second/bottom item (called "dual")
+        if dual is not None:
+            dual_pos = dual.get("position", "mm")
+            text = dual.get("text")
+            if text is not None:
+                fontname = self.get_font(dual.get("font"))
+                font = ImageFont.truetype(fontname, dual.get("size"))
+                w = glow.width / 2
+                p = "m"
+                a = "center"
+                if dual_pos[0] == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif dual_pos[0] == "r":
+                    w = glow.width - inside
+                    p = "r"
+                    a = "right"
+                h = int(3 * button_height / 4)  # middle of bottom part
+                # logger.debug(f"mk_airbus: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
+
+                if not self.has_option("dark"):
+                    color = dual.get("color")
+                    if not self.lit_dual:
+                        color = dual.get("off-color", light_off(color))
+
+                    draw.multiline_text((w, h),  # (glow.width / 2, 15)
+                              text=dual.get("text"),
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=color)
+                    framed = dual.get("framed")
+                    if type(framed) == str:
+                        framed = framed.lower() in ["true", "on", "yes"]
+                    if framed:
+                        start = button_height / 2 + inside
+                        height = button_height / 2 - 2 * inside
+                        thick = 12
+                        e = ICON_SIZE / 8
+                        frame = ((e, start), (glow.width-e, start + height))
+                        draw.rectangle(frame, outline=color, width=thick)
+                else:
+                    logger.debug("mk_airbus: full dark dual display")
+
+        # Glowing texts, later because not nicely perfect.
+        # if not self.has_option("no_blurr") or self.has_option("sharp"):
+        #     blurred_image = glow.filter(ImageFilter.GaussianBlur(self.airbus.get("blurr")))
+        #     glow.alpha_composite(blurred_image)
+        #     # logger.debug("mk_airbus: blurred")
+
+        # We paste the transparent glow into a button:
+        button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=self.airbus.get("color", "black"))
+        button.paste(glow, mask=glow)
+
+        # Background
+        image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.airbus.get("background", "lightsteelblue"))
+        draw = ImageDraw.Draw(image)
+
+        # Title
+        title = self.airbus.get("title")
+        if title is not None and title.get("text") is not None:
+            title_pos = title.get("position", "mm")
+            fontname = self.get_font(title.get("font"))
+            font = ImageFont.truetype(fontname, title.get("size"))
+            w = image.width / 2
+            p = "m"
+            a = "center"
+            if title_pos[0] == "l":
+                w = inside
+                p = "l"
+                a = "left"
+            elif title_pos[0] == "r":
+                w = image.width - inside
+                p = "r"
+                a = "right"
+            h = inside + title.get("size") / 2
+            # logger.debug(f"mk_airbus: position {title_pos}: {(w, h)}")
+            draw.multiline_text((w, h),  # (image.width / 2, 15)
+                      text=title.get("text"),
+                      font=font,
+                      anchor=p+"m",
+                      align=a,
+                      fill=title.get("color"))
+
+        # Button
+        image.paste(button, box=box)
+
+        return image
 
 
 # ###########################
@@ -685,7 +933,34 @@ class ButtonPush(Button):
         # logger.debug(f"ButtonPush::activate: button {self.name}: {state}")
         super().activate(state)
         if state:
-            if self.is_valid() and not self.guard():
+            if self.is_valid():
+                if self.command is not None:
+                    self.xp.commandOnce(self.command)
+                self.render()
+            else:
+                logger.warning(f"activate: button {self.name} is invalid")
+
+
+class AirbusButtonPush(AirbusButton):
+    """
+    Execute command once when key pressed. Nothing is done when button is released.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        AirbusButton.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if self.command is None:
+            logger.warning(f"is_valid: button {self.name} has no command")
+            if not self.has_option("counter"):
+                logger.warning(f"is_valid: button {self.name} has no command or counter option")
+                return False
+        return super().is_valid()
+
+    def activate(self, state: bool):
+        # logger.debug(f"ButtonPush::activate: button {self.name}: {state}")
+        super().activate(state)
+        if state:
+            if self.is_valid():
                 if self.command is not None:
                     self.xp.commandOnce(self.command)
                 self.render()
@@ -752,7 +1027,7 @@ class ButtonUpDown(ButtonPush):
         ButtonPush.__init__(self, config=config, page=page)
         self.stops = self.option_value("stops", len(self.multi_icons))
         self.bounce_arr = self.make_bounce_array(self.stops)
-        self.start_value = None
+        self.start_value = 0
 
     def is_valid(self):
         if self.commands is None or len(self.commands) < 2:
@@ -769,9 +1044,6 @@ class ButtonUpDown(ButtonPush):
         #     else:
         #         self.start_value = 0
         if state:
-            if self.start_value is None:
-                self.start_value = int(self.current_value) if self.current_value is not None else 0
-                self.bounce_idx = self.start_value
             value = self.bounce_arr[(self.start_value + self.pressed_count) % len(self.bounce_arr)]
             # logger.debug(f"activate: counter={self.start_value + self.pressed_count} = start={self.start_value} + press={self.pressed_count} curr={self.current_value} last={self.bounce_idx} value={value} arr={self.bounce_arr} dir={value > self.bounce_idx}")
             if self.is_valid():
@@ -783,6 +1055,375 @@ class ButtonUpDown(ButtonPush):
             else:
                 logger.warning(f"activate: button {self.name}: invalid {self.commands}")
         self.render()
+
+
+# ###########################
+# Loupedeck specials buttons
+#
+class ColoredButton(ButtonPush):
+    """
+    A Push button. We can only change the color of the button.
+    """
+
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def render(self):
+        """
+        Ask deck to set this button's image on the deck.
+        set_key_image will call this button get_button function to get the icon to display with label, etc.
+        """
+        self.deck.set_button_color(self)
+        # logger.debug(f"render: button {self.name} rendered")
+
+    def get_color(self):
+        return self.icon_color if self.icon_color is not None else [random.randint(0,255) for _ in range(3)]
+
+
+class KnobPush(ButtonPush):
+    """
+    A Push button that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if self.has_option("dual") and len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
+            return False
+        elif not self.has_option("dual") and len(self.commands) != 2:
+            logger.warning(f"is_valid: button {self.name} must have 2 commands")
+            return False
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[0])
+                else:
+                    self.xp.commandOnce(self.commands[2])
+            else:
+                self.xp.commandOnce(self.commands[0])
+        elif state == 3:  # rotate right
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[1])
+                else:
+                    self.xp.commandOnce(self.commands[3])
+            else:
+                self.xp.commandOnce(self.commands[1])
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class KnobPushPull(ButtonDual):
+    """
+    A Push button that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonDual.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if self.has_option("dual") and len(self.commands) != 6:
+            logger.warning(f"is_valid: button {self.name} must have 6 commands for dual mode")
+            return False
+        elif len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.name} must have 4 commands")
+            return False
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[2])
+                else:
+                    self.xp.commandOnce(self.commands[4])
+            else:
+                self.xp.commandOnce(self.commands[2])
+        elif state == 3:  # rotate right
+            if self.has_option("dual"):
+                if self.is_pushed():
+                    self.xp.commandOnce(self.commands[3])
+                else:
+                    self.xp.commandOnce(self.commands[5])
+            else:
+                self.xp.commandOnce(self.commands[3])
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class KnobPushTurnRelease(ButtonPush):
+    """
+    A know button that can turn left/right either when pressed or released.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        if len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
+            return False
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            if self.pressed:
+                self.xp.commandOnce(self.commands[2])
+            else:
+                self.xp.commandOnce(self.commands[0])
+        elif state == 3:  # rotate right
+            if self.pressed:
+                self.xp.commandOnce(self.commands[3])
+            else:
+                self.xp.commandOnce(self.commands[1])
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class KnobDataref(ButtonPush):
+    """
+    A knob button that writes directly to a dataref.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+        self.step = config.get("step")
+        self.stepxl = config.get("stepxl")
+        self.value = config.get("value")
+        self.value_min = config.get("value-min")
+        self.value_max = config.get("value-max")
+
+    def is_valid(self):
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state < 2:
+            super().activate(state)
+        elif state == 2:  # rotate left
+            step = self.step
+            if self.has_option("dual") and self.is_pushed():
+                step = self.stepxl
+            self.value = self.value - step
+            if self.value < self.value_min:
+                self.value = self.value_min
+            if self.dataref in self.xp.all_datarefs:
+                vs = float(self.value)
+                self.xp.WriteDataRef(dataref=self.dataref, value=vs, vtype='float')
+                logger.debug(f"activate: button {self.name} dataref {self.dataref} = {vs} written")
+            else:
+                logger.warning(f"activate: button {self.name} dataref {self.dataref} not found")
+        elif state == 3:  # rotate right
+            step = self.step
+            if self.has_option("dual") and self.is_pushed():
+                step = self.stepxl
+            self.value = self.value + step
+            if self.value > self.value_max:
+                self.value = self.value_max
+            if self.dataref in self.xp.all_datarefs:  # need to be there at least because we also read it...
+                vs = float(self.value)
+                self.xp.WriteDataRef(dataref=self.dataref, value=vs, vtype='float')
+                logger.debug(f"activate: button {self.name} dataref {self.dataref} = {vs} written")
+            else:
+                logger.warning(f"activate: button {self.name} dataref {self.dataref} not found")
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
+
+    def dataref_changed(self, dataref: "Dataref"):
+        """
+        One of its dataref has changed, records its value and provoke an update of its representation.
+        """
+        super().dataref_changed(dataref)
+        self.value = self.current_value
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class ButtonSide(ButtonPush):
+    """
+    A ButtonPush that has very special size (60x270), end therefore very special button rendering
+    """
+    def __init__(self, config: dict, page: "Page"):
+        ButtonPush.__init__(self, config=config, page=page)
+
+    def is_valid(self):  # @todo with precision...
+        return True
+
+    def activate(self, state):
+        if type(state) == int:
+            super().activate(state)
+            return
+        # else, swipe event
+        logger.debug(f"activate: side bar swipe event unprocessed {state} ")
+
+    def get_image(self):
+        """
+        Helper function to get button image and overlay label on top of it for SIDE keys (60x270).
+        Side keys can have 3 labels placed in front of each knob.
+        (Currently those labels are static only. Working to make them dynamic.)
+        """
+        image = None
+        # we can't get "button-resized-ready" deck icon, we need to start from original icon stored in decks.
+        if self.key_icon in self.deck.cockpit.icons.keys():
+            image = self.deck.cockpit.icons[self.key_icon]
+            image = self.deck.pil_helper.create_scaled_image(self.index, image)
+
+        if image is not None:
+            draw = None
+            # Add label if any
+            if self.labels is not None:
+                image = image.copy()  # we will add text over it
+                draw = ImageDraw.Draw(image)
+                inside = round(0.04 * image.width + 0.5)
+                vcenter = [43, 150, 227]  # this determines the number of acceptable labels, organized vertically
+                vposition = "TCB"
+                vheight = 38 - inside
+
+                li = 0
+                for label in self.labels:
+                    cnt = label.get("centers")
+                    if cnt is not None:
+                        vcenter = [round(270 * i / 100, 0) for i in convert_color(cnt)]  # !
+                        continue
+                    txt = label.get("label")
+                    knob = "knob" + vposition[li] + self.index[0].upper()
+                    if knob in self.page.buttons.keys():
+                        corrknob = self.page.buttons[knob]
+                        if corrknob.has_option("dot"):
+                            if corrknob.is_dotted(txt):
+                                txt = txt + "•"  # \n•"
+                            else:
+                                txt = txt + ""   # \n"
+                        logger.debug(f"get_image: watching {knob}")
+                    else:
+                        logger.debug(f"get_image: not watching {knob}")
+                    if li >= len(vcenter) or txt is None:
+                        continue
+                    fontname = self.get_font(label.get("label-font", self.label_font))
+                    if fontname is None:
+                        logger.warning(f"get_image: no font, cannot overlay label")
+                    else:
+                        # logger.debug(f"get_image: font {fontname}")
+                        lsize = label.get("label-size", self.label_size)
+                        font = ImageFont.truetype(fontname, lsize)
+                        # Horizontal centering is not an issue...
+                        label_position = label.get("label-position", self.label_position)
+                        w = image.width / 2
+                        p = "m"
+                        a = "center"
+                        if label_position == "l":
+                            w = inside
+                            p = "l"
+                            a = "left"
+                        elif label_position == "r":
+                            w = image.width - inside
+                            p = "r"
+                            a = "right"
+                        # Vertical centering is black magic...
+                        h = vcenter[li] - lsize / 2
+                        if label_position[1] == "t":
+                            h = vcenter[li] - vheight
+                        elif label_position[1] == "b":
+                            h = vcenter[li] + vheight - lsize
+
+                        # logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
+                        draw.multiline_text((w, h),  # (image.width / 2, 15)
+                                  text=txt,
+                                  font=font,
+                                  anchor=p+"m",
+                                  align=a,
+                                  fill=label.get("label-color", self.label_color))
+                    li = li + 1
+            elif self.label is not None:
+                fontname = self.get_font()
+                if fontname is None:
+                    logger.warning(f"get_image: no font, cannot overlay label")
+                else:
+                    # logger.debug(f"get_image: font {fontname}")
+                    image = image.copy()  # we will add text over it
+                    draw = ImageDraw.Draw(image)
+                    font = ImageFont.truetype(fontname, self.label_size)
+                    inside = round(0.04 * image.width + 0.5)
+                    w = image.width / 2
+                    p = "m"
+                    a = "center"
+                    if self.label_position[0] == "l":
+                        w = inside
+                        p = "l"
+                        a = "left"
+                    elif self.label_position[0] == "r":
+                        w = image.width - inside
+                        p = "r"
+                        a = "right"
+                    h = image.height / 2 - self.label_size / 2
+                    if self.label_position[1] == "t":
+                        h = inside + self.label_size / 2
+                    elif self.label_position[1] == "r":
+                        h = image.height - inside - self.label_size
+                    # logger.debug(f"get_image: position {self.label_position}: {(w, h)}")
+                    draw.multiline_text((w, h),  # (image.width / 2, 15)
+                              text=label,
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=self.label_color)
+
+
+
+            # Add little check mark if not valid/fake
+            if not self.is_valid() or self.has_option("placeholder"):
+                if draw is None:  # no label
+                    image = image.copy()  # we will add text over it
+                    draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.1 * image.width)   # size
+                pologon = ( (c, c), (c, c-s), (c-s, c) )  # lower right corner
+                draw.polygon(pologon, fill="red", outline="white")
+            return image
+        else:
+            logger.warning(f"get_image: button {self.name}: icon {self.key_icon} not found")
+            # logger.debug(f"{self.deck.icons.keys()}")
+        return None
 
 
 # #################################
@@ -864,3 +1505,128 @@ class ButtonAnimate(Button):
 
     def clean(self):
         self.anim_stop()
+
+
+class AirbusButtonAnimate(AirbusButton):
+    """
+    """
+    def __init__(self, config: dict, page: "Page"):
+        AirbusButton.__init__(self, config=config, page=page)
+        self.thread = None
+        self.running = False
+        self.finished = None
+        self.speed = float(self.option_value("animation_speed", 0.5))
+        self.counter = 0
+
+    def loop(self):
+        self.finished = threading.Event()
+        while self.running:
+            self.render()
+            self.counter = self.counter + 1
+            time.sleep(self.speed)
+        self.finished.set()
+
+    def anim_start(self):
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self.loop)
+            self.thread.name = f"button {self.name} animation"
+            self.thread.start()
+        else:
+            logger.warning(f"anim_start: button {self.name}: already started")
+
+    def anim_stop(self):
+        if self.running:
+            self.running = False
+            if not self.finished.wait(timeout=2*self.speed):
+                logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
+            self.render()
+        else:
+            logger.debug(f"anim_stop: button {self.name}: already stopped")
+
+    def set_key_icon(self):
+        """
+        If button has more icons, select one from button current value
+        """
+        if self.running:
+            self.lit_display = not self.lit_display
+            self.lit_dual = not self.lit_dual
+        else:
+            super().set_key_icon()  # off
+
+    # Works with activation on/off
+    def activate(self, state: bool):
+        super().activate(state)
+        if state:
+            if self.is_valid():
+                # self.label = f"pressed {self.current_value}"
+                self.xp.commandOnce(self.command)
+                if self.pressed_count % 2 == 0:
+                    self.anim_stop()
+                    self.render()
+                else:
+                    self.anim_start()
+
+    # Works if underlying dataref changed
+    def dataref_changed(self, dataref: "Dataref"):
+        """
+        One of its dataref has changed, records its value and provoke an update of its representation.
+        """
+        self.set_current_value(self.button_value())
+        logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
+        if self.current_value is not None and self.current_value == 1:
+            self.anim_start()
+        else:
+            if self.running:
+                self.anim_stop()
+            self.render()
+
+    def clean(self):
+        self.anim_stop()
+
+
+# ###########################
+# Mapping between button types and classes
+#
+STREAM_DECK_BUTTON_TYPES = {
+    "none": Button,
+    "page": ButtonPage,
+    "push": ButtonPush,
+    "dual": ButtonDual,
+    "long-press": ButtonLongpress,
+    "updown": ButtonUpDown,
+    "animate": ButtonAnimate,
+    "airbus": AirbusButton,
+    "airbus-push": AirbusButtonPush,
+    "airbus-animate": AirbusButtonAnimate,
+    "reload": ButtonReload
+}
+
+LOUPEDECK_BUTTON_TYPES = {
+    "none": Button,
+    "page": ButtonPage,
+    "push": ButtonPush,
+    "dual": ButtonDual,
+    "long-press": ButtonLongpress,
+    "updown": ButtonUpDown,
+    "animate": ButtonAnimate,
+    "knob": KnobPush,
+    "knob-push-pull": KnobPushPull,
+    "knob-push-turn-release": KnobPushTurnRelease,
+    "knob-dataref": KnobDataref,
+    "button": ColoredButton,
+    "side": ButtonSide,
+    "airbus": AirbusButton,
+    "airbus-push": AirbusButtonPush,
+    "airbus-animate": AirbusButtonAnimate,
+    "reload": ButtonReload
+}
+
+XTOUCH_MINI_BUTTON_TYPES = {
+    "none": Button,
+    "push": ButtonPush,
+    "dual": ButtonDual,
+    "long-press": ButtonLongpress,
+    "knob": KnobPush,
+    "knob-push-pull": KnobPushPull
+}

@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 import colorsys
+import traceback
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
@@ -14,7 +15,7 @@ from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AirbusButton")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class AirbusButton(Button):
@@ -54,7 +55,7 @@ class AirbusButton(Button):
         for key in ["display", "dual"]:
             if key in self.airbus:
                 datarefs = super().get_datarefs(base=self.airbus[key])
-                if len(datarefs) > 1:
+                if len(datarefs) > 0:
                     r = r + datarefs
                     logger.debug(f"get_datarefs: button {self.name}: added {key} datarefs {datarefs}")
         return r
@@ -62,7 +63,7 @@ class AirbusButton(Button):
     def button_value(self):
         """
         Same as button value, but exclusively for Airbus-type buttons.
-        We basically check with the supplied dataref-rpn that the button is lit or not.
+        We basically check with the supplied dataref/dataref-rpn that the button is lit or not.
         """
         r = []
         for key in ["display", "dual"]:
@@ -73,11 +74,19 @@ class AirbusButton(Button):
                     expr = self.substitute_dataref_values(calc)
                     rpc = RPC(expr)
                     res = rpc.calculate()
+                    logger.debug(f"button_value: button {self.name}: {key}: {expr}={res}")
+                    r.append(1 if (res is not None and res > 0) else 0)
+                elif "dataref" in c:
+                    dataref = c["dataref"]
+                    res = self.get_dataref_value(dataref)
+                    logger.debug(f"button_value: button {self.name}: {key}: {dataref}={res}")
                     r.append(1 if (res is not None and res > 0) else 0)
                 else:
+                    logger.debug(f"button_value: button {self.name}: {key}: no formula, set to 0")
                     r.append(0)
             else:
                 r.append(0)
+                logger.debug(f"button_value: button {self.name}: {key}: key not found, set to 0")
         # logger.debug(f"airbus_button_value: button {self.name} returning: {r}")
         return r
 
@@ -224,7 +233,7 @@ class AirbusButton(Button):
                     if type(framed) == str:
                         framed = framed.lower() in ["true", "on", "yes"]
                     if framed:
-                        start = button_height / 2 + inside
+                        start = button_height / 2 - inside / 2
                         height = button_height / 2 - 2 * inside
                         thick = 12
                         e = ICON_SIZE / 8
@@ -248,11 +257,11 @@ class AirbusButton(Button):
         draw = ImageDraw.Draw(image)
 
         # Title
-        title = self.airbus.get("title")
-        if title is not None and title.get("text") is not None:
-            title_pos = title.get("position", "mm")
-            fontname = self.get_font(title.get("font"))
-            font = ImageFont.truetype(fontname, title.get("size"))
+        if self.label is not None:
+            title_pos = self.label_position
+            fontname = self.get_font()
+            size = 2 * self.label_size
+            font = ImageFont.truetype(fontname, size)
             w = image.width / 2
             p = "m"
             a = "center"
@@ -264,17 +273,19 @@ class AirbusButton(Button):
                 w = image.width - inside
                 p = "r"
                 a = "right"
-            h = inside + title.get("size") / 2
+            h = size / 2  # middle of "title" box
             # logger.debug(f"mk_airbus: position {title_pos}: {(w, h)}")
             draw.multiline_text((w, h),  # (image.width / 2, 15)
-                      text=title.get("text"),
+                      text=self.label,
                       font=font,
                       anchor=p+"m",
                       align=a,
-                      fill=title.get("color"))
+                      fill=self.label_color)
 
         # Button
         image.paste(button, box=box)
+
+        logger.debug(f"mk_airbus: button {self.name}: ..done")
 
         return image
 

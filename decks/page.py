@@ -88,26 +88,28 @@ class Page:
                     if icon is not None:
                         image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                         self.deck.device.set_key_image(key, image)
-        else:
-            logger.warning(f"render: page {self.name}: no fill icon")
+                    else:
+                        logger.warning(f"render: page {self.name}: no fill icon")
 
     def clean(self):
         """
         Ask each button to stop rendering and clean its mess.
         """
-        for button in self.buttons.values():
-            button.clean()
-        # Next, we clean all icons
-        if self.fill_empty is None:
-            self.fill_empty = "(0, 0, 0)"
+        fill_empty = self.fill_empty if self.fill_empty is not None else "(0, 0, 0)"
+        colors = None
+        if fill_empty.startswith("(") and fill_empty.endswith(")"):
+            colors = convert_color(fill_empty)
 
-        for key in self.buttons.keys():
-            icon = None
-            if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
-                colors = convert_color(self.fill_empty)
-                icon = self.deck.create_icon_for_key(key, colors=colors)
-            elif self.fill_empty in self.deck.icons.keys():
-                icon = self.deck.icons[self.fill_empty]
-            if icon is not None:
-                image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
-                self.deck.device.set_key_image(key, image)
+        for key, button in self.buttons.items():
+            button.clean()
+            if button.has_key_image():
+                icon = None
+                if colors is not None:
+                    icon = self.deck.create_icon_for_key(key, colors=colors)
+                elif self.fill_empty in self.deck.icons.keys():
+                    icon = self.deck.icons[self.fill_empty]
+                if icon is not None:
+                    image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
+                    self.deck.device.set_key_image(key, image)
+                else:
+                    logger.warning(f"clean: page {self.name}: no fill icon")

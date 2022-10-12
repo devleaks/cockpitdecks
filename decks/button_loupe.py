@@ -6,14 +6,12 @@ import random
 
 from PIL import ImageDraw, ImageFont
 
-from .rpc import RPC
-
 from .constant import convert_color
-
 from .button_core import ButtonPush
 
+
 logger = logging.getLogger("LoupedeckButton")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class ColoredButton(ButtonPush):
@@ -23,6 +21,9 @@ class ColoredButton(ButtonPush):
 
     def __init__(self, config: dict, page: "Page"):
         ButtonPush.__init__(self, config=config, page=page)
+
+    def has_key_image(self):
+        return False  # default
 
     def render(self):
         """

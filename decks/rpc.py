@@ -39,5 +39,9 @@ class RPC:
                 stack.append(math.ceil(stack.pop()))
             elif token == "round":
                 stack.append(round(stack.pop(), 0))
+            elif token == "abs":
+                stack.append(abs(stack.pop()))
+            elif token == "chs":
+                stack.append(-1 * stack.pop())
 
         return stack if return_stack else stack.pop()

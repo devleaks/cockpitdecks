@@ -4,27 +4,71 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     name: ADIRS_ON_BAT
-    type: none
-    multi-icons:
-      - NONE_NONE
-      - ONBAT_AMBER_NONE
+    type: airbus
+    airbus:
+      size: small
+      display:
+        text: ON BAT
+        size: 48
+        color: darkorange
+        dataref-rpn: ${AirbusFBW/ADIRUOnBat}
     dataref: AirbusFBW/ADIRUOnBat
   - index: 2
     name: ADIRS_FAST_ALIGN
     type: push
     icon: P_TOLISS_ISCS_OFF
     command: AirbusFBW/ADIRU_fast_align
-    label: ADIR F/ALIGN
+    label: "ADIR\nF/ALIGN"
+    label-position: cb
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: ADIRS1_INDICATOR
-    type: none
-    multi-icons:
-      - NONE_NONE
-      - NONE_ALIGN_LIGHT_AMBER
-      - FAULT_AMBER_ALIGN_LIGHT_AMBER
-    dataref: AirbusFBW/OHPLightsATA34[6]
-    dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
+    type: airbus
+    airbus:
+      size: full
+      display:
+        text: FAIL
+        color: darkorange
+        size: 60
+        dataref-rpn: "0"
+      dual:
+        text: ALIGN
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
+  - index: 9
+    name: ADIRS3_INDICATOR
+    type: airbus
+    airbus:
+      size: full
+      display:
+        text: FAIL
+        color: darkorange
+        size: 60
+        dataref-rpn: "0"
+      dual:
+        text: ALIGN
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        dataref-rpn: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
+  - index: 10
+    name: ADIRS2_INDICATOR
+    type: airbus
+    airbus:
+      size: full
+      display:
+        text: FAIL
+        color: darkorange
+        size: 60
+        dataref-rpn: "0"
+      dual:
+        text: ALIGN
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        dataref-rpn: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: ADIRS1
@@ -40,57 +84,6 @@ buttons:
     options: bounce
     label: IR1
     label-position: ct
-# ### LINE 4 ### 24-31 ######################################################
-  - index: 24
-    name: ADIRS1_OFF_BUTTON
-    type: push
-    multi-icons:
-      - NONE_OFF_LIGHT_AMBER_FR
-      - NONE_NONE
-      - FAULT_AMBER_OFF_LIGHT_AMBER_FR
-    dataref: AirbusFBW/ADIRUSwitchAnims[3]
-    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[3]} 4 * floor
-  - index: 9
-    name: ADIRS3_INDICATOR
-    type: none
-    multi-icons:
-      - NONE_NONE
-      - NONE_ALIGN_LIGHT_AMBER
-      - FAULT_AMBER_ALIGN_LIGHT_AMBER
-    dataref: AirbusFBW/OHPLightsATA34[10]
-    dataref-rpn: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
-  - index: 18
-    name: ADIRS2
-    type: updown
-    multi-icons:
-      - ADIRS_OFF
-      - ADIRS_NAV
-      - ADIRS_ATT
-    commands:
-      - toliss_airbus/adirucommands/ADIRU2SwitchUp
-      - toliss_airbus/adirucommands/ADIRU2SwitchDown
-    dataref: AirbusFBW/ADIRUSwitchArray[1]
-    options: bounce
-    label: IR2
-    label-position: ct
-  - index: 25
-    name: ADIRS3_OFF_BUTTON
-    type: push
-    multi-icons:
-      - NONE_OFF_LIGHT_AMBER_FR
-      - NONE_NONE
-      - FAULT_AMBER_OFF_LIGHT_AMBER_FR
-    dataref: AirbusFBW/ADIRUSwitchAnims[5]
-    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[5]} 4 * floor
-  - index: 10
-    name: ADIRS2_INDICATOR
-    type: none
-    multi-icons:
-      - NONE_NONE
-      - NONE_ALIGN_LIGHT_AMBER
-      - FAULT_AMBER_ALIGN_LIGHT_AMBER
-    dataref: AirbusFBW/OHPLightsATA34[8]
-    dataref-rpn: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
   - index: 17
     name: ADIRS3
     type: updown
@@ -105,15 +98,72 @@ buttons:
     options: bounce
     label: IR3
     label-position: ct
-  - index: 26
-    name: ADIRS2_OFF_BUTTON
-    type: push
-    dataref: AirbusFBW/ADIRUSwitchAnims[4]
-    dataref-rpn: ${AirbusFBW/ADIRUSwitchAnims[4]} 4 * floor
+  - index: 18
+    name: ADIRS2
+    type: updown
     multi-icons:
-      - NONE_OFF_LIGHT_AMBER_FR
-      - NONE_NONE
-      - FAULT_AMBER_OFF_LIGHT_AMBER_FR
+      - ADIRS_OFF
+      - ADIRS_NAV
+      - ADIRS_ATT
+    commands:
+      - toliss_airbus/adirucommands/ADIRU2SwitchUp
+      - toliss_airbus/adirucommands/ADIRU2SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[1]
+    options: bounce
+    label: IR2
+    label-position: ct
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 24
+    name: ADIRS1_OFF
+    type: airbus-push
+    airbus:
+      size: full
+      display:
+        text: FAIL
+        color: darkorange
+        size: 60
+        dataref-rpn: "0"
+      dual:
+        text: "OFF"
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        dataref-rpn: ${AirbusFBW/ADRLights[0]} 1 - abs
+        framed: True
+  - index: 25
+    name: ADIRS3_OFF
+    type: airbus-push
+    airbus:
+      size: full
+      display:
+        text: FAIL
+        color: darkorange
+        size: 60
+        dataref-rpn: "0"
+      dual:
+        text: "OFF"
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        dataref-rpn: ${AirbusFBW/ADRLights[2]} 1 - abs
+        framed: True
+  - index: 26
+    name: ADIRS2_OFF
+    type: airbus-push
+    airbus:
+      size: full
+      display:
+        text: FAIL
+        color: darkorange
+        size: 60
+        dataref-rpn: "0"
+      dual:
+        text: "OFF"
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        dataref-rpn: ${AirbusFBW/ADRLights[1]} 1 - abs
+        framed: True
   - index: 31
     name: Index
     type: page

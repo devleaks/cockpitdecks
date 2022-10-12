@@ -5,13 +5,11 @@ import logging
 import threading
 import time
 
-from PIL import ImageDraw, ImageFont
-
 from .button_core import ButtonPush, ButtonDual
 
 
 logger = logging.getLogger("Knob")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class KnobPush(ButtonPush):
@@ -20,6 +18,9 @@ class KnobPush(ButtonPush):
     """
     def __init__(self, config: dict, page: "Page"):
         ButtonPush.__init__(self, config=config, page=page)
+
+    def has_key_image(self):
+        return False  # default
 
     def is_valid(self):
         if self.has_option("dual") and len(self.commands) != 4:
@@ -69,6 +70,9 @@ class KnobPushPull(ButtonDual):
     def __init__(self, config: dict, page: "Page"):
         ButtonDual.__init__(self, config=config, page=page)
 
+    def has_key_image(self):
+        return False  # default
+
     def is_valid(self):
         if self.has_option("dual") and len(self.commands) != 6:
             logger.warning(f"is_valid: button {self.name} must have 6 commands for dual mode")
@@ -117,6 +121,9 @@ class KnobPushTurnRelease(ButtonPush):
     def __init__(self, config: dict, page: "Page"):
         ButtonPush.__init__(self, config=config, page=page)
 
+    def has_key_image(self):
+        return False  # default
+
     def is_valid(self):
         if len(self.commands) != 4:
             logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
@@ -160,6 +167,9 @@ class KnobDataref(ButtonPush):
         self.value = config.get("value")
         self.value_min = config.get("value-min")
         self.value_max = config.get("value-max")
+
+    def has_key_image(self):
+        return False  # default
 
     def is_valid(self):
         return True  # super().is_valid()

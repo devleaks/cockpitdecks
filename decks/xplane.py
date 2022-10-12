@@ -10,6 +10,15 @@ loggerDataref.setLevel(logging.INFO)
 logger = logging.getLogger("XPlane")
 # logger.setLevel(logging.DEBUG)
 
+DATAREF_ROUND = {
+    "AirbusFBW/BatVolts[0]": 3,
+    "AirbusFBW/BatVolts[0]": 3,
+    "AirbusFBW/OHPLightsATA34[6]": 3,
+    "AirbusFBW/OHPLightsATA34[8]": 3,
+    "AirbusFBW/OHPLightsATA34[10]": 3,
+    "dataref": 0
+}
+
 class Dataref:
 
     def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
@@ -26,6 +35,7 @@ class Dataref:
         self.current_value = None
         self.current_array = []
         self.listeners = []         # buttons using this dataref, will get notified if changes.
+        self.round = DATAREF_ROUND.get(path)
 
         # is dataref a path to an array element?
         if "[" in path:  # sim/some/values[4]
@@ -54,7 +64,11 @@ class Dataref:
 
     def update_value(self, new_value, cascade: bool = False):
         self.previous_value = self.current_value
-        self.current_value = new_value
+        if self.round is not None:
+            self.current_value = round(new_value, 3)
+            loggerDataref.debug(f"update_value: dataref {self.path} value rounded ({self.round})")
+        else:
+            self.current_value = new_value
         if cascade:
             self.notify()
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
