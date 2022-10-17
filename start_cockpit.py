@@ -12,7 +12,7 @@ logger = logging.getLogger("cockpitdecks")
 s = None
 try:
     s = Cockpit(XPlaneUDP)
-    s.load(os.path.join(os.path.dirname(__file__), "A321"))
+    s.load(os.path.join(os.path.dirname(__file__), "DEV"))
 except KeyboardInterrupt:
     if s is not None:
         s.terminate_all()

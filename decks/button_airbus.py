@@ -184,18 +184,29 @@ class AirbusButton(Button):
                 color = display.get("color")
                 if not self.lit_display:
                     color = display.get("off-color", light_off(color))
-                if size == "small":  # 1 horizontal leds
-                    thick = 30             # LED thickness
-                    start = button_height / 2 - thick
-                    frame = ((e, start), (glow.width - e, start+thick))
-                    draw.rectangle(frame, fill=color)
-                else:  # 3 horizontal leds
-                    thick = 10             # LED thickness
-                    start = button_height / 4 - 1.5 * thick - (16 - thick)
-                    for i in range(3):
-                        s = start + i * 16
-                        frame = ((e, s), (glow.width - e, s+thick))
+                if self.has_option("dot"):
+                    ndot = self.option_value("dot", default=2)
+                    ndot = 2 if type(ndot) == bool else int(ndot)
+                    radius = ICON_SIZE / 8  # LED diameter
+                    space  = ICON_SIZE / ndot  # space between dots
+                    e = ICON_SIZE / 2 - ((ndot - 1) * space + radius) / 2
+                    start = button_height / 4 # - radius / 2  # middle of button's top half
+                    for i in range(ndot):
+                        frame = ((e + i * space, start), (e + i * space + radius, start + radius))
+                        draw.ellipse(frame, fill=color)
+                else:
+                    if size == "small":  # 1 horizontal leds
+                        thick = 30
+                        start = button_height / 2 - thick
+                        frame = ((e, start), (glow.width - e, start+thick))
                         draw.rectangle(frame, fill=color)
+                    else:  # 3 horizontal leds
+                        thick = 10             # LED thickness
+                        start = button_height / 4 - 1.5 * thick - (16 - thick)
+                        for i in range(3):
+                            s = start + i * 16
+                            frame = ((e, s), (glow.width - e, s+thick))
+                            draw.rectangle(frame, fill=color)
 
         # Optional second/bottom item (called "dual")
         if dual is not None:
@@ -321,12 +332,12 @@ class AirbusButtonAnimate(AirbusButton):
     """
     """
     def __init__(self, config: dict, page: "Page"):
-        AirbusButton.__init__(self, config=config, page=page)
-        self.thread = None
         self.running = False
+        self.thread = None
         self.finished = None
-        self.speed = float(self.option_value("animation_speed", 0.5))
         self.counter = 0
+        AirbusButton.__init__(self, config=config, page=page)
+        self.speed = float(self.option_value("animation_speed", 0.5))
 
     def loop(self):
         self.finished = threading.Event()

@@ -16,7 +16,7 @@ decks:
     default-label-size: 16
   - name: XPLive
     type: loupedeck
-    layout: pmaldlive
+    layout: live
     brightness: 70
   - name: XPTouch
     type: xtouchmini
