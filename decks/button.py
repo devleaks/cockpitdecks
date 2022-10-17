@@ -34,7 +34,6 @@ LOUPEDECK_BUTTON_TYPES = {
     "animate": ButtonAnimate,
     "knob": KnobPush,
     "knob-push-pull": KnobPushPull,
-    "knob-push-turn-release": KnobPushTurnRelease,
     "knob-dataref": KnobDataref,
     "button": ColoredButton,
     "side": ButtonSide,
@@ -50,5 +49,6 @@ XTOUCH_MINI_BUTTON_TYPES = {
     "dual": ButtonDual,
     "long-press": ButtonLongpress,
     "knob": KnobPush,
-    "knob-push-pull": KnobPushPull
+    "knob-push-pull": KnobPushPull,
+    "knob-push-turn-release": KnobPushTurnRelease
 }

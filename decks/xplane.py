@@ -65,8 +65,8 @@ class Dataref:
     def update_value(self, new_value, cascade: bool = False):
         self.previous_value = self.current_value
         if self.round is not None:
-            self.current_value = round(new_value, 3)
-            loggerDataref.debug(f"update_value: dataref {self.path} value rounded ({self.round})")
+            self.current_value = round(new_value, self.round)
+            loggerDataref.debug(f"update_value: dataref {self.path} value {new_value} rounded to {self.current_value}")
         else:
             self.current_value = new_value
         if cascade:
