@@ -49,18 +49,16 @@ buttons:
   - index: 4
     type: airbus-push
     airbus:
-      size: small
-      title:
-        text: FD
+      size: large
       display:
-  #      text: "AVAIL"
         color: white
         dataref-rpn: "1"
       dual:
-        text: "FD"
+        text: "ON"
         color: white
-        size: 48
+        size: 72
         dataref-rpn: "1"
+        framed: True
     options: dot
   - index: 5
     type: airbus-push
@@ -120,10 +118,12 @@ buttons:
       display:
         text: "AVAIL"
         color: lime
+        dataref-rpn: "1"
       dual:
         text: "ON"
         framed: True
         color: deepskyblue
+        dataref-rpn: "1"
   - index: 10
     type: airbus-push
     airbus:
@@ -132,6 +132,7 @@ buttons:
       display:
         text: "AVAIL"
         color: lime
+        dataref-rpn: "1"
       dual:
         text: "OFF"
         framed: True

@@ -79,6 +79,7 @@ WS_UPGRADE_RESPONSE = 'HTTP/1.1'
 
 # Maximum brightness value
 MAX_BRIGHTNESS = 10
+LIGHT_OFF_BRIGHTNESS = 10  # pct
 
 # How long until trying to reconnect after a disconnect
 RECONNECT_INTERVAL = 3000

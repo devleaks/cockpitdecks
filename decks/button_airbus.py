@@ -10,12 +10,12 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import AIRBUS_DEFAULTS
+from .constant import AIRBUS_DEFAULTS, LIGHT_OFF_BRIGHTNESS
 from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AirbusButton")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class AirbusButton(Button):
@@ -106,13 +106,25 @@ class AirbusButton(Button):
         # If the display or dual is not lit, a darker version is printed unless dark option is added to button
         # in which case nothing gets added to the button.
 
-        def light_off(color, lightness: float = 0.10):
+        def light_off(color, lightness: float = LIGHT_OFF_BRIGHTNESS / 100):
             # Darkens (or lighten) a color
             if type(color) == str:
                 color = ImageColor.getrgb(color)
             a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
             a[1] = lightness
             return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
+
+        def has_frame(part: dict):
+            framed = part.get("framed")
+            if framed is None:
+                return False
+            if type(framed) == bool:
+                return framed
+            elif type(framed) == int:
+                return framed == 1
+            elif type(framed) == str:
+                return framed.lower() in ["true", "on", "yes", "1"]
+            return False
 
         ICON_SIZE = 256  # px
         inside = ICON_SIZE / 32 # 8px
@@ -142,7 +154,7 @@ class AirbusButton(Button):
         glow = Image.new(mode="RGBA", size=(ICON_SIZE, button_height), color=(0, 0, 0, 0))
         draw = ImageDraw.Draw(glow)
 
-        # First/top/main item (called "display")
+        # 1.1 First/top/main item (called "display")
         display = self.airbus.get("display")
         dual    = self.airbus.get("dual")
 
@@ -170,7 +182,7 @@ class AirbusButton(Button):
                 color = display.get("color")
                 if not self.lit_display:
                     color = display.get("off-color", light_off(color))
-                if not self.has_option("dark"):
+                if self.lit_display or not self.has_option("dark"):
                     draw.multiline_text((w, h),  # (glow.width / 2, 15)
                               text=display.get("text"),
                               font=font,
@@ -180,35 +192,44 @@ class AirbusButton(Button):
                 else:
                     logger.debug("mk_airbus: full dark display")
             else:
-                e = ICON_SIZE / 4      # space left and right of LED
+                # If there is no text, we display a LED light.
+                # For large and medium, it is a 3 LED bar light
+                # For small, it is a single block LED.
+                # Alternatively, it can be a series of circular dots (options: dot=3)
                 color = display.get("color")
                 if not self.lit_display:
                     color = display.get("off-color", light_off(color))
+
                 if self.has_option("dot"):
+                    # Plot a series of circular dot on a line
                     ndot = self.option_value("dot", default=2)
                     ndot = 2 if type(ndot) == bool else int(ndot)
-                    radius = ICON_SIZE / 8  # LED diameter
-                    space  = ICON_SIZE / ndot  # space between dots
-                    e = ICON_SIZE / 2 - ((ndot - 1) * space + radius) / 2
-                    start = button_height / 4 # - radius / 2  # middle of button's top half
+                    radius = ICON_SIZE / 16  # LED diameter
+                    space  = (ICON_SIZE - 2 * inside) / ndot  # space between dots, tries to evenly space them "inside" button space
+                    dot_left = ICON_SIZE / 2 - ((ndot - 1) * space) / 2
+                    dot_height = button_height / 2 # Middle of button
+                    if dual is not None:
+                        dot_height = button_height / 4 # middle of button's top half
                     for i in range(ndot):
-                        frame = ((e + i * space, start), (e + i * space + radius, start + radius))
+                        frame = ((dot_left + i * space - radius, dot_height - radius), (dot_left + i * space + radius, dot_height + radius))
                         draw.ellipse(frame, fill=color)
                 else:
+                    # Plot one or three LED bars.
+                    dot_left = ICON_SIZE / 4      # space left and right of LED
                     if size == "small":  # 1 horizontal leds
                         thick = 30
-                        start = button_height / 2 - thick
-                        frame = ((e, start), (glow.width - e, start+thick))
+                        dot_height = button_height / 2 - thick
+                        frame = ((dot_left, dot_height), (glow.width - dot_left, dot_height + thick))
                         draw.rectangle(frame, fill=color)
                     else:  # 3 horizontal leds
                         thick = 10             # LED thickness
-                        start = button_height / 4 - 1.5 * thick - (16 - thick)
+                        dot_height = button_height / 4 - 1.5 * thick - (16 - thick)
                         for i in range(3):
-                            s = start + i * 16
-                            frame = ((e, s), (glow.width - e, s+thick))
+                            s = dot_height + i * 16
+                            frame = ((dot_left, s), (glow.width - dot_left, s+thick))
                             draw.rectangle(frame, fill=color)
 
-        # Optional second/bottom item (called "dual")
+        # 1.2 Optional second/bottom item (called "dual")
         if dual is not None:
             dual_pos = dual.get("position", "mm")
             text = dual.get("text")
@@ -229,35 +250,45 @@ class AirbusButton(Button):
                 h = int(3 * button_height / 4)  # middle of bottom part
                 # logger.debug(f"mk_airbus: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
 
-                if not self.has_option("dark"):
-                    color = dual.get("color")
-                    if not self.lit_dual:
-                        color = dual.get("off-color", light_off(color))
+                color = dual.get("color")
+                if not self.lit_dual:
+                    color = dual.get("off-color", light_off(color))
 
-                    draw.multiline_text((w, h),  # (glow.width / 2, 15)
+                if self.lit_dual or not self.has_option("dark"):
+                    draw.multiline_text((w, h),
                               text=dual.get("text"),
                               font=font,
                               anchor=p+"m",
                               align=a,
                               fill=color)
-                    framed = dual.get("framed")
-                    if type(framed) == str:
-                        framed = framed.lower() in ["true", "on", "yes"]
-                    if framed:
-                        start = button_height / 2 - inside / 2
-                        height = button_height / 2 - 2 * inside
-                        thick = 12
-                        e = ICON_SIZE / 8
-                        frame = ((e, start), (glow.width-e, start + height))
+                    if has_frame(dual):
+                        txtbb = draw.multiline_textbbox((w, h),  # min frame, just around the text
+                                  text=dual.get("text"),
+                                  font=font,
+                                  anchor=p+"m",
+                                  align=a)
+                        margin = 3 * inside
+                        framebb = ((txtbb[0]-margin, txtbb[1]-margin), (txtbb[2]+margin, txtbb[3]+margin))
+
+                        start = button_height / 2 + inside      # max frame, just inside button
+                        height = int(button_height / 2 - 2 * inside)
+                        thick = int(button_height / 16)
+                        e = inside * 4
+                        framemax = ((e, start), (glow.width-e, start + height))
+                        # optimal frame, largest possible in button and that surround text
+                        frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
                         draw.rectangle(frame, outline=color, width=thick)
-                else:
-                    logger.debug("mk_airbus: full dark dual display")
 
         # Glowing texts, later because not nicely perfect.
-        # if not self.has_option("no_blurr") or self.has_option("sharp"):
-        #     blurred_image = glow.filter(ImageFilter.GaussianBlur(self.airbus.get("blurr")))
-        #     glow.alpha_composite(blurred_image)
-        #     # logger.debug("mk_airbus: blurred")
+        if not self.has_option("no_blurr") or self.has_option("sharp"):
+            # blurred_image = glow.filter(ImageFilter.UnsharpMask(radius=2, percent=200, threshold=10))
+            blurred_image1 = glow.filter(ImageFilter.GaussianBlur(16)) # self.airbus.get("blurr", 10)
+            blurred_image2 = glow.filter(ImageFilter.GaussianBlur(6)) # self.airbus.get("blurr", 10)
+            # blurred_image = glow.filter(ImageFilter.BLUR)
+            glow.alpha_composite(blurred_image1)
+            glow.alpha_composite(blurred_image2)
+            # glow = blurred_image
+            # logger.debug("mk_airbus: blurred")
 
         # We paste the transparent glow into a button:
         button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=self.airbus.get("color", "black"))
@@ -296,7 +327,7 @@ class AirbusButton(Button):
         # Button
         image.paste(button, box=box)
 
-        logger.debug(f"mk_airbus: button {self.name}: ..done")
+        # logger.debug(f"mk_airbus: button {self.name}: ..done")
 
         return image
 
