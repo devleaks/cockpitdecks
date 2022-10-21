@@ -14,7 +14,7 @@ from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # Data too delicate to be put in constant.py
@@ -345,10 +345,11 @@ class XPlaneUDP(XPlane):
                 self.thread.name = f"dataref reader"
                 self.running = True
                 self.thread.start()
+                logger.info(f"start: XPlaneUDP started")
             else:
                 logger.debug(f"start: XPlaneUDP already running.")
         else:
-            logger.debug(f"start: no IP address. could not start.")
+            logger.warning(f"start: no IP address. could not start.")
 
     def terminate(self):
         if self.running:
@@ -356,4 +357,4 @@ class XPlaneUDP(XPlane):
             self.running = False
             logger.debug(f"terminate: wait permission to delete")
             self.finished.wait(timeout=20*DATA_REFRESH)
-        logger.debug(f"terminate: XPlaneUDP terminated")
+        logger.info(f"terminate: XPlaneUDP terminated")

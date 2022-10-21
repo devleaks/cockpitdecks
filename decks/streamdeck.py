@@ -310,6 +310,7 @@ class Streamdeck(Deck):
             self.device.set_key_image(button.index, i)
 
     def terminate(self):
+        super().terminate()  # cleanly unload current page, if any
         with self.device:
             self.device.set_key_callback(None)
             self.device.reset()

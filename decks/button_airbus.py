@@ -10,12 +10,37 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import AIRBUS_DEFAULTS, LIGHT_OFF_BRIGHTNESS
+from .constant import AIRBUS_DEFAULTS, LIGHT_OFF_BRIGHTNESS, convert_color
 from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AirbusButton")
 logger.setLevel(logging.DEBUG)
+
+
+def convert_color_string(instr) -> tuple:  # tuple of int 0-255
+    # process either a color name or a color tuple as a string "(1, 2, 3)"
+    # and returns a tuple of 3 or 4 intergers in range [0,255].
+    # If case of failure to convert, returns middle grey values.
+    if type(instr) == tuple or type(instr) == list:
+        return tuple(instr)
+    if type(instr) != str:
+        logger.debug(f"convert_color_string: color {instr} ({type(instr)}) not found, using grey")
+        return (128, 128, 128)
+    # it's a string...
+    instr = instr.strip()
+    if "," in instr and instr.startswith("("):  # "(255, 7, 2)"
+        a = instr.replace("(", "").replace(")", "").split(",")
+        return tuple([int(e) for e in a])
+    else:  # it may be a color name...
+        try:
+            color = ImageColor.getrgb(instr)
+        except ValueError:
+            logger.debug(f"convert_color_string: fail to convert color {instr} ({type(instr)}), using grey")
+            color = (128, 128, 128)
+        return color
+    logger.debug(f"convert_color_string: not a string {instr} ({type(instr)}), using grey")
+    return (128, 128, 128)
 
 
 class AirbusButton(Button):
@@ -108,11 +133,34 @@ class AirbusButton(Button):
 
         def light_off(color, lightness: float = LIGHT_OFF_BRIGHTNESS / 100):
             # Darkens (or lighten) a color
+            if color.startswith("("):
+                color = convert_color(color)
             if type(color) == str:
                 color = ImageColor.getrgb(color)
             a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
             a[1] = lightness
             return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
+
+        def get_color(disp:dict, lit: bool):
+            color = disp.get("color")
+            if type(color) == tuple or type(color) == list:  # we transfort it back to a string, read on...
+                color = "(" + ",".join([str(i) for i in color]) + ")"
+
+            if not lit:
+                try:
+                    color = display.get("off-color", light_off(color))
+                except ValueError:
+                    logger.debug(f"mk_airbus: button {self.name}: color {color} ({type(color)}) not found, using grey")
+                    color = (128, 128, 128)
+            elif color.startswith("("):
+                color = convert_color(color)
+            else:
+                try:
+                    color = ImageColor.getrgb(color)
+                except ValueError:
+                    logger.debug(f"mk_airbus: color {color} not found, using grey")
+                    color = (128, 128, 128)
+            return color
 
         def has_frame(part: dict):
             framed = part.get("framed")
@@ -179,9 +227,7 @@ class AirbusButton(Button):
                 if dual is not None and dual.get("text") is not None: # middle of top part
                     h = int(button_height / 4)
                 # logger.debug(f"mk_airbus: position {display_pos}: {(w, h)}, {dual}")
-                color = display.get("color")
-                if not self.lit_display:
-                    color = display.get("off-color", light_off(color))
+                color = get_color(display, self.lit_display)
                 if self.lit_display or not self.has_option("dark"):
                     draw.multiline_text((w, h),  # (glow.width / 2, 15)
                               text=display.get("text"),
@@ -196,10 +242,7 @@ class AirbusButton(Button):
                 # For large and medium, it is a 3 LED bar light
                 # For small, it is a single block LED.
                 # Alternatively, it can be a series of circular dots (options: dot=3)
-                color = display.get("color")
-                if not self.lit_display:
-                    color = display.get("off-color", light_off(color))
-
+                color = get_color(display, self.lit_display)
                 if self.has_option("dot"):
                     # Plot a series of circular dot on a line
                     ndot = self.option_value("dot", default=2)
@@ -216,13 +259,17 @@ class AirbusButton(Button):
                 else:
                     # Plot one or three LED bars.
                     dot_left = ICON_SIZE / 4      # space left and right of LED
-                    if size == "small":  # 1 horizontal leds
+                    if self.has_option("single_led"):  # single horizontal led
                         thick = 30
+                        if size == "large":
+                            thick = 40
                         dot_height = button_height / 2 - thick
                         frame = ((dot_left, dot_height), (glow.width - dot_left, dot_height + thick))
                         draw.rectangle(frame, fill=color)
                     else:  # 3 horizontal leds
                         thick = 10             # LED thickness
+                        if size == "small":
+                            thick = 6
                         dot_height = button_height / 4 - 1.5 * thick - (16 - thick)
                         for i in range(3):
                             s = dot_height + i * 16
@@ -249,11 +296,7 @@ class AirbusButton(Button):
                     a = "right"
                 h = int(3 * button_height / 4)  # middle of bottom part
                 # logger.debug(f"mk_airbus: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
-
-                color = dual.get("color")
-                if not self.lit_dual:
-                    color = dual.get("off-color", light_off(color))
-
+                color = get_color(dual, self.lit_dual)
                 if self.lit_dual or not self.has_option("dark"):
                     draw.multiline_text((w, h),
                               text=dual.get("text"),
@@ -291,7 +334,8 @@ class AirbusButton(Button):
             # logger.debug("mk_airbus: blurred")
 
         # We paste the transparent glow into a button:
-        button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=self.airbus.get("color", "black"))
+        color = get_color(self.airbus, True)
+        button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=color)
         button.paste(glow, mask=glow)
 
         # Background
@@ -315,7 +359,7 @@ class AirbusButton(Button):
                 w = image.width - inside
                 p = "r"
                 a = "right"
-            h = size / 2  # middle of "title" box
+            h = (box[1] + self.label_size ) / 2  # middle of "title" box
             # logger.debug(f"mk_airbus: position {title_pos}: {(w, h)}")
             draw.multiline_text((w, h),  # (image.width / 2, 15)
                       text=self.label,
@@ -363,12 +407,14 @@ class AirbusButtonAnimate(AirbusButton):
     """
     """
     def __init__(self, config: dict, page: "Page"):
-        self.running = False
+        self.running = None  # state unknown
         self.thread = None
         self.finished = None
         self.counter = 0
         AirbusButton.__init__(self, config=config, page=page)
         self.speed = float(self.option_value("animation_speed", 0.5))
+
+        self.render()
 
     def loop(self):
         self.finished = threading.Event()
@@ -380,18 +426,22 @@ class AirbusButtonAnimate(AirbusButton):
 
     def anim_start(self):
         if not self.running:
+            logger.debug(f"anim_start: button {self.name}: starting..")
             self.running = True
             self.thread = threading.Thread(target=self.loop)
             self.thread.name = f"button {self.name} animation"
             self.thread.start()
+            logger.debug(f"anim_start: button {self.name}: ..started")
         else:
             logger.warning(f"anim_start: button {self.name}: already started")
 
     def anim_stop(self):
         if self.running:
+            logger.debug(f"anim_start: button {self.name}: stopping..")
             self.running = False
             if not self.finished.wait(timeout=2*self.speed):
                 logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
+            logger.debug(f"anim_start: button {self.name}: ..stopped")
             self.render()
         else:
             logger.debug(f"anim_stop: button {self.name}: already stopped")
@@ -433,5 +483,20 @@ class AirbusButtonAnimate(AirbusButton):
                 self.anim_stop()
             self.render()
 
+    def render(self):
+        if self.running is None:  # state unknown?
+            logger.debug(f"render: button {self.name}: unknown state")
+            if self.lit_display or self.lit_dual:
+                logger.debug(f"render: button {self.name}: starting... ({self.lit_display}, {self.lit_dual})")
+                self.anim_start()
+            else:
+                logger.debug(f"render: button {self.name}: stopping...")
+                self.anim_stop()
+            logger.debug(f"render: button {self.name}: ..done")
+        else:
+            super().render()
+
     def clean(self):
+        logger.debug(f"clean: button {self.name}: asking to stop")
         self.anim_stop()
+        self.running = None  # unknown state

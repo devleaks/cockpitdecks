@@ -27,7 +27,7 @@ from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Button:
@@ -301,7 +301,7 @@ class Button:
         # Use of datarefs in formula:
         # 2. Formulae datarefs
         dataref_rpn = base.get("dataref-rpn")
-        if dataref_rpn is not None:
+        if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall("\\${(.+?)}", dataref_rpn)
             if len(datarefs) > 0:
                 r = r + datarefs
@@ -311,14 +311,14 @@ class Button:
         # 3. LABEL datarefs
         # 3.1 Label
         label = base.get("label")
-        if label is not None:
+        if label is not None and type(label) == str:
             datarefs = re.findall("\\${(.+?)}", label)
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
         # 3.2 Label formula
         label_rpn = base.get("label-rpn")
-        if label_rpn is not None:
+        if label_rpn is not None and type(label_rpn) == str:
             datarefs = re.findall("\\${(.+?)}", label_rpn)
             if len(datarefs) > 0:
                 r = r + datarefs
@@ -337,6 +337,10 @@ class Button:
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         """
+        if type(message) == int or type(message) == float:  # probably dataref-rpn is a contant value
+            logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning as is.")
+            return str(message)
+
         dataref_names = re.findall("\\${(.+?)}", message)
         if len(dataref_names) == 0:
             return message

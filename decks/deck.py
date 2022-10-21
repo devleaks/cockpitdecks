@@ -113,7 +113,6 @@ class Deck:
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
         #
-        # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
         pass
 
     def key_change_callback(self, deck, key, state):
@@ -170,11 +169,12 @@ class Deck:
                 page = self.page_history.pop()  # previous one
             else:
                 page = self.home_page.name
-            logger.debug(f"change_page: deck {self.name} change page to {page}..")
+            logger.debug(f"change_page: deck {self.name} back page to {page}..")
         if page in self.pages.keys():
             if self.current_page is not None:
                 self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
                 self.current_page.clean()
+            logger.debug(f"change_page: deck {self.name} ..installing new page..")
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
@@ -193,4 +193,7 @@ class Deck:
         pass
 
     def terminate(self):
-        pass
+        if self.current_page is not None:
+            self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
+            self.current_page.clean()
+            logger.debug(f"terminate: deck {self.name}: page {self.current_page.name} unloaded")

@@ -398,6 +398,7 @@ class Loupedeck(Deck):
         logger.info(f"start: loupedeck {self.name} listening for key strokes")
 
     def terminate(self):
+        super().terminate()  # cleanly unload current page, if any
         with self.device:
             self.device.set_callback(None)
             self.device.reset()

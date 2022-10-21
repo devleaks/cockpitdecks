@@ -74,7 +74,7 @@ class Page:
         """
         for button in self.buttons.values():
             button.render()
-            # logger.debug(f"render: page {self.name}: button {button.name} rendered")
+            logger.debug(f"render: page {self.name}: button {button.name} rendered")
         if self.fill_empty is not None:
             logger.debug(f"render: page {self.name}: fill empty keys {self.fill_empty}")
             for key in self.deck.available_keys:

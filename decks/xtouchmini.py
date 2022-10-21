@@ -164,5 +164,6 @@ class XTouchMini(Deck):
 
 
     def terminate(self):
+        super().terminate()  # cleanly unload current page, if any
         self.device.stop()
         logger.debug(f"terminate: {self.name} stopped")
