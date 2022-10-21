@@ -58,7 +58,7 @@ class Button:
         # Labels
         self.label = config.get("label")
         self.labels = config.get("labels")
-        self.label_rpn = config.get("label-rpn")
+#         self.label_rpn = config.get("label-rpn")
         self.label_format = config.get("label-format")
         self.label_font = config.get("label-font", self.deck.default_label_font)
         self.label_size = int(config.get("label-size", self.deck.default_label_size))
@@ -404,46 +404,52 @@ class Button:
             if fontname in fonts_available:
                 return self.deck.cockpit.fonts[fontname]
             else:
-                logger.warning(f"get_font: button label font '{fontname}' not found")
+                logger.warning(f"get_font: button {self.name}: button label font '{fontname}' not found")
         # 2. Tries deck default font
         if self.deck.default_label_font is not None and self.deck.default_label_font in fonts_available:
-            logger.info(f"get_font: using deck default font '{self.deck.default_label_font}'")
+            logger.info(f"get_font: button {self.name}: using deck default font '{self.deck.default_label_font}'")
             return self.deck.cockpit.fonts[self.deck.default_label_font]
         else:
-            logger.warning(f"get_font: deck default label font '{fontname}' not found")
+            logger.warning(f"get_font: button {self.name}: deck default label font '{fontname}' not found")
         # 3. Tries streamdecks default font
         if self.deck.cockpit.default_label_font is not None and self.deck.cockpit.default_label_font in fonts_available:
-            logger.info(f"get_font: using streamdecks default font '{self.deck.cockpit.default_label_font}'")
+            logger.info(f"get_font: button {self.name}: using cockpit default font '{self.deck.cockpit.default_label_font}'")
             return self.deck.cockpit.fonts[self.deck.cockpit.default_label_font]
-        logger.error(f"get_font: streamdecks default label font not found, tried {fontname}, {self.deck.default_label_font}, {self.deck.cockpit.default_label_font}")
+        logger.error(f"get_font: button {self.name}: cockpit default label font not found, tried {fontname}, {self.deck.default_label_font}, {self.deck.cockpit.default_label_font}")
         return None
 
     def get_label(self, base: dict = None, label_format: str = None):
         """
         Returns label, if any, with substitution of datarefs if any
         """
+        DATEREF_RPN = "${datref-rpn}"
         if base is None:
             base = self._config
 
-        label = None
-        label_rpn = base.get("label-rpn")
-        if label_rpn is not None:
-            expr = self.substitute_dataref_values(label_rpn)
-            rpc = RPC(expr)
-            res = rpc.calculate()  # to be formatted
-            if label_format is None:
-                label_format = base.get("label-format")
-            if label_format is not None:
-                label = label_format.format(res)
-            else:
-                label = str(res)
-            return label
-
         label = base.get("label")
-        if label_format is None:
-            label_format = base.get("label-format")
+
+        # If label contains ${datref-rpn}, it is replaced by the value of the datref-rpn calculation.
+        # So we do it.
+        if DATEREF_RPN in label:
+            datref_rpn = base.get("dataref-rpn")
+            if datref_rpn is not None:
+                expr = self.substitute_dataref_values(datref_rpn)
+                rpc = RPC(expr)
+                res = rpc.calculate()  # to be formatted
+                if label_format is None:
+                    label_format = base.get("label-format")
+                if label_format is not None:
+                    res = label_format.format(res)
+                else:
+                    res = str(res)
+                label.replace(DATEREF_RPN, res)
+            else:
+                logger.warning(f"get_label: button {self.name}: label contains {DATEREF_RPN} not no attribute found")
+
+        # Next, replaces other datarefs, if any
         if label is not None:
             label = self.substitute_dataref_values(label, formatting=label_format, default="---")
+
         return label
 
     def get_image_for_icon(self):
@@ -811,6 +817,12 @@ class ButtonAnimate(Button):
             time.sleep(self.speed)
         self.finished.set()
 
+    def should_run(self) -> bool:
+        """
+        Check conditions to animate the icon.
+        """
+        return self.current_value is not None and self.current_value == 1
+
     def anim_start(self):
         if not self.running:
             self.running = True
@@ -846,11 +858,11 @@ class ButtonAnimate(Button):
             if self.is_valid():
                 # self.label = f"pressed {self.current_value}"
                 self.xp.commandOnce(self.command)
-                if self.pressed_count % 2 == 0:
-                    self.anim_stop()
-                    self.render()
-                else:
+                if self.should_run():
                     self.anim_start()
+                else:
+                    self.anim_stop()
+                    self.render()  # renders default "off" icon
 
     # Works if underlying dataref changed
     def dataref_changed(self, dataref: "Dataref"):
@@ -859,12 +871,11 @@ class ButtonAnimate(Button):
         """
         self.set_current_value(self.button_value())
         logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
-        if self.current_value is not None and self.current_value == 1:
+        if self.should_run():
             self.anim_start()
         else:
-            if self.running:
-                self.anim_stop()
-            self.render()
+            self.anim_stop()
+            self.render()  # renders default "off" icon
 
     def clean(self):
         self.anim_stop()

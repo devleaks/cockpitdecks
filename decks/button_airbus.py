@@ -116,6 +116,7 @@ class AirbusButton(Button):
         return r
 
     def set_key_icon(self):
+        logger.debug(f"set_key_icon: button {self.name} has {self.current_value}")
         if self.current_value is not None and type(self.current_value) == list and len(self.current_value) > 1:
             self.lit_display = (self.current_value[0] != 0)
             self.lit_dual = (self.current_value[1] != 0)
@@ -174,6 +175,40 @@ class AirbusButton(Button):
                 return framed.lower() in ["true", "on", "yes", "1"]
             return False
 
+        def get_text(base: dict, text_format: str = None):
+            """
+            Returns text, if any, with substitution of datarefs if any.
+            Same as Button.get_label().
+            """
+            DATEREF_RPN = "${datref-rpn}"
+            label = base.get("text")
+
+            # If text contains ${datref-rpn}, it is replaced by the value of the datref-rpn calculation.
+            # So we do it.
+            if label is not None and DATEREF_RPN in label:
+                datref_rpn = base.get("dataref-rpn")
+                if datref_rpn is not None:
+                    expr = self.substitute_dataref_values(datref_rpn)
+                    rpc = RPC(expr)
+                    res = rpc.calculate()  # to be formatted
+                    if text_format is None:
+                        text_format = base.get("text-format")
+                    if text_format is not None:
+                        res = text_format.format(res)
+                    else:
+                        res = str(res)
+                    label.replace(DATEREF_RPN, res)
+                else:
+                    logger.warning(f"get_label: button {self.name}: label contains {DATEREF_RPN} not no attribute found")
+
+            # Next, replaces other datarefs, if any
+            if label is not None:
+                label = self.substitute_dataref_values(label, formatting=text_format, default="---")
+
+            return label
+
+
+
         ICON_SIZE = 256  # px
         inside = ICON_SIZE / 32 # 8px
 
@@ -208,7 +243,7 @@ class AirbusButton(Button):
 
         if display is not None:
             display_pos = display.get("position", "mm")
-            text = display.get("text")
+            text = get_text(display)  # display.get("text")
             if text is not None:
                 fontname = self.get_font(display.get("font"))
                 font = ImageFont.truetype(fontname, display.get("size"))
@@ -279,7 +314,7 @@ class AirbusButton(Button):
         # 1.2 Optional second/bottom item (called "dual")
         if dual is not None:
             dual_pos = dual.get("position", "mm")
-            text = dual.get("text")
+            text = get_text(dual)  # = dual.get("text")
             if text is not None:
                 fontname = self.get_font(dual.get("font"))
                 font = ImageFont.truetype(fontname, dual.get("size"))
@@ -416,6 +451,31 @@ class AirbusButtonAnimate(AirbusButton):
 
         self.render()
 
+    def should_run(self):
+        """
+        Check conditions to animate the icon.
+        """
+        logger.debug(f"should_run: button {self.name}: current value {self.current_value}")
+        # If scalar value:
+        if self.current_value is None or type(self.current_value) == int:
+            self.current_value = self.pressed_count % 2 if self.pressed_count is not None else 0
+            logger.debug(f"should_run: button {self.name}: current value {self.current_value}")
+            return self.current_value == 0
+
+        # If array or tuple value
+        for i in self.current_value:
+            if i is not None:
+                if type(i) == bool and i != False:
+                    logger.debug(f"should_run: button {self.name}: complex current bool value {i}, returning True")
+                    return True
+                elif type(i) == int and i != 0:
+                    logger.debug(f"should_run: button {self.name}: complex current int value {i}, returning True")
+                    return True
+                # else, do nothing, False assumed ("no clear sign to set it True")
+            # else, do nothing, None assumed False
+        logger.debug(f"should_run: button {self.name}: complex current value {self.current_value}, returning False")
+        return False  # all individual scalar in array or tuple are None, or 0, or False
+
     def loop(self):
         self.finished = threading.Event()
         while self.running:
@@ -437,7 +497,7 @@ class AirbusButtonAnimate(AirbusButton):
 
     def anim_stop(self):
         if self.running:
-            logger.debug(f"anim_start: button {self.name}: stopping..")
+            logger.debug(f"anim_stop: button {self.name}: stopping..")
             self.running = False
             if not self.finished.wait(timeout=2*self.speed):
                 logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
@@ -446,6 +506,13 @@ class AirbusButtonAnimate(AirbusButton):
         else:
             logger.debug(f"anim_stop: button {self.name}: already stopped")
 
+    def button_value(self):
+        if self.should_run():
+            logger.debug(f"render: button {self.name}: should no longer run")
+            return (0, 0)
+        logger.debug(f"render: button {self.name}: should run")
+        return (1, 1)
+
     def set_key_icon(self):
         """
         If button has more icons, select one from button current value
@@ -453,8 +520,12 @@ class AirbusButtonAnimate(AirbusButton):
         if self.running:
             self.lit_display = not self.lit_display
             self.lit_dual = not self.lit_dual
+#            logger.debug(f"set_key_icon: button {self.name}: running")
         else:
-            super().set_key_icon()  # off
+#            logger.debug(f"set_key_icon: button {self.name}: NOT running")
+            self.lit_display = False
+            self.lit_dual = False
+            super().set_key_icon()  # set off icon
 
     # Works with activation on/off
     def activate(self, state: bool):
@@ -463,11 +534,12 @@ class AirbusButtonAnimate(AirbusButton):
             if self.is_valid():
                 # self.label = f"pressed {self.current_value}"
                 self.xp.commandOnce(self.command)
-                if self.pressed_count % 2 == 0:
-                    self.anim_stop()
-                    self.render()
-                else:
+                if self.should_run():
                     self.anim_start()
+                else:
+                    self.anim_stop()
+                    self.render()  # renders default "off" icon
+        logger.debug(f"activate: button {self.name}: {self.pressed_count}")
 
     # Works if underlying dataref changed
     def dataref_changed(self, dataref: "Dataref"):
@@ -476,27 +548,27 @@ class AirbusButtonAnimate(AirbusButton):
         """
         self.set_current_value(self.button_value())
         logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
-        if self.current_value is not None and self.current_value == 1:
+        if self.should_run():
             self.anim_start()
         else:
-            if self.running:
-                self.anim_stop()
-            self.render()
+            self.anim_stop()
+            self.render()  # renders default "off" icon
 
     def render(self):
         if self.running is None:  # state unknown?
             logger.debug(f"render: button {self.name}: unknown state")
-            if self.lit_display or self.lit_dual:
-                logger.debug(f"render: button {self.name}: starting... ({self.lit_display}, {self.lit_dual})")
+            if self.should_run():
                 self.anim_start()
             else:
-                logger.debug(f"render: button {self.name}: stopping...")
+                logger.debug(f"render: button {self.name}: stopping..")
                 self.anim_stop()
+                super().render() # renders default "off" icon
             logger.debug(f"render: button {self.name}: ..done")
         else:
             super().render()
 
     def clean(self):
-        logger.debug(f"clean: button {self.name}: asking to stop")
+        logger.debug(f"clean: button {self.name}: asking to stop..")
         self.anim_stop()
         self.running = None  # unknown state
+        logger.debug(f"clean: button {self.name}: ..stopped")

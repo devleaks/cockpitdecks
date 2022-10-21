@@ -36,7 +36,7 @@ buttons:
         text: "MASTER\nCAUT"
         color: orange
         font: DIN Condensed Black.otf
-        dataref-rpn: 1
+    dataref-rpn: 0
   - index: 3
     type: airbus-push
     label: DOT Button
@@ -121,11 +121,12 @@ buttons:
     type: airbus
     airbus:
       display:
-        text: "28.5"
+        text: "${dataref-rpn}"
         color: white
         size: 100
         dataref-rpn: 1
         font: Seven Segment
+        dataref-rpn: 28.5
     label: BAT 1
   - index: 9
     type: airbus-push
