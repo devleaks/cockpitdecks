@@ -119,6 +119,7 @@ buttons:
   #       dataref-rpn: 1
   - index: 8
     type: airbus
+    name: BATTERY
     airbus:
       display:
         text: "${dataref-rpn}"
@@ -126,7 +127,8 @@ buttons:
         size: 100
         dataref-rpn: 1
         font: Seven Segment
-        dataref-rpn: 28.5
+        dataref-rpn: 28.476895
+        text-format: "{:02.1f}"
     label: BAT 1
   - index: 9
     type: airbus-push

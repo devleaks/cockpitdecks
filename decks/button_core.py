@@ -58,7 +58,6 @@ class Button:
         # Labels
         self.label = config.get("label")
         self.labels = config.get("labels")
-#         self.label_rpn = config.get("label-rpn")
         self.label_format = config.get("label-format")
         self.label_font = config.get("label-font", self.deck.default_label_font)
         self.label_size = int(config.get("label-size", self.deck.default_label_size))
@@ -316,13 +315,6 @@ class Button:
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
-        # 3.2 Label formula
-        label_rpn = base.get("label-rpn")
-        if label_rpn is not None and type(label_rpn) == str:
-            datarefs = re.findall("\\${(.+?)}", label_rpn)
-            if len(datarefs) > 0:
-                r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added label formula datarefs {datarefs}")
 
         return list(set(r))  # removes duplicates
 
@@ -422,33 +414,32 @@ class Button:
         """
         Returns label, if any, with substitution of datarefs if any
         """
-        DATEREF_RPN = "${datref-rpn}"
+        DATAREF_RPN = "${dataref-rpn}"
         if base is None:
             base = self._config
 
         label = base.get("label")
 
-        # If label contains ${datref-rpn}, it is replaced by the value of the datref-rpn calculation.
+        # If label contains ${dataref-rpn}, it is replaced by the value of the dataref-rpn calculation.
         # So we do it.
-        if DATEREF_RPN in label:
-            datref_rpn = base.get("dataref-rpn")
-            if datref_rpn is not None:
-                expr = self.substitute_dataref_values(datref_rpn)
-                rpc = RPC(expr)
-                res = rpc.calculate()  # to be formatted
-                if label_format is None:
-                    label_format = base.get("label-format")
-                if label_format is not None:
-                    res = label_format.format(res)
-                else:
-                    res = str(res)
-                label.replace(DATEREF_RPN, res)
-            else:
-                logger.warning(f"get_label: button {self.name}: label contains {DATEREF_RPN} not no attribute found")
-
-        # Next, replaces other datarefs, if any
         if label is not None:
-            label = self.substitute_dataref_values(label, formatting=label_format, default="---")
+            if DATAREF_RPN in label:
+                dataref_rpn = base.get("dataref-rpn")
+                if dataref_rpn is not None:
+                    expr = self.substitute_dataref_values(dataref_rpn)
+                    rpc = RPC(expr)
+                    res = rpc.calculate()  # to be formatted
+                    if label_format is None:
+                        label_format = base.get("label-format")
+                    if label_format is not None:
+                        res = label_format.format(res)
+                    else:
+                        res = str(res)
+                    label = label.replace(DATAREF_RPN, res)
+                else:
+                    logger.warning(f"get_label: button {self.name}: label contains {DATAREF_RPN} not no attribute found")
+            else:
+                label = self.substitute_dataref_values(label, formatting=label_format, default="---")
 
         return label
 

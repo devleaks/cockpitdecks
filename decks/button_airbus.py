@@ -116,7 +116,7 @@ class AirbusButton(Button):
         return r
 
     def set_key_icon(self):
-        logger.debug(f"set_key_icon: button {self.name} has {self.current_value}")
+        logger.debug(f"set_key_icon: button {self.name} has current value {self.current_value}")
         if self.current_value is not None and type(self.current_value) == list and len(self.current_value) > 1:
             self.lit_display = (self.current_value[0] != 0)
             self.lit_dual = (self.current_value[1] != 0)
@@ -180,33 +180,32 @@ class AirbusButton(Button):
             Returns text, if any, with substitution of datarefs if any.
             Same as Button.get_label().
             """
-            DATEREF_RPN = "${datref-rpn}"
+            DATAREF_RPN = "${dataref-rpn}"
             label = base.get("text")
 
-            # If text contains ${datref-rpn}, it is replaced by the value of the datref-rpn calculation.
+            # logger.debug(f"get_text: button {self.name}: raw: {label}")
+            # If text contains ${dataref-rpn}, it is replaced by the value of the dataref-rpn calculation.
             # So we do it.
-            if label is not None and DATEREF_RPN in label:
-                datref_rpn = base.get("dataref-rpn")
-                if datref_rpn is not None:
-                    expr = self.substitute_dataref_values(datref_rpn)
-                    rpc = RPC(expr)
-                    res = rpc.calculate()  # to be formatted
-                    if text_format is None:
-                        text_format = base.get("text-format")
-                    if text_format is not None:
-                        res = text_format.format(res)
-                    else:
-                        res = str(res)
-                    label.replace(DATEREF_RPN, res)
-                else:
-                    logger.warning(f"get_label: button {self.name}: label contains {DATEREF_RPN} not no attribute found")
-
-            # Next, replaces other datarefs, if any
             if label is not None:
-                label = self.substitute_dataref_values(label, formatting=text_format, default="---")
-
+                if DATAREF_RPN in label:
+                    dataref_rpn = base.get("dataref-rpn")
+                    if dataref_rpn is not None:
+                        expr = self.substitute_dataref_values(dataref_rpn)
+                        rpc = RPC(expr)
+                        res = rpc.calculate()  # to be formatted
+                        if text_format is None:
+                            text_format = base.get("text-format")
+                        if text_format is not None:
+                            res = text_format.format(res)
+                        else:
+                            res = str(res)
+                        label = label.replace(DATAREF_RPN, res)
+                    else:
+                        logger.warning(f"get_text: button {self.name}: text contains {DATAREF_RPN} not no attribute found")
+                else:
+                    label = self.substitute_dataref_values(label, formatting=text_format, default="---")
+                # logger.debug(f"get_text: button {self.name}: returned: {label}")
             return label
-
 
 
         ICON_SIZE = 256  # px
@@ -238,8 +237,8 @@ class AirbusButton(Button):
         draw = ImageDraw.Draw(glow)
 
         # 1.1 First/top/main item (called "display")
-        display = self.airbus.get("display")
-        dual    = self.airbus.get("dual")
+        display = self.airbus.get("display") if "display" in self._airbus else None
+        dual = self.airbus.get("dual") if "dual" in self._airbus else None
 
         if display is not None:
             display_pos = display.get("position", "mm")
@@ -265,7 +264,7 @@ class AirbusButton(Button):
                 color = get_color(display, self.lit_display)
                 if self.lit_display or not self.has_option("dark"):
                     draw.multiline_text((w, h),  # (glow.width / 2, 15)
-                              text=display.get("text"),
+                              text=text,
                               font=font,
                               anchor=p+"m",
                               align=a,
@@ -334,7 +333,7 @@ class AirbusButton(Button):
                 color = get_color(dual, self.lit_dual)
                 if self.lit_dual or not self.has_option("dark"):
                     draw.multiline_text((w, h),
-                              text=dual.get("text"),
+                              text=text,
                               font=font,
                               anchor=p+"m",
                               align=a,
