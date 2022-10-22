@@ -13,6 +13,7 @@ RESOURCES_FOLDER = "resources"
 
 DEFAULT_LAYOUT = "default"
 INIT_PAGE = "Index"
+DEFAULT_PAGE_NAME = "X-Plane"
 
 FONTS_FOLDER = "fonts"
 DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS

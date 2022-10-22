@@ -14,7 +14,7 @@ from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 # Data too delicate to be put in constant.py
@@ -282,9 +282,9 @@ class XPlaneUDP(XPlane):
         logger.debug(f"loop: ended but not terminated. Terminating..")
         if self.finished is not None:
             self.finished.set()
+            logger.debug(f"loop: allowed to be deleted")
         else:
             logger.warning(f"loop: no event set")
-        logger.debug(f"loop: allowed deletion")
         logger.debug(f"loop: ..terminated")
 
     # ################################
@@ -342,7 +342,7 @@ class XPlaneUDP(XPlane):
         if "IP" in self.BeaconData:
             if not self.running:
                 self.thread = threading.Thread(target=self.loop)
-                self.thread.name = f"dataref reader"
+                self.thread.name = f"XPlaneUDP::loop"
                 self.running = True
                 self.thread.start()
                 logger.info(f"start: XPlaneUDP started")
@@ -355,6 +355,7 @@ class XPlaneUDP(XPlane):
         if self.running:
             self.finished = threading.Event()
             self.running = False
-            logger.debug(f"terminate: wait permission to delete")
+            logger.debug(f"terminate: wait permission to be deleted..")
             self.finished.wait(timeout=20*DATA_REFRESH)
+            logger.debug(f"terminate: ..got it. I can now die in peace")
         logger.info(f"terminate: XPlaneUDP terminated")

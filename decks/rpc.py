@@ -1,4 +1,4 @@
-"""Simple implementation of a reverse polish calculator in Python."""
+# Simple implementation of a reverse polish calculator in Python.
 # Stolen here: https://github.com/scriptprinter/reverse-polish-calculator
 # Added a few necessary functions
 # Alternatively, the following package https://github.com/axiacore/py-expression-eval
@@ -11,14 +11,16 @@ class RPC:
 
     def __init__(self, expression):
         self.tokens = []
+
         if type(expression) != str:
-            print("RPC::__init__: expression is not a string")
-            try:
-                self.tokens.append(float(expression))
-            except:
-                self.tokens.append(None)
-                print("RPC::__init__: expression cannot be converted to a float")
-            return
+            expression = str(expression)
+            # print("RPC::__init__: expression is not a string")
+            # try:
+            #     self.tokens.append(float(expression))
+            # except:
+            #     self.tokens.append(expression)
+            #     print("RPC::__init__: expression cannot be converted to a float")
+            # return
 
         for part in expression.split(" "):
             try:

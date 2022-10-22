@@ -8,14 +8,11 @@ from .deck import Deck
 from .page import Page
 from .button import XTOUCH_MINI_BUTTON_TYPES
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .XTouchMini.Devices.xtouchmini import LED_MODE
 
 logger = logging.getLogger("XTouchMini")
 # logger.setLevel(logging.DEBUG)
-
-
-DEFAULT_PAGE_NAME = "X-Plane"
 
 
 class XTouchMini(Deck):

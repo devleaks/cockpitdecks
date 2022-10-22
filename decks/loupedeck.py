@@ -13,7 +13,7 @@ from enum import Enum
 from .Loupedeck.ImageHelpers import PILHelper
 from PIL import Image, ImageOps
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import convert_color
 from .button import Button, LOUPEDECK_BUTTON_TYPES
 from .page import Page
@@ -24,7 +24,6 @@ from .Loupedeck.Devices.constants import BUTTONS as LOUPEDECK_BUTTON_NAMES
 logger = logging.getLogger("Loupedeck")
 # logger.setLevel(logging.DEBUG)
 
-DEFAULT_PAGE_NAME = "X-Plane"
 
 VALID_STATE = {
     "down": 1,

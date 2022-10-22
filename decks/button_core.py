@@ -27,7 +27,7 @@ from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Button:
@@ -559,7 +559,8 @@ class Button:
         elif "counter" in self.options or "bounce" in self.options:
             logger.debug(f"button_value: button {self.name} has counter or bounce: {self.pressed_count}")
             return self.pressed_count
-        logger.warning(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None")
+        if type(self).__name__ not in ["ColoredButton"]:  # command-only buttons without real "display"
+            logger.warning(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None")
         return None
 
     # ##################################
@@ -818,7 +819,7 @@ class ButtonAnimate(Button):
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"button {self.name} animation"
+            self.thread.name = f"ButtonAnimate::loop({self.name})"
             self.thread.start()
         else:
             logger.warning(f"anim_start: button {self.name}: already started")

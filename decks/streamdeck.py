@@ -13,7 +13,7 @@ from enum import Enum
 from PIL import Image, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import convert_color
 from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
@@ -22,7 +22,7 @@ from .deck import Deck
 logger = logging.getLogger("Streamdeck")
 # logger.setLevel(logging.DEBUG)
 
-DEFAULT_PAGE_NAME = "X-Plane"
+
 POLL_FREQ = 5  # default is 20
 FLIP_DESCRIPTION = {
     (False, False): "not mirrored",

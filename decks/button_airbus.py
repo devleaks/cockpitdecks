@@ -15,7 +15,7 @@ from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AirbusButton")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 def convert_color_string(instr) -> tuple:  # tuple of int 0-255
@@ -488,7 +488,7 @@ class AirbusButtonAnimate(AirbusButton):
             logger.debug(f"anim_start: button {self.name}: starting..")
             self.running = True
             self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"button {self.name} animation"
+            self.thread.name = f"AirbusButtonAnimate::loop({self.name})"
             self.thread.start()
             logger.debug(f"anim_start: button {self.name}: ..started")
         else:
