@@ -62,6 +62,13 @@ class Cockpit:
         self.scan_devices()
 
 
+    def stats(self):
+        logger.info("Cockpitdecks -- Statistics")
+
+        for v in self.cockpit.values():
+            v.stats()
+
+
     def scan_devices(self):
         for decktype, builder in DECK_TYPES.items():
             decks = builder[1]().enumerate()
@@ -417,6 +424,7 @@ class Cockpit:
             self.xp.terminate()
             del self.xp
             self.xp = None
+            logger.info(f"terminate_all: xp deleted")
         logger.info(f"terminate_all: done")
         left = len(threading.enumerate())
         if left > 1:  # [MainThread]

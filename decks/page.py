@@ -31,6 +31,11 @@ class Page:
         self.buttons = {}
         self.datarefs = {}
 
+    def stats(self):
+        logger.info(f"Page {self.name} -- Statistics")
+        for v in self.buttons.values():
+            v.stats()
+
     def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():
             logger.error(f"add_button: button index {idx} already defined, ignoring {button.name}")

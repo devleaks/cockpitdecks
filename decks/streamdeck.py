@@ -290,11 +290,12 @@ class Streamdeck(Deck):
             logger.warning(f"make_icon_for_device: deck {self.name} has no device")
 
     def start(self):
-        if self.device is not None:
-            self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
-            self.device.set_key_callback(self.key_change_callback)
+        if self.device is None:
+            logger.warning(f"start: deck {self.name}: no device")
+            return
+        self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
+        self.device.set_key_callback(self.key_change_callback)
         logger.info(f"start: deck {self.name} listening for key strokes")
-
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:

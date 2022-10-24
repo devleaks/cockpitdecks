@@ -1,14 +1,6 @@
 # Creates pair of commandBegin/commandEnd for some commands.
 # New commands for "command" are "command/begin" and "command/end".
 #
-# Principle:
-# def a(b: str):
-#     print(b)
-# def execute(fun):
-#     fun()
-# todo = lambda: a("hello, world")
-# execute(todo)
-#
 import os
 import yaml
 import xp
@@ -20,19 +12,19 @@ CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
-
-RELEASE = "0.0.15"  # local version number
-
 REF = "cmdref"
 FUN = "cmdfun"
 HDL = "cmdhdl"
+
+
+RELEASE = "0.0.15"  # local version number
 
 class PythonInterface:
 
     def __init__(self):
         self.Name = "Cockpitdecks Helper"
         self.Sig = "cockpitdeckshelper.xppython3"
-        self.Desc = f"Decompose long press commands in begin and end. (Rel. {RELEASE})"
+        self.Desc = f"Decompose long press commands into command/begin and command/end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
         self.trace = True  # produces extra print/debugging in XPPython3.log for this class
@@ -66,7 +58,7 @@ class PythonInterface:
                 print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
                 self.enabled = True
                 return 1
-            print(self.Info, "PI::XPluginEnable: not found.")
+            print(self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found.")
             return 1
         except:
             if self.trace:
@@ -84,7 +76,8 @@ class PythonInterface:
     def XPluginReceiveMessage(self, inFromWho, inMessage, inParam):
         """
         When we receive a message that an aircraft was loaded, if it is the user aircraft,
-        we try to load the aicraft esdconfig. If it does not exist, we default to a screen saver.
+        we try to load the aicraft deskconfig.
+        If it does not exist, we default to a screen saver type of screen for the deck.
         """
         if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "PI::XPluginReceiveMessage: user aircraft received")
@@ -98,7 +91,7 @@ class PythonInterface:
                     if self.trace:
                         print(self.Info, "PI::XPluginReceiveMessage: .. " + acpath[0] + " done.")
                     return None
-                print(self.Info, "PI::XPluginReceiveMessage: aircraft not found.")
+                print(self.Info, "PI::XPluginReceiveMessage: getNthAircraftModel: aircraft not found.")
             except:
                 if self.trace:
                     print(self.Info, "PI::XPluginReceiveMessage: exception.")
@@ -107,6 +100,8 @@ class PythonInterface:
         return None
 
     def command(self, command: str, begin: bool) -> int:
+        # Execute a long press command
+        #
         try:
             if command in self.commands:
                 if begin:
@@ -131,12 +126,14 @@ class PythonInterface:
         return 0  # callback must return 0 or 1.
 
     def load(self, acpath):
-
+        # Unload previous aircraft's command set.
+        # Load current aircraft command set.
+        #
         # remove previous command set
         for k, v in self.commands.items():
             try:
                 if FUN in v:  # cached commands have no FUN
-                    xp.unregisterCommandHandler(v[REF], v[RUN], 1, None)
+                    xp.unregisterCommandHandler(v[REF], v[FUN], 1, None)
                 if self.trace:
                     print(self.Info, f"PI::load: unregistered {k}")
             except:
@@ -184,12 +181,15 @@ class PythonInterface:
 
 
     def get_beginend_commands(self, acpath):
+        # Scans an aircraft deckconfig and collects long press commands.
+        #
         # Constants (keywords in yaml file)
         BUTTONS = "buttons"
         DECKS = "decks"
         LAYOUT = "layout"
         COMMAND = "command"
         MULTI_COMMANDS = "commands"
+
         # Type of commands for which we need to create a pair of commands
         NOTICABLE_BUTTON_TYPES = ["long-press"]
 

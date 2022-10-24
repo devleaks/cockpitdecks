@@ -154,6 +154,10 @@ class Button:
     def id(self):
         return ":".join([self.deck.name, self.page.name, self.name])
 
+    def stats(self):
+        logger.info(f"Button {self.name} -- Statistics")
+        logger.info(f"Datarefs: {self.get_datarefs()}")
+
     def on_current_page(self):
         return self.deck.current_page == self.page
 
@@ -663,6 +667,26 @@ class ButtonReload(Button):
         if state:
             if self.is_valid():
                 self.deck.cockpit.reload_decks()
+
+
+class ButtonInspect(Button):
+    """
+    Execute command while the key is pressed.
+    Pressing starts the command, releasing stops it.
+    """
+
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+
+    def button_value(self):
+        return None
+
+    def activate(self, state: bool):
+        if not state:
+            return
+        what = self.option_value("what")
+        if what == "stats":
+            self.deck.cockpit.stats()
 
 
 # ###########################

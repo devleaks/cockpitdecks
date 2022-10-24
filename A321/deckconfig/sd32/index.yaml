@@ -93,6 +93,12 @@ buttons:
     icon: DATAREFTOOL
     command: leecbaker/datareftool/new_search_window
     label-position: ct
+  - index: 22
+    name: INSPECT
+    type: inspect
+    icon: INFO
+    options: what=stats
+    label-position: ct
   - index: 30
     name: RELOAD
     type: reload

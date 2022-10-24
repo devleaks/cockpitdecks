@@ -154,11 +154,12 @@ class XTouchMini(Deck):
         if self.device is not None:
             self.device.set_control(key=key, value=value, mode=mode)
 
-
     def start(self):
+        if self.device is None:
+            logger.warning(f"start: deck {self.name}: no device")
+            return
         self.device.start()
-        logger.debug(f"start: {self.name} started")
-
+        logger.debug(f"start: deck {self.name}: started")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any

@@ -1,7 +1,7 @@
 # ###########################
 # Mapping between button types and deck capabilities
 #
-from .button_core import Button, ButtonPage, ButtonReload
+from .button_core import Button, ButtonPage, ButtonReload, ButtonInspect
 from .button_core import ButtonPush, ButtonDual, ButtonLongpress
 from .button_core import ButtonUpDown, ButtonAnimate
 
@@ -13,6 +13,7 @@ from .button_airbus import AirbusButton, AirbusButtonPush, AirbusButtonAnimate
 STREAM_DECK_BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
+    "inspect": ButtonInspect,
     "push": ButtonPush,
     "dual": ButtonDual,
     "long-press": ButtonLongpress,
@@ -27,6 +28,7 @@ STREAM_DECK_BUTTON_TYPES = {
 LOUPEDECK_BUTTON_TYPES = {
     "none": Button,
     "page": ButtonPage,
+    "inspect": ButtonInspect,
     "push": ButtonPush,
     "dual": ButtonDual,
     "long-press": ButtonLongpress,
@@ -45,6 +47,7 @@ LOUPEDECK_BUTTON_TYPES = {
 
 XTOUCH_MINI_BUTTON_TYPES = {
     "none": Button,
+    "inspect": ButtonInspect,
     "push": ButtonPush,
     "dual": ButtonDual,
     "long-press": ButtonLongpress,

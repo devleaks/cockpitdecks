@@ -389,12 +389,13 @@ class Loupedeck(Deck):
             color = (240, 240, 240)
         self.device.set_button_color(button.index.replace("B", ""), color)
 
-
     def start(self):
-        if self.device is not None:
-            self.device.set_callback(self.key_change_callback)
-            self.device.start()  # restart it if it was terminated
-        logger.info(f"start: loupedeck {self.name} listening for key strokes")
+        if self.device is None:
+            logger.warning(f"start: loupedeck {self.name}: no device")
+            return
+        self.device.set_callback(self.key_change_callback)
+        self.device.start()  # restart it if it was terminated
+        logger.info(f"start: loupedeck {self.name}: listening for key strokes")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
