@@ -104,7 +104,10 @@ class Deck:
             self.change_page(self.home_page.name)
         logger.info(f"init: deck {self.name} initialized")
 
-    def stats(self):
+    def inspect(self):
+        """
+        This function is called on all pages of this Deck.
+        """
         logger.info(f"Deck {self.name} -- Statistics")
         for v in self.pages.values():
             v.stats()

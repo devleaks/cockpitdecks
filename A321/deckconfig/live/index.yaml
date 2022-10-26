@@ -4,18 +4,21 @@ buttons:
 # KNOB
 #
   - index: knobTL
+    name: FCU Airspeed
     type: knob
     commands:
       - sim/autopilot/airspeed_down
       - sim/autopilot/airspeed_up
     options: dot
   - index: knobCL
+    name: FCU Heading
     type: knob
     commands:
       - sim/autopilot/heading_down
       - sim/autopilot/heading_up
     options: dot
   - index: knobBL
+    name: FCU Baro
     type: knob-push-pull
     command: toliss_airbus/capt_baro_pull
     commands:
@@ -26,6 +29,7 @@ buttons:
     dataref: AirbusFBW/BaroStdCapt
     options: dot
   - index: knobTR
+    name: FCU Altitude
     type: knob-push-pull
     command: AirbusFBW/PullAltitude
     commands:
@@ -35,6 +39,7 @@ buttons:
       - sim/autopilot/altitude_up
     options: dot
   - index: knobCR
+    name: FCU V Speed
     type: knob-dataref
     dataref: sim/cockpit/autopilot/vertical_velocity
     step: 100
@@ -47,10 +52,8 @@ buttons:
       - AirbusFBW/PushVSSel
     options: dual
   - index: knobBR
-    type: knob-push-turn-release
-    commands:
-      - sim/autopilot/altitude_down
-      - sim/autopilot/altitude_up
+    name: FCU Unused
+    type: knob-none
 #
 # BUTTONS
 #
@@ -59,7 +62,7 @@ buttons:
 #
   - index: 0
     type: none
-#    label: ${sim/cockpit/autopilot/airspeed}
+    name: FCU Airspeed display
     label: ${sim/cockpit2/autopilot/airspeed_dial_kts_mach}
     label-format: "{:3.2f}"
     label-color: white
@@ -67,17 +70,8 @@ buttons:
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 1
-    # name: MASTERCAUT
-    # type: push
-    # icon: MASTER_CAUT_OFF
-    # multi-icons:
-    #   - MASTER_CAUT_OFF
-    #   - MASTER_CAUT
-    # command: sim/annunciator/clear_master_caution
-    # dataref: AirbusFBW/MasterCaut
-    # options: animation_speed=0.5
     type: airbus-animate
-    name: ANIMATE
+    name: MASTER CAUTION
     airbus:
       size: full
       display:
@@ -86,9 +80,10 @@ buttons:
         font: DIN Condensed Black.otf
     command: sim/annunciator/clear_master_caution
     dataref: AirbusFBW/MasterCaut
+    # options: animation_speed=0.5
   - index: 2
     type: airbus-animate
-    name: ANIMATE
+    name: MASTER WARNING
     airbus:
       size: full
       display:
@@ -97,16 +92,8 @@ buttons:
         font: DIN Condensed Black.otf
     command: sim/annunciator/clear_master_warning
     dataref: AirbusFBW/MasterWarn
-    # name: MASTERWARN
-    # type: animate
-    # icon: MASTER_WARN_OFF
-    # multi-icons:
-    #   - MASTER_WARN_OFF
-    #   - MASTER_WARN
-    # command: sim/annunciator/clear_master_warning
-    # dataref: AirbusFBW/MasterWarn
-    # options: animation_speed=0.5
   - index: 3
+    name: FCU Altitude display
     type: none
     label: ${sim/cockpit2/autopilot/altitude_dial_ft}
     label-format: "{:05.0f}"
@@ -115,6 +102,7 @@ buttons:
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 4
+    name: FCU Heading display
     type: none
     label: ${sim/cockpit/autopilot/heading_mag}
     label-format: "{:03.0f}"
@@ -136,7 +124,6 @@ buttons:
         size: 60
         dataref-rpn: "1"
     command: AirbusFBW/ATHRbutton
-    dataref: AirbusFBW/ATHRmode
   - index: 6
     name: AP1
     type: airbus-push
@@ -150,9 +137,9 @@ buttons:
         color: white
         size: 60
         dataref-rpn: "1"
-    dataref: AirbusFBW/AP1Engage
     command: toliss_airbus/ap1_push
   - index: 7
+    name: FCU V Speed display
     type: none
     label: ${sim/cockpit/autopilot/vertical_velocity}
     label-format: "{:04.0f}"
@@ -161,6 +148,7 @@ buttons:
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 8
+    name: FCU Baro display
     type: none
     label: ${dataref-rpn}
     label-format: "{: 4.0f}"
@@ -183,20 +171,6 @@ buttons:
         size: 60
         dataref-rpn: "1"
     command: AirbusFBW/LOCbutton
-    dataref: AirbusFBW/LOCilluminated
-  # - index: 9
-  #   name: FD 1
-  #   type: push
-  #   icon: P_1_GREEN_OFF
-  #   command: toliss_airbus/fd1_push
-  #   dataref: AirbusFBW/FD1Engage
-  #   dataref-states:
-  #     - 0.0
-  #     - 1.0
-  #   multi-icons:
-  #     - P_1_GREEN_OFF
-  #     - P_1_GREEN_ON
-  #   label: FD
   - index: 10
     name: APPR
     type: airbus-push
@@ -210,14 +184,13 @@ buttons:
         color: white
         size: 60
         dataref-rpn: "1"
-    dataref: AirbusFBW/APPRilluminated
     command: AirbusFBW/APPRbutton
-  - index: 11
-    name: RELOAD
-    type: reload
-    icon: RELOAD
-    label: RELOAD
-    label-position: ct
+  # - index: 11
+  #   name: RELOAD
+  #   type: reload
+  #   icon: RELOAD
+  #   label: RELOAD
+  #   label-position: ct
 #
 # SIDE KEYS
 #
@@ -245,14 +218,5 @@ buttons:
     icon-color: (94, 111, 130)
     multi-datarefs:
       - AirbusFBW/ALTmanaged
-  # - index: 1
-  #   type: dual
-  #   icon: TEST
-  #   label: "APU\nTEST"
-  #   label-position: ct
-  #   command: AirbusFBW/FireTestAPU
-  # - index: 0
-  #   type: buzz
-  #   pattern: ASCEND_SLOW
 includes: views
 fill-empty-keys: (94, 111, 130)

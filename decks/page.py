@@ -31,7 +31,10 @@ class Page:
         self.buttons = {}
         self.datarefs = {}
 
-    def stats(self):
+    def inspect(self):
+        """
+        This function is called on all buttons of this Page.
+        """
         logger.info(f"Page {self.name} -- Statistics")
         for v in self.buttons.values():
             v.stats()

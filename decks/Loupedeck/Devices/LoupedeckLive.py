@@ -515,11 +515,15 @@ class LoupedeckLive(Loupedeck):
             y = 0
         else:
             display = "center"
-            idx = int(idx)
-            width = BUTTON_SIZES[display][0]
-            height = BUTTON_SIZES[display][1]
-            x = idx % 4 * width
-            y = math.floor(idx / 4) * height
+            try:
+                idx = int(idx)
+                width = BUTTON_SIZES[display][0]
+                height = BUTTON_SIZES[display][1]
+                x = idx % 4 * width
+                y = math.floor(idx / 4) * height
+            except ValueError:
+                logger.warning(f"set_key_image: key {idx}: invalid index for center display, aborting set_key_image")
+                return
 
         width = BUTTON_SIZES[display][0]
         height = BUTTON_SIZES[display][1]

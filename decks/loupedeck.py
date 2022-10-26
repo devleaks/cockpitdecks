@@ -128,6 +128,9 @@ class Loupedeck(Deck):
                                 logger.error(f"load: page {name}: button {a} has no index, ignoring")
                                 continue
 
+                            if bty == "none" and idx is not None and type(idx) == str and idx.startswith("knob"):
+                                bty = "knob-none"  # special button flavor with no rendering...
+
                             if bty == "knob":
                                 if idx not in list(LOUPEDECK_BUTTON_NAMES.values())[0:6]:
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' ({type(idx)}) invalid for LoupedeckLive Device (keys={LOUPEDECK_BUTTON_NAMES.values()[:-7]}), ignoring")

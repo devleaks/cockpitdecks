@@ -5,14 +5,14 @@ import logging
 import time
 
 loggerDataref = logging.getLogger("Dataref")
-loggerDataref.setLevel(logging.INFO)
+# loggerDataref.setLevel(logging.INFO)
 
 logger = logging.getLogger("XPlane")
 # logger.setLevel(logging.DEBUG)
 
 DATAREF_ROUND = {
-    "AirbusFBW/BatVolts[0]": 3,
-    "AirbusFBW/BatVolts[0]": 3,
+    "AirbusFBW/BatVolts[0]": 1,
+    "AirbusFBW/BatVolts[1]": 1,
     "AirbusFBW/OHPLightsATA34[6]": 3,
     "AirbusFBW/OHPLightsATA34[8]": 3,
     "AirbusFBW/OHPLightsATA34[10]": 3,

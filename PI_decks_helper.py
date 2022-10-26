@@ -12,12 +12,20 @@ CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
+#
+#
+# Commands extracted from these button types
+# will get a command/begin command/end helper command.
+NOTICABLE_BUTTON_TYPES = ["long-press"]
+#
+#
+
 REF = "cmdref"
 FUN = "cmdfun"
 HDL = "cmdhdl"
 
 
-RELEASE = "0.0.15"  # local version number
+RELEASE = "0.0.16"  # local version number
 
 class PythonInterface:
 
@@ -189,9 +197,6 @@ class PythonInterface:
         LAYOUT = "layout"
         COMMAND = "command"
         MULTI_COMMANDS = "commands"
-
-        # Type of commands for which we need to create a pair of commands
-        NOTICABLE_BUTTON_TYPES = ["long-press"]
 
         commands = []
 

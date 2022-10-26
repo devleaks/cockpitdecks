@@ -17,6 +17,7 @@ logger = logging.getLogger("LoupedeckButton")
 class ColoredButton(ButtonPush):
     """
     A Push button. We can only change the color of the button.
+    The color is taken from current_value which defaults to icon_color (which defaults to default_icon_color).
     """
 
     def __init__(self, config: dict, page: "Page"):
@@ -24,6 +25,9 @@ class ColoredButton(ButtonPush):
 
     def has_key_image(self):
         return False  # default
+
+    def button_value(self):
+        return self.icon_color if self.icon_color is not None else [random.randint(0,255) for _ in range(3)]
 
     def render(self):
         """
@@ -34,7 +38,7 @@ class ColoredButton(ButtonPush):
         # logger.debug(f"render: button {self.name} rendered")
 
     def get_color(self):
-        return self.icon_color if self.icon_color is not None else [random.randint(0,255) for _ in range(3)]
+        return self.get_current_value()
 
 
 class ButtonSide(ButtonPush):

@@ -45,14 +45,22 @@ buttons:
     dataref: AirbusFBW/BatOHPArray[1]
     command: toliss_airbus/eleccommands/Bat2Toggle
   - index: 5
-    type: none
     name: BAT_VOLT_2
+    type: none
     label: ${AirbusFBW/BatVolts[1]}
     label-format: "{:2.1f}"
     label-color: white
     label-size: 56
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
+    # type: none
+    # name: BAT_VOLT_2
+    # label: ${AirbusFBW/BatVolts[1]}
+    # label-format: "{:2.1f}"
+    # label-color: white
+    # label-size: 56
+    # label-font: Seven Segment.ttf
+    # icon-color: (40, 40, 40)
   - index: 6
     name: AC ESS FEED
     type: none

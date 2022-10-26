@@ -69,6 +69,19 @@ class AirbusButton(Button):
             self.icon = None
             self.multi_icons = None
 
+    def get_airbus_datarefs(self, base:dict = None):
+        """
+        Complement button datarefs with airbus special lit datarefs
+        """
+        r = []
+        for key in ["display", "dual"]:
+            if key in self.airbus:
+                datarefs = super().get_datarefs(base=self.airbus[key])
+                if len(datarefs) > 0:
+                    r = r + datarefs
+                    logger.debug(f"get_airbus_datarefs: button {self.name}: added {key} datarefs {datarefs}")
+        return r
+
     def get_datarefs(self, base:dict = None):
         """
         Complement button datarefs with airbus special lit datarefs
@@ -77,20 +90,47 @@ class AirbusButton(Button):
             return self.all_datarefs
 
         r = super().get_datarefs()
+        r = r + self.get_airbus_datarefs()
+        return r
+
+    def button_level_driven(self) -> bool:
+        """
+        Determine if we need to consider either the global button-level value or
+        individula display/dual -level values
+        """
+        button_level = True
+        datarefs = self.get_airbus_datarefs()
+        # Is there material to decide at display/dual level?
         for key in ["display", "dual"]:
             if key in self.airbus:
-                datarefs = super().get_datarefs(base=self.airbus[key])
-                if len(datarefs) > 0:
-                    r = r + datarefs
-                    logger.debug(f"get_datarefs: button {self.name}: added {key} datarefs {datarefs}")
-        return r
+                c = self.airbus[key]
+                if "dataref-rpn" in c or "dataref" in c:
+                    button_level = False
+                # else remains button-level True
+        if not button_level:
+            logger.debug(f"button_level_driven: button {self.name}: driven at display/dual level")
+            if len(datarefs) < 1:
+                logger.warning(f"button_level_driven: button {self.name}: no display/dual dataref")
+            return False
+        # Is there material to decide at button level?
+        logger.debug(f"button_level_driven: button {self.name}: driven at button level")
+        if self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # Airbus button is driven by button-level dataref
+            logger.warning(f"button_level_driven: button {self.name}: no button dataref")
+        return True
+
+
 
     def button_value(self):
         """
-        Same as button value, but exclusively for Airbus-type buttons.
-        We basically check with the supplied dataref/dataref-rpn that the button is lit or not.
+        Same as button value, but exclusively for Airbus-type buttons with two distinct values (display and dual).
+        If button is driven by single dataref, we forward to button class.
+        Else, we basically check with the supplied dataref/dataref-rpn that the button is lit or not for each button part.
         """
         r = []
+        if self.button_level_driven():
+            logger.debug(f"button_value: button {self.name}: driven by button-level dataref")
+            return super().button_value()
+
         for key in ["display", "dual"]:
             if key in self.airbus:
                 c = self.airbus[key]
@@ -117,10 +157,16 @@ class AirbusButton(Button):
 
     def set_key_icon(self):
         logger.debug(f"set_key_icon: button {self.name} has current value {self.current_value}")
-        if self.current_value is not None and type(self.current_value) == list and len(self.current_value) > 1:
+        if self.current_value is not None and type(self.current_value) in [list, tuple] and len(self.current_value) > 1:
+            logger.debug(f"set_key_icon: button {self.name}: driven by display/dual-level dataref")
             self.lit_display = (self.current_value[0] != 0)
             self.lit_dual = (self.current_value[1] != 0)
+        elif self.current_value is not None and type(self.current_value) in [int, float]:
+            logger.debug(f"set_key_icon: button {self.name}: driven by button-level dataref")
+            self.lit_display = (self.current_value != 0)
+            self.lit_dual = (self.current_value != 0)
         # else: leave untouched
+
 
     def get_image(self):
         """
@@ -454,12 +500,24 @@ class AirbusButtonAnimate(AirbusButton):
         """
         Check conditions to animate the icon.
         """
-        logger.debug(f"should_run: button {self.name}: current value {self.current_value}")
-        # If scalar value:
-        if self.current_value is None or type(self.current_value) == int:
+        logger.debug(f"should_run: button {self.name}: current value {self.current_value}, ({type(self.current_value)})")
+        # If computed value:
+        if self.has_option("counter"):
             self.current_value = self.pressed_count % 2 if self.pressed_count is not None else 0
-            logger.debug(f"should_run: button {self.name}: current value {self.current_value}")
+            logger.debug(f"should_run: button {self.name}: current counter value {self.current_value}")
             return self.current_value == 0
+
+        if self.current_value is None:
+            logger.debug(f"should_run: button {self.name}: current value is None, returning False")
+            return False
+
+        # If scalar value:
+        if type(self.current_value) in [int, float]:
+            logger.debug(f"should_run: button {self.name}: current value is integer")
+            if self.has_option("inverted_logic"):
+                logger.debug(f"should_run: button {self.name}: inverted logic")
+                return self.current_value == 0
+            return self.current_value != 0
 
         # If array or tuple value
         for i in self.current_value:
@@ -504,13 +562,6 @@ class AirbusButtonAnimate(AirbusButton):
             self.render()
         else:
             logger.debug(f"anim_stop: button {self.name}: already stopped")
-
-    def button_value(self):
-        if self.should_run():
-            logger.debug(f"render: button {self.name}: should no longer run")
-            return (0, 0)
-        logger.debug(f"render: button {self.name}: should run")
-        return (1, 1)
 
     def set_key_icon(self):
         """

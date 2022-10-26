@@ -78,6 +78,12 @@ buttons:
     label-position: cm
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
+  - index: 27
+    name: INSPECT
+    type: inspect
+    icon: INFO
+    options: what=stats
+    label-position: ct
   - index: 28
     name: XP PYTHON
     type: push
@@ -92,12 +98,6 @@ buttons:
     label: DataRefTool
     icon: DATAREFTOOL
     command: leecbaker/datareftool/new_search_window
-    label-position: ct
-  - index: 22
-    name: INSPECT
-    type: inspect
-    icon: INFO
-    options: what=stats
     label-position: ct
   - index: 30
     name: RELOAD

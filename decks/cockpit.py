@@ -62,7 +62,10 @@ class Cockpit:
         self.scan_devices()
 
 
-    def stats(self):
+    def inspect(self):
+        """
+        This function is called on all instances of Deck.
+        """
         logger.info("Cockpitdecks -- Statistics")
 
         for v in self.cockpit.values():

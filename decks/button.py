@@ -1,17 +1,18 @@
 # ###########################
 # Mapping between button types and deck capabilities
 #
-from .button_core import Button, ButtonPage, ButtonReload, ButtonInspect
+from .button_core import Button, ButtonNone, ButtonPage, ButtonReload, ButtonInspect
 from .button_core import ButtonPush, ButtonDual, ButtonLongpress
 from .button_core import ButtonUpDown, ButtonAnimate
 
-from .button_knob import KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref
+from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref
 from .button_loupe import ColoredButton, ButtonSide
 from .button_airbus import AirbusButton, AirbusButtonPush, AirbusButtonAnimate
 
 
 STREAM_DECK_BUTTON_TYPES = {
     "none": Button,
+    "button-none": ButtonNone,
     "page": ButtonPage,
     "inspect": ButtonInspect,
     "push": ButtonPush,
@@ -27,6 +28,7 @@ STREAM_DECK_BUTTON_TYPES = {
 
 LOUPEDECK_BUTTON_TYPES = {
     "none": Button,
+    "button-none": ButtonNone,
     "page": ButtonPage,
     "inspect": ButtonInspect,
     "push": ButtonPush,
@@ -34,7 +36,9 @@ LOUPEDECK_BUTTON_TYPES = {
     "long-press": ButtonLongpress,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,
-    "knob": KnobPush,
+    "knob-none": KnobNone,
+    "knob": Knob,
+    "knob-push": KnobPush,
     "knob-push-pull": KnobPushPull,
     "knob-dataref": KnobDataref,
     "button": ColoredButton,
@@ -51,7 +55,9 @@ XTOUCH_MINI_BUTTON_TYPES = {
     "push": ButtonPush,
     "dual": ButtonDual,
     "long-press": ButtonLongpress,
-    "knob": KnobPush,
+    "knob-none": KnobNone,
+    "knob": Knob,
+    "knob-push": KnobPush,
     "knob-push-pull": KnobPushPull,
     "knob-push-turn-release": KnobPushTurnRelease
 }

@@ -154,7 +154,7 @@ class Button:
     def id(self):
         return ":".join([self.deck.name, self.page.name, self.name])
 
-    def stats(self):
+    def inspect(self):
         logger.info(f"Button {self.name} -- Statistics")
         logger.info(f"Datarefs: {self.get_datarefs()}")
 
@@ -170,6 +170,7 @@ class Button:
             self.bounce_arr = self.make_bounce_array(stops)
 
         # test: we try to immediately get a first value
+        logger.debug(f"init: button {self.name} setting initial value..")
         if self.initial_value is not None:
             self.set_current_value(self.initial_value)
             self._first_value = self.initial_value
@@ -177,7 +178,7 @@ class Button:
             self.set_current_value(self.button_value())
         if self._first_value is None and self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # won't get a value from datarefs
             self._first_value = self.current_value
-        logger.debug(f"init: button {self.name} has value {self.current_value}")
+        logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
 
         if self.has_option("guarded"):
             self.guarded = True   # guard type is option value: guarded=cover or grid.
@@ -682,16 +683,25 @@ class ButtonInspect(Button):
         return None
 
     def activate(self, state: bool):
-        if not state:
-            return
-        what = self.option_value("what")
-        if what == "stats":
-            self.deck.cockpit.stats()
+        if state:
+            # what = self.option_value("what")
+            self.deck.cockpit.inspect()
 
 
 # ###########################
 # Normal, standard buttons and switches
 #
+class ButtonNone(Button):
+    """
+    Execute command once when key pressed. Nothing is done when button is released.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+
+    def get_image(self):
+        return None
+
+
 class ButtonPush(Button):
     """
     Execute command once when key pressed. Nothing is done when button is released.

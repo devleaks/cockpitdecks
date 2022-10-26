@@ -5,11 +5,57 @@ import logging
 import threading
 import time
 
-from .button_core import ButtonPush, ButtonDual
+from .button_core import Button, ButtonPush, ButtonDual
 
 
 logger = logging.getLogger("Knob")
 # logger.setLevel(logging.DEBUG)
+
+
+class KnobNone(Button):
+    """
+    A Knob that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+
+    def has_key_image(self):
+        return False
+
+    def is_valid(self):
+        return super().is_valid()
+
+    def activate(self, state):
+        logger.info(f"activate: button {self.name} has no action")
+
+    def render(self):
+        """
+        No rendering for knobs, but render screen next to it in case it carries status.
+        """
+        disp = "left" if self.index[-1] == "L" else "right"
+        if disp in self.page.buttons.keys():
+            logger.debug(f"render: button {self.name} rendering {disp}")
+            self.page.buttons[disp].render()
+
+
+class Knob(KnobNone):
+    """
+    A Knob that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        KnobNone.__init__(self, config=config, page=page)
+
+    def is_valid(self):
+        logger.warning(f"is_valid: button {self.name} must have 2 commands")
+        return True  # super().is_valid()
+
+    def activate(self, state):
+        if state == 2:  # rotate left
+            self.xp.commandOnce(self.commands[0])
+        elif state == 3:  # rotate right
+            self.xp.commandOnce(self.commands[1])
+        else:
+            logger.warning(f"activate: button {self.name} invalid state {state}")
 
 
 class KnobPush(ButtonPush):
