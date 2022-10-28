@@ -3,38 +3,57 @@ buttons:
 #
 # KNOB
 #
-  - index: knob1
-    type: knob
+# DO NOT use simple number to identify knobs.
+  - index: encoder0
+    name: KNOBLED
+    type: knob-led
     commands:
       - AirbusFBW/RMP1FreqDownLrg
       - AirbusFBW/RMP1FreqUpLrg
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
-    options: dual
-  - index: knob2
-    type: knob
+    led-mode: 0
+    dataref-rpn: 8
+  - index: encoder1
+    name: KNOBLED
+    type: knob-led
     commands:
       - AirbusFBW/RMP1FreqDownLrg
       - AirbusFBW/RMP1FreqUpLrg
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
-    options: dual
-  - index: knob3
-    type: knob
+    led-mode: 1
+    dataref-rpn: 4
+  - index: encoder2
+    name: KNOBLED
+    type: knob-led
     commands:
       - AirbusFBW/RMP1FreqDownLrg
       - AirbusFBW/RMP1FreqUpLrg
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
-    options: dual
-  - index: knob4
-    type: knob
+    led-mode: 2
+    dataref-rpn: 8
+  - index: encoder3
+    name: KNOBLED
+    type: knob-led
     commands:
       - AirbusFBW/RMP1FreqDownLrg
       - AirbusFBW/RMP1FreqUpLrg
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
-    options: dual
+    led-mode: 3
+    dataref-rpn: 3
+  - index: encoder4
+    name: KNOBLED
+    type: knob-led
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    led-mode: 4
+    dataref-rpn: 3
 #
 # BUTTONS
 #
@@ -48,4 +67,21 @@ buttons:
     type: push
     command: sim/annunciator/clear_master_warning
     dataref: AirbusFBW/MasterWarn
-includes: views
+
+  - index: 9
+    name: ALLON
+    type: push
+    options: counter
+    dataref-rpn: 1
+  - index: 10
+    name: ALLOFF
+    type: push
+    dataref-rpn: 0
+    options: counter
+  - index: 11
+    name: ALLBLINK
+    type: push
+    dataref-rpn: 1
+    options: blink
+
+# includes: views

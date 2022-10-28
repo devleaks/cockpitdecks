@@ -7,6 +7,8 @@ import time
 
 from .button_core import Button, ButtonPush, ButtonDual
 
+from .XTouchMini.Devices.xtouchmini import LED_MODE
+
 
 logger = logging.getLogger("Knob")
 # logger.setLevel(logging.DEBUG)
@@ -267,3 +269,39 @@ class KnobDataref(ButtonPush):
         if disp in self.page.buttons.keys():
             logger.debug(f"render: button {self.name} rendering {disp}")
             self.page.buttons[disp].render()
+
+
+class KnobLED(Knob):
+    """
+    A knob button that writes directly to a dataref.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Knob.__init__(self, config=config, page=page)
+        self.mode = config.get("led-mode", LED_MODE.SINGLE.value)
+        if self.mode < 0 or self.mode > len(LED_MODE)-1:
+            logger.warning(f"__init__: button {self.name}: invalid mode value {self.mode}, using default")
+            self.mode = LED_MODE.SINGLE
+        else:
+            self.mode = LED_MODE(self.mode)  # assumes values are 0, 1, ... , N.
+
+    def get_led(self):
+        logger.debug(f"get_led: button {self.name}: returning {self.current_value}, {self.mode}")
+        return int(self.current_value), self.mode
+
+    def render(self):
+        """
+        Ask deck to set this button's image on the deck.
+        set_key_image will call this button get_button function to get the icon to display with label, etc.
+        """
+        if self.deck is not None:
+            if self.on_current_page():
+                self.deck.set_key_image(self)
+                # logger.debug(f"render: button {self.name} rendered")
+            else:
+                logger.debug(f"render: button {self.name} not on current page")
+        else:
+            logger.debug(f"render: button {self.name} has no deck")
+
+    def clean(self):
+        self.previous_value = None  # this will provoke a refresh of the value on data reload
+        # should clean LED

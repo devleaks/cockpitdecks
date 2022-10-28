@@ -1,17 +1,21 @@
 # Behringer X-Touch Mini deck
 #
 import os
+import re
 import yaml
 import logging
 
 from .deck import Deck
 from .page import Page
-from .button import XTOUCH_MINI_BUTTON_TYPES
+from .button import XTOUCH_MINI_BUTTON_TYPES, Knob
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import YAML_BUTTONS_KW
+from .constant import print_stack
+
 from .XTouchMini.Devices.xtouchmini import LED_MODE
 
-logger = logging.getLogger("XTouchMini")
+logger = logging.getLogger("XTouchDeck")
 # logger.setLevel(logging.DEBUG)
 
 
@@ -23,15 +27,11 @@ class XTouchMini(Deck):
 
         self.numkeys = 16
 
-        self.init()
-
-
-    def init(self):
-        self.device.set_callback(self.key_change_callback)
         self.start()
         # self.device.test()
         self.load_default_page()
         self.load()
+        self.init()
 
     def load_default_page(self):
         # Add index 0 only button:
@@ -44,7 +44,7 @@ class XTouchMini(Deck):
                                                 "name": "X-Plane Map",
                                                 "type": "push",
                                                 "command": "sim/map/show_current",
-                                                "label": "Map"
+                                                "options": "counter"
                                             }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
@@ -57,7 +57,6 @@ class XTouchMini(Deck):
         """
         Loads Streamdeck pages during configuration
         """
-        YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
         if self.layout is None:
             self.load_default_page()
             return
@@ -142,10 +141,35 @@ class XTouchMini(Deck):
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
             logger.info(f"load: deck {self.name} init page {self.home_page.name}")
 
+    # High-level (functional)calls for feedback/visualization
+    #
     def set_key_image(self, button):
-        self.device.set_key(key=button.index - 8, on=button.is_pushed())
-        logger.debug(f"set_key_image: button {button.name} rendered")
+        if isinstance(button, Knob):
+            self.set_encoder_led(button)
+        else:
+            self.set_button_led(button)
 
+    def set_encoder_led(self, button):
+        # logger.debug(f"test: button {button.name}: {'='*50}")
+        # self.device.test()
+        # logger.debug(f"test: button {button.name}: {'='*50}")
+        # return
+        value, mode = button.get_led()
+        # find index in string
+        nums = re.findall("\\d+(?:\\.\\d+)?$", button.index)
+        if len(nums) < 1:
+            logger.warning(f"set_encoder_led: button {button.name}: {button.index} => cannot determine numeric index")
+            return
+        i = int(nums[0])
+        logger.debug(f"set_encoder_led: button {button.name}: {button.index} => {i}, value={value}, mode={mode}")
+        self.set_control(key=i, value=value, mode=mode)
+
+    def set_button_led(self, button):
+        logger.debug(f"set_button_led: button {button.name}: {button.index} => {button.is_on()} ({button.has_option('blink')})")
+        self.set_key(key=button.index, on=button.is_on(), blink=button.has_option("blink"))
+
+    # Low-level wrapper around device API (direct forward)
+    #
     def set_key(self, key: int, on:bool=False, blink:bool=False):
         if self.device is not None:
             self.device.set_key(key=key, on=on, blink=blink)
@@ -154,10 +178,13 @@ class XTouchMini(Deck):
         if self.device is not None:
             self.device.set_control(key=key, value=value, mode=mode)
 
+    # Start/stop device management & control
+    #
     def start(self):
         if self.device is None:
             logger.warning(f"start: deck {self.name}: no device")
             return
+        self.device.set_callback(self.key_change_callback)
         self.device.start()
         logger.debug(f"start: deck {self.name}: started")
 

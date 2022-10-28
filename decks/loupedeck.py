@@ -14,6 +14,7 @@ from .Loupedeck.ImageHelpers import PILHelper
 from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .constant import convert_color
 from .button import Button, LOUPEDECK_BUTTON_TYPES
 from .page import Page
@@ -61,8 +62,6 @@ class Loupedeck(Deck):
         """
         Loads Streamdeck pages during configuration
         """
-        YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
-        YAML_INCLUDE_KW = "includes"
         if self.layout is None:
             self.load_default_page()
             return
@@ -296,10 +295,21 @@ class Loupedeck(Deck):
                     kstart = msg["key"] if msg["key"] is not None else msg["screen"]
                     kend = self.touches[msg["id"]]["key"] if self.touches[msg["id"]]["key"] is not None else self.touches[msg["id"]]["screen"]
                     same_key = kstart == kend
+                    event_dict = {
+                        "begin_key": kstart,
+                        "begin_x": self.touches[msg["id"]]["x"],
+                        "begin_y": self.touches[msg["id"]]["y"],
+                        "end_key": kend,
+                        "end_x": msg["x"],
+                        "end_y": msg["y"],
+                        "diff_x": dx,
+                        "diff_y": dy,
+                        "same_key": same_key
+                    }
                     event = [self.touches[msg["id"]]["x"], self.touches[msg["id"]]["y"], kstart]
                     event = event + [msg["x"], msg["y"], kend]
                     event = event + [dx, dy, same_key]
-                    # logger.debug(f"key_change_callback: side bar touched, no processing event={event}")
+                    logger.debug(f"key_change_callback: side bar touched, no processing event={event_dict}")
                     transfer(deck, kstart, event)
             else:
                 logger.error(f"key_change_callback: received touchend but no matching touchstart found")

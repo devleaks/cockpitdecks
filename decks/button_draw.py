@@ -13,7 +13,7 @@ from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("DrawButton")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class DrawButton(Button):

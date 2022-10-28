@@ -8,16 +8,37 @@ import mido
 from enum import Enum
 
 logger = logging.getLogger("XTouchMini")
+# logger.setLevel(logging.DEBUG)
 
 GLOBAL_CHANNEL = 0
 CHANNEL = 10
 
 class LED_MODE(Enum):
     SINGLE = 0
-    PAN = 1
-    FAN = 2
+    FAN = 1
+    TRIM = 2
     SPREAD = 3
-    TRIM = 4
+
+MAKIE_MAPPING = {
+    0: 89,
+    1: 90,
+    2: 40,
+    3: 41,
+    4: 42,
+    5: 43,
+    6: 44,
+    7: 45,
+    8: 87,
+    9: 88,
+   10: 91,
+   11: 92,
+   12: 86,
+   13: 93,
+   14: 94,
+   15: 95,
+  "A": 84,
+  "B": 85
+}
 
 class XTouchMini:
 
@@ -43,11 +64,18 @@ class XTouchMini:
     def close(self):
         pass
 
-    def reset(self):
-        for i in range(16):
+    def reset(self, silence: bool = True):
+        if silence:
+            l= logger.getEffectiveLevel()
+            logger.setLevel(logging.WARNING)
+        logger.debug(f"reset: reseting..")
+        for i in MAKIE_MAPPING.keys():
             self.set_key(i)
-        for i in range(1, 9):
+        for i in range(8):
             self.set_control(i, value=0)
+        logger.debug(f"reset: ..reset")
+        if silence:
+            logger.setLevel(l)
 
     def is_visual(self):
         return False
@@ -95,6 +123,13 @@ class XTouchMini:
 
     def start(self) -> None:
         logger.debug(f"start: starting {self.name}..")
+
+        logger.debug(f"start: setting Makie mode..")
+        m = mido.Message(type="control_change", control=127, value=1)
+        self.send(m)
+        time.sleep(1)
+        logger.debug(f"start: ..set")
+
         self.running = True
         t = threading.Thread(target=self.loop)
         t.name = "XTouchMini::loop"
@@ -120,7 +155,7 @@ class XTouchMini:
 
 
     def stop(self) -> None:
-        logger.debug(f"stop: stopping {self.name}..")
+        logger.debug(f"stop: stopping {self.name} (wait can last up to {2 * self.timeout}s)..")
         self.wait_finished = threading.Event()
         self.running = False
         if not self.wait_finished.wait(2 * self.timeout):
@@ -136,60 +171,59 @@ class XTouchMini:
         pass
 
     def set_key(self, key: int, on:bool=False, blink:bool=False):
+        # https://stackoverflow.com/questions/39435550/changing-leds-on-x-touch-mini-mackie-control-mc-mode
+        # To blink, key must be on=True and blink=True
+        if key not in MAKIE_MAPPING.keys():
+            logger.warning(f"set_key: invalid key {key}")
+            return
         velocity = 0
         if on:
-            velocity = 1
-        elif blink:
-            velocity = 2
-        m = mido.Message(type="note_on", note=key, velocity=velocity)
+            velocity = 127
+            if blink:
+                velocity = 1
+        m = mido.Message(type="note_on", note=MAKIE_MAPPING[key], velocity=velocity)
         self.send(m)
 
-    # Modes: There are 11 LEDs
-    # Single Led Lit:  00010000000 (Values 0 - 11)
-    # Trim:   11110000000 (Values 16 - 27)
-    # Fan:    00111100000 (Values 32 - 43)
-    # Spread: 00011111000 (Values 48 - 59)
+    # #: Modes : There are 11 LEDs: 0-4, middle=5, 6-10
+    # 0: Single: 00000001000
+    # 1: Fan   : 00000111000
+    # 2: Trim  : 11111111000
+    # 3: Spread: 00111111100
     #
     def set_control(self, key: int, value:int, mode: LED_MODE = LED_MODE.SINGLE):
-        def decode_value(v):
-            if v == 0:
-                return "all off"
-            elif v < 14:
-                return f"single {v} on"
-            elif v > 13 and v < 27:
-                return f"single {v - 13} blink"
-            elif v == 27:
-                return "all on"
-            elif v == 28:
-                return "all blink"
-            else:
-                return "ignored"
-
-        m = mido.Message(type="control_change", control=key, value=mode.value)
+        if key < 0 or key > 7:
+            logger.warning(f"set_control: invalid key {key}")
+            return
+        if value < 0:
+            logger.warning(f"set_control: invalid value {value}, setting min")
+            value = 0
+        elif value > 11:
+            logger.warning(f"set_control: invalid value {value}, setting max")
+            value = 11
+        m = mido.Message(type="control_change", control=48+key, value=(mode.value * 16)+value)
         self.send(m)
-        m = mido.Message(type="control_change", control=8+key, value=value)
-        self.send(m)
-        logger.debug(f"set_control: encoder {key}: {mode.name}: {decode_value(value)}")
 
 
     def test(self):
         m = mido.Message(type="control_change", control=127, value=1)
         self.send(m)
         time.sleep(1)
-        m = mido.Message(type="control_change", control=127, value=0)
-        self.send(m)
-        time.sleep(1)
+        value_offset = 8
+        mode = None
 
-        for i in range(16):
-            self.set_key(i, on=random.choice([True, False]), blink=random.choice([True, False, False, False, False, False, False, False]))
+        for i in range(128):
+            self.set_key(i)
+        logger.debug(f"test: ..reset")
 
-        for i in range(1, 9):
-            self.set_control(i, value=random.randrange(29), mode=random.choice(list(LED_MODE)))
+        for i in range(40, 46):
+            self.set_key(i, on=True, blink=False)
+            time.sleep(1)
 
-        # for k in range(5):
-        #     for i in range(60):
-        #         m = mido.Message(type="control_change", control=8, value=4)
+        # for i in range(0, 8):
+        #     for j in range(1, 127):
+        #         if mode is not None:
+        #             m = mido.Message(type="control_change", control=i, value=mode)
+        #             self.send(m)
+        #         m = mido.Message(type="control_change", control=48+(i%8), value=j)
         #         self.send(m)
-        #         m = mido.Message(type="control_change", control=16, value=i)
-        #         self.send(m)
-        #         time.sleep(0.2)
+        #         time.sleep(0.1)

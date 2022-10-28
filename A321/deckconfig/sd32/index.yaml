@@ -78,27 +78,27 @@ buttons:
     label-position: cm
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
-  - index: 27
-    name: INSPECT
-    type: inspect
-    icon: INFO
-    options: what=stats
-    label-position: ct
-  - index: 28
-    name: XP PYTHON
-    type: push
-    icon: XP-PYTHON
-    command: XPPython3/reloadScripts
-    label: XPPython3
-    label-position: ct
-  - index: 29
-    name: DATAREFTOOL
-    type: push
-    icon: NONE
-    label: DataRefTool
-    icon: DATAREFTOOL
-    command: leecbaker/datareftool/new_search_window
-    label-position: ct
+  # - index: 27
+  #   name: INSPECT
+  #   type: inspect
+  #   icon: INFO
+  #   options: what=stats
+  #   label-position: ct
+  # - index: 28
+  #   name: XP PYTHON
+  #   type: push
+  #   icon: XP-PYTHON
+  #   command: XPPython3/reloadScripts
+  #   label: XPPython3
+  #   label-position: ct
+  # - index: 29
+  #   name: DATAREFTOOL
+  #   type: push
+  #   icon: NONE
+  #   label: DataRefTool
+  #   icon: DATAREFTOOL
+  #   command: leecbaker/datareftool/new_search_window
+  #   label-position: ct
   - index: 30
     name: RELOAD
     type: reload

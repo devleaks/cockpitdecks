@@ -159,3 +159,4 @@ buttons:
     icon: RELOAD
     label: RELOAD
     label-position: ct
+includes: views

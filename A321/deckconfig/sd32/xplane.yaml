@@ -68,6 +68,13 @@ buttons:
     label: F.GREENS
     label-position: ct
     options: animation_speed=0.5
+  - index: 7
+    name: XPLANEDATA
+    type: push
+    icon: INFO
+    command: sim/operation/toggle_data_output_cockpit
+    label: "XPLANE\nCOCKPIT\nDATA"
+    options: counter
 
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
@@ -90,12 +97,7 @@ buttons:
     label: GHDLX
     label-position: ct
     options: counter
-  - index: 13
-    name: XPLANEDATA
-    type: push
-    command: sim/operation/toggle_data_output_cockpit
-    label: "XPLANE\nCOCKPIT\nDATA"
-    options: counter
+
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: XTouchMini
@@ -115,7 +117,35 @@ buttons:
     command: SRS/X-ATC-Chatter/Toggle_Control_Panel
     label: X-ATC
     label-position: ct
+
 # ### LINE 4 ### 24-31 ######################################################
+  - index: 27
+    name: INSPECT
+    type: inspect
+    icon: INFO
+    options: what=stats
+    label-position: ct
+  - index: 28
+    name: XP PYTHON
+    type: push
+    icon: XP-PYTHON
+    command: XPPython3/reloadScripts
+    label: XPPython3
+    label-position: ct
+  - index: 29
+    name: DATAREFTOOL
+    type: push
+    icon: NONE
+    label: DataRefTool
+    icon: DATAREFTOOL
+    command: leecbaker/datareftool/new_search_window
+    label-position: ct
+  - index: 30
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
   - index: 31
     name: Index
     type: page

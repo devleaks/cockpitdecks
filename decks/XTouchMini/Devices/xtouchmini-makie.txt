@@ -1,0 +1,40 @@
+From: https://stackoverflow.com/questions/39435550/changing-leds-on-x-touch-mini-mackie-control-mc-mode
+
+
+The X-Touch Mini's documentation for changing LED values works as expected only for Standard Mode.
+
+Mackie Control emulation is meant so that X-Touch can be used with every music program (legacy). Here's the only Mackie Control documentation I have found.
+
+The original Mackie Control only had 11 LEDs for Knobs, therefore 2 LEDs won't be controllable in the X-Touch. See 'V-Pot rings' in the MC documentation (values are in hex).
+
+Button LEDs
+
+Note:
+
+Same as the input note when pressing down the button.
+40-45, 84-95
+Velocity:
+
+0 = OFF
+1 = BLINK
+127 = ON
+Example:
+
+ShortMessage(NOTE_ON, 0, note, velocity);
+As noted by CL.'s answer use the constant NOTE_ON (144). You are currently providing 8 which is an invalid command.
+
+Knob LEDs
+
+CC (Control Change):
+
+48-55
+Value:
+
+0 = OFF
+1-11 = SINGLE
+17-27 = TRIM
+33-43 = FAN
+49-54 = SPREAD
+Example:
+
+ShortMessage(CONTROL_CHANGE, 0, cc, value);

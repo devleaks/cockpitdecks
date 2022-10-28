@@ -42,6 +42,11 @@ class Button:
         self.name = config.get("name", f"{type(self).__name__}-{config['index']}")
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
+        self.num_index = None
+        if type(self.index) == str:
+            idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
+            if len(idxnum) > 0:
+                self.num_index = idxnum[0]
 
         # Working variables
         self.pressed_count = 0
@@ -243,6 +248,10 @@ class Button:
         # Starts raised, True is pushed an odd number of times.
         return (self.pressed_count % 2) == 1
 
+    def is_on(self):
+        v = self.get_current_value()
+        return v is not None and v != 0
+
     def is_dotted(self, label: str):
         # check dataref status
         # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
@@ -320,6 +329,9 @@ class Button:
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
+
+        if "dataref-rpn" in r:  # label: ${dataref-rpn}, "dataref-rpn" is not a dataref.
+            r.remove("dataref-rpn")
 
         return list(set(r))  # removes duplicates
 
@@ -561,6 +573,11 @@ class Button:
         elif len(self.all_datarefs) > 1:
             logger.debug(f"button_value: button {self.name} getting formula since more than one dataref")
             return self.execute_formula(default=0.0)
+        # 3. A Dataref formula without dataref in it...
+        elif self.dataref_rpn is not None:
+            logger.debug(f"button_value: button {self.name} getting formula without dataref")
+            return self.execute_formula(default=0.0)
+        # 4. Special cases
         elif "counter" in self.options or "bounce" in self.options:
             logger.debug(f"button_value: button {self.name} has counter or bounce: {self.pressed_count}")
             return self.pressed_count

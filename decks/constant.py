@@ -2,7 +2,9 @@
 Application constants
 
 """
+import os
 from enum import Enum
+from inspect import stack
 
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
@@ -62,6 +64,24 @@ def make_icon_name(top_txt, top_color, bot_txt, bot_color, bot_framed=False):
         r.append("FR")
     r.append(bot_color.upper())
     return "_".join(r)
+
+def print_stack(log, n:int = 3):
+    # print_stack<-caller<-entry, so len(stack()) >= 3.
+    n = min(n + 2, len(stack()))
+    s = ":"
+    for i in range(2,n):
+        f = os.path.basename(stack()[i].filename).replace(".py", "")
+        s = s + " <- " + f + "." + stack()[i].function + f"({stack()[i].lineno})"
+    log.debug(f"{stack()[1].function}{s}")
+
+
+
+# #############################################################
+# Constants for Loupedeck Live
+#
+YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
+YAML_INCLUDE_KW = "includes"
+
 
 # #############################################################
 # Constants for Loupedeck Live

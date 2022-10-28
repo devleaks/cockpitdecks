@@ -3,10 +3,88 @@ version: 2.0.0
 description: EFIS display selector + some FCU commands
 note: final version for Streamdeck 15 keys
 buttons:
-  - index: 14
-    name: ECAM
-    type: page
-    icon: TOLISS-A321
+# ### LINE 1 ###  0 -  4 ######################################################
+  - index: 0
+    name: CSTR
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
+      dual:
+        text: CSTR
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptCstrPushButton
+    dataref: AirbusFBW/NDShowCSTRCapt
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 1
+    name: WPT
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
+      dual:
+        text: WPT
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptWptPushButton
+    dataref: AirbusFBW/NDShowWPTCapt
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 2
+    name: VOR.D
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
+      dual:
+        text: VOR.D
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptVorDPushButton
+    dataref: AirbusFBW/NDShowVORDCapt
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 3
+    name: NDB
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
+      dual:
+        text: NDB
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptNdbPushButton
+    dataref: AirbusFBW/NDShowNDBCapt
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 4
+    name: ARPT
+    type: airbus-push
+    airbus:
+      size: small
+      display:
+        color: lime
+        dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
+      dual:
+        text: ARPT
+        color: white
+        size: 40
+        dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptArptPushButton
+    dataref: AirbusFBW/NDShowARPTCapt
+    view: SRS/X-Camera/Select_View_ID_1
+# ### LINE 2 ###  5 -  9 ######################################################
   - index: 5
     type: push
     command: AirbusFBW/CaptChronoButton
@@ -43,7 +121,7 @@ buttons:
         size: 48
         dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptLSButtonPush
-    dataref: AirbusFBW/ILSonCapt
+    view: SRS/X-Camera/Select_View_ID_1
   - index: 8
     name: LOC 1
     type: airbus-push
@@ -70,82 +148,7 @@ buttons:
     multi-icons:
       - SWITCH_ROUND_TOP
       - SWITCH_ROUND_BOT
-  - index: 0
-    name: CSTR
-    type: airbus-push
-    airbus:
-      size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
-      dual:
-        text: CSTR
-        color: white
-        size: 40
-        dataref-rpn: "1"
-    command: toliss_airbus/dispcommands/CaptCstrPushButton
-    dataref: AirbusFBW/NDShowCSTRCapt
-  - index: 1
-    name: WPT
-    type: airbus-push
-    airbus:
-      size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
-      dual:
-        text: WPT
-        color: white
-        size: 40
-        dataref-rpn: "1"
-    command: toliss_airbus/dispcommands/CaptWptPushButton
-    dataref: AirbusFBW/NDShowWPTCapt
-    label: WPT
-  - index: 2
-    name: VOR.D
-    type: airbus-push
-    airbus:
-      size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
-      dual:
-        text: VOR.D
-        color: white
-        size: 40
-        dataref-rpn: "1"
-    command: toliss_airbus/dispcommands/CaptVorDPushButton
-    dataref: AirbusFBW/NDShowVORDCapt
-  - index: 3
-    name: NDB
-    type: airbus-push
-    airbus:
-      size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
-      dual:
-        text: NDB
-        color: white
-        size: 40
-        dataref-rpn: "1"
-    command: toliss_airbus/dispcommands/CaptNdbPushButton
-    dataref: AirbusFBW/NDShowNDBCapt
-  - index: 4
-    name: ARPT
-    type: airbus-push
-    airbus:
-      size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
-      dual:
-        text: ARPT
-        color: white
-        size: 40
-        dataref-rpn: "1"
-    command: toliss_airbus/dispcommands/CaptArptPushButton
-    dataref: AirbusFBW/NDShowARPTCapt
+# ### LINE 3 ### 10 - 14 ######################################################
   - index: 10
     name: EFIS MODE -
     type: push
@@ -166,3 +169,7 @@ buttons:
     type: push
     command: sim/instruments/map_zoom_out
     label: "EFIS\nZOOM OUT"
+  - index: 14
+    name: ECAM
+    type: page
+    icon: TOLISS-A321

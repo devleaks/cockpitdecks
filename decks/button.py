@@ -5,7 +5,7 @@ from .button_core import Button, ButtonNone, ButtonPage, ButtonReload, ButtonIns
 from .button_core import ButtonPush, ButtonDual, ButtonLongpress
 from .button_core import ButtonUpDown, ButtonAnimate
 
-from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref
+from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref, KnobLED
 from .button_loupe import ColoredButton, ButtonSide
 from .button_airbus import AirbusButton, AirbusButtonPush, AirbusButtonAnimate
 
@@ -57,6 +57,7 @@ XTOUCH_MINI_BUTTON_TYPES = {
     "long-press": ButtonLongpress,
     "knob-none": KnobNone,
     "knob": Knob,
+    "knob-led": KnobLED,
     "knob-push": KnobPush,
     "knob-push-pull": KnobPushPull,
     "knob-push-turn-release": KnobPushTurnRelease

@@ -14,14 +14,14 @@ from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # Data too delicate to be put in constant.py
 # adjust with care
 DATA_REFRESH = 0.1  # secs we poll for data every x seconds, must be < 0.1 for UDP
 DATA_SENT    = 10   # times per second, X-Plane send that data on UDP every that often.
-LOOP_ALIVE   = 1000 # report loop activity every 1000 executions on DEBUG
+LOOP_ALIVE   = 1000 # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 
 
 class XPlaneIpNotFound(Exception):
@@ -265,7 +265,7 @@ class XPlaneUDP(XPlane):
         while self.running:
             nexttime = DATA_REFRESH
             i = i + 1
-            if i % LOOP_ALIVE == 0:
+            if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0:
                 logger.debug(f"loop: {i}")
             if len(self.datarefs) > 0:
                 try:

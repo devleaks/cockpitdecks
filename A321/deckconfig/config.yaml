@@ -22,7 +22,8 @@ decks:
     type: xtouchmini
     layout: xtouch
     brightness: 70
-    disabled: True
+    # disabled: True
+    # We use X-Touch from X-Keypad for better control
 # This is at global level
 default-wallpaper-logo: logo.png
 default-icon-color: (94, 111, 130)

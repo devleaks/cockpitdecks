@@ -10,7 +10,7 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import AIRBUS_DEFAULTS, LIGHT_OFF_BRIGHTNESS, convert_color
+from .constant import AIRBUS_DEFAULTS, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
 from .button_core import Button
 from .rpc import RPC
 
@@ -54,6 +54,7 @@ class AirbusButton(Button):
         self.icon = config.get("icon")
 
         self.airbus = None                   # working def
+        self.airbus_datarefs = None          # cache
         self._airbus = config.get("airbus")  # keep raw
         if self._airbus is not None:
             self.airbus = merge({}, AIRBUS_DEFAULTS, self._airbus)
@@ -73,25 +74,35 @@ class AirbusButton(Button):
         """
         Complement button datarefs with airbus special lit datarefs
         """
+        # print_stack(logger)
+        if self.airbus_datarefs is not None:
+            # logger.debug(f"get_airbus_datarefs: button {self.name}: returned from cache")
+            return self.airbus_datarefs
         r = []
         for key in ["display", "dual"]:
             if key in self.airbus:
                 datarefs = super().get_datarefs(base=self.airbus[key])
                 if len(datarefs) > 0:
+                    self.airbus_datarefs = datarefs
                     r = r + datarefs
                     logger.debug(f"get_airbus_datarefs: button {self.name}: added {key} datarefs {datarefs}")
-        return r
+        return list(set(r))
 
     def get_datarefs(self, base:dict = None):
         """
         Complement button datarefs with airbus special lit datarefs
         """
         if self.all_datarefs is not None:  # cached
+            logger.debug(f"get_datarefs: button {self.name}: returned from cache")
             return self.all_datarefs
 
         r = super().get_datarefs()
-        r = r + self.get_airbus_datarefs()
-        return r
+        a = self.get_airbus_datarefs()
+        if len(a) > 0:
+            r = r + a
+        if "dataref-rpn" in r:  # label: ${dataref-rpn}, "dataref-rpn" is not a dataref.
+            r.remove("dataref-rpn")
+        return list(set(r))
 
     def button_level_driven(self) -> bool:
         """
@@ -99,7 +110,6 @@ class AirbusButton(Button):
         individula display/dual -level values
         """
         button_level = True
-        datarefs = self.get_airbus_datarefs()
         # Is there material to decide at display/dual level?
         for key in ["display", "dual"]:
             if key in self.airbus:
@@ -109,6 +119,7 @@ class AirbusButton(Button):
                 # else remains button-level True
         if not button_level:
             logger.debug(f"button_level_driven: button {self.name}: driven at display/dual level")
+            datarefs = self.get_airbus_datarefs()
             if len(datarefs) < 1:
                 logger.warning(f"button_level_driven: button {self.name}: no display/dual dataref")
             return False

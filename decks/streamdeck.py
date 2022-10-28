@@ -13,7 +13,7 @@ from enum import Enum
 from PIL import Image, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
 from .constant import convert_color
 from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
@@ -60,7 +60,6 @@ class Streamdeck(Deck):
         """
         Loads Streamdeck pages during configuration
         """
-        YAML_BUTTONS_KW = "buttons"  # keywork in yaml file
         if self.layout is None:
             self.load_default_page()
             return
