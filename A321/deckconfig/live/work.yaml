@@ -1,0 +1,185 @@
+name: Index
+buttons:
+#
+# KNOB
+#
+  - index: knobTL
+    name: FCU Airspeed
+    type: knob
+    commands:
+      - sim/autopilot/airspeed_down
+      - sim/autopilot/airspeed_up
+    options: dot
+  - index: knobCL
+    name: FCU Heading
+    type: knob
+    commands:
+      - sim/autopilot/heading_down
+      - sim/autopilot/heading_up
+    options: dot
+  - index: knobBL
+    name: FCU Baro
+    type: knob-push-pull
+    command: toliss_airbus/capt_baro_pull
+    commands:
+      - toliss_airbus/capt_baro_push
+      - toliss_airbus/capt_baro_pull
+      - sim/instruments/barometer_down
+      - sim/instruments/barometer_up
+    dataref: AirbusFBW/BaroStdCapt
+    options: dot
+  - index: knobTR
+    name: FCU Altitude
+    type: knob-push-pull
+    command: AirbusFBW/PullAltitude
+    commands:
+      - AirbusFBW/PullAltitude
+      - AirbusFBW/PushAltitude
+      - sim/autopilot/altitude_down
+      - sim/autopilot/altitude_up
+    options: dot
+  - index: knobCR
+    name: FCU V Speed
+    type: knob-dataref
+    dataref: sim/cockpit/autopilot/vertical_velocity
+    step: 100
+    stepxl: 1000
+    value: 0
+    value-min: -6000
+    value-max: 6000
+    commands:
+      - AirbusFBW/PullVSSel
+      - AirbusFBW/PushVSSel
+    options: dual
+  - index: knobBR
+    name: FCU Unused
+    type: knob-none
+#
+# BUTTONS
+#
+#
+# KEYS
+#
+  - index: 0
+    name: X-Plane Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sim/map/show_current
+    label: Map
+    label-position: ct
+    options: counter
+  - index: 1
+    name: Airport Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: pikitanga/AptNav/ToggleMap
+    label: Airport
+    label-position: ct
+    options: counter
+  - index: 2
+    name: AVS Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: flightfactor/avs/toggle
+    label: AVS
+    label-position: ct
+    options: counter
+  - index: 3
+    name: AviTab
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    label: AviTab
+    label-position: ct
+    command: AviTab/toggle_tablet
+    options: counter
+  - index: 4
+    name: New Data Button
+    type: data
+    label: Data Button
+    label-size: 10
+    label-position: ct
+    data:
+      icon-font: fa.otf
+#      icon-name: "\uf5af"
+      data: 243.654234
+      data-format: "{:03.0f}"
+      data-unit: "kn"
+      data-progress: 350
+      dataref-rpn: ${sim/cockpit/autopilot/heading_mag} 10 *
+      bottomline: Go Faster
+  - index: 5
+    name: LiveTraffic
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: LiveTraffic/Info_Staus_Wnd/Open
+    label: Live/T
+    label-position: ct
+    options: counter
+  - index: 6
+    name: FollowTheGreens
+    type: animate
+    icon: F.GREENS_OFF
+    initial-value: 0
+    multi-icons:
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
+    command: XPPython3/followthegreens/main_windown_toggle
+    label: F.GREENS
+    label-position: ct
+    options: animation_speed=0.5
+  - index: 7
+    name: XPLANEDATA
+    type: push
+    icon: INFO
+    command: sim/operation/toggle_data_output_cockpit
+    label: "XPLANE\nCOCKPIT\nDATA"
+    label-font: DIN Bold
+    options: counter
+  - index: 8
+    name: INSPECT
+    label: "COCKPIT\nDECKS"
+    label-font: DIN Bold
+    label-position: mm
+    label-color: lime
+    type: inspect
+    icon: INFO
+    options: what=stats
+  - index: 9
+    name: XP PYTHON
+    type: push
+    icon: XP-PYTHON
+    command: XPPython3/reloadScripts
+    label: XPPython3
+    label-position: ct
+  - index: 10
+    name: DATAREFTOOL
+    type: push
+    icon: NONE
+    label: DataRefTool
+    icon: DATAREFTOOL
+    command: leecbaker/datareftool/new_search_window
+    label-position: ct
+
+  - index: 11
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
+#
+# SIDE KEYS
+#
+# Note: For type side, you MUST give either an icon at proper size or a icon-color.
+includes: views
+fill-empty-keys: (94, 111, 130)
