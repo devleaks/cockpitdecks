@@ -69,7 +69,7 @@ class Cockpit:
         logger.info("Cockpitdecks -- Statistics")
 
         for v in self.cockpit.values():
-            v.stats()
+            v.inspect()
 
 
     def scan_devices(self):

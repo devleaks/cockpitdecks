@@ -82,6 +82,13 @@ class Loupedeck(Deck):
                     with open(fn, "r") as fp:
                         page_config = yaml.safe_load(fp)
 
+                        if "name" in page_config:
+                            name = page_config["name"]
+
+                        if name in self.pages.keys():
+                            logger.warning(f"load: page {name}: duplicate name, ignored")
+                            continue
+
                         if not YAML_BUTTONS_KW in page_config:
                             logger.error(f"load: {fn} has no action")
                             continue
@@ -102,9 +109,6 @@ class Loupedeck(Deck):
                                                 # Add it if there is no button of that type with same index in page
                                                 page_config[YAML_BUTTONS_KW].append(add_button)
                                                 logger.debug(f"load: includes: added {add_button['type']} {add_button['index']} from {inc} to page {name}")
-
-                        if "name" in page_config:
-                            name = page_config["name"]
 
                         this_page = Page(name, page_config, self)
                         self.pages[name] = this_page

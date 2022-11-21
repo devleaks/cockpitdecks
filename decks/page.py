@@ -37,7 +37,7 @@ class Page:
         """
         logger.info(f"Page {self.name} -- Statistics")
         for v in self.buttons.values():
-            v.stats()
+            v.inspect()
 
     def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():

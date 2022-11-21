@@ -77,12 +77,16 @@ class XTouchMini(Deck):
                     with open(fn, "r") as fp:
                         page_config = yaml.safe_load(fp)
 
+                        if "name" in page_config:
+                            name = page_config["name"]
+
+                        if name in self.pages.keys():
+                            logger.warning(f"load: page {name}: duplicate name, ignored")
+                            continue
+
                         if not YAML_BUTTONS_KW in page_config:
                             logger.error(f"load: {fn} has no action")
                             continue
-
-                        if "name" in page_config:
-                            name = page_config["name"]
 
                         this_page = Page(name, page_config, self)
 

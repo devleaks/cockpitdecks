@@ -110,7 +110,7 @@ class Deck:
         """
         logger.info(f"Deck {self.name} -- Statistics")
         for v in self.pages.values():
-            v.stats()
+            v.inspect()
 
     def load(self):
         """
