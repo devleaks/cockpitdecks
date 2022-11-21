@@ -27,7 +27,7 @@ from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Button:
@@ -161,7 +161,10 @@ class Button:
 
     def inspect(self):
         logger.info(f"Button {self.name} -- Statistics")
-        logger.info(f"Datarefs: {self.get_datarefs()}")
+        logger.info("Datarefs:")
+        for d in self.get_datarefs():
+            v = self.get_dataref_value(d)
+            logger.info(f"    {d} = {v}")
 
     def on_current_page(self):
         return self.deck.current_page == self.page

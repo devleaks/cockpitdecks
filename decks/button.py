@@ -8,6 +8,7 @@ from .button_core import ButtonUpDown, ButtonAnimate
 from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref, KnobLED
 from .button_loupe import ColoredButton, ButtonSide
 from .button_airbus import AirbusButton, AirbusButtonPush, AirbusButtonAnimate
+from .button_data import DataButton
 
 
 STREAM_DECK_BUTTON_TYPES = {
@@ -46,6 +47,7 @@ LOUPEDECK_BUTTON_TYPES = {
     "airbus": AirbusButton,
     "airbus-push": AirbusButtonPush,
     "airbus-animate": AirbusButtonAnimate,
+    "data": DataButton,
     "reload": ButtonReload
 }
 
