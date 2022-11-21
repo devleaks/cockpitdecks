@@ -82,7 +82,7 @@ class PythonInterface:
                     print(self.Name, "PI::XPluginEnable: enabled.")
                 return 1
             else:
-                print(self.Name, "PI::XPluginEnable: aircraft not loaded.", ac)
+                print(self.Name, "PI::XPluginEnable: aircraft not loaded.")
         except:
             if self.trace:
                 print(self.Name, "PI::XPluginEnable: exception:")
