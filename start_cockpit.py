@@ -18,6 +18,7 @@ if len(sys.argv) > 1:
 s = None
 try:
     logger.info(f"Cockpitdecks starting for {ac}..")
+    logger.info(f"Searching for decks and initializing them (this can take a few seconds)..")
     s = Cockpit(XPlaneUDP)
     s.load(os.path.join(os.path.dirname(__file__), ac))
 except KeyboardInterrupt:
