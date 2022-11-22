@@ -107,12 +107,13 @@ buttons:
     label-size: 10
     label-position: ct
     data:
-      icon-font: fa.otf
-#      icon-name: "\uf5af"
-      data: 243.654234
-      data-format: "{:03.0f}"
-      data-unit: "kn"
-      data-progress: 350
+      icon-name: "gas-pump"
+      data: 75.4256
+      data-format: "{:02.0f}"
+      data-font: DIN Condensed Light
+      data-size: 24
+      data-unit: "%"
+      data-progress: 100
       dataref-rpn: ${sim/cockpit/autopilot/heading_mag} 10 *
       bottomline: Go Faster
   - index: 5
@@ -146,15 +147,21 @@ buttons:
     label: "XPLANE\nCOCKPIT\nDATA"
     label-font: DIN Bold
     options: counter
+  # - index: 8
+  #   name: INSPECT
+  #   label: "COCKPIT\nDECKS"
+  #   label-font: DIN Bold
+  #   label-position: mm
+  #   label-color: lime
+  #   type: inspect
+  #   icon: INFO
+  #   options: what=stats
   - index: 8
-    name: INSPECT
-    label: "COCKPIT\nDECKS"
-    label-font: DIN Bold
-    label-position: mm
-    label-color: lime
-    type: inspect
-    icon: INFO
-    options: what=stats
+    name: METAR
+    type: weather
+    label: "Weather Forecast"
+    label-position: ct
+    station: OTHH
   - index: 9
     name: XP PYTHON
     type: push
