@@ -1,8 +1,8 @@
 name: Index2
 buttons:
   - index: 0
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: Caution
       display:
@@ -10,8 +10,8 @@ buttons:
         color: orange
         dataref-rpn: "1"
   - index: 1
-    type: airbus-animate
-    airbus:
+    type: annunciator-animate
+    annunciator:
       size: full
       # title:
       #   text: Warning
@@ -22,8 +22,8 @@ buttons:
         size: 80
         dataref-rpn: "1"
   - index: 2
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: FD
       display:
@@ -35,8 +35,8 @@ buttons:
         size: 90
         dataref-rpn: ${AirbusFBW/FD1Engage}
   - index: 3
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       title:
         text: FD
@@ -47,8 +47,8 @@ buttons:
         text: "FD"
         color: white
   - index: 4
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -61,8 +61,8 @@ buttons:
     command: toliss_airbus/fd1_push
     dataref: AirbusFBW/FD1Engage
   - index: 5
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: SQUIB
       display:
@@ -76,8 +76,8 @@ buttons:
         framed: True
       options: sharp
   - index: 6
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: Avail+None
       display:
@@ -86,8 +86,8 @@ buttons:
       dual:
         text: ""
   - index: 7
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: Fail/OFF
       display:
@@ -99,8 +99,8 @@ buttons:
         color: peachpuff
         framed: True
   - index: 8
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: Bot FAIL only
       display:
@@ -111,8 +111,8 @@ buttons:
         color: darkorange
         size: 56
   - index: 9
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: AVAIL/ON
       display:
@@ -123,8 +123,8 @@ buttons:
         framed: True
         color: deepskyblue
   - index: 10
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: Avail/OFF
       display:
@@ -136,8 +136,8 @@ buttons:
         color: white
       options: no_blurr
   - index: 11
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       title:
         text: Fail/OFF
       display:
@@ -149,8 +149,8 @@ buttons:
         color: peachpuff
         framed: True
   - index: 12
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       title:
         text: ON BAT
@@ -159,8 +159,8 @@ buttons:
         color: darkorange
         size: 56
   - index: 13
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       title:
         text: ON BAT

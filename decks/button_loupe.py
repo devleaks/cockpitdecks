@@ -41,6 +41,24 @@ class ColoredButton(ButtonPush):
         return self.get_current_value()
 
 
+class ButtonStop(ColoredButton):
+    """
+    Execute command while the key is pressed.
+    Pressing starts the command, releasing stops it.
+    """
+
+    def __init__(self, config: dict, page: "Page"):
+        ColoredButton.__init__(self, config=config, page=page)
+
+    def is_valid(self):  # @todo with precision...
+        return True
+
+    def activate(self, state: bool):
+        if state:
+            if self.is_valid():
+                self.deck.cockpit.stop()
+
+
 class ButtonSide(ButtonPush):
     """
     A ButtonPush that has very special size (60x270), end therefore very special button rendering

@@ -291,7 +291,7 @@ class Button:
         """
         Returns all datarefs used by this button from label, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
-        This can be applied to the entire button or to a subset (airbus display and airbus dual)
+        This can be applied to the entire button or to a subset (for annunciator parts)
         """
         if self.all_datarefs is not None:  # cached
             return self.all_datarefs

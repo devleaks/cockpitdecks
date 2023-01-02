@@ -188,5 +188,8 @@ buttons:
 # SIDE KEYS
 #
 # Note: For type side, you MUST give either an icon at proper size or a icon-color.
-includes: views
+  - index: 0
+    name: Stop
+    type: stop
+    icon-color: (255, 0, 0)
 fill-empty-keys: (94, 111, 130)

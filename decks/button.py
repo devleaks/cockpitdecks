@@ -6,8 +6,8 @@ from .button_core import ButtonPush, ButtonDual, ButtonLongpress
 from .button_core import ButtonUpDown, ButtonAnimate
 
 from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref, KnobLED
-from .button_loupe import ColoredButton, ButtonSide
-from .button_airbus import AirbusButton, AirbusButtonPush, AirbusButtonAnimate
+from .button_loupe import ColoredButton, ButtonSide, ButtonStop
+from .button_annunciators import AnnunciatorButton, AnnunciatorButtonPush, AnnunciatorButtonAnimate
 from .button_data import DataButton, WeatherButton
 
 
@@ -21,9 +21,9 @@ STREAM_DECK_BUTTON_TYPES = {
     "long-press": ButtonLongpress,
     "updown": ButtonUpDown,
     "animate": ButtonAnimate,
-    "airbus": AirbusButton,
-    "airbus-push": AirbusButtonPush,
-    "airbus-animate": AirbusButtonAnimate,
+    "annunciator": AnnunciatorButton,
+    "annunciator-push": AnnunciatorButtonPush,
+    "annunciator-animate": AnnunciatorButtonAnimate,
     "reload": ButtonReload
 }
 
@@ -31,6 +31,7 @@ LOUPEDECK_BUTTON_TYPES = {
     "none": Button,
     "button-none": ButtonNone,
     "page": ButtonPage,
+    "stop": ButtonStop,
     "inspect": ButtonInspect,
     "push": ButtonPush,
     "dual": ButtonDual,
@@ -44,9 +45,9 @@ LOUPEDECK_BUTTON_TYPES = {
     "knob-dataref": KnobDataref,
     "button": ColoredButton,
     "side": ButtonSide,
-    "airbus": AirbusButton,
-    "airbus-push": AirbusButtonPush,
-    "airbus-animate": AirbusButtonAnimate,
+    "annunciator": AnnunciatorButton,
+    "annunciator-push": AnnunciatorButtonPush,
+    "annunciator-animate": AnnunciatorButtonAnimate,
     "data": DataButton,
     "weather": WeatherButton,
     "reload": ButtonReload

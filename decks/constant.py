@@ -30,6 +30,8 @@ DEFAULT_ICON_COLOR = (0, 0, 100)
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"
 
+DEFAULT_STYLE = "korry"  # korry|viva
+
 UDP_PORT = 49000
 
 def add_ext(name: str, ext: str):
@@ -99,8 +101,8 @@ WS_UPGRADE_RESPONSE = 'HTTP/1.1'
 # Various constants used by the Loupedeck firmware
 
 # Maximum brightness value
-MAX_BRIGHTNESS = 10
-LIGHT_OFF_BRIGHTNESS = 10  # pct
+MAX_BRIGHTNESS = 10         # scale 0 to 10...
+LIGHT_OFF_BRIGHTNESS = 10   # pct
 
 # How long until trying to reconnect after a disconnect
 RECONNECT_INTERVAL = 3000
@@ -189,10 +191,10 @@ HAPTIC = {
 
 
 # ################################
-# AIRBUS_DEFAULTS
+# ANNUNCIATOR_DEFAULTS
 #
-AIRBUS_DEFAULTS = {                     # May be externalized (constant) one day...
-    "background": (94, 111, 130),       # Button frame color, light blueish airbus dashboard. Needs tuning.
+ANNUNCIATOR_DEFAULTS = {                     # May be externalized (constant) one day...
+    "background": (94, 111, 130),       # Button frame color, light blueish Airbus dashboard. Needs tuning.
     "color": (20, 20, 20),              # Button background color
     "blurr": 16,
     "title": {                          # This is printed on top of the button
@@ -213,8 +215,8 @@ AIRBUS_DEFAULTS = {                     # May be externalized (constant) one day
 }
 
 
-AIRBUS_DEFAULTS_STREAMDECK = {                     # May be externalized (constant) one day...
-    "background": (94, 111, 130),       # Button frame color, light blueish airbus dashboard. Needs tuning.
+ANNUNCIATOR_DEFAULTS_STREAMDECK = {                     # May be externalized (constant) one day...
+    "background": (94, 111, 130),       # Button frame color, light blueish Airbus dashboard. Needs tuning.
     "color": (20, 20, 20),              # Button background color
     "blurr": 16,
     "title": {                          # This is printed on top of the button
@@ -234,8 +236,8 @@ AIRBUS_DEFAULTS_STREAMDECK = {                     # May be externalized (consta
     }
 }
 
-AIRBUS_DEFAULTS_LOUPEDECK = {                     # May be externalized (constant) one day...
-    "background": (94, 111, 130),       # Button frame color, light blueish airbus dashboard. Needs tuning.
+ANNUNCIATOR_DEFAULTS_LOUPEDECK = {                     # May be externalized (constant) one day...
+    "background": (94, 111, 130),       # Button frame color, light blueish Airbus dashboard. Needs tuning.
     "color": (20, 20, 20),              # Button background color
     "blurr": 16,
     "title": {                          # This is printed on top of the button
@@ -255,7 +257,7 @@ AIRBUS_DEFAULTS_LOUPEDECK = {                     # May be externalized (constan
     }
 }
 
-AIRBUS_DEFAULTS_ALL = {
-    "streamdeck": AIRBUS_DEFAULTS_STREAMDECK,
-    "loupedeck": AIRBUS_DEFAULTS_LOUPEDECK
+ANNUNCIATOR_DEFAULTS_ALL = {
+    "streamdeck": ANNUNCIATOR_DEFAULTS_STREAMDECK,
+    "loupedeck": ANNUNCIATOR_DEFAULTS_LOUPEDECK
 }

@@ -1,8 +1,8 @@
 name: Index
 buttons:
   - index: 0
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -12,11 +12,11 @@ buttons:
         color: white
         dataref-rpn: 1
   - index: 1
-    type: airbus-push
+    type: annunciator-push
     label: Small ECAM Button
     label-font: DIN Condensed Bold
     label-size: 17
-    airbus:
+    annunciator:
       size: small
       display:
         color: (255, 255, 102)
@@ -28,9 +28,9 @@ buttons:
         dataref-rpn: 1
 #    options: single_led
   - index: 2
-    type: airbus-animate
+    type: annunciator-animate
     name: ANIMATE
-    airbus:
+    annunciator:
       size: full
       display:
         text: "MASTER\nCAUT"
@@ -38,9 +38,9 @@ buttons:
         font: DIN Condensed Black.otf
     dataref-rpn: 0
   - index: 3
-    type: airbus-push
+    type: annunciator-push
     label: DOT Button
-    airbus:
+    annunciator:
       size: large
       display:
         color: white
@@ -53,8 +53,8 @@ buttons:
         framed: True
     options: dot
   - index: 4
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         text: "ON BAT"
@@ -63,8 +63,8 @@ buttons:
         size: 56
         dataref-rpn: 1
   - index: 5
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       display:
         text: ""
       dual:
@@ -74,9 +74,9 @@ buttons:
         font: DIN Condensed Black.otf
         dataref-rpn: 1
   - index: 6
-    type: airbus-push
+    type: annunciator-push
     label: 1 LED Button
-    airbus:
+    annunciator:
       size: small
       display:
         color: (255, 255, 102)
@@ -88,8 +88,8 @@ buttons:
         dataref-rpn: 1
     options: single_led
   - index: 7
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       display:
         text: "SQUIB"
         size: 56
@@ -103,8 +103,8 @@ buttons:
         dataref-rpn: 1
       options: sharp
   # - index: 8
-  #   type: airbus
-  #   airbus:
+  #   type: annunciator
+  #   annunciator:
   #     size: full
   #     color: (200, 200, 200)
   #     display:
@@ -118,9 +118,9 @@ buttons:
   #       size: 56
   #       dataref-rpn: 1
   - index: 8
-    type: airbus
+    type: annunciator
     name: BATTERY
-    airbus:
+    annunciator:
       display:
         text: "${dataref-rpn}"
         color: white
@@ -131,8 +131,8 @@ buttons:
         text-format: "{:02.1f}"
     label: BAT 1
   - index: 9
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       display:
         text: "AVAIL"
         color: lime
@@ -142,8 +142,8 @@ buttons:
         framed: True
         color: deepskyblue
   - index: 10
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       display:
         text: "AVAIL"
         color: lime

@@ -16,8 +16,8 @@ buttons:
     label-position: ct
   - index: 6
     name: FD 1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -31,8 +31,8 @@ buttons:
     command: toliss_airbus/fd1_push
   - index: 7
     name: LS 1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -46,8 +46,8 @@ buttons:
     dataref: AirbusFBW/ILSonCapt
   - index: 8
     name: LOC 1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -72,8 +72,8 @@ buttons:
       - SWITCH_ROUND_BOT
   - index: 0
     name: CSTR
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -87,8 +87,8 @@ buttons:
     dataref: AirbusFBW/NDShowCSTRCapt
   - index: 1
     name: WPT
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -103,8 +103,8 @@ buttons:
     label: WPT
   - index: 2
     name: VOR.D
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -118,8 +118,8 @@ buttons:
     dataref: AirbusFBW/NDShowVORDCapt
   - index: 3
     name: NDB
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -133,8 +133,8 @@ buttons:
     dataref: AirbusFBW/NDShowNDBCapt
   - index: 4
     name: ARPT
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime

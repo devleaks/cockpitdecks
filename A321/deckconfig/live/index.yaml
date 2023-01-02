@@ -70,9 +70,9 @@ buttons:
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 1
-    type: airbus-animate
+    type: annunciator-animate
     name: MASTER CAUTION
-    airbus:
+    annunciator:
       size: full
       display:
         text: "MASTER\nCAUT"
@@ -82,9 +82,9 @@ buttons:
     dataref: AirbusFBW/MasterCaut
     # options: animation_speed=0.5
   - index: 2
-    type: airbus-animate
+    type: annunciator-animate
     name: MASTER WARNING
-    airbus:
+    annunciator:
       size: full
       display:
         text: "MASTER\nWARN"
@@ -112,8 +112,8 @@ buttons:
     icon-color: (40, 40, 40)
   - index: 5
     name: A/THR
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -126,8 +126,8 @@ buttons:
     command: AirbusFBW/ATHRbutton
   - index: 6
     name: AP1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -159,8 +159,8 @@ buttons:
     dataref-rpn: ${sim/cockpit/misc/barometer_setting} 33.8639 *
   - index: 9
     name: LOC
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -173,8 +173,8 @@ buttons:
     command: AirbusFBW/LOCbutton
   - index: 10
     name: APPR
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime

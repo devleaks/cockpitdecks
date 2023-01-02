@@ -2,8 +2,8 @@ name: Index
 buttons:
   - index: 3
     name: TROIS
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -17,8 +17,8 @@ buttons:
     dataref: AirbusFBW/FD1Engage
   - index: 4
     name: QUATRE
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime

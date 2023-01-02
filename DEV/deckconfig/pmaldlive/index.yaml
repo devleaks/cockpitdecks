@@ -108,8 +108,8 @@ buttons:
     icon-color: (40, 40, 40)
   - index: 5
     name: A/THR
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -123,8 +123,8 @@ buttons:
     dataref: AirbusFBW/ATHRmode
   - index: 6
     name: AP1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -155,8 +155,8 @@ buttons:
     icon-color: (40, 40, 40)
   - index: 9
     name: LOC
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -183,8 +183,8 @@ buttons:
   #   label: FD
   - index: 10
     name: APPR
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime

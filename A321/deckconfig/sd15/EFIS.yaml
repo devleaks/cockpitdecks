@@ -6,8 +6,8 @@ buttons:
 # ### LINE 1 ###  0 -  4 ######################################################
   - index: 0
     name: CSTR
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -22,8 +22,8 @@ buttons:
     view: SRS/X-Camera/Select_View_ID_1
   - index: 1
     name: WPT
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -38,8 +38,8 @@ buttons:
     view: SRS/X-Camera/Select_View_ID_1
   - index: 2
     name: VOR.D
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -54,8 +54,8 @@ buttons:
     view: SRS/X-Camera/Select_View_ID_1
   - index: 3
     name: NDB
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -70,8 +70,8 @@ buttons:
     view: SRS/X-Camera/Select_View_ID_1
   - index: 4
     name: ARPT
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: small
       display:
         color: lime
@@ -94,8 +94,8 @@ buttons:
     label-position: ct
   - index: 6
     name: FD 1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -109,8 +109,8 @@ buttons:
     command: toliss_airbus/fd1_push
   - index: 7
     name: LS 1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime
@@ -124,8 +124,8 @@ buttons:
     view: SRS/X-Camera/Select_View_ID_1
   - index: 8
     name: LOC 1
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: medium
       display:
         color: lime

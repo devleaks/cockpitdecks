@@ -10,11 +10,11 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import AIRBUS_DEFAULTS, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
+from .constant import ANNUNCIATOR_DEFAULTS, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
 from .button_core import Button
 from .rpc import RPC
 
-logger = logging.getLogger("AirbusButton")
+logger = logging.getLogger("AnnunciatorButton")
 # logger.setLevel(logging.DEBUG)
 
 
@@ -43,7 +43,7 @@ def convert_color_string(instr) -> tuple:  # tuple of int 0-255
     return (128, 128, 128)
 
 
-class AirbusButton(Button):
+class AnnunciatorButton(Button):
 
     def __init__(self, config: dict, page: "Page"):
 
@@ -53,51 +53,51 @@ class AirbusButton(Button):
         self.multi_icons = config.get("multi-icons")
         self.icon = config.get("icon")
 
-        self.airbus = None                   # working def
-        self.airbus_datarefs = None          # cache
-        self._airbus = config.get("airbus")  # keep raw
-        if self._airbus is not None:
-            self.airbus = merge({}, AIRBUS_DEFAULTS, self._airbus)
+        self.annunciator = None                   # working def
+        self.annunciator_datarefs = None          # cache
+        self._annunciator = config.get("annunciator")  # keep raw
+        if self._annunciator is not None:
+            self.annunciator = merge({}, ANNUNCIATOR_DEFAULTS, self._annunciator)
         else:
-            logger.error(f"__init__: button {self.name}: has no airbus property")
+            logger.error(f"__init__: button {self.name}: has no annunciator property")
 
         Button.__init__(self, config=config, page=page)
 
-        if self.airbus is not None and (config.get("icon") is not None or config.get("multi-icons") is not None):
-            logger.warning(f"__init__: button {self.name}: has airbus property with icon/multi-icons, ignoring icons")
+        if self.annunciator is not None and (config.get("icon") is not None or config.get("multi-icons") is not None):
+            logger.warning(f"__init__: button {self.name}: has annunciator property with icon/multi-icons, ignoring icons")
 
-        if self.airbus is not None:
+        if self.annunciator is not None:
             self.icon = None
             self.multi_icons = None
 
-    def get_airbus_datarefs(self, base:dict = None):
+    def get_annunciator_datarefs(self, base:dict = None):
         """
-        Complement button datarefs with airbus special lit datarefs
+        Complement button datarefs with annunciator special lit datarefs
         """
         # print_stack(logger)
-        if self.airbus_datarefs is not None:
-            # logger.debug(f"get_airbus_datarefs: button {self.name}: returned from cache")
-            return self.airbus_datarefs
+        if self.annunciator_datarefs is not None:
+            # logger.debug(f"get_annunciator_datarefs: button {self.name}: returned from cache")
+            return self.annunciator_datarefs
         r = []
         for key in ["display", "dual"]:
-            if key in self.airbus:
-                datarefs = super().get_datarefs(base=self.airbus[key])
+            if key in self.annunciator:
+                datarefs = super().get_datarefs(base=self.annunciator[key])
                 if len(datarefs) > 0:
-                    self.airbus_datarefs = datarefs
+                    self.annunciator_datarefs = datarefs
                     r = r + datarefs
-                    logger.debug(f"get_airbus_datarefs: button {self.name}: added {key} datarefs {datarefs}")
+                    logger.debug(f"get_annunciator_datarefs: button {self.name}: added {key} datarefs {datarefs}")
         return list(set(r))
 
     def get_datarefs(self, base:dict = None):
         """
-        Complement button datarefs with airbus special lit datarefs
+        Complement button datarefs with annunciator special lit datarefs
         """
         if self.all_datarefs is not None:  # cached
             logger.debug(f"get_datarefs: button {self.name}: returned from cache")
             return self.all_datarefs
 
         r = super().get_datarefs()
-        a = self.get_airbus_datarefs()
+        a = self.get_annunciator_datarefs()
         if len(a) > 0:
             r = r + a
         if "dataref-rpn" in r:  # label: ${dataref-rpn}, "dataref-rpn" is not a dataref.
@@ -112,14 +112,14 @@ class AirbusButton(Button):
         button_level = True
         # Is there material to decide at display/dual level?
         for key in ["display", "dual"]:
-            if key in self.airbus:
-                c = self.airbus[key]
+            if key in self.annunciator:
+                c = self.annunciator[key]
                 if "dataref-rpn" in c or "dataref" in c:
                     button_level = False
                 # else remains button-level True
         if not button_level:
             logger.debug(f"button_level_driven: button {self.name}: driven at display/dual level")
-            datarefs = self.get_airbus_datarefs()
+            datarefs = self.get_annunciator_datarefs()
             if len(datarefs) < 1:
                 logger.warning(f"button_level_driven: button {self.name}: no display/dual dataref")
             return False
@@ -143,8 +143,8 @@ class AirbusButton(Button):
             return super().button_value()
 
         for key in ["display", "dual"]:
-            if key in self.airbus:
-                c = self.airbus[key]
+            if key in self.annunciator:
+                c = self.annunciator[key]
                 if "dataref-rpn" in c:
                     calc = c["dataref-rpn"]
                     expr = self.substitute_dataref_values(calc)
@@ -163,7 +163,7 @@ class AirbusButton(Button):
             else:
                 r.append(0)
                 logger.debug(f"button_value: button {self.name}: {key}: key not found, set to 0")
-        # logger.debug(f"airbus_button_value: button {self.name} returning: {r}")
+        # logger.debug(f"annunciator_button_value: button {self.name} returning: {r}")
         return r
 
     def set_key_icon(self):
@@ -183,9 +183,9 @@ class AirbusButton(Button):
         """
         """
         self.set_key_icon()
-        return self.mk_airbus()
+        return self.mk_annunciator()
 
-    def mk_airbus(self):
+    def mk_annunciator(self):
         # If the display or dual is not lit, a darker version is printed unless dark option is added to button
         # in which case nothing gets added to the button.
 
@@ -208,7 +208,7 @@ class AirbusButton(Button):
                 try:
                     color = display.get("off-color", light_off(color))
                 except ValueError:
-                    logger.debug(f"mk_airbus: button {self.name}: color {color} ({type(color)}) not found, using grey")
+                    logger.debug(f"mk_annunciator: button {self.name}: color {color} ({type(color)}) not found, using grey")
                     color = (128, 128, 128)
             elif color.startswith("("):
                 color = convert_color(color)
@@ -216,7 +216,7 @@ class AirbusButton(Button):
                 try:
                     color = ImageColor.getrgb(color)
                 except ValueError:
-                    logger.debug(f"mk_airbus: color {color} not found, using grey")
+                    logger.debug(f"mk_annunciator: color {color} not found, using grey")
                     color = (128, 128, 128)
             return color
 
@@ -272,7 +272,7 @@ class AirbusButton(Button):
         #
         # Overall button size: full, large, medium, small.
         #
-        size = self.airbus.get("size", "large")
+        size = self.annunciator.get("size", "large")
         if size == "small":  # about 1/2, starts at 128
             button_height = int(ICON_SIZE / 2)
             box = (0, int(ICON_SIZE/4))
@@ -294,8 +294,8 @@ class AirbusButton(Button):
         draw = ImageDraw.Draw(glow)
 
         # 1.1 First/top/main item (called "display")
-        display = self.airbus.get("display") if "display" in self._airbus else None
-        dual = self.airbus.get("dual") if "dual" in self._airbus else None
+        display = self.annunciator.get("display")
+        dual = self.annunciator.get("dual")
 
         if display is not None:
             display_pos = display.get("position", "mm")
@@ -317,7 +317,7 @@ class AirbusButton(Button):
                 h = int(button_height / 2)  # center of button
                 if dual is not None and dual.get("text") is not None: # middle of top part
                     h = int(button_height / 4)
-                # logger.debug(f"mk_airbus: position {display_pos}: {(w, h)}, {dual}")
+                # logger.debug(f"mk_annunciator: position {display_pos}: {(w, h)}, {dual}")
                 color = get_color(display, self.lit_display)
                 if self.lit_display or not self.has_option("dark"):
                     draw.multiline_text((w, h),  # (glow.width / 2, 15)
@@ -327,7 +327,7 @@ class AirbusButton(Button):
                               align=a,
                               fill=color)
                 else:
-                    logger.debug("mk_airbus: full dark display")
+                    logger.debug("mk_annunciator: full dark display")
             else:
                 # If there is no text, we display a LED light.
                 # For large and medium, it is a 3 LED bar light
@@ -386,7 +386,7 @@ class AirbusButton(Button):
                     p = "r"
                     a = "right"
                 h = int(3 * button_height / 4)  # middle of bottom part
-                # logger.debug(f"mk_airbus: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
+                # logger.debug(f"mk_annunciator: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
                 color = get_color(dual, self.lit_dual)
                 if self.lit_dual or not self.has_option("dark"):
                     draw.multiline_text((w, h),
@@ -416,21 +416,21 @@ class AirbusButton(Button):
         # Glowing texts, later because not nicely perfect.
         if not self.has_option("no_blurr") or self.has_option("sharp"):
             # blurred_image = glow.filter(ImageFilter.UnsharpMask(radius=2, percent=200, threshold=10))
-            blurred_image1 = glow.filter(ImageFilter.GaussianBlur(16)) # self.airbus.get("blurr", 10)
-            blurred_image2 = glow.filter(ImageFilter.GaussianBlur(6)) # self.airbus.get("blurr", 10)
+            blurred_image1 = glow.filter(ImageFilter.GaussianBlur(16)) # self.annunciator.get("blurr", 10)
+            blurred_image2 = glow.filter(ImageFilter.GaussianBlur(6)) # self.annunciator.get("blurr", 10)
             # blurred_image = glow.filter(ImageFilter.BLUR)
             glow.alpha_composite(blurred_image1)
             glow.alpha_composite(blurred_image2)
             # glow = blurred_image
-            # logger.debug("mk_airbus: blurred")
+            # logger.debug("mk_annunciator: blurred")
 
         # We paste the transparent glow into a button:
-        color = get_color(self.airbus, True)
+        color = get_color(self.annunciator, True)
         button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=color)
         button.paste(glow, mask=glow)
 
         # Background
-        image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.airbus.get("background", "lightsteelblue"))
+        image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.annunciator.get("background", "lightsteelblue"))
         draw = ImageDraw.Draw(image)
 
         # Title
@@ -451,7 +451,7 @@ class AirbusButton(Button):
                 p = "r"
                 a = "right"
             h = (box[1] + self.label_size ) / 2  # middle of "title" box
-            # logger.debug(f"mk_airbus: position {title_pos}: {(w, h)}")
+            # logger.debug(f"mk_annunciator: position {title_pos}: {(w, h)}")
             draw.multiline_text((w, h),  # (image.width / 2, 15)
                       text=self.label,
                       font=font,
@@ -462,17 +462,17 @@ class AirbusButton(Button):
         # Button
         image.paste(button, box=box)
 
-        # logger.debug(f"mk_airbus: button {self.name}: ..done")
+        # logger.debug(f"mk_annunciator: button {self.name}: ..done")
 
         return image
 
 
-class AirbusButtonPush(AirbusButton):
+class AnnunciatorButtonPush(AnnunciatorButton):
     """
     Execute command once when key pressed. Nothing is done when button is released.
     """
     def __init__(self, config: dict, page: "Page"):
-        AirbusButton.__init__(self, config=config, page=page)
+        AnnunciatorButton.__init__(self, config=config, page=page)
 
     def is_valid(self):
         if self.command is None:
@@ -494,7 +494,7 @@ class AirbusButtonPush(AirbusButton):
                 logger.warning(f"activate: button {self.name} is invalid")
 
 
-class AirbusButtonAnimate(AirbusButton):
+class AnnunciatorButtonAnimate(AnnunciatorButton):
     """
     """
     def __init__(self, config: dict, page: "Page"):
@@ -502,7 +502,7 @@ class AirbusButtonAnimate(AirbusButton):
         self.thread = None
         self.finished = None
         self.counter = 0
-        AirbusButton.__init__(self, config=config, page=page)
+        AnnunciatorButton.__init__(self, config=config, page=page)
         self.speed = float(self.option_value("animation_speed", 0.5))
 
         self.render()
@@ -557,7 +557,7 @@ class AirbusButtonAnimate(AirbusButton):
             logger.debug(f"anim_start: button {self.name}: starting..")
             self.running = True
             self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"AirbusButtonAnimate::loop({self.name})"
+            self.thread.name = f"AnnunciatorButtonAnimate::loop({self.name})"
             self.thread.start()
             logger.debug(f"anim_start: button {self.name}: ..started")
         else:

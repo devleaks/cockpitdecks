@@ -4,8 +4,8 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     name: ADIRS_ON_BAT
-    type: airbus
-    airbus:
+    type: annunciator
+    annunciator:
       size: small
       display:
         text: ON BAT
@@ -23,8 +23,8 @@ buttons:
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: ADIRS1_INDICATOR
-    type: airbus
-    airbus:
+    type: annunciator
+    annunciator:
       size: full
       display:
         text: FAIL
@@ -39,8 +39,8 @@ buttons:
         dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
   - index: 9
     name: ADIRS3_INDICATOR
-    type: airbus
-    airbus:
+    type: annunciator
+    annunciator:
       size: full
       display:
         text: FAIL
@@ -55,8 +55,8 @@ buttons:
         dataref-rpn: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
   - index: 10
     name: ADIRS2_INDICATOR
-    type: airbus
-    airbus:
+    type: annunciator
+    annunciator:
       size: full
       display:
         text: FAIL
@@ -115,8 +115,8 @@ buttons:
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: ADIRS1_OFF
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: full
       display:
         text: FAIL
@@ -132,8 +132,8 @@ buttons:
         framed: True
   - index: 25
     name: ADIRS3_OFF
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: full
       display:
         text: FAIL
@@ -149,8 +149,8 @@ buttons:
         framed: True
   - index: 26
     name: ADIRS2_OFF
-    type: airbus-push
-    airbus:
+    type: annunciator-push
+    annunciator:
       size: full
       display:
         text: FAIL
