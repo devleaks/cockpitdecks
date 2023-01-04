@@ -16,7 +16,7 @@ from PIL import Image, ImageOps
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .constant import convert_color
-from .button import Button, LOUPEDECK_BUTTON_TYPES
+from .button import Button, LOUPEDECK_BUTTON_TYPES, COLORED_BUTTON, BUTTON_STOP
 from .page import Page
 
 from .deck import Deck
@@ -138,7 +138,7 @@ class Loupedeck(Deck):
                                 if idx not in list(LOUPEDECK_BUTTON_NAMES.values())[0:6]:
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' ({type(idx)}) invalid for LoupedeckLive Device (keys={LOUPEDECK_BUTTON_NAMES.values()[:-7]}), ignoring")
                                     continue
-                            elif bty == "button" or bty =="stop":
+                            elif bty == COLORED_BUTTON or bty == BUTTON_STOP:
                                 if idx < 0 or idx > 7:  # buttons are 0 to 7, circle is an alias for B0
                                     logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
                                     continue

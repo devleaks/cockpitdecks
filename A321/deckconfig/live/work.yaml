@@ -1,4 +1,4 @@
-name: Index
+name: Index2
 buttons:
 #
 # KNOB
@@ -142,9 +142,10 @@ buttons:
   - index: 7
     name: XPLANEDATA
     type: push
-    icon: INFO
+    icon: XPLANE12
     command: sim/operation/toggle_data_output_cockpit
     label: "XPLANE\nCOCKPIT\nDATA"
+    label-color: darkblue
     label-font: DIN Bold
     options: counter
   # - index: 8

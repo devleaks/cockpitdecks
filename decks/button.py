@@ -11,6 +11,12 @@ from .button_annunciators import AnnunciatorButton, AnnunciatorButtonPush, Annun
 from .button_data import DataButton, WeatherButton
 
 
+# Special button names
+#
+COLORED_BUTTON = "button"
+BUTTON_STOP = "stop"
+
+
 STREAM_DECK_BUTTON_TYPES = {
     "none": Button,
     "button-none": ButtonNone,
@@ -31,7 +37,7 @@ LOUPEDECK_BUTTON_TYPES = {
     "none": Button,
     "button-none": ButtonNone,
     "page": ButtonPage,
-    "stop": ButtonStop,
+    BUTTON_STOP: ButtonStop,
     "inspect": ButtonInspect,
     "push": ButtonPush,
     "dual": ButtonDual,
@@ -43,7 +49,7 @@ LOUPEDECK_BUTTON_TYPES = {
     "knob-push": KnobPush,
     "knob-push-pull": KnobPushPull,
     "knob-dataref": KnobDataref,
-    "button": ColoredButton,
+    COLORED_BUTTON: ColoredButton,
     "side": ButtonSide,
     "annunciator": AnnunciatorButton,
     "annunciator-push": AnnunciatorButtonPush,

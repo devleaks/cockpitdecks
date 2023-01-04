@@ -10,14 +10,13 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLE, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
+from .constant import ANNUNCIATOR_DEFAULTS, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
 from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AnnunciatorButton")
 # logger.setLevel(logging.DEBUG)
 
-DATAREF_RPN = "dataref-rpn"
 
 def convert_color_string(instr) -> tuple:  # tuple of int 0-255
     # process either a color name or a color tuple as a string "(1, 2, 3)"
@@ -48,7 +47,8 @@ class AnnunciatorButton(Button):
 
     def __init__(self, config: dict, page: "Page"):
 
-        self.lit = {}  # parts of annunciator that are lit
+        self.lit_display = False
+        self.lit_dual = False
 
         self.multi_icons = config.get("multi-icons")
         self.icon = config.get("icon")
@@ -70,27 +70,6 @@ class AnnunciatorButton(Button):
             self.icon = None
             self.multi_icons = None
 
-            # Normalize annunciator in case of A type (single part)
-            atyp = self.annunciator.get("type", "A")
-            parts = self.annunciator.get("parts")
-            if atyp == "A" and parts is None:  # if only one annunciator, no need for "parts" (special case)
-                self.annunciator["parts"] = { "A0": self.annunciator }
-                logger.debug(f"__init__: button {self.name}: annunciator part normalized")
-
-    def part_iterator(self):
-        """
-        Build annunciator part index list
-        """
-        atyp = self.annunciator.get("type", "A")
-        acnt = 1
-        if atyp in "BC":
-            acnt = 2
-        elif atyp in "DE":
-            acnt = 3
-        elif atyp == "F":
-            acnt = 4
-        return [atyp + str(partnum) for partnum in range(acnt)]
-
     def get_annunciator_datarefs(self, base:dict = None):
         """
         Complement button datarefs with annunciator special lit datarefs
@@ -100,15 +79,14 @@ class AnnunciatorButton(Button):
             # logger.debug(f"get_annunciator_datarefs: button {self.name}: returned from cache")
             return self.annunciator_datarefs
         r = []
-        parts = self.annunciator.get("parts")
-        for key in self.part_iterator():
-            if key in parts.keys():
-                datarefs = super().get_datarefs(base=parts[key])
+        for key in ["display", "dual"]:
+            if key in self.annunciator:
+                datarefs = super().get_datarefs(base=self.annunciator[key])
                 if len(datarefs) > 0:
+                    self.annunciator_datarefs = datarefs
                     r = r + datarefs
                     logger.debug(f"get_annunciator_datarefs: button {self.name}: added {key} datarefs {datarefs}")
-        self.annunciator_datarefs = list(set(r))
-        return self.annunciator_datarefs
+        return list(set(r))
 
     def get_datarefs(self, base:dict = None):
         """
@@ -122,29 +100,28 @@ class AnnunciatorButton(Button):
         a = self.get_annunciator_datarefs()
         if len(a) > 0:
             r = r + a
-        if DATAREF_RPN in r:  # label: ${dataref-rpn}, DATAREF_RPN is not a dataref.
-            r.remove(DATAREF_RPN)
+        if "dataref-rpn" in r:  # label: ${dataref-rpn}, "dataref-rpn" is not a dataref.
+            r.remove("dataref-rpn")
         return list(set(r))
 
     def button_level_driven(self) -> bool:
         """
         Determine if we need to consider either the global button-level value or
-        individula part-level values
+        individula display/dual -level values
         """
         button_level = True
-        # Is there material to decide at part level?
-        parts = self.annunciator["parts"]
-        for key in self.part_iterator():
-            if key in parts:
-                c = parts[key]
-                if DATAREF_RPN in c or "dataref" in c:
+        # Is there material to decide at display/dual level?
+        for key in ["display", "dual"]:
+            if key in self.annunciator:
+                c = self.annunciator[key]
+                if "dataref-rpn" in c or "dataref" in c:
                     button_level = False
                 # else remains button-level True
         if not button_level:
-            logger.debug(f"button_level_driven: button {self.name}: driven at part level")
+            logger.debug(f"button_level_driven: button {self.name}: driven at display/dual level")
             datarefs = self.get_annunciator_datarefs()
             if len(datarefs) < 1:
-                logger.warning(f"button_level_driven: button {self.name}: no part dataref")
+                logger.warning(f"button_level_driven: button {self.name}: no display/dual dataref")
             return False
         # Is there material to decide at button level?
         logger.debug(f"button_level_driven: button {self.name}: driven at button level")
@@ -154,52 +131,49 @@ class AnnunciatorButton(Button):
 
     def button_value(self):
         """
-        Same as button value, but exclusively for Annunciator-type buttons with distinct values for each part.
+        Same as button value, but exclusively for Airbus-type buttons with two distinct values (display and dual).
         If button is driven by single dataref, we forward to button class.
-        Else, we check with the supplied dataref/dataref-rpn that the button is lit or not for each button part.
+        Else, we basically check with the supplied dataref/dataref-rpn that the button is lit or not for each button part.
         """
+        r = []
         if self.button_level_driven():
             logger.debug(f"button_value: button {self.name}: driven by button-level dataref")
             return super().button_value()
 
-        r = {}
-        parts = self.annunciator.get("parts")
-        for key in self.part_iterator():
-            if key in parts.keys():
-                c = parts[key]
-                if DATAREF_RPN in c:
-                    calc = c[DATAREF_RPN]
+        for key in ["display", "dual"]:
+            if key in self.annunciator:
+                c = self.annunciator[key]
+                if "dataref-rpn" in c:
+                    calc = c["dataref-rpn"]
                     expr = self.substitute_dataref_values(calc)
                     rpc = RPC(expr)
                     res = rpc.calculate()
                     logger.debug(f"button_value: button {self.name}: {key}: {expr}={res}")
-                    r[key] = 1 if (res is not None and res > 0) else 0
+                    r.append(1 if (res is not None and res > 0) else 0)
                 elif "dataref" in c:
                     dataref = c["dataref"]
                     res = self.get_dataref_value(dataref)
                     logger.debug(f"button_value: button {self.name}: {key}: {dataref}={res}")
-                    r[key] = 1 if (res is not None and res > 0) else 0
+                    r.append(1 if (res is not None and res > 0) else 0)
                 else:
                     logger.debug(f"button_value: button {self.name}: {key}: no formula, set to 0")
-                    r[key] = 0
+                    r.append(0)
             else:
-                r[key] = 0
+                r.append(0)
                 logger.debug(f"button_value: button {self.name}: {key}: key not found, set to 0")
         # logger.debug(f"annunciator_button_value: button {self.name} returning: {r}")
         return r
 
     def set_key_icon(self):
         logger.debug(f"set_key_icon: button {self.name} has current value {self.current_value}")
-        if self.current_value is not None and type(self.current_value) in [dict] and len(self.current_value) > 1:
-            logger.debug(f"set_key_icon: button {self.name}: driven by part dataref")
-            self.lit = {}
-            for key in self.part_iterator():
-                self.lit[key] = self.current_value[key] != 0
+        if self.current_value is not None and type(self.current_value) in [list, tuple] and len(self.current_value) > 1:
+            logger.debug(f"set_key_icon: button {self.name}: driven by display/dual-level dataref")
+            self.lit_display = (self.current_value[0] != 0)
+            self.lit_dual = (self.current_value[1] != 0)
         elif self.current_value is not None and type(self.current_value) in [int, float]:
             logger.debug(f"set_key_icon: button {self.name}: driven by button-level dataref")
-            self.lit = {}
-            for key in self.part_iterator():
-                self.lit[key] = self.current_value != 0
+            self.lit_display = (self.current_value != 0)
+            self.lit_dual = (self.current_value != 0)
         # else: leave untouched
 
     def get_image(self):
@@ -209,25 +183,8 @@ class AnnunciatorButton(Button):
         return self.mk_annunciator()
 
     def mk_annunciator(self):
-        # If the part is not lit, a darker version is printed unless dark option is added to button
+        # If the display or dual is not lit, a darker version is printed unless dark option is added to button
         # in which case nothing gets added to the button.
-        AC = {
-            "A0": [0.50, 0.50],
-            "B0": [0.50, 0.25],
-            "B1": [0.50, 0.75],
-            "C0": [0.25, 0.50],
-            "C1": [0.75, 0.50],
-            "D0": [0.50, 0.25],
-            "D1": [0.25, 0.75],
-            "D2": [0.75, 0.75],
-            "E0": [0.25, 0.25],
-            "E1": [0.25, 0.75],
-            "E2": [0.50, 0.75],
-            "F0": [0.25, 0.25],
-            "F1": [0.75, 0.25],
-            "F2": [0.25, 0.75],
-            "F3": [0.75, 0.75]
-        }
 
         def light_off(color, lightness: float = LIGHT_OFF_BRIGHTNESS / 100):
             # Darkens (or lighten) a color
@@ -246,7 +203,7 @@ class AnnunciatorButton(Button):
 
             if not lit:
                 try:
-                    color = disp.get("off-color", light_off(color))
+                    color = display.get("off-color", light_off(color))
                 except ValueError:
                     logger.debug(f"mk_annunciator: button {self.name}: color {color} ({type(color)}) not found, using grey")
                     color = (128, 128, 128)
@@ -277,15 +234,15 @@ class AnnunciatorButton(Button):
             Returns text, if any, with substitution of datarefs if any.
             Same as Button.get_label().
             """
+            DATAREF_RPN = "${dataref-rpn}"
             label = base.get("text")
-            DATAREF_RPN_STR = f"${{DATAREF_RPN}}"
 
             # logger.debug(f"get_text: button {self.name}: raw: {label}")
             # If text contains ${dataref-rpn}, it is replaced by the value of the dataref-rpn calculation.
             # So we do it.
             if label is not None:
-                if DATAREF_RPN_STR in label:
-                    dataref_rpn = base.get(DATAREF_RPN)
+                if DATAREF_RPN in label:
+                    dataref_rpn = base.get("dataref-rpn")
                     if dataref_rpn is not None:
                         expr = self.substitute_dataref_values(dataref_rpn)
                         rpc = RPC(expr)
@@ -296,9 +253,9 @@ class AnnunciatorButton(Button):
                             res = text_format.format(res)
                         else:
                             res = str(res)
-                        label = label.replace(DATAREF_RPN_STR, res)
+                        label = label.replace(DATAREF_RPN, res)
                     else:
-                        logger.warning(f"get_text: button {self.name}: text contains {DATAREF_RPN_STR} not no attribute found")
+                        logger.warning(f"get_text: button {self.name}: text contains {DATAREF_RPN} not no attribute found")
                 else:
                     label = self.substitute_dataref_values(label, formatting=text_format, default="---")
                 # logger.debug(f"get_text: button {self.name}: returned: {label}")
@@ -308,12 +265,15 @@ class AnnunciatorButton(Button):
         ICON_SIZE = 256  # px
         inside = ICON_SIZE / 32 # 8px
 
-        # Button overall size: full, large, medium, small.
+        # Button
+        #
+        # Overall button size: full, large, medium, small.
+        #
         size = self.annunciator.get("size", "large")
         if size == "small":  # about 1/2, starts at 128
             button_height = int(ICON_SIZE / 2)
             box = (0, int(ICON_SIZE/4))
-        elif size == "medium":  # about 5/8, starts at 96
+        elif size == "medium":  # about 2/3, starts at 96
             button_height = int(10 * ICON_SIZE / 16)
             box = (0, int(3 * ICON_SIZE / 16))
         elif size == "full":  # starts at 0
@@ -324,149 +284,134 @@ class AnnunciatorButton(Button):
             box = (0, int(3 * ICON_SIZE / 16))
 
         led_offset = inside
-        text_size = int(ICON_SIZE / 4)
 
         # PART 1:
-        # Texts that will glow if Korry style
+        # Texts that will glow
         glow = Image.new(mode="RGBA", size=(ICON_SIZE, button_height), color=(0, 0, 0, 0))
         draw = ImageDraw.Draw(glow)
-        back = Image.new(mode="RGBA", size=(ICON_SIZE, button_height), color=(0, 0, 0, 0))
-        bg   = ImageDraw.Draw(back)
 
-        parts = self.annunciator.get("parts")
-        for partname in self.part_iterator():
-            part = parts.get(partname)
-            if part is not None:
-                txt = get_text(part)
-                if txt is not None:  # we need to display text...
-                    display_pos = "mm"  # part.get("position", "mm")  # always centered
-                    text = get_text(part)  # part.get("text")
-                    if text is not None:
-                        fontname = self.get_font(part.get("font"))
-                        font = ImageFont.truetype(fontname, part.get("size", text_size))
-                        w = glow.width / 2
-                        p = "m"
-                        a = "center"
-                        if display_pos[0] == "l":
-                            w = inside
-                            p = "l"
-                            a = "left"
-                        elif display_pos[0] == "r":
-                            w = glow.width - inside
-                            p = "r"
-                            a = "right"
-                        w, h = AC[partname]
-                        w = w * 256
-                        h = h * 256
-                        # logger.debug(f"mk_annunciator: position {display_pos}: {(w, h)}, {part}")
-                        color = get_color(part, self.lit[partname])
+        # 1.1 First/top/main item (called "display")
+        display = self.annunciator.get("display")
+        dual = self.annunciator.get("dual")
 
-                        if self.lit[partname] or not ANNUNCIATOR_STYLE == "v":
-                            invert = part.get("invert")
-                            if self.lit[partname] and invert is not None:
-                                if w == 128:
-                                    w0 = 0
-                                    w1 = 2 * w
-                                else:
-                                    w0 = w - 64
-                                    w1 = w + 64
-                                if h == 128:
-                                    h0 = 0
-                                    h1 = 2 * w
-                                else:
-                                    h0 = h - 64
-                                    h1 = h + 64
-                                frame = ((w0, h0), (w1, h1))
-                                invert_color = convert_color_string(invert)
-                                bg.rectangle(frame, fill=invert_color)
-
-                            draw.multiline_text((w, h),  # (glow.width / 2, 15)
-                                      text=text,
-                                      font=font,
-                                      anchor=p+"m",
-                                      align=a,
-                                      fill=color)
-
-                            if has_frame(part):
-                                txtbb = draw.multiline_textbbox((w, h),  # min frame, just around the text
-                                          text=text,
-                                          font=font,
-                                          anchor=p+"m",
-                                          align=a)
-                                margin = 3 * inside
-                                framebb = ((txtbb[0]-margin, txtbb[1]-margin), (txtbb[2]+margin, txtbb[3]+margin))
-
-                                thick = int(button_height / 16)
-
-                                he = 128 if h == 128 else 64
-                                hstart = (h - he) + inside
-                                height = 2 * (he - inside)
-                                we = 128 if w == 128 else 64
-                                wstart = (w - we) + inside
-                                width = 2 * (we - inside)
-                                framemax = ((wstart, hstart), (wstart + width, hstart + height))
-                                # logger.debug(f"mk_annunciator: {partname}: {w} x {h} (inside={inside},thick={thick})")
-                                # logger.debug(f"mk_annunciator:  framebb: {framebb}")
-                                # logger.debug(f"mk_annunciator: framemax: {framemax}")
-                                # optimal frame, largest possible in button and that surround text
-                                frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
-                                draw.rectangle(frame, outline=color, width=thick)
-                else:  # no text, try led:
-                    led = part.get("led")
-                    w, h = AC[partname]
-                    w = w * 256
-                    h = h * 256
-                    color = get_color(part, self.lit[partname])
-                    if led is not None:
-                        if led in ["block", "led"]:
-                            thick = 30
-                            if size == "large":
-                                thick = 40
-                            frame = ((w - 64 + 2 * inside, h - thick / 2), (w + 64 - 2 * inside, h + thick / 2))
-                            draw.rectangle(frame, fill=color)
-                        elif led in ["bar", "bars"]:
-                            nbar = 3
-                            thick = 10
-                            if size == "large":
-                                thick = 12
-                            spacer = 3
-                            hstart = h - (nbar * thick + (nbar - 1) * spacer) / 2
-                            for i in range(3):
-                                frame = ((w - 64 + 2 * inside, hstart), (w + 64 - 2 * inside, hstart + thick))
-                                draw.rectangle(frame, fill=color)
-                                hstart = hstart + thick + spacer
-                        elif led == "dot":
-                            # Plot a series of circular dot on a line
-                            radius = ICON_SIZE / 16  # LED diameter
-                            frame = ((w - radius, h - radius), (w + radius, h + radius))
-                            draw.ellipse(frame, fill=color)
-                        elif led == "lgear":
-                            nins = 8
-                            w2 = w
-                            if w == 128:
-                                w0 = (nins / 4) * inside
-                                w1 = 2 * w - (nins / 4) * inside
-                            else:
-                                w0 = w - 64 + (nins / 4) * inside
-                                w1 = w + 64 - (nins / 4) * inside
-                            if h == 128:
-                                h0 = nins * inside
-                                h1 = 2 * w - nins * inside
-                            else:
-                                h0 = h - 64 + (nins / 2) * inside
-                                h1 = h + 64 - (nins / 2) * inside
-                            triangle = [(w0, h0), (w1, h0), (w2, h1), (w0, h0)]
-                            draw.polygon(triangle, outline=color, width=int(96/nins))
-                        else:
-                            logger.warning(f"mk_annunciator: button {self.name}: part {partname}: invalid led {led}")
-                    else:
-                        logger.warning(f"mk_annunciator: button {self.name}: part {partname}: no text, no led")
+        if display is not None:
+            display_pos = display.get("position", "mm")
+            text = get_text(display)  # display.get("text")
+            if text is not None:
+                fontname = self.get_font(display.get("font"))
+                font = ImageFont.truetype(fontname, display.get("size"))
+                w = glow.width / 2
+                p = "m"
+                a = "center"
+                if display_pos[0] == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif display_pos[0] == "r":
+                    w = glow.width - inside
+                    p = "r"
+                    a = "right"
+                h = int(button_height / 2)  # center of button
+                if dual is not None and dual.get("text") is not None: # middle of top part
+                    h = int(button_height / 4)
+                # logger.debug(f"mk_annunciator: position {display_pos}: {(w, h)}, {dual}")
+                color = get_color(display, self.lit_display)
+                if self.lit_display or not self.has_option("dark"):
+                    draw.multiline_text((w, h),  # (glow.width / 2, 15)
+                              text=text,
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=color)
+                else:
+                    logger.debug("mk_annunciator: full dark display")
             else:
-                logger.warning(f"mk_annunciator: button {self.name}: part {partname}: nothing to display")
+                # If there is no text, we display a LED light.
+                # For large and medium, it is a 3 LED bar light
+                # For small, it is a single block LED.
+                # Alternatively, it can be a series of circular dots (options: dot=3)
+                color = get_color(display, self.lit_display)
+                if self.has_option("dot"):
+                    # Plot a series of circular dot on a line
+                    ndot = self.option_value("dot", default=2)
+                    ndot = 2 if type(ndot) == bool else int(ndot)
+                    radius = ICON_SIZE / 16  # LED diameter
+                    space  = (ICON_SIZE - 2 * inside) / ndot  # space between dots, tries to evenly space them "inside" button space
+                    dot_left = ICON_SIZE / 2 - ((ndot - 1) * space) / 2
+                    dot_height = button_height / 2 # Middle of button
+                    if dual is not None:
+                        dot_height = button_height / 4 # middle of button's top half
+                    for i in range(ndot):
+                        frame = ((dot_left + i * space - radius, dot_height - radius), (dot_left + i * space + radius, dot_height + radius))
+                        draw.ellipse(frame, fill=color)
+                else:
+                    # Plot one or three LED bars.
+                    dot_left = ICON_SIZE / 4      # space left and right of LED
+                    if self.has_option("single_led"):  # single horizontal led
+                        thick = 30
+                        if size == "large":
+                            thick = 40
+                        dot_height = button_height / 2 - thick
+                        frame = ((dot_left, dot_height), (glow.width - dot_left, dot_height + thick))
+                        draw.rectangle(frame, fill=color)
+                    else:  # 3 horizontal leds
+                        thick = 10             # LED thickness
+                        if size == "small":
+                            thick = 6
+                        dot_height = button_height / 4 - 1.5 * thick - (16 - thick)
+                        for i in range(3):
+                            s = dot_height + i * 16
+                            frame = ((dot_left, s), (glow.width - dot_left, s+thick))
+                            draw.rectangle(frame, fill=color)
 
+        # 1.2 Optional second/bottom item (called "dual")
+        if dual is not None:
+            dual_pos = dual.get("position", "mm")
+            text = get_text(dual)  # = dual.get("text")
+            if text is not None:
+                fontname = self.get_font(dual.get("font"))
+                font = ImageFont.truetype(fontname, dual.get("size"))
+                w = glow.width / 2
+                p = "m"
+                a = "center"
+                if dual_pos[0] == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif dual_pos[0] == "r":
+                    w = glow.width - inside
+                    p = "r"
+                    a = "right"
+                h = int(3 * button_height / 4)  # middle of bottom part
+                # logger.debug(f"mk_annunciator: {dual.get('text')}: size {dual.get('size')}, position {dual_pos}: {(w, h)}")
+                color = get_color(dual, self.lit_dual)
+                if self.lit_dual or not self.has_option("dark"):
+                    draw.multiline_text((w, h),
+                              text=text,
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=color)
+                    if has_frame(dual):
+                        txtbb = draw.multiline_textbbox((w, h),  # min frame, just around the text
+                                  text=dual.get("text"),
+                                  font=font,
+                                  anchor=p+"m",
+                                  align=a)
+                        margin = 3 * inside
+                        framebb = ((txtbb[0]-margin, txtbb[1]-margin), (txtbb[2]+margin, txtbb[3]+margin))
 
-        # PART 1.2: Glowing texts, later because not nicely perfect.
-        if ANNUNCIATOR_STYLE == "k":
+                        start = button_height / 2 + inside      # max frame, just inside button
+                        height = int(button_height / 2 - 2 * inside)
+                        thick = int(button_height / 16)
+                        e = inside * 4
+                        framemax = ((e, start), (glow.width-e, start + height))
+                        # optimal frame, largest possible in button and that surround text
+                        frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
+                        draw.rectangle(frame, outline=color, width=thick)
+
+        # Glowing texts, later because not nicely perfect.
+        if not self.has_option("no_blurr") or self.has_option("sharp"):
             # blurred_image = glow.filter(ImageFilter.UnsharpMask(radius=2, percent=200, threshold=10))
             blurred_image1 = glow.filter(ImageFilter.GaussianBlur(16)) # self.annunciator.get("blurr", 10)
             blurred_image2 = glow.filter(ImageFilter.GaussianBlur(6)) # self.annunciator.get("blurr", 10)
@@ -479,17 +424,13 @@ class AnnunciatorButton(Button):
         # We paste the transparent glow into a button:
         color = get_color(self.annunciator, True)
         button = Image.new(mode="RGB", size=(ICON_SIZE, button_height), color=color)
-        button.paste(back, box=box)
         button.paste(glow, mask=glow)
 
-        # PART 2: Background
+        # Background
         image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.annunciator.get("background", "lightsteelblue"))
         draw = ImageDraw.Draw(image)
 
-        # Button
-        image.paste(button, box=box)
-
-        # PART 3: Title
+        # Title
         if self.label is not None:
             title_pos = self.label_position
             fontname = self.get_font()
@@ -516,7 +457,7 @@ class AnnunciatorButton(Button):
                       fill=self.label_color)
 
         # Button
-        # image.paste(button, box=box)
+        image.paste(button, box=box)
 
         # logger.debug(f"mk_annunciator: button {self.name}: ..done")
 
@@ -635,13 +576,13 @@ class AnnunciatorButtonAnimate(AnnunciatorButton):
         If button has more icons, select one from button current value
         """
         if self.running:
-            if k in self.lit.keys():
-                self.lit[k] = not self.lit[k]
+            self.lit_display = not self.lit_display
+            self.lit_dual = not self.lit_dual
 #            logger.debug(f"set_key_icon: button {self.name}: running")
         else:
 #            logger.debug(f"set_key_icon: button {self.name}: NOT running")
-            if k in self.lit.keys():
-                self.lit[k] = False
+            self.lit_display = False
+            self.lit_dual = False
             super().set_key_icon()  # set off icon
 
     # Works with activation on/off

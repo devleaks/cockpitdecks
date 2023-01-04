@@ -3,7 +3,6 @@ Application constants
 
 """
 import os
-from enum import Enum
 from inspect import stack
 
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
@@ -29,8 +28,6 @@ DEFAULT_ICON_COLOR = (0, 0, 100)
 
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"
-
-DEFAULT_STYLE = "korry"  # korry|viva
 
 UDP_PORT = 49000
 
@@ -193,7 +190,7 @@ HAPTIC = {
 # ################################
 # ANNUNCIATOR_DEFAULTS
 #
-ANNUNCIATOR_DEFAULTS = {                     # May be externalized (constant) one day...
+ANNUNCIATOR_DEFAULTS = {                # May be externalized (constant) one day...
     "background": (94, 111, 130),       # Button frame color, light blueish Airbus dashboard. Needs tuning.
     "color": (20, 20, 20),              # Button background color
     "blurr": 16,
@@ -214,8 +211,10 @@ ANNUNCIATOR_DEFAULTS = {                     # May be externalized (constant) on
     }
 }
 
+ANNUNCIATOR_STYLE = "k"                 # k(orry): backlit, glowing, default | v(ivisun): bright, sharp.
 
-ANNUNCIATOR_DEFAULTS_STREAMDECK = {                     # May be externalized (constant) one day...
+
+ANNUNCIATOR_DEFAULTS_STREAMDECK = {     # May be externalized (constant) one day...
     "background": (94, 111, 130),       # Button frame color, light blueish Airbus dashboard. Needs tuning.
     "color": (20, 20, 20),              # Button background color
     "blurr": 16,
@@ -236,7 +235,7 @@ ANNUNCIATOR_DEFAULTS_STREAMDECK = {                     # May be externalized (c
     }
 }
 
-ANNUNCIATOR_DEFAULTS_LOUPEDECK = {                     # May be externalized (constant) one day...
+ANNUNCIATOR_DEFAULTS_LOUPEDECK = {      # May be externalized (constant) one day...
     "background": (94, 111, 130),       # Button frame color, light blueish Airbus dashboard. Needs tuning.
     "color": (20, 20, 20),              # Button background color
     "blurr": 16,
