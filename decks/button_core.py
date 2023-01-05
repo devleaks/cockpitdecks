@@ -22,7 +22,7 @@ import time
 
 from PIL import ImageDraw, ImageFont
 
-from .constant import add_ext, convert_color
+from .constant import DATAREF_RPN, add_ext, convert_color
 from .rpc import RPC
 
 
@@ -78,7 +78,7 @@ class Button:
         # Datarefs
         self.dataref = config.get("dataref")
         self.datarefs = config.get("multi-datarefs")
-        self.dataref_rpn = config.get("dataref-rpn")
+        self.dataref_rpn = config.get(DATAREF_RPN)
 
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
@@ -315,7 +315,7 @@ class Button:
 
         # Use of datarefs in formula:
         # 2. Formulae datarefs
-        dataref_rpn = base.get("dataref-rpn")
+        dataref_rpn = base.get(DATAREF_RPN)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall("\\${(.+?)}", dataref_rpn)
             if len(datarefs) > 0:
@@ -332,8 +332,8 @@ class Button:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
 
-        if "dataref-rpn" in r:  # label: ${dataref-rpn}, "dataref-rpn" is not a dataref.
-            r.remove("dataref-rpn")
+        if DATAREF_RPN in r:  # label: ${dataref-rpn}, "dataref-rpn" is not a dataref.
+            r.remove(DATAREF_RPN)
 
         return list(set(r))  # removes duplicates
 
@@ -443,7 +443,7 @@ class Button:
         # So we do it.
         if label is not None:
             if DATAREF_RPN in label:
-                dataref_rpn = base.get("dataref-rpn")
+                dataref_rpn = base.get(DATAREF_RPN)
                 if dataref_rpn is not None:
                     expr = self.substitute_dataref_values(dataref_rpn)
                     rpc = RPC(expr)

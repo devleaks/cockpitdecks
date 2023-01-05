@@ -10,14 +10,12 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
+from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
 from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AnnunciatorButton")
 # logger.setLevel(logging.DEBUG)
-
-DATAREF_RPN = "dataref-rpn"
 
 def convert_color_string(instr) -> tuple:  # tuple of int 0-255
     # process either a color name or a color tuple as a string "(1, 2, 3)"
@@ -206,28 +204,20 @@ class AnnunciatorButton(Button):
                     logger.debug(f"button_value: button {self.name}: {key}: has control ({r})")
                     r[key] = 1 if v is not None and v > 0 else 0
                 else:
-                    logger.debug(f"button_value: button {self.name}: {key}: has no local control (button level value = {r})")
+                    logger.debug(f"button_value: button {self.name}: {key}: has no local control (button level value = {button_level_value})")
                     r[key] = 1 if button_level_value is not None and button_level_value > 0 else 0
             else:
                 r[key] = 0
                 logger.debug(f"button_value: button {self.name}: {key}: key not found, set to 0")
-        # logger.debug(f"annunciator_button_value: button {self.name} returning: {r}")
+        logger.debug(f"annunciator_button_value: button {self.name}: {r}")
         return r
 
     def set_key_icon(self):
         logger.debug(f"set_key_icon: button {self.name} has current value {self.current_value}")
-        if self.current_value is not None and type(self.current_value) in [dict]:
-            logger.debug(f"set_key_icon: button {self.name}: driven by part dataref")
-            self.lit = {}
-            for key in self.part_iterator():
-                self.lit[key] = self.current_value[key] != 0
-        elif self.current_value is not None and type(self.current_value) in [int, float]:
-            logger.debug(f"set_key_icon: button {self.name}: driven by button-level dataref")
-            self.lit = {}
-            for key in self.part_iterator():
-                self.lit[key] = self.current_value != 0
+        self.lit = {}
+        for key in self.part_iterator():
+            self.lit[key] = self.current_value[key] != 0
         logger.debug(f"set_key_icon: button {self.name}: {self.lit}")
-        # else: leave untouched
 
     def get_image(self):
         """
@@ -626,17 +616,36 @@ class AnnunciatorButtonAnimate(AnnunciatorButton):
             return self.current_value != 0
 
         # If array or tuple value
-        for i in self.current_value:
-            if i is not None:
-                if type(i) == bool and i != False:
-                    logger.debug(f"should_run: button {self.name}: complex current bool value {i}, returning True")
-                    return True
-                elif type(i) == int and i != 0:
-                    logger.debug(f"should_run: button {self.name}: complex current int value {i}, returning True")
-                    return True
-                # else, do nothing, False assumed ("no clear sign to set it True")
-            # else, do nothing, None assumed False
-        logger.debug(f"should_run: button {self.name}: complex current value {self.current_value}, returning False")
+        if type(self.current_value) in [list, tuple]:
+            for i in self.current_value:
+                if i is not None:
+                    if type(i) == bool and i != False:
+                        logger.debug(f"should_run: button {self.name}: list bool value {i}, returning True")
+                        return True
+                    elif type(i) == int and i != 0:
+                        logger.debug(f"should_run: button {self.name}: list int value {i}, returning True")
+                        return True
+                    # else, do nothing, False assumed ("no clear sign to set it True")
+                # else, do nothing, None assumed False
+            logger.debug(f"should_run: button {self.name}: complex current value {self.current_value}, returning False")
+            return False  # all individual scalar in array or tuple are None, or 0, or False
+
+        # If dict value
+        if type(self.current_value) in [dict]:
+            for k, i in self.current_value.items():
+                if i is not None:
+                    if type(i) == bool and i != False:
+                        logger.debug(f"should_run: button {self.name}: dict bool value {i}, returning True")
+                        return True
+                    elif type(i) == int and i != 0:
+                        logger.debug(f"should_run: button {self.name}: dict int value {i}, returning True")
+                        return True
+                    # else, do nothing, False assumed ("no clear sign to set it True")
+                # else, do nothing, None assumed False
+            logger.debug(f"should_run: button {self.name}: complex current value {self.current_value}, returning False")
+            return False  # all individual scalar in array or tuple are None, or 0, or False
+
+        logger.debug(f"should_run: button {self.name}: special current value {self.current_value}, returning False")
         return False  # all individual scalar in array or tuple are None, or 0, or False
 
     def loop(self):

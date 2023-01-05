@@ -34,6 +34,9 @@ DEFAULT_LOGO = "logo.png"
 
 UDP_PORT = 49000
 
+DATAREF_RPN = "dataref-rpn"
+
+
 def add_ext(name: str, ext: str):
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")

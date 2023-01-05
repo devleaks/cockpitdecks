@@ -73,11 +73,10 @@ buttons:
     type: annunciator-animate
     name: MASTER CAUTION
     annunciator:
-      size: full
-      display:
-        text: "MASTER\nCAUT"
-        color: orange
-        font: DIN Condensed Black.otf
+      text: "MASTER\nCAUT"
+      color: orange
+      font: DIN Condensed Black.otf
+      font-size: 72
     command: sim/annunciator/clear_master_caution
     dataref: AirbusFBW/MasterCaut
     # options: animation_speed=0.5
@@ -85,11 +84,10 @@ buttons:
     type: annunciator-animate
     name: MASTER WARNING
     annunciator:
-      size: full
-      display:
-        text: "MASTER\nWARN"
-        color: red
-        font: DIN Condensed Black.otf
+      text: "MASTER\nWARN"
+      color: red
+      font: DIN Condensed Black.otf
+      font-size: 72
     command: sim/annunciator/clear_master_warning
     dataref: AirbusFBW/MasterWarn
   - index: 3
