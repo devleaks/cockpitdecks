@@ -27,6 +27,8 @@ class Page:
         self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty = config.get("fill-empty-keys", deck.fill_empty)
+        self.annunciator_style = config.get("annunciator-style", deck.annunciator_style)
+        self.cockpit_color = config.get("cockpit-color", deck.cockpit_color)
 
         self.buttons = {}
         self.datarefs = {}

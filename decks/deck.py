@@ -44,12 +44,15 @@ class Deck:
         self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty = config.get("fill-empty-keys", cockpit.fill_empty)
+        self.annunciator_style = config.get("annunciator-style", cockpit.annunciator_style)
+        self.cockpit_color = config.get("cockpit-color", cockpit.cockpit_color)
         self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
         self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
 
         self.pil_helper = None
         self.icons = {}  # icons ready for this deck
 
+        self.layout_config = {}
         self.pages = {}
         self.home_page = None
         self.current_page = None
@@ -122,6 +125,20 @@ class Deck:
         # Generates an image that is correctly sized to fit across all keys of a given
         #
         pass
+
+    def load_layout_config(self, fn):
+        """
+        Loads a layout global configuration parameters.
+
+        :param      fn:   The function
+        :type       fn:   Function
+        """
+        if os.path.exists(fn):
+            with open(fn, "r") as fp:
+                self.layout_config = yaml.safe_load(fp)
+                logger.debug(f"load_layout_config: loaded layout config {fn}")
+        else:
+            logger.debug(f"load_layout_config: no layout config file")
 
     def key_change_callback(self, deck, key, state):
         """

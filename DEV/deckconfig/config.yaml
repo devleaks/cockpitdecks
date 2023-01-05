@@ -4,7 +4,7 @@ aicraft: Toliss A321
 decks:
   - name: XPDeck
     type: streamdeck
-    layout: layout15
+    layout: demo
     brightness: 80
     default-label-font: DIN Medium.ttf
     default-label-size: 13
@@ -16,7 +16,7 @@ decks:
     default-label-size: 16
   - name: XPLive
     type: loupedeck
-    layout: live
+    layout: annunciator
     brightness: 70
   - name: XPTouch
     type: xtouchmini

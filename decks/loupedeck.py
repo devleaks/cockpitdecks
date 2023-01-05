@@ -74,7 +74,9 @@ class Loupedeck(Deck):
 
         pages = os.listdir(dn)
         for p in pages:
-            if p.endswith("yaml") or p.endswith("yml"):
+            if p == CONFIG_FILE:
+                self.load_layout_config(os.path.join(dn, p))
+            elif p.endswith("yaml") or p.endswith("yml"):
                 name = ".".join(p.split(".")[:-1])  # remove extension from filename
                 fn = os.path.join(dn, p)
 
@@ -84,6 +86,8 @@ class Loupedeck(Deck):
 
                         if "name" in page_config:
                             name = page_config["name"]
+
+                        logger.debug(f"load: loaded page {name} (from file {fn.replace(self.cockpit.acpath, '... ')}), adding..")
 
                         if name in self.pages.keys():
                             logger.warning(f"load: page {name}: duplicate name, ignored")
@@ -160,7 +164,7 @@ class Loupedeck(Deck):
                             else:
                                 logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
 
-                        logger.info(f"load: page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
+                        logger.info(f"load: ..page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
                 else:
                     logger.warning(f"load: file {p} not found")
 

@@ -9,8 +9,8 @@ import pickle
 from PIL import Image, ImageFont
 
 from .constant import CONFIG_DIR, CONFIG_FILE, SERIAL_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER
-from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE
+from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
 from .constant import has_ext, convert_color
 
 from .devices import DECK_TYPES
@@ -52,7 +52,8 @@ class Cockpit:
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
         self.fill_empty = None
-
+        self.annunciator_style = ANNUNCIATOR_STYLE
+        self.cockpit_color = COCKPIT_COLOR
         self.init()
 
     def init(self):
@@ -172,6 +173,7 @@ class Cockpit:
             self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.fill_empty = self.default_config.get("fill-empty-keys")
+            self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
 
         # 1. Creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
@@ -239,6 +241,7 @@ class Cockpit:
         if os.path.exists(fn):
             with open(fn, "r") as fp:
                 config = yaml.safe_load(fp)
+                logger.debug(f"create_decks: loaded config {fn}")
 
                 self._config = config
                 self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
@@ -249,6 +252,7 @@ class Cockpit:
                 self.default_logo = config.get("default-wallpaper-logo", DEFAULT_LOGO)
                 self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
                 self.fill_empty = config.get("fill-empty-keys")
+                self.cockpit_color = config.get("cockpit-color", COCKPIT_COLOR)
 
                 if "decks" in config:
                     cnt = 0

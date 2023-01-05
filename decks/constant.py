@@ -4,6 +4,7 @@ Application constants
 """
 import os
 from inspect import stack
+from enum import Enum
 
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
@@ -15,6 +16,8 @@ RESOURCES_FOLDER = "resources"
 DEFAULT_LAYOUT = "default"
 INIT_PAGE = "Index"
 DEFAULT_PAGE_NAME = "X-Plane"
+
+COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name
 
 FONTS_FOLDER = "fonts"
 DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS
@@ -198,20 +201,15 @@ ANNUNCIATOR_DEFAULTS = {                # May be externalized (constant) one day
         "font": "DIN.ttf",
         "size": 42,                     # ~3/16
         "color": "white"
-    },
-    "display": {                        # This is what is display on the button, text or LED for now
-        "font": "DIN Bold.ttf",
-        "size": 64,                     # 4/16
-        "color": (0, 0, 220)
-    },
-    "dual": {                           # This is what is printed on the button
-        "font": "DIN Bold.ttf",
-        "size": 80,                     # 5/16
-        "color": "deepskyblue"
     }
 }
 
-ANNUNCIATOR_STYLE = "k"                 # k(orry): backlit, glowing, default | v(ivisun): bright, sharp.
+class ANNUNCIATOR_STYLES(Enum):
+    KORRY = "k"
+    VIVISUN = "v"
+
+ANNUNCIATOR_STYLE = "v"                 # k(orry): backlit, glowing, default | v(ivisun): bright, sharp.
+
 
 
 ANNUNCIATOR_DEFAULTS_STREAMDECK = {     # May be externalized (constant) one day...

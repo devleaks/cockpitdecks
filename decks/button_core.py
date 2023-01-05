@@ -293,13 +293,12 @@ class Button:
         listed dataref and datarefs attributes.
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
-        if self.all_datarefs is not None:  # cached
-            return self.all_datarefs
+        if base is None:
+            if self.all_datarefs is not None:  # cached
+                return self.all_datarefs
+            base = self._config
 
         r = []
-
-        if base is None:
-            base = self._config
         # Use of datarefs in button:
         # 1. RAW datarefs
         # 1.1 Single
