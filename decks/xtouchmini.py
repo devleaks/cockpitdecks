@@ -9,7 +9,7 @@ from .deck import Deck
 from .page import Page
 from .button import XTOUCH_MINI_BUTTON_TYPES, Knob
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW
 from .constant import print_stack
 

@@ -13,7 +13,7 @@ from enum import Enum
 from .Loupedeck.ImageHelpers import PILHelper
 from PIL import Image, ImageOps
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .constant import convert_color
 from .button import Button, LOUPEDECK_BUTTON_TYPES, COLORED_BUTTON, BUTTON_STOP

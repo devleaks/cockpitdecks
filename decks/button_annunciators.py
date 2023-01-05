@@ -49,6 +49,8 @@ class AnnunciatorButton(Button):
     def __init__(self, config: dict, page: "Page"):
 
         self.lit = {}  # parts of annunciator that are lit
+        self.part_controls = {}
+        self._part_iterator = None
 
         self.multi_icons = config.get("multi-icons")
         self.icon = config.get("icon")
@@ -66,7 +68,6 @@ class AnnunciatorButton(Button):
                 self.annunciator["parts"] = { "A0": self._annunciator }
                 name = config.get("name", f"{type(self).__name__}-{config['index']}")
                 logger.debug(f"__init__: button {name}: annunciator part normalized")
-
         else:
             logger.error(f"__init__: button {self.name}: has no annunciator property")
 
@@ -83,15 +84,17 @@ class AnnunciatorButton(Button):
         """
         Build annunciator part index list
         """
-        atyp = self.annunciator.get("type", "A")
-        acnt = 1
-        if atyp in "BC":
-            acnt = 2
-        elif atyp in "DE":
-            acnt = 3
-        elif atyp == "F":
-            acnt = 4
-        return [atyp + str(partnum) for partnum in range(acnt)]
+        if self._part_iterator is None:
+            atyp = self.annunciator.get("type", "A")
+            acnt = 1
+            if atyp in "BC":
+                acnt = 2
+            elif atyp in "DE":
+                acnt = 3
+            elif atyp == "F":
+                acnt = 4
+            self._part_iterator = [atyp + str(partnum) for partnum in range(acnt)]
+        return self._part_iterator
 
     def get_annunciator_datarefs(self, base:dict = None):
         """
@@ -131,71 +134,80 @@ class AnnunciatorButton(Button):
             r.remove(DATAREF_RPN)
         return list(set(r))
 
-    def button_level_driven(self) -> bool:
-        """
-        Determine if we need to consider either the global button-level value or
-        individula part-level values
-        """
-        button_level = True
-        part_has_rpn = {}
-        # Is there material to decide at part level?
-        parts = self.annunciator["parts"]
-        for key in self.part_iterator():
-            if key in parts:
-                c = parts[key]
-                part_has_rpn[key] = False
-                if DATAREF_RPN in c or "dataref" in c:
-                    button_level = False
-                if DATAREF_RPN in c:
-                    part_has_rpn[key] = True
-                # else remains button-level True
-        if not button_level:
-            logger.debug(f"button_level_driven: button {self.name}: driven at part level")
-            datarefs = self.get_annunciator_datarefs()
-            if len(datarefs) < 1:
-                logger.warning(f"button_level_driven: button {self.name}: no part dataref")
-                if False in part_has_rpn:
-                    logger.warning(f"button_level_driven: button {self.name}: some part has no dataref-rpn {part_has_rpn}")
-                    return False
-                else:
-                    logger.debug(f"button_level_driven: button {self.name}: parts have dataref-rpn {part_has_rpn}")
-            return False
-        # Is there material to decide at button level?
-        logger.debug(f"button_level_driven: button {self.name}: driven at button level")
-        if self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # Airbus button is driven by button-level dataref
-            logger.warning(f"button_level_driven: button {self.name}: no button dataref or dataref-rpn")
-        return True
+    # def button_level_driven(self) -> bool:
+    #     """
+    #     Determine if we need to consider either the global button-level value or
+    #     individula part-level values
+    #     """
+    #     button_level = True
+    #     part_has_rpn = {}
+    #     # Is there material to decide at part level?
+    #     parts = self.annunciator["parts"]
+    #     for key in self.part_iterator():
+    #         if key in parts:
+    #             c = parts[key]
+    #             part_has_rpn[key] = False
+    #             if DATAREF_RPN in c or "dataref" in c:
+    #                 button_level = False
+    #             if DATAREF_RPN in c:
+    #                 part_has_rpn[key] = True
+    #             # else remains button-level True
+    #     self.part_controls = part_has_rpn
+    #     if not button_level:
+    #         logger.debug(f"button_level_driven: button {self.name}: driven at part level")
+    #         datarefs = self.get_annunciator_datarefs()
+    #         if len(datarefs) < 1:
+    #             logger.warning(f"button_level_driven: button {self.name}: no part dataref")
+    #             if False in part_has_rpn:
+    #                 logger.warning(f"button_level_driven: button {self.name}: some part has no dataref-rpn {part_has_rpn}")
+    #                 return False
+    #             else:
+    #                 logger.debug(f"button_level_driven: button {self.name}: parts have dataref-rpn {part_has_rpn}")
+    #         return False
+    #     # Is there material to decide at button level?
+    #     logger.debug(f"button_level_driven: button {self.name}: driven at button level")
+    #     if self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # Airbus button is driven by button-level dataref
+    #         logger.warning(f"button_level_driven: button {self.name}: no button dataref or dataref-rpn")
+    #     return True
+
+    def part_has_control(self, part: dict) -> bool:
+        return DATAREF_RPN in part or "dataref" in part
+
+    def part_value(self, part: dict, key: str = None):
+        ret = None
+        if DATAREF_RPN in part:
+            calc = part[DATAREF_RPN]
+            expr = self.substitute_dataref_values(calc)
+            rpc = RPC(expr)
+            ret = rpc.calculate()
+            logger.debug(f"part_value: button {self.name}: {key}: {expr}={ret}")
+        elif "dataref" in part:
+            dataref = part["dataref"]
+            ret = self.get_dataref_value(dataref)
+            logger.debug(f"part_value: button {self.name}: {key}: {dataref}={ret}")
+        else:
+            logger.debug(f"part_value: button {self.name}: {key}: no formula, set to {ret}")
+        return ret
 
     def button_value(self):
         """
-        Same as button value, but exclusively for Annunciator-type buttons with distinct values for each part.
-        If button is driven by single dataref, we forward to button class.
-        Else, we check with the supplied dataref/dataref-rpn that the button is lit or not for each button part.
+        There is a button_value value per annunciator part.
+        If part has not value or no wait to get value it is fetched from hosting button value.
         """
-        if self.button_level_driven():
-            logger.debug(f"button_value: button {self.name}: driven by button-level dataref")
-            return super().button_value()
+        button_level_value = super().button_value()
 
         r = {}
         parts = self.annunciator.get("parts")
         for key in self.part_iterator():
             if key in parts.keys():
                 c = parts[key]
-                if DATAREF_RPN in c:
-                    calc = c[DATAREF_RPN]
-                    expr = self.substitute_dataref_values(calc)
-                    rpc = RPC(expr)
-                    res = rpc.calculate()
-                    logger.debug(f"button_value: button {self.name}: {key}: {expr}={res}")
-                    r[key] = 1 if (res is not None and res > 0) else 0
-                elif "dataref" in c:
-                    dataref = c["dataref"]
-                    res = self.get_dataref_value(dataref)
-                    logger.debug(f"button_value: button {self.name}: {key}: {dataref}={res}")
-                    r[key] = 1 if (res is not None and res > 0) else 0
+                if self.part_has_control(c):
+                    v = self.part_value(parts[key], key)
+                    logger.debug(f"button_value: button {self.name}: {key}: has control ({r})")
+                    r[key] = 1 if v is not None and v > 0 else 0
                 else:
-                    logger.debug(f"button_value: button {self.name}: {key}: no formula, set to 0")
-                    r[key] = 0
+                    logger.debug(f"button_value: button {self.name}: {key}: has no local control (button level value = {r})")
+                    r[key] = 1 if button_level_value is not None and button_level_value > 0 else 0
             else:
                 r[key] = 0
                 logger.debug(f"button_value: button {self.name}: {key}: key not found, set to 0")
@@ -214,6 +226,7 @@ class AnnunciatorButton(Button):
             self.lit = {}
             for key in self.part_iterator():
                 self.lit[key] = self.current_value != 0
+        logger.debug(f"set_key_icon: button {self.name}: {self.lit}")
         # else: leave untouched
 
     def get_image(self):
@@ -329,12 +342,6 @@ class AnnunciatorButton(Button):
                     label = self.substitute_dataref_values(label, formatting=text_format, default="---")
                 # logger.debug(f"get_text: button {self.name}: returned: {label}")
             return label
-
-        def full_width(p: str) -> bool:
-            return AC[p][0] == 0.5
-
-        def full_height(p: str) -> bool:
-            return AC[p][1] == 0.5
 
 
         # MAIN

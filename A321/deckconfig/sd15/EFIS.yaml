@@ -9,14 +9,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
-      dual:
-        text: CSTR
-        color: white
-        size: 40
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
+        B1:
+          text: CSTR
+          color: white
+          font-size: 40
+          dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptCstrPushButton
     dataref: AirbusFBW/NDShowCSTRCapt
     view: SRS/X-Camera/Select_View_ID_1
@@ -25,14 +28,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
-      dual:
-        text: WPT
-        color: white
-        size: 40
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
+        B1:
+          text: WPT
+          color: white
+          font-size: 40
+          dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptWptPushButton
     dataref: AirbusFBW/NDShowWPTCapt
     view: SRS/X-Camera/Select_View_ID_1
@@ -41,14 +47,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
-      dual:
-        text: VOR.D
-        color: white
-        size: 40
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
+        B1:
+          text: VOR.D
+          color: white
+          font-size: 40
+          dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptVorDPushButton
     dataref: AirbusFBW/NDShowVORDCapt
     view: SRS/X-Camera/Select_View_ID_1
@@ -57,14 +66,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
-      dual:
-        text: NDB
-        color: white
-        size: 40
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
+        B1:
+          text: NDB
+          color: white
+          font-size: 40
+          dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptNdbPushButton
     dataref: AirbusFBW/NDShowNDBCapt
     view: SRS/X-Camera/Select_View_ID_1
@@ -73,14 +85,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: small
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
-      dual:
-        text: ARPT
-        color: white
-        size: 40
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
+        B1:
+          text: ARPT
+          color: white
+          font-size: 40
+          dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptArptPushButton
     dataref: AirbusFBW/NDShowARPTCapt
     view: SRS/X-Camera/Select_View_ID_1
@@ -97,14 +112,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/FD1Engage}
-      dual:
-        text: FD
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/FD1Engage}
+        B1:
+          text: FD
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/FD1Engage
     command: toliss_airbus/fd1_push
   - index: 7
@@ -112,14 +130,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/ILSonCapt}
-      dual:
-        text: LS
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/ILSonCapt}
+        B1:
+          text: LS
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptLSButtonPush
     view: SRS/X-Camera/Select_View_ID_1
   - index: 8
@@ -127,14 +148,17 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/LOCilluminated}
-      dual:
-        text: LOC
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/LOCilluminated}
+        B1:
+          text: LOC
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     command: AirbusFBW/LOCbutton
     dataref: AirbusFBW/LOCilluminated
   - index: 9

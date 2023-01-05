@@ -12,190 +12,226 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDENG}
-      dual:
-        text: ENG
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDENG}
+        B1:
+          text: ENG
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDENG
     command: AirbusFBW/ECP/SelectEnginePage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 1
     name: BLEED
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDBLEED}
-      dual:
-        text: BLEED
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDBLEED}
+        B1:
+          text: BLEED
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     command: AirbusFBW/ECP/SelectBleedPage
     dataref: AirbusFBW/SDBLEED
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 2
     name: PRESS
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDPRESS}
-      dual:
-        text: PRESS
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDPRESS}
+        B1:
+          text: PRESS
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     command: AirbusFBW/ECP/SelectPressPage
     dataref: AirbusFBW/SDPRESS
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 3
     name: ELEC
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDELEC}
-      dual:
-        text: ELEC
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDELEC}
+        B1:
+          text: ELEC
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDELEC
     command: AirbusFBW/ECP/SelectElecPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 4
     name: HYD
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDHYD}
-      dual:
-        text: HYD
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDHYD}
+        B1:
+          text: HYD
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDHYD
     command: AirbusFBW/ECP/SelectHydraulicPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 5
     name: FUEL
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDFUEL}
-      dual:
-        text: FUEL
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDFUEL}
+        B1:
+          text: FUEL
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDFUEL
     command: AirbusFBW/ECP/SelectFuelPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 6
     name: APU
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDAPU}
-      dual:
-        text: APU
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDAPU}
+        B1:
+          text: APU
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDAPU
     command: AirbusFBW/ECP/SelectAPUPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 7
     name: COND
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDCOND}
-      dual:
-        text: COND
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDCOND}
+        B1:
+          text: COND
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDCOND
     command: AirbusFBW/ECP/SelectConditioningPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 8
     name: DOOR
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDDOOR}
-      dual:
-        text: DOOR
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDDOOR}
+        B1:
+          text: DOOR
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDDOOR
     command: AirbusFBW/ECP/SelectDoorOxyPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 9
     name: WHEEL
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDWHEEL}
-      dual:
-        text: WHEEL
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDWHEEL}
+        B1:
+          text: WHEEL
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDWHEEL
     command: AirbusFBW/ECP/SelectWheelPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 10
     name: F/CTL
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDFCTL}
-      dual:
-        text: F/CTL
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDFCTL}
+        B1:
+          text: F/CTL
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDFCTL
     command: AirbusFBW/ECP/SelectFlightControlPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 11
     name: CLR
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/CLRillum}
-      dual:
-        text: CLR
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/CLRillum}
+        B1:
+          text: CLR
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/CLRillum
     command: AirbusFBW/ECP/CaptainClear
   - index: 12
@@ -203,25 +239,27 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: greenyellow
-        dataref-rpn: ${AirbusFBW/SDSTATUS}
-      dual:
-        text: STS
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: greenyellow
+          led: led
+          dataref-rpn: ${AirbusFBW/SDSTATUS}
+        B1:
+          text: STS
+          color: white
+          font-size: 48
+          dataref-rpn: "1"
     dataref: AirbusFBW/SDSTATUS
     command: AirbusFBW/ECP/SelectStatusPage
-    view: SRS/X-Camera/Select_View_ID_6
+    view: SRS/X-Camera/Select_View_ID_3
   - index: 13
     name: ALL
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        text: ALL
-        color: white
-        size: 48
-        dataref-rpn: "1"
+      text: ALL
+      color: white
+      font-font-size: 48
+      dataref-rpn: "1"
     command: AirbusFBW/ECAMAll
