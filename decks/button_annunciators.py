@@ -596,7 +596,8 @@ class AnnunciatorButtonAnimate(AnnunciatorButton):
         """
         Check conditions to animate the icon.
         """
-        logger.debug(f"should_run: button {self.name}: current value {self.current_value}, ({type(self.current_value)})")
+        logger.debug(f"should_run: button {self.name}: current value {self.current_value}, ({type(self.current_value).__name__})")
+
         # If computed value:
         if self.has_option("counter"):
             self.current_value = self.pressed_count % 2 if self.pressed_count is not None else 0
@@ -627,7 +628,7 @@ class AnnunciatorButtonAnimate(AnnunciatorButton):
                         return True
                     # else, do nothing, False assumed ("no clear sign to set it True")
                 # else, do nothing, None assumed False
-            logger.debug(f"should_run: button {self.name}: complex current value {self.current_value}, returning False")
+            logger.debug(f"should_run: button {self.name}: list current value {self.current_value} is all False, returning False")
             return False  # all individual scalar in array or tuple are None, or 0, or False
 
         # If dict value
@@ -642,7 +643,7 @@ class AnnunciatorButtonAnimate(AnnunciatorButton):
                         return True
                     # else, do nothing, False assumed ("no clear sign to set it True")
                 # else, do nothing, None assumed False
-            logger.debug(f"should_run: button {self.name}: complex current value {self.current_value}, returning False")
+            logger.debug(f"should_run: button {self.name}: dict current value {self.current_value} is all False, returning False")
             return False  # all individual scalar in array or tuple are None, or 0, or False
 
         logger.debug(f"should_run: button {self.name}: special current value {self.current_value}, returning False")
@@ -684,7 +685,7 @@ class AnnunciatorButtonAnimate(AnnunciatorButton):
         """
         if self.running:
             for k in self.lit.keys():
-                self.lit[k] = not self.lit[k]
+                self.lit[k] = not self.lit[k]  # @WARNING: invert all values, may lead to wierd annunciator part behavior...
 #            logger.debug(f"set_key_icon: button {self.name}: running")
         else:
 #            logger.debug(f"set_key_icon: button {self.name}: NOT running")
