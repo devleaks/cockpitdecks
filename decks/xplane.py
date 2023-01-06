@@ -77,9 +77,10 @@ class Dataref:
             loggerDataref.debug(f"update_value: dataref {self.path} value {new_value} rounded to {self.current_value}")
         else:
             self.current_value = new_value
-        loggerDataref.log(SPAM, f"update_value: dataref {self.path} updated {self.previous_value} -> {self.current_value}")
-        if cascade:
-            self.notify()
+        if self.changed():
+            loggerDataref.log(SPAM, f"update_value: dataref {self.path} updated {self.previous_value} -> {self.current_value}")
+            if cascade:
+                self.notify()
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
 
     def add_listener(self, obj):

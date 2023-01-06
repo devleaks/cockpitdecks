@@ -392,9 +392,8 @@ class Button:
             value = r.calculate()
             logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
             return value
-        elif len(self.all_datarefs) > 1 and not self.has_option("multidrefs"):
-            # multidrefs: it reads multiple drefs and it has no formula to combine them, drefs get used internally individually
-            logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
+        else:
+            logger.warning(f"execute_formula: button {self.name}: no formula ({len(self.all_datarefs)} datarefs).")
         return default
 
     # ##################################

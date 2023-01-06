@@ -10,7 +10,6 @@ import logging
 import time
 import datetime
 
-from .constant import UDP_PORT
 from .xplane import XPlane, Dataref
 from .button import Button
 
@@ -18,13 +17,16 @@ logger = logging.getLogger("XPlaneUDP")
 # logger.setLevel(logging.DEBUG)
 
 # Data too delicate to be put in constant.py
-# adjust with care
-# DATA_REFRESH = 0.4  # secs we poll for data every x seconds, must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produced
+# !! adjust with care !!
 DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often = SLOW
-DATA_REFRESH = 1 / (4 * DATA_SENT)
+DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
+                    # must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produce.
 LOOP_ALIVE   = 1000 # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 
 
+# XPlaneBeacon
+# Beacon-specific error classes
+#
 class XPlaneIpNotFound(Exception):
     args = "Could not find any running XPlane instance in network."
 
@@ -34,8 +36,106 @@ class XPlaneTimeout(Exception):
 class XPlaneVersionNotSupported(Exception):
     args = "XPlane version not supported."
 
+class XPlaneBeacon:
+    '''
+    Get data from XPlane via network.
+    Use a class to implement RAI Pattern for the UDP socket.
+    '''
+    #constants
+    MCAST_GRP = "239.255.1.1"
+    MCAST_PORT = 49707 # (MCAST_PORT was 49000 for XPlane10)
+    BEACON_TIMEOUT = 3.0  # seconds
 
-class XPlaneUDP(XPlane):
+    def __init__(self):
+        # Open a UDP Socket to receive on Port 49000
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.settimeout(self.BEACON_TIMEOUT)
+        # values from xplane
+        self.BeaconData = {}
+
+    def FindIp(self):
+        '''
+        Find the IP of XPlane Host in Network.
+        It takes the first one it can find.
+        '''
+        self.BeaconData = {}
+
+        # open socket for multicast group.
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if platform.system() == "Windows":
+            sock.bind(('', self.MCAST_PORT))
+        else:
+            sock.bind((self.MCAST_GRP, self.MCAST_PORT))
+        mreq = struct.pack("=4sl", socket.inet_aton(self.MCAST_GRP), socket.INADDR_ANY)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        sock.settimeout(XPlaneBeacon.BEACON_TIMEOUT)
+
+        # receive data
+        try:
+            packet, sender = sock.recvfrom(1472)
+            logger.debug(f"FindIp: XPlane Beacon: {packet.hex()}")
+
+            # decode data
+            # * Header
+            header = packet[0:5]
+            if header != b"BECN\x00":
+                logger.warning(f"FindIp: Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
+                logger.warning(packet)
+                logger.warning(binascii.hexlify(packet))
+
+            else:
+                # * Data
+                data = packet[5:21]
+                # struct becn_struct
+                # {
+                #   uchar beacon_major_version;     // 1 at the time of X-Plane 10.40
+                #   uchar beacon_minor_version;     // 1 at the time of X-Plane 10.40
+                #   xint application_host_id;       // 1 for X-Plane, 2 for PlaneMaker
+                #   xint version_number;            // 104014 for X-Plane 10.40b14
+                #   uint role;                      // 1 for master, 2 for extern visual, 3 for IOS
+                #   ushort port;                    // port number X-Plane is listening on
+                #   xchr    computer_name[strDIM];  // the hostname of the computer
+                # };
+                beacon_major_version = 0
+                beacon_minor_version = 0
+                application_host_id = 0
+                xplane_version_number = 0
+                role = 0
+                port = 0
+                (
+                    beacon_major_version,    # 1 at the time of X-Plane 10.40
+                    beacon_minor_version,    # 1 at the time of X-Plane 10.40
+                    application_host_id,     # 1 for X-Plane, 2 for PlaneMaker
+                    xplane_version_number,   # 104014 for X-Plane 10.40b14
+                    role,                    # 1 for master, 2 for extern visual, 3 for IOS
+                    port,                    # port number X-Plane is listening on
+                    ) = struct.unpack("<BBiiIH", data)
+                hostname = packet[21:-1] # the hostname of the computer
+                hostname = hostname[0:hostname.find(0)]
+                if beacon_major_version == 1 \
+                    and beacon_minor_version <= 2 \
+                    and application_host_id == 1:
+                    self.BeaconData["IP"] = sender[0]
+                    self.BeaconData["Port"] = port
+                    self.BeaconData["hostname"] = hostname.decode()
+                    self.BeaconData["XPlaneVersion"] = xplane_version_number
+                    self.BeaconData["role"] = role
+                    logger.info(f"FindIp: XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                else:
+                    logger.warning(f"FindIp: XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                    raise XPlaneVersionNotSupported()
+
+        except socket.timeout:
+            logger.error("FindIp: XPlane IP not found.")
+            raise XPlaneIpNotFound()
+        finally:
+            sock.close()
+
+        return self.BeaconData
+
+
+class XPlaneUDP(XPlane, XPlaneBeacon):
     '''
     Get data from XPlane via network.
     Use a class to implement RAI Pattern for the UDP socket.
@@ -48,15 +148,9 @@ class XPlaneUDP(XPlane):
 
     def __init__(self, decks):
         XPlane.__init__(self, decks=decks)
+        XPlaneBeacon.__init__(self)
 
         self.defaultFreq = 1
-
-        # Open a UDP Socket to receive on Port 49000
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.settimeout(self.BEACON_TIMEOUT)
-        # values from xplane
-        self.BeaconData = {}
-        self.UDP_PORT = UDP_PORT
 
         # list of requested datarefs with index number
         self.datarefidx = 0
@@ -104,8 +198,8 @@ class XPlaneUDP(XPlane):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert(len(message)==509)
-        logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.UDP_PORT}): {dataref}={value}")
-        self.socket.sendto(message, (self.BeaconData["IP"], self.UDP_PORT))
+        logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.BeaconData['Port']}): {dataref}={value}")
+        self.socket.sendto(message, (self.BeaconData["IP"], self.BeaconData["Port"]))
 
     def AddDataRef(self, dataref, freq = None):
         '''
@@ -180,87 +274,6 @@ class XPlaneUDP(XPlane):
             logger.debug(f"ExecuteCommand: executed {command}")
         else:
             logger.warning(f"ExecuteCommand: no IP connection ({command})")
-
-    def FindIp(self):
-        '''
-        Find the IP of XPlane Host in Network.
-        It takes the first one it can find.
-        '''
-        self.BeaconData = {}
-
-        # open socket for multicast group.
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if platform.system() == "Windows":
-            sock.bind(('', self.MCAST_PORT))
-        else:
-            sock.bind((self.MCAST_GRP, self.MCAST_PORT))
-        mreq = struct.pack("=4sl", socket.inet_aton(self.MCAST_GRP), socket.INADDR_ANY)
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-        sock.settimeout(3.0)
-
-        # receive data
-        try:
-            packet, sender = sock.recvfrom(1472)
-            logger.debug(f"FindIp: XPlane Beacon: {packet.hex()}")
-
-            # decode data
-            # * Header
-            header = packet[0:5]
-            if header != b"BECN\x00":
-                logger.warning(f"FindIp: Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
-                logger.warning(packet)
-                logger.warning(binascii.hexlify(packet))
-
-            else:
-                # * Data
-                data = packet[5:21]
-                # struct becn_struct
-                # {
-                # 	uchar beacon_major_version;		// 1 at the time of X-Plane 10.40
-                # 	uchar beacon_minor_version;		// 1 at the time of X-Plane 10.40
-                # 	xint application_host_id;		// 1 for X-Plane, 2 for PlaneMaker
-                # 	xint version_number;			// 104014 for X-Plane 10.40b14
-                # 	uint role;						// 1 for master, 2 for extern visual, 3 for IOS
-                # 	ushort port;					// port number X-Plane is listening on
-                # 	xchr	computer_name[strDIM];	// the hostname of the computer
-                # };
-                beacon_major_version = 0
-                beacon_minor_version = 0
-                application_host_id = 0
-                xplane_version_number = 0
-                role = 0
-                port = 0
-                (
-                    beacon_major_version,    # 1 at the time of X-Plane 10.40
-                    beacon_minor_version,    # 1 at the time of X-Plane 10.40
-                    application_host_id,     # 1 for X-Plane, 2 for PlaneMaker
-                    xplane_version_number,   # 104014 for X-Plane 10.40b14
-                    role,                    # 1 for master, 2 for extern visual, 3 for IOS
-                    port,                    # port number X-Plane is listening on
-                    ) = struct.unpack("<BBiiIH", data)
-                hostname = packet[21:-1] # the hostname of the computer
-                hostname = hostname[0:hostname.find(0)]
-                if beacon_major_version == 1 \
-                    and beacon_minor_version <= 2 \
-                    and application_host_id == 1:
-                    self.BeaconData["IP"] = sender[0]
-                    self.BeaconData["Port"] = port
-                    self.BeaconData["hostname"] = hostname.decode()
-                    self.BeaconData["XPlaneVersion"] = xplane_version_number
-                    self.BeaconData["role"] = role
-                    logger.info(f"FindIp: XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
-                else:
-                    logger.warning(f"FindIp: XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
-                    raise XPlaneVersionNotSupported()
-
-        except socket.timeout:
-            logger.error("FindIp: XPlane IP not found.")
-            raise XPlaneIpNotFound()
-        finally:
-            sock.close()
-
-        return self.BeaconData
 
     def loop(self):
         logger.debug(f"loop: started")

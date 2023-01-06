@@ -1,15 +1,21 @@
 name: ovrhdaircond
+version: 2.0.0
+title: Overhead AIR COND Panel
+description: Overhead AIR COND Panel with annunciator buttons
+note: Streamdeck 32 keys
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
-  - index: 0
-    type: push
-    multi-icons:
-      - NONE_NONE
-      - NONE_ON_BLUE_FR
-    label: ECON FLOW
-    label-position: ct
-    command: toliss_airbus/aircondcommands/EconFlowToggle
-    dataref: AirbusFBW/AirCondSwitchAnims[13]
+# THIS IS FOR A321 not A321neo
+  # - index: 0
+  #   name: ECONFLOW
+  #   type: push
+  #   multi-icons:
+  #     - NONE_NONE
+  #     - NONE_ON_BLUE_FR
+  #   label: ECON FLOW
+  #   label-position: ct
+  #   command: toliss_airbus/aircondcommands/EconFlowToggle
+  #   dataref: AirbusFBW/AirCondSwitchAnims[13]
   - index: 1
     name: ACCOCKPIT
     type: updown
@@ -68,47 +74,106 @@ buttons:
       - none
     options: bounce,placeholder
   - index: 5
-    type: push
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - NONE_NONE
+    name: HOTAIR
+    type: annunciator-push
     label: HOT AIR
     label-position: ct
-    command: none
-    dataref: AirbusFBW/HotAirSwitch
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: "FAULT"
+          color: darkorange
+          font: DIN Condensed Bold
+          font-size: 60
+        B1:
+          text: "OFF"
+          color: white
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/HotAirSwitch} 1 - abs
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
-    type: push
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_NONE
-      - NONE_ON_BLUE_FR
+    name: BLEEDPACK1
+    type: annunciator-push
     label: PACK 1
     label-position: ct
-    command: toliss_airbus/aircondcommands/Pack1Toggle
-    dataref: AirbusFBW/AirCondSwitchAnims[0]
-    dataref-rpn: ${AirbusFBW/AirCondSwitchAnims[0]} 0.035 + 3 * floor
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: "FAULT"
+          color: darkorange
+          font: DIN Condensed Bold
+          font-size: 60
+          dataref-rpn: ${AirbusFBW/Pack1SwitchIllum} ${AirbusFBW/Pack1FCVInd} - abs
+        B1:
+          text: "OFF"
+          color: white
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/Pack1SwitchIllum} 1 - abs
   - index: 9
-    type: push
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - NONE_NONE
-      - FAULT_AMBER_NONE
+    name: ENG1BLEED
+    type: annunciator-push
     label: ENG 1 BLEED
     label-position: ct
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: "FAULT"
+          color: darkorange
+          size: 40
+          dataref-rpn: 0
+        B1:
+          text: "OFF"
+          color: white
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/ENG1BleedSwitch} 1 - abs
     command: toliss_airbus/apucommands/BleedToggle
-    dataref: AirbusFBW/ENG1BleedSwitch
   - index: 10
-    type: push
-    multi-icons:
-      - NONE_NONE
-      - NONE_ON_BLUE_FR
-      - FAULT_AMBER_NONE
+    name: RAMAIR
+    type: annunciator-push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B1:
+          text: "ON"
+          color: white
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/RamAirSwitch}
+    label: RAM AIR
+    label-position: ct
+    guard:
+      type: grid
+      color: black
+      dataref: ckpt/ramair/cover
+      # 0=closed, 1=opened
+  - index: 11
+    name: APUBLEED
+    type: annunciator-push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/APUBleedSwitch}
+    command: toliss_airbus/apucommands/BleedToggle
     label: APU BLEED
     label-position: ct
-    command: toliss_airbus/apucommands/BleedToggle
-    dataref: AirbusFBW/APUBleedSwitch
-  - index: 11
+  - index: 12
+    name: XBLEED
     type: updown
     multi-icons:
       - XBLEED_SHUT
@@ -120,31 +185,55 @@ buttons:
       - none
       - none
     dataref: AirbusFBW/XBleedSwitch
-  - index: 12
-    type: updown
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - NONE_NONE
-      - FAULT_AMBER_NONE
+  - index: 13
+    name: ENG2BLEED
+    type: annunciator-push
     label: ENG 2 BLEED
     label-position: ct
-    commands:
-      - none
-      - none
-    dataref: AirbusFBW/ENG2BleedSwitch
-  - index: 13
-    type: push
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - FAULT_AMBER_NONE
-      - NONE_ON_BLUE_FR
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: "FAULT"
+          color: darkorange
+          size: 40
+          dataref-rpn: 0
+        B1:
+          text: "OFF"
+          color: white
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/ENG2BleedSwitch} 1 - abs
+  - index: 14
+    name: BLEEDPACK2
+    type: annunciator-push
     label: PACK 2
     label-position: ct
-    command: toliss_airbus/aircondcommands/Pack2Toggle
-    dataref: AirbusFBW/AirCondSwitchAnims[1]
-    dataref-rpn: ${AirbusFBW/AirCondSwitchAnims[1]} 0.035 + 3 * floor
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: "FAULT"
+          color: darkorange
+          font: DIN Condensed Bold
+          font-size: 60
+          dataref-rpn: ${AirbusFBW/Pack2SwitchIllum} ${AirbusFBW/Pack2FCVInd} - abs
+        B1:
+          text: "OFF"
+          color: white
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/Pack2SwitchIllum} 1 - abs
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
+  - index: 30
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+    label-position: ct
   - index: 31
     name: Index
     type: page

@@ -3,27 +3,38 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     name: EXPPOWER
-    type: push
-    multi-icons:
-      - NONE_NONE
-      - NONE_ON_BLUE_FR
-      - AVAIL_GREEN_NONE
+    type: annunciator-push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: AVAIL
+          color: lime
+          dataref-rpn: ${sim/cockpit2/switches/avionics_power_on} 1 - abs
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          dataref-rpn: ${sim/cockpit2/switches/avionics_power_on}
     command: toliss_airbus/eleccommands/ExtPowToggle
-    dataref: AirbusFBW/ExtPowOHPArray[0]
-    # multi-datarefs:
-    #   - sim/cockpit2/switches/avionics_power_on
-    #   - AirbusFBW/EnableExternalPower
-    # dataref-rpn: ${AirbusFBW/EnableExternalPower} ${sim/cockpit2/switches/avionics_power_on} +
     label: EXT PWR
     label-position: ct
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: APUMASTER
-    type: push
-    multi-icons:
-      - NONE_NONE
-      - NONE_ON_BLUE_FR
-    dataref: AirbusFBW/APUMaster
+    type: annunciator-push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/APUMaster}
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
     label-position: ct
@@ -48,16 +59,22 @@ buttons:
   # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: APUSTART
-    type: push
-    multi-icons:
-      - NONE_NONE
-      - NONE_ON_BLUE_FR
-      - AVAIL_GREEN_NONE
+    type: annunciator-push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: AVAIL
+          color: lime
+          dataref-rpn: ${AirbusFBW/APUAvail}
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          dataref-rpn: ${AirbusFBW/APUStarter}
     command: toliss_airbus/apucommands/StarterToggle
-    multi-datarefs:
-      - AirbusFBW/APUStarter
-      - AirbusFBW/APUAvail
-    dataref-rpn: ${AirbusFBW/APUStarter} ${AirbusFBW/APUAvail} 2 * +
     label: START
     label-position: ct
 # ### LINE 4 ### 24-31 ######################################################

@@ -15,7 +15,8 @@ from .button_core import Button
 from .rpc import RPC
 
 logger = logging.getLogger("AnnunciatorButton")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(15)
+logger.setLevel(logging.DEBUG)
 
 def convert_color_string(instr) -> tuple:  # tuple of int 0-255
     # process either a color name or a color tuple as a string "(1, 2, 3)"
@@ -201,15 +202,19 @@ class AnnunciatorButton(Button):
                 c = parts[key]
                 if self.part_has_control(c):
                     v = self.part_value(parts[key], key)
-                    logger.debug(f"button_value: button {self.name}: {key}: has control ({r})")
                     r[key] = 1 if v is not None and v > 0 else 0
+                    logger.debug(f"button_value: button {self.name}: {key}: has control ({v} -> {r[key]})")
                 else:
-                    logger.debug(f"button_value: button {self.name}: {key}: has no local control (button level value = {button_level_value})")
-                    r[key] = 1 if button_level_value is not None and button_level_value > 0 else 0
+                    if self.has_option("button_value"):
+                        logger.debug(f"button_value: button {self.name}: {key}: has no local control (button level value = {button_level_value})")
+                        r[key] = 1 if button_level_value is not None and button_level_value > 0 else 0
+                    else:
+                        logger.debug(f"button_value: button {self.name}: {key}: has no local control")
+                        r[key] = 0
             else:
                 r[key] = 0
                 logger.debug(f"button_value: button {self.name}: {key}: key not found, set to 0")
-        logger.debug(f"annunciator_button_value: button {self.name}: {r}")
+        logger.log(15, f"button_value: button {self.name}: {r}")
         return r
 
     def set_key_icon(self):
