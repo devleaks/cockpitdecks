@@ -327,7 +327,7 @@ class AnnunciatorButton(Button):
                             res = str(res)
                         label = label.replace(DATAREF_RPN_STR, res)
                     else:
-                        logger.warning(f"get_text: button {self.name}: text contains {DATAREF_RPN_STR} not no attribute found")
+                        logger.warning(f"get_text: button {self.name}: text contains {DATAREF_RPN_STR} but no {DATAREF_RPN} attribute found")
                 else:
                     label = self.substitute_dataref_values(label, formatting=text_format, default="---")
                 # logger.debug(f"get_text: button {self.name}: returned: {label}")

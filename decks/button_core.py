@@ -259,7 +259,7 @@ class Button:
         # check dataref status
         # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
         # AirbusFBW/SPDmanaged, and AirbusFBW/BaroStdCapt
-        hack = "AirbusFBW/BaroStdCapt" if label == "QNH" else f"AirbusFBW/{label}managed"
+        hack = "AirbusFBW/BaroStdCapt" if label.upper() == "QNH" else f"AirbusFBW/{label}managed"
         status = self.is_pushed()
         if hack in self.xp.all_datarefs.keys():
             # logger.debug(f"is_dotted: {hack} = {self.xp.all_datarefs[hack].value()}")
@@ -293,10 +293,10 @@ class Button:
         listed dataref and datarefs attributes.
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
-        if base is None:
+        if base is None:  # local, button-level ones
             if self.all_datarefs is not None:  # cached
                 return self.all_datarefs
-            base = self._config
+            base = self._config                # else, runs through config
 
         r = []
         # Use of datarefs in button:
@@ -307,7 +307,7 @@ class Button:
             r.append(dataref)
             logger.debug(f"get_datarefs: button {self.name}: added single dataref {dataref}")
         # 1.2 Multiple
-        datarefs = base.get("datarefs")
+        datarefs = base.get("multi-datarefs")  # base.get("datarefs")
         if datarefs is not None:
             r = r + datarefs
             logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {datarefs}")
@@ -392,7 +392,8 @@ class Button:
             value = r.calculate()
             logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
             return value
-        elif len(self.all_datarefs) > 1:
+        elif len(self.all_datarefs) > 1 and not self.has_option("multidrefs"):
+            # multidrefs: it reads multiple drefs and it has no formula to combine them, drefs get used internally individually
             logger.warning(f"execute_formula: button {self.name}: more than one dataref to get value from and no formula.")
         return default
 
@@ -433,7 +434,8 @@ class Button:
         """
         Returns label, if any, with substitution of datarefs if any
         """
-        DATAREF_RPN = "${dataref-rpn}"
+        DATAREF_RPN_STR = f"${{{DATAREF_RPN}}}"
+
         if base is None:
             base = self._config
 
@@ -451,12 +453,13 @@ class Button:
                     if label_format is None:
                         label_format = base.get("label-format")
                     if label_format is not None:
+                        logger.debug(f"get_label: button {self.name}: label_format {label_format} res {res} => {label_format.format(res)}")
                         res = label_format.format(res)
                     else:
                         res = str(res)
-                    label = label.replace(DATAREF_RPN, res)
+                    label = label.replace(DATAREF_RPN_STR, res)
                 else:
-                    logger.warning(f"get_label: button {self.name}: label contains {DATAREF_RPN} not no attribute found")
+                    logger.warning(f"get_label: button {self.name}: label contains {DATAREF_RPN_STR} but no {DATAREF_RPN} attribute found")
             else:
                 label = self.substitute_dataref_values(label, formatting=label_format, default="---")
 
@@ -583,8 +586,9 @@ class Button:
         elif "counter" in self.options or "bounce" in self.options:
             logger.debug(f"button_value: button {self.name} has counter or bounce: {self.pressed_count}")
             return self.pressed_count
-        if type(self).__name__ not in ["ColoredButton"]:  # command-only buttons without real "display"
-            logger.warning(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None")
+        if type(self).__name__ not in ["ColoredButton"] and not self.has_option("nostate"):  # command-only buttons without real "display"
+            logger.debug(f"button_value: button {self.name}, datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
+            logger.warning(f"button_value: button {self.name}, no dataref, no formula, no counter, returning None (add options nostate to suppress this warning)")
         return None
 
     # ##################################

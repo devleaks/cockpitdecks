@@ -178,21 +178,25 @@ buttons:
     type: push
     command: sim/instruments/EFIS_mode_dn
     label: "EFIS\nMODE -"
+    options: nostate
   - index: 11
     name: EFIS MODE +
     type: push
     command: sim/instruments/EFIS_mode_up
     label: "EFIS\nMODE +"
+    options: nostate
   - index: 12
     name: EFIS ZOOM IN
     type: push
     command: sim/instruments/map_zoom_in
     label: "EFIS\nZOOM IN"
+    options: nostate
   - index: 13
     name: EFIS ZOOM OUT
     type: push
     command: sim/instruments/map_zoom_out
     label: "EFIS\nZOOM OUT"
+    options: nostate
   - index: 14
     name: ECAM
     type: page

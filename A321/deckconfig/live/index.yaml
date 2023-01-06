@@ -9,14 +9,14 @@ buttons:
     commands:
       - sim/autopilot/airspeed_down
       - sim/autopilot/airspeed_up
-    options: dot
+    options: dot, nostate
   - index: knobCL
     name: FCU Heading
     type: knob
     commands:
       - sim/autopilot/heading_down
       - sim/autopilot/heading_up
-    options: dot
+    options: dot, nostate
   - index: knobBL
     name: FCU Baro
     type: knob-push-pull
@@ -27,7 +27,7 @@ buttons:
       - sim/instruments/barometer_down
       - sim/instruments/barometer_up
     dataref: AirbusFBW/BaroStdCapt
-    options: dot
+    options: dot, nostate
   - index: knobTR
     name: FCU Altitude
     type: knob-push-pull
@@ -37,7 +37,7 @@ buttons:
       - AirbusFBW/PushAltitude
       - sim/autopilot/altitude_down
       - sim/autopilot/altitude_up
-    options: dot
+    options: dot, nostate
   - index: knobCR
     name: FCU V Speed
     type: knob-dataref
@@ -50,10 +50,11 @@ buttons:
     commands:
       - AirbusFBW/PullVSSel
       - AirbusFBW/PushVSSel
-    options: dual
+    options: dual, nostate
   - index: knobBR
     name: FCU Unused
     type: knob-none
+    options: nostate
 #
 # BUTTONS
 #
@@ -66,7 +67,7 @@ buttons:
     label: ${sim/cockpit2/autopilot/airspeed_dial_kts_mach}
     label-format: "{:3.2f}"
     label-color: white
-    label-size: 20
+    label-size: 24
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 1
@@ -93,19 +94,23 @@ buttons:
   - index: 3
     name: FCU Altitude display
     type: none
-    label: ${sim/cockpit2/autopilot/altitude_dial_ft}
+    # label: ${sim/cockpit2/autopilot/altitude_dial_ft}
+    # label-format: "{:05.0f}"
+    label: "${dataref-rpn}"
     label-format: "{:05.0f}"
+    dataref-rpn: ${sim/cockpit2/autopilot/altitude_dial_ft}
     label-color: white
-    label-size: 20
+    label-size: 24
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 4
     name: FCU Heading display
     type: none
-    label: ${sim/cockpit/autopilot/heading_mag}
+    label: "${dataref-rpn}"
     label-format: "{:03.0f}"
+    dataref-rpn: ${sim/cockpit/autopilot/heading_mag}
     label-color: white
-    label-size: 20
+    label-size: 24
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 5
@@ -113,36 +118,43 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/ATHRmode}
-      dual:
-        text: A/THR
-        color: white
-        size: 60
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/ATHRmode}
+        B1:
+          text: A/THR
+          color: white
+          size: 60
+          dataref-rpn: "1"
     command: AirbusFBW/ATHRbutton
   - index: 6
     name: AP1
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/AP1Engage}
-      dual:
-        text: AP1
-        color: white
-        size: 60
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/AP1Engage}
+        B1:
+          text: AP1
+          color: white
+          size: 60
+          dataref-rpn: "1"
     command: toliss_airbus/ap1_push
   - index: 7
     name: FCU V Speed display
     type: none
-    label: ${sim/cockpit/autopilot/vertical_velocity}
+    label: "${dataref-rpn}"
     label-format: "{:04.0f}"
+    dataref-rpn: ${sim/cockpit/autopilot/vertical_velocity}
     label-color: white
-    label-size: 20
+    label-size: 24
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 8
@@ -151,7 +163,7 @@ buttons:
     label: ${dataref-rpn}
     label-format: "{: 4.0f}"
     label-color: white
-    label-size: 20
+    label-size: 24
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
     dataref-rpn: ${sim/cockpit/misc/barometer_setting} 33.8639 *
@@ -160,28 +172,34 @@ buttons:
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/LOCilluminated}
-      dual:
-        text: LOC
-        color: white
-        size: 60
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/LOCilluminated}
+        B1:
+          text: LOC
+          color: white
+          size: 60
+          dataref-rpn: "1"
     command: AirbusFBW/LOCbutton
   - index: 10
     name: APPR
     type: annunciator-push
     annunciator:
       size: medium
-      display:
-        color: lime
-        dataref-rpn: ${AirbusFBW/APPRilluminated}
-      dual:
-        text: APPR
-        color: white
-        size: 60
-        dataref-rpn: "1"
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/APPRilluminated}
+        B1:
+          text: APPR
+          color: white
+          size: 60
+          dataref-rpn: "1"
     command: AirbusFBW/APPRbutton
   # - index: 11
   #   name: RELOAD
@@ -205,6 +223,7 @@ buttons:
     multi-datarefs:
       - AirbusFBW/SPDmanaged
       - AirbusFBW/HDGmanaged
+    options: nostate,multidrefs
   - index: right
     type: side
     label-size: 18
@@ -216,5 +235,6 @@ buttons:
     icon-color: (94, 111, 130)
     multi-datarefs:
       - AirbusFBW/ALTmanaged
+    options: nostate
 includes: views
 fill-empty-keys: (94, 111, 130)
