@@ -8,6 +8,7 @@ import platform
 import threading
 import logging
 import time
+import datetime
 
 from .constant import UDP_PORT
 from .xplane import XPlane, Dataref
@@ -16,11 +17,11 @@ from .button import Button
 logger = logging.getLogger("XPlaneUDP")
 # logger.setLevel(logging.DEBUG)
 
-
 # Data too delicate to be put in constant.py
 # adjust with care
-DATA_REFRESH = 0.1  # secs we poll for data every x seconds, must be < 0.1 for UDP
-DATA_SENT    = 10   # times per second, X-Plane send that data on UDP every that often.
+# DATA_REFRESH = 0.4  # secs we poll for data every x seconds, must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produced
+DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often = SLOW
+DATA_REFRESH = 1 / (4 * DATA_SENT)
 LOOP_ALIVE   = 1000 # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 
 
@@ -163,6 +164,8 @@ class XPlaneUDP(XPlane):
                             value = 0.0
                         retvalues[self.datarefs[idx]] = value
             self.xplaneValues.update(retvalues)
+            # for k in ["AirbusFBW/ILSonCapt", "AirbusFBW/FD1Engage"]:
+            #     print(self.xplaneValues.get(k, "none"))
         except:
             raise XPlaneTimeout
         return self.xplaneValues
@@ -262,20 +265,30 @@ class XPlaneUDP(XPlane):
     def loop(self):
         logger.debug(f"loop: started")
         i = 0
+        j1, j2 = 0, 0
+        tot1, tot2 = 0.0, 0.0
         while self.running:
             nexttime = DATA_REFRESH
             i = i + 1
-            if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0:
-                logger.debug(f"loop: {i}")
+            if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0 and j1 > 0:
+                logger.debug(f"loop: {i}: {datetime.datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
             if len(self.datarefs) > 0:
                 try:
+                    now = time.time()
                     self.current_values = self.GetValues()
+                    later = time.time()
+                    j2 = j2 + 1
+                    tot2 = tot2 + (later - now)
+
+                    now = time.time()
+                    self.detect_changed()
+                    later = time.time()
+                    j1 = j1 + 1
+                    tot1 = tot1 + (later - now)
+                    nexttime = DATA_REFRESH - (later - now)
+
                 except XPlaneTimeout:
                     logger.warning(f"loop: XPlaneTimeout")  # ignore
-                now = time.time()
-                self.detect_changed()
-                later = time.time()
-                nexttime = DATA_REFRESH - (later - now)
             if nexttime > 0:
                 time.sleep(nexttime)
 

@@ -4,12 +4,17 @@ import threading
 import logging
 import time
 
+SPAM=15
+logging.addLevelName(SPAM, "spam")
+
 loggerDataref = logging.getLogger("Dataref")
-# loggerDataref.setLevel(logging.INFO)
+loggerDataref.setLevel(SPAM)
 
 logger = logging.getLogger("XPlane")
 # logger.setLevel(logging.DEBUG)
 
+# from .constant import DATAREF_ROUND
+# Internal: Round a few rapidly changing datarefs
 DATAREF_ROUND = {
     "AirbusFBW/BatVolts[0]": 1,
     "AirbusFBW/BatVolts[1]": 1,
@@ -18,6 +23,9 @@ DATAREF_ROUND = {
     "AirbusFBW/OHPLightsATA34[10]": 3,
     "dataref": 0
 }
+
+TRACK_UPDATE = True # Reports when a dataref has changed
+
 
 class Dataref:
 
@@ -69,6 +77,7 @@ class Dataref:
             loggerDataref.debug(f"update_value: dataref {self.path} value {new_value} rounded to {self.current_value}")
         else:
             self.current_value = new_value
+        loggerDataref.log(SPAM, f"update_value: dataref {self.path} updated {self.previous_value} -> {self.current_value}")
         if cascade:
             self.notify()
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
@@ -82,7 +91,7 @@ class Dataref:
         if self.changed():
             for l in self.listeners:
                 l.dataref_changed(self)
-                loggerDataref.debug(f"notify: notified {l.name}")
+                loggerDataref.log(SPAM, f"notify: notified {l.name}")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 

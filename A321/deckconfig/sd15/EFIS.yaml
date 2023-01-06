@@ -102,6 +102,7 @@ buttons:
 # ### LINE 2 ###  5 -  9 ######################################################
   - index: 5
     type: push
+    name: CHRONO
     command: AirbusFBW/CaptChronoButton
     icon: TEST
     label: CHRONO

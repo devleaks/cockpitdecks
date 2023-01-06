@@ -263,3 +263,4 @@ buttons:
       font-font-size: 48
       dataref-rpn: "1"
     command: AirbusFBW/ECAMAll
+    options: nostate
