@@ -14,7 +14,7 @@ from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
@@ -383,10 +383,18 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             logger.warning(f"start: no IP address. could not start.")
 
     def terminate(self):
+        logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
         if self.running:
             self.finished = threading.Event()
             self.running = False
-            logger.debug(f"terminate: wait permission to be deleted..")
-            self.finished.wait(timeout=20*DATA_REFRESH)
-            logger.debug(f"terminate: ..got it. I can now die in peace")
-        logger.info(f"terminate: XPlaneUDP terminated")
+            wait = 10 * DATA_REFRESH + 2  # 2 seconds is net latency to get recvfrom() on UDP
+            if self.socket:
+                logger.debug(f"terminate: ..hard closing socket..")  # workaround to avoid being stuck in recvfrom()
+                self.socket.close()
+                logger.debug(f"terminate: ..socket closed..")
+            logger.debug(f"terminate: ..waiting {wait}sec. permission to be deleted..")
+            if self.finished.wait(timeout=wait):
+                logger.debug(f"terminate: ..got it. I can now die in peace..")
+            else:
+                logger.warning(f"terminate: ..did not get permission to delete (thread may hang in socket.recvfrom())..")
+        logger.info(f"terminate: ..terminated")
