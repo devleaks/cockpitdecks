@@ -86,7 +86,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          font-size: 60
+          text-size: 60
         B1:
           text: "OFF"
           color: white
@@ -107,7 +107,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          font-size: 60
+          text-size: 60
           dataref-rpn: ${AirbusFBW/Pack1SwitchIllum} ${AirbusFBW/Pack1FCVInd} - abs
         B1:
           text: "OFF"
@@ -218,7 +218,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          font-size: 60
+          text-size: 60
           dataref-rpn: ${AirbusFBW/Pack2SwitchIllum} ${AirbusFBW/Pack2FCVInd} - abs
         B1:
           text: "OFF"

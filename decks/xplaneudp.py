@@ -278,6 +278,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     def loop(self):
         logger.debug(f"loop: started")
         i = 0
+        total_to = 0
         j1, j2 = 0, 0
         tot1, tot2 = 0.0, 0.0
         while self.running:
@@ -299,9 +300,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     j1 = j1 + 1
                     tot1 = tot1 + (later - now)
                     nexttime = DATA_REFRESH - (later - now)
-
+                    total_to = 0
                 except XPlaneTimeout:
-                    logger.warning(f"loop: XPlaneTimeout")  # ignore
+                    logger.warning(f"loop: XPlaneTimeout ({total_to})")  # ignore
+                    total_to = total_to + 1
             if nexttime > 0:
                 time.sleep(nexttime)
 

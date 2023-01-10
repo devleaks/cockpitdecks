@@ -61,12 +61,16 @@ class AnnunciatorButton(Button):
             self.annunciator = merge({}, ANNUNCIATOR_DEFAULTS, self._annunciator)
 
             # Normalize annunciator in case of A type (single part)
-            atyp = self.annunciator.get("type", "A")
             parts = self.annunciator.get("parts")
-            if atyp == "A" and parts is None:  # if only one annunciator, no need for "parts" (special case)
-                self.annunciator["parts"] = { "A0": self._annunciator }
+            if parts is None:  # if only one annunciator, no need for "parts" (special case)
+                arr = {}
+                for part in self.part_iterator():
+                    p = self.annunciator.get(part)
+                    if p is not None:
+                        arr[p] = parts
+                self.annunciator["parts"] = arr
                 name = config.get("name", f"{type(self).__name__}-{config['index']}")
-                logger.debug(f"__init__: button {name}: annunciator part normalized")
+                logger.debug(f"__init__: button {name}: annunciator parts normalized ({list(self.annunciator['parts'].keys())})")
         else:
             logger.error(f"__init__: button {self.name}: has no annunciator property")
 
@@ -295,15 +299,25 @@ class AnnunciatorButton(Button):
             return color
 
         def has_frame(part: dict):
+            """
+            Tries (hard) keyword frame and framed in attributes or options.
+
+            :param      part:  The part
+            :type       part:  dict
+            """
             framed = part.get("framed")
             if framed is None:
-                return False
+                framed = part.get("frame")
+                if framed is None:
+                    return False
             if type(framed) == bool:
                 return framed
             elif type(framed) == int:
                 return framed == 1
             elif type(framed) == str:
                 return framed.lower() in ["true", "on", "yes", "1"]
+            if self.has_option("frame") or  self.has_option("framed"):
+                return True
             return False
 
         def get_text(base: dict, text_format: str = None):
@@ -425,7 +439,7 @@ class AnnunciatorButton(Button):
                 text = get_text(part)  # part.get("text")
                 if text is not None:
                     fontname = self.get_font(part.get("font"))
-                    fontsize = int(part.get("font-size", TEXT_SIZE))
+                    fontsize = int(part.get("text-size", TEXT_SIZE))
                     font = ImageFont.truetype(fontname, fontsize)
                     if is_lit or not self.page.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN.value:
                         invert = part.get("invert")

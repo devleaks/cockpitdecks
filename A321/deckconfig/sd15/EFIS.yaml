@@ -18,7 +18,7 @@ buttons:
         B1:
           text: CSTR
           color: white
-          font-size: 40
+          text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptCstrPushButton
     dataref: AirbusFBW/NDShowCSTRCapt
@@ -37,7 +37,7 @@ buttons:
         B1:
           text: WPT
           color: white
-          font-size: 40
+          text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptWptPushButton
     dataref: AirbusFBW/NDShowWPTCapt
@@ -56,7 +56,7 @@ buttons:
         B1:
           text: VOR.D
           color: white
-          font-size: 40
+          text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptVorDPushButton
     dataref: AirbusFBW/NDShowVORDCapt
@@ -75,7 +75,7 @@ buttons:
         B1:
           text: NDB
           color: white
-          font-size: 40
+          text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptNdbPushButton
     dataref: AirbusFBW/NDShowNDBCapt
@@ -94,7 +94,7 @@ buttons:
         B1:
           text: ARPT
           color: white
-          font-size: 40
+          text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptArptPushButton
     dataref: AirbusFBW/NDShowARPTCapt
@@ -122,7 +122,7 @@ buttons:
         B1:
           text: FD
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/FD1Engage
     command: toliss_airbus/fd1_push
@@ -140,7 +140,7 @@ buttons:
         B1:
           text: LS
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptLSButtonPush
     view: SRS/X-Camera/Select_View_ID_1
@@ -158,7 +158,7 @@ buttons:
         B1:
           text: LOC
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     command: AirbusFBW/LOCbutton
     dataref: AirbusFBW/LOCilluminated

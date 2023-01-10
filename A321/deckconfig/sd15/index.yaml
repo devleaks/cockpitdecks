@@ -21,7 +21,7 @@ buttons:
         B1:
           text: ENG
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDENG
     command: AirbusFBW/ECP/SelectEnginePage
@@ -40,7 +40,7 @@ buttons:
         B1:
           text: BLEED
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     command: AirbusFBW/ECP/SelectBleedPage
     dataref: AirbusFBW/SDBLEED
@@ -59,7 +59,7 @@ buttons:
         B1:
           text: PRESS
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     command: AirbusFBW/ECP/SelectPressPage
     dataref: AirbusFBW/SDPRESS
@@ -78,7 +78,7 @@ buttons:
         B1:
           text: ELEC
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDELEC
     command: AirbusFBW/ECP/SelectElecPage
@@ -97,7 +97,7 @@ buttons:
         B1:
           text: HYD
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDHYD
     command: AirbusFBW/ECP/SelectHydraulicPage
@@ -116,7 +116,7 @@ buttons:
         B1:
           text: FUEL
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDFUEL
     command: AirbusFBW/ECP/SelectFuelPage
@@ -135,7 +135,7 @@ buttons:
         B1:
           text: APU
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDAPU
     command: AirbusFBW/ECP/SelectAPUPage
@@ -154,7 +154,7 @@ buttons:
         B1:
           text: COND
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDCOND
     command: AirbusFBW/ECP/SelectConditioningPage
@@ -173,7 +173,7 @@ buttons:
         B1:
           text: DOOR
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDDOOR
     command: AirbusFBW/ECP/SelectDoorOxyPage
@@ -192,7 +192,7 @@ buttons:
         B1:
           text: WHEEL
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDWHEEL
     command: AirbusFBW/ECP/SelectWheelPage
@@ -211,7 +211,7 @@ buttons:
         B1:
           text: F/CTL
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDFCTL
     command: AirbusFBW/ECP/SelectFlightControlPage
@@ -230,7 +230,7 @@ buttons:
         B1:
           text: CLR
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/CLRillum
     command: AirbusFBW/ECP/CaptainClear
@@ -248,7 +248,7 @@ buttons:
         B1:
           text: STS
           color: white
-          font-size: 48
+          text-size: 48
           dataref-rpn: "1"
     dataref: AirbusFBW/SDSTATUS
     command: AirbusFBW/ECP/SelectStatusPage
@@ -260,7 +260,7 @@ buttons:
       size: medium
       text: ALL
       color: white
-      font-font-size: 48
+      font-text-size: 48
       dataref-rpn: "1"
     command: AirbusFBW/ECAMAll
     options: nostate
