@@ -5,7 +5,7 @@ from .button_core import Button, ButtonNone, ButtonPage, ButtonReload, ButtonIns
 from .button_core import ButtonPush, ButtonDual, ButtonLongpress
 from .button_core import ButtonUpDown, ButtonAnimate
 
-from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref, KnobLED
+from .button_knob import KnobNone, Knob, KnobPush, KnobPushPull, KnobPushTurnRelease, KnobDataref, KnobLED, Slider
 from .button_loupe import ColoredButton, ButtonSide, ButtonStop
 from .button_annunciators import AnnunciatorButton, AnnunciatorButtonPush, AnnunciatorButtonAnimate
 from .button_data import DataButton, WeatherButton
@@ -61,6 +61,7 @@ LOUPEDECK_BUTTON_TYPES = {
 
 XTOUCH_MINI_BUTTON_TYPES = {
     "none": Button,
+    "page": ButtonPage,
     "inspect": ButtonInspect,
     "push": ButtonPush,
     "dual": ButtonDual,
@@ -70,5 +71,7 @@ XTOUCH_MINI_BUTTON_TYPES = {
     "knob-led": KnobLED,
     "knob-push": KnobPush,
     "knob-push-pull": KnobPushPull,
-    "knob-push-turn-release": KnobPushTurnRelease
+    "knob-push-turn-release": KnobPushTurnRelease,
+    "slider": Slider,
+    "reload": ButtonReload
 }

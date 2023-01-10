@@ -15,8 +15,8 @@ CHANNEL = 10
 
 class LED_MODE(Enum):
     SINGLE = 0
-    FAN = 1
-    TRIM = 2
+    TRIM = 1
+    FAN = 2
     SPREAD = 3
 
 MAKIE_MAPPING = {
@@ -53,6 +53,7 @@ class XTouchMini:
         self.callback = None
         self.timeout = 10
         self.wait_finished = None
+        self.makie = False
 
 
     def id(self):
@@ -93,8 +94,30 @@ class XTouchMini:
         self.callback = callback
 
 
-    def _read(self, msg: mido.Message) -> None:
+    def _read_makie(self, msg: mido.Message) -> None:
+        # ** MAKIE VERSION **
         # logger.debug(f"_read: {msg}")
+        payload = None
+        if msg.type == "note_on":
+            payload = { "key": msg.note, "state": 1 if msg.velocity == 127 else 0 }
+        elif msg.type == "note_off":
+            payload = { "key": msg.note, "state": 0 }
+        elif msg.type == "control_change":
+            if msg.control in [9, 10]:  # slider A and B
+                payload = { "key": msg.control, "state": msg.value }
+            else:
+                payload = { "key": msg.control, "state": 2 if msg.value > 64 else 3 }
+        elif msg.type == "pitchwheel":
+                payload = { "key": msg.channel, "state": msg.pitch }
+
+        if self.callback is not None and payload is not None:
+            payload["deck"] = self
+            self.callback(**payload)
+
+
+    def _read(self, msg: mido.Message) -> None:
+        # ** STANDARD VERSION **
+        #logger.debug(f"_read: {msg}")
         payload = None
         if msg.type == "note_on":
             payload = { "key": msg.note, "state": 1 }
@@ -127,6 +150,7 @@ class XTouchMini:
         logger.debug(f"start: setting Makie mode..")
         m = mido.Message(type="control_change", control=127, value=1)
         self.send(m)
+        self.makie = True
         time.sleep(1)
         logger.debug(f"start: ..set")
 
@@ -140,7 +164,7 @@ class XTouchMini:
         m = None
         try:
             logger.debug(f'start: opening MIDI device: "{self.name}"..')
-            m = mido.open_input(self.name, callback=self._read)
+            m = mido.open_input(self.name, callback=self._read_makie if self.makie else self._read)
             logger.debug('start: ..device opened')
             while self.running:
                 time.sleep(self.timeout)

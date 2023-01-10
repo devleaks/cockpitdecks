@@ -5,7 +5,7 @@ import logging
 import time
 
 SPAM=15
-logging.addLevelName(SPAM, "spam")
+logging.addLevelName(SPAM, "SPAM")
 
 loggerDataref = logging.getLogger("Dataref")
 loggerDataref.setLevel(SPAM)

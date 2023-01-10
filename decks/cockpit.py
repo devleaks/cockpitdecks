@@ -36,7 +36,7 @@ class Cockpit:
         self.devices = []
 
         self.acpath = None
-        self.cockpit = {}
+        self.cockpit = {}  # all decks: { deckname: deck }
 
         self.default_config = None
         self.default_logo = DEFAULT_LOGO

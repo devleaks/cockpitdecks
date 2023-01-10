@@ -49,7 +49,6 @@ class XPlaneBeacon:
     def __init__(self):
         # Open a UDP Socket to receive on Port 49000
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.settimeout(self.BEACON_TIMEOUT)
         # values from xplane
         self.BeaconData = {}
 
@@ -304,6 +303,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                 except XPlaneTimeout:
                     logger.warning(f"loop: XPlaneTimeout ({total_to})")  # ignore
                     total_to = total_to + 1
+                    # if total_to > 10:  # attemps to reconnect
+                    #     self.socket.close()
+                    #     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
             if nexttime > 0:
                 time.sleep(nexttime)
 

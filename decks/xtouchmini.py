@@ -13,10 +13,10 @@ from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFA
 from .constant import YAML_BUTTONS_KW
 from .constant import print_stack
 
-from .XTouchMini.Devices.xtouchmini import LED_MODE
+from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
 logger = logging.getLogger("XTouchDeck")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class XTouchMini(Deck):
@@ -149,6 +149,26 @@ class XTouchMini(Deck):
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
             logger.info(f"load: deck {self.name} init page {self.home_page.name}")
 
+    def key_change_processing(self, deck, key, state):
+        """
+        This is the function that is called when a key is pressed.
+        """
+        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
+        KEY_MAP = dict((v,k) for k, v in MAKIE_MAPPING.items())
+        key1 = None
+        if key >= 16 and key <= 23:     # turn encode
+            key1 = f"encoder{key - 16}"
+        elif key >= 32 and key <= 39:   # push on encoder
+            key1 = f"encoder{key - 32}"
+        elif key == 8:                  # slider
+            key1 = f"slider"
+        else:                           # push a button
+            key1 = KEY_MAP[key]
+        logger.debug(f"key_change_callback: {key} => {key1} {state}")
+        if self.current_page is not None and key1 in self.current_page.buttons.keys():
+            self.current_page.buttons[key1].activate(state)
+
     # High-level (functional)calls for feedback/visualization
     #
     def set_key_image(self, button):
@@ -169,11 +189,11 @@ class XTouchMini(Deck):
             logger.warning(f"set_encoder_led: button {button.name}: {button.index} => cannot determine numeric index")
             return
         i = int(nums[0])
-        logger.debug(f"set_encoder_led: button {button.name}: {button.index} => {i}, value={value}, mode={mode}")
+        logger.debug(f"set_encoder_led: button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
         self.set_control(key=i, value=value, mode=mode)
 
     def set_button_led(self, button):
-        logger.debug(f"set_button_led: button {button.name}: {button.index} => {button.is_on()} ({button.has_option('blink')})")
+        logger.debug(f"set_button_led: button {button.name}: {button.index} => on={button.is_on()} (blink={button.has_option('blink')})")
         self.set_key(key=button.index, on=button.is_on(), blink=button.has_option("blink"))
 
     # Low-level wrapper around device API (direct forward)

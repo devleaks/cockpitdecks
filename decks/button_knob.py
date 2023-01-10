@@ -274,6 +274,11 @@ class KnobDataref(ButtonPush):
 class KnobLED(Knob):
     """
     A knob button that writes directly to a dataref.
+    class LED_MODE(Enum):
+        SINGLE = 0
+        TRIM = 1
+        FAN = 2
+        SPREAD = 3
     """
     def __init__(self, config: dict, page: "Page"):
         Knob.__init__(self, config=config, page=page)
@@ -305,3 +310,22 @@ class KnobLED(Knob):
     def clean(self):
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         # should clean LED
+
+class Slider(Button):
+    """
+    A Knob that can turn left/right.
+    """
+    def __init__(self, config: dict, page: "Page"):
+        Button.__init__(self, config=config, page=page)
+
+    def has_key_image(self):
+        return False
+
+    def is_valid(self):
+        return super().is_valid()
+
+    def activate(self, state):
+        logger.info(f"activate: button {self.name} has no action (value={state})")
+
+    def render(self):
+        pass

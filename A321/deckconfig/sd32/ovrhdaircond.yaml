@@ -168,7 +168,7 @@ buttons:
           color: deepskyblue
           framed: true
           size: 60
-          dataref-rpn: ${AirbusFBW/APUBleedSwitch}
+          dataref-rpn: ${AirbusFBW/APUBleedInd}
     command: toliss_airbus/apucommands/BleedToggle
     label: APU BLEED
     label-position: ct

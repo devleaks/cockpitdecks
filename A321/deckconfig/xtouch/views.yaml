@@ -1,0 +1,49 @@
+name: Views
+buttons:
+  - index: 0
+    name: View 0
+    type: button
+    command: SRS/X-Camera/Select_View_ID_8
+  - index: 1
+    name: View 1
+    type: button
+    command: SRS/X-Camera/Select_View_ID_1
+  - index: 2
+    name: View 2
+    type: button
+    command: SRS/X-Camera/Select_View_ID_2
+  - index: 3
+    name: View 3
+    type: button
+    command: SRS/X-Camera/Select_View_ID_3
+  - index: 4
+    name: View 4
+    type: button
+    command: SRS/X-Camera/Select_View_ID_4
+  - index: 5
+    name: View 5
+    type: button
+    command: SRS/X-Camera/Select_View_ID_5
+  - index: 6
+    name: View 6
+    type: button
+    command: SRS/X-Camera/Select_View_ID_6
+  - index: 7
+    name: View 7
+    type: button
+    command: SRS/X-Camera/Select_View_ID_7
+  - index: 15
+    name: RELOAD
+    type: reload
+#
+  - index: slider
+    name: SLIDER
+    type: slider
+  - index: A
+    name: Index
+    type: page
+    icon: NONE
+  - index: B
+    name: Views
+    type: page
+    icon: NONE

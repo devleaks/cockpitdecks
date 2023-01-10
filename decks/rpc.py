@@ -51,11 +51,13 @@ class RPC:
                 stack.append(math.floor(stack.pop()))
             elif token == "ceil":
                 stack.append(math.ceil(stack.pop()))
-            elif token == "round":
+            elif token == "round":  # round to integer
                 stack.append(round(stack.pop(), 0))
-            elif token == "abs":
+            elif token == "abs":    # absolute value
                 stack.append(abs(stack.pop()))
-            elif token == "chs":
+            elif token == "chs":    # change sign
                 stack.append(-1 * stack.pop())
+            elif token == "eq":     # test for equality, pushes 1 if equal, 0 otherwise
+                stack.append(1 if (stack.pop() == stack.pop()) else 0)
 
         return stack if return_stack else stack.pop()

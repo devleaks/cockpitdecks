@@ -27,9 +27,53 @@ from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
+logger.setLevel(15)
 # logger.setLevel(logging.DEBUG)
 
 
+# ##########################################
+# ACTIVATION
+#
+class ButtonActivation:
+
+    def __init__(self, config: dict, button: "Button"):
+        self._config = config
+
+        # Working variables
+        self.pressed_count = 0
+        self.pressed = False
+        self.bounce_arr = None
+        self.bounce_idx = 0
+        self.current_value = None
+        self.previous_value = None
+        self.initial_value = config.get("initial-value")
+        self._first_value = None    # first value the button will get
+
+        # Commands
+        self.command = config.get("command")
+        self.commands = config.get("commands")
+        self.view = config.get("view")
+
+
+    def activate(self):
+        pass
+
+
+# ##########################################
+# RENDERING
+#
+class ButtonRepresentation:
+
+    def __init__(self, config: dict, button: "Button"):
+        self._config = config
+
+    def render(self):
+        pass
+
+
+# ##########################################
+# BUTTONS
+#
 class Button:
 
     def __init__(self, config: dict, page: "Page"):
@@ -390,7 +434,8 @@ class Button:
             expr = self.substitute_dataref_values(formula)
             r = RPC(expr)
             value = r.calculate()
-            logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
+            # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
+            logger.log(15, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
             return value
         else:
             logger.warning(f"execute_formula: button {self.name}: no formula ({len(self.all_datarefs)} datarefs).")
@@ -608,14 +653,16 @@ class Button:
         Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device.
         Default is to tally number of times this button was pressed. It should have been released as many times :-D.
         **** No command gets executed here **** except if there is an associated view with the button.
+        Also, removes guard if it was present. @todo: close guard
         """
         if state:
             self.pressed = True
             self.pressed_count = self.pressed_count + 1
-            if self.guarded is not None:
-                if self.guarded:
+            if self.guarded is not None:    # if guarded
+                if self.guarded:            # just open it
                     self.guarded = False
                     return
+            # not guarded, or guard open
             self.set_current_value(self.button_value())
             if self.view:
                 self.xp.commandOnce(self.view)

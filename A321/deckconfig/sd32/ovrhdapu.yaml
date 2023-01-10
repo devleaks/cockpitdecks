@@ -11,13 +11,13 @@ buttons:
         B0:
           text: AVAIL
           color: lime
-          dataref-rpn: ${sim/cockpit2/switches/avionics_power_on} 1 - abs
+          dataref-rpn: ${AirbusFBW/ExtPowOHPArray[0]} 2 eq
         B1:
           text: "ON"
           color: deepskyblue
           framed: true
           size: 60
-          dataref-rpn: ${sim/cockpit2/switches/avionics_power_on}
+          dataref-rpn: ${AirbusFBW/ExtPowOHPArray[0]} 1 eq
     command: toliss_airbus/eleccommands/ExtPowToggle
     label: EXT PWR
     label-position: ct
