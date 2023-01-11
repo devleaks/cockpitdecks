@@ -435,7 +435,7 @@ class Button:
             r = RPC(expr)
             value = r.calculate()
             # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
-            logger.log(15, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
+            logger.log(15, f"execute_formula: button {self.name}: {formula} => {expr} => {value}")
             return value
         else:
             logger.warning(f"execute_formula: button {self.name}: no formula ({len(self.all_datarefs)} datarefs).")

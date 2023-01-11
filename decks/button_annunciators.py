@@ -16,7 +16,7 @@ from .rpc import RPC
 
 logger = logging.getLogger("AnnunciatorButton")
 logger.setLevel(15)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 def convert_color_string(instr) -> tuple:  # tuple of int 0-255
     # process either a color name or a color tuple as a string "(1, 2, 3)"
@@ -354,7 +354,7 @@ class AnnunciatorButton(Button):
 
 
         # MAIN
-        logger.debug(f"mk_annunciator: button {self.name}: creating..")
+        # logger.debug(f"mk_annunciator: button {self.name}: creating..")
 
         inside = ICON_SIZE / 32 # 8px
 
@@ -566,7 +566,7 @@ class AnnunciatorButton(Button):
                       align=a,
                       fill=self.label_color)
 
-        logger.debug(f"mk_annunciator: button {self.name}: ..done")
+        # logger.debug(f"mk_annunciator: button {self.name}: ..done")
 
         return image
 
