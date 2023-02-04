@@ -61,6 +61,12 @@ class Streamdeck(Deck):
         numkeys = key_rows * key_cols
         return [str(i) for i in range(numkeys)]
 
+    def valid_activations(self):
+        return super().valid_activations() + ["push", "onoff", "updown", "longpress"]
+
+    def valid_representations(self):
+        return super().valid_representations() + ["none", "icon", "multi-icon", "icon-animation"]
+
     def load(self):
         """
         Loads Streamdeck pages during configuration

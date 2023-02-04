@@ -37,6 +37,12 @@ class XTouchMini(Deck):
         buttons = [str(i) for i in range(16)]
         return encoders + buttons + ["A", "B", "slider"]
 
+    def valid_activations(self):
+        return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+
+    def valid_representations(self):
+        return super().valid_representations() + ["led", "multi-leds"]
+
     def load_default_page(self):
         # Add index 0 only button:
         page_config = {

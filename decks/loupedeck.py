@@ -64,6 +64,12 @@ class Loupedeck(Deck):
         buttons = [f"b{i}" for i in range(8)]
         return encoders + keys + buttons + ["left", "right"]
 
+    def valid_activations(self):
+        return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+
+    def valid_representations(self):
+        return super().valid_activations() + ["icon", "multi-icon", "icon-animation", "side", "colored-led"]
+
     def load(self):
         """
         Loads Streamdeck pages during configuration

@@ -118,6 +118,12 @@ class Deck:
     def valid_indices(self):
         return []
 
+    def valid_activations(self):
+        return ["none"] + ["load", "reload", "inspect", "stop"]
+
+    def valid_representations(self):
+        return ["none"]
+
     def load(self):
         """
         Loads Deck pages during configuration
