@@ -15,7 +15,7 @@ from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
 from .color import convert_color
-from .button import Button, STREAM_DECK_BUTTON_TYPES
+from .button import Button
 from .page import Page
 from .deck import Deck
 
@@ -66,90 +66,6 @@ class Streamdeck(Deck):
 
     def valid_representations(self):
         return super().valid_representations() + ["none", "icon", "multi-icon", "icon-animation"]
-
-    def load(self):
-        """
-        Loads Streamdeck pages during configuration
-        """
-        if self.layout is None:
-            self.load_default_page()
-            return
-
-        dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
-        if not os.path.exists(dn):
-            logger.warning(f"load: stream deck has no layout folder '{self.layout}', loading default page")
-            self.load_default_page()
-            return
-
-        pages = os.listdir(dn)
-        for p in pages:
-            if p == CONFIG_FILE:
-                self.load_layout_config(os.path.join(dn, p))
-            elif p.endswith("yaml") or p.endswith("yml"):
-                name = ".".join(p.split(".")[:-1])  # remove extension from filename
-                fn = os.path.join(dn, p)
-
-                if os.path.exists(fn):
-                    with open(fn, "r") as fp:
-                        page_config = yaml.safe_load(fp)
-
-                        if "name" in page_config:
-                            name = page_config["name"]
-
-                        logger.debug(f"load: loaded page {name} (from file {fn.replace(self.cockpit.acpath, '... ')}), adding..")
-
-                        if name in self.pages.keys():
-                            logger.warning(f"load: page {name}: duplicate name, ignored")
-                            continue
-
-                        if not YAML_BUTTONS_KW in page_config:
-                            logger.error(f"load: {fn} has no action")
-                            continue
-
-                        this_page = Page(name, page_config, self)
-
-                        this_page.fill_empty = page_config["fill-empty-keys"] if "fill-empty-keys" in page_config else self.fill_empty
-                        self.pages[name] = this_page
-
-                        for a in page_config[YAML_BUTTONS_KW]:
-                            button = None
-                            bty = None
-                            idx = None
-                            if "index" in a:
-                                idx = int(a["index"])
-                            else:
-                                logger.error(f"load: page {name}: button {a} has no index, ignoring")
-                                continue
-
-                            if idx >= self.numkeys:
-                                logger.error(f"load: page {name}: button {a} has index out of range of Stream Deck Device (maxkeys={self.numkeys}), ignoring")
-                                continue
-
-                            if "type" in a:
-                                bty = a["type"]
-
-                            if bty in STREAM_DECK_BUTTON_TYPES.keys():
-                                button = STREAM_DECK_BUTTON_TYPES[bty].new(config=a, page=this_page)
-                                this_page.add_button(idx, button)
-                            else:
-                                logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
-
-                        logger.info(f"load: ..page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
-                else:
-                    logger.warning(f"load: file {p} not found")
-
-            else:  # not a yaml file
-                logger.debug(f"load: {dn}: ignoring file {p}")
-
-        if not len(self.pages) > 0:
-            self.valid = False
-            logger.error(f"load: {self.name}: has no page, ignoring")
-        else:
-            if INIT_PAGE in self.pages.keys():
-                self.home_page = self.pages[INIT_PAGE]
-            else:
-                self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.info(f"load: deck {self.name} init page {self.home_page.name}")
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
@@ -242,14 +158,14 @@ class Streamdeck(Deck):
             "name": DEFAULT_PAGE_NAME
         }
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
-        button0 = STREAM_DECK_BUTTON_TYPES["push"].new(config={
-                                                "index": 0,
-                                                "name": "X-Plane Map",
-                                                "type": "push",
-                                                "command": "sim/map/show_current",
-                                                "label": "Map",
-                                                "icon": self.default_icon_name
-                                            }, page=page0)
+        button0 = Button(config={
+                                    "index": 0,
+                                    "name": "X-Plane Map",
+                                    "type": "push",
+                                    "command": "sim/map/show_current",
+                                    "label": "Map",
+                                    "icon": self.default_icon_name
+                                }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None

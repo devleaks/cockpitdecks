@@ -78,6 +78,10 @@ class LoupedeckLive(Loupedeck):
         except:
             logger.error(f"__del__: exception:", exc_info=1)
 
+    def deck_type(self):
+        if self.inited:
+            return "loupedecklive" if self._is_loupedeck else "unknown"
+
     def open(self):
         pass
 

@@ -59,6 +59,9 @@ class XTouchMini:
     def id(self):
         return self.name
 
+    def deck_type(self):
+        return "xtouchmini"
+
     def open(self):
         pass
 

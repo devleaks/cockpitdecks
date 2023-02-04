@@ -16,11 +16,10 @@ from PIL import Image, ImageOps
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .color import convert_color
-from .button import Button, LOUPEDECK_BUTTON_TYPES, COLORED_BUTTON, BUTTON_STOP
+from .button import Button
 from .page import Page
 
 from .deck import Deck
-from .Loupedeck.Devices.constants import BUTTONS as LOUPEDECK_BUTTON_NAMES
 
 logger = logging.getLogger("Loupedeck")
 # logger.setLevel(logging.DEBUG)
@@ -68,130 +67,7 @@ class Loupedeck(Deck):
         return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
 
     def valid_representations(self):
-        return super().valid_activations() + ["icon", "multi-icon", "icon-animation", "side", "colored-led"]
-
-    def load(self):
-        """
-        Loads Streamdeck pages during configuration
-        """
-        if self.layout is None:
-            self.load_default_page()
-            return
-
-        dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
-        if not os.path.exists(dn):
-            logger.warning(f"load: loupedeck has no layout folder '{self.layout}', loading default page")
-            self.load_default_page()
-            return
-
-        pages = os.listdir(dn)
-        for p in pages:
-            if p == CONFIG_FILE:
-                self.load_layout_config(os.path.join(dn, p))
-            elif p.endswith("yaml") or p.endswith("yml"):
-                name = ".".join(p.split(".")[:-1])  # remove extension from filename
-                fn = os.path.join(dn, p)
-
-                if os.path.exists(fn):
-                    with open(fn, "r") as fp:
-                        page_config = yaml.safe_load(fp)
-
-                        if "name" in page_config:
-                            name = page_config["name"]
-
-                        logger.debug(f"load: loaded page {name} (from file {fn.replace(self.cockpit.acpath, '... ')}), adding..")
-
-                        if name in self.pages.keys():
-                            logger.warning(f"load: page {name}: duplicate name, ignored")
-                            continue
-
-                        if not YAML_BUTTONS_KW in page_config:
-                            logger.error(f"load: {fn} has no action")
-                            continue
-
-                        button_indices = [(b["type"],b["index"]) for b in page_config[YAML_BUTTONS_KW]]
-                        if YAML_INCLUDE_KW in page_config:
-                            includes = page_config[YAML_INCLUDE_KW]
-                            if type(page_config[YAML_INCLUDE_KW]) == str:
-                                includes = [includes]
-                            for inc in includes:
-                                fni = os.path.join(dn, inc + ".yaml")
-                                with open(fni, "r") as fpi:
-                                    inc_config = yaml.safe_load(fpi)
-                                    # how to merge? for now, just merge buttons
-                                    if YAML_BUTTONS_KW in inc_config:
-                                        for add_button in inc_config[YAML_BUTTONS_KW]:
-                                            if "index" in add_button and "type" in add_button and (add_button["type"],add_button["index"]) not in button_indices:
-                                                # Add it if there is no button of that type with same index in page
-                                                page_config[YAML_BUTTONS_KW].append(add_button)
-                                                logger.debug(f"load: includes: added {add_button['type']} {add_button['index']} from {inc} to page {name}")
-
-                        this_page = Page(name, page_config, self)
-                        self.pages[name] = this_page
-
-                        for a in page_config[YAML_BUTTONS_KW]:
-                            button = None
-                            bty = None
-                            idx = None
-
-                            if "type" in a:
-                                bty = a["type"]
-
-                            if "index" in a:
-                                idx = a["index"]
-                                try:
-                                    idx = int(idx)
-                                except ValueError:
-                                    pass
-                            else:
-                                logger.error(f"load: page {name}: button {a} has no index, ignoring")
-                                continue
-
-                            if bty == "none" and idx is not None and type(idx) == str and idx.startswith("knob"):
-                                bty = "knob-none"  # special button flavor with no rendering...
-
-                            if bty == "knob":
-                                if idx not in list(LOUPEDECK_BUTTON_NAMES.values())[0:6]:
-                                    logger.error(f"load: page {name}: button {a} has index '{idx}' ({type(idx)}) invalid for LoupedeckLive Device (keys={LOUPEDECK_BUTTON_NAMES.values()[:-7]}), ignoring")
-                                    continue
-                            elif bty == COLORED_BUTTON or bty == BUTTON_STOP:
-                                if idx < 0 or idx > 7:  # buttons are 0 to 7, circle is an alias for B0
-                                    logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
-                                    continue
-                                if idx == 0:
-                                    idx = "circle"
-                                else:
-                                    idx = f"B{idx}"
-                            elif bty == "side":
-                                if idx not in ["left", "right"]:  # large, side buttons
-                                    logger.error(f"load: page {name}: button {a} has index '{idx}' invalid for LoupedeckLive Device, ignoring")
-                                    continue
-
-                            a["index"] = idx  # place adjusted index @todo: remove this
-                            a["_key"]  = idx  # place adjusted index
-
-                            if bty in LOUPEDECK_BUTTON_TYPES.keys():
-                                button = LOUPEDECK_BUTTON_TYPES[bty].new(config=a, page=this_page)
-                                this_page.add_button(idx, button)
-                            else:
-                                logger.error(f"load: page {name}: button {a} invalid button type {bty}, ignoring")
-
-                        logger.info(f"load: ..page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
-                else:
-                    logger.warning(f"load: file {p} not found")
-
-            else:  # not a yaml file
-                logger.debug(f"load: {dn}: ignoring file {p}")
-
-        if not len(self.pages) > 0:
-            self.valid = False
-            logger.error(f"load: {self.name}: has no page, ignoring")
-        else:
-            if INIT_PAGE in self.pages.keys():
-                self.home_page = self.pages[INIT_PAGE]
-            else:
-                self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.info(f"load: loupedeck {self.name} init page {self.home_page.name}")
+        return super().valid_representations() + ["icon", "multi-icon", "icon-animation", "side", "colored-led"]
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
@@ -234,14 +110,14 @@ class Loupedeck(Deck):
             "name": DEFAULT_PAGE_NAME
         }
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
-        button0 = LOUPEDECK_BUTTON_TYPES["push"].new(config={
-                                                "index": 0,
-                                                "name": "X-Plane Map",
-                                                "type": "push",
-                                                "command": "sim/map/show_current",
-                                                "label": "Map",
-                                                "icon": self.default_icon_name
-                                            }, page=page0)
+        button0 = Button(config={
+                                    "index": 0,
+                                    "name": "X-Plane Map",
+                                    "type": "push",
+                                    "command": "sim/map/show_current",
+                                    "label": "Map",
+                                    "icon": self.default_icon_name
+                                }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = None

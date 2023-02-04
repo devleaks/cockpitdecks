@@ -2,46 +2,46 @@ name: Index
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
+    name: ovrhdapu
+    type: page
+    icon: NONE
+    label: "APU &\nFIRE"
+    label-position: cm
+  - index: 1
     name: ovrhdhyd
     type: page
     icon: NONE
     label: "HYD"
     label-position: cm
-  - index: 1
+  - index: 2
     name: ovrhdfuel
     type: page
     icon: NONE
     label: "FUEL"
     label-position: cm
-  - index: 2
+  - index: 3
     name: ovrhdelec
     type: page
     icon: NONE
     label: "ELEC"
     label-position: cm
-  - index: 3
+  - index: 4
     name: ovrhdaircond
     type: page
     icon: NONE
     label: "AIR\nCOND"
     label-position: cm
-  - index: 4
+  - index: 5
     name: ovrhdextlights
     type: page
     icon: NONE
     label: "EXT.\nLIGHTS"
     label-position: cm
-  - index: 5
+  - index: 6
     name: ovrhdcall
     type: page
     icon: NONE
     label: "CALL &\nINT.\nLIGHTS"
-    label-position: cm
-  - index: 6
-    name: ovrhdapu
-    type: page
-    icon: NONE
-    label: "APU &\nFIRE"
     label-position: cm
   - index: 7
     name: ISCS

@@ -58,6 +58,10 @@ class Loupedeck:
         """
         self.update_lock.release()
 
+    def deck_type(self):
+        if self.inited:
+            return "loupedeck" if self._is_loupedeck else "unknown"
+
     def is_loupedeck(self) -> bool:
         cnt = 0
         if self.inited:

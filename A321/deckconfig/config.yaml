@@ -6,6 +6,7 @@ decks:
     type: loupedeck
     layout: live
     brightness: 70
+    device: /dev/tty.usbmodem2101
   - name: XPDeck
     type: streamdeck
     layout: sd15

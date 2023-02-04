@@ -13,9 +13,11 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
+
+from .button import Button
 from .color import convert_color
-from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
 
 logger = logging.getLogger("Deck")
@@ -126,9 +128,92 @@ class Deck:
 
     def load(self):
         """
-        Loads Deck pages during configuration
+        Loads Streamdeck pages during configuration
         """
-        pass
+        if self.layout is None:
+            self.load_default_page()
+            return
+
+        dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
+        if not os.path.exists(dn):
+            logger.warning(f"load: deck has no layout folder '{self.layout}', loading default page")
+            self.load_default_page()
+            return
+
+        pages = os.listdir(dn)
+        for p in pages:
+            if p == CONFIG_FILE:
+                self.load_layout_config(os.path.join(dn, p))
+            elif p.endswith("yaml") or p.endswith("yml"):
+                name = ".".join(p.split(".")[:-1])  # remove extension from filename
+                fn = os.path.join(dn, p)
+
+                if os.path.exists(fn):
+                    with open(fn, "r") as fp:
+                        page_config = yaml.safe_load(fp)
+
+                        if "name" in page_config:
+                            name = page_config["name"]
+
+                        if name in self.pages.keys():
+                            logger.warning(f"load: page {name}: duplicate name, ignored")
+                            continue
+
+                        logger.debug(f"load: loaded page {name} (from file {fn.replace(self.cockpit.acpath, '... ')}), adding..")
+
+                        if not YAML_BUTTONS_KW in page_config:
+                            logger.error(f"load: {fn} has no action")
+                            continue
+
+                        this_page = Page(name, page_config, self)
+
+                        this_page.fill_empty = page_config["fill-empty-keys"] if "fill-empty-keys" in page_config else self.fill_empty
+                        self.pages[name] = this_page
+
+                        for a in page_config[YAML_BUTTONS_KW]:
+                            button = None
+
+                            # Where to place the button
+                            idx = None
+                            if "index" in a:
+                                idx = a["index"]
+                                if idx not in self.valid_indices():
+                                    logger.error(f"load: page {name}: button {a} has invalid index {idx}, ignoring")
+                                    continue
+                            else:
+                                logger.error(f"load: page {name}: button {a} has no index, ignoring")
+                                continue
+
+                            # How the button will behave
+                            bty = None
+                            if "type" in a:
+                                bty = a["type"]
+                                if bty not in self.valid_activations():
+                                    logger.error(f"load: page {name}: button {a} has invalid type for {type(self).__name__} {bty}, ignoring")
+                                    continue
+                            else:
+                                logger.error(f"load: page {name}: button {a} has no type, ignoring")
+                                continue
+
+                            button = Button(config=a, page=this_page)
+                            this_page.add_button(idx, button)
+
+                        logger.info(f"load: ..page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
+                else:
+                    logger.warning(f"load: file {p} not found")
+
+            else:  # not a yaml file
+                logger.debug(f"load: {dn}: ignoring file {p}")
+
+        if not len(self.pages) > 0:
+            self.valid = False
+            logger.error(f"load: {self.name}: has no page, ignoring")
+        else:
+            if INIT_PAGE in self.pages.keys():
+                self.home_page = self.pages[INIT_PAGE]
+            else:
+                self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
+            logger.info(f"load: deck {self.name} init page {self.home_page.name}")
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given

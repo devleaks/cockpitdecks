@@ -8,7 +8,7 @@ import sys
 from .Devices import LoupedeckLive
 
 logger = logging.getLogger("DeviceManager")
-
+VERBOSE = False
 
 class DeviceManager:
 
@@ -41,7 +41,7 @@ class DeviceManager:
                 result.append(port)
                 logger.debug(f"..added {port}")
             except (OSError, serial.SerialException):
-                logger.debug(f".. not added {port}", exc_info=True)
+                logger.debug(f".. not added {port}", exc_info=VERBOSE)
         logger.debug(f"list: ..listed")
         return result
 
