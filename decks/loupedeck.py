@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
-from .constant import convert_color
+from .color import convert_color
 from .button import Button, LOUPEDECK_BUTTON_TYPES, COLORED_BUTTON, BUTTON_STOP
 from .page import Page
 
@@ -57,6 +57,12 @@ class Loupedeck(Deck):
             self.load()
             self.init()
             self.start()
+
+    def valid_indices(self):
+        encoders = ["knobTL", "knobCL", "knobBL", "knobTR", "knobCR", "knobBR"]
+        keys = [str(i) for i in range(12)]
+        buttons = [f"b{i}" for i in range(8)]
+        return encoders + keys + buttons + ["left", "right"]
 
     def load(self):
         """

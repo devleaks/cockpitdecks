@@ -2,7 +2,7 @@
 #
 import logging
 
-from .constant import convert_color
+from .color import convert_color
 from .button import Button
 
 logger = logging.getLogger("Page")

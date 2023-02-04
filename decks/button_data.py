@@ -11,26 +11,17 @@ import colorsys
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
-from .constant import convert_color
+from .color import convert_color
 
 from .button_core import Button
 from .rpc import RPC
 from .icons import ICONS
+from .color import light_off
 from .weathericons import WEATHER_ICONS
 from metar import Metar
 
 logger = logging.getLogger("DataButton")
 logger.setLevel(logging.DEBUG)
-
-def light_off(color, lightness: float):
-    # Darkens (or lighten) a color
-    if color.startswith("("):
-        color = convert_color(color)
-    if type(color) == str:
-        color = ImageColor.getrgb(color)
-    a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
-    a[1] = lightness
-    return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
 
 
 class DataButton(Button):

@@ -14,7 +14,7 @@ from PIL import Image, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
-from .constant import convert_color
+from .color import convert_color
 from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
 from .deck import Deck
@@ -55,6 +55,11 @@ class Streamdeck(Deck):
             self.load()
             self.init()
             self.start()
+
+    def valid_indices(self):
+        key_rows, key_cols = self.device.key_layout()
+        numkeys = key_rows * key_cols
+        return [str(i) for i in range(numkeys)]
 
     def load(self):
         """

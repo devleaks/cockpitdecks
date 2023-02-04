@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
-from .constant import convert_color
+from .color import convert_color
 from .button import Button, STREAM_DECK_BUTTON_TYPES
 from .page import Page
 
@@ -115,6 +115,9 @@ class Deck:
         for v in self.pages.values():
             v.inspect()
 
+    def valid_indices(self):
+        return []
+
     def load(self):
         """
         Loads Deck pages during configuration
@@ -207,11 +210,19 @@ class Deck:
             self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
             logger.debug(f"change_page: deck {self.name} ..done")
+            return self.current_page.name
         else:
             logger.warning(f"change_page: deck {self.name}: page {page} not found")
+            if self.current_page is not None:
+                return self.current_page.name
+        return None
+
 
 
     def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
+        pass
+
+    def render(self, button: Button):
         pass
 
     def start(self):

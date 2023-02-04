@@ -11,7 +11,7 @@ from PIL import Image, ImageFont
 from .constant import CONFIG_DIR, CONFIG_FILE, SERIAL_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
-from .constant import has_ext, convert_color
+from .color import convert_color
 
 from .devices import DECK_TYPES
 from .streamdeck import FLIP_DESCRIPTION
@@ -19,6 +19,12 @@ from .streamdeck import FLIP_DESCRIPTION
 
 logger = logging.getLogger("Cockpit")
 # logger.setLevel(logging.DEBUG)
+
+
+def has_ext(name: str, ext: str):
+    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
+    narr = name.split(".")
+    return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
 
 
 class Cockpit:

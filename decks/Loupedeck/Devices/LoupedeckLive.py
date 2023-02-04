@@ -1,43 +1,39 @@
 """
 Main Loupedeck and LoupedeckLive classes.
 """
-import glob
-import io
 import logging
 import math
-import serial
-import sys
 import threading
 import time
 from datetime import datetime
-from queue import Queue
 
-from PIL import Image
-from ..ImageHelpers import PILHelper
+import serial
+from PIL import Image, ImageColor
+
 from .Loupedeck import Loupedeck
-
-
-from .constants import BIG_ENDIAN, WS_UPGRADE_HEADER, WS_UPGRADE_RESPONSE
+from .constants import BIG_ENDIAN, WS_UPGRADE_HEADER
 from .constants import HEADERS, BUTTONS, HAPTIC, MAX_BRIGHTNESS, DISPLAYS, BUTTON_SIZES
-from .. import __NAME__, __version__
+from ..ImageHelpers import PILHelper
 
 logger = logging.getLogger("LoupedeckLive")
 # logger.setLevel(logging.DEBUG)
 
 MAX_TRANSACTIONS = 256
-READING_TIMEOUT = 1     # seconds
+READING_TIMEOUT = 1  # seconds
+BAUD_RATE = 460800
 
-def print_bytes(buff, begin:int = 18, end:int = 10):
+
+def print_bytes(buff, begin: int = 18, end: int = 10):
     if buff is None:
         return None
     if len(buff) > 20:
         return f"{buff[0:begin]} ... {buff[-end:]}"
     return f"{buff}"
 
+
 class LoupedeckLive(Loupedeck):
 
-
-    def __init__(self, path:str, baudrate:int = 460800, timeout:int = READING_TIMEOUT, auto_start:bool = True):
+    def __init__(self, path: str, baudrate: int = BAUD_RATE, timeout: int = READING_TIMEOUT, auto_start: bool = True):
         Loupedeck.__init__(self)
 
         self.path = path
@@ -65,6 +61,9 @@ class LoupedeckLive(Loupedeck):
         }
 
         self.get_timeout = 1  # seconds
+
+        if not self.is_loupedeck():
+            return None
 
         self.init()
 
@@ -97,23 +96,12 @@ class LoupedeckLive(Loupedeck):
         }
 
     def init(self):
-        self.init_ws()
-        if self.auto_start:
-            self.start()
-            self.info()  # this is more to test it is working...
-
-    def init_ws(self):
-        self.send(WS_UPGRADE_HEADER, raw=True)
-        while True and not self.inited:
-            raw_byte = self.connection.readline()
-            logger.debug(raw_byte)
-            if raw_byte == b"\r\n":  # got entire WS_UPGRADE_RESPONSE
-                self.inited = True
-        logger.debug(f"init_ws: inited")
+        self.start()
+        self.info()  # this is more to test it is working...
+        logger.debug(f"init: inited")
 
     def info(self):
         if self.connection is not None:
-            logger.info(f"{__NAME__}: {__version__}")
             logger.info(f"Device: {self.path}")
             self.get_serial = threading.Event()
             self.do_action(HEADERS["SERIAL_OUT"], track=True)
@@ -121,7 +109,7 @@ class LoupedeckLive(Loupedeck):
             if not self.get_serial.wait(10):
                 logger.debug(f"info: could not get serial number")
 
-            time.sleep(4 * self.get_timeout) # give time to get answers
+            time.sleep(4 * self.get_timeout)  # give time to get answers
 
     def id(self):
         return self.serial
@@ -138,44 +126,11 @@ class LoupedeckLive(Loupedeck):
         return ["left", "right"] + list(range(self.key_count()))
 
     # #########################################@
-    # Serial Connection
-    #
-    def send(self, buff, raw = False):
-        """
-        Send buffer to device
-
-        :param      buffer:  The buffer
-        :type       buffer:  { type_description }
-        """
-        # logger.debug(f"send: to send: len={len(buff)}, raw={raw}, {print_bytes(buff)}")
-        if not raw:
-            prep = None
-            if len(buff) > 0x80:
-                prep = bytearray(14)
-                prep[0] = 0x82
-                prep[1] = 0xff
-                buff_len = len(buff)
-                prep[6:10] = buff_len.to_bytes(4, BIG_ENDIAN)
-            else:
-                prep = bytearray(6)
-                prep[0] = 0x82
-                prep[1] = 0x80 + len(buff)
-                # prep.insert(2, buff_length.to_bytes(4, "big", False))
-            # logger.debug(f"send: PREP: len={len(buff)}: {prep}")
-            with self:
-                self.connection.write(prep)
-                self.connection.write(buff)
-        else:
-            with self:
-                # logger.debug(f"send: buff: len={len(buff)}, {print_bytes(buff)}") # {buff},
-                self.connection.write(buff)
-
-    # #########################################@
     # Threading
     #
     def _read_serial(self):
 
-        def magic_byte_length_parser(chunk, magicByte = 0x82):
+        def magic_byte_length_parser(chunk, magicByte=0x82):
             """
             Build local _buffer and scan it for complete messages.
             Enqueue messages (responses) when reconstituted.
@@ -201,11 +156,13 @@ class LoupedeckLive(Loupedeck):
                 expectedEnd = position + nextLength + 2
                 if len(self._buffer) < expectedEnd:
                     if trace:
-                        logger.debug(f"magic: not enough bytes for message ({len(self._buffer)}, exp={expectedEnd}), waiting for more")
+                        logger.debug(
+                            f"magic: not enough bytes for message ({len(self._buffer)}, exp={expectedEnd}), waiting for more")
                     break
                 if trace:
-                    logger.debug(f"magic: message from {position + 2} to {expectedEnd} (len={nextLength}), enqueueing ({self._messages.qsize()})")
-                self._messages.put(self._buffer[position+2:expectedEnd])
+                    logger.debug(
+                        f"magic: message from {position + 2} to {expectedEnd} (len={nextLength}), enqueueing ({self._messages.qsize()})")
+                self._messages.put(self._buffer[position + 2:expectedEnd])
                 self._buffer = self._buffer[expectedEnd:]
                 position = self._buffer.find(magicByte)
 
@@ -230,7 +187,6 @@ class LoupedeckLive(Loupedeck):
 
         logger.debug("_read_serial: terminated")
 
-
     def _process_messages(self):
 
         logger.debug("_process_messages: starting")
@@ -246,7 +202,8 @@ class LoupedeckLive(Loupedeck):
                     transaction_id = buff[2]
                     # logger.debug(f"_process_messages: transaction_id {transaction_id}, header {header:x}")
                     response = handler(buff[3:]) if handler is not None else buff
-                    resolver = self.pendingTransactions[transaction_id] if transaction_id in self.pendingTransactions else None
+                    resolver = self.pendingTransactions[
+                        transaction_id] if transaction_id in self.pendingTransactions else None
                     if resolver is not None:
                         resolver(transaction_id, response)
                     else:
@@ -254,7 +211,7 @@ class LoupedeckLive(Loupedeck):
                 except:
                     logger.error(f"_process_messages: exception:", exc_info=1)
                     logger.error(f"_process_messages: resuming")
-            except: # timeout, continue while self.process_running==True
+            except:  # timeout, continue while self.process_running==True
                 pass
                 # logger.debug(f"_process_messages: timed out, continuing")
 
@@ -299,9 +256,9 @@ class LoupedeckLive(Loupedeck):
         self.process_running = False
         logger.info("stop: requested threads to stop, waiting..")
         # self._messages.put("__STOP__")
-        if not self.reading_finished.wait(timeout=2*READING_TIMEOUT):   # sloppy but ok.
+        if not self.reading_finished.wait(timeout=2 * READING_TIMEOUT):  # sloppy but ok.
             logger.warning("stop: reader thread did not finish cleanly")
-        if not self.process_finished.wait(timeout=2*self.get_timeout):
+        if not self.process_finished.wait(timeout=2 * self.get_timeout):
             logger.warning("stop: reader thread did not finish cleanly")
 
         logger.info("stop: ..stopped")
@@ -309,7 +266,7 @@ class LoupedeckLive(Loupedeck):
     # #########################################@
     # Callbacks
     #
-    def do_action(self, action, data:bytearray = None, track:bool = False):
+    def do_action(self, action, data: bytearray = None, track: bool = False):
         if not self.inited:
             logger.warning(f"do_action: not started")
             return
@@ -321,7 +278,7 @@ class LoupedeckLive(Loupedeck):
         # logger.debug(f"do_action: {action:04x}, {print_bytes(data)}")
         self.transaction_id = (self.transaction_id + 1) % MAX_TRANSACTIONS
         if self.transaction_id == 0:  # Skip transaction ID's of zero since the device seems to ignore them
-             self.transaction_id = self.transaction_id + 1
+            self.transaction_id = self.transaction_id + 1
         header = action.to_bytes(2, BIG_ENDIAN) + self.transaction_id.to_bytes(1, BIG_ENDIAN)
         # logger.debug(f"do_action: id={self.transaction_id}, header={header}, track={track}")
         payload = header
@@ -334,17 +291,17 @@ class LoupedeckLive(Loupedeck):
             self.pendingTransactions[self.transaction_id] = action
         self.send(payload)
 
-    def on_serial(self, serial:bytearray):
+    def on_serial(self, serial: bytearray):
         self.serial = serial.decode("ascii").strip()
         if self.get_serial is not None:
             self.get_serial.set()
         # logger.info(f"Serial number: {self.serial}")
 
-    def on_version(self, version:bytearray):
+    def on_version(self, version: bytearray):
         self.version = f"{version[0]}.{version[1]}.{version[2]}"
         # logger.info(f"Version: {self.version}")
 
-    def on_button(self, buff:bytearray):
+    def on_button(self, buff: bytearray):
         idx = BUTTONS[buff[0]]
         event = 'down' if buff[1] == 0x00 else 'up'
         if self.callback:
@@ -356,7 +313,7 @@ class LoupedeckLive(Loupedeck):
             })
         # logger.debug(f"on_button: {idx}, {event}")
 
-    def on_rotate(self, buff:bytearray):
+    def on_rotate(self, buff: bytearray):
         idx = BUTTONS[buff[0]]
         event = "right" if buff[1] == 0x01 else "left"
         if self.callback:
@@ -368,7 +325,7 @@ class LoupedeckLive(Loupedeck):
             })
         # logger.debug(f"on_rotate: {idx}, {event}")
 
-    def on_touch(self, buff:bytearray, event="touchmove"):
+    def on_touch(self, buff: bytearray, event="touchmove"):
         x = int.from_bytes(buff[1:3], BIG_ENDIAN)
         y = int.from_bytes(buff[3:5], BIG_ENDIAN)
         idx = buff[5]
@@ -408,13 +365,13 @@ class LoupedeckLive(Loupedeck):
 
         # logger.debug(f"on_touch: {event}, {buff}")
 
-    def on_touch_end(self, buff:bytearray):
+    def on_touch_end(self, buff: bytearray):
         self.on_touch(buff, event="touchend")
 
-    def on_tick(self, buff:bytearray):
+    def on_tick(self, buff: bytearray):
         logger.debug(f"on_tick: {buff}")
 
-    def on_default_callback(self, transaction_id: int, response:bytearray):
+    def on_default_callback(self, transaction_id: int, response: bytearray):
         # logger.debug(f"on_default_callback: {transaction_id}: {response}")
         self.pendingTransactions[transaction_id] = None
 
@@ -436,7 +393,7 @@ class LoupedeckLive(Loupedeck):
         """
         Set brightness, from 0 (dark) to 100.
         """
-        brightness = math.floor(brightness/10)
+        brightness = math.floor(brightness / 10)
         if brightness < 1:
             logger.warning(f"set_brightness: brightness set to 0")
             brightness = 0
@@ -445,18 +402,22 @@ class LoupedeckLive(Loupedeck):
         self.do_action(HEADERS["SET_BRIGHTNESS"], brightness.to_bytes(1, BIG_ENDIAN))
         # logger.debug(f"set_brightness: sent {brightness}")
 
-    def set_button_color(self, name: str, color: tuple):
+    def set_button_color(self, name: str, color: tuple or str):
         keys = list(filter(lambda k: BUTTONS[k] == name, BUTTONS))
         if len(keys) != 1:
             logger.info(f"set_button_color: invalid button key {name}")
             return
         key = keys[0]
-        (r, g, b) = color
+
+        if type(color) is str:
+            (r, g, b) = ImageColor.getrgb(color)
+        else:
+            (r, g, b) = color
         data = bytearray([key, r, g, b])
         self.do_action(HEADERS["SET_COLOR"], data)
         # logger.debug(f"set_button_color: sent {name}, {color}")
 
-    def vibrate(self, pattern = "SHORT"):
+    def vibrate(self, pattern="SHORT"):
         if pattern not in HAPTIC.keys():
             logger.error(f"vibrate: invalid pattern {pattern}")
             return
@@ -465,12 +426,13 @@ class LoupedeckLive(Loupedeck):
 
     # Image display functions
     #
-    def refresh(self, display:int):
+    def refresh(self, display: int):
         display_info = DISPLAYS[display]
         self.do_action(HEADERS["DRAW"], display_info["id"], track=True)
         # logger.debug("refresh: refreshed")
 
-    def draw_buffer(self, buff, display:str, width: int = None, height: int = None, x:int = 0, y:int = 0, auto_refresh:bool = True):
+    def draw_buffer(self, buff, display: str, width: int = None, height: int = None, x: int = 0, y: int = 0,
+                    auto_refresh: bool = True):
         display_info = DISPLAYS[display]
         if width is None:
             width = display_info["width"]
@@ -493,14 +455,15 @@ class LoupedeckLive(Loupedeck):
         if auto_refresh:
             self.refresh(display)
 
-    def draw_image(self, image, display:str, width: int = None, height: int = None, x:int = 0, y:int = 0, auto_refresh:bool = True):
+    def draw_image(self, image, display: str, width: int = None, height: int = None, x: int = 0, y: int = 0,
+                   auto_refresh: bool = True):
         buff = PILHelper.to_native_format(display, image)
         self.draw_buffer(buff, display=display, width=width, height=height, x=x, y=y, auto_refresh=auto_refresh)
 
-    def draw_screen(self, image, display:str, auto_refresh:bool = True):
+    def draw_screen(self, image, display: str, auto_refresh: bool = True):
         if type(image) == bytearray:
             self.draw_buffer(image, display=display, auto_refresh=auto_refresh)
-        else: # type(image) == PIL.Image.Image
+        else:  # type(image) == PIL.Image.Image
             self.draw_image(image, display=display, auto_refresh=auto_refresh)
 
     def set_key_image(self, idx: str, image):
@@ -531,7 +494,7 @@ class LoupedeckLive(Loupedeck):
 
         if type(image) == bytearray:
             self.draw_buffer(image, display=display, width=width, height=height, x=x, y=y, auto_refresh=True)
-        else: # type(image) == PIL.Image.Image
+        else:  # type(image) == PIL.Image.Image
             self.draw_image(image, display=display, width=width, height=height, x=x, y=y, auto_refresh=True)
 
     def reset(self):
@@ -543,17 +506,27 @@ class LoupedeckLive(Loupedeck):
         image = Image.new("RGBA", (60, BUTTON_SIZES["left"][1]), colors[1])
         self.draw_image(image, display="right", auto_refresh=True)
 
-
     # #########################################@
     # Development and testing
     #
     def test(self):
+        WAIT_TIME = 0.5
         self.vibrate("REV_FAST")
-        time.sleep(1)
+        time.sleep(WAIT_TIME)
         self.vibrate("LOW")
-        time.sleep(1)
+        time.sleep(WAIT_TIME)
         self.vibrate("LONG")
-        self.set_brightness(50)
+        time.sleep(WAIT_TIME)
+
+        for bright in range(0, 100, 10):
+            time.sleep(0.2)
+            self.set_brightness(bright)
+
+        for i in range(1, 7):
+            self.set_button_color(f"{i}", (00, 00, 101))
+            self.set_button_color(f"{i + 1}", (190, 00, 00))
+            time.sleep(WAIT_TIME)
+
         self.set_button_color("1", "red")
         self.set_button_color("2", "orange")
         self.set_button_color("3", "yellow")
@@ -565,13 +538,13 @@ class LoupedeckLive(Loupedeck):
 
     def test_image(self):
         # image = Image.new("RGBA", (360, 270), "cyan")
-        with open("yumi.jpg", "rb") as infile:
+        with open("Assets/yumi.jpg", "rb") as infile:
             image = Image.open(infile).convert("RGBA")
             self.draw_image(image, display="center")
-        with open("left.jpg", "rb") as infile:
+        with open("Assets/left.jpg", "rb") as infile:
             image = Image.open(infile).convert("RGBA")
             self.draw_image(image, display="left")
-        with open("right.jpg", "rb") as infile:
+        with open("Assets/right.jpg", "rb") as infile:
             image = Image.open(infile).convert("RGBA")
             self.draw_image(image, display="right")
         # image2 = Image.new("RGBA", (90, 90), "blue")
@@ -581,8 +554,11 @@ class LoupedeckLive(Loupedeck):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     devices = LoupedeckLive.list()
+
+
     def callback(msg):
         print(f"received {msg}")
+
 
     l = LoupedeckLive(path=devices[1], baudrate=256000, timeout=1)
     l.set_callback(callback)

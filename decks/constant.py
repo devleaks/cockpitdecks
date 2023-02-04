@@ -35,50 +35,6 @@ DEFAULT_LOGO = "logo.png"
 DATAREF_RPN = "dataref-rpn"
 
 
-def add_ext(name: str, ext: str):
-    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
-    narr = name.split(".")
-    if len(narr) < 2:  # has no extension
-        return name + "." + rext
-    nameext = narr[-1]
-    if nameext.lower() == rext.lower():
-        return ".".join(narr[:-1]) + "." + rext  # force extension to what is should
-    else:  # did not finish with extention, so add it
-        return name + "." + rext  # force extension to what is should
-
-def has_ext(name: str, ext: str):
-    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
-    narr = name.split(".")
-    return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
-
-def convert_color(instr):
-    # convert a string (1, 2, 3) to a tuple of integers.
-    # (Could be extended and generalized with ast.literal_eval...)
-    if type(instr) != str:
-        return instr  # (255, 7, 2)
-    if "," in instr:  # "(255, 7, 2)"
-        a = instr.replace("(", "").replace(")", "").split(",")
-        return tuple([int(e) for e in a])
-    return instr  # white, blue...
-
-def make_icon_name(top_txt, top_color, bot_txt, bot_color, bot_framed=False):
-    r = [top_txt.upper(), top_color.upper(), bot_txt.upper()]
-    if bot_framed:
-        r.append("FR")
-    r.append(bot_color.upper())
-    return "_".join(r)
-
-def print_stack(log, n:int = 3):
-    # print_stack<-caller<-entry, so len(stack()) >= 3.
-    n = min(n + 2, len(stack()))
-    s = ":"
-    for i in range(2,n):
-        f = os.path.basename(stack()[i].filename).replace(".py", "")
-        s = s + " <- " + f + "." + stack()[i].function + f"({stack()[i].lineno})"
-    log.debug(f"{stack()[1].function}{s}")
-
-
-
 # #############################################################
 # Constants for Loupedeck Live
 #

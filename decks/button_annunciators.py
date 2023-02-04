@@ -10,8 +10,10 @@ import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
-from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, convert_color, print_stack
+from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS
 from .button_core import Button
+from .color import convert_color, light_off
+
 from .rpc import RPC
 
 logger = logging.getLogger("AnnunciatorButton")
@@ -103,7 +105,6 @@ class AnnunciatorButton(Button):
         """
         Complement button datarefs with annunciator special lit datarefs
         """
-        # print_stack(logger)
         if self.annunciator_datarefs is not None:
             # logger.debug(f"get_annunciator_datarefs: button {self.name}: returned from cache")
             return self.annunciator_datarefs
@@ -263,16 +264,6 @@ class AnnunciatorButton(Button):
         DOT_RADIUS = ICON_SIZE / 16
         SEAL_WIDTH = 8
         SQUARE = self.has_option("square")
-
-        def light_off(color, lightness: float = LIGHT_OFF_BRIGHTNESS / 100):
-            # Darkens (or lighten) a color
-            if color.startswith("("):
-                color = convert_color(color)
-            if type(color) == str:
-                color = ImageColor.getrgb(color)
-            a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
-            a[1] = lightness
-            return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
 
         def get_color(disp:dict, lit: bool):
             color = disp.get("color")

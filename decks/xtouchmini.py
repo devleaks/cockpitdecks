@@ -11,7 +11,6 @@ from .button import XTOUCH_MINI_BUTTON_TYPES, Knob
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW
-from .constant import print_stack
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
@@ -32,6 +31,11 @@ class XTouchMini(Deck):
         self.load_default_page()
         self.load()
         self.init()
+
+    def valid_indices(self):
+        encoders = [f"e{i}" for i in range(8)]
+        buttons = [str(i) for i in range(16)]
+        return encoders + buttons + ["A", "B", "slider"]
 
     def load_default_page(self):
         # Add index 0 only button:

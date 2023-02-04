@@ -6,7 +6,7 @@ import random
 
 from PIL import ImageDraw, ImageFont
 
-from .constant import convert_color
+from .color import convert_color
 from .button_core import ButtonPush
 
 

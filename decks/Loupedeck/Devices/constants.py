@@ -8,7 +8,15 @@ Upgrade: websocket
 Sec-WebSocket-Key: 123abc
 
 """
-WS_UPGRADE_RESPONSE = 'HTTP/1.1'
+
+WS_UPGRADE_RESPONSE = [
+    b'HTTP/1.1 101 Switching Protocols\r\n',
+    b'Upgrade: websocket\r\n',
+    b'Connection: Upgrade\r\n',
+    b'Sec-WebSocket-Accept: ALtlZo9FMEUEQleXJmq++ukUQ1s=\r\n',
+    b'\r\n'
+]
+
 
 # Various constants used by the Loupedeck firmware
 

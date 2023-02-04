@@ -19,10 +19,12 @@ import re
 import logging
 import threading
 import time
+from datetime import datetime
 
 from PIL import ImageDraw, ImageFont
 
-from .constant import DATAREF_RPN, add_ext, convert_color
+from .constant import DATAREF_RPN
+from .color import convert_color
 from .rpc import RPC
 
 
@@ -31,44 +33,16 @@ logger.setLevel(15)
 # logger.setLevel(logging.DEBUG)
 
 
-# ##########################################
-# ACTIVATION
-#
-class ButtonActivation:
-
-    def __init__(self, config: dict, button: "Button"):
-        self._config = config
-
-        # Working variables
-        self.pressed_count = 0
-        self.pressed = False
-        self.bounce_arr = None
-        self.bounce_idx = 0
-        self.current_value = None
-        self.previous_value = None
-        self.initial_value = config.get("initial-value")
-        self._first_value = None    # first value the button will get
-
-        # Commands
-        self.command = config.get("command")
-        self.commands = config.get("commands")
-        self.view = config.get("view")
-
-
-    def activate(self):
-        pass
-
-
-# ##########################################
-# RENDERING
-#
-class ButtonRepresentation:
-
-    def __init__(self, config: dict, button: "Button"):
-        self._config = config
-
-    def render(self):
-        pass
+def add_ext(name: str, ext: str):
+    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
+    narr = name.split(".")
+    if len(narr) < 2:  # has no extension
+        return name + "." + rext
+    nameext = narr[-1]
+    if nameext.lower() == rext.lower():
+        return ".".join(narr[:-1]) + "." + rext  # force extension to what is should
+    else:  # did not finish with extention, so add it
+        return name + "." + rext  # force extension to what is should
 
 
 # ##########################################
@@ -79,6 +53,10 @@ class Button:
     def __init__(self, config: dict, page: "Page"):
 
         # Definition and references
+        self._activation = None
+        self._representation = None
+        self._activations = {}
+        self._last_activate = None
         self._config = config
         self.page = page
         self.deck = page.deck
@@ -204,13 +182,25 @@ class Button:
         return ":".join([self.deck.name, self.page.name, self.name])
 
     def inspect(self):
+        """
+        Return information aout button status
+        """
         logger.info(f"Button {self.name} -- Statistics")
         logger.info("Datarefs:")
         for d in self.get_datarefs():
             v = self.get_dataref_value(d)
             logger.info(f"    {d} = {v}")
 
+    def register_activation(self, activation):
+        self._activation = activation
+
+    def register_representation(self, representation):
+        self._representation = representation
+
     def on_current_page(self):
+        """
+        Returns whether button is on current page
+        """
         return self.deck.current_page == self.page
 
     def init(self):
@@ -668,6 +658,13 @@ class Button:
                 self.xp.commandOnce(self.view)
         else:
             self.pressed = False
+
+        s = str(state)
+        if s in self._activations:
+            self._activations[s] = self._activations[s] + 1
+        else:
+            self._activations[s] = 1
+        self._last_activate = datetime.now().timestamp()
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def render(self):
@@ -702,6 +699,8 @@ class ButtonPage(Button):
         Button.__init__(self, config=config, page=page)
         if self.name is None:
             logger.error(f"__init__: page button has no name")
+        self.remote_deck = self._config.get("deck")
+
         # We cannot change page validity because target page might not already be loaded.
 
     def button_value(self):
@@ -712,11 +711,19 @@ class ButtonPage(Button):
 
     def activate(self, state: bool):
         super().activate(state)
+        if self.remote_deck is not None and self.remote_deck not in self.deck.cockpit.cockpit.keys():
+            logger.warning(f"activate: button {self.name}: deck not found {self.remote_deck}")
+            self.remote_deck = None
         if state:
-            if self.name == "back" or self.name in self.deck.pages.keys():
+            deck = self.deck
+            if self.remote_deck is not None and self.remote_deck in self.deck.cockpit.cockpit.keys():
+                deck = self.deck.cockpit.cockpit[self.remote_deck]
+
+            if self.name == "back" or self.name in deck.pages.keys():
                 logger.debug(f"activate: button {self.name} change page to {self.name}")
-                self.deck.change_page(self.name)
-                self.set_current_value(self.name)
+                new_name = deck.change_page(self.name)
+                if new_name is not None and self.name != "back":
+                    self.set_current_value(new_name)
             else:
                 logger.warning(f"activate: button {self.name}: page not found {self.name}")
 
