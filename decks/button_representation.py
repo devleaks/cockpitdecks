@@ -56,6 +56,21 @@ class Representation:
 
     def set_current_value(self, value):
         self.current_value = value
+
+    def clean(self):
+        logger.warning(f"clean: button {self.button.name}: no cleaning")
+        pass
+
+
+class Text(Representation):
+
+    def __init__(self, config: dict, button: "Button"):
+        Representation.__init__(self, config=config, button=button)
+
+        self.text = config.get("text")
+        self.texts = config.get("texts")
+
+
 #
 # ###############################
 # ICON TYPE REPRESENTATION
@@ -88,12 +103,13 @@ class Icon(Representation):
                 logger.warning(f"__init__: {type(self).__name__}: icon not found {self.icon}")
                 self.icon = None
 
+        # If we have no icon, but an icon-color, we create a uniform color icon and store it.
         if self.icon is None:
             self.icon_color = config.get("icon-color")
             if self.icon_color is not None:
-                self.icon = f"_default_{self.page.name}_{self.name}_icon.png"
-                deck.create_icon(self.icon, self.icon_color)
-                logger.warning(f"__init__: {type(self).__name__}: create colored icon {self.icon}={self.icon_color}")
+                self.icon = f"_default_{button.page.name}_{button.name}_icon.png"
+                deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
+                logger.warning(f"__init__: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
 
         # self.icon_color = convert_color(self.icon_color)
         # # the icon size varies for center "buttons" and left and right side "buttons".
@@ -113,18 +129,31 @@ class Icon(Representation):
         #     self.deck.icons[self.default_icon] = self.default_icon_image
         #     self.icon = self.default_icon
 
-    def render(self):
-        return self.icon
+    def is_valid(self):
+        if self.button is None:
+            logger.warning(f"is_valid: {type(self).__name__}: no button")
+            return False
+        if self.icon is not None:
+            if self.icon not in self.button.deck.icons.keys():
+                logger.warning(f"is_valid: {type(self).__name__}: icon {self.icon} not in deck")
+                return False
+            return True
+        if self.icon_color is not None:
+            return True
+        logger.warning(f"is_valid: {type(self).__name__}: no icon and no icon color")
+        return False
 
-    def get_font(self, fontname = None):
+
+    def render(self):
+        return self.get_image()
+
+    def get_font(self):
         """
         Helper function to get valid font, depending on button or global preferences
         """
-        if fontname is None:
-            fontname = self.label_font
+        fontname = self.label_font
         deck = self.button.deck
         fonts_available = deck.cockpit.fonts.keys()
-
 
         # 1. Tries button specific font
         if fontname is not None:
@@ -153,12 +182,11 @@ class Icon(Representation):
 
     def get_image_for_icon(self):
         image = None
-        icon = self.render()
         deck = self.button.deck
-        if icon in deck.icons.keys():  # look for properly sized image first...
-            image = deck.icons[icon]
-        elif icon in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
-            image = deck.cockpit.icons[icon]
+        if self.icon in deck.icons.keys():  # look for properly sized image first...
+            image = deck.icons[self.icon]
+        elif self.icon in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
+            image = deck.cockpit.icons[self.icon]
             image = deck.pil_helper.create_scaled_image("button", image)
         return image
 
@@ -173,7 +201,7 @@ class Icon(Representation):
         if image is not None:
             draw = None
             # Add label if any
-            label = self.button.get_label()
+            label = self.button.get_text(self._config)
             if label is not None:
                 fontname = self.get_font()
                 if fontname is None:
@@ -208,7 +236,7 @@ class Icon(Representation):
                               align=a,
                               fill=self.label_color)
             # Add little check mark if not valid/fake
-            if not self.is_valid() or self.has_option("placeholder"):
+            if not self.is_valid() or self.button.has_option("placeholder"):
                 if draw is None:  # no label
                     image = image.copy()  # we will add text over it
                     draw = ImageDraw.Draw(image)
@@ -223,7 +251,27 @@ class Icon(Representation):
         return None
 
     def clean(self):
-        return None
+        """
+        Removes icon from deck
+        (@todo: Should create a button with no activation and icon representation that has
+        default color/icon.)
+        """
+        icon = None
+        deck = self.button.deck
+        page = self.button.page
+        color = deck.cockpit_color
+        if page.empty_key_fill_icon in deck.icons.keys():
+            icon = deck.icons[page.empty_key_fill_icon]
+        elif page.empty_key_fill_color is not None:
+            icon = deck.create_icon_for_key(self.button, colors=page.empty_key_fill_color)
+        elif deck.cockpit_color is not None:
+            icon = deck.create_icon_for_key(self.button, colors=deck.cockpit_color)
+
+        if icon is not None:
+            image = deck.pil_helper.to_native_format(deck.device, icon)
+            deck.device.set_key_image(self.button._key, image)
+        else:
+            logger.warning(f"clean: {type(self).__name__}: no fill icon")
 
 
 class IconSide(Representation):
@@ -232,6 +280,19 @@ class IconSide(Representation):
         Representation.__init__(self, config=config, button=button)
 
         self.labels = config.get("labels")  # multi-labels
+
+    def is_dotted(self, label: str):
+        # check dataref status
+        # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
+        # AirbusFBW/SPDmanaged, and AirbusFBW/BaroStdCapt
+        hack = "AirbusFBW/BaroStdCapt" if label.upper() == "QNH" else f"AirbusFBW/{label}managed"
+        status = self.is_pushed()
+        if hack in self.xp.all_datarefs.keys():
+            # logger.debug(f"is_dotted: {hack} = {self.xp.all_datarefs[hack].value()}")
+            status = self.xp.all_datarefs[hack].value() == 1
+        else:
+            logger.warning(f"is_dotted: button {self.name} dataref {hack} not found")
+        return status
 
 
 
@@ -379,6 +440,7 @@ class Annunciator(Representation):
 REPRESENTATIONS = {
     "none": Representation,
     "icon": Icon,
+    "icon-color": Icon,
     "multi-icons": MultiIcons,
     "icon-animation": IconAnimation,
     "side": IconSide,

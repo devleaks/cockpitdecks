@@ -11,12 +11,12 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 from mergedeep import merge
 
 from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS
-from .button_core import Button
+from .button_representation import Representation
 from .color import convert_color, light_off
 
 from .rpc import RPC
 
-logger = logging.getLogger("AnnunciatorButton")
+logger = logging.getLogger("Annunciator")
 logger.setLevel(15)
 # logger.setLevel(logging.DEBUG)
 
@@ -45,7 +45,7 @@ def convert_color_string(instr) -> tuple:  # tuple of int 0-255
     return (128, 128, 128)
 
 
-class AnnunciatorButton(Button):
+class Annunciator(Representation):
 
     def __init__(self, config: dict, page: "Page"):
 
@@ -76,7 +76,7 @@ class AnnunciatorButton(Button):
         else:
             logger.error(f"__init__: button {self.name}: has no annunciator property")
 
-        Button.__init__(self, config=config, page=page)
+        Representation.__init__(self, config=config, page=page)
 
         if self.annunciator is not None and (config.get("icon") is not None or config.get("multi-icons") is not None):
             logger.warning(f"__init__: button {self.name}: has annunciator property with icon/multi-icons, ignoring icons")
@@ -314,7 +314,7 @@ class AnnunciatorButton(Button):
         def get_text(base: dict, text_format: str = None):
             """
             Returns text, if any, with substitution of datarefs if any.
-            Same as Button.get_label().
+            Same as Button.get_text().
             """
             label = base.get("text")
             DATAREF_RPN_STR = f"${{{DATAREF_RPN}}}"
@@ -562,34 +562,7 @@ class AnnunciatorButton(Button):
         return image
 
 
-class AnnunciatorButtonPush(AnnunciatorButton):
-    """
-    Execute command once when key pressed. Nothing is done when button is released.
-    """
-    def __init__(self, config: dict, page: "Page"):
-        AnnunciatorButton.__init__(self, config=config, page=page)
-
-    def is_valid(self):
-        if self.command is None:
-            logger.warning(f"is_valid: button {self.name} has no command")
-            if not self.has_option("counter"):
-                logger.warning(f"is_valid: button {self.name} has no command or counter option")
-                return False
-        return super().is_valid()
-
-    def activate(self, state: bool):
-        # logger.debug(f"ButtonPush::activate: button {self.name}: {state}")
-        super().activate(state)
-        if state:
-            if self.is_valid():
-                if self.command is not None:
-                    self.xp.commandOnce(self.command)
-                self.render()
-            else:
-                logger.warning(f"activate: button {self.name} is invalid")
-
-
-class AnnunciatorButtonAnimate(AnnunciatorButton):
+class AnnunciatorAnimate(Annunciator):
     """
     """
     def __init__(self, config: dict, page: "Page"):

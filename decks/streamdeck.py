@@ -61,11 +61,13 @@ class Streamdeck(Deck):
         numkeys = key_rows * key_cols
         return [str(i) for i in range(numkeys)]
 
-    def valid_activations(self):
+    def valid_activations(self, index = None):
+        # only one type of button
         return super().valid_activations() + ["push", "onoff", "updown", "longpress"]
 
-    def valid_representations(self):
-        return super().valid_representations() + ["none", "icon", "multi-icon", "icon-animation"]
+    def valid_representations(self, index = None):
+        # only one type of button
+        return super().valid_representations() + ["none", "icon", "icon-color", "multi-icon", "icon-animation", "annunciator"]
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
@@ -231,13 +233,13 @@ class Streamdeck(Deck):
         self.device.set_key_callback(self.key_change_callback)
         logger.info(f"start: deck {self.name} listening for key strokes")
 
-    def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
+    def render(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("set_key_image: no device")
+            logger.warning("render: no device")
             return
-        image = button.get_image()
+        image = button.get_representation()
         if image is None:
-            logger.warning("set_key_image: button returned no image, using default")
+            logger.warning("render: button returned no image, using default")
             image = self.icons[self.default_icon_name]
 
         with self.device:

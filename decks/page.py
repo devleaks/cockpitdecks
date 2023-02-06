@@ -26,9 +26,12 @@ class Page:
         self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.fill_empty = config.get("fill-empty-keys", deck.fill_empty)
+        self.empty_key_fill_color = config.get("empty-key-fill-color", deck.empty_key_fill_color)
+        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        self.empty_key_fill_icon = config.get("empty-key-fill-icon", deck.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", deck.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", deck.cockpit_color)
+        self.cockpit_color = convert_color(self.cockpit_color)
 
         self.buttons = {}
         self.datarefs = {}
@@ -85,16 +88,15 @@ class Page:
         for button in self.buttons.values():
             button.render()
             logger.debug(f"render: page {self.name}: button {button.name} rendered")
-        if self.fill_empty is not None:
-            logger.debug(f"render: page {self.name}: fill empty keys {self.fill_empty}")
+        if self.empty_key_fill_color is not None:
+            logger.debug(f"render: page {self.name}: fill empty keys {self.empty_key_fill_color}")
             for key in self.deck.available_keys:
                 if key not in self.buttons.keys():
                     icon = None
-                    if self.fill_empty.startswith("(") and self.fill_empty.endswith(")"):
-                        colors = convert_color(self.fill_empty)
-                        icon = self.deck.create_icon_for_key(key, colors=colors)
-                    elif self.fill_empty in self.deck.icons.keys():
-                        icon = self.deck.icons[self.fill_empty]
+                    if self.empty_key_fill_icon in self.deck.icons.keys():
+                        icon = self.deck.icons[self.empty_key_fill_icon]
+                    elif self.empty_key_fill_color is not None:
+                        icon = self.deck.create_icon_for_key(key, colors=self.empty_key_fill_color)
                     if icon is not None:
                         image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                         self.deck.device.set_key_image(key, image)
@@ -105,21 +107,5 @@ class Page:
         """
         Ask each button to stop rendering and clean its mess.
         """
-        fill_empty = self.fill_empty if self.fill_empty is not None else "(0, 0, 0)"
-        colors = None
-        if fill_empty.startswith("(") and fill_empty.endswith(")"):
-            colors = convert_color(fill_empty)
-
-        for key, button in self.buttons.items():
-            button.clean()
-            if button.has_key_image():
-                icon = None
-                if colors is not None:
-                    icon = self.deck.create_icon_for_key(key, colors=colors)
-                elif self.fill_empty in self.deck.icons.keys():
-                    icon = self.deck.icons[self.fill_empty]
-                if icon is not None:
-                    image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
-                    self.deck.device.set_key_image(key, image)
-                else:
-                    logger.warning(f"clean: page {self.name}: no fill icon")
+        for button in self.buttons.values():
+            button.clean()  # knows how to clean itself

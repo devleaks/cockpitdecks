@@ -15,7 +15,7 @@ from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
-from .color import convert_color
+from .color import convert_color, is_integer
 from .button import Button
 from .page import Page
 
@@ -31,7 +31,6 @@ VALID_STATE = {
     "left": 2,
     "right": 3
 }
-
 
 class Loupedeck(Deck):
     """
@@ -63,11 +62,31 @@ class Loupedeck(Deck):
         buttons = [f"b{i}" for i in range(8)]
         return encoders + keys + buttons + ["left", "right"]
 
-    def valid_activations(self):
+    def valid_activations(self, index = None):
+        if index is not None:
+            if index in self.valid_indices():
+                if index.startswith("knob"):
+                    return ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+                if index.startswith("b") or is_integer(index):
+                    return ["push", "onoff", "updown", "longpress"]
+            else:
+                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
+                return []
         return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
 
-    def valid_representations(self):
-        return super().valid_representations() + ["icon", "multi-icon", "icon-animation", "side", "colored-led"]
+    def valid_representations(self, index = None):
+        if index is not None:
+            if index in self.valid_indices():
+                if index.startswith("knob"):
+                    return []
+                if index.startswith("b"):
+                    return ["colored-led"]
+                if is_integer(index):
+                    return ["icon", "multi-icon", "icon-animation", "side", "annunciator"]
+            else:
+                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
+                return []
+        return super().valid_representations() + ["icon", "multi-icon", "icon-animation", "side", "colored-led", "annunciator"]
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
@@ -224,9 +243,10 @@ class Loupedeck(Deck):
     #         logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
 
     def create_icon_for_key(self, button, colors):
-        if button not in ["full", "center", "left", "right"]:
-            button = "button"
-        return self.pil_helper.create_image(deck=button, background=colors)
+        b = button.index
+        if b not in ["full", "center", "left", "right"]:
+            b = "button"
+        return self.pil_helper.create_image(deck=b, background=colors)
 
     def make_icon_for_device(self):
         """

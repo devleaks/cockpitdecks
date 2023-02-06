@@ -134,13 +134,13 @@ class LoadPage(Activation):
             if self.remote_deck is not None and self.remote_deck in self.button.deck.cockpit.cockpit.keys():
                 deck = self.button.deck.cockpit.cockpit[self.remote_deck]
 
-            if self.name == "back" or self.name in deck.pages.keys():
-                logger.debug(f"activate: {type(self).__name__} change page to {self.name}")
-                new_name = deck.change_page(self.name)
-                if new_name is not None and self.name != "back":
+            if self.page == "back" or self.page in deck.pages.keys():
+                logger.debug(f"activate: {type(self).__name__} change page to {self.page}")
+                new_name = deck.change_page(self.page)
+                if new_name is not None and self.page != "back":
                     self.set_current_value(new_name)
             else:
-                logger.warning(f"activate: {type(self).__name__}: page not found {self.name}")
+                logger.warning(f"activate: {type(self).__name__}: page not found {self.page}")
 
 
 class Reload(Activation):
@@ -614,7 +614,7 @@ class Swipe(Activation):
 #
 ACTIVATIONS = {
     "none": Activation,
-    "load": LoadPage,
+    "page": LoadPage,
     "reload": Reload,
     "inspect": Inspect,
     "stop": Stop,

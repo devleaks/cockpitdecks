@@ -11,6 +11,14 @@ logger = logging.getLogger("Color")
 DEFAULT_COLOR = (128, 128, 128)
 
 
+def is_integer(s):
+    if type(s) == int:
+        return True
+    if type(s) == str:
+        return s.isdigit() or (s.startswith('-') and s[1:].isdigit())
+    return False
+
+
 def convert_color(instr):
     # process either a color name or a color tuple as a string "(1, 2, 3)"
     # and returns a tuple of 3 or 4 intergers in range [0,255].

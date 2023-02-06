@@ -10,6 +10,7 @@ from .page import Page
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .constant import YAML_BUTTONS_KW
+from .color import is_integer
 
 from .button import Button
 
@@ -38,10 +39,32 @@ class XTouchMini(Deck):
         buttons = [str(i) for i in range(16)]
         return encoders + buttons + ["A", "B", "slider"]
 
-    def valid_activations(self):
-        return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+    def valid_activations(self, index = None):
+        if index is not None:
+            if index in self.valid_indices():
+                if index.startswith("e"):
+                    return ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+                if is_integer(index) or index in ["A", "B"]:
+                    return ["push", "onoff", "updown", "longpress"]
+                if index == "slider":
+                    return ["slider"]
+            else:
+                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
+                return []
+        return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob", "slider"]
 
-    def valid_representations(self):
+    def valid_representations(self, index = None):
+        if index is not None:
+            if index in self.valid_indices():
+                if index.startswith("e"):
+                    return ["multi-leds"]
+                if is_integer(index) or index in ["A", "B"]:
+                    return ["led"]
+                if index == "slider":
+                    return []
+            else:
+                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
+                return []
         return super().valid_representations() + ["led", "multi-leds"]
 
     def load_default_page(self):

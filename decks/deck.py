@@ -45,7 +45,9 @@ class Deck:
         self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.fill_empty = config.get("fill-empty-keys", cockpit.fill_empty)
+        self.empty_key_fill_color = config.get("empty-key-fill-color", cockpit.empty_key_fill_color)
+        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        self.empty_key_fill_icon = config.get("empty-key-fill-icon", cockpit.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", cockpit.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", cockpit.cockpit_color)
         self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
@@ -120,10 +122,10 @@ class Deck:
     def valid_indices(self):
         return []
 
-    def valid_activations(self):
-        return ["none"] + ["load", "reload", "inspect", "stop"]
+    def valid_activations(self, index = None):
+        return ["none"] + ["page", "reload", "inspect", "stop"]
 
-    def valid_representations(self):
+    def valid_representations(self, index = None):
         return ["none"]
 
     def load(self):
@@ -144,63 +146,61 @@ class Deck:
         for p in pages:
             if p == CONFIG_FILE:
                 self.load_layout_config(os.path.join(dn, p))
-            elif p.endswith("yaml") or p.endswith("yml"):
-                name = ".".join(p.split(".")[:-1])  # remove extension from filename
+            elif p.endswith(".yaml") or p.endswith(".yml"):
                 fn = os.path.join(dn, p)
+                # if os.path.exists(fn):  # we know the file should exists...
+                with open(fn, "r") as fp:
+                    page_config = yaml.safe_load(fp)
 
-                if os.path.exists(fn):
-                    with open(fn, "r") as fp:
-                        page_config = yaml.safe_load(fp)
+                    name = ".".join(p.split(".")[:-1])  # build default page name, remove extension from filename
+                    if "name" in page_config:
+                        name = page_config["name"]
 
-                        if "name" in page_config:
-                            name = page_config["name"]
+                    if name in self.pages.keys():
+                        logger.warning(f"load: page {name}: duplicate name, ignored")
+                        continue
 
-                        if name in self.pages.keys():
-                            logger.warning(f"load: page {name}: duplicate name, ignored")
+                    if not YAML_BUTTONS_KW in page_config:
+                        logger.error(f"load: {name} has no button definition '{YAML_BUTTONS_KW}', ignoring")
+                        continue
+
+                    logger.debug(f"load: loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
+                    this_page = Page(name, page_config, self)
+                    self.pages[name] = this_page
+
+                    # Page buttons
+                    for a in page_config[YAML_BUTTONS_KW]:
+                        button = None
+
+                        # Where to place the button
+                        idx = Button.guess_index(a)
+                        if idx is None:
+                            logger.error(f"load: page {name}: button {a} has no index, ignoring")
+                            continue
+                        if str(idx) not in self.valid_indices():
+                            logger.error(f"load: page {name}: button {a} has invalid index '{idx}', ignoring")
                             continue
 
-                        logger.debug(f"load: loaded page {name} (from file {fn.replace(self.cockpit.acpath, '... ')}), adding..")
-
-                        if not YAML_BUTTONS_KW in page_config:
-                            logger.error(f"load: {fn} has no action")
+                        # How the button will behave, it is does something
+                        bty = Button.guess_activation_type(a)
+                        if bty not in self.valid_activations(str(idx)):
+                            logger.error(f"load: page {name}: button {a} has invalid activation type {bty} for index {idx}, ignoring")
                             continue
 
-                        this_page = Page(name, page_config, self)
+                        # How the button will be represented, if it is
+                        bty = Button.guess_representation_type(a)
+                        if bty not in self.valid_representations(str(idx)):
+                            logger.error(f"load: page {name}: button {a} has invalid representation type {bty} for index {idx}, ignoring")
+                            continue
 
-                        this_page.fill_empty = page_config["fill-empty-keys"] if "fill-empty-keys" in page_config else self.fill_empty
-                        self.pages[name] = this_page
-
-                        for a in page_config[YAML_BUTTONS_KW]:
-                            button = None
-
-                            # Where to place the button
-                            idx = None
-                            if "index" in a:
-                                idx = a["index"]
-                                if idx not in self.valid_indices():
-                                    logger.error(f"load: page {name}: button {a} has invalid index {idx}, ignoring")
-                                    continue
-                            else:
-                                logger.error(f"load: page {name}: button {a} has no index, ignoring")
-                                continue
-
-                            # How the button will behave
-                            bty = None
-                            if "type" in a:
-                                bty = a["type"]
-                                if bty not in self.valid_activations():
-                                    logger.error(f"load: page {name}: button {a} has invalid type for {type(self).__name__} {bty}, ignoring")
-                                    continue
-                            else:
-                                logger.error(f"load: page {name}: button {a} has no type, ignoring")
-                                continue
-
-                            button = Button(config=a, page=this_page)
+                        button = Button(config=a, page=this_page)
+                        if button is not None:
                             this_page.add_button(idx, button)
+                            logger.debug(f"load: ..page {name} added button index {idx} {button.name}..")
 
-                        logger.info(f"load: ..page {name} added (from file {fn.replace(self.cockpit.acpath, '... ')})")
-                else:
-                    logger.warning(f"load: file {p} not found")
+                    logger.info(f"load: ..page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')})")
+                # else:
+                #     logger.warning(f"load: file {p} not found")
 
             else:  # not a yaml file
                 logger.debug(f"load: {dn}: ignoring file {p}")
@@ -308,12 +308,8 @@ class Deck:
                 return self.current_page.name
         return None
 
-
-
-    def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
-        pass
-
     def render(self, button: Button):
+        logger.warning(f"render: button {button.name} not rendered")
         pass
 
     def start(self):

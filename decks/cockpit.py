@@ -57,7 +57,8 @@ class Cockpit:
         self.icons = {}
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
-        self.fill_empty = None
+        self.empty_key_fill_color = None
+        self.empty_key_fill_icon = None
         self.annunciator_style = ANNUNCIATOR_STYLE
         self.cockpit_color = COCKPIT_COLOR
         self.init()
@@ -178,7 +179,7 @@ class Cockpit:
             self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
             self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
-            self.fill_empty = self.default_config.get("fill-empty-keys")
+            self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
             self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
 
         # 1. Creating default icon
@@ -257,7 +258,7 @@ class Cockpit:
                 self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
                 self.default_logo = config.get("default-wallpaper-logo", DEFAULT_LOGO)
                 self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
-                self.fill_empty = config.get("fill-empty-keys")
+                self.empty_key_fill_color = config.get("fill-empty-keys")
                 self.cockpit_color = config.get("cockpit-color", COCKPIT_COLOR)
 
                 if "decks" in config:
