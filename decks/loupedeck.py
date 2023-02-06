@@ -63,30 +63,36 @@ class Loupedeck(Deck):
         return encoders + keys + buttons + ["left", "right"]
 
     def valid_activations(self, index = None):
+        valid_pushencoder_icon = ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+        valid_colored_button = ["push", "onoff", "updown", "longpress"]
+
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("knob"):
-                    return ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+                    return valid_pushencoder_icon
                 if index.startswith("b") or is_integer(index):
-                    return ["push", "onoff", "updown", "longpress"]
+                    return valid_colored_button
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+        return set(super().valid_activations() + valid_pushencoder_icon + valid_colored_button)
 
     def valid_representations(self, index = None):
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animation", "annunciator"]
+        valid_colored_button = ["colored-led"]
+
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("knob"):
-                    return []
+                    return valid_key_icon
                 if index.startswith("b"):
                     return ["colored-led"]
                 if is_integer(index):
-                    return ["icon", "multi-icon", "icon-animation", "side", "annunciator"]
+                    return
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return super().valid_representations() + ["icon", "multi-icon", "icon-animation", "side", "colored-led", "annunciator"]
+        return set(super().valid_representations() + valid_key_icon + valid_colored_button)
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given

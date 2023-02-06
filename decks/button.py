@@ -22,7 +22,7 @@ from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
-logger.setLevel(15)
+# logger.setLevel(15)
 # logger.setLevel(logging.DEBUG)
 
 
@@ -38,36 +38,20 @@ class Button:
         self.page = page
         self.deck = page.deck
         self.xp = self.deck.cockpit.xp  # shortcut alias
-        self.name = config.get("name", f"{type(self).__name__}-{config['index']}")
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
+
+        self.name = config.get("name", self.id())
         self.num_index = None
         if type(self.index) == str:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
             if len(idxnum) > 0:
                 self.num_index = idxnum[0]
 
-        # What it will do and how it will appear
-        self._activation = None
-        atype = Button.guess_activation_type(config)
-        if atype is not None and atype in ACTIVATIONS:
-            self._activation = ACTIVATIONS[atype](config, self)
-            logger.debug(f"__init__: button {self.name} activation {atype}")
-        else:
-            logger.warning(f"__init__: button {self.name} has no activation")
-            self._activation = ACTIVATIONS["none"](config, self)
-
-        self._representation = None
-        rtype = Button.guess_representation_type(config)
-        if rtype is not None and rtype in REPRESENTATIONS:
-            self._representation = REPRESENTATIONS[rtype](config, self)
-            logger.debug(f"__init__: button {self.name} representation {rtype}")
-        else:
-            logger.warning(f"__init__: button {self.name} has no representation")
-            self._representation = REPRESENTATIONS["none"](config, self)
-
         # Working variables
+        self._first_value_not_saved = True
         self._first_value = None    # first value the button will get
+        self._last_state = None
         self.initial_value = config.get("initial-value")
         self.current_value = None
         self.previous_value = None
@@ -91,6 +75,25 @@ class Button:
         self.all_datarefs = self.get_datarefs() # cache them
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)   # when the button's page is loaded, we monitor these datarefs
+
+        # What it will do and how it will appear
+        self._activation = None
+        atype = Button.guess_activation_type(config)
+        if atype is not None and atype in ACTIVATIONS:
+            self._activation = ACTIVATIONS[atype](config, self)
+            logger.debug(f"__init__: button {self.name} activation {atype}")
+        else:
+            logger.warning(f"__init__: button {self.name} has no activation")
+            self._activation = ACTIVATIONS["none"](config, self)
+
+        self._representation = None
+        rtype = Button.guess_representation_type(config)
+        if rtype is not None and rtype in REPRESENTATIONS:
+            self._representation = REPRESENTATIONS[rtype](config, self)
+            logger.debug(f"__init__: button {self.name} representation {rtype}")
+        else:
+            logger.warning(f"__init__: button {self.name} has no representation")
+            self._representation = REPRESENTATIONS["none"](config, self)
 
         self.init()
 
@@ -134,12 +137,10 @@ class Button:
         for d in self.get_datarefs():
             v = self.get_dataref_value(d)
             logger.info(f"    {d} = {v}")
-
-    def register_activation(self, activation):
-        self._activation = activation
-
-    def register_representation(self, representation):
-        self._representation = representation
+        logger.info("Activation:")
+        self._activation.inspect()
+        logger.info("Representation:")
+        self._representation.inspect()
 
     def on_current_page(self):
         """
@@ -158,12 +159,11 @@ class Button:
         # test: we try to immediately get a first value
         logger.debug(f"init: button {self.name} setting initial value..")
         if self.initial_value is not None:
+            logger.debug(f"init: button {self.name} .. from initial-value")
             self.set_current_value(self.initial_value)
-            self._first_value = self.initial_value
         else:
+            logger.debug(f"init: button {self.name} .. from button_value")
             self.set_current_value(self.button_value())
-        if self._first_value is None and self.dataref is None and self.datarefs is None and self.dataref_rpn is None:  # won't get a value from datarefs
-            self._first_value = self.current_value
         logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
 
         if self.has_option("guarded"):
@@ -173,11 +173,10 @@ class Button:
         return self.guarded if self.guarded is not None else False
 
     def set_current_value(self, value):
+        if self._first_value_not_saved:
+            self._first_value = value
         self.previous_value = self.current_value
         self.current_value = value
-        # transfer changes in activation and representation
-        # activation knows where to get its value from and may fetch this button's current value.
-        self._representation.set_current_value(self._activation.get_current_value())
 
     def get_current_value(self):
         return self.current_value
@@ -420,9 +419,10 @@ class Button:
             return self._representation.part_values()
 
         # 5. Value is based on activation state:
-        logger.debug(f"button_value: button {self.name}: returning state value")
-        logger.debug(f"button_value: button {self.name}: datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
-        return self._activation.get_current_value()
+        self._last_state = self._activation.get_current_value()
+        logger.debug(f"button_value: button {self.name}: returning state value ({self._last_state})")
+        # logger.debug(f"button_value: button {self.name}: datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
+        return self._last_state
 
     # ##################################
     # External API
@@ -432,10 +432,9 @@ class Button:
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
         self.set_current_value(self.button_value())
-        if self._first_value is None:  # store first non None value received from datarefs
-            self._first_value = self.current_value
-        logger.debug(f"{self.name}: {self.previous_value} -> {self.current_value}")
-        self.render()
+        logger.debug(f"dataref_changed: {self.name}: {self.previous_value} -> {self.current_value}")
+        if self.value_has_changed():  # @todo: check this
+            self.render()
 
     def activate(self, state: bool):
         """
@@ -445,6 +444,7 @@ class Button:
         Also, removes guard if it was present. @todo: close guard
         """
         self._activation.activate(state)
+        self.dataref_changed(None)
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
     def get_representation(self):

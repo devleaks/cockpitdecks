@@ -2,7 +2,10 @@
 Button action and activation abstraction
 """
 import logging
+import yaml
 from datetime import datetime
+
+from .color import is_integer
 
 logger = logging.getLogger("Activation")
 # logger.setLevel(logging.DEBUG)
@@ -33,6 +36,7 @@ class Activation:
         self._view = config.get("view")  # Optional additional command, usually to set a view
                                         # but could be anything.
         # Working variables
+        self._first_value_not_saved = True
         self._first_value = None    # first value the button will get
         self._last_state = None
 
@@ -45,8 +49,11 @@ class Activation:
         self.previous_value = None
         self.current_value = None
 
-        self.button.register_activation(self)
-
+        if self.initial_value is not None:
+            self.current_value = self.initial_value
+            self._first_value = self.initial_value
+            self._first_value_not_saved = False
+            logger.debug(f"activate: button {self.button.name}: set initial value")
 
     def activate(self, state):
         """
@@ -64,6 +71,7 @@ class Activation:
             else:
                 self.activations_count[s] = 1
             self.last_activated = datetime.now().timestamp()
+            logger.debug(f"activate: button {self.button.name} activated")
 
             if self.guarded:            # just open it
                 self.guarded = False
@@ -72,7 +80,8 @@ class Activation:
 
             # not guarded, or guard open
             self.pressed = True
-            self.set_current_value(self.button.button_value())
+            if self.button.has_option("counter"):
+                self.set_current_value(self.activation_count)
         else:
             self.pressed = False
         # logger.debug(f"activate: {type(self).__name__} activated ({state}, {self.activation_count})")
@@ -83,15 +92,35 @@ class Activation:
                          f"current: {self.current_value}",
                          f"previous: {self.previous_value}"))
 
+    def inspect(self):
+        logger.info(f"{self.button.name}:{type(self).__name__}:")
+        logger.info(f"\n{yaml.dump(self._config)}")
+        logger.info(f"view: {self._view}")
+        logger.info(f"_first_value_not_saved: {self._first_value_not_saved}")
+        logger.info(f"first value: {self._first_value}")
+        logger.info(f"initial value: {self.initial_value}")
+
+        logger.info(f"last state: {self._last_state}")
+
+        logger.info(f"activation_count: {self.activation_count}")
+        logger.info(f"activations_count: {self.activations_count}")
+        logger.info(f"last_activated: {self.last_activated}")
+        logger.info(f"pressed: {self.pressed}")
+
+        logger.info(f"previous_value: {self.previous_value}")
+        logger.info(f"current_value: {self.current_value}")
+
     def set_current_value(self, value):
-        if self._first_value is None:  # never used, we initialize it
+        if self._first_value_not_saved:  # never used, we initialize it
             if self.initial_value is not None:
                 self.current_value = self.initial_value
-            self._first_value = self.current_value
+            self._first_value = value
+            self._first_value_not_saved = False
         self.previous_value = self.current_value
         self.current_value = value
 
     def get_current_value(self):
+        logger.debug(f"get_current_value: {self.current_value}")
         return self.current_value
 
     def is_valid(self):
@@ -236,14 +265,19 @@ class Longpress(Push):
 
         Push.__init__(self, config=config, button=button)
 
+    def is_valid(self):
+        return super().is_valid() and self.command is not None
+
     def activate(self, state):
-        if state:
-            if self.is_valid():
-                self.button.xp.commandBegin(self.command)
-        else:
-            if self.is_valid():
-                self.button.xp.commandEnd(self.command)
-            self.view()  # on release only
+        super().activate(state)
+        if self.is_valid():
+            if state:
+                if self.is_valid():
+                    self.button.xp.commandBegin(self.command)
+            else:
+                if self.is_valid():
+                    self.button.xp.commandEnd(self.command)
+                self.view()  # on release only
 
 
 class OnOff(Activation):
@@ -256,7 +290,12 @@ class OnOff(Activation):
         Activation.__init__(self, config=config, button=button)
 
         # Commands
-        self.commands = config.get("commands")
+        self.command = config.get("command")
+        self.commands = config.get("commands", [])
+        if len(self.commands) == 1 and self.command is None:
+            self.command = self.commands[0]
+        else:
+            logger.error(f"is_valid: button {type(self).__name__} must have at least one command")
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join((f"commands: {self.commands}",
@@ -264,7 +303,10 @@ class OnOff(Activation):
                 f"is_valid: {self.is_valid()}")
 
     def is_valid(self):
-        return super().is_valid() and len(self.commands) > 1
+        if self.command is None and len(self.commands) == 0:
+            logger.error(f"is_valid: button {type(self).__name__} must have at least one command")
+            return False
+        return super().is_valid()
 
     def is_on(self):
         return self.activation_count % 2 == 1
@@ -277,14 +319,15 @@ class OnOff(Activation):
 
     def activate(self, state):
         super().activate(state)
-        if self.is_valid():
-            if self.is_off():
-                self.button.xp.commandOnce(self.commands[0])
+        if state:
+            if self.is_valid():
+                if self.is_off():
+                    self.button.xp.commandOnce(self.commands[0])
+                else:
+                    self.button.commandOnce(self.commands[1])
+                self.view()
             else:
-                self.button.commandOnce(self.commands[1])
-            self.view()
-        else:
-            logger.warning(f"activate: button {self.button.name} is invalid")
+                logger.warning(f"activate: button {self.button.name} is invalid")
 
 
 class UpDown(Activation):
@@ -301,9 +344,18 @@ class UpDown(Activation):
         self.commands = config.get("commands")
 
         # Internal status
-        self.stops = self.option_value("stops", len(self.button.multi_icons))
-        self.bounce_arr = self.make_bounce_array(self.stops)
+        self.stops = None
+        stops = self.button.option_value("stops")
+        if stops is not None:
+            self.stops = int(stops)
+        self.bounce_arr = self.make_bounce_array(self.stops)  # convenient
         self.start_value = None
+        self.go_up = True
+
+        if self.initial_value is not None and is_integer(self.initial_value):
+            if self.initial_value < 0:
+                self.initial_value = abs(self.initial_value)
+                self.go_up = False # reverse direction
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join((f"commands: {self.commands}",
@@ -313,6 +365,9 @@ class UpDown(Activation):
     def is_valid(self):
         if self.commands is None or len(self.commands) < 2:
             logger.error(f"is_valid: button {self.button.name} must have at least 2 commands")
+            return False
+        if self.stops is None or self.stops == 0:
+            logger.error(f"is_valid: button {self.button.name} must have a number of stops")
             return False
         return True
 
@@ -325,17 +380,26 @@ class UpDown(Activation):
         #     else:
         #         self.start_value = 0
         if state:
-            if self.start_value is None:
-                self.start_value = int(self.current_value) if self.current_value is not None else 0
-                self.bounce_idx = self.start_value
-            value = self.bounce_arr[(self.start_value + self.activation_count) % len(self.bounce_arr)]
+            if self._first_value_not_saved:
+                if self.initial_value is None:
+                    self._first_value = 0
+                    self.current_value = 0
+                else:
+                    self._first_value = int(self.initial_value)
+                    self.current_value = int(self.initial_value)
+                self._first_value_not_saved = False
+
+            self.current_value = self.bounce_arr[(self._first_value + self.activation_count) % len(self.bounce_arr)]
             # logger.debug(f"activate: counter={self.start_value + self.activation_count} = start={self.start_value} + press={self.activation_count} curr={self.current_value} last={self.bounce_idx} value={value} arr={self.bounce_arr} dir={value > self.bounce_idx}")
             if self.is_valid():
-                if value > self.bounce_idx:
+                if self.go_up:
                     self.button.xp.commandOnce(self.commands[0])  # up
+                    if self.current_value == (len(self.bounce_arr) - 1):
+                        self.go_up = False
                 else:
                     self.button.xp.commandOnce(self.commands[1])  # down
-                self.bounce_idx = value
+                    if self.current_value == 0:
+                        self.go_up = True
             else:
                 logger.warning(f"activate: button {self.button.name} is invalid")
 
@@ -487,13 +551,6 @@ class EncoderOnOff(OnOff):
     """
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
-
-        # Commands
-        self.commands = config.get("commands")
-        if len(self.commands) > 0:
-            self.command = self.commands[0]
-        else:
-            logger.error(f"is_valid: button {type(self).__name__} must have at least one command")
 
         # Internal status
         self._turns = 0

@@ -63,11 +63,13 @@ class Streamdeck(Deck):
 
     def valid_activations(self, index = None):
         # only one type of button
-        return super().valid_activations() + ["push", "onoff", "updown", "longpress"]
+        valid_key_icon = ["push", "onoff", "updown", "longpress"]
+        return super().valid_activations() + valid_key_icon
 
     def valid_representations(self, index = None):
         # only one type of button
-        return super().valid_representations() + ["none", "icon", "icon-color", "multi-icon", "icon-animation", "annunciator"]
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animation", "annunciator"]
+        return set(super().valid_representations() + valid_key_icon)
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given

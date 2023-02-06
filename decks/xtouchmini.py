@@ -40,32 +40,38 @@ class XTouchMini(Deck):
         return encoders + buttons + ["A", "B", "slider"]
 
     def valid_activations(self, index = None):
+        valid_pushencoder = ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+        valid_key = ["push", "onoff", "updown", "longpress"]
+        valid_slider = ["slider"]
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("e"):
-                    return ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
+                    return valid_pushencoder
                 if is_integer(index) or index in ["A", "B"]:
-                    return ["push", "onoff", "updown", "longpress"]
+                    return valid_key
                 if index == "slider":
                     return ["slider"]
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return super().valid_activations() + ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob", "slider"]
+        return set(super().valid_activations() + valid_pushencoder + valid_key + valid_slider)
 
     def valid_representations(self, index = None):
+        valid_pushencoder = ["multi-leds"]
+        valid_key = ["led"]
+        valid_slider = []
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("e"):
-                    return ["multi-leds"]
+                    return valid_pushencoder
                 if is_integer(index) or index in ["A", "B"]:
-                    return ["led"]
+                    return valid_key
                 if index == "slider":
-                    return []
+                    return valid_slider
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return super().valid_representations() + ["led", "multi-leds"]
+        return set(super().valid_representations() + valid_pushencoder + valid_key + valid_slider)
 
     def load_default_page(self):
         # Add index 0 only button:
