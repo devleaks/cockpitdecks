@@ -162,10 +162,10 @@ ANNUNCIATOR_DEFAULTS = {                # May be externalized (constant) one day
 }
 
 class ANNUNCIATOR_STYLES(Enum):
-    KORRY = "k"
-    VIVISUN = "v"
+    KORRY = "k"           # k(orry): backlit, glowing
+    VIVISUN = "v"         # v(ivisun): bright, sharp.
 
-ANNUNCIATOR_STYLE = "v"                 # k(orry): backlit, glowing, default | v(ivisun): bright, sharp.
+ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.VIVISUN
 
 
 

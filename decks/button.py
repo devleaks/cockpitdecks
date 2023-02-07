@@ -9,13 +9,13 @@ import re
 import logging
 import threading
 import time
+import yaml
 from datetime import datetime
 
 from PIL import ImageDraw, ImageFont
 
 from .button_activation import ACTIVATIONS
-from .button_representation import REPRESENTATIONS
-from .button_annunciators import Annunciator
+from .button_representation import REPRESENTATIONS, Annunciator
 from .constant import DATAREF_RPN
 from .color import convert_color
 from .rpc import RPC
@@ -105,6 +105,7 @@ class Button:
     def guess_activation_type(config):
         a = config.get("type")
         if a is None:
+            logger.debug(f"guess_activation_type: not type attribute, assuming 'none' type")
             a = "none"
         if a not in ACTIVATIONS.keys():
             logger.warning(f"guess_activation_type: invalid activation type {a} in {config}")
@@ -122,7 +123,7 @@ class Button:
         elif len(a) == 0:
             logger.warning(f"guess_representation_type: no represetation in {config}")
         else:
-            logger.warning(f"guess_representation_type: multiple represetation {a} in {config} which is not permitted")
+            logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")
         return "none"
 
     def id(self):
@@ -133,13 +134,14 @@ class Button:
         Return information aout button status
         """
         logger.info(f"Button {self.name} -- Statistics")
-        logger.info("Datarefs:")
+        logger.info(f"\n{yaml.dump(self._config)}")
+        logger.info("-- Datarefs:")
         for d in self.get_datarefs():
             v = self.get_dataref_value(d)
             logger.info(f"    {d} = {v}")
-        logger.info("Activation:")
+        logger.info("-- Activation:")
         self._activation.inspect()
-        logger.info("Representation:")
+        logger.info("-- Representation:")
         self._representation.inspect()
 
     def on_current_page(self):
@@ -416,7 +418,7 @@ class Button:
         # 4. Special cases (Annunciator)
         if isinstance(self._representation, Annunciator):
             logger.debug(f"button_value: button {self.name}: is Annunciator, returning part values")
-            return self._representation.part_values()
+            return self._representation.get_current_values()
 
         # 5. Value is based on activation state:
         self._last_state = self._activation.get_current_value()

@@ -41,26 +41,22 @@ class Representation:
         self._config = config
         self.button = button
 
+    def inspect(self):
+        logger.info(f"{self.button.name}:{type(self).__name__}:")
+        logger.info(f"is valid: {self.is_valid()}")
+
     def is_valid(self) -> bool:
         return True
 
-    def inspect(self):
-        logger.info(f"{self.button.name}:{type(self).__name__}:")
-        logger.info(f"\n{yaml.dump(self._config)}")
+    def get_current_value(self):
+        return self.button.get_current_value()
 
     def render(self):
         logger.debug(f"render: button {self.button.name}: {type(self).__name__} has no rendering")
         return None
 
-    def has_label(self) -> bool:
-        return self.label is not None
-
-    def get_current_value(self):
-        return self.button.get_current_value()
-
     def clean(self):
         logger.warning(f"clean: button {self.button.name}: no cleaning")
-        pass
 
 
 #
@@ -173,6 +169,9 @@ class Icon(Representation):
                 return deck.cockpit.fonts[fontname]
             else:
                 logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: button label font '{fontname}' not found")
+        else:
+            fontname = self.button.page.default_label_font
+            logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: not font, using default from page {fontname}")
 
         # 2. Tries deck default font
         if deck.default_label_font is not None and deck.default_label_font in fonts_available:
@@ -191,6 +190,7 @@ class Icon(Representation):
     def get_image_for_icon(self):
         image = None
         deck = self.button.deck
+        self.icon = add_ext(self.icon, "png")
         if self.icon in deck.icons.keys():  # look for properly sized image first...
             logger.info(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in deck")
             image = deck.icons[self.icon]
@@ -334,7 +334,12 @@ class MultiIcons(Icon):
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
-        self.multi_icons = config.get("multi-icons", [])
+        self.multi_icons = config.get("icon-animate")
+        if self.multi_icons is None:
+            self.multi_icons = config.get("multi-icons", [])
+        else:
+            logger.debug(f"__init__: button {self.button.name}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
+
         if len(self.multi_icons) > 0:
             for i in range(len(self.multi_icons)):
                 self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
@@ -368,7 +373,11 @@ class IconAnimation(MultiIcons):
     def __init__(self, config: dict, button: "Button"):
         MultiIcons.__init__(self, config=config, button=button)
 
-        self.speed = float(config("animation-speed", 1))
+        self.speed = float(config.get("animation-speed", 1))
+        self.icon_off = config.get("icon-off")
+
+        if self.icon_off is None and len(self.multi_icons) > 0:
+            self.icon_off = self.multi_icons[0]
 
         # Internal variables
         self.counter = 0
@@ -379,8 +388,9 @@ class IconAnimation(MultiIcons):
     def loop(self):
         self.finished = threading.Event()
         while self.running:
-            self.render()
+            self.button.render()
             self.counter = self.counter + 1
+            self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
             time.sleep(self.speed)
         self.finished.set()
 
@@ -392,29 +402,51 @@ class IconAnimation(MultiIcons):
         return value is not None and value != 0
 
     def anim_start(self):
+        """
+        Starts animation
+        """
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.name})"
+            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
             self.thread.start()
         else:
-            logger.warning(f"anim_start: button {self.name}: already started")
+            logger.warning(f"anim_start: button {self.button.name}: already started")
 
     def anim_stop(self):
+        """
+        Stops animation
+        """
         if self.running:
             self.running = False
             if not self.finished.wait(timeout=2*self.speed):
-                logger.warning(f"anim_stop: button {self.name}: did not get finished signal")
+                logger.warning(f"anim_stop: button {self.button.name}: did not get finished signal")
             self.render()
         else:
-            logger.debug(f"anim_stop: button {self.name}: already stopped")
+            logger.debug(f"anim_stop: button {self.button.name}: already stopped")
 
     def clean(self):
+        """
+        Stops animation and remove icon from deck
+        """
         self.anim_stop()
+        super().clean()
 
     def render(self):
+        """
+        Renders icon_off or current icon in list
+        """
         if self.is_valid():
-            return self.multi_icons[(self.counter % len(self.multi_icons))]
+            if self.should_run():
+                self.icon = self.multi_icons[(self.counter % len(self.multi_icons))]
+                if not self.running:
+                    self.anim_start()
+                return super().render()
+            else:
+                if self.running:
+                    self.anim_stop()
+                self.icon = self.icon_off
+                return super(MultiIcons, self).render()
         return None
 
 #
@@ -469,11 +501,7 @@ class MultiLEDs(Representation):
 # ANNUNCIATOR TYPE REPRESENTATION
 #
 #
-class Annunciator(Representation):
-
-    def __init__(self, config: dict, button: "Button"):
-        Representation.__init__(self, config=config, button=button)
-
+from .button_annunciator import Annunciator
 
 
 #
@@ -488,7 +516,7 @@ REPRESENTATIONS = {
     "icon-text": IconText,
     "icon-color": Icon,
     "multi-icons": MultiIcons,
-    "icon-animation": IconAnimation,
+    "icon-animate": IconAnimation,
     "side": IconSide,
     "led": LED,
     "colored-led": ColoredLED,

@@ -18,7 +18,6 @@ def is_integer(s):
         return s.isdigit() or (s.startswith('-') and s[1:].isdigit())
     return False
 
-
 def convert_color(instr):
     # process either a color name or a color tuple as a string "(1, 2, 3)"
     # and returns a tuple of 3 or 4 intergers in range [0,255].

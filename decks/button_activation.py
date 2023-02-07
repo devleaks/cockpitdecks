@@ -92,9 +92,12 @@ class Activation:
                          f"current: {self.current_value}",
                          f"previous: {self.previous_value}"))
 
+    def is_pressed(self):
+        return self.pressed
+
     def inspect(self):
         logger.info(f"{self.button.name}:{type(self).__name__}:")
-        logger.info(f"\n{yaml.dump(self._config)}")
+        logger.info(f"is_valid: {self.is_valid()}")
         logger.info(f"view: {self._view}")
         logger.info(f"_first_value_not_saved: {self._first_value_not_saved}")
         logger.info(f"first value: {self._first_value}")
@@ -245,9 +248,6 @@ class Push(Activation):
     def is_valid(self):
         return super().is_valid() and self.command is not None
 
-    def is_pressed(self):
-        return self.pressed
-
     def activate(self, state):
         super().activate(state)
         if self.is_valid():
@@ -290,12 +290,7 @@ class OnOff(Activation):
         Activation.__init__(self, config=config, button=button)
 
         # Commands
-        self.command = config.get("command")
         self.commands = config.get("commands", [])
-        if len(self.commands) == 1 and self.command is None:
-            self.command = self.commands[0]
-        else:
-            logger.error(f"is_valid: button {type(self).__name__} must have at least one command")
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join((f"commands: {self.commands}",
@@ -303,8 +298,8 @@ class OnOff(Activation):
                 f"is_valid: {self.is_valid()}")
 
     def is_valid(self):
-        if self.command is None and len(self.commands) == 0:
-            logger.error(f"is_valid: button {type(self).__name__} must have at least one command")
+        if len(self.commands) < 2:
+            logger.error(f"is_valid: button {type(self).__name__} must have at least two command")
             return False
         return super().is_valid()
 
@@ -314,8 +309,8 @@ class OnOff(Activation):
     def is_off(self):
         return self.activation_count % 2 == 0
 
-    def status(self):
-        return "on" if self.is_on() else "off"
+    def get_current_value(self):
+        return self.activation_count % 2
 
     def activate(self, state):
         super().activate(state)
@@ -324,7 +319,7 @@ class OnOff(Activation):
                 if self.is_off():
                     self.button.xp.commandOnce(self.commands[0])
                 else:
-                    self.button.commandOnce(self.commands[1])
+                    self.button.xp.commandOnce(self.commands[1])
                 self.view()
             else:
                 logger.warning(f"activate: button {self.button.name} is invalid")

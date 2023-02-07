@@ -78,7 +78,7 @@ class Loupedeck(Deck):
         return set(super().valid_activations() + valid_pushencoder_icon + valid_colored_button)
 
     def valid_representations(self, index = None):
-        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animation", "annunciator"]
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator"]
         valid_colored_button = ["colored-led"]
 
         if index is not None:

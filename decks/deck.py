@@ -175,22 +175,22 @@ class Deck:
                         # Where to place the button
                         idx = Button.guess_index(a)
                         if idx is None:
-                            logger.error(f"load: page {name}: button {a} has no index, ignoring")
+                            logger.error(f"load: page {name}: button has no index, ignoring {a}")
                             continue
                         if str(idx) not in self.valid_indices():
-                            logger.error(f"load: page {name}: button {a} has invalid index '{idx}', ignoring")
+                            logger.error(f"load: page {name}: button has invalid index '{idx}', ignoring {a}")
                             continue
 
                         # How the button will behave, it is does something
                         bty = Button.guess_activation_type(a)
                         if bty not in self.valid_activations(str(idx)):
-                            logger.error(f"load: page {name}: button {a} has invalid activation type {bty} for index {idx}, ignoring")
+                            logger.error(f"load: page {name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
                             continue
 
                         # How the button will be represented, if it is
                         bty = Button.guess_representation_type(a)
                         if bty not in self.valid_representations(str(idx)):
-                            logger.error(f"load: page {name}: button {a} has invalid representation type {bty} for index {idx}, ignoring")
+                            logger.error(f"load: page {name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
                             continue
 
                         button = Button(config=a, page=this_page)
