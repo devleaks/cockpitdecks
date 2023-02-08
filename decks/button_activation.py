@@ -659,8 +659,8 @@ class Slider(Activation):  # Cursor?
         Activation.__init__(self, config=config, button=button)
 
     def activate(self, state):
-        super().activate()
-        logger.info(f"activate: button {self.name} has no action (value={state})")
+        super().activate(state)
+        logger.info(f"activate: button {self.button.name} has no action (value={state})")
 
 #
 # ###############################
@@ -675,7 +675,8 @@ class Swipe(Activation):
         Activation.__init__(self, config=config, button=button)
 
     def activate(self, state):
-        logger.info(f"activate: button {self.name} has no action (value={state})")
+        super().activate(state)
+        logger.info(f"activate: button {self.button.name} has no action (value={state})")
 
 
 #

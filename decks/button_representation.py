@@ -575,7 +575,6 @@ class MultiLEDs(Representation):
             self.mode = LED_MODE[mode]
         else:
             logger.warning(f"__init__: {type(self).__name__}: invalid mode {mode}")
-        print(">>>", self.mode)
 
     def is_valid(self):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
@@ -587,7 +586,6 @@ class MultiLEDs(Representation):
     def render(self):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
         v = min(int(self.get_current_value()), maxval)
-        print(">>>", self.mode)
         return (v, self.mode)
 
 #

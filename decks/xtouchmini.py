@@ -18,7 +18,7 @@ from .button_representation import LED, MultiLEDs
 from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
 logger = logging.getLogger("XTouchDeck")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class XTouchMini(Deck):
