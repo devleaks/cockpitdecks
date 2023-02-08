@@ -165,7 +165,7 @@ class Streamdeck(Deck):
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
         button0 = Button(config={
                                     "index": 0,
-                                    "name": "X-Plane Map",
+                                    "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
                                     "label": "Map",

@@ -45,6 +45,7 @@ class Deck:
         self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
+        self.fill_empty_keys = config.get("fill-empty-keys", cockpit.fill_empty_keys)
         self.empty_key_fill_color = config.get("empty-key-fill-color", cockpit.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.empty_key_fill_icon = config.get("empty-key-fill-icon", cockpit.empty_key_fill_icon)
@@ -197,9 +198,9 @@ class Deck:
                         button = Button(config=a, page=this_page)
                         if button is not None:
                             this_page.add_button(idx, button)
-                            logger.debug(f"load: ..page {name} added button index {idx} {button.name}..")
+                            logger.debug(f"load: ..page {name}: added button index {idx} {button.name}..")
 
-                    logger.info(f"load: ..page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')})")
+                    logger.info(f"load: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')})")
                 # else:
                 #     logger.warning(f"load: file {p} not found")
 

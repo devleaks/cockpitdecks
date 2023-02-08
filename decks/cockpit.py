@@ -57,6 +57,7 @@ class Cockpit:
         self.icons = {}
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
+        self.fill_empty_keys = True
         self.empty_key_fill_color = None
         self.empty_key_fill_icon = None
         self.annunciator_style = ANNUNCIATOR_STYLE

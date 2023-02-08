@@ -23,7 +23,7 @@ from .rpc import RPC
 
 logger = logging.getLogger("Button")
 # logger.setLevel(15)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # ##########################################

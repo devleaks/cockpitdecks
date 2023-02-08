@@ -13,6 +13,7 @@ from .constant import YAML_BUTTONS_KW
 from .color import is_integer
 
 from .button import Button
+from .button_representation import LED, MultiLEDs
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
@@ -40,26 +41,28 @@ class XTouchMini(Deck):
         return encoders + buttons + ["A", "B", "slider"]
 
     def valid_activations(self, index = None):
-        valid_pushencoder = ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
-        valid_key = ["push", "onoff", "updown", "longpress"]
+        valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
+        valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "knob"]
         valid_slider = ["slider"]
+
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("e"):
-                    return valid_pushencoder
+                    return valid_push_encoder
                 if is_integer(index) or index in ["A", "B"]:
                     return valid_key
                 if index == "slider":
-                    return ["slider"]
+                    return valid_slider
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return set(super().valid_activations() + valid_pushencoder + valid_key + valid_slider)
+        return set(super().valid_activations() + valid_push_encoder + valid_key + valid_slider)
 
     def valid_representations(self, index = None):
         valid_pushencoder = ["multi-leds"]
         valid_key = ["led"]
-        valid_slider = []
+        valid_slider = ["none"]
+
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("e"):
@@ -81,10 +84,10 @@ class XTouchMini(Deck):
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
         button0 = Button(config={
                                     "index": 8,
-                                    "name": "X-Plane Map",
+                                    "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
-                                    "options": "counter"
+                                    "led": "single"
                                 }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
@@ -115,30 +118,21 @@ class XTouchMini(Deck):
 
     # High-level (functional)calls for feedback/visualization
     #
-    def set_key_image(self, button):
-        if isinstance(button, Knob):
-            self.set_encoder_led(button)
-        else:
-            self.set_button_led(button)
-
     def set_encoder_led(self, button):
         # logger.debug(f"test: button {button.name}: {'='*50}")
         # self.device.test()
         # logger.debug(f"test: button {button.name}: {'='*50}")
         # return
-        value, mode = button.get_led()
+        value, mode = button.get_representation()
         # find index in string
-        nums = re.findall("\\d+(?:\\.\\d+)?$", button.index)
-        if len(nums) < 1:
-            logger.warning(f"set_encoder_led: button {button.name}: {button.index} => cannot determine numeric index")
-            return
-        i = int(nums[0])
+        i = int(button.index[1:])
         logger.debug(f"set_encoder_led: button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
         self.set_control(key=i, value=value, mode=mode)
 
     def set_button_led(self, button):
-        logger.debug(f"set_button_led: button {button.name}: {button.index} => on={button.is_on()} (blink={button.has_option('blink')})")
-        self.set_key(key=button.index, on=button.is_on(), blink=button.has_option("blink"))
+        is_on = button.get_current_value()
+        logger.debug(f"set_button_led: button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
+        self.set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
 
     # Low-level wrapper around device API (direct forward)
     #
@@ -149,6 +143,22 @@ class XTouchMini(Deck):
     def set_control(self, key: int, value:int, mode: LED_MODE = LED_MODE.SINGLE):
         if self.device is not None:
             self.device.set_control(key=key, value=value, mode=mode)
+
+    def render(self, button: Button): # idx: int, image: str, label: str = None):
+        if self.device is None:
+            logger.warning("render: no device")
+            return
+        if str(button.index) == "slider":
+            logger.debug(f"render: button type {button.index} has no representation")
+            return
+
+        representation = button._representation
+        if isinstance(representation, LED):
+            self.set_button_led(button)
+        elif isinstance(representation, MultiLEDs):
+            self.set_encoder_led(button)
+        else:
+            logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
 
     # Start/stop device management & control
     #

@@ -62,22 +62,22 @@ class Loupedeck(Deck):
         return encoders + keys + buttons + ["left", "right"]
 
     def valid_activations(self, index = None):
-        valid_key_icon = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
-        valid_pushencoder_icon = valid_key_icon + ["encoder", "encoder-push", "encoder-onoff", "knob"]
-        valid_colored_button = valid_key_icon
+        valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
+        valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "knob"]
+        valid_colored_button = valid_key
 
         if index is not None:
             if index in self.valid_indices():
                 if index.startswith("knob"):
-                    return valid_pushencoder_icon
+                    return valid_push_encoder
                 if index.startswith("b") or is_integer(index):
                     return valid_colored_button
                 if is_integer(index):
-                    return valid_key_icon
+                    return valid_key
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return set(valid_key_icon + valid_pushencoder_icon + valid_colored_button)
+        return set(valid_key + valid_push_encoder + valid_colored_button)
 
     def valid_representations(self, index = None):
         valid_side_icon = ["none", "side"]
@@ -143,7 +143,7 @@ class Loupedeck(Deck):
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
         button0 = Button(config={
                                     "index": 0,
-                                    "name": "X-Plane Map",
+                                    "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
                                     "label": "Map",

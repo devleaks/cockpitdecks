@@ -26,6 +26,7 @@ class Page:
         self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
+        self.fill_empty_keys = config.get("fill-empty-keys", deck.fill_empty_keys)
         self.empty_key_fill_color = config.get("empty-key-fill-color", deck.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.empty_key_fill_icon = config.get("empty-key-fill-icon", deck.empty_key_fill_icon)
@@ -88,8 +89,7 @@ class Page:
         for button in self.buttons.values():
             button.render()
             logger.debug(f"render: page {self.name}: button {button.name} rendered")
-        if self.empty_key_fill_color is not None:
-            logger.debug(f"render: page {self.name}: fill empty keys {self.empty_key_fill_color}")
+        if self.fill_empty_keys:
             for key in self.deck.available_keys:
                 if key not in self.buttons.keys():
                     icon = None
@@ -105,7 +105,7 @@ class Page:
                         image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                         self.deck.device.set_key_image(key, image)
                     else:
-                        logger.warning(f"render: page {self.name}: no fill icon")
+                        logger.warning(f"render: page {self.name}: {key}: no fill icon")
 
     def clean(self):
         """

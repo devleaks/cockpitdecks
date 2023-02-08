@@ -11,7 +11,7 @@ import yaml
 from PIL import ImageDraw, ImageFont
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE
-from .color import convert_color
+from .color import convert_color, is_integer
 
 
 logger = logging.getLogger("Representation")
@@ -194,10 +194,10 @@ class Icon(Representation):
         deck = self.button.deck
         self.icon = add_ext(self.icon, "png")
         if self.icon in deck.icons.keys():  # look for properly sized image first...
-            logger.info(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in deck")
+            logger.debug(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in deck")
             image = deck.icons[self.icon]
         elif self.icon in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
-            logger.info(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in cockpit")
+            logger.debug(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in cockpit")
             image = deck.cockpit.icons[self.icon]
             image = deck.pil_helper.create_scaled_image("button", image)
         else:
@@ -537,9 +537,12 @@ class LED(Representation):
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
+        self.mode = config.get("led", "single")  # unused
+
     def render(self):
         value = self.get_current_value()
-        return value is not None and value !=0
+        v = value is not None and value != 0
+        return (v, self.mode)
 
 
 class ColoredLED(Representation):
@@ -564,7 +567,15 @@ class MultiLEDs(Representation):
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
-        self.mode = config.get("led-mode", LED_MODE.SINGLE)
+        mode = config.get("multi-leds", LED_MODE.SINGLE.name)
+        if is_integer(mode) and int(mode) in [l.value for l in LED_MODE]:
+            self.mode = LED_MODE(mode)
+        elif type(mode) is str and mode.upper() in [l.name for l in LED_MODE]:
+            mode = mode.upper()
+            self.mode = LED_MODE[mode]
+        else:
+            logger.warning(f"__init__: {type(self).__name__}: invalid mode {mode}")
+        print(">>>", self.mode)
 
     def is_valid(self):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
@@ -576,7 +587,8 @@ class MultiLEDs(Representation):
     def render(self):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
         v = min(int(self.get_current_value()), maxval)
-        return (v, self.mode.value)
+        print(">>>", self.mode)
+        return (v, self.mode)
 
 #
 # ###############################

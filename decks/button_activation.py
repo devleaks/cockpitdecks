@@ -244,6 +244,12 @@ class Push(Activation):
                 f"is_valid: {self.is_valid()}"))
 
 
+    def is_on(self):
+        return self.activation_count % 2 == 1
+
+    def is_off(self):
+        return self.activation_count % 2 == 0
+
     def is_valid(self):
         if self.command is None:
             logger.warning(f"is_valid: activation {type(self).__name__} has no command")
@@ -299,12 +305,6 @@ class OnOff(Activation):
             logger.error(f"is_valid: button {type(self).__name__} must have at least two command")
             return False
         return super().is_valid()
-
-    def is_on(self):
-        return self.activation_count % 2 == 1
-
-    def is_off(self):
-        return self.activation_count % 2 == 0
 
     def get_current_value(self):
         return self.activation_count % 2
