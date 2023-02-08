@@ -421,17 +421,29 @@ class Cockpit:
         Should not be used in production...
         """
         logger.info(f"reload_decks: reloading..")
-        self.default_pages = {}
+        self.default_pages = {}  # {deck_name: currently_loaded_page_name}
         for name, deck in self.cockpit.items():
             self.default_pages[name] = deck.current_page.name
-        self.load_aircraft(self.acpath)
+        self.load_aircraft(self.acpath)  # will terminate it before loading again
         logger.info(f"reload_decks: ..done")
 
     def terminate_this_aircraft(self):
         logger.info(f"terminate_this_aircraft: terminating..")
         for deck in self.cockpit.values():
             deck.terminate()
-        logger.info(f"terminate_this_aircraft: done")
+        if not self.xp.use_flight_loop:
+            logger.info(f"terminate_this_aircraft: {len(threading.enumerate())} threads")
+            logger.info(f"terminate_this_aircraft: {[t.name for t in threading.enumerate()]}")
+        logger.info(f"terminate_this_aircraft: ..done")
+
+    def start_this_aircraft(self):
+        logger.info(f"start_this_aircraft: starting..")
+        for deck in self.cockpit.values():
+            deck.start()
+        if not self.xp.use_flight_loop:
+            logger.info(f"start_this_aircraft: {len(threading.enumerate())} threads")
+            logger.info(f"start_this_aircraft: {[t.name for t in threading.enumerate()]}")
+        logger.info(f"start_this_aircraft: ..done")
 
     def terminate_all(self):
         logger.info(f"terminate_all: terminating..")
@@ -440,8 +452,8 @@ class Cockpit:
             self.xp.terminate()
             del self.xp
             self.xp = None
-            logger.info(f"terminate_all: xp deleted")
-        logger.info(f"terminate_all: done")
+            logger.info(f"terminate_all: ..xp deleted..")
+        logger.info(f"terminate_all: ..done")
         left = len(threading.enumerate())
         if left > 1:  # [MainThread]
             logger.error(f"terminate_all: {left} threads remaining")

@@ -190,6 +190,7 @@ class Reload(Activation):
 
     def activate(self, state):
         if state:
+            print("Reload activate")
             if self.is_valid():
                 self.button.deck.cockpit.reload_decks()
 

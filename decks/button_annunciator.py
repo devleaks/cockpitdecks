@@ -201,6 +201,8 @@ class AnnunciatorPart:
                     bgrd_draw.rectangle(frame, fill=self.invert_color())
 
                 # logger.debug(f"render: button {self.button.name}: text '{text}' at ({self.center_w()}, {self.center_h()})")
+                if not self.is_lit():
+                    logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit (Korry)")
                 draw.multiline_text((self.center_w(), self.center_h()),
                           text=text,
                           font=font,
@@ -223,12 +225,12 @@ class AnnunciatorPart:
                     # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
                     draw.rectangle(frame, outline=color, width=thick)
             else:
-                logger.debug(f"draw: button {self.annunciator.button.name}: part {self.name}: not lit")
+                logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit")
             return
 
         led = self.get_led()
         if led is None:
-            logger.warning(f"draw: button {self.annunciator.button.name}: part {self.name}: no text, no led")
+            logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: no text, no led")
             return
 
         LED_HEIGHT = 40
@@ -267,7 +269,7 @@ class AnnunciatorPart:
             thick = int(min(self.width(), self.height()) / 8)
             draw.polygon(triangle, outline=color, width=thick)
         else:
-            logger.warning(f"draw: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
+            logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
 
 
 class Annunciator(Icon):
@@ -380,9 +382,6 @@ class Annunciator(Icon):
         inside = ICON_SIZE / 32 # ~8px for 256x256 image
         page = self.button.page
 
-        # MAIN
-        logger.debug(f"render: button {self.button.name}: creating..")
-
         # Button overall size: full, large, medium, small.
         # Box is the top area where label will go if any
         size = self.annunciator.get("size", "full")
@@ -449,6 +448,10 @@ class Annunciator(Icon):
         draw = ImageDraw.Draw(image)
         image.paste(annunciator, box=(int(width_offset), int(height_offset)))
 
+        # PART 3: Seal
+        # seal = ...
+        # image.paste(seal)
+
         # PART 4: Guard
         # image.paste(guard)
 
@@ -456,47 +459,88 @@ class Annunciator(Icon):
         # Label will be added in Icon.get_image()
         return image
 
-        # if self.label is not None:
-        #     title_pos = self.label_position
-        #     fontname = self.get_font()
-        #     fontsize = 2 * self.label_size
-        #     font = ImageFont.truetype(fontname, fontsize)
-        #     w = image.width / 2
-        #     p = "m"
-        #     a = "center"
-        #     if title_pos[0] == "l":
-        #         w = inside
-        #         p = "l"
-        #         a = "left"
-        #     elif title_pos[0] == "r":
-        #         w = image.width - inside
-        #         p = "r"
-        #         a = "right"
-
-        #     b = box[1]
-        #     h = 1 + max(b, self.label_size) / 2  # smallest to fit text
-        #     # logger.debug(f"render: button {self.button.name}: label '{self.label}' at ({w}, {h}) (box: {box})")
-        #     draw.multiline_text((w, h),  # (image.width / 2, 15)
-        #               text=self.label,
-        #               font=font,
-        #               anchor=p+"m",
-        #               align=a,
-        #               fill=self.label_color)
-
-        # # logger.debug(f"render: button {self.button.name}: ..done")
-
-        # return image
-
+    def all_lit(self, on: bool):
+        for v in self.annunciator_parts.values():
+            v.lit = on
 
 class AnnunciatorAnimate(Annunciator):
     """
     """
-    def __init__(self, config: dict, page: "Page"):
+    def __init__(self, config: dict, button: "Button"):
+
+        config["annunciator"] = config.get("annunciator-animate")
+
+        Annunciator.__init__(self, config=config, button=button)
+
+        self.speed = float(self.annunciator.get("animation-speed", 0.5))
+
+        # Working attributes
         self.running = None  # state unknown
         self.thread = None
         self.finished = None
-        self.counter = 0
-        Annunciator.__init__(self, config=config, page=page)
-        self.speed = float(self.option_value("animation_speed", 0.5))
+        self.blink = True
 
-        self.render()
+    def loop(self):
+        self.finished = threading.Event()
+        while self.running:
+            self.button.render()
+            self.blink = not self.blink
+            self.all_lit(self.blink)
+            time.sleep(self.speed)
+        self.finished.set()
+
+    def should_run(self) -> bool:
+        """
+        Check conditions to animate the icon.
+        """
+        value = self.get_current_value()
+        return value is not None and value != 0
+
+    def anim_start(self):
+        """
+        Starts animation
+        """
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self.loop)
+            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
+            self.thread.start()
+        else:
+            logger.warning(f"anim_start: button {self.button.name}: already started")
+
+    def anim_stop(self):
+        """
+        Stops animation
+        """
+        if self.running:
+            self.running = False
+            if not self.finished.wait(timeout=2*self.speed):
+                logger.warning(f"anim_stop: button {self.button.name}: did not get finished signal")
+            self.all_lit(False)
+            return super().render()
+        else:
+            logger.debug(f"anim_stop: button {self.button.name}: already stopped")
+
+    def clean(self):
+        """
+        Stops animation and remove icon from deck
+        """
+        logger.debug(f"clean: button {self.button.name}: cleaning requested")
+        self.anim_stop()
+        logger.debug(f"clean: button {self.button.name}: stopped")
+        super().clean()
+
+    def render(self):
+        """
+        Renders icon_off or current icon in list
+        """
+        if self.is_valid():
+            if self.should_run():
+                if not self.running:
+                    self.anim_start()
+                return super().render()
+            else:
+                if self.running:
+                    self.anim_stop()
+                return super().render()
+        return None

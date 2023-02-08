@@ -122,7 +122,7 @@ class Button:
             return a[0]
         elif len(a) == 0:
             idx = config.get("index", "")
-            if not idx.startswith("knob"):
+            if not str(idx).startswith("knob"):
                 logger.warning(f"guess_representation_type: no represetation in {config}")
         else:
             logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")
@@ -388,13 +388,18 @@ class Button:
         """
         Button ultimately returns either one value or an array of values if representation requires it.
         """
-        # 1. No dataref
+        # 1. Special cases (Annunciator): Each annunciator part has its own evaluation
+        if isinstance(self._representation, Annunciator):
+            logger.debug(f"button_value: button {self.name}: is Annunciator, returning part values")
+            return self._representation.get_current_values()
+
+        # 2. No dataref
         if len(self.all_datarefs) == 0:
             if self.dataref_rpn is not None:
                 logger.debug(f"button_value: button {self.name}: getting formula without dataref")
                 return self.execute_formula(formula=self.dataref_rpn, default=0.0)
 
-        # 2. One dataref
+        # 3. One dataref
         if len(self.all_datarefs) == 1:
             # if self.all_datarefs[0] in self.page.datarefs.keys():  # unnecessary check
             logger.debug(f"button_value: button {self.name}: getting single dataref {self.all_datarefs[0]}")
@@ -404,7 +409,7 @@ class Button:
             else:  # if no formula, returns dataref as it is
                 return self.get_dataref_value(self.all_datarefs[0])
 
-        # 3. Multiple datarefs
+        # 4. Multiple datarefs
         if len(self.all_datarefs) > 1:
             # 3.1 Mutiple Dataref with a formula, returns only one value
             if self.dataref_rpn is not None:
@@ -417,11 +422,6 @@ class Button:
                 r.append(v)
             logger.debug(f"button_value: button {self.name}: returning several individual datarefs")
             return r
-
-        # 4. Special cases (Annunciator)
-        if isinstance(self._representation, Annunciator):
-            logger.debug(f"button_value: button {self.name}: is Annunciator, returning part values")
-            return self._representation.get_current_values()
 
         # 5. Value is based on activation state:
         self._last_state = self._activation.get_current_value()
@@ -462,6 +462,7 @@ class Button:
         **** No command gets executed here **** except if there is an associated view with the button.
         Also, removes guard if it was present. @todo: close guard
         """
+        print("BUTTON activate", state)
         self._activation.activate(state)
         self.dataref_changed(None)
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")

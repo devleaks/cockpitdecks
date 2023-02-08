@@ -17,7 +17,6 @@ decks:
   - name: XPLive
     type: loupedeck
     layout: newdefs
-    default-homepage-name: FCU
     brightness: 70
   - name: XPTouch
     type: xtouchmini

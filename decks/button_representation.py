@@ -173,7 +173,7 @@ class Icon(Representation):
                 logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: button label font '{fontname}' not found")
         else:
             fontname = self.button.page.default_label_font
-            logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: not font, using default from page {fontname}")
+            logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: no font, using default from page {fontname}")
 
         # 2. Tries deck default font
         if deck.default_label_font is not None and deck.default_label_font in fonts_available:
@@ -231,7 +231,7 @@ class Icon(Representation):
         # Add label if any
 
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._config, which_text)
-        logger.warning(f"overlay_text: {text}")
+        # logger.debug(f"overlay_text: {text}")
         if text is not None:
             fontname = self.get_font(text_font)
             if fontname is None:
@@ -547,9 +547,11 @@ class ColoredLED(Representation):
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
-        self.color = convert_color("black")  # color should hold a tuple of 3 or 4 int or float
+        color = config.get("colored-led", button.page.deck.cockpit.cockpit_color)  # color should hold a tuple of 3 or 4 int or float
+        self.color = convert_color(color)
 
     def render(self):
+        logger.debug(f"render: {type(self).__name__}: {self.color}")
         return self.color
 
 
@@ -581,7 +583,7 @@ class MultiLEDs(Representation):
 # ANNUNCIATOR TYPE REPRESENTATION
 #
 #
-from .button_annunciator import Annunciator
+from .button_annunciator import Annunciator, AnnunciatorAnimate
 
 
 #
@@ -601,5 +603,6 @@ REPRESENTATIONS = {
     "led": LED,
     "colored-led": ColoredLED,
     "multi-leds": MultiLEDs,
-    "annunciator": Annunciator
+    "annunciator": Annunciator,
+    "annunciator-animate": AnnunciatorAnimate
 }

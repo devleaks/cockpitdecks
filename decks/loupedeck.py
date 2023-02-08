@@ -14,7 +14,6 @@ from .Loupedeck.ImageHelpers import PILHelper
 from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
-from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .color import convert_color, is_integer
 from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
@@ -82,7 +81,7 @@ class Loupedeck(Deck):
 
     def valid_representations(self, index = None):
         valid_side_icon = ["none", "side"]
-        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator"]
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate"]
         valid_colored_button = ["colored-led"]
         valid_knob = ["none"]
 
@@ -327,15 +326,18 @@ class Loupedeck(Deck):
             return
         color = button.get_representation()
         if color is None:
-            logger.warning("set_key_image: button returned no image, using default")
+            logger.warning("set_key_image: button returned no representation color, using default")
             color = (240, 240, 240)
-        self.device.set_button_color(button.index.replace("B", ""), color)
+        idx = button.index.lower().replace("b", "")
+        if idx == "0":
+            idx = "circle"
+        self.device.set_button_color(idx, color)
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("render: no device")
             return
-        if button.index.startswith("knob"):
+        if str(button.index).startswith("knob"):
             logger.debug(f"render: button type {button.index} has no representation")
             return
         representation = button._representation

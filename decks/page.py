@@ -14,8 +14,8 @@ class Page:
     A Page is a collection of buttons.
     """
     def __init__(self, name: str, config: dict, deck: "Streamdeck"):
-        self._config = {}
-        self.name = config.get("name")
+        self._config = config
+        self.name = name
         self.deck = deck
         self.xp = self.deck.cockpit.xp  # shortcut alias
 

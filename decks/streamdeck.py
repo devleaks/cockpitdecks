@@ -69,7 +69,7 @@ class Streamdeck(Deck):
 
     def valid_representations(self, index = None):
         # only one type of button
-        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator"]
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate"]
         return set(super().valid_representations() + valid_key_icon)
 
     def load_default_page(self):
@@ -237,7 +237,8 @@ class Streamdeck(Deck):
         if self.device is None:
             logger.warning("render: no device")
             return
-        if isinstance(button, Icon):
+        representation = button._representation
+        if isinstance(representation, Icon):
             image = button.get_representation()
             if image is None:
                 logger.warning("render: button returned no image, using default")
@@ -247,12 +248,13 @@ class Streamdeck(Deck):
                 i = PILHelper.to_native_format(self.device, image)
                 self.device.set_key_image(button.index, i)
         else:
-            logger.warning(f"render: not a valid button type {type(button).__name__} for {type(self).__name__}")
+            logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
         with self.device:
             self.device.set_key_callback(None)
+            self.device._setup_reader(None) # terminates the _read() loop on serial line (thread).
             self.device.reset()
             self.device.close()  # terminates the loop.
             self.running = False
