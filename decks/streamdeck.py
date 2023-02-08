@@ -16,6 +16,7 @@ from StreamDeck.ImageHelpers import PILHelper
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
 from .color import convert_color
 from .button import Button
+from .button_representation import Icon  # valid representations for this type of deck
 from .page import Page
 from .deck import Deck
 
@@ -198,9 +199,6 @@ class Streamdeck(Deck):
         if key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
-    def create_icon_for_key(self, button, colors):
-        return self.pil_helper.create_image(deck=self.device, background=colors)
-
     def make_icon_for_device(self):
         """
         Each device model requires a different icon format (size).
@@ -239,14 +237,17 @@ class Streamdeck(Deck):
         if self.device is None:
             logger.warning("render: no device")
             return
-        image = button.get_representation()
-        if image is None:
-            logger.warning("render: button returned no image, using default")
-            image = self.icons[self.default_icon_name]
+        if isinstance(button, Icon):
+            image = button.get_representation()
+            if image is None:
+                logger.warning("render: button returned no image, using default")
+                image = self.icons[self.default_icon_name]
 
-        with self.device:
-            i = PILHelper.to_native_format(self.device, image)
-            self.device.set_key_image(button.index, i)
+            with self.device:
+                i = PILHelper.to_native_format(self.device, image)
+                self.device.set_key_image(button.index, i)
+        else:
+            logger.warning(f"render: not a valid button type {type(button).__name__} for {type(self).__name__}")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any

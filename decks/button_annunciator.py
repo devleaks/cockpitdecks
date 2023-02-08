@@ -44,7 +44,6 @@ class AnnunciatorPart:
         "F3": [0.75, 0.75]
     }
 
-
     def __init__(self, name: str, config: dict, annunciator: "Annunciator"):
 
         self.name = name
@@ -59,10 +58,12 @@ class AnnunciatorPart:
         self._center_w = None
         self._center_h = None
 
+        if self.name not in AnnunciatorPart.ANNUNCIATOR_TYPES.keys():
+            logger.error(f"__init__: invalid annunciator part name {self.name}")
 
     def set_sizes(self, annun_width, annun_height):
-        if self.name not in AnnunciatorPart.ANNUNCIATOR_TYPES:
-            logger.error(f"set_sizes: invalid annunciator part name {self.name}")
+        if self.name not in AnnunciatorPart.ANNUNCIATOR_TYPES.keys():
+            logger.error(f"set_sizes: invalid annunciator part name {self.name}, sizes not set")
             return
         w, h = AnnunciatorPart.ANNUNCIATOR_TYPES[self.name]
         self._width = annun_width if w == 0.5 else annun_width / 2
@@ -116,13 +117,17 @@ class AnnunciatorPart:
         return self.lit
 
     def is_invert(self):
-        return "invert" in self._config
+        return "invert" in self._config or "invert-color" in self._config
 
     def invert_color(self):
+        DEFAULT_INVERT_COLOR = "white"
         if self.is_invert():
-            return convert_color(self._config.get("invert"))
-        logger.debug(f"invert_color: button {self.annunciator.button.name}: no invert color, returning white")
-        return (255, 255, 225)
+            if "invert" in self._config:
+                return convert_color(self._config.get("invert"))
+            else:
+                return convert_color(self._config.get("invert-color"))
+        logger.debug(f"invert_color: button {self.annunciator.button.name}: no invert color, returning {DEFAULT_INVERT_COLOR}")
+        return convert_color(DEFAULT_INVERT_COLOR)
 
     def get_text(self, attr:str):  # = "text"
         return self.annunciator.button.get_text(self._config, attr)
@@ -174,8 +179,95 @@ class AnnunciatorPart:
             return framed.lower() in ["true", "on", "yes", "1"]
         return False
 
-    def draw(self, frame):
-        return image
+    def render(self, draw, bgrd_draw, icon_size, annun_width, annun_height, inside, size):
+        self.set_sizes(annun_width, annun_height)
+        TEXT_SIZE = int(self.height() / 2)  # @todo: find optimum variable text size depending on text length
+        color = self.get_color()
+        # logger.debug(f"render: button {self.button.name}: annunc {annun_width}x{annun_height}, offset ({width_offset}, {height_offset}), box {box}")
+        # logger.debug(f"render: button {self.button.name}: part {partname}: {self.width()}x{self.height()}, center ({self.center_w()}, {self.center_h()})")
+        # logger.debug(f"render: button {self.button.name}: part {partname}: {is_lit}, {color}")
+        text = self.get_text("text")
+        if text is not None:
+            #
+            # Annunciator part will display text
+            #
+            fontname = self.annunciator.get_font(self._config.get("font"))
+            fontsize = int(self._config.get("text-size", TEXT_SIZE))
+            font = ImageFont.truetype(fontname, fontsize)
+            if self.is_lit() or not self.annunciator.button.page.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
+
+                if self.is_lit() and self.is_invert():
+                    frame = ((self.center_w() - self.width()/2, self.center_h() - self.height()/2), (self.center_w() + self.width()/2, self.center_h() + self.height()/2))
+                    bgrd_draw.rectangle(frame, fill=self.invert_color())
+
+                # logger.debug(f"render: button {self.button.name}: text '{text}' at ({self.center_w()}, {self.center_h()})")
+                draw.multiline_text((self.center_w(), self.center_h()),
+                          text=text,
+                          font=font,
+                          anchor="mm",
+                          align="center",
+                          fill=color)
+
+                if self.has_frame():
+                    txtbb = draw.multiline_textbbox((self.center_w(), self.center_h()),  # min frame, just around the text
+                              text=text,
+                              font=font,
+                              anchor="mm",
+                              align="center")
+                    text_margin = 3 * inside  # margin "around" text, line will be that far from text
+                    framebb = ((txtbb[0]-text_margin, txtbb[1]-text_margin), (txtbb[2]+text_margin, txtbb[3]+text_margin))
+                    side_margin = 4 * inside  # margin from side of part of annunciator
+                    framemax = ((self.center_w() - self.width()/2 + side_margin, self.center_h() - self.height()/2 + side_margin), (self.center_w() + self.width()/2 - side_margin, self.center_h() + self.height()/2 - side_margin))
+                    frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
+                    thick = int(self.height() / 16)
+                    # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
+                    draw.rectangle(frame, outline=color, width=thick)
+            else:
+                logger.debug(f"draw: button {self.annunciator.button.name}: part {self.name}: not lit")
+            return
+
+        led = self.get_led()
+        if led is None:
+            logger.warning(f"draw: button {self.annunciator.button.name}: part {self.name}: no text, no led")
+            return
+
+        LED_HEIGHT = 40
+        LED_BAR_HEIGHT = 12
+        LED_BAR_COUNT = 3
+        LED_BAR_SPACER = 4
+        DOT_RADIUS = self.width() / 16
+
+        ninside = 6
+        if led in ["block", "led"]:
+            if size == "large":
+                LED_HEIGHT = int(LED_HEIGHT * 1.25)
+            frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_HEIGHT / 2))
+            draw.rectangle(frame, fill=color)
+        elif led in ["bar", "bars"]:
+            if size == "large":
+                LED_BAR_HEIGHT = int(LED_BAR_HEIGHT * 1.25)
+            hstart = self.center_h() - (LED_BAR_COUNT * LED_BAR_HEIGHT + (LED_BAR_COUNT - 1) * LED_BAR_SPACER) / 2
+            for i in range(LED_BAR_COUNT):
+                frame = ((self.center_w() - self.width()/2 + ninside * inside, hstart), (self.center_w() + self.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
+                draw.rectangle(frame, fill=color)
+                hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
+        elif led == "dot":
+            # Plot a series of circular dot on a line
+            frame = ((self.center_w() - DOT_RADIUS, self.center_h() - DOT_RADIUS), (self.center_w() + DOT_RADIUS, self.center_h() + DOT_RADIUS))
+            draw.ellipse(frame, fill=color)
+        elif led == "lgear":
+            vert_ninside = 4
+            origin = (self.center_w() - self.width()/2 + ninside * inside, self.center_h() - self.height()/2 + vert_ninside * inside)
+            triangle = [
+                origin,
+                (self.center_w() + self.width()/2 - ninside * inside, self.center_h() - self.height()/2 + vert_ninside * inside),
+                (self.center_w(), self.center_h() + self.height()/2 - vert_ninside * inside),  # lower center point
+                origin
+            ]
+            thick = int(min(self.width(), self.height()) / 8)
+            draw.polygon(triangle, outline=color, width=thick)
+        else:
+            logger.warning(f"draw: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
 
 
 class Annunciator(Icon):
@@ -331,97 +423,8 @@ class Annunciator(Icon):
         guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(0, 0, 0, 0))     # annunuciator optional guard
         guard_draw = ImageDraw.Draw(guard)
 
-        for partname, part in self.annunciator_parts.items():
-            part.set_sizes(annun_width, annun_height)
-            TEXT_SIZE = int(part.height() / 2)  # @todo: find optimum variable text size depending on text length
-            color = part.get_color()
-            # logger.debug(f"render: button {self.button.name}: annunc {annun_width}x{annun_height}, offset ({width_offset}, {height_offset}), box {box}")
-            # logger.debug(f"render: button {self.button.name}: part {partname}: {part.width()}x{part.height()}, center ({part.center_w()}, {part.center_h()})")
-            # logger.debug(f"render: button {self.button.name}: part {partname}: {is_lit}, {color}")
-            text = part.get_text("text")
-            if text is not None:
-                #
-                # Annunciator part will display text
-                #
-                fontname = self.get_font(part._config.get("font"))
-                fontsize = int(part._config.get("text-size", TEXT_SIZE))
-                font = ImageFont.truetype(fontname, fontsize)
-                if part.is_lit() or not self.button.page.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
-
-                    if part.is_lit() and part.is_invert():
-                        frame = ((part.center_w() - part.width()/2, part.center_h() - part.height()/2), (part.center_w() + part.width()/2, part.center_h() + part.height()/2))
-                        bgrd_draw.rectangle(frame, fill=part.invert_color())
-
-                    # logger.debug(f"render: button {self.button.name}: text '{text}' at ({part.center_w()}, {part.center_h()})")
-                    draw.multiline_text((part.center_w(), part.center_h()),
-                              text=text,
-                              font=font,
-                              anchor="mm",
-                              align="center",
-                              fill=color)
-
-                    if part.has_frame():
-                        txtbb = draw.multiline_textbbox((part.center_w(), part.center_h()),  # min frame, just around the text
-                                  text=text,
-                                  font=font,
-                                  anchor="mm",
-                                  align="center")
-                        text_margin = 3 * inside  # margin "around" text, line will be that far from text
-                        framebb = ((txtbb[0]-text_margin, txtbb[1]-text_margin), (txtbb[2]+text_margin, txtbb[3]+text_margin))
-                        side_margin = 4 * inside  # margin from side of part of annunciator
-                        framemax = ((part.center_w() - part.width()/2 + side_margin, part.center_h() - part.height()/2 + side_margin), (part.center_w() + part.width()/2 - side_margin, part.center_h() + part.height()/2 - side_margin))
-                        frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
-                        thick = int(annun_height / 16)
-                        # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
-                        draw.rectangle(frame, outline=color, width=thick)
-                else:
-                    logger.debug(f"get_image_for_icon: button {self.button.name}: part {partname}: not lit")
-            else:
-                #
-                # Annunciator part will display a LED
-                #
-                led = part.get_led()
-                if led is None:
-                    logger.warning(f"render: button {self.button.name}: part {partname}: no text, no led")
-                else:
-                    LED_HEIGHT = 40
-                    LED_BAR_HEIGHT = 12
-                    LED_BAR_COUNT = 3
-                    LED_BAR_SPACER = 4
-                    DOT_RADIUS = ICON_SIZE / 16
-
-                    ninside = 6
-                    if led in ["block", "led"]:
-                        if size == "large":
-                            LED_HEIGHT = int(LED_HEIGHT * 1.25)
-                        frame = ((part.center_w() - part.width()/2 + ninside * inside, part.center_h() - LED_HEIGHT / 2), (part.center_w() + part.width()/2 - ninside * inside, part.center_h() + LED_HEIGHT / 2))
-                        draw.rectangle(frame, fill=color)
-                    elif led in ["bar", "bars"]:
-                        if size == "large":
-                            LED_BAR_HEIGHT = int(LED_BAR_HEIGHT * 1.25)
-                        hstart = part.center_h() - (LED_BAR_COUNT * LED_BAR_HEIGHT + (LED_BAR_COUNT - 1) * LED_BAR_SPACER) / 2
-                        for i in range(LED_BAR_COUNT):
-                            frame = ((part.center_w() - part.width()/2 + ninside * inside, hstart), (part.center_w() + part.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
-                            draw.rectangle(frame, fill=color)
-                            hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
-                    elif led == "dot":
-                        # Plot a series of circular dot on a line
-                        frame = ((part.center_w() - DOT_RADIUS, part.center_h() - DOT_RADIUS), (part.center_w() + DOT_RADIUS, part.center_h() + DOT_RADIUS))
-                        draw.ellipse(frame, fill=color)
-                    elif led == "lgear":
-                        vert_ninside = 4
-                        origin = (part.center_w() - part.width()/2 + ninside * inside, part.center_h() - part.height()/2 + vert_ninside * inside)
-                        triangle = [
-                            origin,
-                            (part.center_w() + part.width()/2 - ninside * inside, part.center_h() - part.height()/2 + vert_ninside * inside),
-                            (part.center_w(), part.center_h() + part.height()/2 - vert_ninside * inside),  # lower center point
-                            origin
-                        ]
-                        thick = int(min(part.width(), part.height()) / 8)
-                        draw.polygon(triangle, outline=color, width=thick)
-                    else:
-                        logger.warning(f"render: button {self.button.name}: part {partname}: invalid led {led}")
-
+        for part in self.annunciator_parts.values():
+            part.render(draw, bgrd_draw, ICON_SIZE, annun_width, annun_height, inside, size)
 
         # PART 1.2: Glowing texts, later because not nicely perfect.
         if page.annunciator_style == ANNUNCIATOR_STYLES.KORRY:

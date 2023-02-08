@@ -96,7 +96,11 @@ class Page:
                     if self.empty_key_fill_icon in self.deck.icons.keys():
                         icon = self.deck.icons[self.empty_key_fill_icon]
                     elif self.empty_key_fill_color is not None:
-                        icon = self.deck.create_icon_for_key(key, colors=self.empty_key_fill_color)
+                        class Butemp:
+                            index = key
+                        button = Butemp()
+                        # setattr(button, "index", key)
+                        icon = self.deck.create_icon_for_key(button, colors=self.empty_key_fill_color)
                     if icon is not None:
                         image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
                         self.deck.device.set_key_image(key, image)

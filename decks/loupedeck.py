@@ -17,8 +17,8 @@ from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFA
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .color import convert_color, is_integer
 from .button import Button
+from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
 from .page import Page
-
 from .deck import Deck
 
 logger = logging.getLogger("Loupedeck")
@@ -63,8 +63,9 @@ class Loupedeck(Deck):
         return encoders + keys + buttons + ["left", "right"]
 
     def valid_activations(self, index = None):
-        valid_pushencoder_icon = ["push", "onoff", "updown", "longpress", "encoder", "encoder-push", "encoder-onoff", "knob"]
-        valid_colored_button = ["push", "onoff", "updown", "longpress"]
+        valid_key_icon = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
+        valid_pushencoder_icon = valid_key_icon + ["encoder", "encoder-push", "encoder-onoff", "knob"]
+        valid_colored_button = valid_key_icon
 
         if index is not None:
             if index in self.valid_indices():
@@ -72,27 +73,33 @@ class Loupedeck(Deck):
                     return valid_pushencoder_icon
                 if index.startswith("b") or is_integer(index):
                     return valid_colored_button
+                if is_integer(index):
+                    return valid_key_icon
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return set(super().valid_activations() + valid_pushencoder_icon + valid_colored_button)
+        return set(valid_key_icon + valid_pushencoder_icon + valid_colored_button)
 
     def valid_representations(self, index = None):
+        valid_side_icon = ["none", "side"]
         valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator"]
         valid_colored_button = ["colored-led"]
+        valid_knob = ["none"]
 
         if index is not None:
             if index in self.valid_indices():
+                if index in ["left", "right"]:
+                    return valid_side_icon
                 if index.startswith("knob"):
-                    return valid_key_icon
+                    return valid_knob
                 if index.startswith("b"):
-                    return ["colored-led"]
+                    return valid_colored_button
                 if is_integer(index):
-                    return
+                    return valid_key_icon
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
-        return set(super().valid_representations() + valid_key_icon + valid_colored_button)
+        return set(super().valid_representations() + valid_key_icon + valid_side_icon + valid_colored_button)
 
     def load_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
@@ -287,7 +294,7 @@ class Loupedeck(Deck):
         if self.device is None:
             logger.warning("set_key_image: no device")
             return
-        image = button.get_image()
+        image = button.get_representation()
         if image is None and button.index not in ["left", "right"]:
             logger.warning("set_key_image: button returned no image, using default")
             image = self.icons[self.default_icon_name]
@@ -318,11 +325,26 @@ class Loupedeck(Deck):
         if self.device is None:
             logger.warning("set_key_image: no device")
             return
-        color = button.get_color()
+        color = button.get_representation()
         if color is None:
             logger.warning("set_key_image: button returned no image, using default")
             color = (240, 240, 240)
         self.device.set_button_color(button.index.replace("B", ""), color)
+
+    def render(self, button: Button): # idx: int, image: str, label: str = None):
+        if self.device is None:
+            logger.warning("render: no device")
+            return
+        if button.index.startswith("knob"):
+            logger.debug(f"render: button type {button.index} has no representation")
+            return
+        representation = button._representation
+        if isinstance(representation, Icon):
+            self.set_key_image(button)
+        elif isinstance(representation, ColoredLED):
+            self.set_button_color(button)
+        else:
+            logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
 
     def start(self):
         if self.device is None:

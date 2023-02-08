@@ -23,7 +23,7 @@ from .rpc import RPC
 
 logger = logging.getLogger("Button")
 # logger.setLevel(15)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 # ##########################################
@@ -68,7 +68,7 @@ class Button:
 
         # Datarefs
         self.dataref = config.get("dataref")
-        self.datarefs = config.get("multi-datarefs")
+        self.multi_datarefs = config.get("multi-datarefs")
         self.dataref_rpn = config.get(DATAREF_RPN)
 
         self.all_datarefs = None                # all datarefs used by this button
@@ -121,7 +121,9 @@ class Button:
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
-            logger.warning(f"guess_representation_type: no represetation in {config}")
+            idx = config.get("index", "")
+            if not idx.startswith("knob"):
+                logger.warning(f"guess_representation_type: no represetation in {config}")
         else:
             logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")
         return "none"
@@ -320,10 +322,10 @@ class Button:
             if formatting is not None and value is not None:
                 if type(formatting) == list:
                     value_str = formatting[cnt].format(value)
-                elif formatting is not None and  type(formatting) == str:
+                elif formatting is not None and type(formatting) == str:
                     value_str = formatting.format(value)
             else:
-                value_str = str(value) if value is not None else default
+                value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
             cnt = cnt + 1
         return retmsg
@@ -334,6 +336,7 @@ class Button:
         Returns formula result.
         """
         expr = self.substitute_dataref_values(message=formula, default=default)
+        logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
         # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
@@ -360,7 +363,7 @@ class Button:
                 # If text contains ${dataref-rpn}, it is replaced by the value of the dataref-rpn calculation.
                 dataref_rpn = base.get(DATAREF_RPN)
                 if dataref_rpn is not None:
-                    res = self.execute_formula(formula=dataref_rpn, default="")
+                    res = self.execute_formula(formula=dataref_rpn, default="0.0")
                     if res != "":  # Format output if format present
                         text_format = base.get(f"{root}-format")
                         if text_format is not None:
@@ -426,7 +429,21 @@ class Button:
         # logger.debug(f"button_value: button {self.name}: datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
         return self._last_state
 
-    # ##################################
+    def is_dotted(self, label: str):
+        # HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
+        # check dataref status
+        # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
+        # AirbusFBW/SPDmanaged, and AirbusFBW/BaroStdCapt
+        hack = "AirbusFBW/BaroStdCapt" if label.upper() == "QNH" else f"AirbusFBW/{label}managed"
+        status = self._activation.is_on()
+        if hack in self.xp.all_datarefs.keys():
+            # logger.debug(f"is_dotted: {hack} = {self.xp.all_datarefs[hack].value()}")
+            status = self.xp.all_datarefs[hack].value() == 1
+        else:
+            logger.warning(f"is_dotted: button {self.name} dataref {hack} not found")
+        return status
+
+   # ##################################
     # External API
     #
     def dataref_changed(self, dataref: "Dataref"):

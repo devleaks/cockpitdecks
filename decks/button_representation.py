@@ -45,7 +45,10 @@ class Representation:
         logger.info(f"{self.button.name}:{type(self).__name__}:")
         logger.info(f"is valid: {self.is_valid()}")
 
-    def is_valid(self) -> bool:
+    def is_valid(self):
+        if self.button is None:
+            logger.warning(f"is_valid: activation {type(self).__name__} has no button")
+            return False
         return True
 
     def get_current_value(self):
@@ -56,7 +59,8 @@ class Representation:
         return None
 
     def clean(self):
-        logger.warning(f"clean: button {self.button.name}: no cleaning")
+        pass
+        # logger.warning(f"clean: button {self.button.name}: no cleaning")
 
 
 #
@@ -98,7 +102,7 @@ class Icon(Representation):
                 self.icon_color = convert_color(self.icon_color)
                 self.icon = f"_default_{button.page.name}_{button.name}_icon.png"
                 deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
-                logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
+                logger.debug(f"__init__: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
 
         # self.icon_color = convert_color(self.icon_color)
         # # the icon size varies for center "buttons" and left and right side "buttons".
@@ -119,17 +123,15 @@ class Icon(Representation):
         #     self.icon = self.default_icon
 
     def is_valid(self):
-        if self.button is None:
-            logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: no button")
-            return False
-        if self.icon is not None:
-            if self.icon not in self.button.deck.icons.keys():
-                logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: icon {self.icon} not in deck")
-                return False
-            return True
-        if self.icon_color is not None:
-            return True
-        logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: no icon and no icon color")
+        if super().is_valid():  # so there is a button...
+            if self.icon is not None:
+                if self.icon not in self.button.deck.icons.keys():
+                    logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: icon {self.icon} not in deck")
+                    return False
+                return True
+            if self.icon_color is not None:
+                return True
+            logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: no icon and no icon color")
         return False
 
     def render(self):
@@ -307,26 +309,100 @@ class IconText(Icon):
         return self.overlay_text(image, "text")
 
 
-class IconSide(Representation):
+class IconSide(Icon):
 
     def __init__(self, config: dict, button: "Button"):
-        Representation.__init__(self, config=config, button=button)
+        Icon.__init__(self, config=config, button=button)
 
-        self.labels = config.get("labels")  # multi-labels
+        page = self.button.page
+        self.side = config.get("side")  # multi-labels
+        self.icon_color = self.side.get("icon-color", page.default_icon_color)
+        self.centers = self.side.get("centers", [43, 150, 227])
+        self.labels = self.side.get("labels")
 
-    def is_dotted(self, label: str):
-        # check dataref status
-        # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
-        # AirbusFBW/SPDmanaged, and AirbusFBW/BaroStdCapt
-        hack = "AirbusFBW/BaroStdCapt" if label.upper() == "QNH" else f"AirbusFBW/{label}managed"
-        status = self.is_pushed()
-        if hack in self.xp.all_datarefs.keys():
-            # logger.debug(f"is_dotted: {hack} = {self.xp.all_datarefs[hack].value()}")
-            status = self.xp.all_datarefs[hack].value() == 1
-        else:
-            logger.warning(f"is_dotted: button {self.name} dataref {hack} not found")
-        return status
+    def is_valid(self):
+        if self.button.index not in ["left", "right"]:
+            logger.debug(f"is_valid: button {self.button.name}: {type(self).__name__}: not a valid index {self.button.index}")
+            return False
+        return super().is_valid()
 
+    def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it for SIDE keys (60x270).
+        Side keys can have 3 labels placed in front of each knob.
+        (Currently those labels are static only. Working to make them dynamic.)
+        """
+        image = super().get_image_for_icon()
+
+        if image is None:
+            return None
+
+        draw = None
+        # Add label if any
+        if self.labels is not None:
+            image = image.copy()  # we will add text over it
+            draw = ImageDraw.Draw(image)
+            inside = round(0.04 * image.width + 0.5)
+            vposition = "TCB"
+            vheight = 38 - inside
+
+            vcenter = [43, 150, 227]  # this determines the number of acceptable labels, organized vertically
+            cnt = self.side.get("centers")
+            if cnt is not None:
+                vcenter = [round(270 * i / 100, 0) for i in convert_color(cnt)]  # !
+
+            li = 0
+            for label in self.labels:
+                txt = label.get("label")
+                knob = "knob" + vposition[li] + self.button.index[0].upper()  # index is left or right
+                if knob in self.button.page.buttons.keys():
+                    corrknob = self.button.page.buttons[knob]
+                    if corrknob.has_option("dot"):
+                        if corrknob.is_dotted(txt):
+                            txt = txt + "•"  # \n•"
+                        else:
+                            txt = txt + ""   # \n"
+                    logger.debug(f"get_image_for_icon: watching {knob}")
+                else:
+                    logger.debug(f"get_image_for_icon: not watching {knob}")
+                if li >= len(vcenter) or txt is None:
+                    continue
+                fontname = self.get_font(label.get("label-font", self.label_font))
+                if fontname is None:
+                    logger.warning(f"get_image_for_icon: no font, cannot overlay label")
+                else:
+                    # logger.debug(f"get_image: font {fontname}")
+                    lsize = label.get("label-size", self.label_size)
+                    font = ImageFont.truetype(fontname, lsize)
+                    # Horizontal centering is not an issue...
+                    label_position = label.get("label-position", self.label_position)
+                    w = image.width / 2
+                    p = "m"
+                    a = "center"
+                    if label_position == "l":
+                        w = inside
+                        p = "l"
+                        a = "left"
+                    elif label_position == "r":
+                        w = image.width - inside
+                        p = "r"
+                        a = "right"
+                    # Vertical centering is black magic...
+                    h = vcenter[li] - lsize / 2
+                    if label_position[1] == "t":
+                        h = vcenter[li] - vheight
+                    elif label_position[1] == "b":
+                        h = vcenter[li] + vheight - lsize
+
+                    # logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
+                    draw.multiline_text((w, h),  # (image.width / 2, 15)
+                              text=txt,
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=label.get("label-color", self.label_color))
+                li = li + 1
+        return image
 
 
 class MultiIcons(Icon):
@@ -347,7 +423,9 @@ class MultiIcons(Icon):
                     logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
 
     def is_valid(self):
-        return len(self.multi_icons) > 0 and super().is_valid()
+        if len(self.multi_icons) > 0:
+            logger.warning(f"is_valid: {type(self).__name__}: no icon")
+        return super().is_valid()
 
     def num_icons(self):
         return len(self.multi_icons)
@@ -488,8 +566,10 @@ class MultiLEDs(Representation):
 
     def is_valid(self):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
-        return self.get_current_value() < maxval
-
+        value = self.get_current_value()
+        if value >= maxval:
+            logger.warning(f"is_valid: {type(self).__name__}: value {value} too large for mode {self.mode}")
+        return super().is_valid()
 
     def render(self):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13

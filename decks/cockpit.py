@@ -9,7 +9,7 @@ import pickle
 from PIL import Image, ImageFont
 
 from .constant import CONFIG_DIR, CONFIG_FILE, SERIAL_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE, INIT_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
 from .color import convert_color
 
@@ -61,6 +61,7 @@ class Cockpit:
         self.empty_key_fill_icon = None
         self.annunciator_style = ANNUNCIATOR_STYLE
         self.cockpit_color = COCKPIT_COLOR
+        self.default_home_page_name = INIT_PAGE
         self.init()
 
     def init(self):
@@ -181,6 +182,7 @@ class Cockpit:
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
             self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
+            self.default_home_page_name = self.default_config.get("default-homepage-name", INIT_PAGE)
 
         # 1. Creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)

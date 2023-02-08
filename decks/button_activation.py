@@ -127,7 +127,10 @@ class Activation:
         return self.current_value
 
     def is_valid(self):
-        return self.button is not None
+        if self.button is None:
+            logger.warning(f"is_valid: activation {type(self).__name__} has no button")
+            return False
+        return True
 
     def get_status(self):
         return None
@@ -154,7 +157,10 @@ class LoadPage(Activation):
         self.remote_deck = config.get("deck")
 
     def is_valid(self):
-        return super().is_valid() and self.page is not None
+        if self.page is None:
+            logger.warning(f"is_valid: activation {type(self).__name__} has no page")
+            return False
+        return super().is_valid()
 
     def activate(self, state: bool):
         super().activate(state)
@@ -182,9 +188,6 @@ class Reload(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
-    def is_valid(self):
-        return super().is_valid()
-
     def activate(self, state):
         if state:
             if self.is_valid():
@@ -198,9 +201,6 @@ class Inspect(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
-    def is_valid(self):
-        return super().is_valid()
-
     def activate(self, state):
         if state:
             if self.is_valid():
@@ -213,9 +213,6 @@ class Stop(Activation):
     """
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
-
-    def is_valid(self):
-        return super().is_valid()
 
     def activate(self, state):
         if state:
@@ -245,8 +242,12 @@ class Push(Activation):
         return super() + "\n" + ", ".join((f"command: {self.command}",
                 f"is_valid: {self.is_valid()}"))
 
+
     def is_valid(self):
-        return super().is_valid() and self.command is not None
+        if self.command is None:
+            logger.warning(f"is_valid: activation {type(self).__name__} has no command")
+            return False
+        return super().is_valid()
 
     def activate(self, state):
         super().activate(state)
@@ -265,18 +266,13 @@ class Longpress(Push):
 
         Push.__init__(self, config=config, button=button)
 
-    def is_valid(self):
-        return super().is_valid() and self.command is not None
-
     def activate(self, state):
         super().activate(state)
         if self.is_valid():
             if state:
-                if self.is_valid():
-                    self.button.xp.commandBegin(self.command)
+                self.button.xp.commandBegin(self.command)
             else:
-                if self.is_valid():
-                    self.button.xp.commandEnd(self.command)
+                self.button.xp.commandEnd(self.command)
                 self.view()  # on release only
 
 
@@ -468,16 +464,17 @@ class Encoder(Activation):
 class EncoderPush(Push):
     """
     Defines a encoder with stepped value coupled to a Push button.
-    One command is executed when the encoder is turned clockwise one step (state = 2),
-    another command is executed the encoder is turned counter-clockwise one step (state = 3).
-    Command 0: Execute when pushed.
-    Command 1: Executed when turned clockwise
-    Command 2: Executed when turned counter-clockwise
-    With dual option:
-    Command 0: Executed when turned clockwise
-    Command 1: Executed when turned counter-clockwise
-    Command 2: Executed when turned clockwise and pushed
-    Command 3: Executed when turned counter-clockwise and pushed
+    First command is executed when encoder is pushed.
+
+    Without dual option:
+    Second command is executed when the encoder is turned clockwise one step (state = 2),
+    Third command is executed the encoder is turned counter-clockwise one step (state = 3).
+
+    With longpush option:
+    Command 0: Executed when turned clockwise and not pushed
+    Command 1: Executed when turned counter-clockwise and not pushed
+    Command 2: Executed when turned clockwise and pushed simultaneously
+    Command 3: Executed when turned counter-clockwise and pushed simultaneously
     """
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -495,10 +492,10 @@ class EncoderPush(Push):
         self._ccw = 0
 
     def is_valid(self):
-        if self.has_option("dual") and len(self.commands) != 4:
+        if self.has_option("longpush") and len(self.commands) != 4:
             logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
             return False
-        elif not self.has_option("dual") and len(self.commands) != 3:
+        elif not self.has_option("longpush") and len(self.commands) != 3:
             logger.warning(f"is_valid: button {self.name} must have 3 commands")
             return False
         return True  # super().is_valid()
@@ -506,8 +503,8 @@ class EncoderPush(Push):
     def activate(self, state):
         if state < 2:
             super().activate(state)
-        elif state == 2:  # rotate left
-            if self.button.has_option("dual"):
+        elif state == 2:  # rotate clockwise
+            if self.button.has_option("longpush"):
                 if self.is_pressed():
                     self.button.xp.commandOnce(self.commands[0])
                     self._turns = self._turns + 1
@@ -517,9 +514,9 @@ class EncoderPush(Push):
                     self._turns = self._turns - 1
                     self._ccw = self._ccw + 1
             else:
-                self.button.xp.commandOnce(self.commands[0])
-        elif state == 3:  # rotate right
-            if self.button.has_option("dual"):
+                self.button.xp.commandOnce(self.commands[1])
+        elif state == 3:  # rotate counter-clockwise
+            if self.button.has_option("longpush"):
                 if self.is_pressed():
                     self.button.xp.commandOnce(self.commands[1])
                     self._turns = self._turns + 1
@@ -529,20 +526,25 @@ class EncoderPush(Push):
                     self._turns = self._turns - 1
                     self._ccw = self._ccw + 1
             else:
-                self.button.xp.commandOnce(self.commands[1])
+                self.button.xp.commandOnce(self.commands[2])
         else:
             logger.warning(f"activate: button {self.name} invalid state {state}")
 
 
 class EncoderOnOff(OnOff):
     """
-    Defines a encoder with stepped value coupled to a Push button.
-    One command is executed when the encoder is turned clockwise one step (state = 2),
-    another command is executed the encoder is turned counter-clockwise one step (state = 3).
-    Command 0: Executed when turned clockwise
-    Command 1: Executed when turned counter-clockwise
-    Command 2: Executed when turned clockwise and ON
-    Command 3: Executed when turned counter-clockwise and ON
+    Defines a encoder with stepped value coupled to a OnOff button.
+    First command is executed when button is Off and pressed.
+    Second command is executed when button is On and pressed.
+    Without dual option:
+    Third command is execute when encoder is turned clockwise one step (state = 2).
+    Fourth command is executed the encoder is turned counter-clockwise one step (state = 3).
+
+    With dual option:
+    Third command: Executed when turned clockwise and ON
+    Fourth command: Executed when turned counter-clockwise and ON
+    Fifth command: Executed when turned clockwise and OFF
+    Sixth command: Executed when turned counter-clockwise and OFF
     """
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
@@ -553,39 +555,52 @@ class EncoderOnOff(OnOff):
         self._ccw = 0
 
     def is_valid(self):
-        if self.has_option("dual") and len(self.commands) != 4:
-            logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
+        if self.button.has_option("dual") and len(self.commands) != 6:
+            logger.warning(f"is_valid: button {self.button.name} must have 6 commands for dual mode")
             return False
-        elif not self.has_option("dual") and len(self.commands) != 3:
-            logger.warning(f"is_valid: button {self.name} must have 3 commands")
+        elif not self.button.has_option("dual") and len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.button.name} must have 4 commands")
             return False
         return True  # super().is_valid()
 
     def activate(self, state):
-        if state < 2:
-            super().activate(state)
-        elif state == 2:  # rotate left
-            if self.is_on():
-                self.button.xp.commandOnce(self.commands[0])
-                self._turns = self._turns + 1
-                self._cw = self._cw + 1
+        if self.is_valid():
+            if state < 2:
+                super().activate(state)
+            elif state == 2:  # rotate clockwise
+                if self.is_on():
+                    if self.button.has_option("dual"):
+                        self.button.xp.commandOnce(self.commands[2])
+                    else:
+                        self.button.xp.commandOnce(self.commands[2])
+                    self._turns = self._turns + 1
+                    self._cw = self._cw + 1
+                else:
+                    if self.button.has_option("dual"):
+                        self.button.xp.commandOnce(self.commands[4])
+                    else:
+                        self.button.xp.commandOnce(self.commands[2])
+                    self._turns = self._turns - 1
+                    self._ccw = self._ccw + 1
+                self.view()
+            elif state == 3:  # rotate counter-clockwise
+                if self.is_on():
+                    if self.button.has_option("dual"):
+                        self.button.xp.commandOnce(self.commands[3])
+                    else:
+                        self.button.xp.commandOnce(self.commands[3])
+                    self._turns = self._turns + 1
+                    self._cw = self._cw + 1
+                else:
+                    if self.button.has_option("dual"):
+                        self.button.xp.commandOnce(self.commands[5])
+                    else:
+                        self.button.xp.commandOnce(self.commands[3])
+                    self._turns = self._turns - 1
+                    self._ccw = self._ccw + 1
+                self.view()
             else:
-                self.button.xp.commandOnce(self.commands[2])
-                self._turns = self._turns - 1
-                self._ccw = self._ccw + 1
-            self.view()
-        elif state == 3:  # rotate right
-            if self.is_on():
-                self.button.xp.commandOnce(self.commands[1])
-                self._turns = self._turns + 1
-                self._cw = self._cw + 1
-            else:
-                self.button.xp.commandOnce(self.commands[3])
-                self._turns = self._turns - 1
-                self._ccw = self._ccw + 1
-            self.view()
-        else:
-            logger.warning(f"activate: button {self.name} invalid state {state}")
+                logger.warning(f"activate: button {self.button.name} invalid state {state}")
 
 
 class EncoderValue(Activation):
@@ -596,6 +611,9 @@ class EncoderValue(Activation):
         Activation.__init__(self, config=config, button=button)
 
         self.step = float(config.get("step"))
+        self.stepxl = float(config.get("stepxl"))
+        self.value_min = float(config.get("value-min"))
+        self.value_max = float(config.get("value-max"))
         self.writable_dataref = config.get("set-dataref")
 
         # Internal status
@@ -604,7 +622,7 @@ class EncoderValue(Activation):
         self._ccw = 0
 
     def activate(self, state):
-        super().activate()
+        super().activate(state)
         ok = False
         x = self.get_current_value()
         if x is None:

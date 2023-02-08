@@ -8,7 +8,7 @@ from decks import __NAME__, __version__, __COPYRIGHT__
 from decks.xplaneudp import XPlaneUDP
 
 # logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__NAME__.title())
 
 ac = sys.argv[1] if len(sys.argv) > 1 else "A321"

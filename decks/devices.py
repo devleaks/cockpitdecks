@@ -11,6 +11,6 @@ from .XTouchMini import DeviceManager as XTouchMiniDeviceManager
 
 DECK_TYPES = {
     "streamdeck": [Streamdeck, StreamDeckDeviceManager],
-    # "loupedeck": [Loupedeck, LoupedeckDeviceManager],
+    "loupedeck": [Loupedeck, LoupedeckDeviceManager],
     # "xtouchmini": [XTouchMini, XTouchMiniDeviceManager]
 }

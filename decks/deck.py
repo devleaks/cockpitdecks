@@ -13,7 +13,7 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT
+from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 
 from .button import Button
@@ -52,6 +52,7 @@ class Deck:
         self.cockpit_color = config.get("cockpit-color", cockpit.cockpit_color)
         self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
         self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
+        self.default_home_page_name = config.get("default-homepage-name", cockpit.default_home_page_name)
 
         self.pil_helper = None
         self.icons = {}  # icons ready for this deck
@@ -183,7 +184,7 @@ class Deck:
 
                         # How the button will behave, it is does something
                         bty = Button.guess_activation_type(a)
-                        if bty not in self.valid_activations(str(idx)):
+                        if bty is None or bty not in self.valid_activations(str(idx)):
                             logger.error(f"load: page {name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
                             continue
 
@@ -209,8 +210,8 @@ class Deck:
             self.valid = False
             logger.error(f"load: {self.name}: has no page, ignoring")
         else:
-            if INIT_PAGE in self.pages.keys():
-                self.home_page = self.pages[INIT_PAGE]
+            if self.default_home_page_name in self.pages.keys():
+                self.home_page = self.pages[self.default_home_page_name]
             else:
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
             logger.info(f"load: deck {self.name} init page {self.home_page.name}")
