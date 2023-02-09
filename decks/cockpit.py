@@ -8,7 +8,7 @@ import pickle
 
 from PIL import Image, ImageFont
 
-from .constant import CONFIG_DIR, CONFIG_FILE, SERIAL_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
+from .constant import CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE, INIT_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
 from .color import convert_color
@@ -78,8 +78,10 @@ class Cockpit:
         """
         logger.info("Cockpitdecks -- Statistics")
 
-        for v in self.cockpit.values():
-            v.inspect()
+        logger.info(f"Threads: {[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
+
+        # for v in self.cockpit.values():
+        #     v.inspect()
 
 
     def scan_devices(self):
@@ -242,7 +244,7 @@ class Cockpit:
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)
-        sn = os.path.join(self.acpath, CONFIG_DIR, SERIAL_FILE)
+        sn = os.path.join(self.acpath, CONFIG_DIR, SECRET_FILE)
         serial_numbers = {}
         if os.path.exists(sn):
             with open(sn, "r") as fp:

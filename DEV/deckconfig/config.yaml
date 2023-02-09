@@ -20,7 +20,7 @@ decks:
     brightness: 70
   - name: XPTouch
     type: xtouchmini
-    layout: newdefs2
+    layout: newxtouch
     default-homepage-name: A
     brightness: 70
 # This is at global level

@@ -10,11 +10,10 @@ EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
 CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
-SERIAL_FILE = "secret.yaml"
-RESOURCES_FOLDER = "resources"
+SECRET_FILE = "secret.yaml"
 
 DEFAULT_LAYOUT = "default"
-INIT_PAGE = "Index"
+INIT_PAGE = "index"
 DEFAULT_PAGE_NAME = "X-Plane"
 
 COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name
@@ -29,6 +28,7 @@ ICONS_FOLDER = "icons"
 DEFAULT_ICON_NAME = "_default_icon.png"
 DEFAULT_ICON_COLOR = (0, 0, 100)
 
+RESOURCES_FOLDER = "resources"
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"
 

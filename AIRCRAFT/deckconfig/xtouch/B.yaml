@@ -76,6 +76,12 @@ buttons:
     led: single
     options: counter
     dataref-rpn: 1
+  - index: 6
+    name: INSPECT
+    led: single
+    type: inspect
+    dataref-rpn: 1
+    options: blink
   - index: 15
     name: RELOAD
     type: reload

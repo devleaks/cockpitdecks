@@ -185,6 +185,15 @@ buttons:
       color: orange
       font: DIN Condensed Black.otf
       dataref-rpn: 1
+  - index: 10
+    name: INSPECT
+    label: INSPECT
+    label-color: white
+    label-size: 14
+    label-font: DIN Bold.ttf
+    label-position: ct
+    type: inspect
+    icon: INFO
   - index: 11
     name: RELOAD
     label: RELOAD

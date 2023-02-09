@@ -1,10 +1,10 @@
 buttons:
   - index: b0
     name: View Circle Dot
-    type: push
+    type: reload
     colored-led: (255, 0, 0)
-    label: Pilot View
-    command: SRS/X-Camera/Select_View_ID_8
+    # label: Pilot View
+    # command: SRS/X-Camera/Select_View_ID_8
   - index: b1
     name: View 1
     type: push

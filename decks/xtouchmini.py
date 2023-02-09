@@ -4,6 +4,7 @@ import os
 import re
 import yaml
 import logging
+import threading
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
@@ -186,5 +187,9 @@ class XTouchMini(Deck):
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
+        logger.info(f"Threads BEFORE: {[t.name for t in threading.enumerate()]}")
         self.device.stop()
+        logger.info(f"Threads AFTER STOP: {[t.name for t in threading.enumerate()]}")
+        del self.device
+        logger.info(f"Threads AFTER DEL: {[t.name for t in threading.enumerate()]}")
         logger.debug(f"terminate: {self.name} stopped")

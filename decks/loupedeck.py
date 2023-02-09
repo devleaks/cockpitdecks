@@ -176,16 +176,13 @@ class Loupedeck(Deck):
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
+            if key == "circle":
+                key = 0
             try:
                 num = int(key)
-                if num == 0:
-                    key = "circle"
-                elif num > 0:
-                    key = f"B{key}"
-                else:
-                    logger.warning(f"key_change_callback: invalid button key {key}")
+                key = f"b{key}"
             except ValueError:
-                pass
+                logger.warning(f"key_change_callback: invalid button key {key}")
             transfer(deck, key, state)
 
         elif action == "rotate":
