@@ -6,6 +6,7 @@ import threading
 import time
 import colorsys
 import traceback
+from math import sqrt
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 # from mergedeep import merge
@@ -233,41 +234,41 @@ class AnnunciatorPart:
             logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: no text, no led")
             return
 
-        LED_HEIGHT = 40
-        LED_BAR_HEIGHT = 12
-        LED_BAR_COUNT = 3
-        LED_BAR_SPACER = 4
-        DOT_RADIUS = self.width() / 16
-
         ninside = 6
         if led in ["block", "led"]:
+            LED_BLOC_HEIGHT = int(self.height() / 2)
             if size == "large":
-                LED_HEIGHT = int(LED_HEIGHT * 1.25)
-            frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_HEIGHT / 2))
+                LED_BLOC_HEIGHT = int(LED_BLOC_HEIGHT * 1.25)
+            frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_BLOC_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_BLOC_HEIGHT / 2))
             draw.rectangle(frame, fill=color)
         elif led in ["bar", "bars"]:
+            LED_BAR_COUNT = int(self._config.get("bars", 3))
+            LED_BAR_HEIGHT = max(int(self.height() / (2 * LED_BAR_COUNT)), 2)
             if size == "large":
                 LED_BAR_HEIGHT = int(LED_BAR_HEIGHT * 1.25)
+            LED_BAR_SPACER = max(int(LED_BAR_HEIGHT / 3), 2)
             hstart = self.center_h() - (LED_BAR_COUNT * LED_BAR_HEIGHT + (LED_BAR_COUNT - 1) * LED_BAR_SPACER) / 2
             for i in range(LED_BAR_COUNT):
                 frame = ((self.center_w() - self.width()/2 + ninside * inside, hstart), (self.center_w() + self.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
                 draw.rectangle(frame, fill=color)
                 hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
         elif led == "dot":
+            DOT_RADIUS = int(min(self.width(), self.height()) / 5)
             # Plot a series of circular dot on a line
             frame = ((self.center_w() - DOT_RADIUS, self.center_h() - DOT_RADIUS), (self.center_w() + DOT_RADIUS, self.center_h() + DOT_RADIUS))
             draw.ellipse(frame, fill=color)
         elif led == "lgear":
-            vert_ninside = 4
-            origin = (self.center_w() - self.width()/2 + ninside * inside, self.center_h() - self.height()/2 + vert_ninside * inside)
+            STROKE_THICK = int(min(self.width(), self.height()) / 8)
+            UNIT = int(min(self.width(), self.height()) / 3)  # triangle half length of side
+            unit5 = int(sqrt(3) * UNIT / 2)
+            origin = (self.center_w() - UNIT, self.center_h() - unit5)
             triangle = [
                 origin,
-                (self.center_w() + self.width()/2 - ninside * inside, self.center_h() - self.height()/2 + vert_ninside * inside),
-                (self.center_w(), self.center_h() + self.height()/2 - vert_ninside * inside),  # lower center point
+                (self.center_w() + UNIT, self.center_h() - unit5),
+                (self.center_w(), self.center_h() + unit5),  # lower center point
                 origin
             ]
-            thick = int(min(self.width(), self.height()) / 8)
-            draw.polygon(triangle, outline=color, width=thick)
+            draw.polygon(triangle, outline=color, width=STROKE_THICK)
         else:
             logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
 

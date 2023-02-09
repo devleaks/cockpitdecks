@@ -5,30 +5,29 @@ import logging
 import yaml
 import threading
 import pickle
-
 from time import sleep
-
 from enum import Enum
+from abc import ABC, abstractmethod
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
-
-from .button import Button
 from .color import convert_color
 from .page import Page
+from .button import Button
 
 logger = logging.getLogger("Deck")
 # logger.setLevel(logging.DEBUG)
 
+
 DEFAULT_PAGE_NAME = "X-Plane"
 
 
-class Deck:
+class Deck(ABC):
     """
-    Loads the configuration of a Stream Deck.
+    Loads the configuration of a Deck.
     A Deck has a collection of Pages, and knows which one is currently being displayed.
     """
 
@@ -77,19 +76,6 @@ class Deck:
             self.valid = False
             logger.error(f"__init__: {self.name}: has no serial number, cannot use")
 
-        self.available_keys = None
-        if device is not None and hasattr(device, "key_names"):
-            self.available_keys = device.key_names()
-
-        if device is not None and hasattr(device, "key_count"):
-            self.numkeys = device.key_count()
-            if self.available_keys is None:
-                self.available_keys = list(range(self.numkeys))
-
-        if self.available_keys is None:
-            self.valid = False
-            logger.error(f"__init__: {self.name}: cannot determine available keys")
-
         self.brightness = 100
         if "brightness" in config:
             self.brightness = int(config["brightness"])
@@ -105,13 +91,32 @@ class Deck:
 
         self.valid = True
 
+    # #######################################
+    # Deck Common Functions
+    #
     def init(self):
+        if self.valid:
+            self.make_default_icon()
+            self.make_icon_for_device()
+            self.load()     # will load default page if no page found
+            self.load_home_page()   # loads home page onto deck
+            self.start()    # Some sustem may need to start before we load_home_page()
+
+    def load_layout_config(self, fn):
         """
-        Connects to device and send initial keys.
+        Loads a layout global configuration parameters.
+
+        :param      fn:   The function
+        :type       fn:   Function
         """
-        if self.home_page is not None:
-            self.change_page(self.home_page.name)
-        logger.info(f"init: deck {self.name} initialized")
+        if os.path.exists(fn):
+            with open(fn, "r") as fp:
+                self.layout_config = yaml.safe_load(fp)
+                logger.debug(f"load_layout_config: loaded layout config {fn}")
+            if self.layout_config is not None and type(self.layout_config) == dict:
+                self.default_home_page_name = self.layout_config.get("default-homepage-name")
+        else:
+            logger.debug(f"load_layout_config: no layout config file")
 
     def inspect(self):
         """
@@ -121,27 +126,48 @@ class Deck:
         for v in self.pages.values():
             v.inspect()
 
-    def valid_indices(self):
-        return []
-
-    def valid_activations(self, index = None):
-        return ["none"] + ["page", "reload", "inspect", "stop"]
-
-    def valid_representations(self, index = None):
-        return ["none"]
-
     def load(self):
         """
         Loads Streamdeck pages during configuration
         """
+        def load_buttons(page, buttons):
+            for a in buttons:
+                button = None
+
+                # Where to place the button
+                idx = Button.guess_index(a)
+                if idx is None:
+                    logger.error(f"load: page {page.name}: button has no index, ignoring {a}")
+                    continue
+                if str(idx) not in self.valid_indices():
+                    logger.error(f"load: page {page.name}: button has invalid index '{idx}', ignoring {a}")
+                    continue
+
+                # How the button will behave, it is does something
+                bty = Button.guess_activation_type(a)
+                if bty is None or bty not in self.valid_activations(str(idx)):
+                    logger.error(f"load: page {page.name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
+                    continue
+
+                # How the button will be represented, if it is
+                bty = Button.guess_representation_type(a)
+                if bty not in self.valid_representations(str(idx)):
+                    logger.error(f"load: page {page.name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
+                    continue
+
+                button = Button(config=a, page=page)
+                if button is not None:
+                    page.add_button(idx, button)
+                    logger.debug(f"load: ..page {page.name}: added button index {idx} {button.name}..")
+
         if self.layout is None:
-            self.load_default_page()
+            self.make_default_page()
             return
 
         dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
         if not os.path.exists(dn):
             logger.warning(f"load: deck has no layout folder '{self.layout}', loading default page")
-            self.load_default_page()
+            self.make_default_page()
             return
 
         pages = os.listdir(dn)
@@ -171,34 +197,26 @@ class Deck:
                     self.pages[name] = this_page
 
                     # Page buttons
-                    for a in page_config[YAML_BUTTONS_KW]:
-                        button = None
+                    load_buttons(this_page, page_config[YAML_BUTTONS_KW])
 
-                        # Where to place the button
-                        idx = Button.guess_index(a)
-                        if idx is None:
-                            logger.error(f"load: page {name}: button has no index, ignoring {a}")
-                            continue
-                        if str(idx) not in self.valid_indices():
-                            logger.error(f"load: page {name}: button has invalid index '{idx}', ignoring {a}")
-                            continue
+                    # Page includes
+                    if YAML_INCLUDE_KW in page_config:
+                        includes = page_config[YAML_INCLUDE_KW]
+                        if type(page_config[YAML_INCLUDE_KW]) == str:  # just one file
+                            includes = [includes]
+                        logger.debug(f"load: includes: {includes} to page {name}..")
+                        for inc in includes:
+                            fni = os.path.join(dn, inc + ".yaml")
+                            if os.path.exists(fni):
+                                with open(fni, "r") as fpi:
+                                    inc_config = yaml.safe_load(fpi)
+                                    # how to merge? for now, just merge buttons
+                                    if YAML_BUTTONS_KW in inc_config:
+                                        load_buttons(this_page, inc_config[YAML_BUTTONS_KW])
+                            else:
+                                logger.warning(f"load: includes: {inc}: file {fni} not found")
+                        logger.debug(f"load: includes: ..included")
 
-                        # How the button will behave, it is does something
-                        bty = Button.guess_activation_type(a)
-                        if bty is None or bty not in self.valid_activations(str(idx)):
-                            logger.error(f"load: page {name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
-                            continue
-
-                        # How the button will be represented, if it is
-                        bty = Button.guess_representation_type(a)
-                        if bty not in self.valid_representations(str(idx)):
-                            logger.error(f"load: page {name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
-                            continue
-
-                        button = Button(config=a, page=this_page)
-                        if button is not None:
-                            this_page.add_button(idx, button)
-                            logger.debug(f"load: ..page {name}: added button index {idx} {button.name}..")
 
                     logger.info(f"load: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')})")
                 # else:
@@ -210,6 +228,43 @@ class Deck:
         if not len(self.pages) > 0:
             self.valid = False
             logger.error(f"load: {self.name}: has no page, ignoring")
+            # self.load_default_apge()
+        else:
+            self.set_home_page()
+
+    def change_page(self, page: str):
+        logger.debug(f"change_page: deck {self.name} change page to {page}..")
+        if page == "back":
+            if len(self.page_history) > 1:
+                page = self.page_history.pop()  # this page
+                page = self.page_history.pop()  # previous one
+            else:
+                page = self.home_page.name
+            logger.debug(f"change_page: deck {self.name} back page to {page}..")
+        if page in self.pages.keys():
+            if self.current_page is not None:
+                self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
+                self.current_page.clean()
+            logger.debug(f"change_page: deck {self.name} ..installing new page..")
+            self.previous_page = self.current_page
+            self.current_page = self.pages[page]
+            self.page_history.append(self.current_page.name)
+            logger.debug(f"change_page: ..reset device {self.name}..")
+            self.device.reset()
+            self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
+            self.current_page.render()
+            logger.debug(f"change_page: deck {self.name} ..done")
+            return self.current_page.name
+        else:
+            logger.warning(f"change_page: deck {self.name}: page {page} not found")
+            if self.current_page is not None:
+                return self.current_page.name
+        return None
+
+    def set_home_page(self):
+        if not len(self.pages) > 0:
+            self.valid = False
+            logger.error(f"load: {self.name}: has no page, ignoring")
         else:
             if self.default_home_page_name in self.pages.keys():
                 self.home_page = self.pages[self.default_home_page_name]
@@ -217,25 +272,88 @@ class Deck:
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
             logger.info(f"load: deck {self.name} init page {self.home_page.name}")
 
-    def load_default_page(self):
-        # Generates an image that is correctly sized to fit across all keys of a given
-        #
+    def load_home_page(self):
+        """
+        Connects to device and send initial keys.
+        """
+        if self.home_page is not None:
+            self.change_page(self.home_page.name)
+        logger.info(f"load_home_page: deck {self.name}, home page {self.home_page.name} loaded")
+
+    # #######################################
+    # Deck Specific Functions
+    #
+    # #######################################
+    # Deck Specific Functions : Definition
+    #
+    @abstractmethod
+    def make_default_page(self):
+        """
+        Connects to device and send initial keys.
+        """
         pass
 
-    def load_layout_config(self, fn):
-        """
-        Loads a layout global configuration parameters.
+    @abstractmethod
+    def valid_indices(self):
+        return []
 
-        :param      fn:   The function
-        :type       fn:   Function
+    @abstractmethod
+    def valid_indices_with_image(self):
+        return []
+
+    def valid_activations(self, index = None):
+        return ["none"] + ["page", "reload", "inspect", "stop"]
+
+    def valid_representations(self, index = None):
+        return ["none"]
+
+    def make_default_icon(self):
         """
-        if os.path.exists(fn):
-            with open(fn, "r") as fp:
-                self.layout_config = yaml.safe_load(fp)
-                logger.debug(f"load_layout_config: loaded layout config {fn}")
+        Connects to device and send initial keys.
+        """
+        # Add default icon for this deck
+        if self.device is not None:
+            self.icons[self.default_icon_name] = PILHelper.create_image(deck=self.device, background=self.default_icon_color)
         else:
-            logger.debug(f"load_layout_config: no layout config file")
+            self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=self.default_icon_color)
+        # copy it at highest level too
+        # self.cockpit.icons[self.default_icon_name] = self.icons[self.default_icon_name]
+        logger.debug(f"make_default_icon: create default {self.default_icon_name} icon ({self.icons.keys()})")
 
+    def make_icon_for_device(self):
+        """
+        Each device model requires a different icon format (size).
+        We could build a set per Stream Deck model rather than stream deck instance...
+        """
+        dn = self.cockpit.icon_folder
+        if dn is not None:
+            cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
+            if os.path.exists(cache):
+                with open(cache, "rb") as fp:
+                    icons_temp = pickle.load(fp)
+                    self.icons.update(icons_temp)
+                logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
+                return
+
+        if self.device is not None:
+            for k, v in self.cockpit.icons.items():
+                self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
+            if dn is not None:
+                cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
+                with open(cache, "wb") as fp:
+                    pickle.dump(self.icons, fp)
+            logger.info(f"make_icon_for_device: deck {self.name} icons ready")
+        else:
+            logger.warning(f"make_icon_for_device: deck {self.name} has no device")
+
+    def create_icon_for_key(self, button, colors):
+        if self.pil_helper is not None:
+            return self.pil_helper.create_image(deck=self.device, background=colors)
+        return None
+
+    # #######################################
+    # Deck Specific Functions : Activation
+    #
     def key_change_callback(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
@@ -257,68 +375,24 @@ class Deck:
         if self.current_page is not None and key in self.current_page.buttons.keys():
             self.current_page.buttons[key].activate(state)
 
-    def create_icon_for_key(self, button, colors):
-        if self.pil_helper is not None:
-            return self.pil_helper.create_image(deck=self.device, background=colors)
-        return None
-
-    def make_default_icon(self):
-        """
-        Connects to device and send initial keys.
-        """
-        # Add default icon for this deck
-        if self.device is not None:
-            self.icons[self.default_icon_name] = PILHelper.create_image(deck=self.device, background=self.default_icon_color)
-        else:
-            self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=self.default_icon_color)
-        # copy it at highest level too
-        # self.cockpit.icons[self.default_icon_name] = self.icons[self.default_icon_name]
-        logger.debug(f"make_default_icon: create default {self.default_icon_name} icon ({self.icons.keys()})")
-
-    def make_icon_for_device(self):
-        """
-        Each device model requires a different icon format (size).
-        We could build a set per Stream Deck model rather than stream deck instance...
-        """
+    # #######################################
+    # Deck Specific Functions : Representation
+    #
+    def _send_key_image_to_device(self, key, image):
         pass
 
-    def change_page(self, page: str):
-        logger.debug(f"change_page: deck {self.name} change page to {page}..")
-        if page == "back":
-            if len(self.page_history) > 1:
-                page = self.page_history.pop()  # this page
-                page = self.page_history.pop()  # previous one
-            else:
-                page = self.home_page.name
-            logger.debug(f"change_page: deck {self.name} back page to {page}..")
-        if page in self.pages.keys():
-            if self.current_page is not None:
-                self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
-                self.current_page.clean()
-            logger.debug(f"change_page: deck {self.name} ..installing new page..")
-            self.previous_page = self.current_page
-            self.current_page = self.pages[page]
-            self.page_history.append(self.current_page.name)
-            self.device.reset()
-            self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
-            self.current_page.render()
-            logger.debug(f"change_page: deck {self.name} ..done")
-            return self.current_page.name
-        else:
-            logger.warning(f"change_page: deck {self.name}: page {page} not found")
-            if self.current_page is not None:
-                return self.current_page.name
-        return None
-
+    @abstractmethod
     def render(self, button: Button):
-        logger.warning(f"render: button {button.name} not rendered")
         pass
 
+    # #######################################
+    # Deck Specific Functions : Device
+    #
+    @abstractmethod
     def start(self):
         pass
 
+    @abstractmethod
     def terminate(self):
-        if self.current_page is not None:
-            self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
-            self.current_page.clean()
-            logger.debug(f"terminate: deck {self.name}: page {self.current_page.name} unloaded")
+        pass
+

@@ -59,9 +59,8 @@ class Representation:
         return None
 
     def clean(self):
-        pass
         # logger.warning(f"clean: button {self.button.name}: no cleaning")
-
+        pass
 
 #
 # ###############################
@@ -544,6 +543,10 @@ class LED(Representation):
         v = value is not None and value != 0
         return (v, self.mode)
 
+    def clean(self):
+        self.button.set_current_value(0)
+        self.button.render()
+
 
 class ColoredLED(Representation):
 
@@ -557,6 +560,10 @@ class ColoredLED(Representation):
         logger.debug(f"render: {type(self).__name__}: {self.color}")
         return self.color
 
+    def clean(self):
+        logger.debug(f"clean: {type(self).__name__}")
+        self.button.set_current_value(0)
+        self.button.render()
 
 
 class MultiLEDs(Representation):
@@ -587,6 +594,10 @@ class MultiLEDs(Representation):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
         v = min(int(self.get_current_value()), maxval)
         return (v, self.mode)
+
+    def clean(self):
+        self.button.set_current_value(0)
+        self.button.render()
 
 #
 # ###############################

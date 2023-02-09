@@ -1,29 +1,28 @@
-# Elgato Streamdeck deck
+# Elgato Streamdeck decks
 #
 import os
 import logging
 import yaml
 import threading
 import pickle
-
 from time import sleep
-
 from enum import Enum
-
 from PIL import Image, ImageFont, ImageOps
+
 from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
 from .color import convert_color
+from .deck import Deck
+from .page import Page
 from .button import Button
 from .button_representation import Icon  # valid representations for this type of deck
-from .page import Page
-from .deck import Deck
 
 logger = logging.getLogger("Streamdeck")
 # logger.setLevel(logging.DEBUG)
 
 
+# Device specific data
 POLL_FREQ = 5  # default is 20
 FLIP_DESCRIPTION = {
     (False, False): "not mirrored",
@@ -35,7 +34,6 @@ FLIP_DESCRIPTION = {
 class Streamdeck(Deck):
     """
     Loads the configuration of a Stream Deck.
-    A Streamdeck has a collection of Pages, and knows which one is currently being displayed.
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
@@ -50,29 +48,15 @@ class Streamdeck(Deck):
         if self.device is not None:
             self.device.set_poll_frequency(POLL_FREQ)
 
-        if self.valid:
-            self.make_default_icon()
-            self.make_icon_for_device()
-            self.load()
-            self.init()
-            self.start()
+        self.init()
 
-    def valid_indices(self):
-        key_rows, key_cols = self.device.key_layout()
-        numkeys = key_rows * key_cols
-        return [str(i) for i in range(numkeys)]
-
-    def valid_activations(self, index = None):
-        # only one type of button
-        valid_key_icon = ["push", "onoff", "updown", "longpress"]
-        return super().valid_activations() + valid_key_icon
-
-    def valid_representations(self, index = None):
-        # only one type of button
-        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate"]
-        return set(super().valid_representations() + valid_key_icon)
-
-    def load_default_page(self):
+    # #######################################
+    # Deck Specific Functions
+    #
+    # #######################################
+    # Deck Specific Functions : Definition
+    #
+    def make_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
         #
         # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
@@ -103,14 +87,14 @@ class Streamdeck(Deck):
             if os.path.exists(image_filename):
                 image = Image.open(image_filename).convert("RGBA")
             else:
-                logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
+                logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
                 image = Image.new(mode="RGBA", size=(2000, 2000), color=self.default_icon_color)
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
                     logo = Image.open(fn).convert("RGBA")
                     image.paste(logo, (500, 500), logo)
                 else:
-                    logger.warning(f"load_default_page: deck {self.name}: no logo image {fn} found, using default")
+                    logger.warning(f"make_default_page: deck {self.name}: no logo image {fn} found, using default")
 
             image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             return image
@@ -144,6 +128,7 @@ class Streamdeck(Deck):
 
             return PILHelper.to_native_format(deck, key_image)
 
+        logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
         key_spacing = (36, 36)
         image = create_full_deck_sized_image(self.device, key_spacing, fn)
@@ -169,71 +154,49 @@ class Streamdeck(Deck):
                                     "type": "push",
                                     "command": "sim/map/show_current",
                                     "label": "Map",
-                                    "icon": self.default_icon_name
+                                    "icon": "MAP"
                                 }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
-        self.home_page = None
-        self.current_page = page0
-        self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
-        self.device.set_key_callback(self.key_change_callback)
-        self.running = True
+        self.home_page = page0
+        # self.current_page = page0
+        # self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
+        # self.device.set_key_callback(self.key_change_callback)
+        # self.running = True
+        logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
-    def key_change_callback(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
-        if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-            self.cockpit.xp.events.put([self.name, key, state])
-            logger.debug(f"key_change_callback: {key} {state} enqueued")
-        else:
-            # logger.debug(f"key_change_callback: {key} {state}")
-            self.key_change_processing(deck, key, state)
+    def valid_indices_with_image(self):
+        return self.valid_indices()
 
-    def key_change_processing(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-        if key in self.current_page.buttons.keys():
-            self.current_page.buttons[key].activate(state)
+    def valid_indices(self):
+        key_rows, key_cols = self.device.key_layout()
+        numkeys = key_rows * key_cols
+        return [str(i) for i in range(numkeys)]
 
-    def make_icon_for_device(self):
-        """
-        Each device model requires a different icon format (size).
-        We could build a set per Stream Deck model rather than stream deck instance...
-        """
-        dn = self.cockpit.icon_folder
-        if dn is not None:
-            cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-            if os.path.exists(cache):
-                with open(cache, "rb") as fp:
-                    icons_temp = pickle.load(fp)
-                    self.icons.update(icons_temp)
-                logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
-                return
+    def valid_activations(self, index = None):
+        # only one type of button
+        valid_key_icon = ["push", "onoff", "updown", "longpress"]
+        return super().valid_activations() + valid_key_icon
 
-        if self.device is not None:
-            for k, v in self.cockpit.icons.items():
-                self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
-            if dn is not None:
-                cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-                with open(cache, "wb") as fp:
-                    pickle.dump(self.icons, fp)
-            logger.info(f"make_icon_for_device: deck {self.name} icons ready")
-        else:
-            logger.warning(f"make_icon_for_device: deck {self.name} has no device")
+    def valid_representations(self, index = None):
+        # only one type of button
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate"]
+        return set(super().valid_representations() + valid_key_icon)
 
-    def start(self):
-        if self.device is None:
-            logger.warning(f"start: deck {self.name}: no device")
-            return
-        self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
-        self.device.set_key_callback(self.key_change_callback)
-        logger.info(f"start: deck {self.name} listening for key strokes")
+    # #######################################
+    # Deck Specific Functions : Activation
+    #
+    # nothing...
 
-    def render(self, button: Button): # idx: int, image: str, label: str = None):
+    # #######################################
+    # Deck Specific Functions : Representation
+    #
+    def _send_key_image_to_device(self, key, image):
+        with self.device:
+            i = PILHelper.to_native_format(self.device, image)
+            self.device.set_key_image(int(key), i)
+
+    def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("render: no device")
             return
@@ -243,12 +206,23 @@ class Streamdeck(Deck):
             if image is None:
                 logger.warning("render: button returned no image, using default")
                 image = self.icons[self.default_icon_name]
-
-            with self.device:
-                i = PILHelper.to_native_format(self.device, image)
-                self.device.set_key_image(button.index, i)
+            self._send_key_image_to_device(button.index, image)
         else:
-            logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"set_key_image: not a valid button type {type(representation).__name__} for {type(self).__name__}")
+
+    def render(self, button: Button): # idx: int, image: str, label: str = None):
+        self._set_key_image(button)
+
+    # #######################################
+    # Deck Specific Functions : Device
+    #
+    def start(self):
+        if self.device is None:
+            logger.warning(f"start: deck {self.name}: no device")
+            return
+        self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
+        self.device.set_key_callback(self.key_change_callback)
+        logger.info(f"start: deck {self.name} listening for key strokes")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
@@ -259,3 +233,5 @@ class Streamdeck(Deck):
             self.device.close()  # terminates the loop.
             self.running = False
         logger.info(f"terminate: deck {self.name} terminated")
+
+

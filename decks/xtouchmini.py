@@ -1,39 +1,62 @@
-# Behringer X-Touch Mini deck
+# Behringer X-Touch Mini decks
 #
 import os
 import re
 import yaml
 import logging
 
-from .deck import Deck
-from .page import Page
+from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
-from .constant import YAML_BUTTONS_KW
 from .color import is_integer
-
+from .deck import Deck
+from .page import Page
 from .button import Button
 from .button_representation import LED, MultiLEDs
-
-from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
 logger = logging.getLogger("XTouchDeck")
 # logger.setLevel(logging.DEBUG)
 
 
 class XTouchMini(Deck):
+    """
+    Loads the configuration of a X-Touch Mini.
+    """
+
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
 
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
-        self.numkeys = 16
-
-        self.start()
-        # self.device.test()
-        self.load_default_page()
-        self.load()
         self.init()
+
+    # #######################################
+    # Deck Specific Functions
+    #
+    # #######################################
+    # Deck Specific Functions : Definition
+    #
+    def make_default_page(self):
+        logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
+        # Add index 0 only button:
+        page_config = {
+            "name": DEFAULT_PAGE_NAME
+        }
+        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
+        button0 = Button(config={
+                                    "index": 8,
+                                    "name": "X-Plane Map (default page)",
+                                    "type": "push",
+                                    "command": "sim/map/show_current",
+                                    "led": "single"
+                                }, page=page0)
+        page0.add_button(button0.index, button0)
+        self.pages = { DEFAULT_PAGE_NAME: page0 }
+        self.home_page = page0
+        logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
+
+    def valid_indices_with_image(self):
+        return []
 
     def valid_indices(self):
         encoders = [f"e{i}" for i in range(8)]
@@ -76,26 +99,15 @@ class XTouchMini(Deck):
                 return []
         return set(super().valid_representations() + valid_pushencoder + valid_key + valid_slider)
 
-    def load_default_page(self):
-        # Add index 0 only button:
-        page_config = {
-            "name": DEFAULT_PAGE_NAME
-        }
-        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
-        button0 = Button(config={
-                                    "index": 8,
-                                    "name": "X-Plane Map (default page)",
-                                    "type": "push",
-                                    "command": "sim/map/show_current",
-                                    "led": "single"
-                                }, page=page0)
-        page0.add_button(button0.index, button0)
-        self.pages = { DEFAULT_PAGE_NAME: page0 }
-        self.home_page = None
-        self.current_page = page0
-        self.device.set_callback(self.key_change_callback)
-        self.running = True
+    def make_default_icon(self):
+        pass
 
+    def make_icon_for_device(self):
+        pass
+
+    # #######################################
+    # Deck Specific Functions : Activation
+    #
     def key_change_processing(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
@@ -116,9 +128,10 @@ class XTouchMini(Deck):
         if self.current_page is not None and key1 in self.current_page.buttons.keys():
             self.current_page.buttons[key1].activate(state)
 
-    # High-level (functional)calls for feedback/visualization
+    # #######################################
+    # Deck Specific Functions : Representation
     #
-    def set_encoder_led(self, button):
+    def _set_encoder_led(self, button):
         # logger.debug(f"test: button {button.name}: {'='*50}")
         # self.device.test()
         # logger.debug(f"test: button {button.name}: {'='*50}")
@@ -127,20 +140,20 @@ class XTouchMini(Deck):
         # find index in string
         i = int(button.index[1:])
         logger.debug(f"set_encoder_led: button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
-        self.set_control(key=i, value=value, mode=mode)
+        self._set_control(key=i, value=value, mode=mode)
 
-    def set_button_led(self, button):
+    def _set_button_led(self, button):
         is_on = button.get_current_value()
         logger.debug(f"set_button_led: button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
-        self.set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
+        self._set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
 
     # Low-level wrapper around device API (direct forward)
     #
-    def set_key(self, key: int, on:bool=False, blink:bool=False):
+    def _set_key(self, key: int, on:bool=False, blink:bool=False):
         if self.device is not None:
             self.device.set_key(key=key, on=on, blink=blink)
 
-    def set_control(self, key: int, value:int, mode: LED_MODE = LED_MODE.SINGLE):
+    def _set_control(self, key: int, value:int, mode: LED_MODE = LED_MODE.SINGLE):
         if self.device is not None:
             self.device.set_control(key=key, value=value, mode=mode)
 
@@ -154,13 +167,14 @@ class XTouchMini(Deck):
 
         representation = button._representation
         if isinstance(representation, LED):
-            self.set_button_led(button)
+            self._set_button_led(button)
         elif isinstance(representation, MultiLEDs):
-            self.set_encoder_led(button)
+            self._set_encoder_led(button)
         else:
             logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
 
-    # Start/stop device management & control
+    # #######################################
+    # Deck Specific Functions : Device
     #
     def start(self):
         if self.device is None:

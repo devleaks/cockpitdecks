@@ -8,7 +8,7 @@ import mido
 from enum import Enum
 
 logger = logging.getLogger("XTouchMini")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 GLOBAL_CHANNEL = 0
 CHANNEL = 10
@@ -68,7 +68,7 @@ class XTouchMini:
     def close(self):
         pass
 
-    def reset(self, silence: bool = True):
+    def reset(self, silence: bool = False):
         if silence:
             l= logger.getEffectiveLevel()
             logger.setLevel(logging.WARNING)
@@ -139,7 +139,7 @@ class XTouchMini:
 
     def _write(self, message: mido.Message) -> None:
         if self._output_device is not None:
-            logger.debug(f"send: sending '{str(message)}'")
+            logger.debug(f"_write: sending '{str(message)}'")
             self._output_device.send(message)
 
 
@@ -179,6 +179,7 @@ class XTouchMini:
             if m is not None:
                 m.close()
                 logger.debug(f'start: closed MIDI device: "{self.name}"')
+        logger.error(f"loop: exited")
 
 
     def stop(self) -> None:

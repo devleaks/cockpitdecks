@@ -1,40 +1,30 @@
-# Loupedeck LoupedeckLive deck
+# Loupedeck LoupedeckLive decks
 #
 import os
 import logging
 import yaml
 import threading
 import pickle
-
 from time import sleep
-
 from enum import Enum
+from PIL import Image, ImageOps
 
 from .Loupedeck.ImageHelpers import PILHelper
-from PIL import Image, ImageOps
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import convert_color, is_integer
+from .deck import Deck
+from .page import Page
 from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
-from .page import Page
-from .deck import Deck
 
 logger = logging.getLogger("Loupedeck")
 # logger.setLevel(logging.DEBUG)
 
 
-VALID_STATE = {
-    "down": 1,
-    "up": 0,
-    "left": 2,
-    "right": 3
-}
-
 class Loupedeck(Deck):
     """
     Loads the configuration of a Loupedeck.
-    A Loupedeck has a collection of Pages, and knows which one is currently being displayed.
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
@@ -48,12 +38,72 @@ class Loupedeck(Deck):
 
         self.valid = True
 
-        if self.valid:
-            self.make_default_icon()
-            self.make_icon_for_device()
-            self.load()
-            self.init()
-            self.start()
+        self.init()
+
+    # #######################################
+    # Deck Specific Functions
+    #
+    # #######################################
+    # Deck Specific Functions : Definition
+    #
+    def make_default_page(self):
+        # Generates an image that is correctly sized to fit across all keys of a given
+        #
+        # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
+        # Generates an image that is correctly sized to fit across all keys of a given
+        #
+        # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
+        def create_full_deck_sized_image(image_filename):
+            deck_width, deck_height = (60 + 4*90 + 60, 270)
+            image = None
+            if os.path.exists(image_filename):
+                image = Image.open(image_filename).convert("RGBA")
+            else:
+                logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
+                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
+                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
+                if os.path.exists(fn):
+                    inside = 20
+                    logo = Image.open(fn).convert("RGBA")
+                    logo2 = ImageOps.fit(logo, (deck_width - 2*inside, deck_height - 2*inside), Image.LANCZOS)
+                    image.paste(logo2, (inside, inside), logo2)
+                else:
+                    logger.warning(f"make_default_page: deck {self.name}: no logo image {fn} found, using default")
+
+            image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
+            return image
+
+        logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
+
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
+        image = create_full_deck_sized_image(fn)
+        image_left = image.copy().crop((0, 0, 60, image.height))
+        self.device.draw_image(image_left, display="left")
+        image_center = image.copy().crop((60, 0, 420, image.height))
+        self.device.draw_image(image_center, display="center")
+        image_right = image.copy().crop((image.width-60, 0, image.width, image.height))
+        self.device.draw_image(image_right, display="right")
+
+        # Add index 0 only button:
+        page_config = {
+            "name": DEFAULT_PAGE_NAME
+        }
+        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
+        button0 = Button(config={
+                                    "index": 0,
+                                    "name": "X-Plane Map (default page)",
+                                    "type": "push",
+                                    "command": "sim/map/show_current",
+                                    "label": "Map",
+                                    "icon": self.default_icon_name
+                                }, page=page0)
+        page0.add_button(button0.index, button0)
+        self.pages = { DEFAULT_PAGE_NAME: page0 }
+        self.home_page = page0
+        logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
+
+    def valid_indices_with_image(self):
+        return [str(i) for i in range(12)] + ["left", "right"]
 
     def valid_indices(self):
         encoders = ["knobTL", "knobCL", "knobBL", "knobTR", "knobCR", "knobBR"]
@@ -100,62 +150,9 @@ class Loupedeck(Deck):
                 return []
         return set(super().valid_representations() + valid_key_icon + valid_side_icon + valid_colored_button)
 
-    def load_default_page(self):
-        # Generates an image that is correctly sized to fit across all keys of a given
-        #
-        # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
-        # Generates an image that is correctly sized to fit across all keys of a given
-        #
-        # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
-        def create_full_deck_sized_image(image_filename):
-            deck_width, deck_height = (60 + 4*90 + 60, 270)
-            image = None
-            if os.path.exists(image_filename):
-                image = Image.open(image_filename).convert("RGBA")
-            else:
-                logger.warning(f"load_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
-                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
-                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
-                if os.path.exists(fn):
-                    inside = 20
-                    logo = Image.open(fn).convert("RGBA")
-                    logo2 = ImageOps.fit(logo, (deck_width - 2*inside, deck_height - 2*inside), Image.LANCZOS)
-                    image.paste(logo2, (inside, inside), logo2)
-                else:
-                    logger.warning(f"load_default_page: deck {self.name}: no logo image {fn} found, using default")
-
-            image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
-            return image
-
-        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
-        image = create_full_deck_sized_image(fn)
-        image_left = image.copy().crop((0, 0, 60, image.height))
-        self.device.draw_image(image_left, display="left")
-        image_center = image.copy().crop((60, 0, 420, image.height))
-        self.device.draw_image(image_center, display="center")
-        image_right = image.copy().crop((image.width-60, 0, image.width, image.height))
-        self.device.draw_image(image_right, display="right")
-
-        # Add index 0 only button:
-        page_config = {
-            "name": DEFAULT_PAGE_NAME
-        }
-        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
-        button0 = Button(config={
-                                    "index": 0,
-                                    "name": "X-Plane Map (default page)",
-                                    "type": "push",
-                                    "command": "sim/map/show_current",
-                                    "label": "Map",
-                                    "icon": self.default_icon_name
-                                }, page=page0)
-        page0.add_button(button0.index, button0)
-        self.pages = { DEFAULT_PAGE_NAME: page0 }
-        self.home_page = None
-        self.current_page = page0
-        self.device.set_callback(self.key_change_callback)
-        self.running = True
-
+    # #######################################
+    # Deck Specific Functions : Activation
+    #
     def key_change_callback(self, deck, msg):
         """
         This is the function that is called when a key is pressed.
@@ -244,52 +241,19 @@ class Loupedeck(Deck):
             if action != "touchmove":
                 logger.debug(f"key_change_callback: unprocessed {msg}")
 
-    # def key_change_processing(self, deck, key, state):
-    #     """
-    #     This is the function that is called when a key is pressed.
-    #     """
-    #     logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-    #     if key in self.current_page.buttons.keys():
-    #         self.current_page.buttons[key].activate(state)
-    #     else:
-    #         logger.debug(f"key_change_processing: Key {key} not in {self.current_page.buttons.keys()}")
-
+    # #######################################
+    # Deck Specific Functions : Representation
+    #
     def create_icon_for_key(self, button, colors):
         b = button.index
         if b not in ["full", "center", "left", "right"]:
             b = "button"
         return self.pil_helper.create_image(deck=b, background=colors)
 
-    def make_icon_for_device(self):
-        """
-        Each device model requires a different icon format (size).
-        We could build a set per Stream Deck model rather than stream deck instance...
-        This makes the square icons for all square keys.
-        Side keys (left and right) are treated separatey.
-        """
-        dn = self.cockpit.icon_folder
-        if dn is not None:
-            cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-            if os.path.exists(cache):
-                with open(cache, "rb") as fp:
-                    icons_temp = pickle.load(fp)
-                    self.icons.update(icons_temp)
-                logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
-                return
+    def _send_key_image_to_device(self, key, image):
+        self.device.set_key_image(key, image)
 
-        logger.info(f"make_icon_for_device: deck {self.name}..")
-        if self.device is not None:
-            for k, v in self.cockpit.icons.items():
-                self.icons[k] = self.pil_helper.create_scaled_image("button", v)  # 90x90
-            if dn is not None:
-                cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-                with open(cache, "wb") as fp:
-                    pickle.dump(self.icons, fp)
-            logger.info(f"make_icon_for_device: deck {self.name} icons ready")
-        else:
-            logger.warning(f"make_icon_for_device: deck {self.name} has no device")
-
-    def set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
+    def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("set_key_image: no device")
             return
@@ -316,11 +280,11 @@ class Loupedeck(Deck):
                     logger.warning("set_key_image: cannot get device key image size")
             else:
                 logger.warning("set_key_image: cannot get device key image format")
-            self.device.set_key_image(button.index, image)
+            self._send_key_image_to_device(button.index, image)
         else:
             logger.warning(f"set_key_image: no image for {button.name}")
 
-    def set_button_color(self, button: Button): # idx: int, image: str, label: str = None):
+    def _set_button_color(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("set_key_image: no device")
             return
@@ -342,12 +306,15 @@ class Loupedeck(Deck):
             return
         representation = button._representation
         if isinstance(representation, Icon):
-            self.set_key_image(button)
+            self._set_key_image(button)
         elif isinstance(representation, ColoredLED):
-            self.set_button_color(button)
+            self._set_button_color(button)
         else:
             logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
 
+    # #######################################
+    # Deck Specific Functions : Device
+    #
     def start(self):
         if self.device is None:
             logger.warning(f"start: loupedeck {self.name}: no device")
@@ -368,3 +335,5 @@ class Loupedeck(Deck):
         # del self.device     # closes connection and stop serial _read thread
         # logger.debug(f"terminate: closed")
         logger.info(f"terminate: deck {self.name} terminated")
+
+

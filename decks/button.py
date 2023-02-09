@@ -462,7 +462,6 @@ class Button:
         **** No command gets executed here **** except if there is an associated view with the button.
         Also, removes guard if it was present. @todo: close guard
         """
-        print("BUTTON activate", state)
         self._activation.activate(state)
         self.dataref_changed(None)
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")

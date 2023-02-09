@@ -90,20 +90,20 @@ class Page:
             button.render()
             logger.debug(f"render: page {self.name}: button {button.name} rendered")
         if self.fill_empty_keys:
-            for key in self.deck.available_keys:
-                if key not in self.buttons.keys():
-                    icon = None
+            busy_keys = [str(i) for i in self.buttons.keys()]
+            for key in self.deck.valid_indices_with_image():
+                if key not in busy_keys:
+                    image = None
                     if self.empty_key_fill_icon in self.deck.icons.keys():
-                        icon = self.deck.icons[self.empty_key_fill_icon]
+                        image = self.deck.icons[self.empty_key_fill_icon]
                     elif self.empty_key_fill_color is not None:
                         class Butemp:
                             index = key
                         button = Butemp()
                         # setattr(button, "index", key)
-                        icon = self.deck.create_icon_for_key(button, colors=self.empty_key_fill_color)
-                    if icon is not None:
-                        image = self.deck.pil_helper.to_native_format(self.deck.device, icon)
-                        self.deck.device.set_key_image(key, image)
+                        image = self.deck.create_icon_for_key(button, colors=self.empty_key_fill_color)
+                    if image is not None:
+                        self.deck._send_key_image_to_device(key, image)
                     else:
                         logger.warning(f"render: page {self.name}: {key}: no fill icon")
 
@@ -111,5 +111,7 @@ class Page:
         """
         Ask each button to stop rendering and clean its mess.
         """
+        logger.debug(f"clean: page {self.name}: cleaning..")
         for button in self.buttons.values():
             button.clean()  # knows how to clean itself
+        logger.debug(f"clean: page {self.name}: ..done")
