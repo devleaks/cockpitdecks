@@ -1,0 +1,105 @@
+name: B
+buttons:
+#
+# KNOB
+#
+# DO NOT use simple number to identify knobs.
+  - index: e4
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: single
+    dataref-rpn: 8
+  - index: e5
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: fan
+    dataref-rpn: 6
+  - index: e6
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: spread
+    dataref-rpn: 8
+  - index: e7
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: trim
+    dataref-rpn: 6
+  - index: e3
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: 0
+    dataref-rpn: 1
+#
+# BUTTONS
+#
+  - index: 0
+    name: MASTERCAUT
+    type: push
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+    led: single
+  - index: 8
+    name: MASTERWARN
+    type: push
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+    led: single
+  - index: 2
+    name: BUTTON BLINK
+    type: push
+    dataref-rpn: 1
+    options: blink
+    led: single
+  - index: 10
+    name: BUTTON ON
+    type: push
+    led: single
+    options: counter
+    dataref-rpn: 1
+  - index: 15
+    name: RELOAD
+    type: reload
+    led: single
+    dataref-rpn: 1
+    options: blink
+#
+  - index: slider
+    name: SLIDER
+    type: slider
+    slider: true
+#
+# Pressing A loads page A
+  - index: A
+    name: Page A
+    type: page
+    page: A
+    led: single
+    dataref-rpn: 0
+# Pressing B does nothing, we are on page B...
+  - index: B
+    name: Page B
+    type: none
+    led: single
+    dataref-rpn: 1
+fill-empty-keys: False
+# includes: views

@@ -1,0 +1,31 @@
+# Definition of decks for Toliss A321
+#
+aicraft: DEMO AND TEST AIRCRAFT
+decks:
+  - name: XPDeck
+    type: streamdeck
+    layout: sd15
+    brightness: 80
+    default-label-font: DIN Medium.ttf
+    default-label-size: 13
+  - name: XPDeckXL
+    type: streamdeck
+    layout: sd32
+    brightness: 70
+    default-label-font: DIN Bold.ttf
+    default-label-size: 16
+  - name: XPLive
+    type: loupedeck
+    layout: live
+    brightness: 70
+  - name: XPTouch
+    type: xtouchmini
+    layout: xtouch
+    default-homepage-name: A
+    brightness: 70
+# This is at global level
+default-wallpaper-logo: logo.png
+default-icon-color: (94, 111, 130)
+default-label-color: white
+default-label-font: DIN.ttf
+default-label-size: 14

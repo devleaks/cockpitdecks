@@ -157,3 +157,5 @@ DEV/
 A321/esdconfig/.DS_Store
 .DS_Store
 A321/deckconfig/secret.yaml
+AIRCRAFT/deckconfig/secret.yaml
+*.zip

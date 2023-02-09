@@ -1,0 +1,100 @@
+name: A
+buttons:
+#
+# KNOB
+#
+# DO NOT use simple number to identify knobs.
+  - index: e0
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: single
+    dataref-rpn: 8
+  - index: e1
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: fan
+    dataref-rpn: 6
+  - index: e2
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: spread
+    dataref-rpn: 8
+  - index: e3
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: trim
+    dataref-rpn: 6
+  - index: e4
+    type: encoder-push
+    commands:
+      - AirbusFBW/RMP1FreqDownLrg
+      - AirbusFBW/RMP1FreqUpLrg
+      - AirbusFBW/RMP1FreqDownSml
+      - AirbusFBW/RMP1FreqUpSml
+    multi-leds: 0
+    dataref-rpn: 1
+#
+# BUTTONS
+#
+  - index: 0
+    name: MASTERCAUT
+    type: push
+    command: sim/annunciator/clear_master_caution
+    dataref: AirbusFBW/MasterCaut
+    led: single
+  - index: 8
+    name: MASTERWARN
+    type: push
+    command: sim/annunciator/clear_master_warning
+    dataref: AirbusFBW/MasterWarn
+    led: single
+  - index: 2
+    name: BUTTON ON
+    type: push
+    led: single
+    options: counter
+    dataref-rpn: 1
+  - index: 10
+    name: BUTTON BLINK
+    type: push
+    dataref-rpn: 1
+    options: blink
+    led: single
+  - index: 15
+    name: RELOAD
+    type: reload
+    led: single
+#
+  - index: slider
+    name: SLIDER
+    type: slider
+    slider: true
+#
+  - index: A
+    name: Page A
+    type: none
+    led: single
+    dataref-rpn: 1
+  - index: B
+    name: Page B
+    type: page
+    page: B
+    led: single
+    dataref-rpn: 0
+fill-empty-keys: False
