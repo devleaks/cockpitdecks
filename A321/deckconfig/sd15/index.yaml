@@ -6,10 +6,11 @@ buttons:
   - index: 14
     name: EFIS
     type: page
+    page: EFIS
     icon: TOLISS-A321
   - index: 0
     name: END
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -23,12 +24,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDENG
     command: AirbusFBW/ECP/SelectEnginePage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 1
     name: BLEED
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -43,11 +43,10 @@ buttons:
           text-size: 48
           dataref-rpn: "1"
     command: AirbusFBW/ECP/SelectBleedPage
-    dataref: AirbusFBW/SDBLEED
     view: SRS/X-Camera/Select_View_ID_3
   - index: 2
     name: PRESS
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -62,11 +61,10 @@ buttons:
           text-size: 48
           dataref-rpn: "1"
     command: AirbusFBW/ECP/SelectPressPage
-    dataref: AirbusFBW/SDPRESS
     view: SRS/X-Camera/Select_View_ID_3
   - index: 3
     name: ELEC
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -80,12 +78,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDELEC
     command: AirbusFBW/ECP/SelectElecPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 4
     name: HYD
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -99,12 +96,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDHYD
     command: AirbusFBW/ECP/SelectHydraulicPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 5
     name: FUEL
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -118,12 +114,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDFUEL
     command: AirbusFBW/ECP/SelectFuelPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 6
     name: APU
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -137,12 +132,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDAPU
     command: AirbusFBW/ECP/SelectAPUPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 7
     name: COND
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -156,12 +150,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDCOND
     command: AirbusFBW/ECP/SelectConditioningPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 8
     name: DOOR
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -175,12 +168,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDDOOR
     command: AirbusFBW/ECP/SelectDoorOxyPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 9
     name: WHEEL
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -194,12 +186,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDWHEEL
     command: AirbusFBW/ECP/SelectWheelPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 10
     name: F/CTL
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -213,12 +204,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDFCTL
     command: AirbusFBW/ECP/SelectFlightControlPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 11
     name: CLR
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -232,11 +222,10 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/CLRillum
     command: AirbusFBW/ECP/CaptainClear
   - index: 12
     name: STS
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -250,12 +239,11 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    dataref: AirbusFBW/SDSTATUS
     command: AirbusFBW/ECP/SelectStatusPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 13
     name: ALL
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       text: ALL

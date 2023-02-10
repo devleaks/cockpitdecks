@@ -17,7 +17,7 @@ from .rpc import RPC
 from .button_representation import Icon
 
 logger = logging.getLogger("Annunciator")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # Yeah, shouldn't be globals.

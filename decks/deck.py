@@ -115,6 +115,9 @@ class Deck(ABC):
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
                 self.default_home_page_name = self.layout_config.get("default-homepage-name")
+                self.empty_key_fill_color = self.layout_config.get("empty-key-fill-color", self.cockpit.empty_key_fill_color)
+                self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+                self.empty_key_fill_icon = self.layout_config.get("empty-key-fill-icon", self.cockpit.empty_key_fill_icon)
         else:
             logger.debug(f"load_layout_config: no layout config file")
 

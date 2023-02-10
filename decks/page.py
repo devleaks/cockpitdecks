@@ -21,6 +21,7 @@ class Page:
 
         self.default_label_font = config.get("default-label-font", deck.default_label_font)
         self.default_label_size = config.get("default-label-size", deck.default_label_size)
+        print("*********> ", self.name, config.get("default-label-size"))
         self.default_label_color = config.get("default-label-color", deck.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
         self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)

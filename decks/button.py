@@ -156,10 +156,6 @@ class Button:
         """
         Install button
         """
-        if self.has_option("bounce") and self.multi_icons is not None and len(self.multi_icons) > 0:
-            stops = self.option_value(option="stops", default=len(self.multi_icons))
-            self.bounce_arr = self.make_bounce_array(stops)
-
         # test: we try to immediately get a first value
         logger.debug(f"init: button {self.name} setting initial value..")
         if self.initial_value is not None:

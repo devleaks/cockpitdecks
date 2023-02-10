@@ -1,5 +1,5 @@
 name: ovrhdaircond
-version: 2.0.0
+version: 3.0.0
 title: Overhead AIR COND Panel
 description: Overhead AIR COND Panel with annunciator buttons
 note: Streamdeck 32 keys
@@ -31,6 +31,7 @@ buttons:
       - AC_6
     dataref: AirbusFBW/AirCondSwitchAnims[12]
     dataref-rpn: ${AirbusFBW/AirCondSwitchAnims[12]} 16 - 2 /
+    initial-value: 3
     commands:
       - none
       - none
@@ -75,7 +76,7 @@ buttons:
     options: bounce,placeholder
   - index: 5
     name: HOTAIR
-    type: annunciator-push
+    type: push
     label: HOT AIR
     label-position: ct
     annunciator:
@@ -96,7 +97,7 @@ buttons:
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: BLEEDPACK1
-    type: annunciator-push
+    type: push
     label: PACK 1
     label-position: ct
     annunciator:
@@ -117,7 +118,7 @@ buttons:
           dataref-rpn: ${AirbusFBW/Pack1SwitchIllum} 1 - abs
   - index: 9
     name: ENG1BLEED
-    type: annunciator-push
+    type: push
     label: ENG 1 BLEED
     label-position: ct
     annunciator:
@@ -138,7 +139,7 @@ buttons:
     command: toliss_airbus/apucommands/BleedToggle
   - index: 10
     name: RAMAIR
-    type: annunciator-push
+    type: push
     annunciator:
       size: large
       type: B
@@ -158,7 +159,7 @@ buttons:
       # 0=closed, 1=opened
   - index: 11
     name: APUBLEED
-    type: annunciator-push
+    type: push
     annunciator:
       size: large
       type: B
@@ -185,9 +186,10 @@ buttons:
       - none
       - none
     dataref: AirbusFBW/XBleedSwitch
+    initial-value: 1
   - index: 13
     name: ENG2BLEED
-    type: annunciator-push
+    type: push
     label: ENG 2 BLEED
     label-position: ct
     annunciator:
@@ -207,7 +209,7 @@ buttons:
           dataref-rpn: ${AirbusFBW/ENG2BleedSwitch} 1 - abs
   - index: 14
     name: BLEEDPACK2
-    type: annunciator-push
+    type: push
     label: PACK 2
     label-position: ct
     annunciator:
@@ -232,9 +234,10 @@ buttons:
     name: RELOAD
     type: reload
     icon: RELOAD
-    label: RELOAD
     label-position: ct
   - index: 31
     name: Index
     type: page
+    page: Index
     icon: TOLISS-A321
+default-label-size: 10

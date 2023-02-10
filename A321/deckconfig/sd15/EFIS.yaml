@@ -1,12 +1,12 @@
 name: EFIS
-version: 2.0.0
+version: 3.0.0
 description: EFIS display selector + some FCU commands
 note: final version for Streamdeck 15 keys
 buttons:
 # ### LINE 1 ###  0 -  4 ######################################################
   - index: 0
     name: CSTR
-    type: annunciator-push
+    type: push
     annunciator:
       size: small
       type: B
@@ -21,11 +21,10 @@ buttons:
           text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptCstrPushButton
-    dataref: AirbusFBW/NDShowCSTRCapt
     view: SRS/X-Camera/Select_View_ID_1
   - index: 1
     name: WPT
-    type: annunciator-push
+    type: push
     annunciator:
       size: small
       type: B
@@ -40,11 +39,10 @@ buttons:
           text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptWptPushButton
-    dataref: AirbusFBW/NDShowWPTCapt
     view: SRS/X-Camera/Select_View_ID_1
   - index: 2
     name: VOR.D
-    type: annunciator-push
+    type: push
     annunciator:
       size: small
       type: B
@@ -59,11 +57,10 @@ buttons:
           text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptVorDPushButton
-    dataref: AirbusFBW/NDShowVORDCapt
     view: SRS/X-Camera/Select_View_ID_1
   - index: 3
     name: NDB
-    type: annunciator-push
+    type: push
     annunciator:
       size: small
       type: B
@@ -78,11 +75,10 @@ buttons:
           text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptNdbPushButton
-    dataref: AirbusFBW/NDShowNDBCapt
     view: SRS/X-Camera/Select_View_ID_1
   - index: 4
     name: ARPT
-    type: annunciator-push
+    type: push
     annunciator:
       size: small
       type: B
@@ -97,7 +93,6 @@ buttons:
           text-size: 40
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptArptPushButton
-    dataref: AirbusFBW/NDShowARPTCapt
     view: SRS/X-Camera/Select_View_ID_1
 # ### LINE 2 ###  5 -  9 ######################################################
   - index: 5
@@ -110,7 +105,7 @@ buttons:
     label-position: ct
   - index: 6
     name: FD 1
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -122,13 +117,12 @@ buttons:
         B1:
           text: FD
           color: white
-          text-size: 48
+          text-size: 64
           dataref-rpn: "1"
-    dataref: AirbusFBW/FD1Engage
     command: toliss_airbus/fd1_push
   - index: 7
     name: LS 1
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -140,13 +134,13 @@ buttons:
         B1:
           text: LS
           color: white
-          text-size: 48
+          text-size: 64
           dataref-rpn: "1"
     command: toliss_airbus/dispcommands/CaptLSButtonPush
     view: SRS/X-Camera/Select_View_ID_1
   - index: 8
     name: LOC 1
-    type: annunciator-push
+    type: push
     annunciator:
       size: medium
       type: B
@@ -158,10 +152,9 @@ buttons:
         B1:
           text: LOC
           color: white
-          text-size: 48
+          text-size: 64
           dataref-rpn: "1"
     command: AirbusFBW/LOCbutton
-    dataref: AirbusFBW/LOCilluminated
   - index: 9
     name: SPD/MACH
     type: push
@@ -170,6 +163,7 @@ buttons:
     label-size: 10
     command: sim/autopilot/knots_mach_toggle
     dataref: sim/cockpit/autopilot/airspeed_is_mach
+    initial-value: 0
     multi-icons:
       - SWITCH_ROUND_TOP
       - SWITCH_ROUND_BOT
@@ -179,26 +173,31 @@ buttons:
     type: push
     command: sim/instruments/EFIS_mode_dn
     label: "EFIS\nMODE -"
+    icon-color: (94, 111, 130)
     options: nostate
   - index: 11
     name: EFIS MODE +
     type: push
     command: sim/instruments/EFIS_mode_up
     label: "EFIS\nMODE +"
+    icon-color: (94, 111, 130)
     options: nostate
   - index: 12
     name: EFIS ZOOM IN
     type: push
     command: sim/instruments/map_zoom_in
     label: "EFIS\nZOOM IN"
+    icon-color: (94, 111, 130)
     options: nostate
   - index: 13
     name: EFIS ZOOM OUT
     type: push
     command: sim/instruments/map_zoom_out
     label: "EFIS\nZOOM OUT"
+    icon-color: (94, 111, 130)
     options: nostate
   - index: 14
     name: ECAM
     type: page
+    page: ECAM
     icon: TOLISS-A321

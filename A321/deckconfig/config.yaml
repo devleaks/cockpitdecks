@@ -4,7 +4,7 @@ aicraft: Toliss A321
 decks:
   - name: XPLive
     type: loupedeck
-    layout: live
+    layout: liveold
     brightness: 70
   - name: XPDeck
     type: streamdeck
@@ -20,7 +20,7 @@ decks:
     default-label-size: 16
   - name: XPTouch
     type: xtouchmini
-    layout: xtouch
+    layout: xtouchold
     brightness: 70
     # disabled: True
     # We use X-Touch from X-Keypad for better control
@@ -30,3 +30,4 @@ default-icon-color: (94, 111, 130)
 default-label-color: white
 default-label-font: DIN.ttf
 default-label-size: 14
+empty-key-fill-color: (94, 111, 130)

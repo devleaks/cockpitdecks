@@ -4,48 +4,55 @@ buttons:
   - index: 0
     name: ovrhdapu
     type: page
+    page: ovrhdapu
     icon: NONE
     label: "APU &\nFIRE"
     label-position: cm
   - index: 1
     name: ovrhdhyd
     type: page
+    page: ovrhdhyd
     icon: NONE
     label: "HYD"
     label-position: cm
   - index: 2
     name: ovrhdfuel
     type: page
+    page: ovrhdfuel
     icon: NONE
     label: "FUEL"
     label-position: cm
   - index: 3
     name: ovrhdelec
     type: page
+    page: ovrhdelec
     icon: NONE
     label: "ELEC"
     label-position: cm
   - index: 4
     name: ovrhdaircond
     type: page
+    page: ovrhdaircond
     icon: NONE
     label: "AIR\nCOND"
     label-position: cm
   - index: 5
     name: ovrhdextlights
     type: page
+    page: ovrhdextlights
     icon: NONE
     label: "EXT.\nLIGHTS"
     label-position: cm
   - index: 6
     name: ovrhdcall
     type: page
+    page: ovrhdcall
     icon: NONE
     label: "CALL &\nINT.\nLIGHTS"
     label-position: cm
   - index: 7
     name: ISCS
-    type: push
+    type: onoff
     multi-icons:
       - P_TOLISS_ISCS_OFF
       - P_TOLISS_ISCS_ON
@@ -55,24 +62,28 @@ buttons:
   - index: 8
     name: adirs
     type: page
+    page: adirs
     icon: NONE
     label: "ADIRS"
     label-position: cm
   - index: 9
     name: other
     type: page
+    page: other
     icon: NONE
     label: "OTHER"
     label-position: cm
   - index: 13
     name: XPNDR
     type: page
+    page: XPNDR
     icon: NONE
     label: XPNDR
     label-position: cm
   - index: 14
     name: radio
     type: page
+    page: radio
     icon: NONE
     label: RADIO
     label-position: cm
@@ -108,4 +119,6 @@ buttons:
   - index: 31
     name: xplane
     type: page
+    page: xplane
     icon: XPLANE12
+default-label-size: 20

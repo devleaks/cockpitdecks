@@ -143,10 +143,8 @@ class Icon(Representation):
         page = self.button.page
         text_font = config.get(f"{which_text}-font", page.default_label_font)
         text_size = config.get(f"{which_text}-size", page.default_label_size)
-
         text_color = config.get(f"{which_text}-color", page.default_label_color)
         text_color = convert_color(text_color)
-
         text_position = config.get(f"{which_text}-position", "cm")
         if text_position[0] not in "lcr" or text_position[1] not in "tmb":
             logger.warning(f"get_text_detail: button {self.button.name}: {type(self).__name__}: invalid label position code {text_position}, using default")
@@ -172,18 +170,18 @@ class Icon(Representation):
                 logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: button label font '{fontname}' not found")
         else:
             fontname = self.button.page.default_label_font
-            logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: no font, using default from page {fontname}")
+            logger.debug(f"get_font: button {self.button.name}: {type(self).__name__}: no font, using default from page {fontname}")
 
         # 2. Tries deck default font
         if deck.default_label_font is not None and deck.default_label_font in fonts_available:
-            logger.info(f"get_font: button {self.button.name}: {type(self).__name__}: using deck default font '{deck.default_label_font}'")
+            logger.debug(f"get_font: button {self.button.name}: {type(self).__name__}: using deck default font '{deck.default_label_font}'")
             return deck.cockpit.fonts[deck.default_label_font]
         else:
             logger.warning(f"get_font: button {self.button.name}: {type(self).__name__} deck default label font '{fontname}' not found")
 
         # 3. Tries streamdecks default font
         if deck.cockpit.default_label_font is not None and deck.cockpit.default_label_font in fonts_available:
-            logger.info(f"get_font: button {self.button.name}: {type(self).__name__} using cockpit default font '{deck.cockpit.default_label_font}'")
+            logger.debug(f"get_font: button {self.button.name}: {type(self).__name__} using cockpit default font '{deck.cockpit.default_label_font}'")
             return deck.cockpit.fonts[deck.cockpit.default_label_font]
         logger.error(f"get_font: button {self.button.name}: {type(self).__name__} cockpit default label font not found, tried {fontname}, {deck.default_label_font}, {deck.cockpit.default_label_font}")
         return None
@@ -230,6 +228,10 @@ class Icon(Representation):
         # Add label if any
 
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._config, which_text)
+
+        if which_text == "label":  # hum.
+            text_size = int(text_size * image.width / 72)
+
         # logger.debug(f"overlay_text: {text}")
         if text is not None:
             fontname = self.get_font(text_font)
@@ -420,9 +422,14 @@ class MultiIcons(Icon):
                 self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
                 if self.multi_icons[i] not in self.button.deck.icons.keys():
                     logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
+        else:
+            logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: no icon")
 
     def is_valid(self):
-        if len(self.multi_icons) > 0:
+        if self.multi_icons is None:
+            logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: no icon")
+            return False
+        if len(self.multi_icons) == 0:
             logger.warning(f"is_valid: {type(self).__name__}: no icon")
         return super().is_valid()
 
@@ -430,11 +437,14 @@ class MultiIcons(Icon):
         return len(self.multi_icons)
 
     def render(self):
+        if not self.is_valid():
+            logger.warning(f"render: button {self.button.name}: {type(self).__name__}: is invalid")
+            return
         value = self.get_current_value()
         if value is None:
             logger.warning(f"render: button {self.button.name}: {type(self).__name__}: no current value")
             return None
-
+        value = int(value)
         if self.num_icons() > 0:
             if  value >= 0 and value < self.num_icons():
                 self.icon = self.multi_icons[value]

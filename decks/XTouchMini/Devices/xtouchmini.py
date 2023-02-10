@@ -7,7 +7,7 @@ import random
 import mido
 from enum import Enum
 
-logger = logging.getLogger(">"*20 + "XTouchMini")
+logger = logging.getLogger("XTouchMini")
 logger.setLevel(logging.DEBUG)
 
 GLOBAL_CHANNEL = 0
@@ -48,26 +48,13 @@ class XTouchMini:
         self.output_device_name = output_device_name
 
         self._input_device = None
-        self._output_device = mido.open_output(output_device_name, autoreset=True)
+        self._output_device = mido.open_output(output_device_name)
 
         self.callback = None
         self.timeout = 10
         self.wait_finished = None
         self.makie = False
 
-        logger.debug(f"__init__: inited: {mido.get_output_names()}")
-
-
-    def __del__(self):
-        """
-        Delete handler for the automatically closing the serial port.
-        """
-        try:
-            if self._output_device is not None:
-                self._output_device.close()
-                logger.debug(f"__del__: connection closed")
-        except:
-            logger.error(f"__del__: exception:", exc_info=1)
 
     def id(self):
         return self.name
@@ -81,7 +68,7 @@ class XTouchMini:
     def close(self):
         pass
 
-    def reset(self, silence: bool = False):
+    def reset(self, silence: bool = True):
         if silence:
             l= logger.getEffectiveLevel()
             logger.setLevel(logging.WARNING)
@@ -112,8 +99,7 @@ class XTouchMini:
 
     def _read_makie(self, msg: mido.Message) -> None:
         # ** MAKIE VERSION **
-        logger.info(f"Threads AFTER: {[t.name for t in threading.enumerate()]}")
-        logger.debug(f"_read_makie: {msg}")
+        # logger.debug(f"_read_makie: {msg}")
         payload = None
         if msg.type == "note_on":
             payload = { "key": msg.note, "state": 1 if msg.velocity == 127 else 0 }
@@ -180,7 +166,6 @@ class XTouchMini:
     def loop(self) -> None:
         m = None
         try:
-            logger.info(f"Threads BEFORE: {[t.name for t in threading.enumerate()]}")
             logger.debug(f'start: opening MIDI device: "{self.name}"..')
             m = mido.open_input(self.name, callback=self._read_makie if self.makie else self._read)
             logger.debug('start: ..device opened')
@@ -189,12 +174,15 @@ class XTouchMini:
             if self.wait_finished is not None:
                 self.wait_finished.set()
         except Exception as e:
-            logger.error(f"start: exception:", exc_info=1)
+            if m is not None and not m.closed:
+                m.close()
+            logger.error(f"loop: exception:", exc_info=1)
         except KeyboardInterrupt:
             if m is not None and not m.closed:
                 m.close()
-                logger.debug(f'start: closed MIDI device: "{self.name}"')
-        logger.error(f"loop: exited")
+                logger.debug(f'loop: closed MIDI device: "{self.name}"')
+            logger.debug(f'loop: KeyboardInterrupt: "{self.name}"')
+        logger.error(f"loop: {self.name}: exited")
 
 
     def stop(self) -> None:
@@ -205,7 +193,6 @@ class XTouchMini:
             logger.warning(f"stop: did not stop cleanly")
         self.wait_finished = None
         if self._output_device is not None and not self._output_device.closed:
-            logger.debug(f"stop: ..closing output channel..")
             self._output_device.close()
         logger.debug(f"stop: ..stopped")
 
