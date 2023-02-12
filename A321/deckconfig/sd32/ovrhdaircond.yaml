@@ -234,10 +234,9 @@ buttons:
     name: RELOAD
     type: reload
     icon: RELOAD
-    label-position: ct
   - index: 31
     name: Index
     type: page
-    page: Index
+    page: index
     icon: TOLISS-A321
 default-label-size: 10

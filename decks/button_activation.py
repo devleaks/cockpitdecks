@@ -63,13 +63,13 @@ class Activation:
         Also, removes guard if it was present. @todo: close guard
         """
         self._last_state = state
+        s = str(state)
+        if s in self.activations_count:
+            self.activations_count[s] = self.activations_count[s] + 1
+        else:
+            self.activations_count[s] = 1
         if state:
             self.activation_count = self.activation_count + 1
-            s = str(state)
-            if s in self.activations_count:
-                self.activations_count[s] = self.activations_count[s] + 1
-            else:
-                self.activations_count[s] = 1
             self.last_activated = datetime.now().timestamp()
             logger.debug(f"activate: button {self.button.name} activated")
 
@@ -137,7 +137,7 @@ class Activation:
 
     def view(self):
         if self._view is not None and self.is_valid():
-            self.button.xp.commandOnce(self.view)
+            self.button.xp.commandOnce(self._view)
 
 
 #
@@ -259,8 +259,9 @@ class Push(Activation):
     def activate(self, state):
         super().activate(state)
         if self.is_valid():
-            self.button.xp.commandOnce(self.command)
-            self.view()
+            if state:
+                self.button.xp.commandOnce(self.command)
+                self.view()
         else:
             logger.warning(f"activate: button {self.button.name} is invalid")
 
@@ -299,6 +300,12 @@ class OnOff(Activation):
         return super() + "\n" + ", ".join((f"commands: {self.commands}",
                 f"is_off: {self.is_off()}"),
                 f"is_valid: {self.is_valid()}")
+
+    def is_on(self):
+        return self.activation_count % 2 == 1
+
+    def is_off(self):
+        return self.activation_count % 2 == 0
 
     def is_valid(self):
         if len(self.commands) < 2:

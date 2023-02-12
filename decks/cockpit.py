@@ -5,11 +5,12 @@ import threading
 import yaml
 import logging
 import pickle
+from queue import Queue
 
 from PIL import Image, ImageFont
 
 from .constant import CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE, INIT_PAGE
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
 from .color import convert_color
 
@@ -39,6 +40,10 @@ class Cockpit:
         self.disabled = False
         self.default_pages = None  # for debugging
 
+        self.reload_loop_run = False
+        self.reload_loop_thread = None
+        self.reload_queue = Queue()
+
         self.devices = []
 
         self.acpath = None
@@ -62,7 +67,7 @@ class Cockpit:
         self.empty_key_fill_icon = None
         self.annunciator_style = ANNUNCIATOR_STYLE
         self.cockpit_color = COCKPIT_COLOR
-        self.default_home_page_name = INIT_PAGE
+        self.default_home_page_name = HOME_PAGE
         self.init()
 
     def init(self):
@@ -70,6 +75,7 @@ class Cockpit:
         Loads all Stream Deck devices connected to this computer.
         """
         self.scan_devices()
+        self.start_reload_loop()
 
 
     def inspect(self):
@@ -185,7 +191,7 @@ class Cockpit:
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
             self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
-            self.default_home_page_name = self.default_config.get("default-homepage-name", INIT_PAGE)
+            self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
 
         # 1. Creating default icon
         self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
@@ -418,17 +424,58 @@ class Cockpit:
     # #########################################################
     # Cockpit start/stop/reload procedures
     #
-    def reload_decks(self):
+    # Note: Reloading the deck is done from a separate (dedicated) thread through a queue.
+    #
+    # The reason is that the reload is provoked by a keypress which is handled in a callback
+    # from a deck thread. On reload, the deck will be stopped, initialized, and restarted
+    # leading somehow in the destruction of the objects that had created the thread.
+    # When pressing a new button, callback would terminate Cockpitdeck.
+    # To prevent that, the callback just enqueue a request to perform a reload and exits right away.
+    # We do the reload from another thread, external to the callback,
+    # that cleanly stops, initializes, and restarts the deck.
+    #
+    def start_reload_loop(self):
+        if not self.reload_loop_run:
+            self.reload_loop_thread = threading.Thread(target=self.reload_loop)
+            self.reload_loop_thread.name = f"Cockpit::reload_loop"
+            self.reload_loop_run = True
+            self.reload_loop_thread.start()
+            logger.info(f"start_reload_loop: started")
+        else:
+            logger.info(f"start_reload_loop: already running")
+
+    def reload_loop(self):
+        while self.reload_loop_run:
+            e = self.reload_queue.get()
+            if e == "reload":
+                self.reload_decks(just_do_it=True)
+        logger.info(f"reload_loop: ended")
+
+    def end_reload_loop(self):
+        if self.reload_loop_run:
+            self.reload_loop_run = False
+            self.reload_queue.put("stop")  # to unblock the Queue.get()
+            self.reload_loop_thread.join()
+            logger.info(f"end_reload_loop: stopped")
+        else:
+            logger.info(f"end_reload_loop: not running")
+
+    def reload_decks(self, just_do_it: bool = False):
         """
         Development function to reload page yaml without leaving the page
         Should not be used in production...
         """
-        logger.info(f"reload_decks: reloading..")
-        self.default_pages = {}  # {deck_name: currently_loaded_page_name}
-        for name, deck in self.cockpit.items():
-            self.default_pages[name] = deck.current_page.name
-        self.load_aircraft(self.acpath)  # will terminate it before loading again
-        logger.info(f"reload_decks: ..done")
+        if just_do_it:
+            logger.info(f"reload_decks: reloading..")
+            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
+            for name, deck in self.cockpit.items():
+                self.default_pages[name] = deck.current_page.name
+            self.load_aircraft(self.acpath)  # will terminate it before loading again
+            logger.info(f"reload_decks: ..done")
+        else:
+            self.reload_queue.put("reload")
+            logger.info(f"reload_decks: enqueued")
+
 
     def terminate_this_aircraft(self):
         logger.info(f"terminate_this_aircraft: terminating..")
@@ -456,6 +503,7 @@ class Cockpit:
             del self.xp
             self.xp = None
             logger.info(f"terminate_all: ..xp deleted..")
+        self.end_reload_loop()
         logger.info(f"terminate_all: ..done")
         left = len(threading.enumerate())
         if left > 1:  # [MainThread]

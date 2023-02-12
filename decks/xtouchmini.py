@@ -8,7 +8,7 @@ import threading
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import is_integer
 from .deck import Deck
 from .page import Page

@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 
 from .Loupedeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, INIT_PAGE, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import convert_color, is_integer
 from .deck import Deck
 from .page import Page

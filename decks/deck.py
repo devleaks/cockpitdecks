@@ -114,7 +114,7 @@ class Deck(ABC):
                 self.layout_config = yaml.safe_load(fp)
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
-                self.default_home_page_name = self.layout_config.get("default-homepage-name")
+                self.default_home_page_name = self.layout_config.get("default-homepage-name", self.cockpit.default_home_page_name)
                 self.empty_key_fill_color = self.layout_config.get("empty-key-fill-color", self.cockpit.empty_key_fill_color)
                 self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
                 self.empty_key_fill_icon = self.layout_config.get("empty-key-fill-icon", self.cockpit.empty_key_fill_icon)
@@ -273,7 +273,7 @@ class Deck(ABC):
                 self.home_page = self.pages[self.default_home_page_name]
             else:
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.info(f"load: deck {self.name} init page {self.home_page.name}")
+            logger.info(f"load: deck {self.name} home page {self.home_page.name}")
 
     def load_home_page(self):
         """

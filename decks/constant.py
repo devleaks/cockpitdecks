@@ -13,7 +13,7 @@ CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 
 DEFAULT_LAYOUT = "default"
-INIT_PAGE = "index"
+HOME_PAGE = "index"
 DEFAULT_PAGE_NAME = "X-Plane"
 
 COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name

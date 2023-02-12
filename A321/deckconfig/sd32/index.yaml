@@ -1,4 +1,4 @@
-name: Index
+name: index
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
@@ -114,8 +114,6 @@ buttons:
     name: RELOAD
     type: reload
     icon: RELOAD
-    label: RELOAD
-    label-position: ct
   - index: 31
     name: xplane
     type: page

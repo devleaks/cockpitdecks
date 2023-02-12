@@ -21,8 +21,9 @@ logger.setLevel(logging.DEBUG)
 DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often = SLOW
 DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
                     # must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produce.
-LOOP_ALIVE   = 1000 # report loop activity every 1000 executions on DEBUG, set to None to suppress output
-
+LOOP_ALIVE   = 10 # report loop activity every 1000 executions on DEBUG, set to None to suppress output
+RECONNECT_TIMEOUT = 10  # seconds
+MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -48,8 +49,9 @@ class XPlaneBeacon:
 
     def __init__(self):
         # Open a UDP Socket to receive on Port 49000
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket = None
         # values from xplane
+        self.connected = False
         self.BeaconData = {}
 
     def FindIp(self):
@@ -57,6 +59,11 @@ class XPlaneBeacon:
         Find the IP of XPlane Host in Network.
         It takes the first one it can find.
         '''
+        if self.socket is not None:
+            self.socket.close()
+            self.socket = None
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
         self.BeaconData = {}
 
         # open socket for multicast group.
@@ -126,12 +133,58 @@ class XPlaneBeacon:
                     raise XPlaneVersionNotSupported()
 
         except socket.timeout:
-            logger.error("FindIp: XPlane IP not found.")
+            logger.warning("FindIp: XPlane IP not found.")
             raise XPlaneIpNotFound()
         finally:
             sock.close()
 
         return self.BeaconData
+
+
+    def disconnect(self, try_reconnect: bool = True):
+        logger.debug("disconnect: disconnecting..")
+        self.connected = False
+        self.terminate()
+        logger.debug("disconnect: ..disconnected")
+        if try_reconnect:
+            self.connect()
+
+
+    def connect_loop(self):
+        logger.debug("connect_loop: connecting..")
+        while not self.connected:
+            try:
+                self.FindIp()
+                if "IP" in self.BeaconData:
+                    self.connected = True
+                logger.info(self.BeaconData)
+                logger.debug("connect_loop: ..starting..")
+                self.start()
+            except XPlaneVersionNotSupported:
+                self.BeaconData = {}
+                self.connected = False
+                logger.error("connect_loop: XPlane Version not supported.")
+            except XPlaneIpNotFound:
+                self.BeaconData = {}
+                self.connected = False
+                # logger.error("connect_loop: XPlane IP not found. Probably there is no XPlane running in your local network.")
+            if not self.connected:
+                time.sleep(RECONNECT_TIMEOUT)
+                logger.debug("connect_loop: ..trying..")
+        logger.debug("connect_loop: ..connected; connect_loop ended")
+
+    def connect(self):
+        if not self.connected:
+            self.connect_thread = threading.Thread(target=self.connect_loop)
+            self.connect_thread.name = "XPlaneBeacon::connect_loop"
+            self.connect_thread.start()
+        logger.debug("connect: connect_loop started")
+
+    def start(self):
+        pass
+
+    def terminate(self):
+        pass
 
 
 class XPlaneUDP(XPlane, XPlaneBeacon):
@@ -159,20 +212,21 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.init()
 
     def init(self):
-        try:
-            beacon = self.FindIp()
-            logger.info(beacon)
-        except XPlaneVersionNotSupported:
-            self.BeaconData = {}
-            logger.error("init: XPlane Version not supported.")
-        except XPlaneIpNotFound:
-            self.BeaconData = {}
-            logger.error("init: XPlane IP not found. Probably there is no XPlane running in your local network.")
+        self.connect()
+        # try:
+        #     beacon = self.FindIp()
+        #     logger.info(beacon)
+        # except XPlaneVersionNotSupported:
+        #     self.BeaconData = {}
+        #     logger.error("init: XPlane Version not supported.")
+        # except XPlaneIpNotFound:
+        #     self.BeaconData = {}
+        #     logger.error("init: XPlane IP not found. Probably there is no XPlane running in your local network.")
 
     def __del__(self):
         for i in range(len(self.datarefs)):
             self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
-        self.socket.close()
+        self.disconnect(try_reconnect=False)
 
     def get_dataref(self, path):
         if path in self.all_datarefs.keys():
@@ -264,7 +318,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         return self.xplaneValues
 
     def ExecuteCommand(self, command: str):
-        if "IP" in self.BeaconData:
+        if self.connected:
             if command.lower() in ["none", "placeholder"]:
                 logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
                 return
@@ -303,9 +357,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                 except XPlaneTimeout:
                     logger.warning(f"loop: XPlaneTimeout ({total_to})")  # ignore
                     total_to = total_to + 1
-                    # if total_to > 10:  # attemps to reconnect
-                    #     self.socket.close()
-                    #     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
+                        self.disconnect()
 
             if nexttime > 0:
                 time.sleep(nexttime)
@@ -370,7 +423,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     # Cockpit interface
     #
     def start(self):
-        if "IP" in self.BeaconData:
+        if self.connected:
             if not self.running:
                 self.thread = threading.Thread(target=self.loop)
                 self.thread.name = f"XPlaneUDP::loop"

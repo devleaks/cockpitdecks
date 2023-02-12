@@ -78,7 +78,7 @@ buttons:
           color: white
           text-size: 48
           dataref-rpn: "1"
-    command: AirbusFBW/ECP/SelectElecPage
+    command: AirbusFBW/ECP/SelectElecACPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 4
     name: HYD
