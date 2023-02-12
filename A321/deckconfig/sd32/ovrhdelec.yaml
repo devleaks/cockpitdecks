@@ -19,7 +19,7 @@ buttons:
     label: ${AirbusFBW/BatVolts[0]}
     label-format: "{:2.1f}"
     label-color: white
-    label-size: 56
+    label-size: 40
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
   - index: 3
@@ -50,7 +50,7 @@ buttons:
     label: ${AirbusFBW/BatVolts[1]}
     label-format: "{:2.1f}"
     label-color: white
-    label-size: 56
+    label-size: 40
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
     # type: none
@@ -90,7 +90,7 @@ buttons:
     label-position: ct
   - index: 12
     name: EXPPOWER
-    type: annunciator-push
+    type: push
     annunciator:
       size: large
       type: B

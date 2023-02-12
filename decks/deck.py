@@ -114,10 +114,22 @@ class Deck(ABC):
                 self.layout_config = yaml.safe_load(fp)
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
-                self.default_home_page_name = self.layout_config.get("default-homepage-name", self.cockpit.default_home_page_name)
+                self.default_label_font = self.layout_config.get("default-label-font", self.cockpit.default_label_font)
+                self.default_label_size = self.layout_config.get("default-label-size", self.cockpit.default_label_size)
+                self.default_label_color = self.layout_config.get("default-label-color", self.cockpit.default_label_color)
+                self.default_label_color = convert_color(self.default_label_color)
+                self.default_icon_name = self.layout_config.get("default-icon-color", self.name + self.cockpit.default_icon_name)
+                self.default_icon_color = self.layout_config.get("default-icon-color", self.cockpit.default_icon_color)
+                self.default_icon_color = convert_color(self.default_icon_color)
+                self.fill_empty_keys = self.layout_config.get("fill-empty-keys", self.cockpit.fill_empty_keys)
                 self.empty_key_fill_color = self.layout_config.get("empty-key-fill-color", self.cockpit.empty_key_fill_color)
                 self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
                 self.empty_key_fill_icon = self.layout_config.get("empty-key-fill-icon", self.cockpit.empty_key_fill_icon)
+                self.annunciator_style = self.layout_config.get("annunciator-style", self.cockpit.annunciator_style)
+                self.cockpit_color = self.layout_config.get("cockpit-color", self.cockpit.cockpit_color)
+                self.logo = self.layout_config.get("default-wallpaper-logo", self.cockpit.default_logo)
+                self.wallpaper = self.layout_config.get("default-wallpaper", self.cockpit.default_wallpaper)
+                self.default_home_page_name = self.layout_config.get("default-homepage-name", self.cockpit.default_home_page_name)
         else:
             logger.debug(f"load_layout_config: no layout config file")
 
@@ -263,6 +275,9 @@ class Deck(ABC):
             if self.current_page is not None:
                 return self.current_page.name
         return None
+
+    def reload_page(self):
+        self.change_page(self.current_page.name)
 
     def set_home_page(self):
         if not len(self.pages) > 0:

@@ -9,7 +9,7 @@ buttons:
     name: View 1
     type: button
     icon-color: (255, 128, 0)
-    label: "Overhead\nPanel"
+    label: FD/ND
     command: SRS/X-Camera/Select_View_ID_1
   - index: 2
     name: View 2
@@ -21,19 +21,19 @@ buttons:
     name: View 3
     type: button
     icon-color: (0, 255, 0)
-    label: PFD / ND
+    label: ECAM
     command: SRS/X-Camera/Select_View_ID_3
   - index: 4
     name: View 4
     type: button
     icon-color: (0, 255, 255)
-    label: ECAM
+    label: FMC
     command: SRS/X-Camera/Select_View_ID_4
   - index: 5
     name: View 5
     type: button
     icon-color: (0,0,255)
-    label: FMC
+    label: Piedestal
     command: SRS/X-Camera/Select_View_ID_5
   - index: 6
     name: View 6
@@ -44,6 +44,6 @@ buttons:
   - index: 7
     name: View 7
     type: button
-    label: back
+    label: Overhead Panel
     command: SRS/X-Camera/Select_View_ID_7
     icon-color: (255, 0, 255)

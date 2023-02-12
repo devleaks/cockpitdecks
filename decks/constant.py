@@ -21,7 +21,7 @@ COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name
 FONTS_FOLDER = "fonts"
 DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS
 DEFAULT_LABEL_FONT = "DIN.ttf"
-DEFAULT_LABEL_SIZE = 12
+DEFAULT_LABEL_SIZE = 10
 DEFAULT_LABEL_COLOR = "white"
 
 ICONS_FOLDER = "icons"
@@ -34,6 +34,7 @@ DEFAULT_LOGO = "logo.png"
 
 DATAREF_RPN = "dataref-rpn"
 
+SPAM = 15
 
 # #############################################################
 # Constants for Loupedeck Live

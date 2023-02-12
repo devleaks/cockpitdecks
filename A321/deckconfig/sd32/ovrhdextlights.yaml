@@ -1,4 +1,4 @@
-name: ovrhdcall
+name: ovrhdextlights
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
 # ### LINE 2 ###  8-15 ######################################################
@@ -7,4 +7,5 @@ buttons:
   - index: 31
     name: Index
     type: page
+    page: index
     icon: TOLISS-A321

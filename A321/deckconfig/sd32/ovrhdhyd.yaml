@@ -6,16 +6,19 @@ buttons:
     icon: NO_BUTTON
     label: GREEN
     label-color: green
+    label-size: 14
   - index: 2
     type: none
     icon: NO_BUTTON
     label: BLUE
     label-color: blue
+    label-size: 14
   - index: 4
     type: none
     icon: NO_BUTTON
     label: YELLOW
     label-color: yellow
+    label-size: 14
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: ENG1PUMP
@@ -25,6 +28,7 @@ buttons:
       - FAULT_AMBER_NONE
       - NONE_OFF_WHITE_FR
       - FAULT_AMBER_OFF_WHITE_FR
+    initial-value: 0
     label: ENG 1 PUMP
     label-position: ct
     options: counter
@@ -37,6 +41,7 @@ buttons:
       - NONE_ON_GREEN_FR
     label: RAT MAN ON
     label-position: ct
+    initial-value: 0
     options: counter
   - index: 10
     name: ELECPUMP1
@@ -48,6 +53,7 @@ buttons:
       - FAULT_AMBER_OFF_WHITE_FR
     label: ELEC PUMP
     label-position: ct
+    initial-value: 0
   - index: 11
     name: PTU
     type: push
@@ -58,6 +64,7 @@ buttons:
       - FAULT_AMBER_OFF_WHITE_FR
     label: PTU
     label-position: ct
+    initial-value: 0
   - index: 12
     name: ENG2PUMP
     type: push
@@ -68,6 +75,7 @@ buttons:
       - FAULT_AMBER_OFF_WHITE_FR
     label: ENG 2 PUMP
     label-position: ct
+    initial-value: 0
   - index: 13
     name: ELECPUMP2
     type: push
@@ -78,9 +86,11 @@ buttons:
       - FAULT_AMBER_OFF_WHITE_FR
     label: ELEC PUMP
     label-position: ct
+    initial-value: 0
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31
     name: Index
     type: page
     icon: TOLISS-A321
+default-label-size: 10

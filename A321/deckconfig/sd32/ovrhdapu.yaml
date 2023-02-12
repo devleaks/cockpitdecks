@@ -1,9 +1,10 @@
 name: ovrhdapu
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
+# This is EXTERNAL POWER from Toliss ISCS screen.
   - index: 0
     name: EXPPOWER
-    type: annunciator-push
+    type: push
     annunciator:
       size: large
       type: B
@@ -24,7 +25,7 @@ buttons:
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: APUMASTER
-    type: annunciator-push
+    type: push
     annunciator:
       size: large
       type: B
@@ -39,19 +40,19 @@ buttons:
     label: MASTER SW
     label-position: ct
   - index: 10
-    type: long-press
+    type: longpress
     icon: TEST
     label: "ENG 1\nTEST"
     label-position: ct
     command: AirbusFBW/FireTestENG1
   - index: 11
-    type: long-press
+    type: longpress
     icon: TEST
     label: "APU\nTEST"
     label-position: ct
     command: AirbusFBW/FireTestAPU
   - index: 12
-    type: long-press
+    type: longpress
     icon: TEST
     label: "ENG 2\nTEST"
     label-position: ct
@@ -59,7 +60,7 @@ buttons:
   # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: APUSTART
-    type: annunciator-push
+    type: push
     annunciator:
       size: large
       type: B

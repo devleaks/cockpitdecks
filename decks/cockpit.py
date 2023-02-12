@@ -9,7 +9,7 @@ from queue import Queue
 
 from PIL import Image, ImageFont
 
-from .constant import CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
+from .constant import SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
 from .color import convert_color
@@ -17,6 +17,7 @@ from .color import convert_color
 from .devices import DECK_TYPES
 from .streamdeck import FLIP_DESCRIPTION
 
+logging.addLevelName(SPAM, "SPAM")
 
 logger = logging.getLogger("Cockpit")
 # logger.setLevel(logging.DEBUG)
@@ -171,6 +172,10 @@ class Cockpit:
         else:
             logger.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
+
+    def reload_page(self):
+        for name, deck in self.cockpit.items():
+            deck.reload_page()
 
     def load_defaults(self):
         """

@@ -392,6 +392,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     def add_datarefs_to_monitor(self, datarefs):
         if "IP" not in self.BeaconData:
             logger.warning(f"add_datarefs_to_monitor: no IP connection")
+            logger.debug(f"add_datarefs_to_monitor: would add {datarefs.keys()}")
             return
         # Add those to monitor
         super().add_datarefs_to_monitor(datarefs)
@@ -404,6 +405,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     def remove_datarefs_to_monitor(self, datarefs):
         if "IP" not in self.BeaconData:
             logger.warning(f"remove_datarefs_to_monitor: no IP connection")
+            logger.debug(f"remove_datarefs_to_monitor: would remove {datarefs.keys()}")
             return
         # Add those to monitor
         prnt = []
@@ -432,6 +434,9 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                 logger.info(f"start: XPlaneUDP started")
             else:
                 logger.debug(f"start: XPlaneUDP already running.")
+            # When restarted after network failure, should clean all datarefs
+            # then reload datarefs from current page of each deck
+            self.cockpit.reload_page()
         else:
             logger.warning(f"start: no IP address. could not start.")
 
@@ -441,10 +446,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             self.finished = threading.Event()
             self.running = False
             wait = 10 * DATA_REFRESH + 2  # 2 seconds is net latency to get recvfrom() on UDP
-            if self.socket:
-                logger.debug(f"terminate: ..hard closing socket..")  # workaround to avoid being stuck in recvfrom()
-                self.socket.close()
-                logger.debug(f"terminate: ..socket closed..")
+            # if self.socket:
+            #     logger.debug(f"terminate: ..hard closing socket..")  # workaround to avoid being stuck in recvfrom()
+            #     self.socket.close()
+            #     logger.debug(f"terminate: ..socket closed..")
             logger.debug(f"terminate: ..waiting {wait}sec. permission to be deleted..")
             if self.finished.wait(timeout=wait):
                 logger.debug(f"terminate: ..got it. I can now die in peace..")

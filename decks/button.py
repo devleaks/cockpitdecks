@@ -16,13 +16,13 @@ from PIL import ImageDraw, ImageFont
 
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
-from .constant import DATAREF_RPN
+from .constant import SPAM, DATAREF_RPN
 from .color import convert_color
 from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
-# logger.setLevel(15)
+# logger.setLevel(SPAM)
 # logger.setLevel(logging.DEBUG)
 
 
@@ -66,16 +66,6 @@ class Button:
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
             self.options = [a.strip() for a in new.split(",")]
 
-        # Datarefs
-        self.dataref = config.get("dataref")
-        self.multi_datarefs = config.get("multi-datarefs")
-        self.dataref_rpn = config.get(DATAREF_RPN)
-
-        self.all_datarefs = None                # all datarefs used by this button
-        self.all_datarefs = self.get_datarefs() # cache them
-        if len(self.all_datarefs) > 0:
-            self.page.register_datarefs(self)   # when the button's page is loaded, we monitor these datarefs
-
         # What it will do and how it will appear
         self._activation = None
         atype = Button.guess_activation_type(config)
@@ -94,6 +84,16 @@ class Button:
         else:
             logger.warning(f"__init__: button {self.name} has no representation")
             self._representation = REPRESENTATIONS["none"](config, self)
+
+        # Datarefs
+        self.dataref = config.get("dataref")
+        self.multi_datarefs = config.get("multi-datarefs")
+        self.dataref_rpn = config.get(DATAREF_RPN)
+
+        self.all_datarefs = None                # all datarefs used by this button
+        self.all_datarefs = self.get_datarefs() # cache them
+        if len(self.all_datarefs) > 0:
+            self.page.register_datarefs(self)   # when the button's page is loaded, we monitor these datarefs
 
         self.init()
 
@@ -234,7 +234,7 @@ class Button:
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
         if base is None:  # local, button-level ones
-            if self.all_datarefs is not None:  # cached
+            if self.all_datarefs is not None:  # cached if globals (base is None)
                 return self.all_datarefs
             base = self._config                # else, runs through config
 
@@ -278,6 +278,13 @@ class Button:
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added text datarefs {datarefs}")
+
+        # 4. ANNUNCIATOR datarefs
+        if self._representation is not None and isinstance(self._representation, Annunciator):
+            datarefs = self._representation.get_annunciator_datarefs()
+            if datarefs is not None:
+                r = r + datarefs
+                logger.debug(f"get_datarefs: button {self.name}: added annunciator datarefs {datarefs}")
 
         if DATAREF_RPN in r:  # label or text may contain ${dataref-rpn}, "dataref-rpn" is not a dataref.
             r.remove(DATAREF_RPN)

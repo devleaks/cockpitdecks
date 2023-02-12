@@ -4,7 +4,7 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     name: ADIRS_ON_BAT
-    type: annunciator
+    type: none
     annunciator:
       size: small
       display:
@@ -12,7 +12,6 @@ buttons:
         size: 48
         color: darkorange
         dataref-rpn: ${AirbusFBW/ADIRUOnBat}
-    dataref: AirbusFBW/ADIRUOnBat
   - index: 2
     name: ADIRS_FAST_ALIGN
     type: push
@@ -23,7 +22,7 @@ buttons:
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: ADIRS1_INDICATOR
-    type: annunciator
+    type: none
     annunciator:
       size: full
       display:
@@ -39,7 +38,7 @@ buttons:
         dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
   - index: 9
     name: ADIRS3_INDICATOR
-    type: annunciator
+    type: none
     annunciator:
       size: full
       display:
@@ -55,7 +54,7 @@ buttons:
         dataref-rpn: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
   - index: 10
     name: ADIRS2_INDICATOR
-    type: annunciator
+    type: none
     annunciator:
       size: full
       display:
@@ -81,6 +80,7 @@ buttons:
       - toliss_airbus/adirucommands/ADIRU1SwitchUp
       - toliss_airbus/adirucommands/ADIRU1SwitchDown
     dataref: AirbusFBW/ADIRUSwitchArray[0]
+    initial-value: 0
     options: bounce
     label: IR1
     label-position: ct
@@ -95,6 +95,7 @@ buttons:
       - toliss_airbus/adirucommands/ADIRU3SwitchUp
       - toliss_airbus/adirucommands/ADIRU3SwitchDown
     dataref: AirbusFBW/ADIRUSwitchArray[2]
+    initial-value: 0
     options: bounce
     label: IR3
     label-position: ct
@@ -109,13 +110,14 @@ buttons:
       - toliss_airbus/adirucommands/ADIRU2SwitchUp
       - toliss_airbus/adirucommands/ADIRU2SwitchDown
     dataref: AirbusFBW/ADIRUSwitchArray[1]
+    initial-value: 0
     options: bounce
     label: IR2
     label-position: ct
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: ADIRS1_OFF
-    type: annunciator-push
+    type: push
     annunciator:
       size: full
       display:
@@ -132,7 +134,7 @@ buttons:
         framed: True
   - index: 25
     name: ADIRS3_OFF
-    type: annunciator-push
+    type: push
     annunciator:
       size: full
       display:
@@ -149,7 +151,7 @@ buttons:
         framed: True
   - index: 26
     name: ADIRS2_OFF
-    type: annunciator-push
+    type: push
     annunciator:
       size: full
       display:

@@ -4,8 +4,7 @@ import threading
 import logging
 import time
 
-SPAM=15
-logging.addLevelName(SPAM, "SPAM")
+from .constant import SPAM
 
 loggerDataref = logging.getLogger("Dataref")
 loggerDataref.setLevel(SPAM)
