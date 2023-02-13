@@ -202,7 +202,7 @@ class AnnunciatorPart:
                     bgrd_draw.rectangle(frame, fill=self.invert_color())
 
                 # logger.debug(f"render: button {self.button.name}: text '{text}' at ({self.center_w()}, {self.center_h()})")
-                if not self.is_lit():
+                if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
                     logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit (Korry)")
                 draw.multiline_text((self.center_w(), self.center_h()),
                           text=text,
@@ -226,7 +226,8 @@ class AnnunciatorPart:
                     # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
                     draw.rectangle(frame, outline=color, width=thick)
             else:
-                logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit")
+                if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
+                    logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit")
             return
 
         led = self.get_led()
@@ -306,7 +307,7 @@ class Annunciator(Icon):
         else:
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        for a in ["dataref", "multi-datarefs", "datarefs", "dataref-rpn"]:
+        for a in ["dataref", "multi-datarefs", "datarefs", DATAREF_RPN]:
             if a in config:
                 logger.warning(f"__init__: button {self.button.name}: annunciator parent button has property {a} which is ignored")
 

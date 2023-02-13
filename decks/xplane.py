@@ -124,6 +124,8 @@ class XPlane:
                 else:
                     self.all_datarefs[d].update_value(self.current_values[d], cascade=False)  # we just update the value but no notification
                     logger.warning(f"detect_changed: updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
+                    # This means we got a value from X-Plane we never asked for this run...
+                    # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
                 # logger.debug(f"detect_changed: ..done")
             # else:
             #     logger.debug(f"detect_changed: {d}={self.current_values[d]} not changed (was {self.previous_values[d]})")

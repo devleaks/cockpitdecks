@@ -4,7 +4,7 @@ aicraft: Toliss A321
 decks:
   - name: XPLive
     type: loupedeck
-    layout: liveold
+    layout: live
     brightness: 70
   - name: XPDeck
     type: streamdeck

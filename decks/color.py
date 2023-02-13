@@ -45,7 +45,7 @@ def convert_color(instr):
     return DEFAULT_COLOR
 
 
-def light_off(color, lightness: float = 0.20):
+def light_off(color, lightness: float = 0.10):
     # Darkens (or lighten) a color
     if type(color) not in [tuple, list]:
         color = convert_color(color)

@@ -618,10 +618,10 @@ class EncoderValue(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
-        self.step = float(config.get("step"))
-        self.stepxl = float(config.get("stepxl"))
-        self.value_min = float(config.get("value-min"))
-        self.value_max = float(config.get("value-max"))
+        self.step = float(config.get("step", 1))
+        self.stepxl = float(config.get("stepxl", 10))
+        self.value_min = float(config.get("value-min", 0))
+        self.value_max = float(config.get("value-max", 100))
         self.writable_dataref = config.get("set-dataref")
 
         # Internal status

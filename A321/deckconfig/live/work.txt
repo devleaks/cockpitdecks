@@ -1,25 +1,25 @@
-name: Index2
+name: work
 buttons:
 #
 # KNOB
 #
   - index: knobTL
     name: FCU Airspeed
-    type: knob
+    type: encoder
     commands:
       - sim/autopilot/airspeed_down
       - sim/autopilot/airspeed_up
     options: dot
   - index: knobCL
     name: FCU Heading
-    type: knob
+    type: encoder
     commands:
       - sim/autopilot/heading_down
       - sim/autopilot/heading_up
     options: dot
   - index: knobBL
     name: FCU Baro
-    type: knob-push-pull
+    type: encoder-push-pull
     command: toliss_airbus/capt_baro_pull
     commands:
       - toliss_airbus/capt_baro_push
@@ -30,7 +30,7 @@ buttons:
     options: dot
   - index: knobTR
     name: FCU Altitude
-    type: knob-push-pull
+    type: encoder-push-pull
     command: AirbusFBW/PullAltitude
     commands:
       - AirbusFBW/PullAltitude
@@ -40,7 +40,7 @@ buttons:
     options: dot
   - index: knobCR
     name: FCU V Speed
-    type: knob-dataref
+    type: encoder-dataref
     dataref: sim/cockpit/autopilot/vertical_velocity
     step: 100
     stepxl: 1000
@@ -53,7 +53,7 @@ buttons:
     options: dual
   - index: knobBR
     name: FCU Unused
-    type: knob-none
+    type: none
 #
 # BUTTONS
 #

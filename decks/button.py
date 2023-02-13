@@ -286,7 +286,7 @@ class Button:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added annunciator datarefs {datarefs}")
 
-        if DATAREF_RPN in r:  # label or text may contain ${dataref-rpn}, "dataref-rpn" is not a dataref.
+        if DATAREF_RPN in r:  # label or text may contain ${dataref-rpn}, DATAREF_RPN is not a dataref.
             r.remove(DATAREF_RPN)
 
         return list(set(r))  # removes duplicates

@@ -1,14 +1,13 @@
 import os
 import logging
 import sys
-from time import sleep
 
 from decks import Cockpit
 from decks import __NAME__, __version__, __COPYRIGHT__
 from decks.xplaneudp import XPlaneUDP
 
 # logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__NAME__.title())
 
 ac = sys.argv[1] if len(sys.argv) > 1 else "AIRCRAFT"

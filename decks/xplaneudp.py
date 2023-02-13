@@ -213,15 +213,6 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
 
     def init(self):
         self.connect()
-        # try:
-        #     beacon = self.FindIp()
-        #     logger.info(beacon)
-        # except XPlaneVersionNotSupported:
-        #     self.BeaconData = {}
-        #     logger.error("init: XPlane Version not supported.")
-        # except XPlaneIpNotFound:
-        #     self.BeaconData = {}
-        #     logger.error("init: XPlane IP not found. Probably there is no XPlane running in your local network.")
 
     def __del__(self):
         for i in range(len(self.datarefs)):
@@ -311,8 +302,6 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                             value = 0.0
                         retvalues[self.datarefs[idx]] = value
             self.xplaneValues.update(retvalues)
-            # for k in ["AirbusFBW/ILSonCapt", "AirbusFBW/FD1Engage"]:
-            #     print(self.xplaneValues.get(k, "none"))
         except:
             raise XPlaneTimeout
         return self.xplaneValues
@@ -446,10 +435,6 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             self.finished = threading.Event()
             self.running = False
             wait = 10 * DATA_REFRESH + 2  # 2 seconds is net latency to get recvfrom() on UDP
-            # if self.socket:
-            #     logger.debug(f"terminate: ..hard closing socket..")  # workaround to avoid being stuck in recvfrom()
-            #     self.socket.close()
-            #     logger.debug(f"terminate: ..socket closed..")
             logger.debug(f"terminate: ..waiting {wait}sec. permission to be deleted..")
             if self.finished.wait(timeout=wait):
                 logger.debug(f"terminate: ..got it. I can now die in peace..")

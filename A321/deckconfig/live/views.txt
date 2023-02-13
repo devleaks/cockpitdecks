@@ -1,49 +1,49 @@
 buttons:
-  - index: 0
+  - index: b0
     name: View Circle Dot
-    type: button
-    icon-color: (255, 0, 0)
+    type: push
+    colored-led: (255, 0, 0)
     label: Pilot View
     command: SRS/X-Camera/Select_View_ID_8
-  - index: 1
+  - index: b1
     name: View 1
-    type: button
-    icon-color: (255, 128, 0)
+    type: push
+    colored-led: (255, 128, 0)
     label: FD/ND
     command: SRS/X-Camera/Select_View_ID_1
-  - index: 2
+  - index: b2
     name: View 2
-    type: button
-    icon-color: (255, 255, 0)
+    type: push
+    colored-led: (255, 255, 0)
     label: FCU
     command: SRS/X-Camera/Select_View_ID_2
-  - index: 3
+  - index: b3
     name: View 3
-    type: button
-    icon-color: (0, 255, 0)
+    type: push
+    colored-led: (0, 255, 0)
     label: ECAM
     command: SRS/X-Camera/Select_View_ID_3
-  - index: 4
+  - index: b4
     name: View 4
-    type: button
-    icon-color: (0, 255, 255)
+    type: push
+    colored-led: (0, 255, 255)
     label: FMC
     command: SRS/X-Camera/Select_View_ID_4
-  - index: 5
+  - index: b5
     name: View 5
-    type: button
-    icon-color: (0,0,255)
+    type: push
+    colored-led: (0,0,255)
     label: Piedestal
     command: SRS/X-Camera/Select_View_ID_5
-  - index: 6
+  - index: b6
     name: View 6
-    type: button
-    icon-color: (128, 0, 255)
+    type: push
+    colored-led: (128, 0, 255)
     label: Radios
     command: SRS/X-Camera/Select_View_ID_6
-  - index: 7
+  - index: b7
     name: View 7
-    type: button
+    type: push
     label: Overhead Panel
     command: SRS/X-Camera/Select_View_ID_7
-    icon-color: (255, 0, 255)
+    colored-led: (255, 0, 255)
