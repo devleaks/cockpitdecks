@@ -5,11 +5,13 @@ decks:
   - name: XPLive
     type: loupedeck
     layout: live
-    brightness: 70
+    brightness: 80
+    light-off: 5
   - name: XPDeck
     type: streamdeck
     layout: sd15
     brightness: 80
+    light-off: 5
     default-label-font: DIN Medium.ttf
     default-label-size: 13
   - name: XPDeckXL

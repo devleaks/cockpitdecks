@@ -95,7 +95,7 @@ class Activation:
     def is_pressed(self):
         return self.pressed
 
-    def inspect(self):
+    def inspect(self, what: str = None):
         logger.info(f"{self.button.name}:{type(self).__name__}:")
         logger.info(f"is_valid: {self.is_valid()}")
         logger.info(f"view: {self._view}")
@@ -202,10 +202,12 @@ class Inspect(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
+        self.what = config.get("what", "info")
+
     def activate(self, state):
         if state:
             if self.is_valid():
-                self.button.deck.cockpit.inspect()
+                self.button.deck.cockpit.inspect(self.what)
 
 
 class Stop(Activation):

@@ -131,20 +131,20 @@ class Button:
     def id(self):
         return ":".join([self.deck.name, self.page.name, str(self.index)])
 
-    def inspect(self):
+    def inspect(self, what: str = None):
         """
         Return information aout button status
         """
-        logger.info(f"Button {self.name} -- Statistics")
+        logger.info(f"Button {self.name} -- {what}")
         logger.info(f"\n{yaml.dump(self._config)}")
         logger.info("-- Datarefs:")
         for d in self.get_datarefs():
             v = self.get_dataref_value(d)
             logger.info(f"    {d} = {v}")
         logger.info("-- Activation:")
-        self._activation.inspect()
+        self._activation.inspect(what)
         logger.info("-- Representation:")
-        self._representation.inspect()
+        self._representation.inspect(what)
 
     def on_current_page(self):
         """

@@ -11,7 +11,7 @@ from PIL import Image, ImageFont
 
 from .constant import SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
-from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
+from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
 from .color import convert_color
 
 from .devices import DECK_TYPES
@@ -64,6 +64,7 @@ class Cockpit:
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
         self.fill_empty_keys = True
+        self.light_off_intensity = DEFAULT_LIGHT_OFF_INTENSITY
         self.empty_key_fill_color = None
         self.empty_key_fill_icon = None
         self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
@@ -79,16 +80,16 @@ class Cockpit:
         self.start_reload_loop()
 
 
-    def inspect(self):
+    def inspect(self, what: str = None):
         """
         This function is called on all instances of Deck.
         """
-        logger.info("Cockpitdecks -- Statistics")
+        logger.info(f"Cockpitdecks -- {what}")
 
         logger.info(f"Threads: {[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
 
         # for v in self.cockpit.values():
-        #     v.inspect()
+        #     v.inspect(what)
 
 
     def scan_devices(self):

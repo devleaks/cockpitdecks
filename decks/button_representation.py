@@ -41,7 +41,7 @@ class Representation:
         self._config = config
         self.button = button
 
-    def inspect(self):
+    def inspect(self, what: str = None):
         logger.info(f"{self.button.name}:{type(self).__name__}:")
         logger.info(f"is valid: {self.is_valid()}")
 

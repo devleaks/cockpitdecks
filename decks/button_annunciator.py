@@ -150,7 +150,7 @@ class AnnunciatorPart:
 
         if not self.is_lit():
             try:
-                color = self._config.get("off-color", light_off(color))
+                color = self._config.get("off-color", light_off(color, lightness=self.annunciator.button.page.light_off_intensity/100))
             except ValueError:
                 logger.debug(f"render: button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using grey")
                 color = (128, 128, 128)

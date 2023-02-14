@@ -37,6 +37,7 @@ class Deck(ABC):
         self.cockpit = cockpit
         self.device = device
 
+        # set_default(config, cockpit)
         self.default_label_font = config.get("default-label-font", cockpit.default_label_font)
         self.default_label_size = config.get("default-label-size", cockpit.default_label_size)
         self.default_label_color = config.get("default-label-color", cockpit.default_label_color)
@@ -44,6 +45,7 @@ class Deck(ABC):
         self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
+        self.light_off_intensity = config.get("light-off", cockpit.light_off_intensity)
         self.fill_empty_keys = config.get("fill-empty-keys", cockpit.fill_empty_keys)
         self.empty_key_fill_color = config.get("empty-key-fill-color", cockpit.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
@@ -102,6 +104,32 @@ class Deck(ABC):
             self.load_home_page()   # loads home page onto deck
             self.start()    # Some sustem may need to start before we load_home_page()
 
+    def set_default(self, src: dict, base):
+        """
+        Loads a layout global configuration parameters.
+
+        :param      fn:   The function
+        :type       fn:   Function
+        """
+        self.default_label_font = src.get("default-label-font", base.default_label_font)
+        self.default_label_size = src.get("default-label-size", base.default_label_size)
+        self.default_label_color = src.get("default-label-color", base.default_label_color)
+        self.default_label_color = convert_color(self.default_label_color)
+        self.default_icon_name = src.get("default-icon-color", self.name + base.default_icon_name)
+        self.default_icon_color = src.get("default-icon-color", base.default_icon_color)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.light_off_intensity = src.get("light-off", base.light_off_intensity)
+        self.fill_empty_keys = src.get("fill-empty-keys", base.fill_empty_keys)
+        self.empty_key_fill_color = src.get("empty-key-fill-color", base.empty_key_fill_color)
+        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        self.empty_key_fill_icon = src.get("empty-key-fill-icon", base.empty_key_fill_icon)
+        self.annunciator_style = src.get("annunciator-style", base.annunciator_style)
+        default_color = src.get("cockpit-color", base.cockpit_color)
+        self.logo = src.get("default-wallpaper-logo", base.default_logo)
+        self.wallpaper = src.get("default-wallpaper", base.default_wallpaper)
+        self.default_home_page_name = src.get("default-homepage-name", base.default_home_page_name)
+
+
     def load_layout_config(self, fn):
         """
         Loads a layout global configuration parameters.
@@ -114,32 +142,17 @@ class Deck(ABC):
                 self.layout_config = yaml.safe_load(fp)
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
-                self.default_label_font = self.layout_config.get("default-label-font", self.cockpit.default_label_font)
-                self.default_label_size = self.layout_config.get("default-label-size", self.cockpit.default_label_size)
-                self.default_label_color = self.layout_config.get("default-label-color", self.cockpit.default_label_color)
-                self.default_label_color = convert_color(self.default_label_color)
-                self.default_icon_name = self.layout_config.get("default-icon-color", self.name + self.cockpit.default_icon_name)
-                self.default_icon_color = self.layout_config.get("default-icon-color", self.cockpit.default_icon_color)
-                self.default_icon_color = convert_color(self.default_icon_color)
-                self.fill_empty_keys = self.layout_config.get("fill-empty-keys", self.cockpit.fill_empty_keys)
-                self.empty_key_fill_color = self.layout_config.get("empty-key-fill-color", self.cockpit.empty_key_fill_color)
-                self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-                self.empty_key_fill_icon = self.layout_config.get("empty-key-fill-icon", self.cockpit.empty_key_fill_icon)
-                self.annunciator_style = self.layout_config.get("annunciator-style", self.cockpit.annunciator_style)
-                self.cockpit_color = self.layout_config.get("cockpit-color", self.cockpit.cockpit_color)
-                self.logo = self.layout_config.get("default-wallpaper-logo", self.cockpit.default_logo)
-                self.wallpaper = self.layout_config.get("default-wallpaper", self.cockpit.default_wallpaper)
-                self.default_home_page_name = self.layout_config.get("default-homepage-name", self.cockpit.default_home_page_name)
+                self.set_default(self.layout_config, self.cockpit)
         else:
             logger.debug(f"load_layout_config: no layout config file")
 
-    def inspect(self):
+    def inspect(self, what: str = None):
         """
         This function is called on all pages of this Deck.
         """
-        logger.info(f"Deck {self.name} -- Statistics")
+        logger.info(f"Deck {self.name} -- {what}")
         for v in self.pages.values():
-            v.inspect()
+            v.inspect(what)
 
     def load(self):
         """
@@ -243,7 +256,7 @@ class Deck(ABC):
         if not len(self.pages) > 0:
             self.valid = False
             logger.error(f"load: {self.name}: has no page, ignoring")
-            # self.load_default_apge()
+            # self.load_default_page()
         else:
             self.set_home_page()
 

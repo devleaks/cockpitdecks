@@ -26,6 +26,7 @@ class Page:
         self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
+        self.light_off_intensity = config.get("light-off", deck.light_off_intensity)
         self.fill_empty_keys = config.get("fill-empty-keys", deck.fill_empty_keys)
         self.empty_key_fill_color = config.get("empty-key-fill-color", deck.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
@@ -37,13 +38,13 @@ class Page:
         self.buttons = {}
         self.datarefs = {}
 
-    def inspect(self):
+    def inspect(self, what: str = None):
         """
         This function is called on all buttons of this Page.
         """
-        logger.info(f"Page {self.name} -- Statistics")
+        logger.info(f"Page {self.name} -- {what}")
         for v in self.buttons.values():
-            v.inspect()
+            v.inspect(what)
 
     def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():

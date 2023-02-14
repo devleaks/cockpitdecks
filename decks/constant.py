@@ -33,6 +33,8 @@ RESOURCES_FOLDER = "resources"
 DEFAULT_WALLPAPER = "wallpaper.png"
 DEFAULT_LOGO = "logo.png"
 
+DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
+
 DATAREF_RPN = "dataref-rpn"
 
 SPAM = 15

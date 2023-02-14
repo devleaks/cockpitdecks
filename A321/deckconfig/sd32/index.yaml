@@ -88,6 +88,46 @@ buttons:
     label: RADIO
     label-position: cm
 # ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    name: Popup ISI
+    type: push
+    command: AirbusFBW/PopUpISI
+    icon: ISI
+  - index: 17
+    name: Popup FD1
+    type: push
+    command: AirbusFBW/PopUpPFD1
+    icon: FD
+  - index: 18
+    name: Popup ND1
+    type: push
+    command: AirbusFBW/PopUpND1
+    icon: ND
+  - index: 19
+    name: Popup EWD
+    type: push
+    command: AirbusFBW/PopUpEWD
+    icon: ECAM
+  - index: 20
+    name: Popup SD
+    type: push
+    command: AirbusFBW/PopUpSD
+    icon: ECAM_DOOR
+  - index: 21
+    name: Popup MCDU
+    type: push
+    command: AirbusFBW/UndockMCDU1
+    icon: MCDU
+  - index: 22
+    name: Popup Pedestal1
+    type: push
+    command: AirbusFBW/PopUpPedestal1
+    icon: PNL_PIEDESTAL
+  - index: 23
+    name: Popup Pedestal2
+    type: push
+    command: AirbusFBW/PopUpPedestal2
+    icon: PNL_PIEDESTAL
 # ### LINE 4 ### 24-31 ######################################################
   # - index: 27
   #   name: INSPECT

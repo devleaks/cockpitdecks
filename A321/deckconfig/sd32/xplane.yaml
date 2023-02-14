@@ -121,11 +121,22 @@ buttons:
     label: X-ATC
 
 # ### LINE 4 ### 24-31 ######################################################
+  - index: 26
+    name: XPLANEDATA
+    type: push
+    icon: XPLANE_OUTPUT
+    label: "XPLANE\nCOCKPIT\nDATA"
+    label-color: black
+    label-position: "cm"
+    command: sim/operation/toggle_data_output_cockpit
   - index: 27
     name: INSPECT
     type: inspect
-    icon: INFO
-    options: what=stats
+    icon: COCKPITDECKS
+    label: "INSPECT"
+    label-color: red
+    label-position: "cm"
+    what: stats
   - index: 28
     name: XP PYTHON
     type: push
