@@ -83,7 +83,6 @@ buttons:
     initial-value: 0
     options: bounce
     label: IR1
-    label-position: ct
   - index: 17
     name: ADIRS3
     type: updown
@@ -98,7 +97,6 @@ buttons:
     initial-value: 0
     options: bounce
     label: IR3
-    label-position: ct
   - index: 18
     name: ADIRS2
     type: updown
@@ -113,7 +111,6 @@ buttons:
     initial-value: 0
     options: bounce
     label: IR2
-    label-position: ct
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: ADIRS1_OFF

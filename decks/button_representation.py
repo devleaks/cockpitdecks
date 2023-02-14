@@ -12,7 +12,7 @@ from PIL import ImageDraw, ImageFont
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE
 from .color import convert_color, is_integer
-
+from .constant import DEFAULT_LABEL_POSITION
 
 logger = logging.getLogger("Representation")
 # logger.setLevel(logging.DEBUG)
@@ -79,10 +79,10 @@ class Icon(Representation):
         self.label_size = int(config.get("label-size", page.default_label_size))
         self.label_color = config.get("label-color", page.default_label_color)
         self.label_color = convert_color(self.label_color)
-        self.label_position = config.get("label-position", "cm")
+        self.label_position = config.get("label-position", DEFAULT_LABEL_POSITION)
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             logger.warning(f"__init__: button {self.button.name}: {type(self).__name__} invalid label position code {self.label_position}, using default")
-            self.label_position = "cm"
+            self.label_position = DEFAULT_LABEL_POSITION
 
         self.icon_color = config.get("icon-color", page.default_icon_color)
         self.icon = config.get("icon")
@@ -138,14 +138,14 @@ class Icon(Representation):
 
     def get_text_detail(self, config, which_text):
         text = self.button.get_text(config, which_text)
-        text_format = config.get("label-format")
+        text_format = config.get(f"{which_text}-format")
 
         page = self.button.page
         text_font = config.get(f"{which_text}-font", page.default_label_font)
         text_size = config.get(f"{which_text}-size", page.default_label_size)
         text_color = config.get(f"{which_text}-color", page.default_label_color)
         text_color = convert_color(text_color)
-        text_position = config.get(f"{which_text}-position", "cm")
+        text_position = config.get(f"{which_text}-position", DEFAULT_LABEL_POSITION)
         if text_position[0] not in "lcr" or text_position[1] not in "tmb":
             logger.warning(f"get_text_detail: button {self.button.name}: {type(self).__name__}: invalid label position code {text_position}, using default")
 
@@ -156,7 +156,9 @@ class Icon(Representation):
         Helper function to get valid font, depending on button or global preferences
         """
         deck = self.button.deck
-        fonts_available = deck.cockpit.fonts.keys()
+        all_fonts = deck.cockpit.fonts
+        fonts_available = all_fonts.keys()
+        this_button = f"{self.button.name}: {type(self).__name__}"
 
         # 1. Tries button specific font
         if fontname is not None:
@@ -165,40 +167,45 @@ class Icon(Representation):
                 fontname = add_ext(fontname, ".ttf")  # should also try .otf
 
             if fontname in fonts_available:
-                return deck.cockpit.fonts[fontname]
+                return all_fonts[fontname]
             else:
-                logger.warning(f"get_font: button {self.button.name}: {type(self).__name__}: button label font '{fontname}' not found")
+                logger.warning(f"get_font: button {this_button}: button label font '{fontname}' not found")
         else:
             fontname = self.button.page.default_label_font
-            logger.debug(f"get_font: button {self.button.name}: {type(self).__name__}: no font, using default from page {fontname}")
+            logger.debug(f"get_font: button {this_button}: no font, using default from page {fontname}")
+            if fontname in fonts_available:
+                return all_fonts[fontname]
+            else:
+                logger.warning(f"get_font: button {this_button}: button default label font from page '{fontname}' not found in {fonts_available}")
 
         # 2. Tries deck default font
         if deck.default_label_font is not None and deck.default_label_font in fonts_available:
-            logger.debug(f"get_font: button {self.button.name}: {type(self).__name__}: using deck default font '{deck.default_label_font}'")
-            return deck.cockpit.fonts[deck.default_label_font]
+            logger.debug(f"get_font: button {this_button}: using deck default font '{deck.default_label_font}'")
+            return all_fonts[deck.default_label_font]
         else:
-            logger.warning(f"get_font: button {self.button.name}: {type(self).__name__} deck default label font '{fontname}' not found")
+            logger.warning(f"get_font: button {this_button} deck default label font '{fontname}' not found in {fonts_available}")
 
         # 3. Tries streamdecks default font
         if deck.cockpit.default_label_font is not None and deck.cockpit.default_label_font in fonts_available:
-            logger.debug(f"get_font: button {self.button.name}: {type(self).__name__} using cockpit default font '{deck.cockpit.default_label_font}'")
-            return deck.cockpit.fonts[deck.cockpit.default_label_font]
-        logger.error(f"get_font: button {self.button.name}: {type(self).__name__} cockpit default label font not found, tried {fontname}, {deck.default_label_font}, {deck.cockpit.default_label_font}")
+            logger.debug(f"get_font: button {this_button} using cockpit default font '{deck.cockpit.default_label_font}'")
+            return all_fonts[deck.cockpit.default_label_font]
+        logger.error(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {fontname}, {deck.default_label_font}, {deck.cockpit.default_label_font}")
         return None
 
     def get_image_for_icon(self):
         image = None
         deck = self.button.deck
+        this_button = f"{self.button.name}: {type(self).__name__}"
         self.icon = add_ext(self.icon, "png")
         if self.icon in deck.icons.keys():  # look for properly sized image first...
-            logger.debug(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in deck")
+            logger.debug(f"get_image_for_icon: button {this_button}: found {self.icon} in deck")
             image = deck.icons[self.icon]
         elif self.icon in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
-            logger.debug(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: found {self.icon} in cockpit")
+            logger.debug(f"get_image_for_icon: button {this_button}: found {self.icon} in cockpit")
             image = deck.cockpit.icons[self.icon]
             image = deck.pil_helper.create_scaled_image("button", image)
         else:
-            logger.warning(f"get_image_for_icon: button {self.button.name}: {type(self).__name__}: {self.icon} not found")
+            logger.warning(f"get_image_for_icon: button {this_button}: {self.icon} not found")
         return image
 
     def get_image(self):
@@ -614,8 +621,7 @@ class MultiLEDs(Representation):
 # ANNUNCIATOR TYPE REPRESENTATION
 #
 #
-from .button_annunciator import Annunciator, AnnunciatorAnimate
-
+from .button_annunciator import Annunciator, AnnunciatorAnimate, DataIcon, WeatherIcon
 
 #
 # ###############################
@@ -635,5 +641,7 @@ REPRESENTATIONS = {
     "colored-led": ColoredLED,
     "multi-leds": MultiLEDs,
     "annunciator": Annunciator,
-    "annunciator-animate": AnnunciatorAnimate
+    "annunciator-animate": AnnunciatorAnimate,
+    "data": DataIcon,
+    "weather": WeatherIcon
 }

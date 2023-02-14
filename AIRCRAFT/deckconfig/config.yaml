@@ -21,7 +21,7 @@ decks:
   - name: XPTouch
     type: xtouchmini
     layout: xtouch
-    default-homepage-name: A
+    homepage-name: A
     brightness: 70
 # This is at global level
 default-wallpaper-logo: logo.png

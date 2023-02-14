@@ -1,4 +1,4 @@
-name: Index
+name: index
 buttons:
 #
 # KNOB
@@ -93,7 +93,7 @@ buttons:
       color: orange
       font: DIN Condensed Black.otf
       text-size: 72
-      dataref-rpn: 1
+      dataref: AirbusFBW/MasterWarn
       animation-speed: 0.5
   - index: 3
     name: FCU Altitude display
@@ -205,12 +205,12 @@ buttons:
           size: 60
           dataref-rpn: "1"
     command: AirbusFBW/APPRbutton
-  # - index: 11
-  #   name: RELOAD
-  #   type: reload
-  #   icon: RELOAD
-  #   label: RELOAD
-  #   label-position: ct
+  - index: 11
+    name: WORK
+    type: page
+    page: work
+    label: WORK
+    label-position: mt
 #
 # SIDE KEYS
 #
@@ -245,4 +245,3 @@ buttons:
     multi-datarefs:
       - AirbusFBW/ALTmanaged
 includes: views
-fill-empty-keys: (94, 111, 130)

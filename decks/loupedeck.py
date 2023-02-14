@@ -131,7 +131,7 @@ class Loupedeck(Deck):
 
     def valid_representations(self, index = None):
         valid_side_icon = ["none", "side"]
-        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate"]
+        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate", "data", "weather"]
         valid_colored_button = ["colored-led"]
         valid_knob = ["none"]
 

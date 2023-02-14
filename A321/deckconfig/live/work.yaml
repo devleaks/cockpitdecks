@@ -19,7 +19,7 @@ buttons:
     options: dot
   - index: knobBL
     name: FCU Baro
-    type: encoder-push-pull
+    type: encoder-onoff
     command: toliss_airbus/capt_baro_pull
     commands:
       - toliss_airbus/capt_baro_push
@@ -30,7 +30,7 @@ buttons:
     options: dot
   - index: knobTR
     name: FCU Altitude
-    type: encoder-push-pull
+    type: encoder-onoff
     command: AirbusFBW/PullAltitude
     commands:
       - AirbusFBW/PullAltitude
@@ -40,7 +40,7 @@ buttons:
     options: dot
   - index: knobCR
     name: FCU V Speed
-    type: encoder-dataref
+    type: knob
     dataref: sim/cockpit/autopilot/vertical_velocity
     step: 100
     stepxl: 1000
@@ -67,8 +67,8 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: sim/map/show_current
+    initial-value: 0
     label: Map
-    label-position: ct
     options: counter
   - index: 1
     name: Airport Map
@@ -77,8 +77,8 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: pikitanga/AptNav/ToggleMap
+    initial-value: 0
     label: Airport
-    label-position: ct
     options: counter
   - index: 2
     name: AVS Map
@@ -87,8 +87,8 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: flightfactor/avs/toggle
+    initial-value: 0
     label: AVS
-    label-position: ct
     options: counter
   - index: 3
     name: AviTab
@@ -97,25 +97,28 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     label: AviTab
-    label-position: ct
     command: AviTab/toggle_tablet
+    initial-value: 0
     options: counter
   - index: 4
     name: New Data Button
-    type: data
+    type: none
     label: Data Button
     label-size: 10
-    label-position: ct
     data:
       icon-name: "gas-pump"
+      icon-size: 60
       data: 75.4256
       data-format: "{:02.0f}"
       data-font: DIN Condensed Light
-      data-size: 24
+      data-size: 96
+      data-color: darkorange
       data-unit: "%"
       data-progress: 100
       dataref-rpn: ${sim/cockpit/autopilot/heading_mag} 10 *
       bottomline: Go Faster
+      bottomline-size: 30
+      bottomline-color: lime
   - index: 5
     name: LiveTraffic
     type: push
@@ -123,22 +126,24 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: LiveTraffic/Info_Staus_Wnd/Open
+    initial-value: 0
     label: Live/T
-    label-position: ct
     options: counter
   - index: 6
     name: FollowTheGreens
-    type: animate
-    icon: F.GREENS_OFF
-    initial-value: 0
-    multi-icons:
+    type: onoff
+    icon-off: F.GREENS_OFF
+    icon-animate:
       - F.GREENS_ON_1
       - F.GREENS_ON_2
       - F.GREENS_ON_3
-    command: XPPython3/followthegreens/main_windown_toggle
+    animation-speed: 0.2
+#     command: XPPython3/followthegreens/main_windown_toggle
+    commands:
+      - XPPython3/followthegreens/main_windown_toggle
+      - XPPython3/followthegreens/main_windown_toggle
+    initial-value: 0
     label: F.GREENS
-    label-position: ct
-    options: animation_speed=0.5
   - index: 7
     name: XPLANEDATA
     type: push
@@ -147,6 +152,7 @@ buttons:
     label: "XPLANE\nCOCKPIT\nDATA"
     label-color: darkblue
     label-font: DIN Bold
+    label-position: "cm"
     options: counter
   # - index: 8
   #   name: INSPECT
@@ -159,17 +165,16 @@ buttons:
   #   options: what=stats
   - index: 8
     name: METAR
-    type: weather
-    label: "Weather Forecast"
-    label-position: ct
-    station: OTHH
+    type: none
+    label: "Weather"
+    weather:
+      - station: OTHH
   - index: 9
     name: XP PYTHON
     type: push
     icon: XP-PYTHON
     command: XPPython3/reloadScripts
     label: XPPython3
-    label-position: ct
   - index: 10
     name: DATAREFTOOL
     type: push
@@ -177,14 +182,12 @@ buttons:
     label: DataRefTool
     icon: DATAREFTOOL
     command: leecbaker/datareftool/new_search_window
-    label-position: ct
 
   - index: 11
     name: RELOAD
     type: reload
     icon: RELOAD
     label: RELOAD
-    label-position: ct
 #
 # SIDE KEYS
 #
@@ -193,4 +196,4 @@ buttons:
     name: Stop
     type: stop
     icon-color: (255, 0, 0)
-fill-empty-keys: (94, 111, 130)
+includes: popups

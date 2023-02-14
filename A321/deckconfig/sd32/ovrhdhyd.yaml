@@ -30,7 +30,6 @@ buttons:
       - FAULT_AMBER_OFF_WHITE_FR
     initial-value: 0
     label: ENG 1 PUMP
-    label-position: ct
     options: counter
   - index: 9
     name: RAT
@@ -40,7 +39,6 @@ buttons:
       - GARD_OPEN
       - NONE_ON_GREEN_FR
     label: RAT MAN ON
-    label-position: ct
     initial-value: 0
     options: counter
   - index: 10
@@ -52,7 +50,6 @@ buttons:
       - NONE_OFF_WHITE_FR
       - FAULT_AMBER_OFF_WHITE_FR
     label: ELEC PUMP
-    label-position: ct
     initial-value: 0
   - index: 11
     name: PTU
@@ -63,7 +60,6 @@ buttons:
       - NONE_OFF_WHITE_FR
       - FAULT_AMBER_OFF_WHITE_FR
     label: PTU
-    label-position: ct
     initial-value: 0
   - index: 12
     name: ENG2PUMP
@@ -74,7 +70,6 @@ buttons:
       - NONE_OFF_WHITE_FR
       - FAULT_AMBER_OFF_WHITE_FR
     label: ENG 2 PUMP
-    label-position: ct
     initial-value: 0
   - index: 13
     name: ELECPUMP2
@@ -85,7 +80,6 @@ buttons:
       - NONE_OFF_WHITE_FR
       - FAULT_AMBER_OFF_WHITE_FR
     label: ELEC PUMP
-    label-position: ct
     initial-value: 0
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################

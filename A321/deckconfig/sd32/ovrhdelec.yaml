@@ -6,13 +6,11 @@ buttons:
     type: none
     icon: NONE_NONE
     label: COMMERCIAL
-    label-position: ct
   - index: 1
     name: GALLEY
     type: none
     icon: NONE_NONE
     label: GALLEY
-    label-position: ct
   - index: 2
     name: BAT_VOLT_1
     type: none
@@ -30,7 +28,6 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_OFF_WHITE_FR
     label: BAT 1
-    label-position: ct
     dataref: AirbusFBW/BatOHPArray[0]
     command: toliss_airbus/eleccommands/Bat1Toggle
   - index: 4
@@ -41,7 +38,6 @@ buttons:
       - NONE_NONE
       - FAULT_AMBER_OFF_WHITE_FR
     label: BAT 2
-    label-position: ct
     dataref: AirbusFBW/BatOHPArray[1]
     command: toliss_airbus/eleccommands/Bat2Toggle
   - index: 5
@@ -66,28 +62,23 @@ buttons:
     type: none
     icon: NONE_NONE
     label: AC ESS FEED
-    label-position: ct
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     type: none
     icon: NONE_NONE_ORANGE_GR
     label: IDG 1
-    label-position: ct
   - index: 9
     type: none
     icon: NONE_NONE
     label: GEN 1
-    label-position: ct
   - index: 10
     type: none
     icon: NONE_NONE
     label: APU GEN
-    label-position: ct
   - index: 11
     type: none
     icon: NONE_NONE
     label: BUS TIE
-    label-position: ct
   - index: 12
     name: EXPPOWER
     type: push
@@ -107,17 +98,14 @@ buttons:
           dataref-rpn: ${sim/cockpit2/switches/avionics_power_on}
     command: toliss_airbus/eleccommands/ExtPowToggle
     label: EXT PWR
-    label-position: ct
   - index: 14
     type: none
     icon: NONE_NONE
     label: GEN 2
-    label-position: ct
   - index: 15
     type: none
     icon: NONE_NONE_ORANGE_GR
     label: IDG 2
-    label-position: ct
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31

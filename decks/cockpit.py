@@ -10,7 +10,7 @@ from queue import Queue
 from PIL import Image, ImageFont
 
 from .constant import SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLE, HOME_PAGE
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR
 from .color import convert_color
 
@@ -66,7 +66,7 @@ class Cockpit:
         self.fill_empty_keys = True
         self.empty_key_fill_color = None
         self.empty_key_fill_icon = None
-        self.annunciator_style = ANNUNCIATOR_STYLE
+        self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
         self.cockpit_color = COCKPIT_COLOR
         self.default_home_page_name = HOME_PAGE
         self.init()
@@ -505,6 +505,7 @@ class Cockpit:
         self.terminate_this_aircraft()
         if self.xp is not None:
             self.xp.terminate()
+            logger.info(f"terminate_all: ..deleting..")
             del self.xp
             self.xp = None
             logger.info(f"terminate_all: ..xp deleted..")
@@ -530,6 +531,7 @@ class Cockpit:
                 logger.info(f"run: terminated")
         else:
             logger.warning(f"run: no deck")
+            self.terminate_all()
 
     # #########################################################
     # XPPython Plugin Hooks

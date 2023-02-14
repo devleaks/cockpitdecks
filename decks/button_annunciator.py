@@ -10,10 +10,13 @@ from math import sqrt
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 # from mergedeep import merge
+from metar import Metar
 
-from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS
+from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
 from .color import convert_color, light_off
 from .rpc import RPC
+from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
+from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
 
 logger = logging.getLogger("Annunciator")
@@ -23,6 +26,8 @@ logger = logging.getLogger("Annunciator")
 # Yeah, shouldn't be globals.
 # Localized here for convenience
 # Can be moved lated.
+ICON_SIZE = 256 # px
+DEFAULT_INVERT_COLOR = "white"
 
 
 class AnnunciatorPart:
@@ -121,7 +126,6 @@ class AnnunciatorPart:
         return "invert" in self._config or "invert-color" in self._config
 
     def invert_color(self):
-        DEFAULT_INVERT_COLOR = "white"
         if self.is_invert():
             if "invert" in self._config:
                 return convert_color(self._config.get("invert"))
@@ -195,11 +199,12 @@ class AnnunciatorPart:
             fontname = self.annunciator.get_font(self._config.get("font"))
             fontsize = int(self._config.get("text-size", TEXT_SIZE))
             font = ImageFont.truetype(fontname, fontsize)
-            if self.is_lit() or not self.annunciator.button.page.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
+            if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
 
                 if self.is_lit() and self.is_invert():
                     frame = ((self.center_w() - self.width()/2, self.center_h() - self.height()/2), (self.center_w() + self.width()/2, self.center_h() + self.height()/2))
                     bgrd_draw.rectangle(frame, fill=self.invert_color())
+                    logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: lit reverse")
 
                 # logger.debug(f"render: button {self.button.name}: text '{text}' at ({self.center_w()}, {self.center_h()})")
                 if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
@@ -279,7 +284,9 @@ class Annunciator(Icon):
     def __init__(self, config: dict, button: "Button"):
 
         self.button = button        # we need the reference before we call Icon.__init__()...
+        self.icon = config.get("icon")
         self.annunciator = config.get("annunciator")  # keep raw
+        self.annunciator_style = config.get("annunciator-style", button.page.annunciator_style)
 
         # Normalize annunciator parts in parts attribute if not present
         if self.annunciator is None:
@@ -378,7 +385,6 @@ class Annunciator(Icon):
         # If the part is not lit, a darker version is printed unless dark option is added to button
         # in which case nothing gets added to the button.
         # CONSTANTS
-        ICON_SIZE = 256 # px
         SEAL_WIDTH = 8  # px
         SQUARE = self.button.has_option("square")
         inside = ICON_SIZE / 32 # ~8px for 256x256 image
@@ -428,7 +434,7 @@ class Annunciator(Icon):
             part.render(draw, bgrd_draw, ICON_SIZE, annun_width, annun_height, inside, size)
 
         # PART 1.2: Glowing texts, later because not nicely perfect.
-        if page.annunciator_style == ANNUNCIATOR_STYLES.KORRY:
+        if self.annunciator_style == ANNUNCIATOR_STYLES.KORRY:
             # blurred_image = glow.filter(ImageFilter.UnsharpMask(radius=2, percent=200, threshold=10))
             blurred_image1 = glow.filter(ImageFilter.GaussianBlur(10)) # self.annunciator.get("blurr", 10)
             blurred_image2 = glow.filter(ImageFilter.GaussianBlur(4)) # self.annunciator.get("blurr", 10)
@@ -496,6 +502,8 @@ class AnnunciatorAnimate(Annunciator):
         Check conditions to animate the icon.
         """
         value = self.get_current_value()
+        if type(value) == dict:
+            value = value[list(value.keys())[0]]
         return value is not None and value != 0
 
     def anim_start(self):
@@ -546,3 +554,266 @@ class AnnunciatorAnimate(Annunciator):
                     self.anim_stop()
                 return super().render()
         return None
+
+#
+# ###############################
+# DISPLAY-ONLY REPRESENTATION
+#
+#
+class DataIcon(Icon):
+
+    def __init__(self, config: dict, button: "Button"):
+        Icon.__init__(self, config=config, button=button)
+
+        self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
+
+    def get_data_value(self, data: dict):
+        return data.get("data", "---")
+
+    def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        draw = ImageDraw.Draw(image)
+        inside = round(0.04 * image.width + 0.5)
+
+        # Display Data
+        data = self._config.get("data")
+        if data is None:
+            logger.warning(f"get_image_for_icon: button {self.button.name}: no data")
+            return image
+
+        # Icon
+        icon, icon_format, icon_font, icon_color, icon_size, icon_position = self.get_text_detail(data, "icon")
+        #print(">"*10, "ICON", icon, icon_format, icon_font, icon_color, icon_size, icon_position)
+
+        icon_name = data.get("icon-name")  # not "icon"...
+        if icon_name is not None:
+            icon_str = FA_ICONS.get(icon_name, "*")
+        else:
+            icon_str = "*"
+
+        icon_font = data.get("icon-font", ICON_FONT)
+        fontname = self.get_font(icon_font)
+        if fontname is None:
+            logger.warning(f"get_image_for_icon: icon font not found, cannot overlay icon {icon_name} in {icon_font}")
+        else:
+            font = ImageFont.truetype(fontname, int(icon_size))
+            inside = round(0.04 * image.width + 0.5)
+            w = inside
+            h = image.height / 2
+            draw.text((w, h),  # (image.width / 2, 15)
+                      text=icon_str,
+                      font=font,
+                      anchor="lm",
+                      align="left",
+                      fill=icon_color)
+
+        # Data
+        DATA_UNIT_SEP = " "
+        data_value, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(data, "data")
+        #print(">"*10, "DATA", data_value, data_format, data_font, data_color, data_size, data_position)
+
+        if data_format is not None:
+            data_str = data_format.format(float(data_value))
+        else:
+            data_str = str(data_value)
+
+        data_unit = data.get("data-unit")
+        # if data_unit is not None:
+        #     data_str = data_str + DATA_UNIT_SEP + data_unit
+
+        data_progress = data.get("data-progress")
+
+        fontname = self.get_font(data_font)
+        if fontname is None:
+            logger.warning(f"get_image_for_icon: data font {data_font} not found, cannot overlay data")
+        else:
+            font = ImageFont.truetype(fontname, data_size)
+            font_unit = ImageFont.truetype(fontname, int(data_size * 0.50))
+            inside = round(0.04 * image.width + 0.5)
+            w = image.width - inside
+            h = image.height / 2 + data_size / 2 - inside
+            # if dataprogress is not None:
+            #     h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
+            if data_unit is not None:
+                w = w - draw.textlength(DATA_UNIT_SEP + data_unit, font=font_unit)
+            draw.text((w, h),  # (image.width / 2, 15)
+                      text=data_str,
+                      font=font,
+                      anchor="rs",
+                      align="right",
+                      fill=data_color)
+
+            if data_unit is not None:
+                w = image.width - inside
+                draw.text((w, h),  # (image.width / 2, 15)
+                          text=DATA_UNIT_SEP + data_unit,
+                          font=font_unit,
+                          anchor="rs",
+                          align="right",
+                          fill=data_color)
+
+        # Progress bar
+        DATA_PROGRESS_SPACE = 8
+        DATA_PROGRESS = 6
+
+        if data_progress is not None:
+            w = icon_size + 4 * inside
+            h = 3 * image.height / 4 - 2 * DATA_PROGRESS
+            pct = float(data_value) / float(data_progress)
+            if pct > 1:
+                pct = 1
+            full_color = light_off(data_color, 0.30)
+            l = w + pct * ((image.width - inside) - w)
+            draw.line([(w, h), (image.width - inside, h)],fill=full_color, width=DATA_PROGRESS, joint="curve") # 100%
+            draw.line([(w, h), (l, h)], fill=data_color, width=DATA_PROGRESS, joint="curve")
+
+        # Bottomline (forced at CENTER BOTTOM line of icon)
+        bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position = self.get_text_detail(data, "bottomline")
+        #print(">"*10, "BOTL", bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position)
+
+        if bottom_line is not None:
+            fontname = self.get_font(botl_font)
+            if fontname is None:
+                logger.warning(f"get_image_for_icon: bottom line font {botl_font} not found, cannot print bottom line")
+            else:
+                font = ImageFont.truetype(fontname, botl_size)
+                w = image.width / 2
+                h = image.height / 2
+                h = image.height - inside - botl_size / 2  # forces BOTTOM position
+                draw.multiline_text((w, h),  # (image.width / 2, 15)
+                          text=bottom_line,
+                          font=font,
+                          anchor="md",
+                          align="center",
+                          fill=botl_color)
+        return image
+
+
+class WeatherIcon(Icon):
+
+    def __init__(self, config: dict, button: "Button"):
+        Icon.__init__(self, config=config, button=button)
+
+        self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
+        self.weather_icon = "wi_day_sunny"
+
+    def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        draw = ImageDraw.Draw(image)
+        inside = round(0.04 * image.width + 0.5)
+
+        self.to_icon()
+
+        # Weather Icon
+        icon_name = self.weather_icon
+        if icon_name is not None:
+            icon_str = WEATHER_ICONS.get(icon_name, "*")
+        else:
+            icon_str = "*"
+
+        icon_font = self._config.get("icon-font", WEATHER_ICON_FONT)
+        icon_size = int(image.width / 2)
+        icon_color = "white"
+        fontname = self.get_font(icon_font)
+        if fontname is None:
+            logger.warning(f"get_image_for_icon: icon font not found, cannot overlay icon")
+        else:
+            font = ImageFont.truetype(fontname, icon_size)
+            inside = round(0.04 * image.width + 0.5)
+            w = image.width / 2
+            h = image.height / 2
+            draw.text((w, h),  # (image.width / 2, 15)
+                      text=icon_str,
+                      font=font,
+                      anchor="mm",
+                      align="center",
+                      fill=light_off(icon_color, 0.2))
+
+        # Weather Data
+        text_font = self._config.get("weather-font", self.label_font)
+        fontname = self.get_font(text_font)
+        if fontname is None:
+            logger.warning(f"get_image_for_icon: text font not found, cannot overlay text")
+        else:
+            # logger.debug(f"get_image: font {fontname}")
+            detailsize = int(image.width / 10)
+            font = ImageFont.truetype(fontname, detailsize)
+            w = inside
+            p = "l"
+            a = "left"
+            h = image.height / 3
+            il = detailsize
+            draw.text((w, h),  # (image.width / 2, 15)
+                      text=f"Temp: {self.metar.temp.string('C')}",
+                      font=font,
+                      anchor=p+"m",
+                      align=a,
+                      fill=self.label_color)
+
+            h = h + il
+            draw.text((w, h),  # (image.width / 2, 15)
+                      text=f"Press: {self.metar.press.string('mb')}",
+                      font=font,
+                      anchor=p+"m",
+                      align=a,
+                      fill=self.label_color)
+
+            if self.metar.wind_dir:
+                h = h + il
+                draw.multiline_text((w, h),  # (image.width / 2, 15)
+                          text=f"Wind: {self.metar.wind_speed.string('MPS')} {self.metar.wind_dir.compass()}",
+                          font=font,
+                          anchor=p+"m",
+                          align=a,
+                          fill=self.label_color)
+
+        return image
+
+    def to_icon(self):
+        WI = [  "fog",
+                "hail",
+                "rain",
+                "rain_mix",
+                "rain_wind",
+                "showers",
+                "sleet",
+                "snow",
+                "sprinkle",
+                "snow_wind",
+                "smog",
+                "smoke",
+                "lightning",
+                "raindrops",
+                "raindrop",
+                "dust",
+                "snowflake_cold",
+                "windy",
+                "strong_wind",
+                "sandstorm",
+                "earthquake",
+                "fire",
+                "flood",
+                "meteor",
+                "tsunami",
+                "volcano",
+                "hurricane",
+                "tornado",
+                "small_craft_advisory",
+                "gale_warning",
+                "storm_warning",
+                "hurricane_warning",
+                "wind_direction",
+                "degrees",
+                "humidity",
+                "na"]
+

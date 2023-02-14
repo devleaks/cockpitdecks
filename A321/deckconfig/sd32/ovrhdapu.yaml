@@ -21,7 +21,6 @@ buttons:
           dataref-rpn: ${AirbusFBW/ExtPowOHPArray[0]} 1 eq
     command: toliss_airbus/eleccommands/ExtPowToggle
     label: EXT PWR
-    label-position: ct
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: APUMASTER
@@ -38,24 +37,20 @@ buttons:
           dataref-rpn: ${AirbusFBW/APUMaster}
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
-    label-position: ct
   - index: 10
     type: longpress
     icon: TEST
     label: "ENG 1\nTEST"
-    label-position: ct
     command: AirbusFBW/FireTestENG1
   - index: 11
     type: longpress
     icon: TEST
     label: "APU\nTEST"
-    label-position: ct
     command: AirbusFBW/FireTestAPU
   - index: 12
     type: longpress
     icon: TEST
     label: "ENG 2\nTEST"
-    label-position: ct
     command: AirbusFBW/FireTestENG2
   # ### LINE 3 ### 16-23 ######################################################
   - index: 16
@@ -77,7 +72,6 @@ buttons:
           dataref-rpn: ${AirbusFBW/APUStarter}
     command: toliss_airbus/apucommands/StarterToggle
     label: START
-    label-position: ct
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31
     name: Index

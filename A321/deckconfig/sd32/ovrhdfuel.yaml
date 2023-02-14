@@ -17,42 +17,34 @@ buttons:
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: "1"
-    label-position: ct
   - index: 9
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: "2"
-    label-position: ct
   - index: 10
     type: none
     icon: FAULT_AMBER_FWD_BLUE_FR
     label: ACT
-    label-position: ct
   - index: 11
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: L XFR
-    label-position: ct
   - index: 12
     type: none
     icon: FAULT_AMBER_MAN_WHITE_FR
     label: MODE SEL
-    label-position: ct
   - index: 13
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: R XFR
-    label-position: ct
   - index: 14
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: "1"
-    label-position: ct
   - index: 15
     type: none
     icon: FAULT_AMBER_OFF_WHITE_FR
     label: "2"
-    label-position: ct
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31

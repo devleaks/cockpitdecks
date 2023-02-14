@@ -23,6 +23,7 @@ DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS
 DEFAULT_LABEL_FONT = "DIN.ttf"
 DEFAULT_LABEL_SIZE = 10
 DEFAULT_LABEL_COLOR = "white"
+DEFAULT_LABEL_POSITION = "ct"
 
 ICONS_FOLDER = "icons"
 DEFAULT_ICON_NAME = "_default_icon.png"
@@ -35,6 +36,9 @@ DEFAULT_LOGO = "logo.png"
 DATAREF_RPN = "dataref-rpn"
 
 SPAM = 15
+
+ICON_FONT = "fontawesome.otf"
+WEATHER_ICON_FONT = "weathericons.otf"
 
 # #############################################################
 # Constants for Loupedeck Live
@@ -166,7 +170,7 @@ class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"           # k(orry): backlit, glowing
     VIVISUN = "v"         # v(ivisun): bright, sharp.
 
-ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.VIVISUN
+DEFAULT_ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.VIVISUN
 
 
 

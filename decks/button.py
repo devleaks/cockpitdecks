@@ -303,8 +303,15 @@ class Button:
         Replaces ${dataref} with value of dataref in labels and execution formula.
         """
         if type(message) == int or type(message) == float:  # probably dataref-rpn is a contant value
-            logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning as is.")
-            return str(message)
+            value_str = message
+            if formatting is not None:
+                if formatting is not None:
+                    value_str = formatting.format(message)
+                    logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning as is.")
+                else:
+                    value_str = str(message)
+                    logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning formatted {formatting}.")
+            return value_str
 
         dataref_names = re.findall("\\${(.+?)}", message)
         if len(dataref_names) == 0:
@@ -362,7 +369,7 @@ class Button:
         text = base.get(root)
 
         if text is not None:
-            if DATAREF_RPN in text:
+            if DATAREF_RPN in str(text):
                 # If text contains ${dataref-rpn}, it is replaced by the value of the dataref-rpn calculation.
                 dataref_rpn = base.get(DATAREF_RPN)
                 if dataref_rpn is not None:

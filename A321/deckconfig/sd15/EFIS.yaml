@@ -102,7 +102,6 @@ buttons:
     icon: TEST
     label: CHRONO
     label-size: 10
-    label-position: ct
   - index: 6
     name: FD 1
     type: push
@@ -159,7 +158,6 @@ buttons:
     name: SPD/MACH
     type: push
     label: SPD/MACH
-    label-position: ct
     label-size: 10
     command: sim/autopilot/knots_mach_toggle
     dataref: sim/cockpit/autopilot/airspeed_is_mach

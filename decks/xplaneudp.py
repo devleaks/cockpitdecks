@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often = SLOW
 DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
                     # must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produce.
-LOOP_ALIVE   = 10 # report loop activity every 1000 executions on DEBUG, set to None to suppress output
+LOOP_ALIVE   = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
 
@@ -52,6 +52,8 @@ class XPlaneBeacon:
         self.socket = None
         # values from xplane
         self.connected = False
+        self.connect_thread = None
+        self.should_run = True
         self.BeaconData = {}
 
     def FindIp(self):
@@ -152,11 +154,12 @@ class XPlaneBeacon:
 
     def connect_loop(self):
         logger.debug("connect_loop: connecting..")
-        while not self.connected:
+        while not self.connected and self.should_run:
             try:
                 self.FindIp()
                 if "IP" in self.BeaconData:
                     self.connected = True
+                    self.should_run = False
                 logger.info(self.BeaconData)
                 logger.debug("connect_loop: ..starting..")
                 self.start()
@@ -168,10 +171,13 @@ class XPlaneBeacon:
                 self.BeaconData = {}
                 self.connected = False
                 # logger.error("connect_loop: XPlane IP not found. Probably there is no XPlane running in your local network.")
-            if not self.connected:
+            if not self.connected and self.should_run:
                 time.sleep(RECONNECT_TIMEOUT)
                 logger.debug("connect_loop: ..trying..")
-        logger.debug("connect_loop: ..connected; connect_loop ended")
+        if self.should_run:
+            logger.debug("connect_loop: ..connected; connect_loop ended")
+        else:
+            logger.debug("connect_loop: ..ended")
 
     def connect(self):
         if not self.connected:
@@ -184,8 +190,13 @@ class XPlaneBeacon:
         pass
 
     def terminate(self):
-        pass
-
+        self.should_run = False
+        logger.debug(f"terminate: asked to stop.. (this may last {RECONNECT_TIMEOUT} secs.)")
+        self.connect_thread.join(timeout=RECONNECT_TIMEOUT)
+        if not self.connect_thread.is_alive():
+            logger.debug("terminate: ..stopped")
+        else:
+            logger.warning(f"terminate: ..thread may hang..")
 
 class XPlaneUDP(XPlane, XPlaneBeacon):
     '''
@@ -208,7 +219,6 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.datarefidx = 0
         self.datarefs = {} # key = idx, value = dataref
 
-        self.finished = None
         self.init()
 
     def init(self):
@@ -318,7 +328,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             logger.warning(f"ExecuteCommand: no IP connection ({command})")
 
     def loop(self):
-        logger.debug(f"loop: started")
+        logger.debug(f"loop: started..")
         i = 0
         total_to = 0
         j1, j2 = 0, 0
@@ -344,20 +354,14 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     nexttime = DATA_REFRESH - (later - now)
                     total_to = 0
                 except XPlaneTimeout:
-                    logger.warning(f"loop: XPlaneTimeout ({total_to})")  # ignore
+                    logger.debug(f"loop: XPlaneTimeout ({total_to})")  # ignore
                     total_to = total_to + 1
                     if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
+                        logger.warning(f"loop: XPlaneTimeout ({total_to})")  # ignore
                         self.disconnect()
 
             if nexttime > 0:
                 time.sleep(nexttime)
-
-        logger.debug(f"loop: ended but not terminated. Terminating..")
-        if self.finished is not None:
-            self.finished.set()
-            logger.debug(f"loop: allowed to be deleted")
-        else:
-            logger.warning(f"loop: no event set")
         logger.debug(f"loop: ..terminated")
 
     # ################################
@@ -430,13 +434,14 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             logger.warning(f"start: no IP address. could not start.")
 
     def terminate(self):
+        XPlaneBeacon.terminate(self)
         logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
         if self.running:
-            self.finished = threading.Event()
             self.running = False
             wait = 10 * DATA_REFRESH + 2  # 2 seconds is net latency to get recvfrom() on UDP
             logger.debug(f"terminate: ..waiting {wait}sec. permission to be deleted..")
-            if self.finished.wait(timeout=wait):
+            self.thread.join(wait)
+            if not self.thread.is_alive():
                 logger.debug(f"terminate: ..got it. I can now die in peace..")
             else:
                 logger.warning(f"terminate: ..did not get permission to delete (thread may hang in socket.recvfrom())..")

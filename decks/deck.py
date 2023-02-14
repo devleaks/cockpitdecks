@@ -52,16 +52,16 @@ class Deck(ABC):
         self.cockpit_color = config.get("cockpit-color", cockpit.cockpit_color)
         self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
         self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
-        self.default_home_page_name = config.get("default-homepage-name", cockpit.default_home_page_name)
+        self.default_home_page_name = config.get("homepage-name", cockpit.default_home_page_name)
 
         self.pil_helper = None
         self.icons = {}  # icons ready for this deck
 
         self.layout_config = {}
         self.pages = {}
-        self.home_page = None
-        self.current_page = None
-        self.previous_page = None
+        self.home_page = None           # this is a Page, not a str.
+        self.current_page = None        # this is a Page, not a str.
+        self.previous_page = None       # this is a Page, not a str.
         self.page_history = []
 
         self.valid = False
@@ -282,13 +282,14 @@ class Deck(ABC):
     def set_home_page(self):
         if not len(self.pages) > 0:
             self.valid = False
-            logger.error(f"load: {self.name}: has no page, ignoring")
+            logger.error(f"set_home_page: deck {self.name} has no page, ignoring")
         else:
             if self.default_home_page_name in self.pages.keys():
                 self.home_page = self.pages[self.default_home_page_name]
             else:
+                logger.debug(f"set_home_page: deck {self.name}: no home page named {self.default_home_page_name}")
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.info(f"load: deck {self.name} home page {self.home_page.name}")
+            logger.info(f"set_home_page: deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
         """
@@ -296,7 +297,9 @@ class Deck(ABC):
         """
         if self.home_page is not None:
             self.change_page(self.home_page.name)
-        logger.info(f"load_home_page: deck {self.name}, home page {self.home_page.name} loaded")
+            logger.info(f"load_home_page: deck {self.name}, home page {self.home_page.name} loaded")
+        else:
+            logger.info(f"load_home_page: deck {self.name} has no home page")
 
     # #######################################
     # Deck Specific Functions
@@ -410,7 +413,8 @@ class Deck(ABC):
     def start(self):
         pass
 
-    @abstractmethod
     def terminate(self):
-        pass
+        if self.current_page is not None:
+            self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
+            self.current_page.clean()
 
