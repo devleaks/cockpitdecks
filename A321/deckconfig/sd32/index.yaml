@@ -93,6 +93,7 @@ buttons:
     type: push
     command: AirbusFBW/PopUpISI
     icon: ISI
+    options: framed-icon
   - index: 17
     name: Popup FD1
     type: push
@@ -122,12 +123,27 @@ buttons:
     name: Popup Pedestal1
     type: push
     command: AirbusFBW/PopUpPedestal1
-    icon: PNL_PIEDESTAL
+    icon: PIEDESTAL_FRONT
   - index: 23
     name: Popup Pedestal2
     type: push
     command: AirbusFBW/PopUpPedestal2
-    icon: PNL_PIEDESTAL
+    icon: PIEDESTAL_BACK
+  - index: 24
+    name: efis
+    type: page
+    page: efis
+    icon: FCU
+  - index: 25
+    name: ECAM
+    type: page
+    page: ecam
+    icon: ECAM_SELECTOR.png
+  - index: 24
+    name: FCU
+    type: page
+    page: fcu
+    icon: FCU
 # ### LINE 4 ### 24-31 ######################################################
   # - index: 27
   #   name: INSPECT

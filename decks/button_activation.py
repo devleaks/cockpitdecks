@@ -353,6 +353,8 @@ class UpDown(Activation):
         self.start_value = None
         self.go_up = True
 
+        # @todo: can bounce 0-1-2-1-0-1-2... or not 0-1-2-0-1-2-0...
+
         if self.initial_value is not None and is_integer(self.initial_value):
             if self.initial_value < 0:
                 self.initial_value = abs(self.initial_value)

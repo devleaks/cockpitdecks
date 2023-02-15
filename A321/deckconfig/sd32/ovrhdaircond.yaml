@@ -16,9 +16,23 @@ buttons:
   #   label-position: ct
   #   command: toliss_airbus/aircondcommands/EconFlowToggle
   #   dataref: AirbusFBW/AirCondSwitchAnims[13]
+  - index: 0
+    name: PACKFLOW
+    type: updown
+    stops: 3
+    label: PACK FLOW
+    multi-icons:
+      - XBLEED_SHUT
+      - XBLEED_AUTO
+      - XBLEED_OPEN
+    dataref: AirbusFBW/AirCondSwitchAnims[13]
+    commands:
+      - toliss_airbus/aircondcommands/EconFlowToggle
+      - toliss_airbus/aircondcommands/EconFlowToggle
   - index: 1
     name: ACCOCKPIT
     type: updown
+    stops: 7
     label: COCKPIT
     multi-icons:
       - AC_0
@@ -38,6 +52,7 @@ buttons:
   - index: 2
     name: ACFWDCABIN
     type: updown
+    stops: 7
     label: FWD CABIN
     multi-icons:
       - AC_0
@@ -56,6 +71,7 @@ buttons:
   - index: 3
     name: ACAFTCABIN
     type: updown
+    stops: 7
     label: AFT CABIN
     multi-icons:
       - AC_0
@@ -103,7 +119,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          text-size: 60
+          text-size: 72
           dataref-rpn: ${AirbusFBW/Pack1SwitchIllum} ${AirbusFBW/Pack1FCVInd} - abs
         B1:
           text: "OFF"
@@ -168,6 +184,7 @@ buttons:
   - index: 12
     name: XBLEED
     type: updown
+    stops: 3
     multi-icons:
       - XBLEED_SHUT
       - XBLEED_AUTO
@@ -209,7 +226,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          text-size: 60
+          text-size: 72
           dataref-rpn: ${AirbusFBW/Pack2SwitchIllum} ${AirbusFBW/Pack2FCVInd} - abs
         B1:
           text: "OFF"
@@ -228,3 +245,5 @@ buttons:
     type: page
     page: index
     icon: TOLISS-A321
+default-label-size: 12
+default-label-font: DIN Medium.ttf

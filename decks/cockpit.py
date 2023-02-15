@@ -12,7 +12,7 @@ from PIL import Image, ImageFont
 from .constant import SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
-from .color import convert_color
+from .color import convert_color, has_ext
 
 from .devices import DECK_TYPES
 from .streamdeck import FLIP_DESCRIPTION
@@ -21,12 +21,6 @@ logging.addLevelName(SPAM, "SPAM")
 
 logger = logging.getLogger("Cockpit")
 # logger.setLevel(logging.DEBUG)
-
-
-def has_ext(name: str, ext: str):
-    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
-    narr = name.split(".")
-    return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
 
 
 class Cockpit:

@@ -7,7 +7,7 @@ buttons:
     type: none
     annunciator:
       size: small
-      display:
+      A0:
         text: ON BAT
         size: 48
         color: darkorange
@@ -25,12 +25,13 @@ buttons:
     type: none
     annunciator:
       size: full
-      display:
+      type: B
+      B0:
         text: FAIL
         color: darkorange
         size: 60
         dataref-rpn: "0"
-      dual:
+      B1:
         text: ALIGN
         color: peachpuff
         size: 80
@@ -41,12 +42,13 @@ buttons:
     type: none
     annunciator:
       size: full
-      display:
+      type: B
+      B0:
         text: FAIL
         color: darkorange
         size: 60
         dataref-rpn: "0"
-      dual:
+      B1:
         text: ALIGN
         color: peachpuff
         size: 80
@@ -57,12 +59,13 @@ buttons:
     type: none
     annunciator:
       size: full
-      display:
+      type: B
+      B0:
         text: FAIL
         color: darkorange
         size: 60
         dataref-rpn: "0"
-      dual:
+      B1:
         text: ALIGN
         color: peachpuff
         size: 80
@@ -72,6 +75,7 @@ buttons:
   - index: 16
     name: ADIRS1
     type: updown
+    stops: 3
     multi-icons:
       - ADIRS_OFF
       - ADIRS_NAV
@@ -86,6 +90,7 @@ buttons:
   - index: 17
     name: ADIRS3
     type: updown
+    stops: 3
     multi-icons:
       - ADIRS_OFF
       - ADIRS_NAV
@@ -100,6 +105,7 @@ buttons:
   - index: 18
     name: ADIRS2
     type: updown
+    stops: 3
     multi-icons:
       - ADIRS_OFF
       - ADIRS_NAV
@@ -117,12 +123,13 @@ buttons:
     type: push
     annunciator:
       size: full
-      display:
+      type: B
+      B0:
         text: FAIL
         color: darkorange
         size: 60
         dataref-rpn: "0"
-      dual:
+      B1:
         text: "OFF"
         color: peachpuff
         size: 80
@@ -134,12 +141,13 @@ buttons:
     type: push
     annunciator:
       size: full
-      display:
+      type: B
+      B0:
         text: FAIL
         color: darkorange
         size: 60
         dataref-rpn: "0"
-      dual:
+      B1:
         text: "OFF"
         color: peachpuff
         size: 80
@@ -151,12 +159,13 @@ buttons:
     type: push
     annunciator:
       size: full
-      display:
+      type: B
+      B0:
         text: FAIL
         color: darkorange
         size: 60
         dataref-rpn: "0"
-      dual:
+      B1:
         text: "OFF"
         color: peachpuff
         size: 80

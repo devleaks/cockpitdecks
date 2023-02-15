@@ -4,7 +4,7 @@ aicraft: Toliss A321
 decks:
   - name: XPDeck
     type: streamdeck
-    layout: newicons
+    layout: draw
     brightness: 80
     default-label-font: DIN Medium.ttf
     default-label-size: 13

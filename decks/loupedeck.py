@@ -245,7 +245,17 @@ class Loupedeck(Deck):
         b = button.index
         if b not in ["full", "center", "left", "right"]:
             b = "button"
-        return self.pil_helper.create_image(deck=b, background=colors)
+        if self.pil_helper is not None:
+            return self.pil_helper.create_image(deck=b, background=colors)
+        return None
+
+    def scale_icon_for_key(self, button, image):
+        b = button.index
+        if b not in ["full", "center", "left", "right"]:
+            b = "button"
+        if self.pil_helper is not None:
+            return self.pil_helper.create_scaled_image(deck=b, image=image)
+        return None
 
     def _send_key_image_to_device(self, key, image):
         self.device.set_key_image(key, image)

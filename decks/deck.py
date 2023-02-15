@@ -385,6 +385,11 @@ class Deck(ABC):
             return self.pil_helper.create_image(deck=self.device, background=colors)
         return None
 
+    def scale_icon_for_key(self, button, image):
+        if self.pil_helper is not None:
+            return self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+        return None
+
     # #######################################
     # Deck Specific Functions : Activation
     #

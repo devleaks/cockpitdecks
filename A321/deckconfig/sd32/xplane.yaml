@@ -125,10 +125,9 @@ buttons:
     name: XPLANEDATA
     type: push
     icon: XPLANE_OUTPUT
-    label: "XPLANE\nCOCKPIT\nDATA"
-    label-color: black
-    label-position: "cm"
+    label: "COCKPIT\nDATA"
     command: sim/operation/toggle_data_output_cockpit
+    options: framed-icon
   - index: 27
     name: INSPECT
     type: inspect

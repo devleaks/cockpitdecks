@@ -305,7 +305,7 @@ class Annunciator(Icon):
                     arr[part_name] = AnnunciatorPart(name=part_name, config=p, annunciator=self)
             if len(arr) > 0:
                 self.annunciator_parts = arr
-                logger.debug(f"__init__: button {self.button.name}: annunciator parts normalized ({list(self.annunciator['parts'].keys())})")
+                logger.debug(f"__init__: button {self.button.name}: annunciator parts normalized ({list(self.annunciator_parts.keys())})")
             else:
                 self.annunciator["type"] = "A"
                 arr["A0"] = AnnunciatorPart(name="A0", config=self.annunciator, annunciator=self)

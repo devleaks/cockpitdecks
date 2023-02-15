@@ -11,23 +11,11 @@ import yaml
 from PIL import ImageDraw, ImageFont
 
 from .XTouchMini.Devices.xtouchmini import LED_MODE
-from .color import convert_color, is_integer
+from .color import convert_color, is_integer, has_ext, add_ext
 from .constant import DEFAULT_LABEL_POSITION
 
 logger = logging.getLogger("Representation")
 # logger.setLevel(logging.DEBUG)
-
-
-def add_ext(name: str, ext: str):
-    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
-    narr = name.split(".")
-    if len(narr) < 2:  # has no extension
-        return name + "." + rext
-    nameext = narr[-1]
-    if nameext.lower() == rext.lower():
-        return ".".join(narr[:-1]) + "." + rext  # force extension to what is should
-    else:  # did not finish with extention, so add it
-        return name + "." + rext  # force extension to what is should
 
 
 # ##########################################
@@ -157,39 +145,53 @@ class Icon(Representation):
         """
         deck = self.button.deck
         all_fonts = deck.cockpit.fonts
-        fonts_available = all_fonts.keys()
+        fonts_available = list(all_fonts.keys())
         this_button = f"{self.button.name}: {type(self).__name__}"
 
         # 1. Tries button specific font
         if fontname is not None:
-            narr = fontname.split(".")
-            if len(narr) < 2:  # has no extension
-                fontname = add_ext(fontname, ".ttf")  # should also try .otf
+            if has_ext(fontname, ".ttf") or has_ext(fontname, ".otf"):
+                if fontname in fonts_available:
+                    return all_fonts[fontname]
 
-            if fontname in fonts_available:
-                return all_fonts[fontname]
-            else:
-                logger.warning(f"get_font: button {this_button}: button label font '{fontname}' not found")
+            fn = add_ext(fontname, ".ttf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+
+            fn = add_ext(fontname, ".otf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+
+            logger.warning(f"get_font: button {this_button}: button label font '{fontname}' not found")
+
+        # 2. Tries default fonts
+        #    Tries page default font
+        if self.button.page.default_label_font is not None and self.button.page.default_label_font in fonts_available:
+            logger.debug(f"get_font: button {this_button}: using page default font '{self.button.page.default_label_font}'")
+            return all_fonts[self.button.page.default_label_font]
         else:
-            fontname = self.button.page.default_label_font
-            logger.debug(f"get_font: button {this_button}: no font, using default from page {fontname}")
-            if fontname in fonts_available:
-                return all_fonts[fontname]
-            else:
-                logger.warning(f"get_font: button {this_button}: button default label font from page '{fontname}' not found in {fonts_available}")
+            logger.warning(f"get_font: button {this_button} page default label font '{self.button.page.default_label_font}' not found in {fonts_available}")
 
         # 2. Tries deck default font
         if deck.default_label_font is not None and deck.default_label_font in fonts_available:
             logger.debug(f"get_font: button {this_button}: using deck default font '{deck.default_label_font}'")
             return all_fonts[deck.default_label_font]
         else:
-            logger.warning(f"get_font: button {this_button} deck default label font '{fontname}' not found in {fonts_available}")
+            logger.warning(f"get_font: button {this_button} deck default label font '{deck.default_label_font}' not found in {fonts_available}")
 
-        # 3. Tries streamdecks default font
+        # 3. Tries cockpit default font
         if deck.cockpit.default_label_font is not None and deck.cockpit.default_label_font in fonts_available:
             logger.debug(f"get_font: button {this_button} using cockpit default font '{deck.cockpit.default_label_font}'")
             return all_fonts[deck.cockpit.default_label_font]
-        logger.error(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {fontname}, {deck.default_label_font}, {deck.cockpit.default_label_font}")
+        else:
+            logger.warning(f"get_font: button {this_button} deck default label font '{deck.cockpit.default_label_font}' not found in {fonts_available}")
+
+        # 4. Returns first font, if any
+        if len(fonts_available) > 0:
+            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {self.button.page.default_label_font}, {deck.default_label_font}, {deck.cockpit.default_label_font}")
+            return all_fonts[fonts_available[0]]
+        else:
+            logger.error(f"get_font: button {this_button}: no font")
         return None
 
     def get_image_for_icon(self):
@@ -203,7 +205,7 @@ class Icon(Representation):
         elif self.icon in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
             logger.debug(f"get_image_for_icon: button {this_button}: found {self.icon} in cockpit")
             image = deck.cockpit.icons[self.icon]
-            image = deck.pil_helper.create_scaled_image("button", image)
+            image = deck.scale_icon_for_key(self.button, image)
         else:
             logger.warning(f"get_image_for_icon: button {this_button}: {self.icon} not found")
         return image
@@ -214,7 +216,12 @@ class Icon(Representation):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image = self.get_image_for_icon()
+        image = None
+        if self.button.has_option("framed-icon"):
+            image = self.get_framed_icon()
+        else:
+            image = self.get_image_for_icon()
+
         if image is None:
             logger.warning(f"get_image: button {self.button.name}: {type(self).__name__} no image")
             return None
@@ -229,6 +236,32 @@ class Icon(Representation):
             draw.polygon(pologon, fill="red", outline="white")
 
         return self.overlay_text(image, "label")
+
+    def get_framed_icon(self):
+        FRAME = "FRAME"
+        FRAME_SIZE = (400, 400)
+        FRAME_CONTENT = (222, 222)
+        FRAME_POSITION = (90, 125)
+        image = None
+        deck = self.button.deck
+        this_button = f"{self.button.name}: {type(self).__name__}"
+        frame = add_ext(FRAME, "png")
+        if frame in deck.cockpit.icons.keys():  # look for properly sized image first...
+            logger.debug(f"frame_icon: button {this_button}: found {frame} in cockpit")
+            image = deck.cockpit.icons[frame]
+        else:
+            logger.warning(f"frame_icon: button {this_button}: {frame} not found")
+            return self.get_image_for_icon()
+
+        inside = self.get_image_for_icon()
+        if inside is not None:
+            inside = inside.resize(FRAME_CONTENT)
+            box = (90, 125, )  # FRAME_POSITION + (FRAME_POSITION[0]+FRAME_CONTENT[0],FRAME_POSITION[1]+FRAME_CONTENT[1])
+            logger.debug(f"frame_icon: button {this_button}: {self.icon}, {frame}, {image}, {inside}, {box}")
+            image.paste(inside, box)
+            image = deck.scale_icon_for_key(self.button, image)
+            return image
+        return None
 
     def overlay_text(self, image, which_text):  # which_text = {label|text}
         draw = None
@@ -622,6 +655,7 @@ class MultiLEDs(Representation):
 #
 #
 from .button_annunciator import Annunciator, AnnunciatorAnimate, DataIcon, WeatherIcon
+from .button_draw import CircularSwitch
 
 #
 # ###############################
@@ -642,6 +676,7 @@ REPRESENTATIONS = {
     "multi-leds": MultiLEDs,
     "annunciator": Annunciator,
     "annunciator-animate": AnnunciatorAnimate,
+    "circular-switch": CircularSwitch,
     "data": DataIcon,
     "weather": WeatherIcon
 }

@@ -1,0 +1,200 @@
+name: efis
+version: 3.0.0
+description: EFIS display selector + some FCU commands
+note: final version for Streamdeck 15 keys
+buttons:
+# ### LINE 1 ###  0 -  4 ######################################################
+  - index: 31
+    type: page
+    page: back
+    icon: TOLISS-A321
+  - index: 0
+    name: CSTR
+    type: push
+    annunciator:
+      size: small
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
+        B1:
+          text: CSTR
+          color: white
+          text-size: 40
+          dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptCstrPushButton
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 1
+    name: WPT
+    type: push
+    annunciator:
+      size: small
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
+        B1:
+          text: WPT
+          color: white
+          text-size: 40
+          dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptWptPushButton
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 2
+    name: VOR.D
+    type: push
+    annunciator:
+      size: small
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
+        B1:
+          text: VOR.D
+          color: white
+          text-size: 40
+          dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptVorDPushButton
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 3
+    name: NDB
+    type: push
+    annunciator:
+      size: small
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
+        B1:
+          text: NDB
+          color: white
+          text-size: 40
+          dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptNdbPushButton
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 4
+    name: ARPT
+    type: push
+    annunciator:
+      size: small
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
+        B1:
+          text: ARPT
+          color: white
+          text-size: 40
+          dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptArptPushButton
+    view: SRS/X-Camera/Select_View_ID_1
+# ### LINE 2 ###  5 -  9 ######################################################
+  - index: 5
+    type: push
+    name: CHRONO
+    command: AirbusFBW/CaptChronoButton
+    icon: TEST
+    label: CHRONO
+    label-size: 10
+  - index: 6
+    name: FD 1
+    type: push
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/FD1Engage}
+        B1:
+          text: FD
+          color: white
+          text-size: 64
+          dataref-rpn: "1"
+    command: toliss_airbus/fd1_push
+  - index: 7
+    name: LS 1
+    type: push
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/ILSonCapt}
+        B1:
+          text: LS
+          color: white
+          text-size: 64
+          dataref-rpn: "1"
+    command: toliss_airbus/dispcommands/CaptLSButtonPush
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 8
+    name: LOC 1
+    type: push
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref-rpn: ${AirbusFBW/LOCilluminated}
+        B1:
+          text: LOC
+          color: white
+          text-size: 64
+          dataref-rpn: "1"
+    command: AirbusFBW/LOCbutton
+  - index: 9
+    name: SPD/MACH
+    type: push
+    label: SPD/MACH
+    label-size: 10
+    command: sim/autopilot/knots_mach_toggle
+    dataref: sim/cockpit/autopilot/airspeed_is_mach
+    initial-value: 0
+    multi-icons:
+      - SWITCH_ROUND_TOP
+      - SWITCH_ROUND_BOT
+# ### LINE 3 ### 10 - 14 ######################################################
+  - index: 10
+    name: EFIS MODE -
+    type: push
+    command: sim/instruments/EFIS_mode_dn
+    label: "EFIS\nMODE -"
+    icon-color: (94, 111, 130)
+    options: nostate
+  - index: 11
+    name: EFIS MODE +
+    type: push
+    command: sim/instruments/EFIS_mode_up
+    label: "EFIS\nMODE +"
+    icon-color: (94, 111, 130)
+    options: nostate
+  - index: 12
+    name: EFIS ZOOM IN
+    type: push
+    command: sim/instruments/map_zoom_in
+    label: "EFIS\nZOOM IN"
+    icon-color: (94, 111, 130)
+    options: nostate
+  - index: 13
+    name: EFIS ZOOM OUT
+    type: push
+    command: sim/instruments/map_zoom_out
+    label: "EFIS\nZOOM OUT"
+    icon-color: (94, 111, 130)
+    options: nostate

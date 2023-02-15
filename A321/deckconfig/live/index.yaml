@@ -78,7 +78,7 @@ buttons:
     command: sim/annunciator/clear_master_caution
     annunciator:
       text: "MASTER\nCAUT"
-      color: red
+      color: darkorange
       font: DIN Condensed Black.otf
       text-size: 72
       dataref: AirbusFBW/MasterCaut
@@ -90,11 +90,11 @@ buttons:
     dataref: AirbusFBW/MasterWarn
     annunciator-animate:
       text: "MASTER\nWARN"
-      color: orange
+      color: firebrick
       font: DIN Condensed Black.otf
       text-size: 72
       dataref: AirbusFBW/MasterWarn
-      animation-speed: 0.5
+      animation-speed: 2.0
   - index: 3
     name: FCU Altitude display
     type: none
@@ -210,7 +210,9 @@ buttons:
     type: page
     page: work
     label: WORK
-    label-position: mt
+    label-position: cm
+    label-color: black
+    icon: XPLANE
 #
 # SIDE KEYS
 #

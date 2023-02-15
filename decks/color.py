@@ -52,3 +52,21 @@ def light_off(color, lightness: float = 0.10):
     a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
     a[1] = lightness
     return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
+
+
+def has_ext(name: str, ext: str):
+    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
+    narr = name.split(".")
+    return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
+
+
+def add_ext(name: str, ext: str):
+    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
+    narr = name.split(".")
+    if len(narr) < 2:  # has no extension
+        return name + "." + rext
+    nameext = narr[-1]
+    if nameext.lower() == rext.lower():
+        return ".".join(narr[:-1]) + "." + rext  # force extension to what is should
+    else:  # did not finish with extention, so add it
+        return name + "." + rext  # force extension to what is should
