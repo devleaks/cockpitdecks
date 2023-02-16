@@ -19,24 +19,42 @@ class Page:
         self.deck = deck
         self.xp = self.deck.cockpit.xp  # shortcut alias
 
-        self.default_label_font = config.get("default-label-font", deck.default_label_font)
-        self.default_label_size = config.get("default-label-size", deck.default_label_size)
-        self.default_label_color = config.get("default-label-color", deck.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)
-        self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.light_off_intensity = config.get("light-off", deck.light_off_intensity)
-        self.fill_empty_keys = config.get("fill-empty-keys", deck.fill_empty_keys)
-        self.empty_key_fill_color = config.get("empty-key-fill-color", deck.empty_key_fill_color)
-        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-        self.empty_key_fill_icon = config.get("empty-key-fill-icon", deck.empty_key_fill_icon)
-        self.annunciator_style = config.get("annunciator-style", deck.annunciator_style)
-        self.cockpit_color = config.get("cockpit-color", deck.cockpit_color)
-        self.cockpit_color = convert_color(self.cockpit_color)
+        self.load_defaults(config, deck)
+        # self.default_label_font = config.get("default-label-font", deck.default_label_font)
+        # self.default_label_size = config.get("default-label-size", deck.default_label_size)
+        # self.default_label_color = config.get("default-label-color", deck.default_label_color)
+        # self.default_label_color = convert_color(self.default_label_color)
+        # self.default_icon_name = config.get("default-icon-color", name + deck.default_icon_name)
+        # self.default_icon_color = config.get("default-icon-color", deck.default_icon_color)
+        # self.default_icon_color = convert_color(self.default_icon_color)
+        # self.light_off_intensity = config.get("light-off", deck.light_off_intensity)
+        # self.fill_empty_keys = config.get("fill-empty-keys", deck.fill_empty_keys)
+        # self.empty_key_fill_color = config.get("empty-key-fill-color", deck.empty_key_fill_color)
+        # self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        # self.empty_key_fill_icon = config.get("empty-key-fill-icon", deck.empty_key_fill_icon)
+        # self.annunciator_style = config.get("annunciator-style", deck.annunciator_style)
+        # self.cockpit_color = config.get("cockpit-color", deck.cockpit_color)
+        # self.cockpit_color = convert_color(self.cockpit_color)
 
         self.buttons = {}
         self.datarefs = {}
+
+    def load_defaults(self, config, src):
+        self.default_label_font = config.get("default-label-font", src.default_label_font)
+        self.default_label_size = config.get("default-label-size", src.default_label_size)
+        self.default_label_color = config.get("default-label-color", src.default_label_color)
+        self.default_label_color = convert_color(self.default_label_color)
+        self.default_icon_name = config.get("default-icon-color", self.name + src.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", src.default_icon_color)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.light_off_intensity = config.get("light-off", src.light_off_intensity)
+        self.fill_empty_keys = config.get("fill-empty-keys", src.fill_empty_keys)
+        self.empty_key_fill_color = config.get("empty-key-fill-color", src.empty_key_fill_color)
+        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        self.empty_key_fill_icon = config.get("empty-key-fill-icon", src.empty_key_fill_icon)
+        self.annunciator_style = config.get("annunciator-style", src.annunciator_style)
+        self.cockpit_color = config.get("cockpit-color", src.cockpit_color)
+        self.cockpit_color = convert_color(self.cockpit_color)
 
     def inspect(self, what: str = None):
         """

@@ -222,6 +222,7 @@ class Deck(ABC):
 
                     logger.debug(f"load: loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
                     this_page = Page(name, page_config, self)
+                    this_page.load_defaults(page_config, self)
                     self.pages[name] = this_page
 
                     # Page buttons
