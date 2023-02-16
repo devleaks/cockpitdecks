@@ -654,8 +654,8 @@ class MultiLEDs(Representation):
 # ANNUNCIATOR TYPE REPRESENTATION
 #
 #
-from .button_annunciator import Annunciator, AnnunciatorAnimate, DataIcon, WeatherIcon
-from .button_draw import CircularSwitch
+from .button_annunciator import Annunciator, AnnunciatorAnimate
+from .button_draw import DataIcon, WeatherIcon, Switch, CircularSwitch
 
 #
 # ###############################
@@ -676,6 +676,7 @@ REPRESENTATIONS = {
     "multi-leds": MultiLEDs,
     "annunciator": Annunciator,
     "annunciator-animate": AnnunciatorAnimate,
+    "switch": Switch,
     "circular-switch": CircularSwitch,
     "data": DataIcon,
     "weather": WeatherIcon

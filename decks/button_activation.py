@@ -346,7 +346,7 @@ class UpDown(Activation):
 
         # Internal status
         self.stops = None
-        stops = self.button.option_value("stops", 1)
+        stops = config.get("stops", 2)
         if stops is not None:
             self.stops = int(stops)
         self.bounce_arr = self.make_bounce_array(self.stops)  # convenient
