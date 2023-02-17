@@ -250,44 +250,44 @@ class WeatherIcon(Icon):
         return image
 
     def to_icon(self):
-        WI = [  "fog",
-                "hail",
-                "rain",
-                "rain_mix",
-                "rain_wind",
-                "showers",
-                "sleet",
-                "snow",
-                "sprinkle",
-                "snow_wind",
-                "smog",
-                "smoke",
-                "lightning",
-                "raindrops",
-                "raindrop",
-                "dust",
-                "snowflake_cold",
-                "windy",
-                "strong_wind",
-                "sandstorm",
-                "earthquake",
-                "fire",
-                "flood",
-                "meteor",
-                "tsunami",
-                "volcano",
-                "hurricane",
-                "tornado",
-                "small_craft_advisory",
-                "gale_warning",
-                "storm_warning",
-                "hurricane_warning",
-                "wind_direction",
-                "degrees",
-                "humidity",
-                "na"]
-
-
+        WI = [
+            "fog",
+            "hail",
+            "rain",
+            "rain_mix",
+            "rain_wind",
+            "showers",
+            "sleet",
+            "snow",
+            "sprinkle",
+            "snow_wind",
+            "smog",
+            "smoke",
+            "lightning",
+            "raindrops",
+            "raindrop",
+            "dust",
+            "snowflake_cold",
+            "windy",
+            "strong_wind",
+            "sandstorm",
+            "earthquake",
+            "fire",
+            "flood",
+            "meteor",
+            "tsunami",
+            "volcano",
+            "hurricane",
+            "tornado",
+            "small_craft_advisory",
+            "gale_warning",
+            "storm_warning",
+            "hurricane_warning",
+            "wind_direction",
+            "degrees",
+            "humidity",
+            "na"
+        ]
 
 #
 # ###############################
@@ -377,11 +377,11 @@ class CircularSwitch(Icon):
                 return red(a)
             return a
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
 
         # Button
-        center = [ICON_SIZE/2, ICON_SIZE/2]
+        center = [ICON_SIZE, ICON_SIZE]
 
         tl = [center[0]-self.button_size/2, center[1]-self.button_size/2]
         br = [center[0]+self.button_size/2, center[1]+self.button_size/2]
@@ -389,8 +389,8 @@ class CircularSwitch(Icon):
 
         # Ticks
         tick_start = self.button_size/2 + self.tick_space
-        tick_end = tick_start + self.tick_length
-        tick_lbl = tick_end + self.tick_label_space
+        tick_end   = tick_start + self.tick_length
+        tick_lbl   = tick_end + self.tick_label_space
 
         label_anchors = []
         for i in range(self.tick_steps):
@@ -402,7 +402,7 @@ class CircularSwitch(Icon):
             x2 = center[0] - tick_lbl * math.sin(math.radians(a))
             y2 = center[1] + tick_lbl * math.cos(math.radians(a))
             # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
-            label_anchors.append([a, x1, y1])
+            label_anchors.append([a, x2, y2])
             draw.line([(x0,y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
 
 
@@ -440,10 +440,13 @@ class CircularSwitch(Icon):
         value = self.button.get_current_value()
         if value is None:
             value = 0
+        if value >= self.tick_steps:
+            logger.warning(f"__init__: button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}")
+            value = self.tick_steps - 1
         angle = red(self.tick_from + value * self.angular_step)
 
         if self.switch_style == "home":   # big handle style
-            overlay = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+            overlay = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
             overlay_draw = ImageDraw.Draw(overlay)
             inner = self.button_size
 
@@ -453,7 +456,7 @@ class CircularSwitch(Icon):
             overlay_draw.ellipse(tl+br, fill=(200,200,200), outline=self.button_stroke_color, width=self.button_stroke_width)
 
             # Button handle needle
-            home = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+            home = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
             home_drawing = ImageDraw.Draw(home)
             handle_width = int(2*inner/3)
 
@@ -506,8 +509,19 @@ class CircularSwitch(Icon):
                           fill=self.needle_underline_color)
             draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
 
-        return image.convert("RGB")
 
+        a = 1
+        b = 0
+        c = self.switch.get("left", 0) + self.switch.get("right", 0)
+        d = 0
+        e = 1
+        f = self.switch.get("up", 0) - self.switch.get("down", 0)  # up/down (i.e. 5/-5)
+        if c != 0 or f != 0:
+            image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
+
+        image = image.crop((ICON_SIZE/2, ICON_SIZE/2, 3*ICON_SIZE/2, 3*ICON_SIZE/2))
+
+        return image.convert("RGB")
 
 
 class Switch(Icon):
@@ -568,7 +582,7 @@ class Switch(Icon):
         image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
 
-        image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
 
         # Button
@@ -610,6 +624,11 @@ class Switch(Icon):
                 else:
                     pos = 1
 
+        # 3dot specifics
+        rw = ICON_SIZE / 4   # 3dot top of switch width, height=width/2
+        cr = ICON_SIZE / 16  # 3dot dot radius
+        cs = ICON_SIZE / 16  # 3dot space between dots
+
         if not (self.three_way and value == 1):  # extreme positions
             if self.vertical:
                 y1 = center[1]+pos*self.switch_length
@@ -625,13 +644,10 @@ class Switch(Icon):
                     br = [center[0]+ew, y1+ew/2]
                     draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
                 else: # complicate 3 dot rectangle
-                    rw = 50
-                    rh = 15
-                    cr = 20
-                    cs = 8
                     tl = [center[0]-rw, y1-rw/2]
                     br = [center[0]+rw, y1+rw/2]
-                    draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
 
                 # Tick
                 if self.switch_stroke_width > 0:
@@ -644,13 +660,6 @@ class Switch(Icon):
                               fill=self.switch_color)
 
                 if self.switch_style == "3dot": # complicate 3 dot rectangle
-                    # rw = 50
-                    # rh = 15
-                    # cr = 20
-                    # cs = 8
-                    # tl = [center[0]-rw, y1-rw/2]
-                    # br = [center[0]+rw, y1+rw/2]
-                    # draw.rectangle(tl+br, fill=self.switch_color) # , outline=self.switch_stroke_color, width=self.switch_stroke_width
                     cx = center[0] - cr - cs
                     tl = [cx-cr/2, y1-cr/2]
                     br = [cx+cr/2, y1+cr/2]
@@ -684,13 +693,10 @@ class Switch(Icon):
                     br = [x1+ew/2, center[1]+ew]
                     draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
                 else: # complicate 3 dot rectangle
-                    rw = 50
-                    rh = 15
-                    cr = 20
-                    cs = 8
                     tl = [x1-rw/2, center[1]-rw]
                     br = [x1+rw/2, center[1]+rw]
-                    draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
 
                 # Tick
                 if self.switch_stroke_width > 0:
@@ -731,14 +737,11 @@ class Switch(Icon):
                 br = [center[0]+ew, center[1]+ew/2]
                 draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
             else: # complicate 3 dot rectangle
-                rw = 50
-                rh = 15
-                cr = 20
-                cs = 8
                 if self.vertical:
                     tl = [center[0]-rw, center[1]-rw/2]
                     br = [center[0]+rw, center[1]+rw/2]
-                    draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
                     cx = center[0] - cr - cs
                     tl = [cx-cr/2, center[1]-cr/2]
                     br = [cx+cr/2, center[1]+cr/2]
@@ -754,7 +757,8 @@ class Switch(Icon):
                 else:
                     tl = [center[0]-rw/2, center[1]-rw]
                     br = [center[0]+rw/2, center[1]+rw]
-                    draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
                     cy = center[1] - cr - cs
                     tl = [center[0]-cr/2, cy-cr/2]
                     br = [center[0]+cr/2, cy+cr/2]
@@ -867,7 +871,7 @@ class Switch(Icon):
                     else:
                         draw.line([(2*inside,underline),(ICON_SIZE-2*inside,underline)], width=self.tick_underline_width, fill=self.tick_color)
 
-        return image
+        return image.convert("RGB")
 
 #
 # ###############################
@@ -882,23 +886,22 @@ class Animation(Icon):
 
         Icon.__init__(self, config=config, button=button)
 
-        config["animation"] = config.get("animation")
+        self._animation = config.get("animation")
 
-        self.speed = float(self.annunciator.get("animation-speed", 0.5))
+        # Base definition
+        self.speed = float(self._animation.get("speed", 1))
 
         # Working attributes
         self.tween = 0
+
         self.running = None  # state unknown
         self.thread = None
-        self.finished = None
 
     def loop(self):
-        self.finished = threading.Event()
         while self.running:
+            self.animate()
             self.button.render()
-            self.tween = self.tween + 1
             time.sleep(self.speed)
-        self.finished.set()
 
     def should_run(self) -> bool:
         """
@@ -908,6 +911,16 @@ class Animation(Icon):
         if type(value) == dict:
             value = value[list(value.keys())[0]]
         return value is not None and value != 0
+
+    def animate(self):
+        """
+        Where changes between frames occur
+
+        :returns:   { description_of_the_return_value }
+        :rtype:     { return_type_description }
+        """
+        self.tween = self.tween + 1
+        return super().render()
 
     def anim_start(self):
         """
@@ -927,10 +940,9 @@ class Animation(Icon):
         """
         if self.running:
             self.running = False
-            if not self.finished.wait(timeout=2*self.speed):
-                logger.warning(f"anim_stop: button {self.button.name}: did not get finished signal")
-            self.all_lit(False)
-            return super().render()
+            self.thread.join(timeout=2*self.speed)
+            if self.thread.is_alive():
+                logger.warning(f"anim_stop: button {self.button.name}: animation did not terminate")
         else:
             logger.debug(f"anim_stop: button {self.button.name}: already stopped")
 

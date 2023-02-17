@@ -80,10 +80,11 @@ class Cockpit:
         """
         logger.info(f"Cockpitdecks -- {what}")
 
-        logger.info(f"Threads: {[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
-
-        # for v in self.cockpit.values():
-        #     v.inspect(what)
+        if "thread" in what:
+            logger.info(f"Threads: {[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
+        else:
+            for v in self.cockpit.values():
+                v.inspect(what)
 
 
     def scan_devices(self):

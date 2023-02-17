@@ -136,15 +136,23 @@ class Button:
         Return information aout button status
         """
         logger.info(f"Button {self.name} -- {what}")
-        logger.info(f"\n{yaml.dump(self._config)}")
-        logger.info("-- Datarefs:")
-        for d in self.get_datarefs():
-            v = self.get_dataref_value(d)
-            logger.info(f"    {d} = {v}")
-        logger.info("-- Activation:")
-        self._activation.inspect(what)
-        logger.info("-- Representation:")
-        self._representation.inspect(what)
+        if "datarefs" in what:
+            logger.info("-- Datarefs:")
+            for d in self.get_datarefs():
+                v = self.get_dataref_value(d)
+                logger.info(f"    {d} = {v}")
+        if "activation" in what:
+            logger.info("-- Activation:")
+            self._activation.inspect(what)
+        if "representation" in what:
+            logger.info("-- Representation:")
+            self._representation.inspect(what)
+        if "status" in what:
+            logger.info("-- Status:")
+            logger.info(yaml.dump(self.get_status()))
+        if "config" in what:
+            logger.info("-- Config:")
+            logger.info(f"\n{yaml.dump(self._config)}")
 
     def on_current_page(self):
         """
@@ -156,16 +164,19 @@ class Button:
         """
         Install button
         """
-        # test: we try to immediately get a first value
-        logger.debug(f"init: button {self.name} setting initial value..")
-        if self.initial_value is not None:
-            logger.debug(f"init: button {self.name} .. from initial-value")
-            self.set_current_value(self.initial_value)
+        # Set initial value if not already set
+        if self._first_value_not_saved:
+            logger.debug(f"init: button {self.name} setting initial value..")
+            if self.initial_value is not None:
+                logger.debug(f"init: button {self.name} .. from initial-value")
+                self.set_current_value(self.initial_value)
+            else:
+                logger.debug(f"init: button {self.name} .. from button_value")
+                self.set_current_value(self.button_value())
+            logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
         else:
-            logger.debug(f"init: button {self.name} .. from button_value")
-            self.set_current_value(self.button_value())
-        logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
-
+            logger.debug(f"init: button {self.name}: alread has a value ({self.current_value}), initial value ignored")
+        # Guard
         if self.has_option("guarded"):
             self.guarded = True   # guard type is option value: guarded=cover or grid.
 
@@ -175,10 +186,13 @@ class Button:
     def set_current_value(self, value):
         if self._first_value_not_saved:
             self._first_value = value
+            self._first_value_not_saved = False
         self.previous_value = self.current_value
         self.current_value = value
+        logger.debug(f"set_current_value: button {self.name}: {self.current_value}")
 
     def get_current_value(self):
+        logger.debug(f"get_current_value: button {self.name}: {self.current_value}")
         return self.current_value
 
     def value_has_changed(self) -> bool:
@@ -340,6 +354,16 @@ class Button:
             cnt = cnt + 1
         return retmsg
 
+    def substitude_status_value(self, text):
+        status = self.status()
+        txtcpy = text
+        for k, v in status.items():
+            s = f"${{status:{k}}}"      # @todo: !!possible injection!!
+            if s in txtcpy:
+                txtcpy.replace(k, v)
+                logger.debug(f"substitude_status_value: button {self.name}: replaced {k} by {v}. ({s})")
+        return txtcpy
+
     def execute_formula(self, formula, default: str = "0.0", formatting = None):
         """
         replace datarefs variables with their (numeric) value and execute formula.
@@ -476,6 +500,19 @@ class Button:
         self.dataref_changed(None)
         # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
 
+    def get_status(self):
+        """
+        Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device.
+        Default is to tally number of times this button was pressed. It should have been released as many times :-D.
+        **** No command gets executed here **** except if there is an associated view with the button.
+        Also, removes guard if it was present. @todo: close guard
+        """
+        if self._activation is not None:
+            return self._activation.get_status()
+        # if self._representation is not None:
+        #     return self._representation.get_status()
+        return {}
+
     def get_representation(self):
         """
         Called from deck to get what's necessary for displaying this button on the deck.
@@ -503,3 +540,4 @@ class Button:
         """
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
+

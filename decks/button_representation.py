@@ -42,6 +42,11 @@ class Representation:
     def get_current_value(self):
         return self.button.get_current_value()
 
+    def get_status(self):
+        return {
+            "representation_type": type(self).__name__
+        }
+
     def render(self):
         logger.debug(f"render: button {self.button.name}: {type(self).__name__} has no rendering")
         return None

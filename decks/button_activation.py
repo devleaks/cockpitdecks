@@ -42,7 +42,7 @@ class Activation:
 
         self.activation_count = 0
         self.activations_count = {}
-        self.last_activated = None
+        self.last_activated = 0
         self.pressed = False
         self.initial_value = config.get("initial-value")
 
@@ -133,7 +133,16 @@ class Activation:
         return True
 
     def get_status(self):
-        return None
+        return {
+            "activation_type": type(self).__name__,
+            "activation_count": self.activation_count,
+            "last_activated": self.last_activated,
+            "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
+            "initial_value": self.initial_value,
+            "previous_value": self.previous_value,
+            "current_value": self.current_value,
+            "guarded": self.guarded
+        }
 
     def view(self):
         if self._view is not None and self.is_valid():
@@ -202,13 +211,21 @@ class Inspect(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
-        self.what = config.get("what", "info")
+        self.what = config.get("what", "status")
 
     def activate(self, state):
         if state:
             if self.is_valid():
                 self.button.deck.cockpit.inspect(self.what)
 
+    def get_status(self):
+        s = super().get_status()
+        if s is None:
+            s = {}
+        s = s | {
+            "what": self.what
+        }
+        return s
 
 class Stop(Activation):
     """
@@ -330,6 +347,15 @@ class OnOff(Activation):
             else:
                 logger.warning(f"activate: button {self.button.name} is invalid")
 
+    def get_status(self):
+        s = super().get_status()
+        if s is None:
+            s = {}
+        s = s | {
+            "on": self.is_on()
+        }
+        return s
+
 
 class UpDown(Activation):
     """
@@ -359,6 +385,10 @@ class UpDown(Activation):
             if self.initial_value < 0:
                 self.initial_value = abs(self.initial_value)
                 self.go_up = False # reverse direction
+        if self.initial_value is not None and is_integer(self.initial_value) and self.initial_value > self.stops - 1:
+            logger.warning(f"__init__: button {self.button.name} invalid initial value {self.initial_value}. Set to {self.stops - 1}")
+            self.button.set_current_value(self.stops - 1)
+            self.go_up = False
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join((f"commands: {self.commands}",
@@ -415,6 +445,16 @@ class UpDown(Activation):
             return af + [stops-1] + ab[:-1]
         return [0]
 
+    def get_status(self):
+        s = super().get_status()
+        if s is None:
+            s = {}
+        s = s | {
+            "stops": self.stops,
+            "go_up": self.go_up
+        }
+        return s
+
 #
 # ###############################
 # ENCODER TYPE ACTIVATION
@@ -464,7 +504,7 @@ class Encoder(Activation):
 
     def get_status(self):
         a = super().get_status()
-        if a is not None:
+        if a is None:
             a = {}
         return a | {
             "cw": self._cw,
@@ -542,6 +582,16 @@ class EncoderPush(Push):
         else:
             logger.warning(f"activate: button {self.name} invalid state {state}")
 
+    def get_status(self):
+        a = super().get_status()
+        if a is None:
+            a = {}
+        return a | {
+            "cw": self._cw,
+            "ccw": self._ccw,
+            "turns": self._turns
+        }
+
 
 class EncoderOnOff(OnOff):
     """
@@ -614,6 +664,16 @@ class EncoderOnOff(OnOff):
             else:
                 logger.warning(f"activate: button {self.button.name} invalid state {state}")
 
+    def get_status(self):
+        a = super().get_status()
+        if a is None:
+            a = {}
+        return a | {
+            "cw": self._cw,
+            "ccw": self._ccw,
+            "turns": self._turns
+        }
+
 
 class EncoderValue(Activation):
     """
@@ -656,6 +716,22 @@ class EncoderValue(Activation):
             self.set_current_value(x)
             if self.writable_dataref is not None:
                 self.button.xp.WriteDataRef(dataref=self.writable_dataref, value=vs, vtype='float')
+
+    def get_status(self):
+        a = super().get_status()
+        if a is None:
+            a = {}
+        return a | {
+            "step": self.step,
+            "stepxl": self.stepxl,
+            "value_min": self.value_min,
+            "value_max": self.value_max,
+            "writable_dataref": self.set_dataref,
+            "cw": self._cw,
+            "ccw": self._ccw,
+            "turns": self._turns
+        }
+
 
 #
 # ###############################
