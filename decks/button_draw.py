@@ -22,7 +22,7 @@ from .button_representation import Icon
 from .button_annunciator import ICON_SIZE, DEFAULT_INVERT_COLOR
 
 logger = logging.getLogger("DrawIcon")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 #
@@ -317,11 +317,17 @@ class CircularSwitch(DrawBase):
         self.switch_style = self.switch.get("switch-style")
 
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.switch.get("button-fill-color", "(200,200,200)")
+        self.button_fill_color = self.switch.get("button-fill-color", "(150,150,150)")
         self.button_fill_color = convert_color(self.button_fill_color)
         self.button_stroke_color = self.switch.get("button-stroke-color", "white")
         self.button_stroke_color = convert_color(self.button_stroke_color)
         self.button_stroke_width = self.switch.get("button-stroke-width", 4)
+
+        self.handle_fill_color = self.switch.get("handle-fill-color", "(100,100,100)")
+        self.handle_fill_color = convert_color(self.handle_fill_color)
+        self.handle_stroke_color = self.switch.get("handle-stroke-color", "white")
+        self.handle_stroke_color = convert_color(self.handle_stroke_color)
+        self.handle_stroke_width = self.switch.get("handle-stroke-width", 4)
 
         self.tick_from = self.switch.get("tick-from", 90)
         self.tick_to = self.switch.get("tick-to", 270)
@@ -449,7 +455,7 @@ class CircularSwitch(DrawBase):
             value = self.tick_steps - 1
         angle = red(self.tick_from + value * self.angular_step)
 
-        if self.switch_style in ["medium", "large"]:   # handle style
+        if self.switch_style in ["medium", "large", "xlarge"]:   # handle style
             overlay = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
             overlay_draw = ImageDraw.Draw(overlay)
             inner = self.button_size
@@ -457,7 +463,7 @@ class CircularSwitch(DrawBase):
             # Base circle
             tl = [center[0]-inner, center[1]-inner]
             br = [center[0]+inner, center[1]+inner]
-            overlay_draw.ellipse(tl+br, fill=(200,200,200), outline=self.button_stroke_color, width=self.button_stroke_width)
+            overlay_draw.ellipse(tl+br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
 
             # Button handle needle
             home = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
@@ -466,13 +472,15 @@ class CircularSwitch(DrawBase):
             handle_height = int(2*inner/3)
 
             if self.switch_style == "large":   # big handle style
+                handle_width = int(inner)
+            elif self.switch_style == "xlarge":   # big handle style
                 handle_width = int(4*inner/3)
 
             r = 10
             side = handle_width / math.sqrt(2) + r / 2
             tl = [center[0]-side/2, center[1]-side/2]
             br = [center[0]+side/2, center[1]+side/2]
-            home_drawing.rounded_rectangle(tl+br, radius=r, fill=(100,100,100))
+            home_drawing.rounded_rectangle(tl+br, radius=r, fill=self.handle_fill_color)
             home = home.rotate(45)
             a = 1
             b = 0
@@ -486,7 +494,7 @@ class CircularSwitch(DrawBase):
             home_drawing = ImageDraw.Draw(home)
             tl = [center[0]-handle_width/2, center[1]-handle_height]
             br = [center[0]+handle_width/2, center[1]+handle_height]
-            home_drawing.rounded_rectangle(tl+br, radius=r, fill=(100,100,100))
+            home_drawing.rounded_rectangle(tl+br, radius=r, fill=self.handle_fill_color)
 
             overlay.alpha_composite(home)
             overlay = overlay.rotate(red(-angle))  # ;-)
@@ -527,7 +535,9 @@ class CircularSwitch(DrawBase):
         if c != 0 or f != 0:
             image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
-        image = image.crop((ICON_SIZE/2, ICON_SIZE/2, 3*ICON_SIZE/2, 3*ICON_SIZE/2))
+        cl = ICON_SIZE/2
+        ct = ICON_SIZE/2
+        image = image.crop((cl, ct, cl+ICON_SIZE, ct+ICON_SIZE))
 
         return image.convert("RGB")
 

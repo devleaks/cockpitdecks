@@ -87,7 +87,6 @@ buttons:
     name: MASTER WARNING
     type: push
     command: sim/annunciator/clear_master_warning
-    dataref: AirbusFBW/MasterWarn
     annunciator-animate:
       text: "MASTER\nWARN"
       color: firebrick
@@ -205,14 +204,14 @@ buttons:
           size: 60
           formula: "1"
     command: AirbusFBW/APPRbutton
-  - index: 11
-    name: WORK
-    type: page
-    page: work
-    label: WORK
-    label-position: cm
-    label-color: black
-    icon: XPLANE
+  # - index: 11
+  #   name: WORK
+  #   type: page
+  #   page: work
+  #   label: WORK
+  #   label-position: cm
+  #   label-color: black
+  #   icon: XPLANE
 #
 # SIDE KEYS
 #

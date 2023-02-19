@@ -139,7 +139,7 @@ buttons:
     type: page
     page: ecam
     icon: ECAM_SELECTOR.png
-  - index: 24
+  - index: 26
     name: FCU
     type: page
     page: fcu

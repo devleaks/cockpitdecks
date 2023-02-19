@@ -158,42 +158,60 @@ class Icon(Representation):
             if has_ext(fontname, ".ttf") or has_ext(fontname, ".otf"):
                 if fontname in fonts_available:
                     return all_fonts[fontname]
-
             fn = add_ext(fontname, ".ttf")
             if fn in fonts_available:
                 return all_fonts[fn]
-
             fn = add_ext(fontname, ".otf")
             if fn in fonts_available:
                 return all_fonts[fn]
-
             logger.warning(f"get_font: button {this_button}: button label font '{fontname}' not found")
 
         # 2. Tries default fonts
         #    Tries page default font
-        if self.button.page.default_label_font is not None and self.button.page.default_label_font in fonts_available:
-            logger.debug(f"get_font: button {this_button}: using page default font '{self.button.page.default_label_font}'")
-            return all_fonts[self.button.page.default_label_font]
-        else:
-            logger.warning(f"get_font: button {this_button} page default label font '{self.button.page.default_label_font}' not found in {fonts_available}")
+        default_font = self.button.page.default_label_font
+        if default_font is not None:
+            if has_ext(default_font, ".ttf") or has_ext(default_font, ".otf"):
+                if default_font in fonts_available:
+                    return all_fonts[default_font]
+            fn = add_ext(default_font, ".ttf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+            fn = add_ext(default_font, ".otf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+            logger.warning(f"get_font: button {this_button} page default label font '{default_font}' not found in {fonts_available}")
 
         # 2. Tries deck default font
-        if deck.default_label_font is not None and deck.default_label_font in fonts_available:
-            logger.debug(f"get_font: button {this_button}: using deck default font '{deck.default_label_font}'")
-            return all_fonts[deck.default_label_font]
-        else:
-            logger.warning(f"get_font: button {this_button} deck default label font '{deck.default_label_font}' not found in {fonts_available}")
+        default_font = deck.default_label_font
+        if default_font is not None:
+            if has_ext(default_font, ".ttf") or has_ext(default_font, ".otf"):
+                if default_font in fonts_available:
+                    return all_fonts[default_font]
+            fn = add_ext(default_font, ".ttf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+            fn = add_ext(default_font, ".otf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+            logger.warning(f"get_font: button {this_button} deck default label font '{default_font}' not found in {fonts_available}")
 
         # 3. Tries cockpit default font
-        if deck.cockpit.default_label_font is not None and deck.cockpit.default_label_font in fonts_available:
-            logger.debug(f"get_font: button {this_button} using cockpit default font '{deck.cockpit.default_label_font}'")
-            return all_fonts[deck.cockpit.default_label_font]
-        else:
+        default_font = deck.default_label_font
+        if default_font is not None:
+            if has_ext(default_font, ".ttf") or has_ext(default_font, ".otf"):
+                if default_font in fonts_available:
+                    return all_fonts[default_font]
+            fn = add_ext(default_font, ".ttf")
+            if fn in fonts_available:
+                return all_fonts[fn]
+            fn = add_ext(default_font, ".otf")
+            if fn in fonts_available:
+                return all_fonts[fn]
             logger.warning(f"get_font: button {this_button} deck default label font '{deck.cockpit.default_label_font}' not found in {fonts_available}")
 
         # 4. Returns first font, if any
         if len(fonts_available) > 0:
-            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {self.button.page.default_label_font}, {deck.default_label_font}, {deck.cockpit.default_label_font}")
+            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {self.button.page.default_label_font}, {deck.default_label_font}, {deck.cockpit.default_label_font}. Returning first font found ({fonts_available[0]})")
             return all_fonts[fonts_available[0]]
         else:
             logger.error(f"get_font: button {this_button}: no font")

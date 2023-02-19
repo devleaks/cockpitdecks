@@ -108,11 +108,11 @@ class AnnunciatorPart:
             expr = self.annunciator.button.substitute_dataref_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
-            logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
+            # logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
         elif "dataref" in self._config:
             dataref = self._config["dataref"]
             ret = self.annunciator.button.get_dataref_value(dataref)
-            logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
+            # logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
         else:
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: no dataref and no formula, set to {ret}")
         self.lit = ret is not None and is_number(ret) and float(ret) > 0
@@ -232,7 +232,7 @@ class AnnunciatorPart:
                     draw.rectangle(frame, outline=color, width=thick)
             else:
                 if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
-                    logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit")
+                    logger.debug(f"render: button {self.annunciator.button.name}: part {self.name}: not lit (type vivisun)")
             return
 
         led = self.get_led()
@@ -240,43 +240,44 @@ class AnnunciatorPart:
             logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: no text, no led")
             return
 
-        ninside = 6
-        if led in ["block", "led"]:
-            LED_BLOC_HEIGHT = int(self.height() / 2)
-            if size == "large":
-                LED_BLOC_HEIGHT = int(LED_BLOC_HEIGHT * 1.25)
-            frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_BLOC_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_BLOC_HEIGHT / 2))
-            draw.rectangle(frame, fill=color)
-        elif led in ["bar", "bars"]:
-            LED_BAR_COUNT = int(self._config.get("bars", 3))
-            LED_BAR_HEIGHT = max(int(self.height() / (2 * LED_BAR_COUNT)), 2)
-            if size == "large":
-                LED_BAR_HEIGHT = int(LED_BAR_HEIGHT * 1.25)
-            LED_BAR_SPACER = max(int(LED_BAR_HEIGHT / 3), 2)
-            hstart = self.center_h() - (LED_BAR_COUNT * LED_BAR_HEIGHT + (LED_BAR_COUNT - 1) * LED_BAR_SPACER) / 2
-            for i in range(LED_BAR_COUNT):
-                frame = ((self.center_w() - self.width()/2 + ninside * inside, hstart), (self.center_w() + self.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
+        if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
+            ninside = 6
+            if led in ["block", "led"]:
+                LED_BLOC_HEIGHT = int(self.height() / 2)
+                if size == "large":
+                    LED_BLOC_HEIGHT = int(LED_BLOC_HEIGHT * 1.25)
+                frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_BLOC_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_BLOC_HEIGHT / 2))
                 draw.rectangle(frame, fill=color)
-                hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
-        elif led == "dot":
-            DOT_RADIUS = int(min(self.width(), self.height()) / 5)
-            # Plot a series of circular dot on a line
-            frame = ((self.center_w() - DOT_RADIUS, self.center_h() - DOT_RADIUS), (self.center_w() + DOT_RADIUS, self.center_h() + DOT_RADIUS))
-            draw.ellipse(frame, fill=color)
-        elif led == "lgear":
-            STROKE_THICK = int(min(self.width(), self.height()) / 8)
-            UNIT = int(min(self.width(), self.height()) / 3)  # triangle half length of side
-            unit5 = int(sqrt(3) * UNIT / 2)
-            origin = (self.center_w() - UNIT, self.center_h() - unit5)
-            triangle = [
-                origin,
-                (self.center_w() + UNIT, self.center_h() - unit5),
-                (self.center_w(), self.center_h() + unit5),  # lower center point
-                origin
-            ]
-            draw.polygon(triangle, outline=color, width=STROKE_THICK)
-        else:
-            logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
+            elif led in ["bar", "bars"]:
+                LED_BAR_COUNT = int(self._config.get("bars", 3))
+                LED_BAR_HEIGHT = max(int(self.height() / (2 * LED_BAR_COUNT)), 2)
+                if size == "large":
+                    LED_BAR_HEIGHT = int(LED_BAR_HEIGHT * 1.25)
+                LED_BAR_SPACER = max(int(LED_BAR_HEIGHT / 3), 2)
+                hstart = self.center_h() - (LED_BAR_COUNT * LED_BAR_HEIGHT + (LED_BAR_COUNT - 1) * LED_BAR_SPACER) / 2
+                for i in range(LED_BAR_COUNT):
+                    frame = ((self.center_w() - self.width()/2 + ninside * inside, hstart), (self.center_w() + self.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
+                    draw.rectangle(frame, fill=color)
+                    hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
+            elif led == "dot":
+                DOT_RADIUS = int(min(self.width(), self.height()) / 5)
+                # Plot a series of circular dot on a line
+                frame = ((self.center_w() - DOT_RADIUS, self.center_h() - DOT_RADIUS), (self.center_w() + DOT_RADIUS, self.center_h() + DOT_RADIUS))
+                draw.ellipse(frame, fill=color)
+            elif led == "lgear":
+                STROKE_THICK = int(min(self.width(), self.height()) / 8)
+                UNIT = int(min(self.width(), self.height()) / 3)  # triangle half length of side
+                unit5 = int(sqrt(3) * UNIT / 2)
+                origin = (self.center_w() - UNIT, self.center_h() - unit5)
+                triangle = [
+                    origin,
+                    (self.center_w() + UNIT, self.center_h() - unit5),
+                    (self.center_w(), self.center_h() + unit5),  # lower center point
+                    origin
+                ]
+                draw.polygon(triangle, outline=color, width=STROKE_THICK)
+            else:
+                logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
 
 
 class Annunciator(Icon):

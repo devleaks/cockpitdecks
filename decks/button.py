@@ -150,6 +150,7 @@ class Button:
             if type(v) not in [int, float, str]:
                 logger.warning(f"get_button_value: value of {name} is {type(v)}")
             return v
+        return None
 
     def id(self):
         return self.get_id()

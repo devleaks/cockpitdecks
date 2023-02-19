@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import ID_SEP, CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
+from .constant import ID_SEP, ANNUNCIATOR_STYLES, CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .color import convert_color
 from .page import Page
@@ -51,6 +51,7 @@ class Deck(ABC):
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.empty_key_fill_icon = config.get("empty-key-fill-icon", cockpit.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", cockpit.annunciator_style)
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", cockpit.cockpit_color)
         self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
         self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
@@ -117,6 +118,7 @@ class Deck(ABC):
                     logger.warning(f"get_button_value: so such page {a[1]}")
             else:
                 logger.warning(f"get_button_value: not my deck {a[0]} ({self.name})")
+        return None
 
     def set_default(self, src: dict, base):
         """
@@ -213,9 +215,11 @@ class Deck(ABC):
             return
 
         pages = os.listdir(dn)
+        if CONFIG_FILE in pages:  # first load config
+            self.load_layout_config(os.path.join(dn, CONFIG_FILE))
         for p in pages:
             if p == CONFIG_FILE:
-                self.load_layout_config(os.path.join(dn, p))
+                continue
             elif p.endswith(".yaml") or p.endswith(".yml"):
                 fn = os.path.join(dn, p)
                 # if os.path.exists(fn):  # we know the file should exists...

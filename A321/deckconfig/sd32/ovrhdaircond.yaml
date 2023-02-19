@@ -21,72 +21,124 @@ buttons:
     type: updown
     stops: 3
     label: PACK FLOW
-    multi-icons:
-      - XBLEED_SHUT
-      - XBLEED_AUTO
-      - XBLEED_OPEN
     dataref: AirbusFBW/AirCondSwitchAnims[13]
     commands:
       - toliss_airbus/aircondcommands/EconFlowToggle
       - toliss_airbus/aircondcommands/EconFlowToggle
+    initial-value: 0
+    circular-switch:
+      switch-style: large
+      down: 60
+      button-size: 48
+      tick-space: 36
+      tick-length: 24
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+      tick-from: 120
+      tick-to: 240
+      tick-color: white
+      tick-width: 8
+      tick-underline-width: 8
+      tick-labels:
+        - "LO"
+        - "NORM"
+        - "HI"
   - index: 1
     name: ACCOCKPIT
+    label: COCKPIT
     type: updown
     stops: 7
-    label: COCKPIT
-    multi-icons:
-      - AC_0
-      - AC_1
-      - AC_2
-      - AC_3
-      - AC_4
-      - AC_5
-      - AC_6
-    dataref: AirbusFBW/AirCondSwitchAnims[12]
-    formula: ${AirbusFBW/AirCondSwitchAnims[12]} 16 - 2 /
     initial-value: 3
     commands:
       - none
       - none
-    options: bounce,placeholder
+    formula: ${AirbusFBW/AirCondSwitchAnims[12]} 16 - 2 /
+    dataref: AirbusFBW/AirCondSwitchAnims[12]
+    circular-switch:
+      switch-style: large
+      down: 30
+      button-size: 70
+      tick-space: 36
+      tick-length: 24
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+      tick-from: 45
+      tick-to: 315
+      tick-color: white
+      tick-width: 8
+      tick-underline-width: 8
+      tick-labels:
+        - "COLD"
+        - ""
+        - ""
+        - ""
+        - ""
+        - ""
+        - "HOT"
   - index: 2
     name: ACFWDCABIN
+    label: FWD CABIN
     type: updown
     stops: 7
-    label: FWD CABIN
-    multi-icons:
-      - AC_0
-      - AC_1
-      - AC_2
-      - AC_3
-      - AC_4
-      - AC_5
-      - AC_6
-    dataref: AirbusFBW/AirCondSwitchAnims[11]
-    formula: ${AirbusFBW/AirCondSwitchAnims[11]} 16 - 2 /
+    initial-value: 3
     commands:
       - none
       - none
-    options: bounce,placeholder
+    dataref: AirbusFBW/AirCondSwitchAnims[11]
+    formula: ${AirbusFBW/AirCondSwitchAnims[11]} 16 - 2 /
+    circular-switch:
+      switch-style: large
+      down: 30
+      button-size: 70
+      tick-space: 36
+      tick-length: 24
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+      tick-from: 45
+      tick-to: 315
+      tick-color: white
+      tick-width: 8
+      tick-underline-width: 8
+      tick-labels:
+        - "COLD"
+        - ""
+        - ""
+        - ""
+        - ""
+        - ""
+        - "HOT"
   - index: 3
     name: ACAFTCABIN
     type: updown
     stops: 7
     label: AFT CABIN
-    multi-icons:
-      - AC_0
-      - AC_1
-      - AC_2
-      - AC_3
-      - AC_4
-      - AC_5
-      - AC_6
-    dataref: AirbusFBW/AftCabinTemp
-    formula: ${AirbusFBW/AftCabinTemp} 16 - 2 /
+    initial-value: 3
     commands:
       - none
       - none
-    options: bounce,placeholder
+    dataref: AirbusFBW/AftCabinTemp
+    formula: ${AirbusFBW/AftCabinTemp} 16 - 2 /
+    circular-switch:
+      switch-style: large
+      down: 30
+      button-size: 70
+      tick-space: 36
+      tick-length: 24
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+      tick-from: 45
+      tick-to: 315
+      tick-color: white
+      tick-width: 8
+      tick-underline-width: 8
+      tick-labels:
+        - "COLD"
+        - ""
+        - ""
+        - ""
+        - ""
+        - ""
+        - "HOT"
   - index: 5
     name: HOTAIR
     type: push
@@ -185,16 +237,29 @@ buttons:
     name: XBLEED
     type: updown
     stops: 3
-    multi-icons:
-      - XBLEED_SHUT
-      - XBLEED_AUTO
-      - XBLEED_OPEN
     label: X BLEED
     commands:
       - none
       - none
     dataref: AirbusFBW/XBleedSwitch
     initial-value: 1
+    circular-switch:
+      switch-style: large
+      down: 60
+      button-size: 48
+      tick-space: 36
+      tick-length: 24
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+      tick-from: 120
+      tick-to: 240
+      tick-color: white
+      tick-width: 8
+      tick-underline-width: 8
+      tick-labels:
+        - "SHUT"
+        - "AUTO"
+        - "OPEN"
   - index: 13
     name: ENG2BLEED
     type: push

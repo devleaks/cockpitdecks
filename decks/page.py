@@ -2,7 +2,7 @@
 #
 import logging
 
-from .constant import ID_SEP
+from .constant import ID_SEP, ANNUNCIATOR_STYLES
 from .color import convert_color
 from .button import Button
 
@@ -55,6 +55,7 @@ class Page:
                 logger.warning(f"get_button_value: not my page {a[0]} ({self.name})")
         else:
             logger.warning(f"get_button_value: invalid name {name}")
+        return None
 
     def load_defaults(self, config, src):
         self.default_label_font = config.get("default-label-font", src.default_label_font)
@@ -70,6 +71,7 @@ class Page:
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.empty_key_fill_icon = config.get("empty-key-fill-icon", src.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", src.annunciator_style)
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", src.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
 
@@ -83,7 +85,7 @@ class Page:
 
     def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():
-            logger.error(f"add_button: button index {idx} already defined, ignoring {button.name}")
+            logger.error(f"add_button: page {self.name}: button index {idx} already defined, ignoring {button.name}")
             return
         self.buttons[idx] = button
         logger.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
