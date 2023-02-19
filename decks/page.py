@@ -2,6 +2,7 @@
 #
 import logging
 
+from .constant import ID_SEP
 from .color import convert_color
 from .button import Button
 
@@ -38,6 +39,22 @@ class Page:
 
         self.buttons = {}
         self.datarefs = {}
+
+    def get_id(self):
+        return ID_SEP.join([self.deck.get_id(), self.name])
+
+    def get_button_value(self, name):
+        a = name.split(ID_SEP)
+        if len(a) > 0:
+            if a[0] == self.name:
+                if a[1] in self.buttons.keys():
+                    return self.buttons[a[1]].get_button_value(ID_SEP.join(a[1:]))
+                else:
+                    logger.warning(f"get_button_value: so such button {a[1]}")
+            else:
+                logger.warning(f"get_button_value: not my page {a[0]} ({self.name})")
+        else:
+            logger.warning(f"get_button_value: invalid name {name}")
 
     def load_defaults(self, config, src):
         self.default_label_font = config.get("default-label-font", src.default_label_font)

@@ -16,7 +16,7 @@ from PIL import ImageDraw, ImageFont
 
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
-from .constant import SPAM, DATAREF_RPN
+from .constant import ID_SEP, SPAM, DATAREF_RPN
 from .color import convert_color
 from .rpc import RPC
 
@@ -128,8 +128,31 @@ class Button:
             logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")
         return "none"
 
+    def get_id(self):
+        return ID_SEP.join([self.page.get_id(), self.name])
+
+    def get_button_value(self, name):
+        if len(name) == 0:
+            v = self.get_current_value()
+            if type(v) not in [int, float, str]:
+                logger.warning(f"get_button_value: value of {name} is {type(v)}")
+            return v
+        a = name.split(ID_SEP)
+        if len(a) > 0:
+            if a[0] == "status":
+                s = self.get_status()
+                if a[1] in s.keys():
+                    return s[a[1]]
+                else:
+                    logger.warning(f"get_button_value: so such status {a[1]}")
+        else:
+            v = self.get_current_value()
+            if type(v) not in [int, float, str]:
+                logger.warning(f"get_button_value: value of {name} is {type(v)}")
+            return v
+
     def id(self):
-        return ":".join([self.deck.name, self.page.name, str(self.index)])
+        return self.get_id()
 
     def inspect(self, what: str = None):
         """
@@ -354,14 +377,27 @@ class Button:
             cnt = cnt + 1
         return retmsg
 
-    def substitude_status_value(self, text):
-        status = self.status()
+    def substitute_status_values(self, text):
+        status = self.get_status()
         txtcpy = text
         for k, v in status.items():
             s = f"${{status:{k}}}"      # @todo: !!possible injection!!
             if s in txtcpy:
                 txtcpy.replace(k, v)
-                logger.debug(f"substitude_status_value: button {self.name}: replaced {k} by {v}. ({s})")
+                logger.debug(f"substitute_status_value: button {self.name}: replaced {k} by {v}. ({s})")
+        more = re.findall("\\${(.+?)}", txtcpy)
+        if len(more) > 0:
+            logger.warning(f"substitute_status_value: button {self.name}: unsubstituted values {more}")
+        return txtcpy
+
+    def substitute_button_values(self, text):
+        txtcpy = text
+        more = re.findall("\\${button:(.+?)}", txtcpy)
+        if len(more) > 0:
+            for m in more:
+                name = ""
+                v = self.deck.cockpit.get_button_value(name)  # starts at the top
+                txtcpy.replace(m, v)
         return txtcpy
 
     def execute_formula(self, formula, default: str = "0.0", formatting = None):
@@ -412,6 +448,8 @@ class Button:
                 # If text contains ${dataref}s, they are replaced by their value.
                 text_format = base.get(f"{root}-format")
                 text = self.substitute_dataref_values(text, formatting=text_format, default="---")
+
+            text = self.substitute_status_values(text)
 
         return text
 

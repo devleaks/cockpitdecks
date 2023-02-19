@@ -38,6 +38,7 @@ DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
 DATAREF_RPN = "dataref-rpn"
 
 SPAM = 15
+ID_SEP = ":"
 
 ICON_FONT = "fontawesome.otf"
 WEATHER_ICON_FONT = "weathericons.otf"

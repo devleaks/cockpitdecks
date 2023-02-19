@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
+from .constant import ID_SEP, CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
 from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
 from .color import convert_color
 from .page import Page
@@ -103,6 +103,20 @@ class Deck(ABC):
             self.load()     # will load default page if no page found
             self.load_home_page()   # loads home page onto deck
             self.start()    # Some sustem may need to start before we load_home_page()
+
+    def get_id(self):
+        return ID_SEP.join([self.cockpit.get_id(), self.name])
+
+    def get_button_value(self, name):
+        a = name.split(ID_SEP)
+        if len(a) > 0:
+            if a[0] == self.name:
+                if a[1] in self.pages.keys():
+                    return self.pages[a[1]].get_button_value(ID_SEP.join(a[1:]))
+                else:
+                    logger.warning(f"get_button_value: so such page {a[1]}")
+            else:
+                logger.warning(f"get_button_value: not my deck {a[0]} ({self.name})")
 
     def set_default(self, src: dict, base):
         """
@@ -208,7 +222,7 @@ class Deck(ABC):
                 with open(fn, "r") as fp:
                     page_config = yaml.safe_load(fp)
 
-                    name = ".".join(p.split(".")[:-1])  # build default page name, remove extension from filename
+                    name = ".".join(p.split(".")[:-1])  # build default page name, remove extension ".yaml" or ".yml" from filename
                     if "name" in page_config:
                         name = page_config["name"]
 

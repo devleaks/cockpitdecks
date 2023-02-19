@@ -9,7 +9,7 @@ from queue import Queue
 
 from PIL import Image, ImageFont
 
-from .constant import SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
+from .constant import ID_SEP, SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
 from .color import convert_color, has_ext
@@ -31,6 +31,7 @@ class Cockpit:
     def __init__(self, xp):
         self.xp = xp(self)
         self._config = None
+        self.name = "Cockpitdecks"
 
         self.disabled = False
         self.default_pages = None  # for debugging
@@ -73,6 +74,21 @@ class Cockpit:
         self.scan_devices()
         self.start_reload_loop()
 
+    def get_id(self):
+        return self.name
+
+    def get_button_value(self, name):
+        a = name.split(ID_SEP)
+        if len(a) > 0:
+            if a[0] == self.name:
+                if a[1] in self.cockpit.keys():
+                    return self.cockpit[a[1]].get_button_value(ID_SEP.join(a[1:]))
+                else:
+                    logger.warning(f"get_button_value: so such deck {a[1]}")
+            else:
+                logger.warning(f"get_button_value: so such cockpit {a[0]}")
+        else:
+            logger.warning(f"get_button_value: invalid name {name}")
 
     def inspect(self, what: str = None):
         """
@@ -184,6 +200,7 @@ class Cockpit:
                 self.default_config = yaml.safe_load(fp)
                 logger.debug(f"load_defaults: loaded default config {fn}")
         if self.default_config is not None:
+            self.name = self.default_config.get("name", "Cockpitdecks")
             self.default_logo = self.default_config.get("default-wallpaper-logo", DEFAULT_LOGO)
             self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
             self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)

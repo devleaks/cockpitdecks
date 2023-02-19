@@ -37,9 +37,6 @@ class DataIcon(Icon):
 
         self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
 
-    def get_data_value(self, data: dict):
-        return data.get("data", "---")
-
     def get_image_for_icon(self):
         """
         Helper function to get button image and overlay label on top of it.
@@ -171,6 +168,11 @@ class WeatherIcon(Icon):
 
         self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
         self.weather_icon = "wi_day_sunny"
+
+    def set_metar(self, metar):
+        self.metar = metar
+        self.to_icon()
+        self.button.render()
 
     def get_image_for_icon(self):
         """
@@ -538,13 +540,13 @@ class Switch(Icon):
         self.base_color = self.switch.get("base-color", "(200, 200, 200)")
         self.base_color = convert_color(self.base_color)
         self.base_underline_color = self.switch.get("base-underline-color", "orange")
-        self.base_underline_width = self.switch.get("base-underline-width", 4)
+        self.base_underline_width = self.switch.get("base-underline-width", 0)
         # Switch
         self.switch_color = self.switch.get("switch-color", "(128, 128, 128)")
         self.switch_color = convert_color(self.switch_color)
         self.switch_stroke_color = self.switch.get("switch-stroke-color", "white")
         self.switch_stroke_color = convert_color(self.switch_stroke_color)
-        self.switch_stroke_width = self.switch.get("switch-stroke-width", 4)
+        self.switch_stroke_width = self.switch.get("switch-stroke-width", 2)
         self.switch_length = self.switch.get("switchs-length", ICON_SIZE/3)
         self.switch_width = self.switch.get("switchs-width", 32)
         self.switch_dot_color = self.switch.get("switch-dot-color", "white")  # 3dot
@@ -606,7 +608,7 @@ class Switch(Icon):
             draw.regular_polygon((center[0], center[1], self.base_size/2), n_sides=6, rotation=randint(0, 60), fill=self.base_color)
         else:
             draw.ellipse(tl+br, fill=self.base_color)
-        if self.base_underline_color is not None:
+        if self.base_underline_width > 0:
             tl1 = [center[0]-self.base_size/2-OUT, center[1]-self.base_size/2-OUT]
             br1 = [center[0]+self.base_size/2+OUT, center[1]+self.base_size/2+OUT]
             draw.ellipse(tl1+br1, outline=self.base_underline_color, width=self.base_underline_width)
