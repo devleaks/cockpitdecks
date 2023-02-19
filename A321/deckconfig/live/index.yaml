@@ -100,9 +100,9 @@ buttons:
     type: none
     # label: ${sim/cockpit2/autopilot/altitude_dial_ft}
     # label-format: "{:05.0f}"
-    label: "${dataref-rpn}"
+    label: "${formula}"
     label-format: "{:05.0f}"
-    dataref-rpn: ${sim/cockpit2/autopilot/altitude_dial_ft}
+    formula: ${sim/cockpit2/autopilot/altitude_dial_ft}
     label-color: white
     label-size: 24
     label-font: Seven Segment.ttf
@@ -110,9 +110,9 @@ buttons:
   - index: 4
     name: FCU Heading display
     type: none
-    label: "${dataref-rpn}"
+    label: "${formula}"
     label-format: "{:03.0f}"
-    dataref-rpn: ${sim/cockpit/autopilot/heading_mag}
+    formula: ${sim/cockpit/autopilot/heading_mag}
     label-color: white
     label-size: 24
     label-font: Seven Segment.ttf
@@ -127,12 +127,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/ATHRmode}
+          formula: ${AirbusFBW/ATHRmode}
         B1:
           text: A/THR
           color: white
           size: 60
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ATHRbutton
   - index: 6
     name: AP1
@@ -144,19 +144,19 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/AP1Engage}
+          formula: ${AirbusFBW/AP1Engage}
         B1:
           text: AP1
           color: white
           size: 60
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/ap1_push
   - index: 7
     name: FCU V Speed display
     type: none
-    label: "${dataref-rpn}"
+    label: "${formula}"
     label-format: "{:04.0f}"
-    dataref-rpn: ${sim/cockpit/autopilot/vertical_velocity}
+    formula: ${sim/cockpit/autopilot/vertical_velocity}
     label-color: white
     label-size: 24
     label-font: Seven Segment.ttf
@@ -164,13 +164,13 @@ buttons:
   - index: 8
     name: FCU Baro display
     type: none
-    label: ${dataref-rpn}
+    label: ${formula}
     label-format: "{: 4.0f}"
     label-color: white
     label-size: 24
     label-font: Seven Segment.ttf
     icon-color: (40, 40, 40)
-    dataref-rpn: ${sim/cockpit/misc/barometer_setting} 33.8639 *
+    formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
   - index: 9
     name: LOC
     type: push
@@ -181,12 +181,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/LOCilluminated}
+          formula: ${AirbusFBW/LOCilluminated}
         B1:
           text: LOC
           color: white
           size: 60
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/LOCbutton
   - index: 10
     name: APPR
@@ -198,12 +198,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/APPRilluminated}
+          formula: ${AirbusFBW/APPRilluminated}
         B1:
           text: APPR
           color: white
           size: 60
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/APPRbutton
   - index: 11
     name: WORK
@@ -225,9 +225,9 @@ buttons:
       centers: (10, 53, 94)
       labels:
         - label: SPD
-          dataref-rpn: ${AirbusFBW/SPDmanaged}
+          formula: ${AirbusFBW/SPDmanaged}
         - label: HDG
-          dataref-rpn: ${AirbusFBW/HDGmanaged}
+          formula: ${AirbusFBW/HDGmanaged}
         - label: QNH
     multi-datarefs:
       - AirbusFBW/SPDmanaged
@@ -241,7 +241,7 @@ buttons:
       labels:
         - label: ALT
           label-font: DIN
-          dataref-rpn: ${AirbusFBW/ALTmanaged}
+          formula: ${AirbusFBW/ALTmanaged}
         - label: V/S
         - label: ""
     multi-datarefs:

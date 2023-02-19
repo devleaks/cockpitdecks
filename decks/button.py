@@ -16,7 +16,7 @@ from PIL import ImageDraw, ImageFont
 
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
-from .constant import ID_SEP, SPAM, DATAREF_RPN
+from .constant import ID_SEP, SPAM, FORMULA
 from .color import convert_color
 from .rpc import RPC
 
@@ -41,7 +41,7 @@ class Button:
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
-        self.name = config.get("name", self.id())
+        self.name = config.get("name", "-".join((type(self).__name__, str(self.index))))
         self.num_index = None
         if type(self.index) == str:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
@@ -88,7 +88,7 @@ class Button:
         # Datarefs
         self.dataref = config.get("dataref")
         self.multi_datarefs = config.get("multi-datarefs")
-        self.dataref_rpn = config.get(DATAREF_RPN)
+        self.dataref_rpn = config.get(FORMULA)
 
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
@@ -292,7 +292,7 @@ class Button:
 
         # Use of datarefs in formula:
         # 2. Formulae datarefs
-        dataref_rpn = base.get(DATAREF_RPN)
+        dataref_rpn = base.get(FORMULA)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall("\\${(.+?)}", dataref_rpn)
             if len(datarefs) > 0:
@@ -323,8 +323,8 @@ class Button:
                 r = r + datarefs
                 logger.debug(f"get_datarefs: button {self.name}: added annunciator datarefs {datarefs}")
 
-        if DATAREF_RPN in r:  # label or text may contain ${dataref-rpn}, DATAREF_RPN is not a dataref.
-            r.remove(DATAREF_RPN)
+        if FORMULA in r:  # label or text may contain ${formula}, FORMULA is not a dataref.
+            r.remove(FORMULA)
 
         return list(set(r))  # removes duplicates
 
@@ -339,7 +339,7 @@ class Button:
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         """
-        if type(message) == int or type(message) == float:  # probably dataref-rpn is a contant value
+        if type(message) == int or type(message) == float:  # probably formula is a contant value
             value_str = message
             if formatting is not None:
                 if formatting is not None:
@@ -421,17 +421,17 @@ class Button:
     #
     def get_text(self, base: dict, root: str = "label"):  # root={label|text}
         """
-        Extract label or text from base and perform dataref-rpn and dataref values substitution if present.
-        (I.e. replaces ${dataref-rpn} and ${dataref} with their values.)
+        Extract label or text from base and perform formula and dataref values substitution if present.
+        (I.e. replaces ${formula} and ${dataref} with their values.)
         """
-        DATAREF_RPN_STR = f"${{{DATAREF_RPN}}}"
+        FORMULA_STR = f"${{{FORMULA}}}"
 
         text = base.get(root)
 
         if text is not None:
-            if DATAREF_RPN in str(text):
-                # If text contains ${dataref-rpn}, it is replaced by the value of the dataref-rpn calculation.
-                dataref_rpn = base.get(DATAREF_RPN)
+            if FORMULA in str(text):
+                # If text contains ${formula}, it is replaced by the value of the formula calculation.
+                dataref_rpn = base.get(FORMULA)
                 if dataref_rpn is not None:
                     res = self.execute_formula(formula=dataref_rpn, default="0.0")
                     if res != "":  # Format output if format present
@@ -441,9 +441,9 @@ class Button:
                             res = text_format.format(res)
                         else:
                             res = str(res)
-                    text = text.replace(DATAREF_RPN_STR, res)
+                    text = text.replace(FORMULA_STR, res)
                 else:
-                    logger.warning(f"get_text: button {self.name}: text contains {DATAREF_RPN_STR} but no {DATAREF_RPN} attribute found")
+                    logger.warning(f"get_text: button {self.name}: text contains {FORMULA_STR} but no {FORMULA} attribute found")
             else:
                 # If text contains ${dataref}s, they are replaced by their value.
                 text_format = base.get(f"{root}-format")

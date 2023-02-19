@@ -18,12 +18,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/NDShowCSTRCapt}
+          formula: ${AirbusFBW/NDShowCSTRCapt}
         B1:
           text: CSTR
           color: white
           text-size: 40
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/dispcommands/CaptCstrPushButton
     view: SRS/X-Camera/Select_View_ID_1
   - index: 1
@@ -36,12 +36,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/NDShowWPTCapt}
+          formula: ${AirbusFBW/NDShowWPTCapt}
         B1:
           text: WPT
           color: white
           text-size: 40
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/dispcommands/CaptWptPushButton
     view: SRS/X-Camera/Select_View_ID_1
   - index: 2
@@ -54,12 +54,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/NDShowVORDCapt}
+          formula: ${AirbusFBW/NDShowVORDCapt}
         B1:
           text: VOR.D
           color: white
           text-size: 40
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/dispcommands/CaptVorDPushButton
     view: SRS/X-Camera/Select_View_ID_1
   - index: 3
@@ -72,12 +72,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/NDShowNDBCapt}
+          formula: ${AirbusFBW/NDShowNDBCapt}
         B1:
           text: NDB
           color: white
           text-size: 40
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/dispcommands/CaptNdbPushButton
     view: SRS/X-Camera/Select_View_ID_1
   - index: 4
@@ -90,12 +90,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/NDShowARPTCapt}
+          formula: ${AirbusFBW/NDShowARPTCapt}
         B1:
           text: ARPT
           color: white
           text-size: 40
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/dispcommands/CaptArptPushButton
     view: SRS/X-Camera/Select_View_ID_1
 # ### LINE 2 ###  5 -  9 ######################################################
@@ -116,12 +116,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/FD1Engage}
+          formula: ${AirbusFBW/FD1Engage}
         B1:
           text: FD
           color: white
           text-size: 64
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/fd1_push
   - index: 7
     name: LS 1
@@ -133,12 +133,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/ILSonCapt}
+          formula: ${AirbusFBW/ILSonCapt}
         B1:
           text: LS
           color: white
           text-size: 64
-          dataref-rpn: "1"
+          formula: "1"
     command: toliss_airbus/dispcommands/CaptLSButtonPush
     view: SRS/X-Camera/Select_View_ID_1
   - index: 8
@@ -151,12 +151,12 @@ buttons:
         B0:
           color: lime
           led: bars
-          dataref-rpn: ${AirbusFBW/LOCilluminated}
+          formula: ${AirbusFBW/LOCilluminated}
         B1:
           text: LOC
           color: white
           text-size: 64
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/LOCbutton
   - index: 9
     name: SPD/MACH

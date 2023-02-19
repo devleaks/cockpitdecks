@@ -18,12 +18,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDENG}
+          formula: ${AirbusFBW/SDENG}
         B1:
           text: ENG
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectEnginePage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 1
@@ -36,12 +36,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDBLEED}
+          formula: ${AirbusFBW/SDBLEED}
         B1:
           text: BLEED
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectBleedPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 2
@@ -54,12 +54,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDPRESS}
+          formula: ${AirbusFBW/SDPRESS}
         B1:
           text: PRESS
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectPressPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 3
@@ -72,12 +72,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDELEC}
+          formula: ${AirbusFBW/SDELEC}
         B1:
           text: ELEC
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectElecACPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 4
@@ -90,12 +90,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDHYD}
+          formula: ${AirbusFBW/SDHYD}
         B1:
           text: HYD
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectHydraulicPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 5
@@ -108,12 +108,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDFUEL}
+          formula: ${AirbusFBW/SDFUEL}
         B1:
           text: FUEL
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectFuelPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 6
@@ -126,12 +126,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDAPU}
+          formula: ${AirbusFBW/SDAPU}
         B1:
           text: APU
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectAPUPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 7
@@ -144,12 +144,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDCOND}
+          formula: ${AirbusFBW/SDCOND}
         B1:
           text: COND
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectConditioningPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 8
@@ -162,12 +162,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDDOOR}
+          formula: ${AirbusFBW/SDDOOR}
         B1:
           text: DOOR
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectDoorOxyPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 9
@@ -180,12 +180,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDWHEEL}
+          formula: ${AirbusFBW/SDWHEEL}
         B1:
           text: WHEEL
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectWheelPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 10
@@ -198,12 +198,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDFCTL}
+          formula: ${AirbusFBW/SDFCTL}
         B1:
           text: F/CTL
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectFlightControlPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 11
@@ -216,12 +216,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/CLRillum}
+          formula: ${AirbusFBW/CLRillum}
         B1:
           text: CLR
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/CaptainClear
   - index: 12
     name: STS
@@ -233,12 +233,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref-rpn: ${AirbusFBW/SDSTATUS}
+          formula: ${AirbusFBW/SDSTATUS}
         B1:
           text: STS
           color: white
           text-size: 48
-          dataref-rpn: "1"
+          formula: "1"
     command: AirbusFBW/ECP/SelectStatusPage
     view: SRS/X-Camera/Select_View_ID_3
   - index: 13
@@ -249,6 +249,6 @@ buttons:
       text: ALL
       color: white
       font-text-size: 48
-      dataref-rpn: "1"
+      formula: "1"
     command: AirbusFBW/ECAMAll
     options: nostate

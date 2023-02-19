@@ -13,7 +13,7 @@ buttons:
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
     led-mode: 0
-    dataref-rpn: 8
+    formula: 8
   - index: encoder1
     name: KNOBLED
     type: knob-led
@@ -23,7 +23,7 @@ buttons:
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
     led-mode: 1
-    dataref-rpn: 6
+    formula: 6
   - index: encoder2
     name: KNOBLED
     type: knob-led
@@ -33,7 +33,7 @@ buttons:
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
     led-mode: 2
-    dataref-rpn: 8
+    formula: 8
   - index: encoder3
     name: KNOBLED
     type: knob-led
@@ -43,7 +43,7 @@ buttons:
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
     led-mode: 3
-    dataref-rpn: 6
+    formula: 6
   - index: encoder4
     name: KNOBLED
     type: knob-led
@@ -53,7 +53,7 @@ buttons:
       - AirbusFBW/RMP1FreqDownSml
       - AirbusFBW/RMP1FreqUpSml
     led-mode: 4
-    dataref-rpn: 1
+    formula: 1
 #
 # BUTTONS
 #
@@ -72,16 +72,16 @@ buttons:
     name: ALLON
     type: push
     options: counter
-    dataref-rpn: 1
+    formula: 1
   - index: 10
     name: ALLOFF
     type: push
-    dataref-rpn: 0
+    formula: 0
     options: counter
   - index: 11
     name: ALLBLINK
     type: push
-    dataref-rpn: 1
+    formula: 1
     options: blink
   - index: 15
     name: RELOAD

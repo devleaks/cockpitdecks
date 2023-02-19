@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 # from mergedeep import merge
 from metar import Metar
 
-from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
+from .constant import FORMULA, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
 from .color import convert_color, light_off
 from .rpc import RPC
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
@@ -103,8 +103,8 @@ class AnnunciatorPart:
             return True
 
         ret = None
-        if DATAREF_RPN in self._config:
-            calc = self._config[DATAREF_RPN]
+        if FORMULA in self._config:
+            calc = self._config[FORMULA]
             expr = self.annunciator.button.substitute_dataref_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
@@ -314,7 +314,7 @@ class Annunciator(Icon):
         else:
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        for a in ["dataref", "multi-datarefs", "datarefs", DATAREF_RPN]:
+        for a in ["dataref", "multi-datarefs", "datarefs", FORMULA]:
             if a in config:
                 logger.warning(f"__init__: button {self.button.name}: annunciator parent button has property {a} which is ignored")
 

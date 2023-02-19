@@ -11,7 +11,7 @@ buttons:
         text: ON BAT
         size: 48
         color: darkorange
-        dataref-rpn: ${AirbusFBW/ADIRUOnBat}
+        formula: ${AirbusFBW/ADIRUOnBat}
   - index: 2
     name: ADIRS_FAST_ALIGN
     type: push
@@ -30,13 +30,13 @@ buttons:
         text: FAIL
         color: darkorange
         size: 60
-        dataref-rpn: "0"
+        formula: "0"
       B1:
         text: ALIGN
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        dataref-rpn: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
+        formula: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
   - index: 9
     name: ADIRS3_INDICATOR
     type: none
@@ -47,13 +47,13 @@ buttons:
         text: FAIL
         color: darkorange
         size: 60
-        dataref-rpn: "0"
+        formula: "0"
       B1:
         text: ALIGN
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        dataref-rpn: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
+        formula: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
   - index: 10
     name: ADIRS2_INDICATOR
     type: none
@@ -64,13 +64,13 @@ buttons:
         text: FAIL
         color: darkorange
         size: 60
-        dataref-rpn: "0"
+        formula: "0"
       B1:
         text: ALIGN
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        dataref-rpn: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
+        formula: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     name: ADIRS1
@@ -128,13 +128,13 @@ buttons:
         text: FAIL
         color: darkorange
         size: 60
-        dataref-rpn: "0"
+        formula: "0"
       B1:
         text: "OFF"
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        dataref-rpn: ${AirbusFBW/ADRLights[0]} 1 - abs
+        formula: ${AirbusFBW/ADRLights[0]} 1 - abs
         framed: True
   - index: 25
     name: ADIRS3_OFF
@@ -146,13 +146,13 @@ buttons:
         text: FAIL
         color: darkorange
         size: 60
-        dataref-rpn: "0"
+        formula: "0"
       B1:
         text: "OFF"
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        dataref-rpn: ${AirbusFBW/ADRLights[2]} 1 - abs
+        formula: ${AirbusFBW/ADRLights[2]} 1 - abs
         framed: True
   - index: 26
     name: ADIRS2_OFF
@@ -164,13 +164,13 @@ buttons:
         text: FAIL
         color: darkorange
         size: 60
-        dataref-rpn: "0"
+        formula: "0"
       B1:
         text: "OFF"
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        dataref-rpn: ${AirbusFBW/ADRLights[1]} 1 - abs
+        formula: ${AirbusFBW/ADRLights[1]} 1 - abs
         framed: True
   - index: 31
     name: Index

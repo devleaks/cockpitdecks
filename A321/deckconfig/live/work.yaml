@@ -115,7 +115,7 @@ buttons:
       data-color: darkorange
       data-unit: "%"
       data-progress: 100
-      dataref-rpn: ${sim/cockpit/autopilot/heading_mag} 10 *
+      formula: ${sim/cockpit/autopilot/heading_mag} 10 *
       bottomline: Go Faster
       bottomline-size: 30
       bottomline-color: lime

@@ -1,5 +1,5 @@
 # ###########################
-# Special Airbus Button Rendering
+# Buttons that are drawn on render()
 #
 import logging
 import threading
@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
 # from mergedeep import merge
 from metar import Metar
 
-from .constant import DATAREF_RPN, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
+from .constant import FORMULA, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
 from .color import convert_color, light_off
 from .rpc import RPC
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
@@ -30,10 +30,19 @@ logger.setLevel(logging.DEBUG)
 # DISPLAY-ONLY REPRESENTATION
 #
 #
-class DataIcon(Icon):
+class DrawBase(Icon):
 
     def __init__(self, config: dict, button: "Button"):
+
         Icon.__init__(self, config=config, button=button)
+
+        self.cockpit_color = config.get("cockpit-color", self.button.page.cockpit_color)
+
+
+class DataIcon(DrawBase):
+
+    def __init__(self, config: dict, button: "Button"):
+        DrawBase.__init__(self, config=config, button=button)
 
         self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
 
@@ -161,10 +170,10 @@ class DataIcon(Icon):
         return image
 
 
-class WeatherIcon(Icon):
+class WeatherIcon(DrawBase):
 
     def __init__(self, config: dict, button: "Button"):
-        Icon.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, config=config, button=button)
 
         self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
         self.weather_icon = "wi_day_sunny"
@@ -296,18 +305,11 @@ class WeatherIcon(Icon):
 # SWITCH BUTTON REPRESENTATION
 #
 #
-class SwitchBase(Icon):
+class CircularSwitch(DrawBase):
 
     def __init__(self, config: dict, button: "Button"):
 
-        Icon.__init__(self, config=config, button=button)
-
-
-class CircularSwitch(Icon):
-
-    def __init__(self, config: dict, button: "Button"):
-
-        Icon.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, config=config, button=button)
 
         self.switch = config.get("circular-switch")
 
@@ -379,7 +381,7 @@ class CircularSwitch(Icon):
                 return red(a)
             return a
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
 
         # Button
@@ -447,7 +449,7 @@ class CircularSwitch(Icon):
             value = self.tick_steps - 1
         angle = red(self.tick_from + value * self.angular_step)
 
-        if self.switch_style == "home":   # big handle style
+        if self.switch_style in ["medium", "large"]:   # handle style
             overlay = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
             overlay_draw = ImageDraw.Draw(overlay)
             inner = self.button_size
@@ -461,6 +463,10 @@ class CircularSwitch(Icon):
             home = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
             home_drawing = ImageDraw.Draw(home)
             handle_width = int(2*inner/3)
+            handle_height = int(2*inner/3)
+
+            if self.switch_style == "large":   # big handle style
+                handle_width = int(4*inner/3)
 
             r = 10
             side = handle_width / math.sqrt(2) + r / 2
@@ -473,13 +479,13 @@ class CircularSwitch(Icon):
             c = 0  # left/right (i.e. 5/-5)
             d = 0
             e = 1
-            f = - handle_width + r/2  # up/down (i.e. 5/-5)
+            f = - handle_height + r/2  # up/down (i.e. 5/-5)
             home = home.transform(overlay.size, Image.AFFINE, (a, b, c, d, e, f))
 
             # # Button handle
             home_drawing = ImageDraw.Draw(home)
-            tl = [center[0]-handle_width/2, center[1]-handle_width]
-            br = [center[0]+handle_width/2, center[1]+handle_width]
+            tl = [center[0]-handle_width/2, center[1]-handle_height]
+            br = [center[0]+handle_width/2, center[1]+handle_height]
             home_drawing.rounded_rectangle(tl+br, radius=r, fill=(100,100,100))
 
             overlay.alpha_composite(home)
@@ -488,7 +494,7 @@ class CircularSwitch(Icon):
             # Overlay tick mark on top of button
             if self.needle_underline_width > 0:
                 start = r
-                end = handle_width + side / 2 - r / 2
+                end = handle_height + side / 2 - r / 2
                 xr = center[0] - start * math.sin(math.radians(angle))
                 yr = center[1] + start * math.cos(math.radians(angle))
                 length = self.button_size/2 - self.needle_length
@@ -526,11 +532,11 @@ class CircularSwitch(Icon):
         return image.convert("RGB")
 
 
-class Switch(Icon):
+class Switch(DrawBase):
 
     def __init__(self, config: dict, button: "Button"):
 
-        Icon.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, config=config, button=button)
 
         self.switch = config.get("switch")
 
@@ -581,10 +587,7 @@ class Switch(Icon):
         OUT = 8
         inside = ICON_SIZE / 32
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
-        draw = ImageDraw.Draw(image)
-
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
         draw = ImageDraw.Draw(image)
 
         # Button

@@ -376,7 +376,6 @@ class UpDown(Activation):
         if stops is not None:
             self.stops = int(stops)
         self.bounce_arr = self.make_bounce_array(self.stops)  # convenient
-        self.start_value = None
         self.go_up = True
 
         # @todo: can bounce 0-1-2-1-0-1-2... or not 0-1-2-0-1-2-0...
@@ -385,10 +384,11 @@ class UpDown(Activation):
             if self.initial_value < 0:
                 self.initial_value = abs(self.initial_value)
                 self.go_up = False # reverse direction
+                self.button.set_current_value(self.initial_value)
         if self.initial_value is not None and is_integer(self.initial_value) and self.initial_value > self.stops - 1:
             logger.warning(f"__init__: button {self.button.name} invalid initial value {self.initial_value}. Set to {self.stops - 1}")
-            self.button.set_current_value(self.stops - 1)
             self.go_up = False
+            self.button.set_current_value(self.stops - 1)
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join((f"commands: {self.commands}",

@@ -12,13 +12,13 @@ buttons:
         B0:
           text: AVAIL
           color: lime
-          dataref-rpn: ${AirbusFBW/ExtPowOHPArray[0]} 2 eq
+          formula: ${AirbusFBW/ExtPowOHPArray[0]} 2 eq
         B1:
           text: "ON"
           color: deepskyblue
           framed: true
           size: 60
-          dataref-rpn: ${AirbusFBW/ExtPowOHPArray[0]} 1 eq
+          formula: ${AirbusFBW/ExtPowOHPArray[0]} 1 eq
     command: toliss_airbus/eleccommands/ExtPowToggle
     label: EXT PWR
 # ### LINE 2 ###  8-15 ######################################################
@@ -34,7 +34,7 @@ buttons:
           color: deepskyblue
           framed: true
           size: 60
-          dataref-rpn: ${AirbusFBW/APUMaster}
+          formula: ${AirbusFBW/APUMaster}
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
   - index: 10
@@ -63,13 +63,13 @@ buttons:
         B0:
           text: AVAIL
           color: lime
-          dataref-rpn: ${AirbusFBW/APUAvail}
+          formula: ${AirbusFBW/APUAvail}
         B1:
           text: "ON"
           color: deepskyblue
           framed: true
           size: 60
-          dataref-rpn: ${AirbusFBW/APUStarter}
+          formula: ${AirbusFBW/APUStarter}
     command: toliss_airbus/apucommands/StarterToggle
     label: START
 # ### LINE 4 ### 24-31 ######################################################
