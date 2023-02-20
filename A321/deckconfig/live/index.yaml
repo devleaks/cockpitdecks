@@ -76,9 +76,13 @@ buttons:
   - index: 0
     type: none
     name: FCU Airspeed display
+    label: SPD
+    label-font: DIN Bold
+    label-color: khaki
+    label-position: lt
     text: ${sim/cockpit2/autopilot/airspeed_dial_kts_mach}
     text-format: "{:3.2f}"
-    text-color: white
+    text-color: khaki
     text-size: 24
     text-font: Seven Segment.ttf
     text-position: cm
@@ -110,21 +114,30 @@ buttons:
     type: none
     # label: ${sim/cockpit2/autopilot/altitude_dial_ft}
     # label-format: "{:05.0f}"
+    label: ALT
+    label-font: DIN Bold
+    label-color: khaki
+    label-position: ct
     text: "${formula}"
     text-format: "{:05.0f}"
     formula: ${sim/cockpit2/autopilot/altitude_dial_ft}
-    text-color: white
+    text-color: khaki
     text-size: 24
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
   - index: 4
+    label: HDG
+    label-font: DIN Bold
+    label-color: khaki
+    label-position: lt
     name: FCU Heading display
     type: none
-    text: "${formula}"
+    text: "${sim/cockpit/autopilot/heading_mag}"
     text-format: "{:03.0f}"
-    formula: ${sim/cockpit/autopilot/heading_mag}
-    text-color: white
-    text-size: 24
+#    formula: ${status:activation_count}
+#    formula: ${sim/cockpit/autopilot/heading_mag}
+    text-color: khaki
+    text-size: 36
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
   - index: 5
@@ -165,21 +178,29 @@ buttons:
     command: toliss_airbus/ap1_push
   - index: 7
     name: FCU V Speed display
+    label: V/S
+    label-font: DIN Bold
+    label-color: khaki
+    label-position: ct
     type: none
     text: "${formula}"
     text-format: "{:04.0f}"
     formula: ${sim/cockpit/autopilot/vertical_velocity}
-    text-color: white
+    text-color: khaki
     text-size: 24
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
   - index: 8
     name: FCU Baro display
     type: none
+    label: QNH
+    label-font: DIN Bold
+    label-color: khaki
+    label-position: rt
     text: ${formula}
     text-format: "{: 4.0f}"
-    text-color: white
-    text-size: 24
+    text-color: khaki
+    text-size: 36
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
     formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
@@ -219,6 +240,17 @@ buttons:
           text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/APPRbutton
+#   - index: 11
+#     name: Remote Button
+#     type: none
+#     text: "${formula}"
+#     text-format: "{:03.0f}"
+#     formula: ${button:Toliss A321/XPLive/index/FCU Heading display:activation_count}
+# #    formula: ${sim/cockpit/autopilot/heading_mag}
+#     text-color: white
+#     text-size: 24
+#     text-font: Seven Segment.ttf
+#     text-bg-color: (40, 40, 40)
   # - index: 11
   #   name: WORK
   #   type: page

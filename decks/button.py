@@ -132,19 +132,18 @@ class Button:
         return ID_SEP.join([self.page.get_id(), self.name])
 
     def get_button_value(self, name):
-        if len(name) == 0:
+        if name is None or len(name) == 0:
             v = self.get_current_value()
             if type(v) not in [int, float, str]:
                 logger.warning(f"get_button_value: value of {name} is {type(v)}")
             return v
-        a = name.split(ID_SEP)
-        if len(a) > 0:
-            if a[0] == "status":
-                s = self.get_status()
-                if a[1] in s.keys():
-                    return s[a[1]]
-                else:
-                    logger.warning(f"get_button_value: so such status {a[1]}")
+        a = name.split(":")
+        if len(a) > 1:
+            s = self.get_status()
+            if a[1] in s.keys():
+                return s[a[1]]
+            else:
+                logger.warning(f"get_button_value: so such variable {a[1]}")
         else:
             v = self.get_current_value()
             if type(v) not in [int, float, str]:
@@ -387,12 +386,17 @@ class Button:
     def substitute_status_values(self, text, default: str = "0.0", formatting = None):
         status = self.get_status()
         txtcpy = text
-        more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
+        # more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         for k, v in status.items():
             s = f"${{status:{k}}}"      # @todo: !!possible injection!!
             if s in txtcpy:
-                txtcpy.replace(k, v)
-                logger.debug(f"substitute_status_value: button {self.name}: replaced {k} by {v}. ({s})")
+                if v is None:
+                    logger.warning(f"substitute_status_value: button {self.name}: {k} has no value")
+                    v = str(default)
+                else:
+                    v = str(v)  # @todo: later: use formatting
+                txtcpy = txtcpy.replace(s, v)
+                logger.debug(f"substitute_status_value: button {self.name}: replaced {s} by {str(v)}. ({k})")
         more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         if len(more) > 0:
             logger.warning(f"substitute_status_value: button {self.name}: unsubstituted status values {more}")
@@ -403,9 +407,15 @@ class Button:
         more = re.findall("\\${button:(.+?)}", txtcpy)
         if len(more) > 0:
             for m in more:
-                name = ""
-                v = self.deck.cockpit.get_button_value(name)  # starts at the top
-                txtcpy.replace(m, v)
+                v = self.deck.cockpit.get_button_value(m)  # starts at the top
+                if v is None:
+                    logger.warning(f"substitute_button_values: button {self.name}: {m} has no value")
+                    v = str(default)
+                else:
+                    v = str(v)  # @todo: later: use formatting
+                m_str = f"${{button:{m}}}"   # "${formula}"
+                txtcpy = txtcpy.replace(m_str, v)
+                logger.debug(f"substitute_button_values: button {self.name}: replaced {m_str} by {str(v)}. ({m})")
         more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
         if len(more) > 0:
             logger.warning(f"substitute_button_values: button {self.name}: unsubstituted button values {more}")
@@ -591,131 +601,3 @@ class Button:
         """
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
-
-
-#
-# ###############################
-# ANIMATED REPRESENTATION
-#
-#
-class AnimationBase:
-    """
-    ABC for animations
-    """
-    def __init__(self, config: dict, button: "Button"):
-
-        Icon.__init__(self, config=config, button=button)
-
-        self._animation = config.get("animation")
-
-        # Base definition
-        self.speed = float(self._animation.get("speed", 1))
-
-        # Working attributes
-        self.tween = 0
-
-        self.running = None  # state unknown
-        self.thread = None
-
-    def loop(self):
-        while self.running:
-            self.animate()
-            self.button.render()
-            time.sleep(self.speed)
-
-    def should_run(self) -> bool:
-        """
-        Check conditions to animate the icon.
-        """
-        value = self.get_current_value()
-        if type(value) == dict:
-            value = value[list(value.keys())[0]]
-        return value is not None and value != 0
-
-    def animate(self):
-        """
-        Where changes between frames occur
-
-        :returns:   { description_of_the_return_value }
-        :rtype:     { return_type_description }
-        """
-        pass
-
-    def anim_start(self):
-        """
-        Starts animation
-        """
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
-            self.thread.start()
-        else:
-            logger.warning(f"anim_start: button {self.button.name}: already started")
-
-    def anim_stop(self):
-        """
-        Stops animation
-        """
-        if self.running:
-            self.running = False
-            self.thread.join(timeout=2*self.speed)
-            if self.thread.is_alive():
-                logger.warning(f"anim_stop: button {self.button.name}: animation did not terminate")
-        else:
-            logger.debug(f"anim_stop: button {self.button.name}: already stopped")
-
-    def clean(self):
-        """
-        Stops animation and remove icon from deck
-        """
-        pass
-
-    def render(self):
-        """
-        Renders icon_off or current icon in list
-        """
-        pass
-
-
-class Animation(AnimationBase):
-    """
-    Animation "Trait"
-    """
-    def __init__(self, config: dict, button: "Button"):
-
-        AnimationBase.__init__(self, config=config, button=button)
-
-    def animate(self):
-        """
-        Where changes between frames occur
-
-        :returns:   { description_of_the_return_value }
-        :rtype:     { return_type_description }
-        """
-        self.tween = self.tween + 1
-        return super().render()
-
-    def clean(self):
-        """
-        Stops animation and remove icon from deck
-        """
-        logger.debug(f"clean: button {self.button.name}: cleaning requested")
-        self.anim_stop()
-        logger.debug(f"clean: button {self.button.name}: stopped")
-        super().clean()
-
-    def render(self):
-        """
-        Renders icon_off or current icon in list
-        """
-        if self.is_valid():
-            if self.should_run():
-                if not self.running:
-                    self.anim_start()
-                return super().render()
-            else:
-                if self.running:
-                    self.anim_stop()
-                return super().render()
-        return None

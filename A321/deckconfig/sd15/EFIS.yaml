@@ -138,22 +138,25 @@ buttons:
     command: toliss_airbus/dispcommands/CaptLSButtonPush
     view: SRS/X-Camera/Select_View_ID_1
   - index: 8
-    name: LOC 1
+    name: TERRONND1
     type: push
+    label: TERR ON ND
+    label-color: lemonchiffon
+    label-font: DIN Bold
+    label-size: 12
     annunciator:
-      size: medium
+      size: large
       type: B
       parts:
-        B0:
-          color: lime
-          led: bars
-          formula: ${AirbusFBW/LOCilluminated}
         B1:
-          text: LOC
-          color: white
-          text-size: 64
-          formula: "1"
-    command: AirbusFBW/LOCbutton
+          text: "ON"
+          text-color: lime
+          text-size: 70
+          text-font: DIN Bold
+          formula: ${AirbusFBW/TerrainSelectedND1}
+          framed: ON
+    options: square
+    command: toliss_airbus/dispcommands/TerrOnND1Toggle
   - index: 9
     name: SPD/MACH
     type: push

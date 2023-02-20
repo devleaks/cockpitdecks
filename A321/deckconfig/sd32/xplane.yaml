@@ -63,6 +63,8 @@ buttons:
       - F.GREENS_ON_1
       - F.GREENS_ON_2
       - F.GREENS_ON_3
+    animation:
+      speed: 0.2
     animation-speed: 0.2
 #     command: XPPython3/followthegreens/main_windown_toggle
     commands:

@@ -38,6 +38,7 @@ class Page:
         # self.cockpit_color = convert_color(self.cockpit_color)
 
         self.buttons = {}
+        self.button_names = {}
         self.datarefs = {}
 
     def get_id(self):
@@ -47,10 +48,11 @@ class Page:
         a = name.split(ID_SEP)
         if len(a) > 0:
             if a[0] == self.name:
-                if a[1] in self.buttons.keys():
-                    return self.buttons[a[1]].get_button_value(ID_SEP.join(a[1:]))
+                b = a[1].split(":")   # button-name:variable-name
+                if b[0] in self.button_names.keys():
+                    return self.button_names[b[0]].get_button_value(":".join(b[1:]) if len(b) > 1 else None)
                 else:
-                    logger.warning(f"get_button_value: so such button {a[1]}")
+                    logger.warning(f"get_button_value: so such button {b[0]} in {self.buttons.keys()}")
             else:
                 logger.warning(f"get_button_value: not my page {a[0]} ({self.name})")
         else:
@@ -87,8 +89,12 @@ class Page:
         if idx in self.buttons.keys():
             logger.error(f"add_button: page {self.name}: button index {idx} already defined, ignoring {button.name}")
             return
+        if button.name is not None and button.name in self.button_names.keys():
+            logger.error(f"add_button: page {self.name}: button named {button.name} already defined, ignoring {button.name}")
+            return
         self.buttons[idx] = button
-        logger.debug(f"add_button: page {self.name}: button {button.name} {idx} added")
+        self.button_names[button.name] = button
+        logger.debug(f"add_button: page {self.name}: button {idx} {button.name} added")
 
     def register_datarefs(self, button: Button):
         for d in button.get_datarefs():

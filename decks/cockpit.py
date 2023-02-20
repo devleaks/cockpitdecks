@@ -86,7 +86,7 @@ class Cockpit:
                 else:
                     logger.warning(f"get_button_value: so such deck {a[1]}")
             else:
-                logger.warning(f"get_button_value: so such cockpit {a[0]}")
+                logger.warning(f"get_button_value: no such cockpit {a[0]}")
         else:
             logger.warning(f"get_button_value: invalid name {name}")
         return None
