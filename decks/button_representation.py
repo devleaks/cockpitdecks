@@ -89,12 +89,7 @@ class Icon(Representation):
 
         # If we have no icon, but an icon-color, we create a uniform color icon and store it.
         if self.icon is None:
-            self.icon_color = config.get("icon-color", page.default_icon_color)
-            if self.icon_color is not None:
-                self.icon_color = convert_color(self.icon_color)
-                self.icon = f"_default_{button.page.name}_{button.name}_icon.png"
-                deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
-                logger.debug(f"__init__: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
+            self.mk_uniform_icon()
 
         # self.icon_color = convert_color(self.icon_color)
         # # the icon size varies for center "buttons" and left and right side "buttons".
@@ -114,6 +109,16 @@ class Icon(Representation):
         #     self.deck.icons[self.default_icon] = self.default_icon_image
         #     self.icon = self.default_icon
 
+    def mk_uniform_icon(self):
+        deck = self.button.deck
+        if self.icon_color is not None:
+            self.icon_color = convert_color(self.icon_color)
+            self.icon = f"_default_{self.button.page.name}_{self.button.name}_icon.png"
+            deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
+            logger.debug(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
+        else:
+            logger.warning(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: no icon color")
+
     def is_valid(self):
         if super().is_valid():  # so there is a button...
             if self.icon is not None:
@@ -130,6 +135,7 @@ class Icon(Representation):
         return self.get_image()
 
     def get_text_detail(self, config, which_text):
+        DEFAULT_TEXT_POSITION = "cm"  # text centered on icon
         text = self.button.get_text(config, which_text)
         text_format = config.get(f"{which_text}-format")
 
@@ -138,7 +144,7 @@ class Icon(Representation):
         text_size = config.get(f"{which_text}-size", page.default_label_size)
         text_color = config.get(f"{which_text}-color", page.default_label_color)
         text_color = convert_color(text_color)
-        text_position = config.get(f"{which_text}-position", DEFAULT_LABEL_POSITION)
+        text_position = config.get(f"{which_text}-position", DEFAULT_LABEL_POSITION if which_text == "label" else DEFAULT_TEXT_POSITION)
         if text_position[0] not in "lcr" or text_position[1] not in "tmb":
             logger.warning(f"get_text_detail: button {self.button.name}: {type(self).__name__}: invalid label position code {text_position}, using default")
 
@@ -148,66 +154,48 @@ class Icon(Representation):
         """
         Helper function to get valid font, depending on button or global preferences
         """
-        deck = self.button.deck
-        all_fonts = deck.cockpit.fonts
-        fonts_available = list(all_fonts.keys())
-        this_button = f"{self.button.name}: {type(self).__name__}"
+        def try_ext(fn):
+            deck = self.button.deck
+            all_fonts = deck.cockpit.fonts
+            fonts_available = list(all_fonts.keys())
+
+            if fn is not None:
+                if has_ext(fn, ".ttf") or has_ext(fn, ".otf"):
+                    if fn in fonts_available:
+                        return all_fonts[fn]
+                f1 = add_ext(fn, ".ttf")
+                if f1 in fonts_available:
+                    return all_fonts[f1]
+                f2 = add_ext(fn, ".otf")
+                if f2 in fonts_available:
+                    return all_fonts[f2]
+                this_button = f"{self.button.name}: {type(self).__name__}"
+                logger.warning(f"get_font: button {this_button}: button label font '{fn}' not found")
+            return None
 
         # 1. Tries button specific font
-        if fontname is not None:
-            if has_ext(fontname, ".ttf") or has_ext(fontname, ".otf"):
-                if fontname in fonts_available:
-                    return all_fonts[fontname]
-            fn = add_ext(fontname, ".ttf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            fn = add_ext(fontname, ".otf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            logger.warning(f"get_font: button {this_button}: button label font '{fontname}' not found")
+        f = try_ext(fontname)
+        if f is not None:
+            return f
 
         # 2. Tries default fonts
         #    Tries page default font
         default_font = self.button.page.default_label_font
-        if default_font is not None:
-            if has_ext(default_font, ".ttf") or has_ext(default_font, ".otf"):
-                if default_font in fonts_available:
-                    return all_fonts[default_font]
-            fn = add_ext(default_font, ".ttf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            fn = add_ext(default_font, ".otf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            logger.warning(f"get_font: button {this_button} page default label font '{default_font}' not found in {fonts_available}")
+        f = try_ext(default_font)
+        if f is not None:
+            return f
 
         # 2. Tries deck default font
         default_font = deck.default_label_font
-        if default_font is not None:
-            if has_ext(default_font, ".ttf") or has_ext(default_font, ".otf"):
-                if default_font in fonts_available:
-                    return all_fonts[default_font]
-            fn = add_ext(default_font, ".ttf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            fn = add_ext(default_font, ".otf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            logger.warning(f"get_font: button {this_button} deck default label font '{default_font}' not found in {fonts_available}")
+        f = try_ext(default_font)
+        if f is not None:
+            return f
 
         # 3. Tries cockpit default font
-        default_font = deck.default_label_font
-        if default_font is not None:
-            if has_ext(default_font, ".ttf") or has_ext(default_font, ".otf"):
-                if default_font in fonts_available:
-                    return all_fonts[default_font]
-            fn = add_ext(default_font, ".ttf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            fn = add_ext(default_font, ".otf")
-            if fn in fonts_available:
-                return all_fonts[fn]
-            logger.warning(f"get_font: button {this_button} deck default label font '{deck.cockpit.default_label_font}' not found in {fonts_available}")
+        default_font = deck.cockpit.default_label_font
+        f = try_ext(default_font)
+        if f is not None:
+            return f
 
         # 4. Returns first font, if any
         if len(fonts_available) > 0:
@@ -215,6 +203,7 @@ class Icon(Representation):
             return all_fonts[fonts_available[0]]
         else:
             logger.error(f"get_font: button {this_button}: no font")
+
         return None
 
     def get_image_for_icon(self):
@@ -361,6 +350,9 @@ class IconText(Icon):
         Icon.__init__(self, config=config, button=button)
 
         self.text = config.get("text")
+
+        self.icon_color = config.get("text-bg-color")
+        self.mk_uniform_icon()
         # self.texts = config.get("texts")  # @todo later
 
     def get_image(self):
@@ -383,6 +375,7 @@ class IconSide(Icon):
         self.icon_color = self.side.get("icon-color", page.default_icon_color)
         self.centers = self.side.get("centers", [43, 150, 227])
         self.labels = self.side.get("labels")
+        self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
 
     def is_valid(self):
         if self.button.index not in ["left", "right"]:

@@ -1,6 +1,6 @@
 # Definition of decks for Toliss A321
 #
-aicraft: Toliss A321
+aircraft: Toliss A321
 decks:
   - name: XPLive
     type: loupedeck

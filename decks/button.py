@@ -41,7 +41,7 @@ class Button:
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
-        self.name = config.get("name", "-".join((type(self).__name__, str(self.index))))
+        self.name = config.get("name", "-".join((self.page.name, str(self.index))))
         self.num_index = None
         if type(self.index) == str:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
@@ -199,10 +199,11 @@ class Button:
                 self.set_current_value(self.button_value())
             logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
         else:
-            logger.debug(f"init: button {self.name}: alread has a value ({self.current_value}), initial value ignored")
+            logger.debug(f"init: button {self.name}: already has a value ({self.current_value}), initial value ignored")
         # Guard
         if self.has_option("guarded"):
             self.guarded = True   # guard type is option value: guarded=cover or grid.
+        # logger.info(f"init: button {self.name}: {self.id()}")
 
     def guard(self):
         return self.guarded if self.guarded is not None else False
@@ -376,22 +377,28 @@ class Button:
                 value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
             cnt = cnt + 1
+
+        more = re.findall("\\${([^\\}]+?)}", retmsg)
+        if len(more) > 0:
+            logger.warning(f"substitute_dataref_values: button {self.name}: unsubstituted dataref values {more}")
+
         return retmsg
 
-    def substitute_status_values(self, text):
+    def substitute_status_values(self, text, default: str = "0.0", formatting = None):
         status = self.get_status()
         txtcpy = text
+        more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         for k, v in status.items():
             s = f"${{status:{k}}}"      # @todo: !!possible injection!!
             if s in txtcpy:
                 txtcpy.replace(k, v)
                 logger.debug(f"substitute_status_value: button {self.name}: replaced {k} by {v}. ({s})")
-        more = re.findall("\\${(.+?)}", txtcpy)
+        more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         if len(more) > 0:
-            logger.warning(f"substitute_status_value: button {self.name}: unsubstituted values {more}")
+            logger.warning(f"substitute_status_value: button {self.name}: unsubstituted status values {more}")
         return txtcpy
 
-    def substitute_button_values(self, text):
+    def substitute_button_values(self, text, default: str = "0.0", formatting = None):
         txtcpy = text
         more = re.findall("\\${button:(.+?)}", txtcpy)
         if len(more) > 0:
@@ -399,14 +406,26 @@ class Button:
                 name = ""
                 v = self.deck.cockpit.get_button_value(name)  # starts at the top
                 txtcpy.replace(m, v)
+        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+        if len(more) > 0:
+            logger.warning(f"substitute_button_values: button {self.name}: unsubstituted button values {more}")
         return txtcpy
+
+    def substitute_values(self, text, default: str = "0.0", formatting = None):
+        t1 = self.substitute_status_values(text, default=default, formatting=formatting)
+        logger.debug(f"substitute_values: button {self.name}: {text} => {t1}")
+        t2 = self.substitute_button_values(t1, default=default, formatting=formatting)
+        logger.debug(f"substitute_values: button {self.name}: {t1} => {t2}")
+        t3 = self.substitute_dataref_values(t2, default=default, formatting=formatting)
+        logger.debug(f"substitute_values: button {self.name}: {t2} => {t3}")
+        return t3
 
     def execute_formula(self, formula, default: str = "0.0", formatting = None):
         """
         replace datarefs variables with their (numeric) value and execute formula.
         Returns formula result.
         """
-        expr = self.substitute_dataref_values(message=formula, default=default)
+        expr = self.substitute_values(text=formula, default=default)
         logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
@@ -425,32 +444,25 @@ class Button:
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
         """
-        FORMULA_STR = f"${{{FORMULA}}}"
-
         text = base.get(root)
-
         if text is not None:
+            text_format = base.get(f"{root}-format")
             if FORMULA in str(text):
                 # If text contains ${formula}, it is replaced by the value of the formula calculation.
                 dataref_rpn = base.get(FORMULA)
                 if dataref_rpn is not None:
                     res = self.execute_formula(formula=dataref_rpn, default="0.0")
                     if res != "":  # Format output if format present
-                        text_format = base.get(f"{root}-format")
                         if text_format is not None:
                             logger.debug(f"get_text: button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                             res = text_format.format(res)
                         else:
                             res = str(res)
+                    FORMULA_STR = f"${{{FORMULA}}}"   # "${formula}"
                     text = text.replace(FORMULA_STR, res)
                 else:
                     logger.warning(f"get_text: button {self.name}: text contains {FORMULA_STR} but no {FORMULA} attribute found")
-            else:
-                # If text contains ${dataref}s, they are replaced by their value.
-                text_format = base.get(f"{root}-format")
-                text = self.substitute_dataref_values(text, formatting=text_format, default="---")
-
-            text = self.substitute_status_values(text)
+            text = self.substitute_values(text, formatting=text_format, default="---")
 
         return text
 
@@ -580,3 +592,130 @@ class Button:
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
 
+
+#
+# ###############################
+# ANIMATED REPRESENTATION
+#
+#
+class AnimationBase:
+    """
+    ABC for animations
+    """
+    def __init__(self, config: dict, button: "Button"):
+
+        Icon.__init__(self, config=config, button=button)
+
+        self._animation = config.get("animation")
+
+        # Base definition
+        self.speed = float(self._animation.get("speed", 1))
+
+        # Working attributes
+        self.tween = 0
+
+        self.running = None  # state unknown
+        self.thread = None
+
+    def loop(self):
+        while self.running:
+            self.animate()
+            self.button.render()
+            time.sleep(self.speed)
+
+    def should_run(self) -> bool:
+        """
+        Check conditions to animate the icon.
+        """
+        value = self.get_current_value()
+        if type(value) == dict:
+            value = value[list(value.keys())[0]]
+        return value is not None and value != 0
+
+    def animate(self):
+        """
+        Where changes between frames occur
+
+        :returns:   { description_of_the_return_value }
+        :rtype:     { return_type_description }
+        """
+        pass
+
+    def anim_start(self):
+        """
+        Starts animation
+        """
+        if not self.running:
+            self.running = True
+            self.thread = threading.Thread(target=self.loop)
+            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
+            self.thread.start()
+        else:
+            logger.warning(f"anim_start: button {self.button.name}: already started")
+
+    def anim_stop(self):
+        """
+        Stops animation
+        """
+        if self.running:
+            self.running = False
+            self.thread.join(timeout=2*self.speed)
+            if self.thread.is_alive():
+                logger.warning(f"anim_stop: button {self.button.name}: animation did not terminate")
+        else:
+            logger.debug(f"anim_stop: button {self.button.name}: already stopped")
+
+    def clean(self):
+        """
+        Stops animation and remove icon from deck
+        """
+        pass
+
+    def render(self):
+        """
+        Renders icon_off or current icon in list
+        """
+        pass
+
+
+class Animation(AnimationBase):
+    """
+    Animation "Trait"
+    """
+    def __init__(self, config: dict, button: "Button"):
+
+        AnimationBase.__init__(self, config=config, button=button)
+
+    def animate(self):
+        """
+        Where changes between frames occur
+
+        :returns:   { description_of_the_return_value }
+        :rtype:     { return_type_description }
+        """
+        self.tween = self.tween + 1
+        return super().render()
+
+    def clean(self):
+        """
+        Stops animation and remove icon from deck
+        """
+        logger.debug(f"clean: button {self.button.name}: cleaning requested")
+        self.anim_stop()
+        logger.debug(f"clean: button {self.button.name}: stopped")
+        super().clean()
+
+    def render(self):
+        """
+        Renders icon_off or current icon in list
+        """
+        if self.is_valid():
+            if self.should_run():
+                if not self.running:
+                    self.anim_start()
+                return super().render()
+            else:
+                if self.running:
+                    self.anim_stop()
+                return super().render()
+        return None

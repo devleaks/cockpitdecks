@@ -893,7 +893,7 @@ class Switch(DrawBase):
 # ANIMATED DRAW REPRESENTATION
 #
 #
-class Animation(Icon):
+class DrawAnimation(Icon):
     """
     """
 

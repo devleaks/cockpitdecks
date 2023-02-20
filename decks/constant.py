@@ -38,7 +38,7 @@ DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
 FORMULA = "formula"
 
 SPAM = 15
-ID_SEP = ":"
+ID_SEP = "/"
 
 ICON_FONT = "fontawesome.otf"
 WEATHER_ICON_FONT = "weathericons.otf"

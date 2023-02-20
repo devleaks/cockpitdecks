@@ -142,8 +142,15 @@ class AnnunciatorPart:
 
     def get_color(self):
         color = self._config.get("color")
+        text_color = self._config.get("text-color")
+        if color is None and text_color is not None:
+            color = text_color
+            logger.debug(f"get_color: button {self.annunciator.button.name}: color not set but text-color set, using color {color}")
+        elif color is not None and text_color is not None:
+            logger.warning(f"get_color: button {self.annunciator.button.name}: has both color and text-color set, using color {color}")
+
         if color is None:
-            logger.warning(f"render: button {self.annunciator.button.name}: not color found, using grey")
+            logger.warning(f"get_color: button {self.annunciator.button.name}: no color found, using grey")
             color = (128, 128, 128)
         if type(color) == tuple or type(color) == list:  # we transfort it back to a string, read on...
             color = "(" + ",".join([str(i) for i in color]) + ")"
@@ -152,7 +159,7 @@ class AnnunciatorPart:
             try:
                 color = self._config.get("off-color", light_off(color, lightness=self.annunciator.button.page.light_off_intensity/100))
             except ValueError:
-                logger.debug(f"render: button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using grey")
+                logger.debug(f"get_color: button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using grey")
                 color = (128, 128, 128)
         elif color.startswith("("):
             color = convert_color(color)
@@ -160,7 +167,7 @@ class AnnunciatorPart:
             try:
                 color = ImageColor.getrgb(color)
             except ValueError:
-                logger.debug(f"render: color {color} not found, using grey")
+                logger.debug(f"get_color: color {color} not found, using grey")
                 color = (128, 128, 128)
         return color
 
@@ -196,7 +203,7 @@ class AnnunciatorPart:
             #
             # Annunciator part will display text
             #
-            fontname = self.annunciator.get_font(self._config.get("font"))
+            fontname = self.annunciator.get_font(self._config.get("text-font"))
             fontsize = int(self._config.get("text-size", TEXT_SIZE))
             font = ImageFont.truetype(fontname, fontsize)
             if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:

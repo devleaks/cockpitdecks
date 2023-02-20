@@ -63,23 +63,34 @@ buttons:
 #
 # KEYS
 #
+  # - index: 0
+  #   type: none
+  #   name: FCU Airspeed display
+  #   label: ${sim/cockpit2/autopilot/airspeed_dial_kts_mach}
+  #   label-format: "{:3.2f}"
+  #   label-color: white
+  #   label-size: 24
+  #   label-font: Seven Segment.ttf
+  #   label-position: cm
+  #   icon-color: (40, 40, 40)
   - index: 0
     type: none
     name: FCU Airspeed display
-    label: ${sim/cockpit2/autopilot/airspeed_dial_kts_mach}
-    label-format: "{:3.2f}"
-    label-color: white
-    label-size: 24
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text: ${sim/cockpit2/autopilot/airspeed_dial_kts_mach}
+    text-format: "{:3.2f}"
+    text-color: white
+    text-size: 24
+    text-font: Seven Segment.ttf
+    text-position: cm
+    text-bg-color: (40, 40, 40)
   - index: 1
     name: MASTER CAUTION
     type: push
     command: sim/annunciator/clear_master_caution
     annunciator:
       text: "MASTER\nCAUT"
-      color: darkorange
-      font: DIN Condensed Black.otf
+      text-color: darkorange
+      text-font: DIN Condensed Black.otf
       text-size: 72
       dataref: AirbusFBW/MasterCaut
     # options: animation_speed=0.5
@@ -89,8 +100,8 @@ buttons:
     command: sim/annunciator/clear_master_warning
     annunciator-animate:
       text: "MASTER\nWARN"
-      color: firebrick
-      font: DIN Condensed Black.otf
+      text-color: firebrick
+      text-font: DIN Condensed Black.otf
       text-size: 72
       dataref: AirbusFBW/MasterWarn
       animation-speed: 2.0
@@ -99,23 +110,23 @@ buttons:
     type: none
     # label: ${sim/cockpit2/autopilot/altitude_dial_ft}
     # label-format: "{:05.0f}"
-    label: "${formula}"
-    label-format: "{:05.0f}"
+    text: "${formula}"
+    text-format: "{:05.0f}"
     formula: ${sim/cockpit2/autopilot/altitude_dial_ft}
-    label-color: white
-    label-size: 24
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text-color: white
+    text-size: 24
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
   - index: 4
     name: FCU Heading display
     type: none
-    label: "${formula}"
-    label-format: "{:03.0f}"
+    text: "${formula}"
+    text-format: "{:03.0f}"
     formula: ${sim/cockpit/autopilot/heading_mag}
-    label-color: white
-    label-size: 24
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text-color: white
+    text-size: 24
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
   - index: 5
     name: A/THR
     type: push
@@ -129,8 +140,9 @@ buttons:
           formula: ${AirbusFBW/ATHRmode}
         B1:
           text: A/THR
-          color: white
-          size: 60
+          text-color: white
+          text-size: 60
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ATHRbutton
   - index: 6
@@ -146,29 +158,30 @@ buttons:
           formula: ${AirbusFBW/AP1Engage}
         B1:
           text: AP1
-          color: white
-          size: 60
+          text-color: white
+          text-size: 60
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/ap1_push
   - index: 7
     name: FCU V Speed display
     type: none
-    label: "${formula}"
-    label-format: "{:04.0f}"
+    text: "${formula}"
+    text-format: "{:04.0f}"
     formula: ${sim/cockpit/autopilot/vertical_velocity}
-    label-color: white
-    label-size: 24
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text-color: white
+    text-size: 24
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
   - index: 8
     name: FCU Baro display
     type: none
-    label: ${formula}
-    label-format: "{: 4.0f}"
-    label-color: white
-    label-size: 24
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text: ${formula}
+    text-format: "{: 4.0f}"
+    text-color: white
+    text-size: 24
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
     formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
   - index: 9
     name: LOC
@@ -183,8 +196,9 @@ buttons:
           formula: ${AirbusFBW/LOCilluminated}
         B1:
           text: LOC
-          color: white
-          size: 60
+          text-color: white
+          text-size: 60
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/LOCbutton
   - index: 10
@@ -200,8 +214,9 @@ buttons:
           formula: ${AirbusFBW/APPRilluminated}
         B1:
           text: APPR
-          color: white
-          size: 60
+          text-color: white
+          text-size: 60
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/APPRbutton
   # - index: 11

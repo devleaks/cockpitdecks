@@ -201,7 +201,6 @@ class Cockpit:
                 self.default_config = yaml.safe_load(fp)
                 logger.debug(f"load_defaults: loaded default config {fn}")
         if self.default_config is not None:
-            self.name = self.default_config.get("name", "Cockpitdecks")
             self.default_logo = self.default_config.get("default-wallpaper-logo", DEFAULT_LOGO)
             self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
             self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
@@ -281,8 +280,8 @@ class Cockpit:
             with open(fn, "r") as fp:
                 config = yaml.safe_load(fp)
                 logger.debug(f"create_decks: loaded config {fn}")
-
                 self._config = config
+                self.name = self._config.get("name", self._config.get("aircraft", "Cockpitdecks4"))
                 self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
                 self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
                 self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
