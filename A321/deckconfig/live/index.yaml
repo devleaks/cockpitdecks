@@ -7,8 +7,8 @@ buttons:
     name: FCU Airspeed
     type: encoder-onoff
     commands:
-      - sim/autopilot/airspeed_managed
-      - sim/autopilot/airspeed_unmanaged
+      - AirbusFBW/PullSPDSel
+      - AirbusFBW/PushSPDSel
       - sim/autopilot/airspeed_down
       - sim/autopilot/airspeed_up
     options: dot, nostate
@@ -16,8 +16,8 @@ buttons:
     name: FCU Heading
     type: encoder-onoff
     commands:
-      - sim/autopilot/heading_managed
-      - sim/autopilot/heading_unmanaged
+      - AirbusFBW/PullHDGSel
+      - AirbusFBW/PushHDGSel
       - sim/autopilot/heading_down
       - sim/autopilot/heading_up
     options: dot, nostate

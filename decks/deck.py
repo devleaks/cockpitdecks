@@ -23,7 +23,7 @@ logger = logging.getLogger("Deck")
 
 
 DEFAULT_PAGE_NAME = "X-Plane"
-
+BACKPAGE = "back"
 
 class Deck(ABC):
     """
@@ -280,8 +280,14 @@ class Deck(ABC):
             self.set_home_page()
 
     def change_page(self, page: str):
+        """
+        Returns the currently loaded page name
+
+        :param      page:  The page
+        :type       page:  str
+        """
         logger.debug(f"change_page: deck {self.name} change page to {page}..")
-        if page == "back":
+        if page == BACKPAGE:
             if len(self.page_history) > 1:
                 page = self.page_history.pop()  # this page
                 page = self.page_history.pop()  # previous one

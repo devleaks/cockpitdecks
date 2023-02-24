@@ -75,10 +75,11 @@ buttons:
   - index: 7
     name: XPLANEDATA
     type: push
-    icon: INFO
+    icon: XPLANE_OUTPUT
     command: sim/operation/toggle_data_output_cockpit
     label: "XPLANE\nCOCKPIT\nDATA"
-    options: counter
+    label-color: black
+    label-position: cm
 
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
@@ -100,7 +101,6 @@ buttons:
     command: jd/ghd/show_widget
     initial-value: 0
     label: GHDLX
-    options: counter
 
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
@@ -123,13 +123,21 @@ buttons:
     label: X-ATC
 
 # ### LINE 4 ### 24-31 ######################################################
+  # - index: 26
+  #   name: XPLANEDATA2
+  #   type: push
+  #   icon: XPLANE_OUTPUT
+  #   label: "COCKPIT\nDATA"
+  #   command: sim/operation/toggle_data_output_cockpit
+  #   options: framed-icon
   - index: 26
-    name: XPLANEDATA
-    type: push
-    icon: XPLANE_OUTPUT
-    label: "COCKPIT\nDATA"
-    command: sim/operation/toggle_data_output_cockpit
-    options: framed-icon
+    name: DESCRIBE
+    type: inspect
+    icon: COCKPITDECKS
+    label: "DESCRIBE"
+    label-color: red
+    label-position: "cm"
+    what: desc
   - index: 27
     name: INSPECT
     type: inspect

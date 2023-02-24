@@ -23,6 +23,7 @@ buttons:
           text: ENG
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectEnginePage
     view: SRS/X-Camera/Select_View_ID_3
@@ -41,6 +42,7 @@ buttons:
           text: BLEED
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectBleedPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -59,6 +61,7 @@ buttons:
           text: PRESS
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectPressPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -77,6 +80,7 @@ buttons:
           text: ELEC
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectElecACPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -95,6 +99,7 @@ buttons:
           text: HYD
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectHydraulicPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -113,6 +118,7 @@ buttons:
           text: FUEL
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectFuelPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -131,6 +137,7 @@ buttons:
           text: APU
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectAPUPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -149,6 +156,7 @@ buttons:
           text: COND
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectConditioningPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -167,6 +175,7 @@ buttons:
           text: DOOR
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectDoorOxyPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -185,6 +194,7 @@ buttons:
           text: WHEEL
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectWheelPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -203,6 +213,7 @@ buttons:
           text: F/CTL
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectFlightControlPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -221,6 +232,7 @@ buttons:
           text: CLR
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/CaptainClear
   - index: 12
@@ -238,6 +250,7 @@ buttons:
           text: STS
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectStatusPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -248,7 +261,8 @@ buttons:
       size: medium
       text: ALL
       color: white
-      font-text-size: 48
+      text-size: 48
+      text-font: DIN Bold
       formula: "1"
     command: AirbusFBW/ECAMAll
     options: nostate

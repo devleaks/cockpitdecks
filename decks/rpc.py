@@ -59,5 +59,9 @@ class RPC:
                 stack.append(-1 * stack.pop())
             elif token == "eq":     # test for equality, pushes 1 if equal, 0 otherwise
                 stack.append(1 if (stack.pop() == stack.pop()) else 0)
+            elif token == "inf":    # inf is used as a keyword to return a special value
+                stack.append(math.inf)
+            else:
+                print(f"RPC: invalid token {token}")
 
         return stack if return_stack else stack.pop()

@@ -10,11 +10,13 @@ import logging
 import time
 import datetime
 
+from .constant import SPAM
 from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
 # logger.setLevel(logging.DEBUG)
+logger.setLevel(SPAM)
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
@@ -241,19 +243,20 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
         cmd = b"DREF\x00"
-        dataref    =dataref+'\x00'
+        dataref = dataref + '\x00'
         string = dataref.ljust(500).encode()
         message = "".encode()
         if vtype == "float":
-            message = struct.pack("<5sf500s", cmd,value,string)
+            message = struct.pack("<5sf500s", cmd, value, string)
         elif vtype == "int":
             message = struct.pack("<5si500s", cmd, value, string)
         elif vtype == "bool":
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert(len(message)==509)
-        logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.BeaconData['Port']}): {dataref}={value}")
+        logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.BeaconData['Port']}): {dataref}={value} ..")
         self.socket.sendto(message, (self.BeaconData["IP"], self.BeaconData["Port"]))
+        logger.debug(f"WriteDataRef: .. sent")
 
     def AddDataRef(self, dataref, freq = None):
         '''
@@ -323,7 +326,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                 return
             message = 'CMND0' + command
             self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
-            logger.debug(f"ExecuteCommand: executed {command}")
+            logger.log(SPAM, f"ExecuteCommand: executed {command}")
         else:
             logger.warning(f"ExecuteCommand: no IP connection ({command})")
 
@@ -421,7 +424,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         if self.connected:
             if not self.running:
                 self.thread = threading.Thread(target=self.loop)
-                self.thread.name = f"XPlaneUDP::loop"
+                self.thread.name = f"XPlaneUDP::datarefs_watcher"
                 self.running = True
                 self.thread.start()
                 logger.info(f"start: XPlaneUDP started")

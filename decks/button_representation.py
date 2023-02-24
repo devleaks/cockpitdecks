@@ -55,6 +55,9 @@ class Representation:
         # logger.warning(f"clean: button {self.button.name}: no cleaning")
         pass
 
+    def describe(self):
+        return "This button does not produce any output."
+
 #
 # ###############################
 # ICON TYPE REPRESENTATION
@@ -343,6 +346,9 @@ class Icon(Representation):
         else:
             logger.warning(f"clean: button {self.button.name}: {type(self).__name__}: no fill icon")
 
+    def describe(self):
+        return "This representation produces an icon with optional label overlay."
+
 
 class IconText(Icon):
 
@@ -363,6 +369,9 @@ class IconText(Icon):
         """
         image = super().get_image()
         return self.overlay_text(image, "text")
+
+    def describe(self):
+        return "This representation produces an icon with optional text and label overlay."
 
 
 class IconSide(Icon):
@@ -461,6 +470,9 @@ class IconSide(Icon):
                 li = li + 1
         return image
 
+    def describe(self):
+        return "This representation produces an icon with optional label overlay for larger side buttons on LoupedeckLive."
+
 
 class MultiIcons(Icon):
 
@@ -510,6 +522,12 @@ class MultiIcons(Icon):
         else:
             logger.warning(f"render: button {self.button.name}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
         return None
+
+    def describe(self):
+        return "\n\r".join([
+            f"This representation produces an icon selected from a list of {len(self.multi_icons)} icons."
+        ])
+
 
 class IconAnimation(MultiIcons):
 
@@ -592,6 +610,19 @@ class IconAnimation(MultiIcons):
                 return super(MultiIcons, self).render()
         return None
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This representation produces an animation by displaying an icon from a list of {len(self.multi_icons)} icons"
+            f"and changing it every {self.speed} seconds."
+        ]
+        if self.icon_off is not None:
+            a.append(f"When the animation is not running, it displays an OFF icon {self.icon_off}.")
+        return "\n\r".join(a)
+
+
 #
 # ###############################
 # LED TYPE REPRESENTATION
@@ -613,9 +644,20 @@ class LED(Representation):
         self.button.set_current_value(0)
         self.button.render()
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This representation turns ON or OFF a single LED light"
+        ]
+        return "\n\r".join(a)
+
 
 class ColoredLED(Representation):
-
+    """
+    @todo: later: Adjust the color of the LED from the button.get_button_value().
+    """
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
@@ -631,12 +673,20 @@ class ColoredLED(Representation):
         self.button.set_current_value(0)
         self.button.render()
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This representation turns ON or OFF a single LED light and changes the color of the LED."
+        ]
+        return "\n\r".join(a)
+
 
 class MultiLEDs(Representation):
     """
     Ring of 13 LEDs surrounding X-Touch Mini encoders
     """
-
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
@@ -664,6 +714,15 @@ class MultiLEDs(Representation):
     def clean(self):
         self.button.set_current_value(0)
         self.button.render()
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This representation turns multiple LED ON or OFF"
+        ]
+        return "\n\r".join(a)
 
 #
 # ###############################

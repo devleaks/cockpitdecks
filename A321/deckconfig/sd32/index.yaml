@@ -52,12 +52,12 @@ buttons:
     label-position: cm
   - index: 7
     name: ISCS
-    type: onoff
+    type: push
     multi-icons:
       - P_TOLISS_ISCS_OFF
       - P_TOLISS_ISCS_ON
     command: toliss_airbus/iscs_open
-    options: counter
+    initial-value: 0
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: adirs

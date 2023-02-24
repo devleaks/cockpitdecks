@@ -10,6 +10,8 @@ from .color import is_integer
 logger = logging.getLogger("Activation")
 # logger.setLevel(logging.DEBUG)
 
+BACKPAGE = "back"
+
 
 # ##########################################
 # ACTIVATION
@@ -53,7 +55,7 @@ class Activation:
             self.current_value = self.initial_value
             self._first_value = self.initial_value
             self._first_value_not_saved = False
-            logger.debug(f"activate: button {self.button.name}: set initial value")
+            logger.debug(f"activate: button {self.button.name}: initial value set: {self.initial_value}")
 
     def activate(self, state):
         """
@@ -87,10 +89,10 @@ class Activation:
         # logger.debug(f"activate: {type(self).__name__} activated ({state}, {self.activation_count})")
 
     def __str__(self):  # print its status
-        return ", ".join((type(self).__name__,
+        return ", ".join([type(self).__name__,
                          f"activation-count: {self.activation_count}",
                          f"current: {self.current_value}",
-                         f"previous: {self.previous_value}"))
+                         f"previous: {self.previous_value}"])
 
     def is_pressed(self):
         return self.pressed
@@ -115,12 +117,11 @@ class Activation:
 
     def set_current_value(self, value):
         if self._first_value_not_saved:  # never used, we initialize it
-            if self.initial_value is not None:
-                self.current_value = self.initial_value
             self._first_value = value
             self._first_value_not_saved = False
         self.previous_value = self.current_value
         self.current_value = value
+        logger.debug(f"set_current_value: {self.current_value}")
 
     def get_current_value(self):
         logger.debug(f"get_current_value: {self.current_value}")
@@ -148,6 +149,14 @@ class Activation:
         if self._view is not None and self.is_valid():
             self.button.xp.commandOnce(self._view)
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button does nothing. This is the default 'none' behavior."
+        ])
+
 
 #
 # ###############################
@@ -162,7 +171,7 @@ class LoadPage(Activation):
         Activation.__init__(self, config=config, button=button)
 
         # Commands
-        self.page = config.get("page", "back")  # default is to go to previously loaded page, if any
+        self.page = config.get("page", BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = config.get("deck")
 
     def is_valid(self):
@@ -181,13 +190,22 @@ class LoadPage(Activation):
             if self.remote_deck is not None and self.remote_deck in self.button.deck.cockpit.cockpit.keys():
                 deck = self.button.deck.cockpit.cockpit[self.remote_deck]
 
-            if self.page == "back" or self.page in deck.pages.keys():
+            if self.page == BACKPAGE or self.page in deck.pages.keys():
                 logger.debug(f"activate: {type(self).__name__} change page to {self.page}")
                 new_name = deck.change_page(self.page)
-                if new_name is not None and self.page != "back":
+                if new_name is not None and self.page != BACKPAGE:
                     self.set_current_value(new_name)
             else:
                 logger.warning(f"activate: {type(self).__name__}: page not found {self.page}")
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        deck = f"deck {self.remote_deck}" if self.remote_deck is not None else "the current deck"
+        return "\n\r".join([
+            f"This button loads page {self.page} on {deck}."
+        ])
 
 
 class Reload(Activation):
@@ -202,6 +220,14 @@ class Reload(Activation):
             print("Reload activate")
             if self.is_valid():
                 self.button.deck.cockpit.reload_decks()
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button reloads all decks and tries to reload the page that was displayed."
+        ])
 
 
 class Inspect(Activation):
@@ -227,6 +253,15 @@ class Inspect(Activation):
         }
         return s
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button displays '{self.what}' information about each cockpit, deck, page and/or button."
+        ])
+
+
 class Stop(Activation):
     """
     Stops all decks.
@@ -238,6 +273,14 @@ class Stop(Activation):
         if state:
             if self.is_valid():
                 self.button.deck.cockpit.stop()
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button stops Cockpitdecks and terminates gracefully."
+        ])
 
 #
 # ###############################
@@ -259,9 +302,10 @@ class Push(Activation):
         self.pressed = False  # True while the button is pressed, False when released
 
     def __str__(self):  # print its status
-        return super() + "\n" + ", ".join((f"command: {self.command}",
-                f"is_valid: {self.is_valid()}"))
-
+        return super() + "\n" + ", ".join([
+                f"command: {self.command}",
+                f"is_valid: {self.is_valid()}"
+        ])
 
     def is_on(self):
         return self.activation_count % 2 == 1
@@ -284,6 +328,15 @@ class Push(Activation):
         else:
             logger.warning(f"activate: button {self.button.name} is invalid")
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button executes {self.command} when it is activated (pressed).",
+            f"This button does nothing when it is de-activated (released)."
+        ])
+
 
 class Longpress(Push):
     """
@@ -302,6 +355,16 @@ class Longpress(Push):
                 self.button.xp.commandEnd(self.command)
                 self.view()  # on release only
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button begins command {self.command} when it is activated (pressed).",
+            f"This button ends command {self.command} when it is de-activated (released).",
+            f"(Begin and end command is a special terminology (phase of execution of a command) of X-Plane.)"
+        ])
+
 
 class OnOff(Activation):
     """
@@ -316,15 +379,9 @@ class OnOff(Activation):
         self.commands = config.get("commands", [])
 
     def __str__(self):  # print its status
-        return super() + "\n" + ", ".join((f"commands: {self.commands}",
-                f"is_off: {self.is_off()}"),
-                f"is_valid: {self.is_valid()}")
-
-    def is_on(self):
-        return self.activation_count % 2 == 1
-
-    def is_off(self):
-        return self.activation_count % 2 == 0
+        return super() + "\n" + ", ".join([f"commands: {self.commands}",
+                        f"is_off: {self.is_off()}",
+                        f"is_valid: {self.is_valid()}"])
 
     def is_valid(self):
         if len(self.commands) < 2:
@@ -333,7 +390,17 @@ class OnOff(Activation):
         return super().is_valid()
 
     def get_current_value(self):
-        return self.activation_count % 2
+        parent = self.button.get_current_value()
+        if parent is not None:
+            return 0 if parent == 0 else 1
+        else:
+            return self.activation_count % 2
+
+    def is_on(self):
+        return self.get_current_value() == 1
+
+    def is_off(self):
+        return self.get_current_value() == 0
 
     def activate(self, state):
         super().activate(state)
@@ -355,6 +422,22 @@ class OnOff(Activation):
             "on": self.is_on()
         }
         return s
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This button executes command {self.commands[0]} when its current value is OFF (0).",
+            f"This button executes command {self.commands[1]} when its current value is ON (not 0).",
+            f"This button does nothing when it is de-activated (released)."
+        ]
+        if False:
+            a.append(f"This button gets its curent value from its button value (dataref, or formula).")
+        else:
+            a.append(f"This button gets its curent value from an internal counter that increases by 1 each time it is pressed.")
+            a.append(f"The current value is {self.current_value} (={'ON' if self.is_on() else 'OFF'}).")
+        return "\n\r".join(a)
 
 
 class UpDown(Activation):
@@ -378,22 +461,21 @@ class UpDown(Activation):
         self.bounce_arr = self.make_bounce_array(self.stops)  # convenient
         self.go_up = True
 
-        # @todo: can bounce 0-1-2-1-0-1-2... or not 0-1-2-0-1-2-0...
-
+        # We redo initial value setting...
         if self.initial_value is not None and is_integer(self.initial_value):
+            value = abs(self.initial_value)
+            if value > self.stops - 1:
+                logger.warning(f"__init__: button {self.button.name} initial value {value} too large. Set to {self.stops - 1}.")
+                value = self.stops - 1
             if self.initial_value < 0:
-                self.initial_value = abs(self.initial_value)
                 self.go_up = False # reverse direction
-                self.button.set_current_value(self.initial_value)
-        if self.initial_value is not None and is_integer(self.initial_value) and self.initial_value > self.stops - 1:
-            logger.warning(f"__init__: button {self.button.name} invalid initial value {self.initial_value}. Set to {self.stops - 1}")
-            self.go_up = False
-            self.button.set_current_value(self.stops - 1)
+            self.initial_value = value
+            self.current_value = value
 
     def __str__(self):  # print its status
-        return super() + "\n" + ", ".join((f"commands: {self.commands}",
-                f"stops: {self.stops}"),
-                f"is_valid: {self.is_valid()}")
+        return super() + "\n" + ", ".join([f"commands: {self.commands}",
+                        f"stops: {self.stops}",
+                        f"is_valid: {self.is_valid()}"])
 
     def is_valid(self):
         if self.commands is None or len(self.commands) < 2:
@@ -404,6 +486,13 @@ class UpDown(Activation):
             return False
         return True
 
+    def get_current_value(self):
+        parent = self.button.get_current_value()
+        if parent is not None:
+            return parent
+        else:
+            return self.bounce_arr[(self._first_value + self.activation_count) % len(self.bounce_arr)]
+
     def activate(self, state: bool):
         super().activate(state)
         # We need to do something if button does not start in status 0. @todo
@@ -412,32 +501,33 @@ class UpDown(Activation):
         #         self.start_value = int(self.current_value)
         #     else:
         #         self.start_value = 0
-        if state:
-            if self._first_value_not_saved:
-                if self.initial_value is None:
-                    self._first_value = 0
-                    self.current_value = 0
-                else:
-                    self._first_value = int(self.initial_value)
-                    self.current_value = int(self.initial_value)
-                self._first_value_not_saved = False
+        if self.is_valid():
+            if state:
+                if self._first_value_not_saved:
+                    if self.initial_value is None:
+                        self._first_value = 0
+                        self.current_value = 0
+                    else:
+                        self._first_value = int(self.initial_value)
+                        self.current_value = int(self.initial_value)
+                    self._first_value_not_saved = False
 
-            self.current_value = self.bounce_arr[(self._first_value + self.activation_count) % len(self.bounce_arr)]
-            # logger.debug(f"activate: counter={self.start_value + self.activation_count} = start={self.start_value} + press={self.activation_count} curr={self.current_value} last={self.bounce_idx} value={value} arr={self.bounce_arr} dir={value > self.bounce_idx}")
-            if self.is_valid():
+                self.current_value = self.get_current_value()
+                nextval = int(self.current_value + 1 if self.go_up else self.current_value - 1)
                 if self.go_up:
                     self.button.xp.commandOnce(self.commands[0])  # up
-                    if self.current_value == (len(self.bounce_arr) - 1):
+                    if nextval == (self.stops - 1):
                         self.go_up = False
                 else:
                     self.button.xp.commandOnce(self.commands[1])  # down
-                    if self.current_value == 0:
+                    if nextval == 0:
                         self.go_up = True
-            else:
-                logger.warning(f"activate: button {self.button.name} is invalid")
+        else:
+            logger.warning(f"activate: button {self.button.name} is invalid")
 
     def make_bounce_array(self, stops: int):
         # Builds an array like 0-1-2-3-2-1-0 for a 4 stops button.
+        # @todo: can bounce 0-1-2-1-0-1-2... or not 0-1-2-0-1-2-0...
         if stops > 1:
             af = list(range(stops - 1))
             ab = af.copy()
@@ -454,6 +544,17 @@ class UpDown(Activation):
             "go_up": self.go_up
         }
         return s
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This button executes command {self.commands[0]} when it increases its current value.",
+            f"This button executes command {self.commands[1]} when it decreases its current value.",
+            f"This button does nothing when it is de-activated (released).",
+            f"This button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed.",
+            f"The current value is {self.current_value}. Value will {'increase' if self.go_up else 'decrease'}"])
 
 #
 # ###############################
@@ -512,6 +613,15 @@ class Encoder(Activation):
             "turns": self._turns
         }
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This encoder executes command {self.commands[0]} when it is turned clockwise.",
+            f"This encoder executes command {self.commands[1]} when it is turned counter-clockwise."
+        ])
+
 
 class EncoderPush(Push):
     """
@@ -538,17 +648,19 @@ class EncoderPush(Push):
         else:
             logger.error(f"is_valid: button {type(self).__name__} must have at least one command")
 
+        self.longpush = self.button.has_option("longpush")
+
         # Internal status
         self._turns = 0
         self._cw = 0
         self._ccw = 0
 
     def is_valid(self):
-        if self.has_option("longpush") and len(self.commands) != 4:
-            logger.warning(f"is_valid: button {self.name} must have 4 commands for dual mode")
+        if self.longpush and len(self.commands) != 4:
+            logger.warning(f"is_valid: button {self.button.name} must have 4 commands for longpush mode")
             return False
-        elif not self.has_option("longpush") and len(self.commands) != 3:
-            logger.warning(f"is_valid: button {self.name} must have 3 commands")
+        elif not self.longpush and len(self.commands) != 3:
+            logger.warning(f"is_valid: button {self.button.name} must have 3 commands")
             return False
         return True  # super().is_valid()
 
@@ -556,31 +668,31 @@ class EncoderPush(Push):
         if state < 2:
             super().activate(state)
         elif state == 2:  # rotate clockwise
-            if self.button.has_option("longpush"):
+            if self.longpush:
                 if self.is_pressed():
-                    self.button.xp.commandOnce(self.commands[0])
+                    self.button.xp.commandOnce(self.commands[2])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                 else:
-                    self.button.xp.commandOnce(self.commands[2])
+                    self.button.xp.commandOnce(self.commands[0])
                     self._turns = self._turns - 1
                     self._ccw = self._ccw + 1
             else:
                 self.button.xp.commandOnce(self.commands[1])
         elif state == 3:  # rotate counter-clockwise
-            if self.button.has_option("longpush"):
+            if self.longpush:
                 if self.is_pressed():
-                    self.button.xp.commandOnce(self.commands[1])
+                    self.button.xp.commandOnce(self.commands[3])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                 else:
-                    self.button.xp.commandOnce(self.commands[3])
+                    self.button.xp.commandOnce(self.commands[1])
                     self._turns = self._turns - 1
                     self._ccw = self._ccw + 1
             else:
                 self.button.xp.commandOnce(self.commands[2])
         else:
-            logger.warning(f"activate: button {self.name} invalid state {state}")
+            logger.warning(f"activate: button {self.button.name} invalid state {state}")
 
     def get_status(self):
         a = super().get_status()
@@ -591,6 +703,27 @@ class EncoderPush(Push):
             "ccw": self._ccw,
             "turns": self._turns
         }
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        if self.longpush:
+            return "\n\r".join([
+                f"This encoder has longpush option.",
+                f"This encoder executes command {self.commands[0]} when it is not pressed and turned clockwise.",
+                f"This encoder executes command {self.commands[1]} when it is not pressed and turned counter-clockwise.",
+                f"This encoder executes command {self.commands[2]} when it is pressed and turned clockwise.",
+                f"This encoder executes command {self.commands[3]} when it is pressed and turned counter-clockwise.",
+            ])
+        else:
+            return "\n\r".join([
+                f"This encoder does not have longpush option.",
+                f"This encoder executes command {self.commands[0]} when it is pressed.",
+                f"This encoder does not execute any command when it is released.",
+                f"This encoder executes command {self.commands[1]} when it is turned clockwise.",
+                f"This encoder executes command {self.commands[2]} when it is turned counter-clockwise."
+            ])
 
 
 class EncoderOnOff(OnOff):
@@ -611,16 +744,19 @@ class EncoderOnOff(OnOff):
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
 
+
+        self.dual = self.button.has_option("dual")
+
         # Internal status
         self._turns = 0
         self._cw = 0
         self._ccw = 0
 
     def is_valid(self):
-        if self.button.has_option("dual") and len(self.commands) != 6:
+        if self.dual and len(self.commands) != 6:
             logger.warning(f"is_valid: button {self.button.name} must have 6 commands for dual mode")
             return False
-        elif not self.button.has_option("dual") and len(self.commands) != 4:
+        elif not self.dual and len(self.commands) != 4:
             logger.warning(f"is_valid: button {self.button.name} must have 4 commands")
             return False
         return True  # super().is_valid()
@@ -631,14 +767,14 @@ class EncoderOnOff(OnOff):
                 super().activate(state)
             elif state == 2:  # rotate clockwise
                 if self.is_on():
-                    if self.button.has_option("dual"):
+                    if self.dual:
                         self.button.xp.commandOnce(self.commands[2])
                     else:
                         self.button.xp.commandOnce(self.commands[2])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                 else:
-                    if self.button.has_option("dual"):
+                    if self.dual:
                         self.button.xp.commandOnce(self.commands[4])
                     else:
                         self.button.xp.commandOnce(self.commands[2])
@@ -647,14 +783,14 @@ class EncoderOnOff(OnOff):
                 self.view()
             elif state == 3:  # rotate counter-clockwise
                 if self.is_on():
-                    if self.button.has_option("dual"):
+                    if self.dual:
                         self.button.xp.commandOnce(self.commands[3])
                     else:
                         self.button.xp.commandOnce(self.commands[3])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                 else:
-                    if self.button.has_option("dual"):
+                    if self.dual:
                         self.button.xp.commandOnce(self.commands[5])
                     else:
                         self.button.xp.commandOnce(self.commands[3])
@@ -673,6 +809,31 @@ class EncoderOnOff(OnOff):
             "ccw": self._ccw,
             "turns": self._turns
         }
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        if self.dual:
+            return "\n\r".join([
+                f"This encoder has dual option.",
+                f"This encoder executes command {self.commands[0]} when it is pressed and OFF.",
+                f"This encoder executes command {self.commands[1]} when it is pressed and ON.",
+                f"This encoder does not execute any command when it is released.",
+                f"This encoder executes command {self.commands[2]} when it is OFF and turned clockwise.",
+                f"This encoder executes command {self.commands[3]} when it is OFF and turned counter-clockwise.",
+                f"This encoder executes command {self.commands[4]} when it is ON and turned clockwise.",
+                f"This encoder executes command {self.commands[5]} when it is ON and turned counter-clockwise.",
+            ])
+        else:
+            return "\n\r".join([
+                f"This encoder does not have dual option.",
+                f"This encoder executes command {self.commands[0]} when it is pressed and OFF.",
+                f"This encoder executes command {self.commands[1]} when it is pressed and ON.",
+                f"This encoder does not execute any command when it is released.",
+                f"This encoder executes command {self.commands[2]} when it is turned clockwise.",
+                f"This encoder executes command {self.commands[3]} when it is turned counter-clockwise."
+            ])
 
 
 class EncoderValue(Activation):
@@ -715,7 +876,7 @@ class EncoderValue(Activation):
         if ok:
             self.set_current_value(x)
             if self.writable_dataref is not None:
-                self.button.xp.WriteDataRef(dataref=self.writable_dataref, value=vs, vtype='float')
+                self.button.xp.WriteDataRef(dataref=self.writable_dataref, value=float(x), vtype='float')
 
     def get_status(self):
         a = super().get_status()
@@ -732,6 +893,19 @@ class EncoderValue(Activation):
             "turns": self._turns
         }
 
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This encoder increases a value by {self.step} when it is turned clockwise.",
+            f"This encoder decreases a value by {self.step} when it is turned counter-clockwise.",
+            f"The value remains in the range [{self.value_min}-{self.value_max}]."
+        ]
+        if self.writable_dataref is not None:
+            a.append(f"The value is written in dataref {self.writable_dataref}.")
+        return "\n\r".join(a)
+
 
 #
 # ###############################
@@ -745,9 +919,26 @@ class Slider(Activation):  # Cursor?
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
+        self.value_min = float(config.get("value-min", 0))
+        self.value_max = float(config.get("value-max", 100))
+        self.writable_dataref = config.get("set-dataref")
+
     def activate(self, state):
         super().activate(state)
         logger.info(f"activate: button {self.button.name} has no action (value={state})")
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        a = [
+            f"This slider produces a value between [{self.value_min}-{self.value_max}].",
+            f"The raw value from slider is modified by formula {self.button.formula}."
+        ]
+        if self.writable_dataref is not None:
+            a.append(f"The value is written in dataref {self.writable_dataref}.")
+        return "\n\r".join(a)
+
 
 #
 # ###############################
@@ -764,6 +955,15 @@ class Swipe(Activation):
     def activate(self, state):
         super().activate(state)
         logger.info(f"activate: button {self.button.name} has no action (value={state})")
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([
+            f"This surface is used to monitor swipes of a finger over the surface.",
+            f"There currently is no handling of this type of activation."
+        ])
 
 
 #

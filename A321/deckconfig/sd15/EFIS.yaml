@@ -19,6 +19,7 @@ buttons:
           text: CSTR
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptCstrPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -37,6 +38,7 @@ buttons:
           text: WPT
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptWptPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -55,6 +57,7 @@ buttons:
           text: VOR.D
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptVorDPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -73,6 +76,7 @@ buttons:
           text: NDB
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptNdbPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -91,6 +95,7 @@ buttons:
           text: ARPT
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptArptPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -102,42 +107,64 @@ buttons:
     icon: TEST
     label: CHRONO
     label-size: 10
-  - index: 6
-    name: FD 1
-    type: push
-    annunciator:
-      size: medium
-      type: B
-      parts:
-        B0:
-          color: lime
-          led: bars
-          formula: ${AirbusFBW/FD1Engage}
-        B1:
-          text: FD
-          color: white
-          text-size: 64
-          formula: "1"
-    command: toliss_airbus/fd1_push
   - index: 7
-    name: LS 1
-    type: push
-    annunciator:
-      size: medium
-      type: B
-      parts:
-        B0:
-          color: lime
-          led: bars
-          formula: ${AirbusFBW/ILSonCapt}
-        B1:
-          text: LS
-          color: white
-          text-size: 64
-          formula: "1"
-    command: toliss_airbus/dispcommands/CaptLSButtonPush
-    view: SRS/X-Camera/Select_View_ID_1
+    name: ND MODE
+    type: updown
+    stops: 5
+    initial-value: 4
+    circular-switch:
+      button-size: 50
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 270
+      tick-space: 40
+      tick-underline-width: 8
+      tick-color: white
+      tick-underline-color: white
+      needle-color: white
+      needle-length: 130
+      tick-label-size: 28
+      tick-labels:
+        - LS
+        - VOR
+        - NAV
+        - ARC
+        - PLAN
+    commands:
+      - sim/instruments/EFIS_mode_up
+      - sim/instruments/EFIS_mode_dn
+    dataref: AirbusFBW/NDmodeCapt
   - index: 8
+    name: ND RANGE
+    type: updown
+    stops: 6
+    initial-value: 2
+    circular-switch:
+      button-size: 50
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 315
+      tick-space: 40
+      tick-underline-width: 8
+      tick-color: white
+      tick-underline-color: white
+      needle-color: white
+      needle-length: 130
+      tick-label-size: 28
+      tick-labels:
+        - "10"
+        - "20"
+        - "40"
+        - "80"
+        - "160"
+        - "320"
+    commands:
+      - sim/instruments/map_zoom_out
+      - sim/instruments/map_zoom_in
+    dataref: AirbusFBW/NDrangeCapt
+  - index: 6
     name: TERRONND1
     type: push
     label: TERR ON ND
@@ -165,38 +192,71 @@ buttons:
     command: sim/autopilot/knots_mach_toggle
     dataref: sim/cockpit/autopilot/airspeed_is_mach
     initial-value: 0
-    multi-icons:
-      - SWITCH_ROUND_TOP
-      - SWITCH_ROUND_BOT
+    icon: TEST
 # ### LINE 3 ### 10 - 14 ######################################################
   - index: 10
-    name: EFIS MODE -
+    name: FD 1
     type: push
-    command: sim/instruments/EFIS_mode_dn
-    label: "EFIS\nMODE -"
-    icon-color: (94, 111, 130)
-    options: nostate
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          formula: ${AirbusFBW/FD1Engage}
+        B1:
+          text: FD
+          color: white
+          text-size: 64
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/fd1_push
   - index: 11
-    name: EFIS MODE +
+    name: LS 1
     type: push
-    command: sim/instruments/EFIS_mode_up
-    label: "EFIS\nMODE +"
-    icon-color: (94, 111, 130)
-    options: nostate
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          formula: ${AirbusFBW/ILSonCapt}
+        B1:
+          text: LS
+          color: white
+          text-size: 64
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/dispcommands/CaptLSButtonPush
+    view: SRS/X-Camera/Select_View_ID_1
   - index: 12
-    name: EFIS ZOOM IN
-    type: push
-    command: sim/instruments/map_zoom_in
-    label: "EFIS\nZOOM IN"
-    icon-color: (94, 111, 130)
-    options: nostate
+    name: mode1
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "ADF1"
+        - "OFF"
+        - "VOR1"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,horizontal
+    dataref: ckpt/fcu/adf1Left/anim
   - index: 13
-    name: EFIS ZOOM OUT
-    type: push
-    command: sim/instruments/map_zoom_out
-    label: "EFIS\nZOOM OUT"
-    icon-color: (94, 111, 130)
-    options: nostate
+    name: mode2
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "ADF2"
+        - "OFF"
+        - "VOR2"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,horizontal
+    dataref: ckpt/fcu/adf2Left/anim
   - index: 14
     name: ECAM
     type: page

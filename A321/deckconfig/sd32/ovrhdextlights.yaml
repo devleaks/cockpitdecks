@@ -9,3 +9,32 @@ buttons:
     type: page
     page: index
     icon: TOLISS-A321
+# AirbusFBW/OHPLightSwitches
+# Strobe: 7 0,1,2
+# Beacon: 0 0,1
+# Wing: 1 0,1
+# NavLogo: 2 0,1
+# RunwayTurnOff: 6: 0,1
+# LandLeft: 4 0,1,2
+# LandRight: 5 0,1,2
+# Nose: 3 0,1,2
+# Seat Belt: 11 0,1
+# Non Smoking: 12 0,1,2
+# STBY COMPASS: 9 0,1
+# Dome: 8, 0,1,2
+# Emergency Exit: 10 0,1,2
+#
+# cockpit/oh/annLight/anim: 0,1,2 (2=test)
+#
+# AirbusFBW/OPHLightsATA30
+#
+#
+# Probe/Window heat: AirbusFBW/ProbeHeatSwitch
+# AirbusFBW/ENG1AISwitch
+# AirbusFBW/ENG1AILight
+# and eng2 also
+#
+# All guards:
+# AirbusFBW/OHPGuardsAllATA
+#
+#

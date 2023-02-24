@@ -157,11 +157,15 @@ class Cockpit:
         Loads decks for aircraft in supplied path.
         """
         if self.disabled:
-            logger.warning(f"load: Cockpit is disabled")
+            logger.warning(f"load_aircraft: Cockpitdecks is disabled")
             return
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
             self.terminate_this_aircraft()
+
+        if len(self.devices) == 0:
+            logger.warning(f"load_aircraft: no device")
+            return
 
         self.cockpit = {}
         self.icons = {}
@@ -176,14 +180,14 @@ class Cockpit:
             self.load_fonts()
             self.create_decks()
             if self.default_pages is not None:
-                logger.debug(f"load: default_pages {self.default_pages.keys()}")
+                logger.debug(f"load_aircraft: default_pages {self.default_pages.keys()}")
                 for name, deck in self.cockpit.items():
                     if name in self.default_pages.keys():
-                        if deck.home_page is not None:  # do not refresh default pages
+                        if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
                             deck.change_page(self.default_pages[name])
                 self.default_pages = None
         else:
-            logger.error(f"load: no Stream Deck folder '{CONFIG_DIR}' in aircraft folder {acpath}")
+            logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
 
     def reload_page(self):
@@ -457,7 +461,7 @@ class Cockpit:
     def start_reload_loop(self):
         if not self.reload_loop_run:
             self.reload_loop_thread = threading.Thread(target=self.reload_loop)
-            self.reload_loop_thread.name = f"Cockpit::reload_loop"
+            self.reload_loop_thread.name = f"Cockpit::reloader"
             self.reload_loop_run = True
             self.reload_loop_thread.start()
             logger.info(f"start_reload_loop: started")

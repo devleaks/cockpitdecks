@@ -10,6 +10,7 @@ import logging
 import threading
 import time
 import yaml
+import math
 from datetime import datetime
 
 from PIL import ImageDraw, ImageFont
@@ -51,7 +52,8 @@ class Button:
         # Working variables
         self._first_value_not_saved = True
         self._first_value = None    # first value the button will get
-        self._last_state = None
+        self._use_activation_state = False
+        self._last_activation_state = None
         self.initial_value = config.get("initial-value")
         self.current_value = None
         self.previous_value = None
@@ -173,9 +175,15 @@ class Button:
         if "status" in what:
             logger.info("-- Status:")
             logger.info(yaml.dump(self.get_status()))
+        if "desc" in what:
+            logger.info("-- Description:")
+            logger.info(self.describe())
         if "config" in what:
             logger.info("-- Config:")
             logger.info(f"\n{yaml.dump(self._config)}")
+
+    def describe(self):
+        return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
     def on_current_page(self):
         """
@@ -216,6 +224,9 @@ class Button:
         logger.debug(f"set_current_value: button {self.name}: {self.current_value}")
 
     def get_current_value(self):
+        """
+        Gets the current value, but does not provoke a calculation, just returns the current value.
+        """
         logger.debug(f"get_current_value: button {self.name}: {self.current_value}")
         return self.current_value
 
@@ -430,20 +441,16 @@ class Button:
         logger.debug(f"substitute_values: button {self.name}: {t2} => {t3}")
         return t3
 
-    def execute_formula(self, formula, default: str = "0.0", formatting = None):
+    def execute_formula(self, formula, default: float = 0.0):
         """
         replace datarefs variables with their (numeric) value and execute formula.
         Returns formula result.
         """
-        expr = self.substitute_values(text=formula, default=default)
-        logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
+        expr = self.substitute_values(text=formula, default=str(default))
+        # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
-        # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
-        logger.log(15, f"execute_formula: button {self.name}: {formula} => {expr} => {value}")
-        if formatting is not None:
-            logger.debug(f"execute_formula: button {self.name}: formatting {formatting}: res {value} => {formatting.format(value)}")
-            value = formatting.format(value)
+        logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
         return value
 
     # ##################################
@@ -454,6 +461,7 @@ class Button:
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
         """
+        DATEREF_RPN_INF = "---"
         text = base.get(root)
         if text is not None:
             text_format = base.get(f"{root}-format")
@@ -461,8 +469,10 @@ class Button:
                 # If text contains ${formula}, it is replaced by the value of the formula calculation.
                 dataref_rpn = base.get(FORMULA)
                 if dataref_rpn is not None:
-                    res = self.execute_formula(formula=dataref_rpn, default="0.0")
-                    if res != "":  # Format output if format present
+                    res = self.execute_formula(formula=dataref_rpn)
+                    if res == math.inf:
+                        res = DATEREF_RPN_INF
+                    elif res != "":  # Format output if format present
                         if text_format is not None:
                             logger.debug(f"get_text: button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                             res = text_format.format(res)
@@ -479,6 +489,27 @@ class Button:
     # ##################################
     # Value and icon
     #
+    def has_external_value(self) -> bool:
+        """
+        Whether the button fetches its value from external source.
+        """
+        if isinstance(self._representation, Annunciator):
+            return self._representation.has_external_value()
+
+        if self.dataref is not None:
+            logger.debug(f"button_value: button {self.name}: has dataref {self.dataref}")
+            return True
+        if self.multi_datarefs is not None:
+            logger.debug(f"button_value: button {self.name}: has datarefs {self.multi_datarefs}")
+            return True
+        if self.formula is not None:
+            logger.debug(f"button_value: button {self.name}: has formula {self.formula}")
+            return True
+        if len(self.all_datarefs) > 0:
+            logger.debug(f"button_value: button {self.name}: has dataref(s) {self.all_datarefs}")
+            return True
+        return False
+
     def button_value(self):
         """
         Button ultimately returns either one value or an array of values if representation requires it.
@@ -492,7 +523,7 @@ class Button:
         if len(self.all_datarefs) == 0:
             if self.dataref_rpn is not None:
                 logger.debug(f"button_value: button {self.name}: getting formula without dataref")
-                return self.execute_formula(formula=self.dataref_rpn, default=0.0)
+                return self.execute_formula(formula=self.dataref_rpn)
 
         # 3. One dataref
         if len(self.all_datarefs) == 1:
@@ -500,7 +531,7 @@ class Button:
             logger.debug(f"button_value: button {self.name}: getting single dataref {self.all_datarefs[0]}")
             if self.dataref_rpn is not None:
                 logger.debug(f"button_value: button {self.name} getting formula with one dataref")
-                return self.execute_formula(formula=self.dataref_rpn, default=0.0)
+                return self.execute_formula(formula=self.dataref_rpn)
             else:  # if no formula, returns dataref as it is
                 return self.get_dataref_value(self.all_datarefs[0])
 
@@ -509,20 +540,23 @@ class Button:
             # 3.1 Mutiple Dataref with a formula, returns only one value
             if self.dataref_rpn is not None:
                 logger.debug(f"button_value: button {self.name}: getting formula with several datarefs")
-                return self.execute_formula(formula=self.dataref_rpn, default=0.0)
+                return self.execute_formula(formula=self.dataref_rpn)
             # 3.1 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
-            r = []
+            r = {}
             for d in self.multi_datarefs:
                 v = self.get_dataref_value(d)
-                r.append(v)
-            logger.debug(f"button_value: button {self.name}: returning several individual datarefs")
+                r[d] = v
+            logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
             return r
 
         # 5. Value is based on activation state:
-        self._last_state = self._activation.get_current_value()
-        logger.debug(f"button_value: button {self.name}: returning state value ({self._last_state})")
+        if not self.has_option("no-value"): # for buttons we know they dont use any value
+            logger.warning(f"button_value: button {self.name}: use internal activation value")
+        self._use_activation_state = True
+        self._last_activation_state = self._activation.get_current_value()
+        logger.debug(f"button_value: button {self.name}: returning activation current value ({self._last_activation_state})")
         # logger.debug(f"button_value: button {self.name}: datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
-        return self._last_state
+        return self._last_activation_state
 
     def is_dotted(self, label: str):
         # HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
@@ -538,7 +572,7 @@ class Button:
             logger.warning(f"is_dotted: button {self.name} dataref {hack} not found")
         return status
 
-   # ##################################
+    # ##################################
     # External API
     #
     def dataref_changed(self, dataref: "Dataref"):
