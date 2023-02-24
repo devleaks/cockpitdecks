@@ -48,3 +48,11 @@ buttons:
     label: Overhead Panel
     command: SRS/X-Camera/Select_View_ID_7
     colored-led: (255, 0, 255)
+# 0 Front, captain
+# 1 EFIS
+# 2 FCU
+# 3 ECAM
+# 4 MCDU
+# 5 PIEDESTAL
+# 6 ELEV TRIM
+# 7 OVERHEAD

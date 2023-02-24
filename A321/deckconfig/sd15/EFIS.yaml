@@ -111,7 +111,7 @@ buttons:
     name: ND MODE
     type: updown
     stops: 5
-    initial-value: 4
+    initial-value: 2
     circular-switch:
       button-size: 50
       switch-style: medium

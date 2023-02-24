@@ -320,7 +320,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         return self.xplaneValues
 
     def ExecuteCommand(self, command: str):
-        if self.connected:
+        if self.is_connected():
             if command.lower() in ["none", "placeholder"]:
                 logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
                 return
@@ -421,7 +421,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     # Cockpit interface
     #
     def start(self):
-        if self.connected:
+        if self.is_connected():
             if not self.running:
                 self.thread = threading.Thread(target=self.loop)
                 self.thread.name = f"XPlaneUDP::datarefs_watcher"

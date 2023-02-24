@@ -101,6 +101,7 @@ class XPlane:
     """
     def __init__(self, decks):
         self.cockpit = decks
+        self.connected = False
         self.use_flight_loop = False
         self.running = False
         self.all_datarefs = {}
@@ -111,6 +112,9 @@ class XPlane:
         # Values of datarefs
         self.previous_values = {}
         self.current_values = {}
+
+    def is_connected(self):
+        return self.connected
 
     def detect_changed(self):
         """

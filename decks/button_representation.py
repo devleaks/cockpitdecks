@@ -56,7 +56,7 @@ class Representation:
         pass
 
     def describe(self):
-        return "This button does not produce any output."
+        return "The button does not produce any output."
 
 #
 # ###############################
@@ -347,7 +347,7 @@ class Icon(Representation):
             logger.warning(f"clean: button {self.button.name}: {type(self).__name__}: no fill icon")
 
     def describe(self):
-        return "This representation produces an icon with optional label overlay."
+        return "The representation produces an icon with optional label overlay."
 
 
 class IconText(Icon):
@@ -371,7 +371,7 @@ class IconText(Icon):
         return self.overlay_text(image, "text")
 
     def describe(self):
-        return "This representation produces an icon with optional text and label overlay."
+        return "The representation produces an icon with optional text and label overlay."
 
 
 class IconSide(Icon):
@@ -471,7 +471,7 @@ class IconSide(Icon):
         return image
 
     def describe(self):
-        return "This representation produces an icon with optional label overlay for larger side buttons on LoupedeckLive."
+        return "The representation produces an icon with optional label overlay for larger side buttons on LoupedeckLive."
 
 
 class MultiIcons(Icon):
@@ -525,12 +525,16 @@ class MultiIcons(Icon):
 
     def describe(self):
         return "\n\r".join([
-            f"This representation produces an icon selected from a list of {len(self.multi_icons)} icons."
+            f"The representation produces an icon selected from a list of {len(self.multi_icons)} icons."
         ])
 
 
 class IconAnimation(MultiIcons):
-
+    """
+    To start the animation, set the button's current_value to something different from None or 0.
+    To stop the anination, set the button's current_value to 0.
+    When not running, an optional icon_off can be supplied, otherwise first icon in multi-icons list will be used.
+    """
     def __init__(self, config: dict, button: "Button"):
         MultiIcons.__init__(self, config=config, button=button)
 
@@ -615,7 +619,7 @@ class IconAnimation(MultiIcons):
         Describe what the button does in plain English
         """
         a = [
-            f"This representation produces an animation by displaying an icon from a list of {len(self.multi_icons)} icons"
+            f"The representation produces an animation by displaying an icon from a list of {len(self.multi_icons)} icons"
             f"and changing it every {self.speed} seconds."
         ]
         if self.icon_off is not None:
@@ -649,7 +653,7 @@ class LED(Representation):
         Describe what the button does in plain English
         """
         a = [
-            f"This representation turns ON or OFF a single LED light"
+            f"The representation turns ON or OFF a single LED light"
         ]
         return "\n\r".join(a)
 
@@ -678,7 +682,7 @@ class ColoredLED(Representation):
         Describe what the button does in plain English
         """
         a = [
-            f"This representation turns ON or OFF a single LED light and changes the color of the LED."
+            f"The representation turns ON or OFF a single LED light and changes the color of the LED."
         ]
         return "\n\r".join(a)
 
@@ -720,7 +724,7 @@ class MultiLEDs(Representation):
         Describe what the button does in plain English
         """
         a = [
-            f"This representation turns multiple LED ON or OFF"
+            f"The representation turns multiple LED ON or OFF"
         ]
         return "\n\r".join(a)
 

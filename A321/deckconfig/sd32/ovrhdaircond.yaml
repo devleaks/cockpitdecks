@@ -242,6 +242,7 @@ buttons:
       - none
       - none
     dataref: AirbusFBW/XBleedSwitch
+    set-dataref: AirbusFBW/XBleedSwitch
     initial-value: 1
     circular-switch:
       switch-style: large

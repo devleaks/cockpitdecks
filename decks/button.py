@@ -489,27 +489,6 @@ class Button:
     # ##################################
     # Value and icon
     #
-    def has_external_value(self) -> bool:
-        """
-        Whether the button fetches its value from external source.
-        """
-        if isinstance(self._representation, Annunciator):
-            return self._representation.has_external_value()
-
-        if self.dataref is not None:
-            logger.debug(f"button_value: button {self.name}: has dataref {self.dataref}")
-            return True
-        if self.multi_datarefs is not None:
-            logger.debug(f"button_value: button {self.name}: has datarefs {self.multi_datarefs}")
-            return True
-        if self.formula is not None:
-            logger.debug(f"button_value: button {self.name}: has formula {self.formula}")
-            return True
-        if len(self.all_datarefs) > 0:
-            logger.debug(f"button_value: button {self.name}: has dataref(s) {self.all_datarefs}")
-            return True
-        return False
-
     def button_value(self):
         """
         Button ultimately returns either one value or an array of values if representation requires it.
@@ -550,12 +529,14 @@ class Button:
             return r
 
         # 5. Value is based on activation state:
-        if not self.has_option("no-value"): # for buttons we know they dont use any value
-            logger.warning(f"button_value: button {self.name}: use internal activation value")
+        if not self._activation._has_no_value:
+            logger.warning(f"button_value: button {self.page.name}/{self.index}/{self.name}: use internal activation value")
         self._use_activation_state = True
-        self._last_activation_state = self._activation.get_current_value()
+        self._last_activation_state = self._activation.get_status()
         logger.debug(f"button_value: button {self.name}: returning activation current value ({self._last_activation_state})")
         # logger.debug(f"button_value: button {self.name}: datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
+        if "current_value" in self._last_activation_state:
+            return self._last_activation_state["current_value"]
         return self._last_activation_state
 
     def is_dotted(self, label: str):

@@ -23,6 +23,8 @@ class XPlaneSDK(XPlane):
     def __init__(self, decks):
         XPlane.__init__(self, decks=decks)
         self.use_flight_loop = True
+        self.connected = True
+
         self.events = Queue()
 
         self.drflref = None

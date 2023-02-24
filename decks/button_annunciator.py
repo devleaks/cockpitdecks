@@ -348,16 +348,6 @@ class Annunciator(Icon):
             return False
         return True
 
-    def has_external_value(self) -> bool:
-        """
-        Whether the button fetches its value from external source.
-        """
-        drefs = self.get_annunciator_datarefs()
-        if len(drefs) > 0:
-            logger.debug(f"has_external_value: button {self.button.name}: has dataref(s) {drefs}")
-            return True
-        return False
-
     def part_iterator(self):
         """
         Build annunciator part index list
@@ -495,7 +485,7 @@ class Annunciator(Icon):
         """
         t = self.annunciator.get("type", "A")
         a = [
-            f"This representation displays an annunciator of type {t}."
+            f"The representation displays an annunciator of type {t}."
         ]
         return "\n\r".join(a)
 
@@ -590,7 +580,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         t = self.annunciator.get("type", "A")
         a = [
-            f"This representation displays an annunciator of type {t}.",
+            f"The representation displays an annunciator of type {t}.",
             f"This annunciator is blinking every {self.speed} seconds when it is ON."
         ]
         return "\n\r".join(a)
