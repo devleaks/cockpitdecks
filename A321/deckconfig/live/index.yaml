@@ -11,7 +11,6 @@ buttons:
       - AirbusFBW/PushSPDSel
       - sim/autopilot/airspeed_down
       - sim/autopilot/airspeed_up
-    options: dot, nostate
   - index: knobCL
     name: FCU Heading
     type: encoder-onoff
@@ -20,7 +19,6 @@ buttons:
       - AirbusFBW/PushHDGSel
       - sim/autopilot/heading_down
       - sim/autopilot/heading_up
-    options: dot, nostate
   - index: knobBL
     name: FCU Baro
     type: encoder-onoff
@@ -29,8 +27,6 @@ buttons:
       - toliss_airbus/capt_baro_pull
       - sim/instruments/barometer_down
       - sim/instruments/barometer_up
-    dataref: AirbusFBW/BaroStdCapt
-    options: dot, nostate
   - index: knobTR
     name: FCU Altitude
     type: encoder-onoff
@@ -39,7 +35,6 @@ buttons:
       - AirbusFBW/PushAltitude
       - sim/autopilot/altitude_down
       - sim/autopilot/altitude_up
-    options: dot, nostate
   - index: knobCR
     name: FCU V Speed
     type: knob
@@ -52,7 +47,7 @@ buttons:
     commands:
       - AirbusFBW/PullVSSel
       - AirbusFBW/PushVSSel
-    options: dual, nostate
+    options: dual
   - index: knobBR
     name: FCU Unused
     type: none
@@ -87,6 +82,7 @@ buttons:
     text-font: Seven Segment.ttf
     text-position: cm
     text-bg-color: (40, 40, 40)
+    managed: AirbusFBW/SPDmanaged
   - index: 1
     name: MASTER CAUTION
     type: push
@@ -125,6 +121,7 @@ buttons:
     text-size: 24
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
+    managed: AirbusFBW/ALTmanaged
   - index: 4
     label: HDG
     label-font: DIN Bold
@@ -134,6 +131,7 @@ buttons:
     type: none
     text: "${sim/cockpit/autopilot/heading_mag}"
     text-format: "{:03.0f}"
+    managed: AirbusFBW/HDGmanaged
 #    formula: ${status:activation_count}
 #    formula: ${sim/cockpit/autopilot/heading_mag}
     text-color: khaki
@@ -204,6 +202,8 @@ buttons:
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
     formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
+    managed: AirbusFBW/BaroStdCapt
+    options: std
   - index: 9
     name: LOC
     type: push
@@ -271,13 +271,8 @@ buttons:
       centers: (10, 53, 94)
       labels:
         - label: SPD
-          formula: ${AirbusFBW/SPDmanaged}
         - label: HDG
-          formula: ${AirbusFBW/HDGmanaged}
         - label: QNH
-    multi-datarefs:
-      - AirbusFBW/SPDmanaged
-      - AirbusFBW/HDGmanaged
   - index: right
     type: none
     label-size: 18
@@ -286,10 +281,6 @@ buttons:
       centers: (10, 53, 94)
       labels:
         - label: ALT
-          label-font: DIN
-          formula: ${AirbusFBW/ALTmanaged}
         - label: V/S
         - label: ""
-    multi-datarefs:
-      - AirbusFBW/ALTmanaged
 includes: views

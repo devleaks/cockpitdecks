@@ -71,13 +71,11 @@ buttons:
   - index: 9
     name: ALLON
     type: push
-    options: counter
     formula: 1
   - index: 10
     name: ALLOFF
     type: push
     formula: 0
-    options: counter
   - index: 11
     name: ALLBLINK
     type: push

@@ -30,7 +30,6 @@ buttons:
       - FAULT_AMBER_OFF_WHITE_FR
     initial-value: 0
     label: ENG 1 PUMP
-    options: counter
   - index: 9
     name: RAT
     type: push
@@ -40,7 +39,6 @@ buttons:
       - NONE_ON_GREEN_FR
     label: RAT MAN ON
     initial-value: 0
-    options: counter
   - index: 10
     name: ELECPUMP1
     type: push

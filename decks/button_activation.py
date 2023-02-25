@@ -110,6 +110,10 @@ class Activation:
                          f"current: {self.current_value}",
                          f"previous: {self.previous_value}"])
 
+    def view(self):
+        if self._view is not None and self.is_valid():
+            self.button.xp.commandOnce(self._view)
+
     def is_pressed(self):
         return self.pressed
 
@@ -141,6 +145,7 @@ class Activation:
         return {
             "activation_type": type(self).__name__,
             "activation_count": self.activation_count,
+            "all_activations": self.activations_count,
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
@@ -149,10 +154,6 @@ class Activation:
             "writable_dataref": self.writable_dataref,
             "guarded": self.guarded
         }
-
-    def view(self):
-        if self._view is not None and self.is_valid():
-            self.button.xp.commandOnce(self._view)
 
     def describe(self):
         """

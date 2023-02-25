@@ -420,17 +420,6 @@ class IconSide(Icon):
             li = 0
             for label in self.labels:
                 txt = label.get("label")
-                knob = "knob" + vposition[li] + self.button.index[0].upper()  # index is left or right
-                if knob in self.button.page.buttons.keys():
-                    corrknob = self.button.page.buttons[knob]
-                    if corrknob.has_option("dot"):
-                        if corrknob.is_dotted(txt):
-                            txt = txt + "•"  # \n•"
-                        else:
-                            txt = txt + ""   # \n"
-                    logger.debug(f"get_image_for_icon: watching {knob}")
-                else:
-                    logger.debug(f"get_image_for_icon: not watching {knob}")
                 if li >= len(vcenter) or txt is None:
                     continue
                 fontname = self.get_font(label.get("label-font", self.label_font))

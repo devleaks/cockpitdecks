@@ -23,7 +23,7 @@ from .rpc import RPC
 
 
 logger = logging.getLogger("Button")
-# logger.setLevel(SPAM)
+logger.setLevel(SPAM)
 # logger.setLevel(logging.DEBUG)
 
 
@@ -91,6 +91,7 @@ class Button:
         self.dataref = config.get("dataref")
         self.multi_datarefs = config.get("multi-datarefs")
         self.dataref_rpn = config.get(FORMULA)
+        self.managed = config.get("managed")
 
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
@@ -295,6 +296,10 @@ class Button:
         if dataref is not None:
             r.append(dataref)
             logger.debug(f"get_datarefs: button {self.name}: added single dataref {dataref}")
+        managed = base.get("managed")
+        if managed is not None:
+            r.append(managed)
+            logger.debug(f"get_datarefs: button {self.name}: added managed dataref {managed}")
         # 1.2 Multiple
         datarefs = base.get("multi-datarefs")  # base.get("datarefs")
         if datarefs is not None:
@@ -347,6 +352,16 @@ class Button:
         d = self.page.datarefs.get(dataref)
         return d.current_value if d is not None else default
 
+    def is_managed(self):
+        if self.managed is None:
+            return False
+        d = self.get_dataref_value(self.managed, default= 0)
+        if d != 0:
+            logger.log(SPAM, f"is_managed: button {self.name}: is managed ({d}).")
+            return True
+        return False
+        # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
+
     def substitute_dataref_values(self, message: str, default: str = "0.0", formatting = None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
@@ -394,12 +409,12 @@ class Button:
 
         return retmsg
 
-    def substitute_status_values(self, text, default: str = "0.0", formatting = None):
+    def substitute_state_values(self, text, default: str = "0.0", formatting = None):
         status = self.get_status()
         txtcpy = text
         # more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         for k, v in status.items():
-            s = f"${{status:{k}}}"      # @todo: !!possible injection!!
+            s = f"${{state:{k}}}"      # @todo: !!possible injection!!
             if s in txtcpy:
                 if v is None:
                     logger.warning(f"substitute_status_value: button {self.name}: {k} has no value")
@@ -433,12 +448,17 @@ class Button:
         return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting = None):
-        t1 = self.substitute_status_values(text, default=default, formatting=formatting)
-        logger.debug(f"substitute_values: button {self.name}: {text} => {t1}")
-        t2 = self.substitute_button_values(t1, default=default, formatting=formatting)
-        logger.debug(f"substitute_values: button {self.name}: {t1} => {t2}")
+        if type(text) != str or "$" not in text:  # no ${..} to stubstitute
+            return text
+        t1 = self.substitute_state_values(text, default=default, formatting=formatting)
+        if text != t1:
+            logger.log(SPAM, f"substitute_values: button {self.name}: {text} => {t1}")
+        # t2 = self.substitute_button_values(t1, default=default, formatting=formatting)
+        # logger.log(SPAM, f"substitute_values: button {self.name}: {t1} => {t2}")
+        t2 = t1
         t3 = self.substitute_dataref_values(t2, default=default, formatting=formatting)
-        logger.debug(f"substitute_values: button {self.name}: {t2} => {t3}")
+        if t3 != t2:
+            logger.log(SPAM, f"substitute_values: button {self.name}: {t2} => {t3}")
         return t3
 
     def execute_formula(self, formula, default: float = 0.0):
@@ -450,7 +470,7 @@ class Button:
         # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
-        logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
+        logger.log(SPAM, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
         return value
 
     # ##################################
@@ -464,6 +484,13 @@ class Button:
         DATEREF_RPN_INF = "---"
         text = base.get(root)
         if text is not None:
+            if self.is_managed():  # managed
+                if root == "label" and self.has_option("dot"): # we just append a DOT next to the label
+                    return text + "•"
+                elif root == "label" and self.has_option("std"): # QNH Std
+                    return "Std"
+                elif root == "text":
+                    return "--- •"
             text_format = base.get(f"{root}-format")
             if FORMULA in str(text):
                 # If text contains ${formula}, it is replaced by the value of the formula calculation.
@@ -493,6 +520,9 @@ class Button:
         """
         Button ultimately returns either one value or an array of values if representation requires it.
         """
+        def has_no_state():
+            return self._activation._has_no_value or self._config.get("type") == "none" or str(self.index).startswith("knob")
+
         # 1. Special cases (Annunciator): Each annunciator part has its own evaluation
         if isinstance(self._representation, Annunciator):
             logger.debug(f"button_value: button {self.name}: is Annunciator, returning part values")
@@ -516,42 +546,38 @@ class Button:
 
         # 4. Multiple datarefs
         if len(self.all_datarefs) > 1:
-            # 3.1 Mutiple Dataref with a formula, returns only one value
+            # 4.1 Mutiple Dataref with a formula, returns only one value
             if self.dataref_rpn is not None:
                 logger.debug(f"button_value: button {self.name}: getting formula with several datarefs")
                 return self.execute_formula(formula=self.dataref_rpn)
-            # 3.1 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
-            r = {}
-            for d in self.multi_datarefs:
-                v = self.get_dataref_value(d)
-                r[d] = v
-            logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
-            return r
+            # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
+            # !! May be we should return them all?
+            if self.multi_datarefs is not None:
+                r = {}
+                for d in self.multi_datarefs:
+                    v = self.get_dataref_value(d)
+                    r[d] = v
+                logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
+                return r
+            else:
+                logger.warning(f"button_value: button {self.name}: multiple datarefs (not in multi-datarefs): {self.all_datarefs}")
+                r = {}
+                for d in self.all_datarefs:
+                    v = self.get_dataref_value(d)
+                    r[d] = v
+                logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
+                return r
 
         # 5. Value is based on activation state:
-        if not self._activation._has_no_value:
+        if not has_no_state():
             logger.warning(f"button_value: button {self.page.name}/{self.index}/{self.name}: use internal activation value")
         self._use_activation_state = True
         self._last_activation_state = self._activation.get_status()
-        logger.debug(f"button_value: button {self.name}: returning activation current value ({self._last_activation_state})")
-        # logger.debug(f"button_value: button {self.name}: datarefs: {len(self.all_datarefs)}, rpn: {self.dataref_rpn}, options: {self.options}")
+        # logger.log(SPAM, f"button_value: button {self.name}: returning activation current value ({self._last_activation_state})")
         if "current_value" in self._last_activation_state:
+            logger.debug(f"button_value: button {self.name}: returning activation current value ({self._last_activation_state['current_value']})")
             return self._last_activation_state["current_value"]
         return self._last_activation_state
-
-    def is_dotted(self, label: str):
-        # HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
-        # check dataref status
-        # AirbusFBW/ALTmanaged, AirbusFBW/HDGmanaged,
-        # AirbusFBW/SPDmanaged, and AirbusFBW/BaroStdCapt
-        hack = "AirbusFBW/BaroStdCapt" if label.upper() == "QNH" else f"AirbusFBW/{label}managed"
-        status = self._activation.is_on()
-        if hack in self.xp.all_datarefs.keys():
-            # logger.debug(f"is_dotted: {hack} = {self.xp.all_datarefs[hack].value()}")
-            status = self.xp.all_datarefs[hack].value() == 1
-        else:
-            logger.warning(f"is_dotted: button {self.name} dataref {hack} not found")
-        return status
 
     # ##################################
     # External API

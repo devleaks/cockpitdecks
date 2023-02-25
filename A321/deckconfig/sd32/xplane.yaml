@@ -10,7 +10,7 @@ buttons:
     command: sim/map/show_current
     initial-value: 0
     label: Map
-    options: counter
+    formula: ${state:activation_count} 2 %
   - index: 1
     name: Airport Map
     type: push
@@ -18,9 +18,9 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: pikitanga/AptNav/ToggleMap
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: Airport
-    options: counter
   - index: 2
     name: AVS Map
     type: push
@@ -28,9 +28,9 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: flightfactor/avs/toggle
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: AVS
-    options: counter
   - index: 3
     name: AviTab
     type: push
@@ -39,8 +39,8 @@ buttons:
       - NONE_ON_BLUE_FR
     label: AviTab
     command: AviTab/toggle_tablet
+    formula: ${state:activation_count} 2 %
     initial-value: 0
-    options: counter
   # - index: 4
   #   name: Ground Services
   #   type: page
@@ -52,9 +52,9 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: LiveTraffic/Info_Staus_Wnd/Open
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: Live/T
-    options: counter
   - index: 6
     name: FollowTheGreens
     type: onoff
@@ -70,6 +70,7 @@ buttons:
     commands:
       - XPPython3/followthegreens/main_windown_toggle
       - XPPython3/followthegreens/main_windown_toggle
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: F.GREENS
   - index: 7
@@ -77,6 +78,7 @@ buttons:
     type: push
     icon: XPLANE_OUTPUT
     command: sim/operation/toggle_data_output_cockpit
+    formula: ${state:activation_count} 2 %
     label: "XPLANE\nCOCKPIT\nDATA"
     label-color: black
     label-position: cm
@@ -89,9 +91,9 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: sam/main_window
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: SAM/GV
-    options: counter
   - index: 9
     name: GroundHandlingDeluxe
     type: push
@@ -99,6 +101,7 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: jd/ghd/show_widget
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: GHDLX
 
@@ -110,6 +113,7 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: SRS/X-Camera/Toggle_Control_Panel_on_or_off
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: X-Camera
   - index: 17
@@ -119,6 +123,7 @@ buttons:
       - AVAIL_GREEN_NONE
       - NONE_ON_BLUE_FR
     command: SRS/X-ATC-Chatter/Toggle_Control_Panel
+    formula: ${state:activation_count} 2 %
     initial-value: 0
     label: X-ATC
 

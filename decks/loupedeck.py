@@ -158,6 +158,9 @@ class Loupedeck(Deck):
         This is the function that is called when a key is pressed.
         """
         def transfer(this_deck, this_key, this_state):
+            """
+            Either execute function direactly or enqueue it for later dequeue.
+            """
             if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
                 self.cockpit.xp.events.put([self.name, this_key, this_state])
                 # logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
@@ -176,13 +179,15 @@ class Loupedeck(Deck):
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
-            if key == "circle":
-                key = 0
-            try:
-                num = int(key)
-                key = f"b{key}"
-            except ValueError:
-                logger.warning(f"key_change_callback: invalid button key {key}")
+            print(">>>>", key)
+            if not key.startswith("knob"):
+                if key == "circle":
+                    key = 0
+                try:
+                    num = int(key)
+                    key = f"b{key}"
+                except ValueError:
+                    logger.warning(f"key_change_callback: invalid button key {key}")
             transfer(deck, key, state)
 
         elif action == "rotate":
