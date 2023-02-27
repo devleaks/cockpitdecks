@@ -14,12 +14,12 @@ buttons:
   - index: 2
     name: BAT_VOLT_1
     type: none
-    label: ${AirbusFBW/BatVolts[0]}
-    label-format: "{:2.1f}"
-    label-color: white
-    label-size: 40
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text: ${AirbusFBW/BatVolts[0]}
+    text-format: "{:2.1f}"
+    text-color: white
+    text-size: 60
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
   - index: 3
     name: BAT_1
     type: push
@@ -43,12 +43,12 @@ buttons:
   - index: 5
     name: BAT_VOLT_2
     type: none
-    label: ${AirbusFBW/BatVolts[1]}
-    label-format: "{:2.1f}"
-    label-color: white
-    label-size: 40
-    label-font: Seven Segment.ttf
-    icon-color: (40, 40, 40)
+    text: ${AirbusFBW/BatVolts[1]}
+    text-format: "{:2.1f}"
+    text-color: white
+    text-size: 60
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
     # type: none
     # name: BAT_VOLT_2
     # label: ${AirbusFBW/BatVolts[1]}

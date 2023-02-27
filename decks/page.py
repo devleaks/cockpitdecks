@@ -81,6 +81,7 @@ class Page:
         """
         This function is called on all buttons of this Page.
         """
+        logger.info(f"-"*60)
         logger.info(f"Page {self.name} -- {what}")
         for v in self.buttons.values():
             v.inspect(what)
@@ -106,7 +107,7 @@ class Page:
                     logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"register_datarefs: page {self.name}: button {button.name}: failed to create dataref {d}")
-            else:
+            else:  # dataref already exists in list, just add this button as a listener
                 self.datarefs[d].add_listener(button)
                 logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for existing dataref {d}")
         logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered")
@@ -115,6 +116,9 @@ class Page:
         """
         For each button on this page, notifies the button if a dataref used by that button has changed.
         """
+        if dataref is None:
+            logger.error(f"dataref_changed: page {self.name}: no dataref")
+            return
         if dataref.path in self.datarefs.keys():
             self.datarefs[dataref].notify()
         else:

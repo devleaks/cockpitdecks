@@ -211,16 +211,6 @@ class Button:
             logger.debug(f"init: button {self.name}: already has a value ({self.current_value}), initial value ignored")
         # logger.info(f"init: button {self.name}: {self.id()}")
 
-    def is_guarded(self):
-        if self.guarded is None:
-            return False
-        d = self.get_dataref_value(self.guarded, default=0)
-        if d != 0:
-            logger.log(SPAM, f"is_guarded: button {self.name}: is guarded ({d}).")
-            return True
-        return False
-        # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
-
     def set_current_value(self, value):
         if self._first_value_not_saved:
             self._first_value = value
@@ -379,6 +369,16 @@ class Button:
             return True
         return False
         # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
+
+    def is_guarded(self):
+        if self.guarded is None:
+            return False
+        d = self.get_dataref_value(self.guarded, default=0)
+        if d != 0:
+            logger.log(SPAM, f"is_guarded: button {self.name}: is guarded ({d}).")
+            return True
+        return False
+        # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
 
     def substitute_dataref_values(self, message: str, default: str = "0.0", formatting = None):
         """
@@ -606,8 +606,8 @@ class Button:
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
         self.set_current_value(self.button_value())
-        logger.debug(f"dataref_changed: {self.name}: {dataref.path}: {self.previous_value} -> {self.current_value}")
         if self.value_has_changed() or dataref.path in [self.managed, self.guarded]:  # @todo: check this
+            logger.debug(f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
 
     def activate(self, state: bool):
@@ -617,9 +617,13 @@ class Button:
         **** No command gets executed here **** except if there is an associated view with the button.
         Also, removes guard if it was present. @todo: close guard
         """
+        if not self._activation.is_valid():
+            logger.warning(f"activate: button {self.name}: activation is not valid")
+            return
         self._activation.activate(state)
-        self.dataref_changed(None)
-        # logger.debug(f"activate: button {self.name} activated ({state}, {self.pressed_count})")
+        if self.value_has_changed():
+            logger.debug(f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
+            self.render()
 
     def get_status(self):
         """

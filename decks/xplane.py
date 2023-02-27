@@ -91,7 +91,7 @@ class Dataref:
         if self.changed():
             for l in self.listeners:
                 l.dataref_changed(self)
-                loggerDataref.log(SPAM, f"notify: notified {l.name}")
+                loggerDataref.log(SPAM, f"notify: {self.path}: notified {l.name}")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 

@@ -232,7 +232,9 @@ buttons:
     command: toliss_airbus/dispcommands/CaptLSButtonPush
     view: SRS/X-Camera/Select_View_ID_1
   - index: 12
-    name: mode1
+    name: ADFVOR1
+    type: updown
+    stops: 3
     switch:
       base-underline-width: 6
       tick-labels:
@@ -244,8 +246,11 @@ buttons:
       tick-label-font: DIN Bold
     options: 3way,horizontal
     dataref: ckpt/fcu/adf1Left/anim
+    set-dataref: ckpt/fcu/adf1Left/anim
   - index: 13
-    name: mode2
+    name: ADFVOR2
+    type: updown
+    stops: 3
     switch:
       base-underline-width: 6
       tick-labels:
@@ -257,6 +262,7 @@ buttons:
       tick-label-font: DIN Bold
     options: 3way,horizontal
     dataref: ckpt/fcu/adf2Left/anim
+    set-dataref: ckpt/fcu/adf2Left/anim
   - index: 14
     name: ECAM
     type: page

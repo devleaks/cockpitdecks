@@ -150,7 +150,7 @@ buttons:
     label: "INSPECT"
     label-color: red
     label-position: "cm"
-    what: stats
+    what: status
   - index: 28
     name: XP PYTHON
     type: push

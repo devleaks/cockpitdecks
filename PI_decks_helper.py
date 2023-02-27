@@ -8,7 +8,7 @@ from traceback import print_exc
 
 # from decks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
 # Copied here to make this script independent
-CONFIG_DIR = "deckconfig"
+CONFIG_DIR  = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
@@ -16,7 +16,7 @@ DEFAULT_LAYOUT = "default"
 #
 # Commands extracted from these button types
 # will get a command/begin command/end helper command.
-NOTICABLE_BUTTON_TYPES = ["long-press"]
+NOTICABLE_BUTTON_TYPES = ["long-press", "longpress"]
 #
 #
 

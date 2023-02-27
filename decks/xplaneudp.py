@@ -255,6 +255,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
 
         assert(len(message)==509)
         logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.BeaconData['Port']}): {dataref}={value} ..")
+        logger.log(SPAM, f"WriteDataRef: {dataref}={value}")
         self.socket.sendto(message, (self.BeaconData["IP"], self.BeaconData["Port"]))
         logger.debug(f"WriteDataRef: .. sent")
 
@@ -441,7 +442,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
         if self.running:
             self.running = False
-            wait = 10 * DATA_REFRESH + 2  # 2 seconds is net latency to get recvfrom() on UDP
+            wait = 10 * DATA_REFRESH + 4  # 2 seconds is net latency to get recvfrom() on UDP
             logger.debug(f"terminate: ..waiting {wait}sec. permission to be deleted..")
             self.thread.join(wait)
             if not self.thread.is_alive():
