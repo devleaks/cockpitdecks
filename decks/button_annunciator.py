@@ -91,7 +91,7 @@ class AnnunciatorPart:
 
     def get_datarefs(self):
         if self.datarefs is None:
-            self.datarefs = self.annunciator.button.get_datarefs(base=self._config)
+            self.datarefs = self.annunciator.button.scan_datarefs(base=self._config)
         return self.datarefs
 
     def get_current_value(self):
@@ -333,8 +333,8 @@ class Annunciator(Icon):
         self.lit = {}  # parts of annunciator that are lit
         self.part_controls = {}
 
-        self.annunciator_datarefs = None          # cache
-        self.annunciator_datarefs = self.get_annunciator_datarefs()
+        self.annunciator_datarefs = None  # cache
+        self.annunciator_datarefs = self.get_datarefs()
 
         Icon.__init__(self, config=config, button=button)
 
@@ -364,7 +364,7 @@ class Annunciator(Icon):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_annunciator_datarefs(self, base:dict = None):
+    def get_datarefs(self) -> list:
         """
         Complement button datarefs with annunciator special lit datarefs
         """

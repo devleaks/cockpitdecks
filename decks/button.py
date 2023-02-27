@@ -92,6 +92,7 @@ class Button:
         self.multi_datarefs = config.get("multi-datarefs")
         self.dataref_rpn = config.get(FORMULA)
         self.managed = config.get("managed")
+        self.guarded = config.get("guarded")
 
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
@@ -208,13 +209,17 @@ class Button:
             logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
         else:
             logger.debug(f"init: button {self.name}: already has a value ({self.current_value}), initial value ignored")
-        # Guard
-        if self.has_option("guarded"):
-            self.guarded = True   # guard type is option value: guarded=cover or grid.
         # logger.info(f"init: button {self.name}: {self.id()}")
 
-    def guard(self):
-        return self.guarded if self.guarded is not None else False
+    def is_guarded(self):
+        if self.guarded is None:
+            return False
+        d = self.get_dataref_value(self.guarded, default=0)
+        if d != 0:
+            logger.log(SPAM, f"is_guarded: button {self.name}: is guarded ({d}).")
+            return True
+        return False
+        # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
 
     def set_current_value(self, value):
         if self._first_value_not_saved:
@@ -286,8 +291,28 @@ class Button:
         if base is None:  # local, button-level ones
             if self.all_datarefs is not None:  # cached if globals (base is None)
                 return self.all_datarefs
-            base = self._config                # else, runs through config
 
+        r = self.scan_datarefs(self._config)
+        # Activation datarefs
+        if self._activation is not None:
+            datarefs = self._activation.get_datarefs()
+            if datarefs is not None:
+                r = r + datarefs
+                logger.debug(f"get_datarefs: button {self.name}: added activation datarefs {datarefs}")
+        # Representation datarefs
+        if self._representation is not None:
+            datarefs = self._representation.get_datarefs()
+            if datarefs is not None:
+                r = r + datarefs
+                logger.debug(f"get_datarefs: button {self.name}: added representation datarefs {datarefs}")
+        return list(set(r))  # removes duplicates
+
+    def scan_datarefs(self, base:dict):
+        """
+        Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
+        listed dataref and datarefs attributes.
+        This can be applied to the entire button or to a subset (for annunciator parts)
+        """
         r = []
         # Use of datarefs in button:
         # 1. RAW datarefs
@@ -295,16 +320,16 @@ class Button:
         dataref = base.get("dataref")
         if dataref is not None:
             r.append(dataref)
-            logger.debug(f"get_datarefs: button {self.name}: added single dataref {dataref}")
+            logger.debug(f"scan_datarefs: button {self.name}: added single dataref {dataref}")
         managed = base.get("managed")
         if managed is not None:
             r.append(managed)
-            logger.debug(f"get_datarefs: button {self.name}: added managed dataref {managed}")
+            logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
         # 1.2 Multiple
         datarefs = base.get("multi-datarefs")  # base.get("datarefs")
         if datarefs is not None:
             r = r + datarefs
-            logger.debug(f"get_datarefs: button {self.name}: added multiple datarefs {datarefs}")
+            logger.debug(f"scan_datarefs: button {self.name}: added multiple datarefs {datarefs}")
         # logger.debug(f"get_datarefs: button {base.name}: {r}, {base.datarefs}")
 
         # Use of datarefs in formula:
@@ -314,7 +339,7 @@ class Button:
             datarefs = re.findall("\\${(.+?)}", dataref_rpn)
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added formula datarefs {datarefs}")
+                logger.debug(f"scan_datarefs: button {self.name}: added formula datarefs {datarefs}")
 
         # Use of datarefs in label or text:
         # 3. LABEL datarefs
@@ -324,21 +349,14 @@ class Button:
             datarefs = re.findall("\\${(.+?)}", label)
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added label datarefs {datarefs}")
+                logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
         # 3.1 Button Text
         text = base.get("text")
         if text is not None and type(text) == str:
             datarefs = re.findall("\\${(.+?)}", text)
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added text datarefs {datarefs}")
-
-        # 4. ANNUNCIATOR datarefs
-        if self._representation is not None and isinstance(self._representation, Annunciator):
-            datarefs = self._representation.get_annunciator_datarefs()
-            if datarefs is not None:
-                r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added annunciator datarefs {datarefs}")
+                logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
 
         if FORMULA in r:  # label or text may contain ${formula}, FORMULA is not a dataref.
             r.remove(FORMULA)
@@ -481,16 +499,17 @@ class Button:
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
         """
+        DOT = "."
         DATEREF_RPN_INF = "---"
         text = base.get(root)
         if text is not None:
             if self.is_managed():  # managed
                 if root == "label" and self.has_option("dot"): # we just append a DOT next to the label
-                    return text + "•"
+                    return text + DOT
                 elif root == "label" and self.has_option("std"): # QNH Std
                     return "Std"
                 elif root == "text":
-                    return "--- •"
+                    return DATEREF_RPN_INF + " " + DOT
             text_format = base.get(f"{root}-format")
             if FORMULA in str(text):
                 # If text contains ${formula}, it is replaced by the value of the formula calculation.
@@ -521,7 +540,7 @@ class Button:
         Button ultimately returns either one value or an array of values if representation requires it.
         """
         def has_no_state():
-            return self._activation._has_no_value or self._config.get("type") == "none" or str(self.index).startswith("knob")
+            return self._activation._has_no_value or self._config.get("type") == "none"
 
         # 1. Special cases (Annunciator): Each annunciator part has its own evaluation
         if isinstance(self._representation, Annunciator):
@@ -587,8 +606,8 @@ class Button:
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
         self.set_current_value(self.button_value())
-        logger.debug(f"dataref_changed: {self.name}: {self.previous_value} -> {self.current_value}")
-        if self.value_has_changed():  # @todo: check this
+        logger.debug(f"dataref_changed: {self.name}: {dataref.path}: {self.previous_value} -> {self.current_value}")
+        if self.value_has_changed() or dataref.path in [self.managed, self.guarded]:  # @todo: check this
             self.render()
 
     def activate(self, state: bool):
@@ -604,10 +623,6 @@ class Button:
 
     def get_status(self):
         """
-        Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device.
-        Default is to tally number of times this button was pressed. It should have been released as many times :-D.
-        **** No command gets executed here **** except if there is an associated view with the button.
-        Also, removes guard if it was present. @todo: close guard
         """
         if self._activation is not None:
             return self._activation.get_status()

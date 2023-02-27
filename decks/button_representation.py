@@ -39,6 +39,9 @@ class Representation:
             return False
         return True
 
+    def get_datarefs(self) -> list:
+        return []
+
     def get_current_value(self):
         return self.button.get_current_value()
 

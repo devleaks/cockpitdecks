@@ -89,6 +89,11 @@ class Activation:
             self.pressed = False
         # logger.debug(f"activate: {type(self).__name__} activated ({state}, {self.activation_count})")
 
+    def get_datarefs(self) -> list:
+        if self.writable_dataref is not None:
+            return [ self.writable_dataref ]
+        return []
+
     def write_dataref(self):
         """
         Currently only called in UpDown and EncoderValue.

@@ -22,7 +22,7 @@ class PythonInterface:
 
     def __init__(self):
         self.Name = "Cockpitdecks"
-        self.Sig = "cockpitdecks.xppython3"
+        self.Sig = "xppython3.cockpitdecks"
         self.Desc = "Elgato Stream Deck, Loupedeck LoupedeckLive, and Behringer X-Touch Mini controllers for X-Plane (Rel. " + RELEASE + ")"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class

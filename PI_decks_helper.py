@@ -25,13 +25,16 @@ FUN = "cmdfun"
 HDL = "cmdhdl"
 
 
-RELEASE = "0.0.16"  # local version number
+RELEASE = "1.0.0"  # local version number
+
+# Release notes:
+# 25-OCT-2022: 1.0.0
 
 class PythonInterface:
 
     def __init__(self):
         self.Name = "Cockpitdecks Helper"
-        self.Sig = "cockpitdeckshelper.xppython3"
+        self.Sig = "xppython3.cockpitdeckshelper"
         self.Desc = f"Decompose long press commands into command/begin and command/end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
