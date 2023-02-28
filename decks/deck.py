@@ -37,25 +37,7 @@ class Deck(ABC):
         self.cockpit = cockpit
         self.device = device
 
-        # set_default(config, cockpit)
-        self.default_label_font = config.get("default-label-font", cockpit.default_label_font)
-        self.default_label_size = config.get("default-label-size", cockpit.default_label_size)
-        self.default_label_color = config.get("default-label-color", cockpit.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = config.get("default-icon-color", name + cockpit.default_icon_name)
-        self.default_icon_color = config.get("default-icon-color", cockpit.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.light_off_intensity = config.get("light-off", cockpit.light_off_intensity)
-        self.fill_empty_keys = config.get("fill-empty-keys", cockpit.fill_empty_keys)
-        self.empty_key_fill_color = config.get("empty-key-fill-color", cockpit.empty_key_fill_color)
-        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-        self.empty_key_fill_icon = config.get("empty-key-fill-icon", cockpit.empty_key_fill_icon)
-        self.annunciator_style = config.get("annunciator-style", cockpit.annunciator_style)
-        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-        self.cockpit_color = config.get("cockpit-color", cockpit.cockpit_color)
-        self.logo = config.get("default-wallpaper-logo", cockpit.default_logo)
-        self.wallpaper = config.get("default-wallpaper", cockpit.default_wallpaper)
-        self.default_home_page_name = config.get("homepage-name", cockpit.default_home_page_name)
+        self.set_default(config, cockpit)
 
         self.pil_helper = None
         self.icons = {}  # icons ready for this deck
@@ -140,7 +122,8 @@ class Deck(ABC):
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.empty_key_fill_icon = src.get("empty-key-fill-icon", base.empty_key_fill_icon)
         self.annunciator_style = src.get("annunciator-style", base.annunciator_style)
-        default_color = src.get("cockpit-color", base.cockpit_color)
+        self.cockpit_color = src.get("cockpit-color", base.cockpit_color)
+        self.cockpit_color = convert_color(self.cockpit_color)
         self.logo = src.get("default-wallpaper-logo", base.default_logo)
         self.wallpaper = src.get("default-wallpaper", base.default_wallpaper)
         self.default_home_page_name = src.get("default-homepage-name", base.default_home_page_name)

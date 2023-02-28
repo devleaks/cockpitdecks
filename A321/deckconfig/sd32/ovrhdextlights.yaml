@@ -1,7 +1,139 @@
 name: ovrhdextlights
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: STROBE
+    label: STROBE
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      base-underline-width: 6
+      tick-labels:
+        - "ON"
+        - "AUTO"
+        - "OFF"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert
+    dataref: ckpt/oh/strobeLight/anim
+    set-dataref: ckpt/oh/strobeLight/anim
+  - index: 1
+    name: BEACON
+    label: BEACON
+    type: onoff
+    switch:
+      switch-style: rect
+      base-underline-width: 6
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    dataref: ckpt/oh/beaconLight/anim
+    set-dataref: ckpt/oh/beaconLight/anim
+  - index: 2
+    name: WING_LIGHTS
+    label: WING
+    type: onoff
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    dataref: ckpt/oh/wingLight/anim
+    set-dataref: ckpt/oh/wingLight/anim
+  - index: 3
+    name: NAVLOGO
+    label: "NAV & LOGO"
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      base-underline-width: 6
+      tick-labels:
+        - "2"
+        - "1"
+        - "OFF"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert
+    dataref: ckpt/oh/navLight/anim
+    set-dataref: ckpt/oh/navLight/anim
 # ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    name: RWY_LIGHTS
+    type: onoff
+    label: RWY TURN OFF
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    dataref: ckpt/oh/rwyTurnOff/anim
+    set-dataref: ckpt/oh/rwyTurnOff/anim
+  - index: 9
+    name: LAND_L
+    label: LAND L
+    type: updown
+    stops: 3
+    switch:
+      switch-style: 3dot
+      base-underline-width: 6
+      tick-labels:
+        - "ON"
+        - "OFF"
+        - "RETRACT"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert
+    dataref: ckpt/oh/ladningLightLeft/anim
+    set-dataref: ckpt/oh/ladningLightLeft/anim
+  - index: 10
+    name: LAND_R
+    label: LAND R
+    type: updown
+    stops: 3
+    switch:
+      switch-style: 3dot
+      base-underline-width: 6
+      tick-labels:
+        - "ON"
+        - "OFF"
+        - "RETRACT"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert
+    dataref: ckpt/oh/ladningLightRight/anim
+    set-dataref: ckpt/oh/ladningLightRight/anim
+  - index: 11
+    name: NOSE_LIGHTS
+    label: NOSE
+    type: updown
+    stops: 3
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "T.O"
+        - "TAXI"
+        - "OFF"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert
+    dataref: ckpt/oh/taxiLight/anim
+    set-dataref: ckpt/oh/taxiLight/anim
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31

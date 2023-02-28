@@ -72,6 +72,27 @@ buttons:
           formula: ${AirbusFBW/APUStarter}
     command: toliss_airbus/apucommands/StarterToggle
     label: START
+  - index: 18
+    name: PROBEWINDOW
+    type: push
+    label: "PROBE/WINDOW\nHEAT"
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: FAIL
+          color: darkorange
+          formula: 0
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          formula: ${sim/cockpit2/ice/ice_window_heat_on}
+    set-dateref: sim/cockpit2/ice/ice_window_heat_on
+
+
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31
     name: Index

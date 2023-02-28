@@ -6,7 +6,7 @@ buttons:
   - index: 14
     name: EFIS
     type: page
-    page: EFIS
+    page: efis
     icon: TOLISS-A321
   - index: 0
     name: END

@@ -584,6 +584,7 @@ class Switch(DrawBase):
         self.label_opposite = self.button.has_option("label-opposite")
         # Options
         self.three_way = self.button.has_option("3way")
+        self.invert = self.button.has_option("invert")
         self.vertical = not self.button.has_option("horizontal")
         self.hexabase = self.button.has_option("hexa")
 
@@ -638,6 +639,9 @@ class Switch(DrawBase):
                     pos = 0
                 else:
                     pos = 1
+
+        if self.invert:
+            pos = pos * -1
 
         # 3dot specifics
         rw = ICON_SIZE / 4   # 3dot top of switch width, height=width/2

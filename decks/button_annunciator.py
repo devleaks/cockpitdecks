@@ -322,7 +322,7 @@ class Annunciator(Icon):
         else:
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        for a in ["dataref", "multi-datarefs", "datarefs", FORMULA]:
+        for a in ["dataref", FORMULA]:
             if a in config:
                 logger.warning(f"__init__: button {self.button.name}: annunciator parent button has property {a} which is ignored")
 

@@ -135,6 +135,10 @@ buttons:
   #   label: "COCKPIT\nDATA"
   #   command: sim/operation/toggle_data_output_cockpit
   #   options: framed-icon
+  - index: 24
+    name: STOP_COCKPITDECKS
+    type: stop
+    icon: PANIC
   - index: 26
     name: DESCRIBE
     type: inspect

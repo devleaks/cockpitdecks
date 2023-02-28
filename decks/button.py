@@ -17,6 +17,7 @@ from PIL import ImageDraw, ImageFont
 
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
+from .xplane import Dataref
 from .constant import ID_SEP, SPAM, FORMULA
 from .color import convert_color
 from .rpc import RPC
@@ -89,7 +90,6 @@ class Button:
 
         # Datarefs
         self.dataref = config.get("dataref")
-        self.multi_datarefs = config.get("multi-datarefs")
         self.dataref_rpn = config.get(FORMULA)
         self.managed = config.get("managed")
         self.guarded = config.get("guarded")
@@ -248,8 +248,14 @@ class Button:
         if self._activation is None:
             logger.warning(f"is_valid: button {self.name} has no activation")
             return False
+        if not self._activation.is_valid():
+            logger.warning(f"is_valid: button {self.name} activation is not valid")
+            return False
         if self._representation is None:
             logger.warning(f"is_valid: button {self.name} has no representation")
+            return False
+        if not self._representation.is_valid():
+            logger.warning(f"is_valid: button {self.name} representation is not valid")
             return False
         return True
 
@@ -299,14 +305,14 @@ class Button:
 
     def scan_datarefs(self, base:dict):
         """
-        Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
-        listed dataref and datarefs attributes.
-        This can be applied to the entire button or to a subset (for annunciator parts)
+        scan all datarefs in texts, computed datarefs, or explicitely listed.
+        This is applied to the entire button or to a subset (for annunciator parts for example).
         """
         r = []
-        # Use of datarefs in button:
-        # 1. RAW datarefs
-        # 1.1 Single
+
+        # Direct use of datarefs:
+        #
+        # 1. Single
         dataref = base.get("dataref")
         if dataref is not None:
             r.append(dataref)
@@ -315,15 +321,12 @@ class Button:
         if managed is not None:
             r.append(managed)
             logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
-        # 1.2 Multiple
-        datarefs = base.get("multi-datarefs")  # base.get("datarefs")
-        if datarefs is not None:
-            r = r + datarefs
-            logger.debug(f"scan_datarefs: button {self.name}: added multiple datarefs {datarefs}")
+
         # logger.debug(f"get_datarefs: button {base.name}: {r}, {base.datarefs}")
 
         # Use of datarefs in formula:
-        # 2. Formulae datarefs
+        #
+        # 2. Formula datarefs
         dataref_rpn = base.get(FORMULA)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall("\\${(.+?)}", dataref_rpn)
@@ -331,7 +334,8 @@ class Button:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added formula datarefs {datarefs}")
 
-        # Use of datarefs in label or text:
+        # Use of datarefs in label or text
+        #
         # 3. LABEL datarefs
         # 3.1 Label
         label = base.get("label")
@@ -340,7 +344,8 @@ class Button:
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
-        # 3.1 Button Text
+
+        # 3.2 Button Text
         text = base.get("text")
         if text is not None and type(text) == str:
             datarefs = re.findall("\\${(.+?)}", text)
@@ -348,6 +353,7 @@ class Button:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
 
+        # Clean up
         if FORMULA in r:  # label or text may contain ${formula}, FORMULA is not a dataref.
             r.remove(FORMULA)
 
@@ -492,7 +498,7 @@ class Button:
         return value
 
     # ##################################
-    # Icon image and label(s)
+    # Text(s)
     #
     def get_text(self, base: dict, root: str = "label"):  # root={label|text}
         """
@@ -533,7 +539,7 @@ class Button:
         return text
 
     # ##################################
-    # Value and icon
+    # Value
     #
     def button_value(self):
         """
@@ -571,21 +577,12 @@ class Button:
                 return self.execute_formula(formula=self.dataref_rpn)
             # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
             # !! May be we should return them all?
-            if self.multi_datarefs is not None:
-                r = {}
-                for d in self.multi_datarefs:
-                    v = self.get_dataref_value(d)
-                    r[d] = v
-                logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
-                return r
-            else:
-                logger.warning(f"button_value: button {self.name}: multiple datarefs (not in multi-datarefs): {self.all_datarefs}")
-                r = {}
-                for d in self.all_datarefs:
-                    v = self.get_dataref_value(d)
-                    r[d] = v
-                logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
-                return r
+            r = {}
+            for d in self.all_datarefs:
+                v = self.get_dataref_value(d)
+                r[d] = v
+            logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
+            return r
 
         # 5. Value is based on activation state:
         if not has_no_state():
@@ -605,6 +602,9 @@ class Button:
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
+        if not isinstance(dataref, Dataref):
+            logger.error(f"dataref_changed: button {self.name}: not a dataref")
+            return
         self.set_current_value(self.button_value())
         if self.value_has_changed() or dataref.path in [self.managed, self.guarded]:  # @todo: check this
             logger.debug(f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
@@ -612,10 +612,7 @@ class Button:
 
     def activate(self, state: bool):
         """
-        Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device.
-        Default is to tally number of times this button was pressed. It should have been released as many times :-D.
-        **** No command gets executed here **** except if there is an associated view with the button.
-        Also, removes guard if it was present. @todo: close guard
+        @todo: Return a status from activate()
         """
         if not self._activation.is_valid():
             logger.warning(f"activate: button {self.name}: activation is not valid")
@@ -628,8 +625,7 @@ class Button:
     def get_status(self):
         """
         """
-        if self._activation is not None:
-            return self._activation.get_status()
+        return self._activation.get_status()
         # if self._representation is not None:
         #     return self._representation.get_status()
         return {}
@@ -639,6 +635,9 @@ class Button:
         Called from deck to get what's necessary for displaying this button on the deck.
         It can be an image, a color, a binary value on/off...
         """
+        if not self._representation.is_valid():
+            logger.warning(f"get_representation: button {self.name}: representation is not valid")
+            return None
         return self._representation.render()
 
     def render(self):

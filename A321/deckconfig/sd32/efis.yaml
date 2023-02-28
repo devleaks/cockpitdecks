@@ -171,30 +171,113 @@ buttons:
       - SWITCH_ROUND_BOT
 # ### LINE 3 ### 10 - 14 ######################################################
   - index: 10
-    name: EFIS MODE -
-    type: push
-    command: sim/instruments/EFIS_mode_dn
-    label: "EFIS\nMODE -"
-    icon-color: (94, 111, 130)
-    options: nostate
+    name: ND MODE
+    type: updown
+    stops: 5
+    initial-value: 2
+    circular-switch:
+      button-size: 50
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 270
+      tick-space: 40
+      tick-underline-width: 8
+      tick-color: white
+      tick-underline-color: white
+      needle-color: white
+      needle-length: 130
+      tick-label-size: 28
+      tick-labels:
+        - LS
+        - VOR
+        - NAV
+        - ARC
+        - PLAN
+    commands:
+      - sim/instruments/EFIS_mode_up
+      - sim/instruments/EFIS_mode_dn
+    dataref: AirbusFBW/NDmodeCapt
   - index: 11
-    name: EFIS MODE +
+    name: ND RANGE
+    type: updown
+    stops: 6
+    initial-value: 2
+    circular-switch:
+      button-size: 50
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 315
+      tick-space: 40
+      tick-underline-width: 8
+      tick-color: white
+      tick-underline-color: white
+      needle-color: white
+      needle-length: 130
+      tick-label-size: 28
+      tick-labels:
+        - "10"
+        - "20"
+        - "40"
+        - "80"
+        - "160"
+        - "320"
+    commands:
+      - sim/instruments/map_zoom_out
+      - sim/instruments/map_zoom_in
+    dataref: AirbusFBW/NDrangeCapt
+  - index: 14
+    name: TERRONND1
     type: push
-    command: sim/instruments/EFIS_mode_up
-    label: "EFIS\nMODE +"
-    icon-color: (94, 111, 130)
-    options: nostate
+    label: TERR ON ND
+    label-color: lemonchiffon
+    label-font: DIN Bold
+    label-size: 12
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B1:
+          text: "ON"
+          text-color: lime
+          text-size: 70
+          text-font: DIN Bold
+          formula: ${AirbusFBW/TerrainSelectedND1}
+          framed: ON
+    options: square
+    command: toliss_airbus/dispcommands/TerrOnND1Toggle
+
   - index: 12
-    name: EFIS ZOOM IN
-    type: push
-    command: sim/instruments/map_zoom_in
-    label: "EFIS\nZOOM IN"
-    icon-color: (94, 111, 130)
-    options: nostate
+    name: ADFVOR1
+    type: updown
+    stops: 3
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "ADF1"
+        - "OFF"
+        - "VOR1"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,horizontal
+    dataref: ckpt/fcu/adf1Left/anim
+    set-dataref: ckpt/fcu/adf1Left/anim
   - index: 13
-    name: EFIS ZOOM OUT
-    type: push
-    command: sim/instruments/map_zoom_out
-    label: "EFIS\nZOOM OUT"
-    icon-color: (94, 111, 130)
-    options: nostate
+    name: ADFVOR2
+    type: updown
+    stops: 3
+    switch:
+      base-underline-width: 6
+      tick-labels:
+        - "ADF2"
+        - "OFF"
+        - "VOR2"
+      tick-space: 0
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,horizontal
+    dataref: ckpt/fcu/adf2Left/anim
+    set-dataref: ckpt/fcu/adf2Left/anim
+

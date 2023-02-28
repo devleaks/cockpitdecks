@@ -100,7 +100,7 @@ class Activation:
             self.button.xp.WriteDataRef(dataref=self.writable_dataref, value=value, vtype='float')
             logger.debug(f"write_dataref: button {self.button.name}: dataref {self.writable_dataref} set to {value}")
         else:
-            logger.debug(f"write_dataref: button {self.button.name}: has not set-dataref")
+            logger.debug(f"write_dataref: button {self.button.name}: has no set-dataref")
 
     def __str__(self):  # print its status
         return ", ".join([type(self).__name__,
@@ -387,10 +387,13 @@ class OnOff(Activation):
                         f"is_off: {self.is_off()}",
                         f"is_valid: {self.is_valid()}"])
 
+    def num_commands(self):
+        return len(self.commands) if self.commands is not None else 0
+
     def is_valid(self):
-        if self.commands is None and self.writable_dataref is not None:
+        if self.num_commands() == 0 and self.writable_dataref is not None:
             return True
-        if len(self.commands) < 2:
+        if self.num_commands() < 2:
             logger.error(f"is_valid: button {type(self).__name__} must have at least two command")
             return False
         return super().is_valid()
@@ -404,7 +407,7 @@ class OnOff(Activation):
     def activate(self, state):
         super().activate(state)
         if state:
-            if self.commands is not None:
+            if self.num_commands() > 1:
                 if self.is_off():
                     self.button.xp.commandOnce(self.commands[0])
                 else:
@@ -484,10 +487,13 @@ class UpDown(Activation):
                         f"stops: {self.stops}",
                         f"is_valid: {self.is_valid()}"])
 
+    def num_commands(self):
+        return len(self.commands) if self.commands is not None else 0
+
     def is_valid(self):
-        if self.commands is None and self.writable_dataref is not None:
+        if self.num_commands() == 0 and self.writable_dataref is not None:
             return True
-        if self.commands is None or len(self.commands) < 2:
+        if self.num_commands() < 2:
             logger.error(f"is_valid: button {self.button.name} must have at least 2 commands")
             return False
         if self.stops is None or self.stops == 0:
@@ -504,14 +510,16 @@ class UpDown(Activation):
             nextval = int(currval + 1 if self.go_up else currval - 1)
             logger.debug(f"activate: {currval}, {nextval}, {self.go_up}")
             if self.go_up:
-                if self.commands is not None:
+                if self.num_commands() > 1:
                     self.button.xp.commandOnce(self.commands[0])  # up
                 if nextval >= (self.stops - 1):
                     nextval = self.stops - 1
                     self.go_up = False
             else:
-                if self.commands is not None:
+                if self.num_commands() > 2:
                     self.button.xp.commandOnce(self.commands[1])  # down
+                else:
+                    logger.warning(f"is_valid: button {self.button.name}: missing up-down command")
                 if nextval <= 0:
                     nextval = 0
                     self.go_up = True
@@ -568,8 +576,11 @@ class Encoder(Activation):
         self._cw = 0
         self._ccw = 0
 
+    def num_commands(self):
+        return len(self.commands) if self.commands is not None else 0
+
     def is_valid(self):
-        if self.commands is None or len(self.commands) < 2:
+        if self.num_commands() < 2:
             logger.error(f"is_valid: {type(self).__name__} must have at least 2 commands")
             return False
         return super().is_valid()
@@ -639,11 +650,14 @@ class EncoderPush(Push):
         self._cw = 0
         self._ccw = 0
 
+    def num_commands(self):
+        return len(self.commands) if self.commands is not None else 0
+
     def is_valid(self):
-        if self.longpush and len(self.commands) != 4:
+        if self.longpush and self.num_commands() != 4:
             logger.warning(f"is_valid: button {self.button.name} must have 4 commands for longpush mode")
             return False
-        elif not self.longpush and len(self.commands) != 3:
+        elif not self.longpush and self.num_commands() != 3:
             logger.warning(f"is_valid: button {self.button.name} must have 3 commands")
             return False
         return True  # super().is_valid()
@@ -736,11 +750,14 @@ class EncoderOnOff(OnOff):
         self._cw = 0
         self._ccw = 0
 
+    def num_commands(self):
+        return len(self.commands) if self.commands is not None else 0
+
     def is_valid(self):
-        if self.dual and len(self.commands) != 6:
+        if self.dual and self.num_commands() != 6:
             logger.warning(f"is_valid: button {self.button.name} must have 6 commands for dual mode")
             return False
-        elif not self.dual and len(self.commands) != 4:
+        elif not self.dual and self.num_commands() != 4:
             logger.warning(f"is_valid: button {self.button.name} must have 4 commands")
             return False
         return True  # super().is_valid()

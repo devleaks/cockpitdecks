@@ -89,7 +89,7 @@ buttons:
         B0:
           text: AVAIL
           color: lime
-          formula: ${sim/cockpit2/switches/avionics_power_on} 1 - abs
+          formula: ${sim/cockpit2/switches/avionics_power_on} 1 - abs ${AirbusFBW/SDExtPowBox} *
         B1:
           text: "ON"
           color: deepskyblue

@@ -1,4 +1,3 @@
-name: EFIS
 version: 3.0.0
 description: EFIS display selector + some FCU commands
 note: final version for Streamdeck 15 keys

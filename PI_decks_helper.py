@@ -25,10 +25,13 @@ FUN = "cmdfun"
 HDL = "cmdhdl"
 
 
-RELEASE = "1.0.0"  # local version number
+RELEASE = "1.0.1"  # local version number
 
-# Release notes:
-# 25-OCT-2022: 1.0.0
+# Changelog:
+#
+# 28-FEB-2023: 1.0.1: Adjusted for new Yaml file format and attributes.
+# 25-OCT-2022: 1.0.0: Initial version
+#
 
 class PythonInterface:
 
@@ -195,11 +198,13 @@ class PythonInterface:
         # Scans an aircraft deckconfig and collects long press commands.
         #
         # Constants (keywords in yaml file)
+        DEBUG = False
         BUTTONS = "buttons"
         DECKS = "decks"
         LAYOUT = "layout"
         COMMAND = "command"
         MULTI_COMMANDS = "commands"
+        TYPE = "type"
 
         commands = []
 
@@ -214,7 +219,7 @@ class PythonInterface:
                             layout = deck[LAYOUT]
                         layout_dn = os.path.join(acpath, CONFIG_DIR, layout)
                         if not os.path.exists(layout_dn):
-                            print(self.Info, f"PI::get_beginend_commands: stream deck has no layout folder '{layout}'")
+                            print(self.Info, f"PI::get_beginend_commands: deck has no layout folder '{layout}'")
                             continue
                         pages = os.listdir(layout_dn)
                         for page in pages:
@@ -223,18 +228,26 @@ class PythonInterface:
                                 if os.path.exists(page_fn):
                                     with open(page_fn, "r") as page_fp:
                                         page_def = yaml.safe_load(page_fp)
+                                        if DEBUG:
+                                            print(self.Info, f"load: doing {page_fn}..")
                                         if not BUTTONS in page_def:
-                                            print(f"load: {page_fn} has no action")
+                                            print(self.Info, f"load: {page_fn} has no action")
                                             continue
                                         for button_def in page_def[BUTTONS]:
                                             bty = None
-                                            if "type" in button_def:
-                                                bty = button_def["type"]
+                                            if TYPE in button_def:
+                                                bty = button_def[TYPE]
                                             if bty in NOTICABLE_BUTTON_TYPES:
+                                                if DEBUG:
+                                                    print(self.Info, f"load: doing {button_def['index']}..")
                                                 if COMMAND in button_def:
                                                     commands.append(button_def[COMMAND])
+                                                    if DEBUG:
+                                                        print(self.Info, f"load: added {button_def[COMMAND]}..")
                                                 if MULTI_COMMANDS in button_def:
                                                     for c in button_def[MULTI_COMMANDS]:
+                                                        if DEBUG:
+                                                            print(self.Info, f"load: added mc {c}..")
                                                         commands.append(c)
                                 else:
                                     print(self.Info, f"PI::get_beginend_commands: file {page_fn} not found")

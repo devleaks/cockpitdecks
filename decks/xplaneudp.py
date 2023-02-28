@@ -345,7 +345,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             if len(self.datarefs) > 0:
                 try:
                     now = time.time()
-                    self.current_values = self.GetValues()
+                    with self.dataref_db_lock:
+                        self.current_values = self.GetValues()
                     later = time.time()
                     j2 = j2 + 1
                     tot2 = tot2 + (later - now)
