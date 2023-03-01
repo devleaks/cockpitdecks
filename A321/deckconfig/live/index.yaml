@@ -251,14 +251,10 @@ buttons:
 #     text-size: 24
 #     text-font: Seven Segment.ttf
 #     text-bg-color: (40, 40, 40)
-  # - index: 11
-  #   name: WORK
-  #   type: page
-  #   page: work
-  #   label: WORK
-  #   label-position: cm
-  #   label-color: black
-  #   icon: XPLANE
+  - index: 11
+    name: RELOAD
+    type: reload
+    icon: RELOAD
 #
 # SIDE KEYS
 #

@@ -305,29 +305,69 @@ class WeatherIcon(DrawBase):
 # SWITCH BUTTON REPRESENTATION
 #
 #
-class CircularSwitch(DrawBase):
+class SwitchCommonBase(DrawBase):
 
-    def __init__(self, config: dict, button: "Button"):
+    def __init__(self, config: dict, button: "Button", switch_type: str):
 
         DrawBase.__init__(self, config=config, button=button)
 
-        self.switch = config.get("circular-switch")
+        self.switch = config.get(switch_type)
 
         self.switch_type = self.switch.get("type")
         self.switch_style = self.switch.get("switch-style")
 
+        # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
         self.button_fill_color = self.switch.get("button-fill-color", "(150,150,150)")
         self.button_fill_color = convert_color(self.button_fill_color)
         self.button_stroke_color = self.switch.get("button-stroke-color", "white")
         self.button_stroke_color = convert_color(self.button_stroke_color)
         self.button_stroke_width = self.switch.get("button-stroke-width", 4)
+        self.button_underline_color = self.switch.get("button-underline-color", "white")
+        self.button_underline_color = convert_color(self.button_underline_color)
+        self.button_underline_width = self.switch.get("button-underline-width", 4)
 
         self.handle_fill_color = self.switch.get("handle-fill-color", "(100,100,100)")
         self.handle_fill_color = convert_color(self.handle_fill_color)
         self.handle_stroke_color = self.switch.get("handle-stroke-color", "white")
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.switch.get("handle-stroke-width", 4)
+
+        # Ticks
+        self.tick_space = self.switch.get("tick-space", 10)
+        self.tick_length = self.switch.get("tick-length", 16)
+        self.tick_width = self.switch.get("tick-width", 4)
+        self.tick_color = self.switch.get("tick-color", "white")
+        self.tick_color = convert_color(self.tick_color)
+        self.tick_underline_color = self.switch.get("tick-underline-color", "white")
+        self.tick_underline_color = convert_color(self.tick_underline_color)
+        self.tick_underline_width = self.switch.get("tick-underline-width", 0)
+
+        # Labels
+        self.tick_labels = self.switch.get("tick-labels")
+        self.tick_label_space = self.switch.get("tick-label-space", 10)
+        self.tick_label_font = self.switch.get("tick-label-font", "DIN")
+        self.tick_label_size = self.switch.get("tick-label-size", 50)
+        self.tick_label_color = self.switch.get("tick-label-color", "white")
+        self.tick_label_color = convert_color(self.tick_label_color)
+
+        # Handle needle
+        self.needle_width = self.switch.get("needle-width", 8)
+        self.needle_length = self.switch.get("needle-length", 50)  # % of radius
+        self.needle_length = int(self.needle_length * self.button_size / 200)
+        self.needle_color = self.switch.get("needle-color", "white")
+        self.needle_color = convert_color(self.needle_color)
+        # Options
+        self.needle_underline_width = self.switch.get("needle-underline-width", 4)
+        self.needle_underline_color = self.switch.get("needle-underline-color", "black")
+        self.needle_underline_color = convert_color(self.needle_underline_color)
+
+
+class CircularSwitch(SwitchCommonBase):
+
+    def __init__(self, config: dict, button: "Button"):
+
+        SwitchCommonBase.__init__(self, config=config, button=button, switch_type="circular-switch")
 
         self.tick_from = self.switch.get("tick-from", 90)
         self.tick_to = self.switch.get("tick-to", 270)
@@ -341,36 +381,8 @@ class CircularSwitch(DrawBase):
             self.tick_steps = 2
         logger.debug(f"__init__: button {self.button.name}: {self.tick_steps} steps")
         self.angular_step = (self.tick_to - self.tick_from) / (self.tick_steps - 1)
-        # Ticks
-        self.tick_space = self.switch.get("tick-space", 10)
-        self.tick_length = self.switch.get("tick-length", 16)
-        self.tick_width = self.switch.get("tick-width", 4)
-        self.tick_color = self.switch.get("tick-color", "white")
-        self.tick_color = convert_color(self.tick_color)
-        self.tick_underline_color = self.switch.get("tick-underline-color", "white")
-        self.tick_underline_color = convert_color(self.tick_underline_color)
-        self.tick_underline_width = self.switch.get("tick-underline-width", 0)
-        # Labels
-        self.tick_label_space = self.switch.get("tick-label-space", 10)
-        self.tick_labels = self.switch.get("tick-labels")
-        self.tick_label_font = self.switch.get("tick-label-font", "DIN")
-        self.tick_label_size = self.switch.get("tick-label-size", 50)
-        self.tick_label_color = self.switch.get("tick-label-color", "white")
-        self.tick_label_color = convert_color(self.tick_label_color)
-        # Needle
-        self.needle_width = self.switch.get("needle-width", 8)
-        self.needle_length = self.switch.get("needle-length", 50)  # % of radius
-        self.needle_length = int(self.needle_length * self.button_size / 200)
-        self.needle_color = self.switch.get("needle-color", "white")
-        self.needle_color = convert_color(self.needle_color)
-        # Options
-        self.needle_underline_width = self.switch.get("needle-underline-width", 4)
-        self.needle_underline_color = self.switch.get("needle-underline-color", "black")
-        self.needle_underline_color = convert_color(self.needle_underline_color)
-
         if len(self.tick_labels) < self.tick_steps:
             logger.warning(f"__init__: button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})")
-
 
     def get_image_for_icon(self):
         """
@@ -416,7 +428,7 @@ class CircularSwitch(DrawBase):
             draw.line([(x0,y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
 
 
-        # Thick run mark
+        # Tick run mark
         if self.tick_underline_width > 0:
             tl = [center[0]-tick_start, center[1]-tick_start]
             br = [center[0]+tick_start, center[1]+tick_start]
@@ -542,47 +554,25 @@ class CircularSwitch(DrawBase):
         return image.convert("RGB")
 
 
-class Switch(DrawBase):
+class Switch(SwitchCommonBase):
 
     def __init__(self, config: dict, button: "Button"):
 
-        DrawBase.__init__(self, config=config, button=button)
+        SwitchCommonBase.__init__(self, config=config, button=button, switch_type="switch")
 
-        self.switch = config.get("switch")
+        # Alternate defaults
+        self.switch_style = self.switch.get("switch-style", "round")
+        self.button_size = self.switch.get("button-size", 80)
 
-        self.switch_style = self.switch.get("switch-style", "round")  # rect, triple
-        # Base
-        self.base_size = self.switch.get("base-size", 80)
-        self.base_color = self.switch.get("base-color", "(200, 200, 200)")
-        self.base_color = convert_color(self.base_color)
-        self.base_underline_color = self.switch.get("base-underline-color", "orange")
-        self.base_underline_width = self.switch.get("base-underline-width", 0)
+        # Handle
+        self.handle_dot_color = self.switch.get("switch-length", "white")
+
         # Switch
-        self.switch_color = self.switch.get("switch-color", "(128, 128, 128)")
-        self.switch_color = convert_color(self.switch_color)
-        self.switch_stroke_color = self.switch.get("switch-stroke-color", "white")
-        self.switch_stroke_color = convert_color(self.switch_stroke_color)
-        self.switch_stroke_width = self.switch.get("switch-stroke-width", 2)
-        self.switch_length = self.switch.get("switchs-length", ICON_SIZE/3)
-        self.switch_width = self.switch.get("switchs-width", 32)
-        self.switch_dot_color = self.switch.get("switch-dot-color", "white")  # 3dot
-        self.switch_dot_color = convert_color(self.switch_dot_color)
-        # Ticks
-        self.tick_space = self.switch.get("tick-space", 10)
-        self.tick_length = self.switch.get("tick-length", 20)
-        self.tick_width = self.switch.get("tick-length", 6)
-        self.tick_color = self.switch.get("switch-color", "(128, 128, 128)")
-        self.tick_color = convert_color(self.switch_color)
-        self.tick_underline_width = self.switch.get("tick-underline-width", 6)
-        # Labels
-        self.tick_label_space = self.switch.get("tick-label-space", 10)
-        self.tick_label_color = self.switch.get("tick-label-color", "white")
-        self.tick_label_color = convert_color(self.tick_label_color)
-        self.tick_label_font = self.switch.get("tick-label-font", "DIN")
-        self.tick_label_size = self.switch.get("tick-label-size", 50)
-        self.tick_labels = self.switch.get("tick-labels")
-        self.label_opposite = self.button.has_option("label-opposite")
+        self.switch_length = self.switch.get("switch-length", ICON_SIZE/3)
+        self.switch_width = self.switch.get("switch-width", 32)
+
         # Options
+        self.label_opposite = self.button.has_option("label-opposite")
         self.three_way = self.button.has_option("3way")
         self.invert = self.button.has_option("invert")
         self.vertical = not self.button.has_option("horizontal")
@@ -616,16 +606,16 @@ class Switch(DrawBase):
             center[1] = center[1] + offset
 
 
-        tl = [center[0]-self.base_size/2, center[1]-self.base_size/2]
-        br = [center[0]+self.base_size/2, center[1]+self.base_size/2]
+        tl = [center[0]-self.button_size/2, center[1]-self.button_size/2]
+        br = [center[0]+self.button_size/2, center[1]+self.button_size/2]
         if self.hexabase:
-            draw.regular_polygon((center[0], center[1], self.base_size/2), n_sides=6, rotation=randint(0, 60), fill=self.base_color)
+            draw.regular_polygon((center[0], center[1], self.button_size/2), n_sides=6, rotation=randint(0, 60), fill=self.button_fill_color)
         else:
-            draw.ellipse(tl+br, fill=self.base_color)
-        if self.base_underline_width > 0:
-            tl1 = [center[0]-self.base_size/2-OUT, center[1]-self.base_size/2-OUT]
-            br1 = [center[0]+self.base_size/2+OUT, center[1]+self.base_size/2+OUT]
-            draw.ellipse(tl1+br1, outline=self.base_underline_color, width=self.base_underline_width)
+            draw.ellipse(tl+br, fill=self.button_fill_color)
+        if self.button_underline_width > 0:
+            tl1 = [center[0]-self.button_size/2-OUT, center[1]-self.button_size/2-OUT]
+            br1 = [center[0]+self.button_size/2+OUT, center[1]+self.button_size/2+OUT]
+            draw.ellipse(tl1+br1, outline=self.button_underline_color, width=self.button_underline_width)
 
         # Handle
         value = self.button.get_current_value()  # 0, 1, or 2 if three_way
@@ -657,46 +647,46 @@ class Switch(DrawBase):
                 tl = [center[0]-ew/2, y1-ew/2]
                 br = [center[0]+ew/2, y1+ew/2]
                 if self.switch_style == "round":
-                    draw.ellipse(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
                 elif self.switch_style == "rect":
-                    tl = [center[0]-ew, y1-ew/2]
-                    br = [center[0]+ew, y1+ew/2]
-                    draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    tl = [center[0]-ew, y1-ew/3]
+                    br = [center[0]+ew, y1+ew/3]
+                    draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=int(self.handle_stroke_width * 1.5))
                 else: # complicate 3 dot rectangle
-                    tl = [center[0]-rw, y1-rw/2]
-                    br = [center[0]+rw, y1+rw/2]
-                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    tl = [center[0]-rw, y1-rw/3]
+                    br = [center[0]+rw, y1+rw/3]
+                    # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=int(self.handle_stroke_width * 1.5))
 
-                # Tick
-                if self.switch_stroke_width > 0:
-                    ew = ew + 2*self.switch_stroke_width
+                # Handle
+                if self.handle_stroke_width > 0:
+                    ew = ew + 2*self.handle_stroke_width
                     draw.line([tuple(center), (center[0], y1)],
                               width=ew,
-                              fill=self.switch_stroke_color)
+                              fill=self.handle_stroke_color) #!STROKE color
                 draw.line([tuple(center), (center[0], y1)],
                               width=self.switch_width,
-                              fill=self.switch_color)
+                              fill=self.handle_fill_color)
 
                 if self.switch_style == "3dot": # complicate 3 dot rectangle
                     cx = center[0] - cr - cs
                     tl = [cx-cr/2, y1-cr/2]
                     br = [cx+cr/2, y1+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     cx = center[0]
                     tl = [cx-cr/2, y1-cr/2]
                     br = [cx+cr/2, y1+cr/2]
                     cx = center[0] + cr + cs
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     tl = [cx-cr/2, y1-cr/2]
                     br = [cx+cr/2, y1+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
 
 
                 # small base ellipsis
                 tl = [center[0]-ew/2, center[1]-ew/4]
                 br = [center[0]+ew/2, center[1]+ew/4]
-                draw.ellipse(tl+br, fill=self.switch_color)
+                draw.ellipse(tl+br, fill=self.handle_fill_color)
 
             else:
                 x1 = center[0]+pos*self.switch_length
@@ -706,90 +696,90 @@ class Switch(DrawBase):
                 tl = [x1-ew/2, center[1]-ew/2]
                 br = [x1+ew/2, center[1]+ew/2]
                 if self.switch_style == "round":
-                    draw.ellipse(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
                 elif self.switch_style == "rect":
                     tl = [x1-ew/2, center[1]-ew]
                     br = [x1+ew/2, center[1]+ew]
-                    draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
                 else: # complicate 3 dot rectangle
                     tl = [x1-rw/2, center[1]-rw]
                     br = [x1+rw/2, center[1]+rw]
-                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
 
                 # Tick
-                if self.switch_stroke_width > 0:
-                    ew = ew + 2*self.switch_stroke_width
+                if self.handle_stroke_width > 0:
+                    ew = ew + 2*self.handle_stroke_width
                     draw.line([tuple(center), (x1, center[1])],
                               width=ew,
-                              fill=self.switch_stroke_color)
+                              fill=self.handle_fill_color)
                 draw.line([tuple(center), (x1, center[1])],
                               width=self.switch_width,
-                              fill=self.switch_color)
+                              fill=self.handle_fill_color)
 
                 if self.switch_style == "3dot": # complicate 3 dot rectangle
                     cy = center[1] - cr - cs
                     tl = [x1-cr/2, cy-cr/2]
                     br = [x1+cr/2, cy+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     cy = center[1]
                     tl = [x1-cr/2, cy-cr/2]
                     br = [x1+cr/2, cy+cr/2]
                     cy = center[1] + cr + cs
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     tl = [x1-cr/2, cy-cr/2]
                     br = [x1+cr/2, cy+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
 
                 # small base ellipsis
                 tl = [center[0]-ew/4, center[1]-ew/2]
                 br = [center[0]+ew/4, center[1]+ew/2]
-                draw.ellipse(tl+br, fill=self.switch_color)
+                draw.ellipse(tl+br, fill=self.handle_fill_color)
         else:  # middle position
             ew = self.switch_width
             tl = [center[0]-ew/2, center[1]-ew/2]
             br = [center[0]+ew/2, center[1]+ew/2]
             if self.switch_style == "round":
-                draw.ellipse(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
             elif self.switch_style == "rect":
                 tl = [center[0]-ew, center[1]-ew/2]
                 br = [center[0]+ew, center[1]+ew/2]
-                draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
             else: # complicate 3 dot rectangle
                 if self.vertical:
                     tl = [center[0]-rw, center[1]-rw/2]
                     br = [center[0]+rw, center[1]+rw/2]
-                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
                     cx = center[0] - cr - cs
                     tl = [cx-cr/2, center[1]-cr/2]
                     br = [cx+cr/2, center[1]+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     cx = center[0]
                     tl = [cx-cr/2, center[1]-cr/2]
                     br = [cx+cr/2, center[1]+cr/2]
                     cx = center[0] + cr + cs
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     tl = [cx-cr/2, center[1]-cr/2]
                     br = [cx+cr/2, center[1]+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                 else:
                     tl = [center[0]-rw/2, center[1]-rw]
                     br = [center[0]+rw/2, center[1]+rw]
-                    # draw.rectangle(tl+br, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.switch_color, outline=self.switch_stroke_color, width=self.switch_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
                     cy = center[1] - cr - cs
                     tl = [center[0]-cr/2, cy-cr/2]
                     br = [center[0]+cr/2, cy+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     cy = center[1]
                     tl = [center[0]-cr/2, cy-cr/2]
                     br = [center[0]+cr/2, cy+cr/2]
                     cy = center[1] + cr + cs
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
                     tl = [center[0]-cr/2, cy-cr/2]
                     br = [center[0]+cr/2, cy+cr/2]
-                    draw.ellipse(tl+br, fill=self.switch_dot_color)
+                    draw.ellipse(tl+br, fill=self.handle_dot_color)
 
         # Labels
         fontname = self.get_font(self.tick_label_font)

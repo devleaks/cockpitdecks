@@ -8,15 +8,17 @@ buttons:
     stops: 3
     switch:
       switch-style: rect
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "ON"
         - "AUTO"
         - "OFF"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert
+    options: 3way,invert,hexa
     dataref: ckpt/oh/strobeLight/anim
     set-dataref: ckpt/oh/strobeLight/anim
   - index: 1
@@ -24,14 +26,16 @@ buttons:
     label: BEACON
     type: onoff
     switch:
-      switch-style: rect
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "ON"
         - "OFF"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
+    options: hexa
     dataref: ckpt/oh/beaconLight/anim
     set-dataref: ckpt/oh/beaconLight/anim
   - index: 2
@@ -39,13 +43,16 @@ buttons:
     label: WING
     type: onoff
     switch:
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "ON"
         - "OFF"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
+    options: hexa
     dataref: ckpt/oh/wingLight/anim
     set-dataref: ckpt/oh/wingLight/anim
   - index: 3
@@ -54,16 +61,17 @@ buttons:
     type: updown
     stops: 3
     switch:
-      switch-style: rect
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "2"
         - "1"
         - "OFF"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert
+    options: 3way,invert,hexa
     dataref: ckpt/oh/navLight/anim
     set-dataref: ckpt/oh/navLight/anim
 # ### LINE 2 ###  8-15 ######################################################
@@ -72,13 +80,16 @@ buttons:
     type: onoff
     label: RWY TURN OFF
     switch:
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "ON"
         - "OFF"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
+    options: hexa
     dataref: ckpt/oh/rwyTurnOff/anim
     set-dataref: ckpt/oh/rwyTurnOff/anim
   - index: 9
@@ -88,15 +99,17 @@ buttons:
     stops: 3
     switch:
       switch-style: 3dot
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "ON"
         - "OFF"
         - "RETRACT"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert
+    options: 3way,invert,hexa
     dataref: ckpt/oh/ladningLightLeft/anim
     set-dataref: ckpt/oh/ladningLightLeft/anim
   - index: 10
@@ -106,15 +119,17 @@ buttons:
     stops: 3
     switch:
       switch-style: 3dot
-      base-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "ON"
         - "OFF"
         - "RETRACT"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert
+    options: 3way,invert,hexa
     dataref: ckpt/oh/ladningLightRight/anim
     set-dataref: ckpt/oh/ladningLightRight/anim
   - index: 11
@@ -123,15 +138,15 @@ buttons:
     type: updown
     stops: 3
     switch:
-      base-underline-width: 6
+      button-underline-width: 6
       tick-labels:
         - "T.O"
         - "TAXI"
         - "OFF"
-      tick-space: 0
+      tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert
+    options: 3way,invert,hexa
     dataref: ckpt/oh/taxiLight/anim
     set-dataref: ckpt/oh/taxiLight/anim
 # ### LINE 3 ### 16-23 ######################################################
