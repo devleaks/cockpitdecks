@@ -399,7 +399,7 @@ class CircularSwitch(SwitchCommonBase):
                 return red(a)
             return a
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=(255,255,255,0))                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
 
         # Button
@@ -537,7 +537,7 @@ class CircularSwitch(SwitchCommonBase):
                           fill=self.needle_underline_color)
             draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
 
-
+        # Move whole drawing around
         a = 1
         b = 0
         c = self.switch.get("left", 0) + self.switch.get("right", 0)
@@ -622,13 +622,15 @@ class Switch(SwitchCommonBase):
         if value is None:
             value = 0
 
-        pos = -1
+        pos = -1  # 1 or -1, or 0 if 3way
         if value != 0:
             if self.three_way:
                 if value == 1:
                     pos = 0
                 else:
                     pos = 1
+            else:
+                pos = 1  # force to 1 in case value > 1
 
         if self.invert:
             pos = pos * -1
@@ -879,8 +881,20 @@ class Switch(SwitchCommonBase):
                         draw.line([(2*inside,tick_end),(ICON_SIZE-2*inside,tick_end)], width=self.tick_underline_width, fill=self.tick_color)
                     else:
                         draw.line([(2*inside,underline),(ICON_SIZE-2*inside,underline)], width=self.tick_underline_width, fill=self.tick_color)
+        # Move whole drawing around
+        a = 1
+        b = 0
+        c = self.switch.get("left", 0) + self.switch.get("right", 0)
+        d = 0
+        e = 1
+        f = self.switch.get("up", 0) - self.switch.get("down", 20)  # up/down (i.e. 5/-5)
+        if c != 0 or f != 0:
+            image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
-        return image.convert("RGB")
+        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
+        bg.alpha_composite(image)
+
+        return bg.convert("RGB")
 
 #
 # ###############################

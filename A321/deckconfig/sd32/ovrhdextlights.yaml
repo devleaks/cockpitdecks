@@ -138,7 +138,9 @@ buttons:
     type: updown
     stops: 3
     switch:
-      button-underline-width: 6
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
       tick-labels:
         - "T.O"
         - "TAXI"

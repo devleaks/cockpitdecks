@@ -60,7 +60,7 @@ class Dataref:
     def exists(self):
         return self.path is not None
 
-    def changed(self):
+    def has_changed(self):
         if self.previous_value is None and self.current_value is None:
             return False
         elif self.previous_value is None and self.current_value is not None:
@@ -76,7 +76,7 @@ class Dataref:
             loggerDataref.debug(f"update_value: dataref {self.path} value {new_value} rounded to {self.current_value}")
         else:
             self.current_value = new_value
-        if self.changed():
+        if self.has_changed():
             loggerDataref.log(SPAM, f"update_value: dataref {self.path} updated {self.previous_value} -> {self.current_value}")
             if cascade:
                 self.notify()
@@ -88,7 +88,7 @@ class Dataref:
         loggerDataref.debug(f"add_listener: {self.dataref} added {obj.name} ({len(self.listeners)})")
 
     def notify(self):
-        if self.changed():
+        if self.has_changed():
             for l in self.listeners:
                 l.dataref_changed(self)
                 loggerDataref.log(SPAM, f"notify: {self.path}: notified {l.name}")

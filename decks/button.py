@@ -226,7 +226,7 @@ class Button:
         logger.debug(f"get_current_value: button {self.name}: {self.current_value}")
         return self.current_value
 
-    def value_has_changed(self) -> bool:
+    def has_changed(self) -> bool:
         if self.previous_value is None and self.current_value is None:
             return False
         elif self.previous_value is None and self.current_value is not None:
@@ -606,9 +606,11 @@ class Button:
             logger.error(f"dataref_changed: button {self.name}: not a dataref")
             return
         self.set_current_value(self.button_value())
-        if self.value_has_changed() or dataref.path in [self.managed, self.guarded]:  # @todo: check this
-            logger.debug(f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
+        if self.has_changed() or dataref.has_changed():
+            logger.log(SPAM, f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
+        else:
+            logger.debug(f"dataref_changed: button {self.name}: no change")
 
     def activate(self, state: bool):
         """
@@ -618,9 +620,11 @@ class Button:
             logger.warning(f"activate: button {self.name}: activation is not valid")
             return
         self._activation.activate(state)
-        if self.value_has_changed():
-            logger.debug(f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
+        if self.has_changed():
+            logger.log(SPAM, f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
+        else:
+            logger.debug(f"activate: button {self.name}: no change")
 
     def get_status(self):
         """

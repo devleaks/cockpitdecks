@@ -505,6 +505,7 @@ class Cockpit:
         logger.info(f"terminate_this_aircraft: terminating..")
         for deck in self.cockpit.values():
             deck.terminate()
+        self.cockpit = {}
         if not self.xp.use_flight_loop:
             logger.info(f"terminate_this_aircraft: {len(threading.enumerate())} threads")
             logger.info(f"terminate_this_aircraft: {[t.name for t in threading.enumerate()]}")

@@ -148,3 +148,7 @@ class Page:
         for button in self.buttons.values():
             button.clean()  # knows how to clean itself
         logger.debug(f"clean: page {self.name}: ..done")
+
+    def terminate(self):
+        self.clean()
+        self.buttons = {}

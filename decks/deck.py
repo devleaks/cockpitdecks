@@ -443,5 +443,6 @@ class Deck(ABC):
     def terminate(self):
         if self.current_page is not None:
             self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
-            self.current_page.clean()
-
+        for p in self.pages.values():
+            p.terminate()
+        self.pages = {}
