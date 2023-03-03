@@ -167,7 +167,7 @@ class DataIcon(DrawBase):
                           anchor="md",
                           align="center",
                           fill=botl_color)
-        return image
+        return image.convert("RGB")
 
 
 class WeatherIcon(DrawBase):
@@ -189,7 +189,7 @@ class WeatherIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
         inside = round(0.04 * image.width + 0.5)
 
@@ -258,7 +258,10 @@ class WeatherIcon(DrawBase):
                           align=a,
                           fill=self.label_color)
 
-        return image
+        # Paste image on cockpit background and return it.
+        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
+        bg.alpha_composite(image)
+        return bg.convert("RGB")
 
     def to_icon(self):
         WI = [
@@ -305,6 +308,7 @@ class WeatherIcon(DrawBase):
 # SWITCH BUTTON REPRESENTATION
 #
 #
+TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
 class SwitchCommonBase(DrawBase):
 
     def __init__(self, config: dict, button: "Button", switch_type: str):
@@ -399,7 +403,7 @@ class CircularSwitch(SwitchCommonBase):
                 return red(a)
             return a
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=(255,255,255,0))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
 
         # Button
@@ -551,7 +555,10 @@ class CircularSwitch(SwitchCommonBase):
         ct = ICON_SIZE/2
         image = image.crop((cl, ct, cl+ICON_SIZE, ct+ICON_SIZE))
 
-        return image.convert("RGB")
+        # Paste image on cockpit background and return it.
+        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
+        bg.alpha_composite(image)
+        return bg.convert("RGB")
 
 
 class Switch(SwitchCommonBase):
@@ -588,7 +595,7 @@ class Switch(SwitchCommonBase):
         OUT = 8
         inside = ICON_SIZE / 32
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
 
         # Button
@@ -891,9 +898,9 @@ class Switch(SwitchCommonBase):
         if c != 0 or f != 0:
             image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
+        # Paste image on cockpit background and return it.
         bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
         bg.alpha_composite(image)
-
         return bg.convert("RGB")
 
 #

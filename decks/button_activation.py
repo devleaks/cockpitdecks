@@ -376,11 +376,21 @@ class OnOff(Activation):
                 self.onoff_current_value = self.initial_value != 0
 
     def init(self):
-        if self.onoff_current_value is None:
-            self.onoff_current_value = self.button.get_current_value()
-            logger.debug(f"init: button {self.button.name} initialized stop at {self.onoff_current_value}")
+        if self._inited:
+            return
+        value = self.button.get_current_value()
+        if value is not None:
+            self.onoff_current_value = value
+            logger.debug(f"init: button {self.button.name} initialized on/off at {self.onoff_current_value}")
+        elif self.initial_value is not None:
+            if type(self.initial_value) == bool: # expect bool or number... (no check for number)
+                self.onoff_current_value = self.initial_value
+            else:
+                self.onoff_current_value = self.initial_value != 0
+            logger.debug(f"init: button {self.button.name} initialized on/off at {self.onoff_current_value} from initial-value")
         if self.onoff_current_value is not None:
             self._inited = True
+        # self.onoff_current_value can still be None here...
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join([f"commands: {self.commands}",
@@ -476,11 +486,32 @@ class UpDown(Activation):
             self.stop_current_value = value
 
     def init(self):
-        if self.stop_current_value is None:
-            self.stop_current_value = self.button.get_current_value()
+        if self._inited:
+            return
+        value = self.button.get_current_value()
+        if value is not None:
+            self.stop_current_value = value
+            if self.stop_current_value >= (self.stops - 1):
+                self.stop_current_value = self.stops - 1
+                self.go_up = False
+            elif self.stop_current_value <= 0:
+                self.stop_current_value = 0
+                self.go_up = True
             logger.debug(f"init: button {self.button.name} initialized stop at {self.stop_current_value}")
+        elif self.initial_value is not None:
+            if is_integer(self.initial_value):
+                value = abs(self.initial_value)
+                if value > self.stops - 1:
+                    logger.warning(f"__init__: button {self.button.name} initial value {value} too large. Set to {self.stops - 1}.")
+                    value = self.stops - 1
+                if self.initial_value < 0:
+                    self.go_up = False # reverse direction
+                self.initial_value = value
+                self.stop_current_value = value
+            logger.debug(f"init: button {self.button.name} initialized stop at {self.stop_current_value} from initial-value")
         if self.stop_current_value is not None:
             self._inited = True
+
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join([f"commands: {self.commands}",
@@ -507,6 +538,7 @@ class UpDown(Activation):
             currval = self.stop_current_value
             if currval is None:
                 currval = 0
+                self.go_up = True
             nextval = int(currval + 1 if self.go_up else currval - 1)
             logger.debug(f"activate: {currval}, {nextval}, {self.go_up}")
             if self.go_up:
@@ -516,7 +548,7 @@ class UpDown(Activation):
                     nextval = self.stops - 1
                     self.go_up = False
             else:
-                if self.num_commands() > 2:
+                if self.num_commands() > 1:
                     self.button.xp.commandOnce(self.commands[1])  # down
                 else:
                     logger.warning(f"is_valid: button {self.button.name}: missing up-down command")

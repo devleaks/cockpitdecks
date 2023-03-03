@@ -398,7 +398,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         for d in datarefs.values():
             self.AddDataRef(d.path, freq=DATA_SENT)
             prnt.append(d.path)
-        logger.debug(f"add_datarefs_to_monitor: added {prnt}")
+        logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
         if "IP" not in self.BeaconData:

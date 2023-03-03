@@ -1,0 +1,136 @@
+name: ovrhdcall
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 5
+    name: STBY COMPASS
+    label: STBY COMPASS
+    type: onoff
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: hexa,invert
+    dataref: AirbusFBW/StbyCompassLightLevel
+    commands:
+      - toliss_airbus/lightcommands/CompassLightToggle
+      - toliss_airbus/lightcommands/CompassLightToggle
+  - index: 6
+    name: DOME
+    label: DOME
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "BRT"
+        - "DIM"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/domeLight/anim
+    set-dataref: ckpt/oh/domeLight/anim
+  - index: 7
+    name: ANNUNCIATOR LIGHTS
+    label: ANN LT
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "TEST"
+        - "BRT"
+        - "DIM"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: AirbusFBW/AnnunMode
+    set-dataref: AirbusFBW/AnnunMode
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 12
+    name: SEAT BELT
+    label: SEAT BELTS
+    type: onoff
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: hexa,invert
+    dataref: ckpt/oh/seatbelts/anim
+    set-dataref: ckpt/oh/seatbelts/anim
+  - index: 13
+    name: SMOKING
+    label: NO SMOKING
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "AUTO"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/nosmoking/anim
+    set-dataref: ckpt/oh/nosmoking/anim
+  - index: 14
+    type: none
+    label: EMERGENCY
+    annunciator:
+      type: B
+      B1:
+        text: "OFF"
+        text-color: darkorange
+        formula: ${ckpt/oh/emerExitLight/anim} 0 eq
+  - index: 15
+    name: EMERGENCY EXITS
+    label: EXITS LT
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "ARM"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/emerExitLight/anim
+    set-dataref: ckpt/oh/emerExitLight/anim
+# ### LINE 3 ### 16-23 ######################################################
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 31
+    name: Index
+    type: page
+    page: index
+    icon: TOLISS-A321

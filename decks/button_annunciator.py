@@ -20,7 +20,7 @@ from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
 
 logger = logging.getLogger("Annunciator")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 # Yeah, shouldn't be globals.
@@ -108,11 +108,11 @@ class AnnunciatorPart:
             expr = self.annunciator.button.substitute_dataref_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
-            # logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
+            logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
         elif "dataref" in self._config:
             dataref = self._config["dataref"]
             ret = self.annunciator.button.get_dataref_value(dataref)
-            # logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
+            logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
         else:
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: no dataref and no formula, set to {ret}")
         self.lit = ret is not None and is_number(ret) and float(ret) > 0

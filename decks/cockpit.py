@@ -349,7 +349,7 @@ class Cockpit:
         for deck in self.devices:
             decktype = deck.get("type")
             if decktype not in DECK_TYPES.keys():
-                logger.warning(f"create_decks: invalid deck type {decktype}, ignoring")
+                logger.warning(f"create_default_decks: invalid deck type {decktype}, ignoring")
                 continue
             device = deck["device"]
             device.open()

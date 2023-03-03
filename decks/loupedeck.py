@@ -179,7 +179,6 @@ class Loupedeck(Deck):
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
-            print(">>>>", key)
             if not key.startswith("knob"):
                 if key == "circle":
                     key = 0

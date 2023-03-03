@@ -15,7 +15,7 @@ decks:
     default-label-font: DIN Medium.ttf
     default-label-size: 13
   - name: XPDeckXL
-    layout: sd32
+    layout: overhead
     type: streamdeck
     brightness: 70
     default-label-font: DIN Bold.ttf

@@ -1,0 +1,354 @@
+name: index
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: ICE WING
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAIL
+        color: darkorange
+        dataref: AirbusFBW/OHPLightsATA30[1]
+      B1:
+        text: "ON"
+        color: deepskyblue
+        framed: true
+        dataref: AirbusFBW/OHPLightsATA30[0]
+    label: WING
+    command: toliss_airbus/antiicecommands/WingToggle
+  - index 1:
+    name: ANTI ICE
+    type: none
+    label: ANTI ICE
+    icon-color: (94, 111, 130)
+  - index: 2
+    name: ICE ENG1
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAIL
+        color: darkorange
+        dataref: AirbusFBW/OHPLightsATA30[3]
+      B1:
+        text: "ON"
+        color: deepskyblue
+        framed: true
+        dataref: AirbusFBW/OHPLightsATA30[2]
+    label: ENG1
+    command: toliss_airbus/antiicecommands/ENG1Toggle
+  - index: 3
+    name: ICE ENG2
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAIL
+        color: darkorange
+        dataref: AirbusFBW/OHPLightsATA30[5]
+      B1:
+        text: "ON"
+        color: deepskyblue
+        framed: true
+        dataref: AirbusFBW/OHPLightsATA30[4]
+    label: ENG2
+    command: toliss_airbus/antiicecommands/ENG2Toggle
+  - index: 5
+    name: PROBE/WINDOW HEAT
+    type: onoff
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAIL
+        color: darkorange
+        dataref: AirbusFBW/OHPLightsATA30[11]
+      B1:
+        text: "ON"
+        color: deepskyblue
+        framed: true
+        dataref: AirbusFBW/OHPLightsATA30[10]
+    label: "PROBE/WINDOW\nHEAT"
+    set-dataref: AirbusFBW/ProbeHeatSwitch
+  - index: 6
+    name: METAR
+    type: none
+    label: "Weather"
+    weather:
+      - station: OTHH
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 14
+    name: meteo
+    type: page
+    page: ovrhdaircond
+    icon-color: (94, 111, 130)
+#    label: "\uf062"
+    label: ${wi:wi_day_rain_wind}
+    label-font: weathericons.otf
+    label-size: 40
+    label-position: cm
+  - index: 15
+    name: up
+    type: page
+    page: ovrhdaircond
+    icon-color: (94, 111, 130)
+#    label: "\uf062"
+    label: ${fa:arrow-up}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
+# ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    name: STROBE
+    label: STROBE
+    type: updown
+    stops: 3
+    switch:
+      switch-style: rect
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "AUTO"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/strobeLight/anim
+    set-dataref: ckpt/oh/strobeLight/anim
+  - index: 17
+    name: BEACON
+    label: BEACON
+    type: onoff
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: hexa,invert
+    dataref: ckpt/oh/beaconLight/anim
+    set-dataref: ckpt/oh/beaconLight/anim
+  - index: 18
+    name: WING_LIGHTS
+    label: WING
+    type: onoff
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: hexa,invert
+    dataref: ckpt/oh/wingLight/anim
+    set-dataref: ckpt/oh/wingLight/anim
+  - index: 19
+    name: NAVLOGO
+    label: "NAV & LOGO"
+    type: updown
+    stops: 3
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "2"
+        - "1"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/navLight/anim
+    set-dataref: ckpt/oh/navLight/anim
+  - index: 21
+    name: APUMASTER
+    type: push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          formula: ${AirbusFBW/APUMaster}
+    command: toliss_airbus/apucommands/MasterToggle
+    label: MASTER SW
+  - index: 23
+    name: right
+    type: page
+    page: ovrhdcall
+    icon-color: (94, 111, 130)
+    label: "\uf061"
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 24
+    name: RWY_LIGHTS
+    type: onoff
+    label: RWY TURN OFF
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: hexa,invert
+    dataref: ckpt/oh/rwyTurnOff/anim
+    set-dataref: ckpt/oh/rwyTurnOff/anim
+  - index: 25
+    name: LAND_L
+    label: LAND L
+    type: updown
+    stops: 3
+    switch:
+      switch-style: 3dot
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+        - "RETRACT"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/ladningLightLeft/anim
+    set-dataref: ckpt/oh/ladningLightLeft/anim
+  - index: 26
+    name: LAND_R
+    label: LAND R
+    type: updown
+    stops: 3
+    switch:
+      switch-style: 3dot
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "ON"
+        - "OFF"
+        - "RETRACT"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/ladningLightRight/anim
+    set-dataref: ckpt/oh/ladningLightRight/anim
+  - index: 27
+    name: NOSE_LIGHTS
+    label: NOSE
+    type: updown
+    stops: 3
+    switch:
+      button-fill-color: black
+      button-underline-width: 4
+      button-underline-color: coral
+      tick-labels:
+        - "T.O"
+        - "TAXI"
+        - "OFF"
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: 3way,invert,hexa
+    dataref: ckpt/oh/taxiLight/anim
+    set-dataref: ckpt/oh/taxiLight/anim
+  - index: 29
+    name: APUSTART
+    type: push
+    annunciator:
+      size: large
+      type: B
+      parts:
+        B0:
+          text: AVAIL
+          color: lime
+          formula: ${AirbusFBW/APUAvail}
+        B1:
+          text: "ON"
+          color: deepskyblue
+          framed: true
+          size: 60
+          formula: ${AirbusFBW/APUStarter}
+    command: toliss_airbus/apucommands/StarterToggle
+    label: START
+  - index: 30
+    name: RELOAD
+    type: reload
+    label: RELOAD
+    label-size: 14
+    label-position: cm
+    text: ${fa:rotate-right}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 80
+    text-position: cm
+    text-bg-color: (94, 111, 130)
+  # - index: 30
+  #   name: RELOAD
+  #   type: reload
+  #   bg-color: (94, 111, 130)
+  #   label: ${fa:rotate-right}
+  #   label-font: fontawesome.otf
+  #   label-color: lime
+  #   label-size: 60
+  #   label-position: cm
+  #   text: RELOAD
+  #   text-position: cm
+  - index: 31
+    name: Index
+    type: page
+    page: index-old
+    icon: TOLISS-A321
+# AirbusFBW/OHPLightSwitches
+# Strobe: 7 0,1,2
+# Beacon: 0 0,1
+# Wing: 1 0,1
+# NavLogo: 2 0,1
+# RunwayTurnOff: 6: 0,1
+# LandLeft: 4 0,1,2
+# LandRight: 5 0,1,2
+# Nose: 3 0,1,2
+# Seat Belt: 11 0,1
+# Non Smoking: 12 0,1,2
+# STBY COMPASS: 9 0,1
+# Dome: 8, 0,1,2
+# Emergency Exit: 10 0,1,2
+#
+# cockpit/oh/annLight/anim: 0,1,2 (2=test)
+#
+# AirbusFBW/OPHLightsATA30
+#
+#
+# Probe/Window heat: AirbusFBW/ProbeHeatSwitch
+# AirbusFBW/ENG1AISwitch
+# AirbusFBW/ENG1AILight
+# and eng2 also
+#
+# All guards:
+# AirbusFBW/OHPGuardsAllATA
+#
+#

@@ -22,11 +22,16 @@ from .constant import ID_SEP, SPAM, FORMULA
 from .color import convert_color
 from .rpc import RPC
 
+from .resources.icons import icons as FA_ICONS        # Font Awesome Icons ${fa-arrow-up}
+from .resources.weathericons import WEATHER_ICONS     # Weather Icons
+
 
 logger = logging.getLogger("Button")
 logger.setLevel(SPAM)
 # logger.setLevel(logging.DEBUG)
 
+
+PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 
 # ##########################################
 # BUTTONS
@@ -308,6 +313,14 @@ class Button:
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
+        def is_dref(r):
+            PREFIX = ["fa", "wi", "button", "state"]
+            SEP = ":"
+            for s in PREFIX:
+                if r.startswith(s+SEP):
+                    return False
+            return True
+
         r = []
 
         # Direct use of datarefs:
@@ -329,7 +342,7 @@ class Button:
         # 2. Formula datarefs
         dataref_rpn = base.get(FORMULA)
         if dataref_rpn is not None and type(dataref_rpn) == str:
-            datarefs = re.findall("\\${(.+?)}", dataref_rpn)
+            datarefs = re.findall(PATTERN_DOLCB, dataref_rpn)
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added formula datarefs {datarefs}")
@@ -340,7 +353,8 @@ class Button:
         # 3.1 Label
         label = base.get("label")
         if label is not None and type(label) == str:
-            datarefs = re.findall("\\${(.+?)}", label)
+            datarefs = re.findall(PATTERN_DOLCB, label)
+            datarefs = list(filter(lambda x: is_dref(x), datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
@@ -348,7 +362,8 @@ class Button:
         # 3.2 Button Text
         text = base.get("text")
         if text is not None and type(text) == str:
-            datarefs = re.findall("\\${(.+?)}", text)
+            datarefs = re.findall(PATTERN_DOLCB, text)
+            datarefs = list(filter(lambda x: is_dref(x), datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
@@ -401,7 +416,7 @@ class Button:
                     logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning formatted {formatting}.")
             return value_str
 
-        dataref_names = re.findall("\\${(.+?)}", message)
+        dataref_names = re.findall(PATTERN_DOLCB, message)
         if len(dataref_names) == 0:
             return message
         if formatting is not None:
@@ -427,7 +442,7 @@ class Button:
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
             cnt = cnt + 1
 
-        more = re.findall("\\${([^\\}]+?)}", retmsg)
+        more = re.findall(PATTERN_DOLCB, retmsg) # XXXHERE
         if len(more) > 0:
             logger.warning(f"substitute_dataref_values: button {self.name}: unsubstituted dataref values {more}")
 
@@ -454,7 +469,7 @@ class Button:
 
     def substitute_button_values(self, text, default: str = "0.0", formatting = None):
         txtcpy = text
-        more = re.findall("\\${button:(.+?)}", txtcpy)
+        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
         if len(more) > 0:
             for m in more:
                 v = self.deck.cockpit.get_button_value(m)  # starts at the top
@@ -516,6 +531,22 @@ class Button:
                     return "Std"
                 elif root == "text":
                     return DATEREF_RPN_INF + " " + DOT
+
+            # HACK
+            bizfonts = {
+                "fa": ("fontawesome", FA_ICONS),
+                "wi": ("weathericons", WEATHER_ICONS)
+            }
+            text_font = base.get(root+"-font", self.page.default_label_font)
+            for k, v in bizfonts.items():
+                if text_font.lower().startswith(v[0]):
+                    s = "\\${%s:([^\\}]+?)}" % (k)
+                    icons = re.findall(s, text)
+                    for i in icons:
+                        if i in v[1].keys():
+                            text = text.replace(f"${{{k}:{i}}}", v[1][i])
+                            logger.debug(f"get_text_detail: button {self.name}: substituing {i}")
+
             text_format = base.get(f"{root}-format")
             if FORMULA in str(text):
                 # If text contains ${formula}, it is replaced by the value of the formula calculation.

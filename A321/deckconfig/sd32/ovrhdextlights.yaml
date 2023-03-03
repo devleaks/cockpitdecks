@@ -89,7 +89,7 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: hexa
+    options: hexa,invert
     dataref: ckpt/oh/rwyTurnOff/anim
     set-dataref: ckpt/oh/rwyTurnOff/anim
   - index: 9

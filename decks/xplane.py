@@ -20,6 +20,12 @@ DATAREF_ROUND = {
     "AirbusFBW/OHPLightsATA34[6]": 3,
     "AirbusFBW/OHPLightsATA34[8]": 3,
     "AirbusFBW/OHPLightsATA34[10]": 3,
+    "AirbusFBW/OHPLightsATA30[0]": 3,
+    "AirbusFBW/OHPLightsATA30[1]": 3,
+    "AirbusFBW/OHPLightsATA30[2]": 3,
+    "AirbusFBW/OHPLightsATA30[3]": 3,
+    "AirbusFBW/OHPLightsATA30[4]": 3,
+    "AirbusFBW/OHPLightsATA30[5]": 3,
     "dataref": 0
 }
 
@@ -114,6 +120,7 @@ class XPlane:
         self.current_values = {}
 
         self.dataref_db_lock = threading.RLock()
+        self._need_reload = True
 
     def is_connected(self):
         return self.connected

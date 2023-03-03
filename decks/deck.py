@@ -5,6 +5,9 @@ import logging
 import yaml
 import threading
 import pickle
+import inspect
+
+
 from time import sleep
 from enum import Enum
 from abc import ABC, abstractmethod
@@ -24,6 +27,7 @@ logger = logging.getLogger("Deck")
 
 DEFAULT_PAGE_NAME = "X-Plane"
 BACKPAGE = "back"
+
 
 class Deck(ABC):
     """
