@@ -53,6 +53,9 @@ class RPC:
                 stack.append(math.ceil(stack.pop()))
             elif token == "round":  # round to integer
                 stack.append(round(stack.pop(), 0))
+            elif token == "roundn":  # round to integer
+                number2 = stack.pop()
+                stack.append(round(stack.pop(), int(number2)))
             elif token == "abs":    # absolute value
                 stack.append(abs(stack.pop()))
             elif token == "chs":    # change sign

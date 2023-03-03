@@ -97,7 +97,13 @@ class Button:
         self.dataref = config.get("dataref")
         self.dataref_rpn = config.get(FORMULA)
         self.managed = config.get("managed")
-        self.guarded = config.get("guarded")
+
+        self.guarded = None
+        self.guard = config.get("guard")
+        if self.guard is not None:
+            self.guarded = self.guard.get("dataref")
+            if self.guarded is None:
+                logger.warning(f"__init__: button {self.name} has guard but no dataref")
 
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
@@ -330,10 +336,21 @@ class Button:
         if dataref is not None:
             r.append(dataref)
             logger.debug(f"scan_datarefs: button {self.name}: added single dataref {dataref}")
+
+        # 1b. Managed values
         managed = base.get("managed")
         if managed is not None:
             r.append(managed)
             logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
+
+        # 1c. Guarded buttons
+        guarded = None
+        guard_dict = base.get("guard")
+        if guard_dict is not None:
+            guarded = guard_dict.get("dataref")
+        if guarded is not None:
+            r.append(guarded)
+            logger.debug(f"scan_datarefs: button {self.name}: added guarding dataref {guarded}")
 
         # logger.debug(f"get_datarefs: button {base.name}: {r}, {base.datarefs}")
 
@@ -395,7 +412,7 @@ class Button:
         if self.guarded is None:
             return False
         d = self.get_dataref_value(self.guarded, default=0)
-        if d != 0:
+        if d == 0:
             logger.log(SPAM, f"is_guarded: button {self.name}: is guarded ({d}).")
             return True
         return False
@@ -660,10 +677,13 @@ class Button:
     def get_status(self):
         """
         """
-        return self._activation.get_status()
+        a = {
+            "managed": self.managed,
+            "guarded": self.guarded
+        }
+        return self._activation.get_status() | a
         # if self._representation is not None:
         #     return self._representation.get_status()
-        return {}
 
     def get_representation(self):
         """

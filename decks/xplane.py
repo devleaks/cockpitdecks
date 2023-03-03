@@ -12,23 +12,7 @@ loggerDataref.setLevel(SPAM)
 logger = logging.getLogger("XPlane")
 # logger.setLevel(logging.DEBUG)
 
-# from .constant import DATAREF_ROUND
-# Internal: Round a few rapidly changing datarefs
-DATAREF_ROUND = {
-    "AirbusFBW/BatVolts[0]": 1,
-    "AirbusFBW/BatVolts[1]": 1,
-    "AirbusFBW/OHPLightsATA34[6]": 3,
-    "AirbusFBW/OHPLightsATA34[8]": 3,
-    "AirbusFBW/OHPLightsATA34[10]": 3,
-    "AirbusFBW/OHPLightsATA30[0]": 3,
-    "AirbusFBW/OHPLightsATA30[1]": 3,
-    "AirbusFBW/OHPLightsATA30[2]": 3,
-    "AirbusFBW/OHPLightsATA30[3]": 3,
-    "AirbusFBW/OHPLightsATA30[4]": 3,
-    "AirbusFBW/OHPLightsATA30[5]": 3,
-    "dataref": 0
-}
-
+from .xpdref_round import DATAREF_ROUND
 TRACK_UPDATE = True # Reports when a dataref has changed
 
 
@@ -129,21 +113,29 @@ class XPlane:
         """
         Update dataref values that have changed between 2 fetches.
         """
-        with self.dataref_db_lock:
-            for d in self.current_values.keys():
-                if d not in self.previous_values.keys() or self.current_values[d] != self.previous_values[d]:
-                    # logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
-                    if d in self.datarefs_to_monitor.keys():
-                        self.all_datarefs[d].update_value(self.current_values[d], cascade=True)
-                    else:
-                        self.all_datarefs[d].update_value(self.current_values[d], cascade=False)  # we just update the value but no notification
-                        logger.warning(f"detect_changed: updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
-                        # This means we got a value from X-Plane we never asked for this run...
-                        # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
-                    # logger.debug(f"detect_changed: ..done")
-                # else:
-                #     logger.debug(f"detect_changed: {d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
-            self.previous_values = self.current_values.copy()
+        try:
+            currvalues = None
+            with self.dataref_db_lock:
+                currvalues = self.current_values.copy()  # we take a copy first so that it does not change...
+
+            if currvalues is not None:
+                for d in currvalues.keys():
+                    if d not in self.previous_values.keys() or currvalues[d] != self.previous_values[d]:
+                        # logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
+                        if d in self.datarefs_to_monitor.keys():
+                            self.all_datarefs[d].update_value(currvalues[d], cascade=True)
+                        else:
+                            self.all_datarefs[d].update_value(currvalues[d], cascade=False)  # we just update the value but no notification
+                            logger.warning(f"detect_changed: updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
+                            # This means we got a value from X-Plane we never asked for this run...
+                            # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
+                        # logger.debug(f"detect_changed: ..done")
+                    # else:
+                    #     logger.debug(f"detect_changed: {d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
+            else:
+                logger.warning(f"detect_changed: no current values") #  (was {self.datarefs_to_monitor.keys()})
+        except RuntimeError:
+            logger.warning(f"detect_changed:", exc_info=True)
 
     def register(self, dataref):
         if dataref.path not in self.all_datarefs:

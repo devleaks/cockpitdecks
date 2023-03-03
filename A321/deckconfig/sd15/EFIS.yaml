@@ -181,7 +181,10 @@ buttons:
           text-font: DIN Bold
           formula: ${AirbusFBW/TerrainSelectedND1}
           framed: ON
-    options: square
+    options: square,seal
+    # simple highlight
+    seal-color: coral
+    seal-width: 4
     command: toliss_airbus/dispcommands/TerrOnND1Toggle
   - index: 9
     name: SPD/MACH

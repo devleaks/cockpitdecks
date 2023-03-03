@@ -430,10 +430,10 @@ class Annunciator(Icon):
         # PART 1:
         # Texts that will glow if Korry style goes on glow.
         # Drawing that will not glow go on bgrd.
-        annun_bg = convert_color(self.annunciator.get("background-color", "black"))
+        annun_bg = convert_color(self.annunciator.get("background-color", "(0,0,0,0)"))
         bgrd = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_bg)     # annunciator background color, including invert ON modes
         bgrd_draw = ImageDraw.Draw(bgrd)
-        glow = Image.new(mode="RGBA", size=(annun_width, annun_height))                     # annunciator text and leds , color=(0, 0, 0, 0)
+        glow = Image.new(mode="RGBA", size=(annun_width, annun_height), color=(0, 0, 0, 0)) # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(glow)
         guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(0, 0, 0, 0))     # annunuciator optional guard
         guard_draw = ImageDraw.Draw(guard)
@@ -452,28 +452,56 @@ class Annunciator(Icon):
             # glow = blurred_image
             # logger.debug("render: blurred")
 
-        # PART 1.2: Make annunciator
+        # PART 1.3: Seal
+        if self.button.has_option("seal"):
+            seal_width = int(self.button._config.get("seal-width", 16))
+            seal_color = self.button._config.get("seal-color", "darkslategray")
+            sw2 = seal_width / 2
+            bgrd_draw.line([(sw2,sw2),(annun_width-sw2,sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(sw2,annun_height-sw2),(annun_width-sw2,annun_height-sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(sw2,sw2),(sw2,annun_height-sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(annun_width-sw2,sw2),(annun_width-sw2,annun_height-sw2)], fill=seal_color, width=seal_width)
+
+        # PART 2: Make annunciator
         # Paste the transparent text/glow into the annunciator background (and optional seal):
-        annunciator = Image.new(mode="RGB", size=(annun_width, annun_height), color=(0, 0, 0))
-        annunciator.paste(bgrd)               # potential inverted colors
+        annunciator = Image.new(mode="RGBA", size=(annun_width, annun_height), color=(0, 0, 0, 0))
+        annunciator.alpha_composite(bgrd)               # potential inverted colors
+        # annunciator.alpha_composite(glow)    # texts
         annunciator.paste(glow, mask=glow)    # texts
 
-        # PART 2: Background
+        # PART 3: Background
         # Paste the annunciator into the button background:
-        image = Image.new(mode="RGB", size=(ICON_SIZE, ICON_SIZE), color=self.button.page.cockpit_color)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.page.cockpit_color)
         draw = ImageDraw.Draw(image)
         image.paste(annunciator, box=(int(width_offset), int(height_offset)))
 
-        # PART 3: Seal
-        # seal = ...
-        # image.paste(seal)
-
         # PART 4: Guard
-        # image.paste(guard)
+        if self.button.guard is not None:
+            cover = self.button.guard.get("type", "cover")
+            guard_color = self.button.guard.get("color", "red")
+            guard_color = convert_color(guard_color)
+            sw = self.button.guard.get("grid-width", 16)
+            topp = self.button.guard.get("top", int(ICON_SIZE/8))
+            tl = (ICON_SIZE/8, 0)
+            br = (int(7*ICON_SIZE/8), topp)
+            guard_draw.rectangle(tl+br, fill=guard_color)
+            if self.button.is_guarded():
+                if cover == "grid":
+                    for i in range(3):
+                        x = int((i * ICON_SIZE / 2) - (i - 1) * sw / 2)
+                        guard_draw.line([(x, topp), (x, ICON_SIZE)], fill=guard_color, width=sw)
+                    for i in range(3):
+                        y = int(topp + (i * (7*ICON_SIZE/8) / 2) - (i - 1) * sw / 2)
+                        guard_draw.line([(0, y), (ICON_SIZE, y)], fill=guard_color, width=sw)
+                else:
+                    tl = (0, topp)
+                    br = (ICON_SIZE, ICON_SIZE)
+                    guard_draw.rectangle(tl+br, fill=guard_color)
+            image.alpha_composite(guard)
 
         # PART 5: Label
         # Label will be added in Icon.get_image()
-        return image
+        return image.convert("RGB")
 
     def all_lit(self, on: bool):
         for v in self.annunciator_parts.values():

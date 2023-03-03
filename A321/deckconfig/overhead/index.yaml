@@ -193,7 +193,7 @@ buttons:
   - index: 23
     name: right
     type: page
-    page: ovrhdcall
+    page: intlights
     icon-color: (94, 111, 130)
     label: "\uf061"
     label-font: fontawesome.otf

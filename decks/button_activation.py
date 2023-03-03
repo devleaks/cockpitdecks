@@ -30,13 +30,6 @@ class Activation:
         self._inited = False
         # Options
 
-        # Guard
-        self.guarded = False
-        self.guard = config.get("guard")
-        if self.guard is not None:
-            self.guard_type = config.get("guard-type", "plain")
-            self.guarded = config.get("guard-status", False)
-
         # Commands
         self._view = config.get("view")  # Optional additional command, usually to set a view
 
@@ -49,6 +42,7 @@ class Activation:
         self.activation_count = 0
         self.activations_count = {}
         self.last_activated = 0
+        self.duration = 0
         self.pressed = False
         self.initial_value = config.get("initial-value")
 
@@ -74,16 +68,22 @@ class Activation:
             self.activation_count = self.activation_count + 1
             self.last_activated = datetime.now().timestamp()
             logger.debug(f"activate: button {self.button.name} activated")
+            self.pressed = True
 
-            if self.guarded:            # just open it
-                self.guarded = False
+            # Guard handling
+            if self.button.is_guarded():
+                self._write_dataref(self.button.guarded, 1) # just open it
                 logger.debug(f"activate: button {self.button.name}: guard removed")
                 return
-
-            # not guarded, or guard open
-            self.pressed = True
         else:
             self.pressed = False
+            self.duration = datetime.now().timestamp() - self.last_activated
+            # Guard handling
+            if self.button.guard is not None and not self.button.is_guarded() and self.duration > 2:
+                self._write_dataref(self.button.guarded, 0) # close it
+                logger.debug(f"activate: button {self.button.name}: guard replaced")
+                return
+
         # logger.debug(f"activate: {type(self).__name__} activated ({state}, {self.activation_count})")
 
     def get_datarefs(self) -> list:
@@ -91,16 +91,23 @@ class Activation:
             return [ self.writable_dataref ]
         return []
 
+    def _write_dataref(self, dataref, value: float):
+        """
+        Currently called in OnOff, UpDown and EncoderValue.
+        Should be the last call in activate() if activation succeeded.
+        """
+        if dataref is not None:
+            self.button.xp.WriteDataRef(dataref=dataref, value=value, vtype='float')
+            logger.debug(f"write_dataref: button {self.button.name}: dataref {dataref} set to {value}")
+        else:
+            logger.debug(f"write_dataref: button {self.button.name}: has no set-dataref")
+
     def write_dataref(self, value: float):
         """
         Currently called in OnOff, UpDown and EncoderValue.
         Should be the last call in activate() if activation succeeded.
         """
-        if self.writable_dataref is not None:
-            self.button.xp.WriteDataRef(dataref=self.writable_dataref, value=value, vtype='float')
-            logger.debug(f"write_dataref: button {self.button.name}: dataref {self.writable_dataref} set to {value}")
-        else:
-            logger.debug(f"write_dataref: button {self.button.name}: has no set-dataref")
+        self._write_dataref(self.writable_dataref, value)
 
     def __str__(self):  # print its status
         return ", ".join([type(self).__name__,
@@ -130,6 +137,7 @@ class Activation:
         logger.info(f"activation_count: {self.activation_count}")
         logger.info(f"activations_count: {self.activations_count}")
         logger.info(f"last_activated: {self.last_activated}")
+        logger.info(f"last_activation_duration: {self.duration}")
         logger.info(f"pressed: {self.pressed}")
 
     def get_status(self):
@@ -140,8 +148,7 @@ class Activation:
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
-            "writable_dataref": self.writable_dataref,
-            "guarded": self.guarded
+            "writable_dataref": self.writable_dataref
         }
 
     def describe(self):
