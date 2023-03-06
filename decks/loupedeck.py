@@ -9,7 +9,7 @@ from time import sleep
 from enum import Enum
 from PIL import Image, ImageOps
 
-from .Loupedeck.ImageHelpers import PILHelper
+from Loupedeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import convert_color, is_integer

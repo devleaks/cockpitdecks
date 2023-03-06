@@ -1,7 +1,7 @@
 import os
 import sys
 
-from decks.Loupedeck.DeviceManager import DeviceManager
+from Loupedeck.DeviceManager import DeviceManager
 
 devices = DeviceManager().enumerate()
 

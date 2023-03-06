@@ -10,7 +10,7 @@ import yaml
 
 from PIL import ImageDraw, ImageFont
 
-from .XTouchMini.Devices.xtouchmini import LED_MODE
+from XTouchMini.Devices.xtouchmini import LED_MODE
 from .color import convert_color, is_integer, has_ext, add_ext
 from .constant import DEFAULT_LABEL_POSITION
 

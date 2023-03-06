@@ -6,7 +6,7 @@ import yaml
 import logging
 import threading
 
-from .XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
+from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
 from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import is_integer

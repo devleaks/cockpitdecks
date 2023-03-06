@@ -2,12 +2,13 @@
 #
 from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
 
+from Loupedeck import DeviceManager as LoupedeckDeviceManager
+
+from XTouchMini import DeviceManager as XTouchMiniDeviceManager
+
 from .streamdeck import Streamdeck
 from .loupedeck import Loupedeck
 from .xtouchmini import XTouchMini
-
-from .Loupedeck import DeviceManager as LoupedeckDeviceManager
-from .XTouchMini import DeviceManager as XTouchMiniDeviceManager
 
 DECK_TYPES = {
     "streamdeck": [Streamdeck, StreamDeckDeviceManager],
