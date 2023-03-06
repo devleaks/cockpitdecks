@@ -3,14 +3,29 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     name: COMMERCIAL
-    type: none
-    icon: NONE_NONE
     label: COMMERCIAL
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 1
     name: GALLEY
-    type: none
-    icon: NONE_NONE
     label: GALLEY
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 2
     name: BAT_VOLT_1
     type: none
@@ -22,23 +37,35 @@ buttons:
     text-bg-color: (40, 40, 40)
   - index: 3
     name: BAT_1
-    type: push
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - NONE_NONE
-      - FAULT_AMBER_OFF_WHITE_FR
     label: BAT 1
-    dataref: AirbusFBW/BatOHPArray[0]
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
+        dataref: AirbusFBW/BatOHPArray[0]
     command: toliss_airbus/eleccommands/Bat1Toggle
   - index: 4
+    name: BAT_1
+    label: BAT 1
     type: push
-    name: BAT_2
-    multi-icons:
-      - NONE_OFF_WHITE_FR
-      - NONE_NONE
-      - FAULT_AMBER_OFF_WHITE_FR
-    label: BAT 2
-    dataref: AirbusFBW/BatOHPArray[1]
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
+        dataref: AirbusFBW/BatOHPArray[1]
     command: toliss_airbus/eleccommands/Bat2Toggle
   - index: 5
     name: BAT_VOLT_2
@@ -59,26 +86,81 @@ buttons:
     # icon-color: (40, 40, 40)
   - index: 6
     name: AC ESS FEED
-    type: none
-    icon: NONE_NONE
     label: AC ESS FEED
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "ALTN"
+        color: white
+        framed: true
+  - index: 7
+    name: up
+    type: page
+    page: ovrhdfuel
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-up}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
-    type: none
-    icon: NONE_NONE_ORANGE_GR
+    name: IDG 1
     label: IDG 1
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+    guard:
+      dataref: AirbusFBW/OHPGuardsAllATA[5]
+      type: grid
+      color: (255,0,0,100)
   - index: 9
-    type: none
-    icon: NONE_NONE
+    name: GEN_1
     label: GEN 1
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 10
-    type: none
-    icon: NONE_NONE
+    name: APU GEN
     label: APU GEN
-  - index: 11
     type: none
-    icon: NONE_NONE
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
+  - index: 11
+    name: BUS TIE
     label: BUS TIE
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 12
     name: EXPPOWER
     type: push
@@ -98,15 +180,44 @@ buttons:
           formula: ${sim/cockpit2/switches/avionics_power_on}
     command: toliss_airbus/eleccommands/ExtPowToggle
     label: EXT PWR
-  - index: 14
-    type: none
-    icon: NONE_NONE
+  - index: 13
+    name: GEN_2
     label: GEN 2
-  - index: 15
     type: none
-    icon: NONE_NONE_ORANGE_GR
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
+  - index: 14
+    name: IDG 2
     label: IDG 2
+    type: none
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+    guard:
+      dataref: AirbusFBW/OHPGuardsAllATA[6]
+      type: grid
+      color: (255,0,0,100)
 # ### LINE 3 ### 16-23 ######################################################
+  - index: 23
+    name: down
+    type: page
+    page: ovrhdaircond
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-down}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31
     name: Index

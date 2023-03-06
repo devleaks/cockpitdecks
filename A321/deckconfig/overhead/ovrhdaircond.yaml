@@ -158,6 +158,15 @@ buttons:
           framed: true
           size: 60
           formula: ${AirbusFBW/HotAirSwitch} 1 - abs
+  - index: 7
+    name: up
+    type: page
+    page: ovrhdelec
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-up}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: BLEEDPACK1
@@ -171,7 +180,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          text-size: 72
+          text-size: 40
           formula: ${AirbusFBW/Pack1SwitchIllum} ${AirbusFBW/Pack1FCVInd} - abs
         B1:
           text: "OFF"
@@ -292,7 +301,7 @@ buttons:
           text: "FAULT"
           color: darkorange
           font: DIN Condensed Bold
-          text-size: 72
+          text-size: 40
           formula: ${AirbusFBW/Pack2SwitchIllum} ${AirbusFBW/Pack2FCVInd} - abs
         B1:
           text: "OFF"
@@ -301,11 +310,28 @@ buttons:
           size: 60
           formula: ${AirbusFBW/Pack2SwitchIllum} 1 - abs
 # ### LINE 3 ### 16-23 ######################################################
+  - index: 23
+    name: down
+    type: page
+    page: index
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-down}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
   - index: 30
     name: RELOAD
     type: reload
-    icon: RELOAD
+    label: RELOAD
+    label-size: 14
+    label-position: cm
+    text: ${fa:rotate-right}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 80
+    text-position: cm
+    text-bg-color: (94, 111, 130)
   - index: 31
     name: Index
     type: page

@@ -180,7 +180,21 @@ class Streamdeck(Deck):
 
     def valid_representations(self, index = None):
         # only one type of button
-        valid_key_icon = ["none", "icon", "text", "icon-color", "multi-icons", "icon-animate", "annunciator", "annunciator-animate", "data", "weather", "switch", "circular-switch"]
+        valid_key_icon = [
+            "none",
+            "icon",
+            "text",
+            "icon-color",
+            "multi-icons",
+            "icon-animate",
+            "annunciator",
+            "annunciator-animate",
+            "data",
+            "weather",
+            "switch",
+            "circular-switch",
+            "push-switch"
+        ]
         return set(super().valid_representations() + valid_key_icon)
 
     # #######################################

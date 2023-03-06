@@ -7,19 +7,14 @@ Maintain a value.
 """
 import re
 import logging
-import threading
-import time
-import yaml
 import math
+import yaml
 from datetime import datetime
-
-from PIL import ImageDraw, ImageFont
 
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
-from .constant import ID_SEP, SPAM, FORMULA
-from .color import convert_color
+from .constant import ID_SEP, SPAM, FORMULA, WEATHER_ICON_FONT, ICON_FONT
 from .rpc import RPC
 
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons ${fa-arrow-up}
@@ -551,8 +546,8 @@ class Button:
 
             # HACK
             bizfonts = {
-                "fa": ("fontawesome", FA_ICONS),
-                "wi": ("weathericons", WEATHER_ICONS)
+                "fa": (ICON_FONT, FA_ICONS),
+                "wi": (WEATHER_ICON_FONT, WEATHER_ICONS)
             }
             text_font = base.get(root+"-font", self.page.default_label_font)
             for k, v in bizfonts.items():

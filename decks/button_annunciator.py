@@ -4,23 +4,18 @@
 import logging
 import threading
 import time
-import colorsys
-import traceback
+from enum import Enum
 from math import sqrt
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
-# from mergedeep import merge
-from metar import Metar
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
 
-from .constant import FORMULA, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
+from .constant import FORMULA, ANNUNCIATOR_STYLES
 from .color import convert_color, light_off
 from .rpc import RPC
-from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
-from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
 
 logger = logging.getLogger("Annunciator")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # Yeah, shouldn't be globals.
@@ -28,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 # Can be moved lated.
 ICON_SIZE = 256 # px
 DEFAULT_INVERT_COLOR = "white"
-
+TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
 
 class AnnunciatorPart:
 
@@ -286,6 +281,10 @@ class AnnunciatorPart:
             else:
                 logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
 
+class GUARD_TYPES(Enum):
+    COVER = "cover"
+    GRID = "grid"
+
 
 class Annunciator(Icon):
 
@@ -354,6 +353,9 @@ class Annunciator(Icon):
         """
         if self._part_iterator is None:
             t = self.annunciator.get("type", "A")
+            if t not in "ABCDEF":
+                logger.warning(f"part_iterator: button {self.button.name}: invalid annunciator type {t}")
+                return []
             n = 1
             if t in "BC":
                 n = 2
@@ -477,7 +479,7 @@ class Annunciator(Icon):
 
         # PART 4: Guard
         if self.button.guard is not None:
-            cover = self.button.guard.get("type", "cover")
+            cover = self.button.guard.get("type", GUARD_TYPES.COVER.value)
             guard_color = self.button.guard.get("color", "red")
             guard_color = convert_color(guard_color)
             sw = self.button.guard.get("grid-width", 16)
@@ -486,7 +488,7 @@ class Annunciator(Icon):
             br = (int(7*ICON_SIZE/8), topp)
             guard_draw.rectangle(tl+br, fill=guard_color)
             if self.button.is_guarded():
-                if cover == "grid":
+                if cover == GUARD_TYPES.GRID.value:
                     for i in range(3):
                         x = int((i * ICON_SIZE / 2) - (i - 1) * sw / 2)
                         guard_draw.line([(x, topp), (x, ICON_SIZE)], fill=guard_color, width=sw)

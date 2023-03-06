@@ -18,7 +18,7 @@ buttons:
         dataref: AirbusFBW/OHPLightsATA30[0]
     label: WING
     command: toliss_airbus/antiicecommands/WingToggle
-  - index 1:
+  - index: 1
     name: ANTI ICE
     type: none
     label: ANTI ICE
@@ -79,7 +79,16 @@ buttons:
     type: none
     label: "Weather"
     weather:
-      - station: OTHH
+      station: OTHH
+  - index: 7
+    name: up
+    type: page
+    page: ovrhdaircond
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-up}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
   - index: 14
     name: meteo
@@ -92,12 +101,11 @@ buttons:
     label-size: 40
     label-position: cm
   - index: 15
-    name: up
+    name: right
     type: page
-    page: ovrhdaircond
+    page: intlights
     icon-color: (94, 111, 130)
-#    label: "\uf062"
-    label: ${fa:arrow-up}
+    label: "\uf061"
     label-font: fontawesome.otf
     label-size: 60
     label-position: cm
@@ -190,15 +198,6 @@ buttons:
           formula: ${AirbusFBW/APUMaster}
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
-  - index: 23
-    name: right
-    type: page
-    page: intlights
-    icon-color: (94, 111, 130)
-    label: "\uf061"
-    label-font: fontawesome.otf
-    label-size: 60
-    label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: RWY_LIGHTS

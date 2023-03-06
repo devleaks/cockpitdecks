@@ -726,7 +726,8 @@ class MultiLEDs(Representation):
 #
 #
 from .button_annunciator import Annunciator, AnnunciatorAnimate
-from .button_draw import DataIcon, WeatherIcon, Switch, CircularSwitch
+from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch
+from .button_ext import WeatherIcon
 
 #
 # ###############################
@@ -749,6 +750,7 @@ REPRESENTATIONS = {
     "annunciator-animate": AnnunciatorAnimate,
     "switch": Switch,
     "circular-switch": CircularSwitch,
+    "push-switch": PushSwitch,
     "data": DataIcon,
     "weather": WeatherIcon
 }

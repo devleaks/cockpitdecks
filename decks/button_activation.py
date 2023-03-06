@@ -2,7 +2,7 @@
 Button action and activation abstraction
 """
 import logging
-import yaml
+
 from datetime import datetime
 
 #from .constant import SPAM

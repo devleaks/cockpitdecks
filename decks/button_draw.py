@@ -4,25 +4,21 @@
 import logging
 import threading
 import time
-import colorsys
-import traceback
 import math
 from random import randint
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageColor
-# from mergedeep import merge
+from PIL import Image, ImageDraw, ImageFont
 from metar import Metar
 
-from .constant import FORMULA, ANNUNCIATOR_DEFAULTS, ANNUNCIATOR_STYLES, LIGHT_OFF_BRIGHTNESS, WEATHER_ICON_FONT, ICON_FONT
+from .constant import WEATHER_ICON_FONT, ICON_FONT
 from .color import convert_color, light_off
-from .rpc import RPC
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
-from .button_annunciator import ICON_SIZE, DEFAULT_INVERT_COLOR
+from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
 
 logger = logging.getLogger("DrawIcon")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 #
@@ -170,145 +166,11 @@ class DataIcon(DrawBase):
         return image.convert("RGB")
 
 
-class WeatherIcon(DrawBase):
-
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
-
-        self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
-        self.weather_icon = "wi_day_sunny"
-
-    def set_metar(self, metar):
-        self.metar = metar
-        self.to_icon()
-        self.button.render()
-
-    def get_image_for_icon(self):
-        """
-        Helper function to get button image and overlay label on top of it.
-        Label may be updated at each activation since it can contain datarefs.
-        Also add a little marker on placeholder/invalid buttons that will do nothing.
-        """
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
-        draw = ImageDraw.Draw(image)
-        inside = round(0.04 * image.width + 0.5)
-
-        self.to_icon()
-
-        # Weather Icon
-        icon_name = self.weather_icon
-        if icon_name is not None:
-            icon_str = WEATHER_ICONS.get(icon_name, "*")
-        else:
-            icon_str = "*"
-
-        icon_font = self._config.get("icon-font", WEATHER_ICON_FONT)
-        icon_size = int(image.width / 2)
-        icon_color = "white"
-        fontname = self.get_font(icon_font)
-        if fontname is None:
-            logger.warning(f"get_image_for_icon: icon font not found, cannot overlay icon")
-        else:
-            font = ImageFont.truetype(fontname, icon_size)
-            inside = round(0.04 * image.width + 0.5)
-            w = image.width / 2
-            h = image.height / 2
-            draw.text((w, h),  # (image.width / 2, 15)
-                      text=icon_str,
-                      font=font,
-                      anchor="mm",
-                      align="center",
-                      fill=light_off(icon_color, 0.2))
-
-        # Weather Data
-        text_font = self._config.get("weather-font", self.label_font)
-        fontname = self.get_font(text_font)
-        if fontname is None:
-            logger.warning(f"get_image_for_icon: text font not found, cannot overlay text")
-        else:
-            # logger.debug(f"get_image: font {fontname}")
-            detailsize = int(image.width / 10)
-            font = ImageFont.truetype(fontname, detailsize)
-            w = inside
-            p = "l"
-            a = "left"
-            h = image.height / 3
-            il = detailsize
-            draw.text((w, h),  # (image.width / 2, 15)
-                      text=f"Temp: {self.metar.temp.string('C')}",
-                      font=font,
-                      anchor=p+"m",
-                      align=a,
-                      fill=self.label_color)
-
-            h = h + il
-            draw.text((w, h),  # (image.width / 2, 15)
-                      text=f"Press: {self.metar.press.string('mb')}",
-                      font=font,
-                      anchor=p+"m",
-                      align=a,
-                      fill=self.label_color)
-
-            if self.metar.wind_dir:
-                h = h + il
-                draw.multiline_text((w, h),  # (image.width / 2, 15)
-                          text=f"Wind: {self.metar.wind_speed.string('MPS')} {self.metar.wind_dir.compass()}",
-                          font=font,
-                          anchor=p+"m",
-                          align=a,
-                          fill=self.label_color)
-
-        # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
-        bg.alpha_composite(image)
-        return bg.convert("RGB")
-
-    def to_icon(self):
-        WI = [
-            "fog",
-            "hail",
-            "rain",
-            "rain_mix",
-            "rain_wind",
-            "showers",
-            "sleet",
-            "snow",
-            "sprinkle",
-            "snow_wind",
-            "smog",
-            "smoke",
-            "lightning",
-            "raindrops",
-            "raindrop",
-            "dust",
-            "snowflake_cold",
-            "windy",
-            "strong_wind",
-            "sandstorm",
-            "earthquake",
-            "fire",
-            "flood",
-            "meteor",
-            "tsunami",
-            "volcano",
-            "hurricane",
-            "tornado",
-            "small_craft_advisory",
-            "gale_warning",
-            "storm_warning",
-            "hurricane_warning",
-            "wind_direction",
-            "degrees",
-            "humidity",
-            "na"
-        ]
-
 #
 # ###############################
 # SWITCH BUTTON REPRESENTATION
 #
 #
-TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
 class SwitchCommonBase(DrawBase):
 
     def __init__(self, config: dict, button: "Button", switch_type: str):
@@ -365,6 +227,22 @@ class SwitchCommonBase(DrawBase):
         self.needle_underline_width = self.switch.get("needle-underline-width", 4)
         self.needle_underline_color = self.switch.get("needle-underline-color", "black")
         self.needle_underline_color = convert_color(self.needle_underline_color)
+
+    def move_and_send(self, image):
+        # Move whole drawing around
+        a = 1
+        b = 0
+        c = self.switch.get("left", 0) + self.switch.get("right", 0)
+        d = 0
+        e = 1
+        f = self.switch.get("up", 0) - self.switch.get("down", 20)  # up/down (i.e. 5/-5)
+        if c != 0 or f != 0:
+            image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
+
+        # Paste image on cockpit background and return it.
+        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
+        bg.alpha_composite(image)
+        return bg.convert("RGB")
 
 
 class CircularSwitch(SwitchCommonBase):
@@ -888,20 +766,64 @@ class Switch(SwitchCommonBase):
                         draw.line([(2*inside,tick_end),(ICON_SIZE-2*inside,tick_end)], width=self.tick_underline_width, fill=self.tick_color)
                     else:
                         draw.line([(2*inside,underline),(ICON_SIZE-2*inside,underline)], width=self.tick_underline_width, fill=self.tick_color)
-        # Move whole drawing around
-        a = 1
-        b = 0
-        c = self.switch.get("left", 0) + self.switch.get("right", 0)
-        d = 0
-        e = 1
-        f = self.switch.get("up", 0) - self.switch.get("down", 20)  # up/down (i.e. 5/-5)
-        if c != 0 or f != 0:
-            image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
-        # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
-        bg.alpha_composite(image)
-        return bg.convert("RGB")
+        return self.move_and_send(image)
+
+
+class PushSwitch(SwitchCommonBase):
+
+    def __init__(self, config: dict, button: "Button"):
+
+        SwitchCommonBase.__init__(self, config=config, button=button, switch_type="push-switch")
+
+        # Alternate defaults
+        self.button_size = self.switch.get("button-size", 80)
+
+        self.handle_size = self.switch.get("witness-size", min(self.button_size/2, 40))
+
+        self.handle_fill_color = self.switch.get("witness-fill-color", (0,0,0,0))
+        self.handle_fill_color = convert_color(self.handle_fill_color)
+        self.handle_stroke_color = self.switch.get("witness-stroke-color", (255,255,255))
+        self.handle_stroke_color = convert_color(self.handle_stroke_color)
+        self.handle_stroke_width = self.switch.get("witness-stroke-width", 4)
+
+        self.handle_off_fill_color = self.switch.get("witness-fill-off-color", (0,0,0,0))
+        self.handle_off_fill_color = convert_color(self.handle_off_fill_color)
+        self.handle_off_stroke_color = self.switch.get("witness-stroke-off-color", (255,255,255, 0))
+        self.handle_off_stroke_color = convert_color(self.handle_off_stroke_color)
+        self.handle_off_stroke_width = self.switch.get("witness-stroke-off-width", 4)
+
+
+    def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        OUT = 8
+        inside = ICON_SIZE / 32
+
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)
+        draw = ImageDraw.Draw(image)
+
+        # Button
+        center = [ICON_SIZE/2, ICON_SIZE/2]
+        tl = [center[0]-self.button_size/2, center[1]-self.button_size/2]
+        br = [center[0]+self.button_size/2, center[1]+self.button_size/2]
+        draw.ellipse(tl+br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+
+        if self.handle_size > 0:
+            tl = [center[0]-self.handle_size/2, center[1]-self.handle_size/2]
+            br = [center[0]+self.handle_size/2, center[1]+self.handle_size/2]
+            if hasattr(self.button._activation, "is_on") and self.button._activation.is_off():
+                logger.debug(f"get_image_for_icon: button {self.button.name}: has on/off state and IS OFF")
+                draw.ellipse(tl+br, fill=self.handle_off_fill_color, outline=self.handle_off_stroke_color, width=self.handle_off_stroke_width)
+            else:
+                if not hasattr(self.button._activation, "is_on"):
+                    logger.debug(f"get_image_for_icon: button {self.button.name}: has no on/off state")
+                draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+
+        return self.move_and_send(image)
 
 #
 # ###############################

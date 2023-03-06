@@ -3,49 +3,148 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     type: none
-    icon: NO_BUTTON
     label: "ENG 1\nL TK PUMPS"
   - index: 3
     type: none
-    icon: OPEN_GREEN_ON_WHITE_FR
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: OPEN
+        color: lime
+        formula: 1
+      B1:
+        text: "ON"
+        color: white
+        framed: true
+        formula: 1
   - index: 6
     type: none
-    icon: NO_BUTTON
     label: "ENG 2\nR TK PUMPS"
+  - index: 7
+    name: up
+    type: page
+    page: ovrhdhyd
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-up}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     type: none
-    icon: FAULT_AMBER_OFF_WHITE_FR
     label: "1"
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 9
     type: none
-    icon: FAULT_AMBER_OFF_WHITE_FR
     label: "2"
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 10
     type: none
-    icon: FAULT_AMBER_FWD_BLUE_FR
     label: ACT
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "FWD"
+        color: deepskyblue
+        framed: true
   - index: 11
     type: none
-    icon: FAULT_AMBER_OFF_WHITE_FR
     label: L XFR
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 12
     type: none
-    icon: FAULT_AMBER_MAN_WHITE_FR
     label: MODE SEL
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "MAN"
+        color: white
+        framed: true
   - index: 13
     type: none
-    icon: FAULT_AMBER_OFF_WHITE_FR
     label: R XFR
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 14
     type: none
-    icon: FAULT_AMBER_OFF_WHITE_FR
     label: "1"
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
   - index: 15
     type: none
-    icon: FAULT_AMBER_OFF_WHITE_FR
     label: "2"
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "OFF"
+        color: white
+        framed: true
 # ### LINE 3 ### 16-23 ######################################################
+  - index: 23
+    name: down
+    type: page
+    page: ovrhdelec
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-down}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31
     name: Index

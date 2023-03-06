@@ -2,11 +2,11 @@ name: index-old
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
-    name: ovrhdapu
+    name: ovrhdfire
     type: page
-    page: ovrhdapu
+    page: ovrhdfire
     icon: NONE
-    label: "APU &\nFIRE"
+    label: "FIRE"
     label-position: cm
   - index: 1
     name: ovrhdhyd
