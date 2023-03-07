@@ -1034,6 +1034,7 @@ ACTIVATIONS = {
     "encoder": Encoder,
     "encoder-push": EncoderPush,
     "encoder-onoff": EncoderOnOff,
+    "encoder-value": EncoderValue,
     "knob": EncoderValue,
     "slider": Slider,
     "cursor": Slider,

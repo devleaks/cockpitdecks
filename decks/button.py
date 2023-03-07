@@ -532,52 +532,58 @@ class Button:
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
         """
-        DOT = "."
-        DATEREF_RPN_INF = "---"
+        DOT = "."  # • does not exist in all charsets
         text = base.get(root)
-        if text is not None:
-            if self.is_managed():  # managed
-                if root == "label" and self.has_option("dot"): # we just append a DOT next to the label
-                    return text + DOT
-                elif root == "label" and self.has_option("std"): # QNH Std
+        if text is None:
+            return None
+
+        # HACK 1
+        if self.is_managed():      # managed
+            if root == "label" and self.has_option("dot"): # label
+                return text + DOT  # ---•
+            elif root == "text":   # formula value as text
+                if self.has_option("std"):    # QNH Std
                     return "Std"
-                elif root == "text":
-                    return DATEREF_RPN_INF + " " + DOT
+                elif self.has_option("dash"):  # --- dash=4 or simply dash (defaults to dash=3)
+                    n = self.option_value("dash")
+                    if type(n) == bool:
+                        n = 3
+                    return "-" * int(n) + " " + DOT
 
-            # HACK
-            bizfonts = {
-                "fa": (ICON_FONT, FA_ICONS),
-                "wi": (WEATHER_ICON_FONT, WEATHER_ICONS)
-            }
-            text_font = base.get(root+"-font", self.page.default_label_font)
-            for k, v in bizfonts.items():
-                if text_font.lower().startswith(v[0]):
-                    s = "\\${%s:([^\\}]+?)}" % (k)
-                    icons = re.findall(s, text)
-                    for i in icons:
-                        if i in v[1].keys():
-                            text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                            logger.debug(f"get_text_detail: button {self.name}: substituing {i}")
+        # HACK 2
+        bizfonts = {
+            "fa": (ICON_FONT, FA_ICONS),
+            "wi": (WEATHER_ICON_FONT, WEATHER_ICONS)
+        }
+        text_font = base.get(root+"-font", self.page.default_label_font)
+        for k, v in bizfonts.items():
+            if text_font.lower().startswith(v[0]):
+                s = "\\${%s:([^\\}]+?)}" % (k)
+                icons = re.findall(s, text)
+                for i in icons:
+                    if i in v[1].keys():
+                        text = text.replace(f"${{{k}:{i}}}", v[1][i])
+                        logger.debug(f"get_text_detail: button {self.name}: substituing {i}")
 
-            text_format = base.get(f"{root}-format")
-            if FORMULA in str(text):
-                # If text contains ${formula}, it is replaced by the value of the formula calculation.
-                dataref_rpn = base.get(FORMULA)
-                if dataref_rpn is not None:
-                    res = self.execute_formula(formula=dataref_rpn)
-                    if res == math.inf:
-                        res = DATEREF_RPN_INF
-                    elif res != "":  # Format output if format present
-                        if text_format is not None:
-                            logger.debug(f"get_text: button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
-                            res = text_format.format(res)
-                        else:
-                            res = str(res)
-                    FORMULA_STR = f"${{{FORMULA}}}"   # "${formula}"
-                    text = text.replace(FORMULA_STR, res)
-                else:
-                    logger.warning(f"get_text: button {self.name}: text contains {FORMULA_STR} but no {FORMULA} attribute found")
-            text = self.substitute_values(text, formatting=text_format, default="---")
+        # Formula in text
+        text_format = base.get(f"{root}-format")
+        FORMULA_STR = f"${{{FORMULA}}}"   # "${formula}"
+        if FORMULA_STR in str(text):
+            # If text contains ${formula}, it is replaced by the value of the formula calculation.
+            dataref_rpn = base.get(FORMULA)
+            if dataref_rpn is not None:
+                res = self.execute_formula(formula=dataref_rpn)
+                if res != "":  # Format output if format present
+                    if text_format is not None:
+                        logger.debug(f"get_text: button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        res = text_format.format(res)
+                    else:
+                        res = str(res)
+                text = text.replace(FORMULA_STR, res)
+            else:
+                logger.warning(f"get_text: button {self.name}: text contains {FORMULA_STR} but no {FORMULA} attribute found")
+
+        text = self.substitute_values(text, formatting=text_format, default="---")
 
         return text
 

@@ -37,7 +37,7 @@ buttons:
       - sim/autopilot/altitude_up
   - index: knobCR
     name: FCU V Speed
-    type: knob
+    type: encoder-onoff
     dataref: sim/cockpit/autopilot/vertical_velocity
     step: 100
     stepxl: 1000
@@ -47,7 +47,8 @@ buttons:
     commands:
       - AirbusFBW/PullVSSel
       - AirbusFBW/PushVSSel
-    options: dual
+      - sim/autopilot/vertical_speed_down
+      - sim/autopilot/vertical_speed_up
   - index: knobBR
     name: FCU Unused
     type: none
@@ -83,6 +84,7 @@ buttons:
     text-position: cm
     text-bg-color: (40, 40, 40)
     managed: AirbusFBW/SPDmanaged
+    options: dash
   - index: 1
     name: MASTER CAUTION
     type: push
@@ -134,6 +136,7 @@ buttons:
     text: "${sim/cockpit/autopilot/heading_mag}"
     text-format: "{:03.0f}"
     managed: AirbusFBW/HDGmanaged
+    options: dash
 #    formula: ${status:activation_count}
 #    formula: ${sim/cockpit/autopilot/heading_mag}
     text-color: khaki
@@ -201,7 +204,7 @@ buttons:
     text-format: "{: 4.0f}"
     text-color: khaki
     text-size: 36
-    text-font: Seven Segment.ttf
+    text-font: Seven Segment
     text-bg-color: (40, 40, 40)
     formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
     managed: AirbusFBW/BaroStdCapt

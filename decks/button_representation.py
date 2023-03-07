@@ -252,13 +252,22 @@ class Icon(Representation):
             return None
 
         # Add little check mark if not valid/fake
-        if not self.is_valid() or self.button.has_option("placeholder"):
+        if not self.button.is_valid() or self.button.has_option("placeholder"):
             image = image.copy()  # we will add text over it
             draw = ImageDraw.Draw(image)
             c = round(0.97 * image.width)  # % from edge
             s = round(0.1 * image.width)   # size
-            pologon = ( (c, c), (c, c-s), (c-s, c) )  # lower right corner
+            pologon = ( (c, c), (c, c-s), (c-s, c), (c, c) )  # lower right corner
             draw.polygon(pologon, fill="red", outline="white")
+
+        # Add little check mark if not valid/fake
+        if self.button._config.get("type", "none") == "none":
+            image = image.copy()  # we will add text over it
+            draw = ImageDraw.Draw(image)
+            c1 = round(0.03 * image.width)  # % from edge
+            s = round(0.1 * image.width)   # size
+            pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
+            draw.polygon(pologon, fill="orange", outline="white")
 
         return self.overlay_text(image, "label")
 
