@@ -441,6 +441,15 @@ class IconSide(Icon):
                 txt = label.get("label")
                 if li >= len(vcenter) or txt is None:
                     continue
+                managed = label.get("managed")
+                if managed is not None:
+                    value = self.button.get_dataref_value(managed)
+                    if value:
+                        txt = txt + "•"  # \n•"
+                    else:
+                        txt = txt + ""   # \n"
+                    logger.debug(f"get_image_for_icon: watching {managed}: {value}")
+
                 fontname = self.get_font(label.get("label-font", self.label_font))
                 if fontname is None:
                     logger.warning(f"get_image_for_icon: no font, cannot overlay label")

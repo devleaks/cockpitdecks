@@ -37,18 +37,31 @@ buttons:
       - sim/autopilot/altitude_up
   - index: knobCR
     name: FCU V Speed
-    type: encoder-onoff
+    type: encoder-value
     dataref: sim/cockpit/autopilot/vertical_velocity
     step: 100
     stepxl: 1000
     value: 0
     value-min: -6000
     value-max: 6000
+    set-dataref: sim/cockpit/autopilot/vertical_velocity
     commands:
       - AirbusFBW/PullVSSel
       - AirbusFBW/PushVSSel
-      - sim/autopilot/vertical_speed_down
-      - sim/autopilot/vertical_speed_up
+  # - index: knobCR
+  #   name: FCU V Speed
+  #   type: encoder-onoff
+  #   dataref: sim/cockpit/autopilot/vertical_velocity
+  #   step: 100
+  #   stepxl: 1000
+  #   value: 0
+  #   value-min: -6000
+  #   value-max: 6000
+  #   commands:
+  #     - AirbusFBW/PullVSSel
+  #     - AirbusFBW/PushVSSel
+  #     - sim/autopilot/vertical_speed_down
+  #     - sim/autopilot/vertical_speed_up
   - index: knobBR
     name: FCU Unused
     type: none
@@ -280,8 +293,11 @@ buttons:
       centers: (10, 53, 94)
       labels:
         - label: SPD
+          managed: AirbusFBW/SPDmanaged
         - label: HDG
+          managed: AirbusFBW/HDGmanaged
         - label: QNH
+          managed: AirbusFBW/BaroStdCapt
   - index: right
     type: none
     label-size: 18
@@ -290,6 +306,7 @@ buttons:
       centers: (10, 53, 94)
       labels:
         - label: ALT
+          managed: AirbusFBW/ALTmanaged
         - label: V/S
         - label: ""
 includes: views

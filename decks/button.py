@@ -22,7 +22,7 @@ from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 
 
 logger = logging.getLogger("Button")
-logger.setLevel(SPAM)
+# logger.setLevel(SPAM)
 # logger.setLevel(logging.DEBUG)
 
 

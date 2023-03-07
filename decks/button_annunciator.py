@@ -15,7 +15,7 @@ from .rpc import RPC
 from .button_representation import Icon
 
 logger = logging.getLogger("Annunciator")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 # Yeah, shouldn't be globals.
@@ -100,7 +100,7 @@ class AnnunciatorPart:
         ret = None
         if FORMULA in self._config:
             calc = self._config[FORMULA]
-            expr = self.annunciator.button.substitute_dataref_values(calc)
+            expr = self.annunciator.button.substitute_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")

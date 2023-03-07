@@ -426,11 +426,10 @@ class OnOff(Activation):
     def activate(self, state):
         super().activate(state)
         if state:
-            if self.num_commands() > 1:
-                if self.is_off():
-                    self.button.xp.commandOnce(self.commands[0])
-                else:
-                    self.button.xp.commandOnce(self.commands[1])
+            if self.is_off():
+                self.button.xp.commandOnce(self.commands[0])
+            else:
+                self.button.xp.commandOnce(self.commands[1])
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
             self.write_dataref(self.onoff_current_value)
@@ -877,12 +876,12 @@ class EncoderOnOff(OnOff):
             ])
 
 
-class EncoderValue(Activation):
+class EncoderValue(OnOff):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
     def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+        OnOff.__init__(self, config=config, button=button)
 
         self.step = float(config.get("step", 1))
         self.stepxl = float(config.get("stepxl", 10))
@@ -895,6 +894,19 @@ class EncoderValue(Activation):
         self._ccw = 0
         self.encoder_current_value = 0
 
+    def init(self):
+        if self._inited:
+            return
+        value = self.button.get_current_value()
+        if value is not None:
+            self.encoder_current_value = value
+            logger.debug(f"init: button {self.button.name} initialized on/off at {self.encoder_current_value}")
+        elif self.initial_value is not None:
+            self.encoder_current_value = self.initial_value
+            logger.debug(f"init: button {self.button.name} initialized on/off at {self.onoff_current_value} from initial-value")
+        if self.encoder_current_value is not None:
+            self._inited = True
+
     def is_valid(self):
         if self.writable_dataref is None:
             logger.error(f"is_valid: button {type(self).__name__} must have a dataref to write to")
@@ -902,7 +914,16 @@ class EncoderValue(Activation):
         return super().is_valid()
 
     def activate(self, state):
-        super().activate(state)
+        if state < 2:
+            if state:
+                if self.is_off():
+                    self.button.xp.commandOnce(self.commands[0])
+                else:
+                    self.button.xp.commandOnce(self.commands[1])
+                # Update current value and write dataref if present
+                self.onoff_current_value = not self.onoff_current_value
+                self.view()
+            return
         ok = False
         x = self.encoder_current_value
         if x is None:

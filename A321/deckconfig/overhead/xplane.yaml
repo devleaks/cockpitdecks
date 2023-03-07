@@ -3,58 +3,93 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     name: X-Plane Map
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: sim/map/show_current
-    initial-value: 0
     label: Map
-    formula: ${state:activation_count} 2 %
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: sim/map/show_current
   - index: 1
     name: Airport Map
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: pikitanga/AptNav/ToggleMap
-    formula: ${state:activation_count} 2 %
-    initial-value: 0
     label: Airport
+    type: push
+    command: pikitanga/AptNav/ToggleMap
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
   - index: 2
     name: AVS Map
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: flightfactor/avs/toggle
-    formula: ${state:activation_count} 2 %
-    initial-value: 0
     label: AVS
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: flightfactor/avs/toggle
   - index: 3
     name: AviTab
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
     label: AviTab
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
     command: AviTab/toggle_tablet
-    formula: ${state:activation_count} 2 %
-    initial-value: 0
   # - index: 4
   #   name: Ground Services
   #   type: page
   #   label: Ground Services
   - index: 5
     name: LiveTraffic
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: LiveTraffic/Info_Staus_Wnd/Open
-    formula: ${state:activation_count} 2 %
-    initial-value: 0
     label: Live/T
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: LiveTraffic/Info_Staus_Wnd/Open
   - index: 6
     name: FollowTheGreens
     type: onoff

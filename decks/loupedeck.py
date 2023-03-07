@@ -143,7 +143,7 @@ class Loupedeck(Deck):
 
     def valid_activations(self, index = None):
         valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
-        valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "knob"]
+        valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
         valid_colored_button = valid_key
 
         if index is not None:

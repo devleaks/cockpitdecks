@@ -18,7 +18,7 @@ from .button_representation import Icon
 from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
 
 logger = logging.getLogger("DrawIcon")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 #
