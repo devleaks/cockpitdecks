@@ -397,6 +397,22 @@ class Cockpit:
         # If the font is not found by ImageFont, we ignore it.
         # So self.icons is a list of properly located usable fonts.
         #
+        # 0. Load fonts supplied by Cockpitdeck in its resource folder
+        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER)
+        if os.path.exists(rn):
+            fonts = os.listdir(rn)
+            for i in fonts:
+                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
+                    if i not in self.fonts.keys():
+                        fn = os.path.join(rn, i)
+                        try:
+                            test = ImageFont.truetype(fn, self.default_label_size)
+                            self.fonts[i] = fn
+                        except:
+                            logger.warning(f"load_fonts: default font file {fn} not loaded")
+                    else:
+                        logger.debug(f"load_fonts: font {i} already loaded")
+
         # 1. Load fonts supplied by the user in the configuration
         dn = os.path.join(self.acpath, CONFIG_DIR, FONTS_FOLDER)
         if os.path.exists(dn):

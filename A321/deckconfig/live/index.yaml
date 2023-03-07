@@ -93,6 +93,7 @@ buttons:
       text-font: DIN Condensed Black.otf
       text-size: 72
       dataref: AirbusFBW/MasterCaut
+    vibrate: RUMBLE5
     # options: animation_speed=0.5
   - index: 2
     name: MASTER WARNING
@@ -105,6 +106,7 @@ buttons:
       text-size: 72
       dataref: AirbusFBW/MasterWarn
       animation-speed: 2.0
+    vibrate: LONG
   - index: 3
     name: FCU Altitude display
     type: none

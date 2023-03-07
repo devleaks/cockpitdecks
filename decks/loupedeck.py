@@ -21,6 +21,36 @@ from .button_representation import Icon, ColoredLED  # valid representations for
 logger = logging.getLogger("Loupedeck")
 # logger.setLevel(logging.DEBUG)
 
+VIBRATION_MODES = [
+    "SHORT",
+    "MEDIUM",
+    "LONG",
+    "LOW",
+    "SHORT_LOW",
+    "SHORT_LOWER",
+    "LOWER",
+    "LOWEST",
+    "DESCEND_SLOW",
+    "DESCEND_MED",
+    "DESCEND_FAST",
+    "ASCEND_SLOW",
+    "ASCEND_MED",
+    "ASCEND_FAST",
+    "REV_SLOWEST",
+    "REV_SLOW",
+    "REV_MED",
+    "REV_FAST",
+    "REV_FASTER",
+    "REV_FASTEST",
+    "RISE_FALL",
+    "BUZZ",
+    "RUMBLE5", # lower frequencies in descending order
+    "RUMBLE4",
+    "RUMBLE3",
+    "RUMBLE2",
+    "RUMBLE1",
+    "VERY_LONG"  # 10 sec high freq (!)
+]
 
 class Loupedeck(Deck):
     """
@@ -274,6 +304,9 @@ class Loupedeck(Deck):
         if self.pil_helper is not None:
             return self.pil_helper.create_scaled_image(deck=b, image=image)
         return None
+
+    def _vibrate(self, pattern: str):
+        self.device.vibrate(pattern)
 
     def _send_key_image_to_device(self, key, image):
         self.device.set_key_image(key, image)

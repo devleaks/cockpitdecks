@@ -404,14 +404,16 @@ class OnOff(Activation):
                         f"is_off: {self.is_off()}",
                         f"is_valid: {self.is_valid()}"])
 
-    def num_commands(self):
+    def num_commands(self) -> int:
         return len(self.commands) if self.commands is not None else 0
 
     def is_valid(self):
-        if self.num_commands() == 0 and self.writable_dataref is not None:
-            return True
-        if self.num_commands() < 2:
-            logger.error(f"is_valid: button {type(self).__name__} must have at least two command")
+        if self.num_commands() > 0:
+            if self.num_commands() < 2:
+                logger.error(f"is_valid: button {type(self).__name__} must have at least two commands")
+                return False
+        elif self.writable_dataref is None:
+            logger.error(f"is_valid: button {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         return super().is_valid()
 
@@ -529,15 +531,17 @@ class UpDown(Activation):
         return len(self.commands) if self.commands is not None else 0
 
     def is_valid(self):
-        if self.num_commands() == 0 and self.writable_dataref is not None:
-            return True
-        if self.num_commands() < 2:
-            logger.error(f"is_valid: button {self.button.name} must have at least 2 commands")
+        if self.num_commands() > 0:
+            if self.num_commands() < 2:
+                logger.error(f"is_valid: button {self.button.name} must have at least 2 commands")
+                return False
+        elif self.writable_dataref is None:
+            logger.error(f"is_valid: button {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         if self.stops is None or self.stops == 0:
             logger.error(f"is_valid: button {self.button.name} must have a number of stops")
             return False
-        return True
+        return super().is_valid()
 
     def activate(self, state: bool):
         super().activate(state)
@@ -891,6 +895,12 @@ class EncoderValue(Activation):
         self._ccw = 0
         self.encoder_current_value = 0
 
+    def is_valid(self):
+        if self.writable_dataref is None:
+            logger.error(f"is_valid: button {type(self).__name__} must have a dataref to write to")
+            return False
+        return super().is_valid()
+
     def activate(self, state):
         super().activate(state)
         ok = False
@@ -956,6 +966,12 @@ class Slider(Activation):  # Cursor?
 
         self.value_min = float(config.get("value-min", 0))
         self.value_max = float(config.get("value-max", 100))
+
+    def is_valid(self):
+        if self.writable_dataref is None:
+            logger.error(f"is_valid: button {type(self).__name__} must have a dataref to write to")
+            return False
+        return super().is_valid()
 
     def activate(self, state):
         super().activate(state)

@@ -597,6 +597,7 @@ class AnnunciatorAnimate(Annunciator):
             if self.should_run():
                 if not self.running:
                     self.anim_start()
+                self.vibrate()
                 return super().render()
             else:
                 if self.running:

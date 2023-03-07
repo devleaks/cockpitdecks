@@ -429,6 +429,9 @@ class Deck(ABC):
     # #######################################
     # Deck Specific Functions : Representation
     #
+    def _vibrate(self, pattern: str):
+        pass
+
     def _send_key_image_to_device(self, key, image):
         pass
 

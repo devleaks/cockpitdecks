@@ -28,6 +28,7 @@ class Representation:
     def __init__(self, config: dict, button: "Button"):
         self._config = config
         self.button = button
+        self._sound = config.get("vibrate")
 
     def inspect(self, what: str = None):
         logger.info(f"{self.button.name}:{type(self).__name__}:")
@@ -53,6 +54,10 @@ class Representation:
     def render(self):
         logger.debug(f"render: button {self.button.name}: {type(self).__name__} has no rendering")
         return None
+
+    def vibrate(self):
+        if self._sound is not None:
+            self.button.deck._vibrate(self._sound)
 
     def clean(self):
         # logger.warning(f"clean: button {self.button.name}: no cleaning")
@@ -160,11 +165,14 @@ class Icon(Representation):
         """
         Helper function to get valid font, depending on button or global preferences
         """
-        def try_ext(fn):
-            deck = self.button.deck
-            all_fonts = deck.cockpit.fonts
-            fonts_available = list(all_fonts.keys())
+        page = self.button.page
+        deck = self.button.deck
+        cockpit = deck.cockpit
+        all_fonts = cockpit.fonts
+        fonts_available = list(all_fonts.keys())
+        this_button = f"{self.button.name}: {type(self).__name__}"
 
+        def try_ext(fn):
             if fn is not None:
                 if has_ext(fn, ".ttf") or has_ext(fn, ".otf"):
                     if fn in fonts_available:
@@ -175,7 +183,6 @@ class Icon(Representation):
                 f2 = add_ext(fn, ".otf")
                 if f2 in fonts_available:
                     return all_fonts[f2]
-                this_button = f"{self.button.name}: {type(self).__name__}"
                 logger.warning(f"get_font: button {this_button}: button label font '{fn}' not found")
             return None
 
@@ -186,7 +193,7 @@ class Icon(Representation):
 
         # 2. Tries default fonts
         #    Tries page default font
-        default_font = self.button.page.default_label_font
+        default_font = page.default_label_font
         f = try_ext(default_font)
         if f is not None:
             return f
@@ -198,14 +205,14 @@ class Icon(Representation):
             return f
 
         # 3. Tries cockpit default font
-        default_font = deck.cockpit.default_label_font
+        default_font = cockpit.default_label_font
         f = try_ext(default_font)
         if f is not None:
             return f
 
         # 4. Returns first font, if any
         if len(fonts_available) > 0:
-            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {self.button.page.default_label_font}, {deck.default_label_font}, {deck.cockpit.default_label_font}. Returning first font found ({fonts_available[0]})")
+            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {page.default_label_font}, {deck.default_label_font}, {cockpit.default_label_font}. Returning first font found ({fonts_available[0]})")
             return all_fonts[fonts_available[0]]
         else:
             logger.error(f"get_font: button {this_button}: no font")
@@ -722,11 +729,13 @@ class MultiLEDs(Representation):
 
 #
 # ###############################
-# ANNUNCIATOR TYPE REPRESENTATION
 #
+# "Icon" Buttons that are dynamically drawn
 #
 from .button_annunciator import Annunciator, AnnunciatorAnimate
 from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch
+
+# Calls external services
 from .button_ext import WeatherIcon
 
 #
@@ -738,7 +747,6 @@ REPRESENTATIONS = {
     "none": Representation,
     "icon": Icon,
     "text": IconText,
-    "icon-text": IconText,
     "icon-color": Icon,
     "multi-icons": MultiIcons,
     "icon-animate": IconAnimation,
