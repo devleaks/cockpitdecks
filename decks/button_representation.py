@@ -30,13 +30,16 @@ class Representation:
         self.button = button
         self._sound = config.get("vibrate")
 
+    def button_name(self):
+        return self.button.name if self.button is not None else 'no button'
+
     def inspect(self, what: str = None):
-        logger.info(f"{self.button.name}:{type(self).__name__}:")
+        logger.info(f"{self.button_name()}:{type(self).__name__}:")
         logger.info(f"is valid: {self.is_valid()}")
 
     def is_valid(self):
         if self.button is None:
-            logger.warning(f"is_valid: activation {type(self).__name__} has no button")
+            logger.warning(f"is_valid: representation {type(self).__name__} has no button")
             return False
         return True
 
@@ -52,7 +55,7 @@ class Representation:
         }
 
     def render(self):
-        logger.debug(f"render: button {self.button.name}: {type(self).__name__} has no rendering")
+        logger.debug(f"render: button {self.button_name()}: {type(self).__name__} has no rendering")
         return None
 
     def vibrate(self):
@@ -60,7 +63,7 @@ class Representation:
             self.button.deck._vibrate(self._sound)
 
     def clean(self):
-        # logger.warning(f"clean: button {self.button.name}: no cleaning")
+        # logger.warning(f"clean: button {self.button_name()}: no cleaning")
         pass
 
     def describe(self):
@@ -85,7 +88,7 @@ class Icon(Representation):
         self.label_color = convert_color(self.label_color)
         self.label_position = config.get("label-position", DEFAULT_LABEL_POSITION)
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
-            logger.warning(f"__init__: button {self.button.name}: {type(self).__name__} invalid label position code {self.label_position}, using default")
+            logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default")
             self.label_position = DEFAULT_LABEL_POSITION
 
         self.icon_color = config.get("icon-color", page.default_icon_color)
@@ -95,7 +98,7 @@ class Icon(Representation):
         if self.icon is not None:  # 2.1 if supplied, use it
             self.icon = add_ext(self.icon, ".png")
             if self.icon not in deck.icons.keys():
-                logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: icon not found {self.icon}")
+                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}")
                 self.icon = None
 
         # If we have no icon, but an icon-color, we create a uniform color icon and store it.
@@ -124,22 +127,22 @@ class Icon(Representation):
         deck = self.button.deck
         if self.icon_color is None:
             self.icon_color = deck.cockpit_color
-            logger.debug(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: no icon color, using cockpit color {self.icon_color}")
+            logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: no icon color, using cockpit color {self.icon_color}")
         self.icon_color = convert_color(self.icon_color)
-        self.icon = f"_default_{self.button.page.name}_{self.button.name}_icon.png"
+        self.icon = f"_default_{self.button.page.name}_{self.button_name()}_icon.png"
         deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
-        logger.debug(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
+        logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
             if self.icon is not None:
                 if self.icon not in self.button.deck.icons.keys():
-                    logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: icon {self.icon} not in deck")
+                    logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
                     return False
                 return True
             if self.icon_color is not None:
                 return True
-            logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: no icon and no icon color")
+            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: no icon and no icon color")
         return False
 
     def render(self):
@@ -157,7 +160,7 @@ class Icon(Representation):
         text_color = convert_color(text_color)
         text_position = config.get(f"{which_text}-position", DEFAULT_LABEL_POSITION if which_text == "label" else DEFAULT_TEXT_POSITION)
         if text_position[0] not in "lcr" or text_position[1] not in "tmb":
-            logger.warning(f"get_text_detail: button {self.button.name}: {type(self).__name__}: invalid label position code {text_position}, using default")
+            logger.warning(f"get_text_detail: button {self.button_name()}: {type(self).__name__}: invalid label position code {text_position}, using default")
 
         return text, text_format, text_font, text_color, text_size, text_position
 
@@ -170,7 +173,7 @@ class Icon(Representation):
         cockpit = deck.cockpit
         all_fonts = cockpit.fonts
         fonts_available = list(all_fonts.keys())
-        this_button = f"{self.button.name}: {type(self).__name__}"
+        this_button = f"{self.button_name()}: {type(self).__name__}"
 
         def try_ext(fn):
             if fn is not None:
@@ -222,7 +225,7 @@ class Icon(Representation):
     def get_image_for_icon(self):
         image = None
         deck = self.button.deck
-        this_button = f"{self.button.name}: {type(self).__name__}"
+        this_button = f"{self.button_name()}: {type(self).__name__}"
         self.icon = add_ext(self.icon, "png")
         if self.icon in deck.icons.keys():  # look for properly sized image first...
             logger.debug(f"get_image_for_icon: button {this_button}: found {self.icon} in deck")
@@ -248,7 +251,7 @@ class Icon(Representation):
             image = self.get_image_for_icon()
 
         if image is None:
-            logger.warning(f"get_image: button {self.button.name}: {type(self).__name__} no image")
+            logger.warning(f"get_image: button {self.button_name()}: {type(self).__name__} no image")
             return None
 
         # Add little check mark if not valid/fake
@@ -278,7 +281,7 @@ class Icon(Representation):
         FRAME_POSITION = (90, 125)
         image = None
         deck = self.button.deck
-        this_button = f"{self.button.name}: {type(self).__name__}"
+        this_button = f"{self.button_name()}: {type(self).__name__}"
         frame = add_ext(FRAME, "png")
         if frame in deck.cockpit.icons.keys():  # look for properly sized image first...
             logger.debug(f"frame_icon: button {this_button}: found {frame} in cockpit")
@@ -363,7 +366,7 @@ class Icon(Representation):
             image = deck.pil_helper.to_native_format(deck.device, icon)
             deck.device.set_key_image(self.button._key, image)
         else:
-            logger.warning(f"clean: button {self.button.name}: {type(self).__name__}: no fill icon")
+            logger.warning(f"clean: button {self.button_name()}: {type(self).__name__}: no fill icon")
 
     def describe(self):
         return "The representation produces an icon with optional label overlay."
@@ -407,7 +410,7 @@ class IconSide(Icon):
 
     def is_valid(self):
         if self.button.index not in ["left", "right"]:
-            logger.debug(f"is_valid: button {self.button.name}: {type(self).__name__}: not a valid index {self.button.index}")
+            logger.debug(f"is_valid: button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}")
             return False
         return super().is_valid()
 
@@ -500,34 +503,31 @@ class MultiIcons(Icon):
         if self.multi_icons is None:
             self.multi_icons = config.get("multi-icons", [])
         else:
-            logger.debug(f"__init__: button {self.button.name}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
+            logger.debug(f"__init__: button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
 
         if len(self.multi_icons) > 0:
             for i in range(len(self.multi_icons)):
                 self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
                 if self.multi_icons[i] not in self.button.deck.icons.keys():
-                    logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
+                    logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
         else:
-            logger.warning(f"__init__: button {self.button.name}: {type(self).__name__}: no icon")
+            logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: no icon")
 
     def is_valid(self):
         if self.multi_icons is None:
-            logger.warning(f"is_valid: button {self.button.name}: {type(self).__name__}: no icon")
+            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: no icon")
             return False
         if len(self.multi_icons) == 0:
-            logger.warning(f"is_valid: {type(self).__name__}: no icon")
+            logger.warning(f"is_vali: button {self.button_name()}: {type(self).__name__}: no icon")
         return super().is_valid()
 
     def num_icons(self):
         return len(self.multi_icons)
 
     def render(self):
-        if not self.is_valid():
-            logger.warning(f"render: button {self.button.name}: {type(self).__name__}: is invalid")
-            return
         value = self.get_current_value()
         if value is None:
-            logger.warning(f"render: button {self.button.name}: {type(self).__name__}: no current value")
+            logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None
         value = int(value)
         if self.num_icons() > 0:
@@ -537,7 +537,7 @@ class MultiIcons(Icon):
                 self.icon = self.multi_icons[value % self.num_icons()]
             return super().render()
         else:
-            logger.warning(f"render: button {self.button.name}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
+            logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
         return None
 
     def describe(self):
@@ -590,10 +590,10 @@ class IconAnimation(MultiIcons):
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
+            self.thread.name = f"ButtonAnimate::loop({self.button_name()})"
             self.thread.start()
         else:
-            logger.warning(f"anim_start: button {self.button.name}: already started")
+            logger.warning(f"anim_start: button {self.button_name()}: already started")
 
     def anim_stop(self):
         """
@@ -602,10 +602,10 @@ class IconAnimation(MultiIcons):
         if self.running:
             self.running = False
             if not self.finished.wait(timeout=2*self.speed):
-                logger.warning(f"anim_stop: button {self.button.name}: did not get finished signal")
+                logger.warning(f"anim_stop: button {self.button_name()}: did not get finished signal")
             self.render()
         else:
-            logger.debug(f"anim_stop: button {self.button.name}: already stopped")
+            logger.debug(f"anim_stop: button {self.button_name()}: already stopped")
 
     def clean(self):
         """
@@ -618,18 +618,15 @@ class IconAnimation(MultiIcons):
         """
         Renders icon_off or current icon in list
         """
-        if self.is_valid():
-            if self.should_run():
-                self.icon = self.multi_icons[(self.counter % len(self.multi_icons))]
-                if not self.running:
-                    self.anim_start()
-                return super().render()
-            else:
-                if self.running:
-                    self.anim_stop()
-                self.icon = self.icon_off
-                return super(MultiIcons, self).render()
-        return None
+        if self.should_run():
+            self.icon = self.multi_icons[(self.counter % len(self.multi_icons))]
+            if not self.running:
+                self.anim_start()
+            return super().render()
+        if self.running:
+            self.anim_stop()
+        self.icon = self.icon_off
+        return super(MultiIcons, self).render()
 
     def describe(self):
         """
@@ -724,7 +721,7 @@ class MultiLEDs(Representation):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
         value = self.get_current_value()
         if value >= maxval:
-            logger.warning(f"is_valid: {type(self).__name__}: value {value} too large for mode {self.mode}")
+            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: value {value} too large for mode {self.mode}")
         return super().is_valid()
 
     def render(self):

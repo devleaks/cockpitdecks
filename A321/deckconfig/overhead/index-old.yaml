@@ -39,7 +39,7 @@ buttons:
   - index: 5
     name: ovrhdextlights
     type: page
-    page: ovrhdextlights
+    page: index
     icon: NONE
     label: "EXT.\nLIGHTS"
     label-position: cm
