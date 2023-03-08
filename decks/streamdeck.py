@@ -236,7 +236,7 @@ class Streamdeck(Deck):
             return
         self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
         self.device.set_key_callback(self.key_change_callback)
-        logger.info(f"start: deck {self.name} listening for key strokes")
+        logger.info(f"start: deck {self.name}: device started")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any

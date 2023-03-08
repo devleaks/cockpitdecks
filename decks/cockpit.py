@@ -66,11 +66,12 @@ class Cockpit:
         self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
         self.cockpit_color = COCKPIT_COLOR
         self.default_home_page_name = HOME_PAGE
+
         self.init()
 
     def init(self):
         """
-        Loads all Stream Deck devices connected to this computer.
+        Loads all devices connected to this computer.
         """
         self.scan_devices()
 
@@ -107,20 +108,20 @@ class Cockpit:
     def scan_devices(self):
         for decktype, builder in DECK_TYPES.items():
             decks = builder[1]().enumerate()
-            logger.info(f"init: found {len(decks)} {decktype}")
+            logger.info(f"scan_devices: found {len(decks)} {decktype}")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
                 device.close()
                 if serial in EXCLUDE_DECKS:
-                    logger.warning(f"init: deck {serial} excluded")
+                    logger.warning(f"scan_devices: deck {serial} excluded")
                     del decks[name]
                 self.devices.append({
                     "type": decktype,
                     "device": device,
                     "serial_number": serial
                 })
-            logger.info(f"init: using {len(decks)} {decktype}")
+            logger.debug(f"scan_devices: using {len(decks)} {decktype}")
 
 
     def get_device(self, req_serial: str, req_type: str):
@@ -145,7 +146,7 @@ class Cockpit:
         logger.warning(f"get_device: deck {req_serial} not found")
         return None
 
-    def load(self, acpath: str):
+    def start_aircraft(self, acpath: str):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
@@ -161,7 +162,7 @@ class Cockpit:
             return
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
-            self.terminate_this_aircraft()
+            self.terminate_aircraft()
 
         if len(self.devices) == 0:
             logger.warning(f"load_aircraft: no device")
@@ -488,25 +489,25 @@ class Cockpit:
             self.reload_loop_thread.name = f"Cockpit::reloader"
             self.reload_loop_run = True
             self.reload_loop_thread.start()
-            logger.info(f"start_reload_loop: started")
+            logger.debug(f"start_reload_loop: started")
         else:
-            logger.info(f"start_reload_loop: already running")
+            logger.warning(f"start_reload_loop: already running")
 
     def reload_loop(self):
         while self.reload_loop_run:
             e = self.reload_queue.get()
             if e == "reload":
                 self.reload_decks(just_do_it=True)
-        logger.info(f"reload_loop: ended")
+        logger.debug(f"reload_loop: ended")
 
     def end_reload_loop(self):
         if self.reload_loop_run:
             self.reload_loop_run = False
             self.reload_queue.put("stop")  # to unblock the Queue.get()
             self.reload_loop_thread.join()
-            logger.info(f"end_reload_loop: stopped")
+            logger.debug(f"end_reload_loop: stopped")
         else:
-            logger.info(f"end_reload_loop: not running")
+            logger.warning(f"end_reload_loop: not running")
 
     def reload_decks(self, just_do_it: bool = False):
         """
@@ -514,7 +515,7 @@ class Cockpit:
         Should not be used in production...
         """
         if just_do_it:
-            logger.info(f"reload_decks: reloading..")
+            logger.info(f"reload_decks: reloading decks..")
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
             for name, deck in self.cockpit.items():
                 self.default_pages[name] = deck.current_page.name
@@ -522,18 +523,17 @@ class Cockpit:
             logger.info(f"reload_decks: ..done")
         else:
             self.reload_queue.put("reload")
-            logger.info(f"reload_decks: enqueued")
+            logger.debug(f"reload_decks: enqueued")
 
-
-    def terminate_this_aircraft(self):
-        logger.info(f"terminate_this_aircraft: terminating..")
+    def terminate_aircraft(self):
+        logger.info(f"terminate_aircraft: terminating..")
         for deck in self.cockpit.values():
             deck.terminate()
         self.cockpit = {}
         if not self.xp.use_flight_loop:
-            logger.info(f"terminate_this_aircraft: {len(threading.enumerate())} threads")
-            logger.info(f"terminate_this_aircraft: {[t.name for t in threading.enumerate()]}")
-        logger.info(f"terminate_this_aircraft: ..done")
+            logger.info(f"terminate_aircraft: {len(threading.enumerate())} threads")
+            logger.info(f"terminate_aircraft: {[t.name for t in threading.enumerate()]}")
+        logger.info(f"terminate_aircraft: ..done")
 
     def terminate_devices(self):
         for deck in self.devices:
@@ -547,14 +547,15 @@ class Cockpit:
     def terminate_all(self):
         logger.info(f"terminate_all: terminating..")
         # Terminate decks
-        self.terminate_this_aircraft()
+        self.terminate_aircraft()
         # Terminate dataref collection
         if self.xp is not None:
+            logger.info(f"terminate_all: ..terminating xp..")
             self.xp.terminate()
-            logger.info(f"terminate_all: ..deleting..")
+            logger.debug(f"terminate_all: ..deleting xp..")
             del self.xp
             self.xp = None
-            logger.info(f"terminate_all: ..xp deleted..")
+            logger.debug(f"terminate_all: ..xp deleted..")
         # Terminate reload loop
         self.end_reload_loop()
         logger.info(f"terminate_all: ..terminating devices..")
@@ -569,13 +570,16 @@ class Cockpit:
         if len(self.cockpit) > 0:
             # Each deck should have been started
             # Start reload loop
+            logger.info(f"run: starting..")
             self.start_reload_loop()
+            logger.info(f"run: ..reload loop started..")
             # Start dataref collection
             self.xp.start()
-            logger.info(f"run: active")
+            logger.info(f"run: ..xp started..")
             if not self.xp.use_flight_loop:
                 logger.info(f"run: {len(threading.enumerate())} threads")
                 logger.info(f"run: {[t.name for t in threading.enumerate()]}")
+                logger.info(f"run: ..started")
                 for t in threading.enumerate():
                     try:
                         t.join()
@@ -605,7 +609,7 @@ class Cockpit:
         logger.info(f"enable: enabled")
 
     def disable(self):
-        self.terminate_this_aircraft()
+        self.terminate_aircraft()
         self.disabled = True
         logger.info(f"disable: disabled")
 

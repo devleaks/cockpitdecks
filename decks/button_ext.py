@@ -4,6 +4,7 @@
 # Buttons were isolated here bevcause they use quite larger packages (avwx-engine),
 # call and rely on external services.
 #
+import logging
 import random
 from avwx import Metar
 
@@ -15,6 +16,11 @@ from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_draw import DrawBase
 from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
+
+
+logger = logging.getLogger("ButtonExternal")
+# logger.setLevel(SPAM)
+# logger.setLevel(logging.DEBUG)
 
 
 class WeatherIcon(DrawBase):
@@ -78,15 +84,18 @@ class WeatherIcon(DrawBase):
             a = "left"
             h = image.height / 3
             il = detailsize
-            lines = self.metar.summary.split(",")  # ~ 6-7 short lines
-            for line in lines:
-                draw.text((w, h),  # (image.width / 2, 15)
-                          text=line.strip(),
-                          font=font,
-                          anchor=p+"m",
-                          align=a,
-                          fill=self.label_color)
-                h = h + il
+            if self.metar and self.metar.summary:
+                lines = self.metar.summary.split(",")  # ~ 6-7 short lines
+                for line in lines:
+                    draw.text((w, h),  # (image.width / 2, 15)
+                              text=line.strip(),
+                              font=font,
+                              anchor=p+"m",
+                              align=a,
+                              fill=self.label_color)
+                    h = h + il
+            else:
+                logger.warning(f"get_image_for_icon: no metar summary")
 
         # Paste image on cockpit background and return it.
         bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)

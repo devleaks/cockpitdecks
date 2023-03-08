@@ -16,12 +16,12 @@ s = None
 try:
     logger.info(f"{__version__} {__COPYRIGHT__}")
     logger.info(f"Starting for {ac}..")
-    logger.info(f"..searching for decks and initializing them (this can take a few seconds)..")
+    logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
     # if len(sys.argv) > 2 and sys.argv[2] == "d":
     #     logging.basicConfig(level=logging.DEBUG)
     #     logger.info(f"..debug..")
     s = Cockpit(XPlaneUDP)
-    s.load(os.path.join(os.path.dirname(__file__), ac))
+    s.start_aircraft(os.path.join(os.path.dirname(__file__), ac))
 except KeyboardInterrupt:
     if s is not None:
         s.terminate_all()

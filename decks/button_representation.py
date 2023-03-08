@@ -610,9 +610,9 @@ class IconAnimation(MultiIcons):
         """
         Stops animation and remove icon from deck
         """
-        logger.info(f"clean: button {self.button_name()}: cleaning requested")
+        logger.debug(f"clean: button {self.button_name()}: cleaning requested")
         self.anim_stop(render=False)
-        logger.info(f"clean: button {self.button_name()}: stopped")
+        logger.debug(f"clean: button {self.button_name()}: stopped")
         super().clean()
 
     def render(self):

@@ -86,7 +86,7 @@ class Deck(ABC):
     def init(self):
         if self.valid:
             self.make_default_icon()
-            self.make_icon_for_device()
+            self.load_icons()
             self.load()     # will load default page if no page found
             self.load_home_page()   # loads home page onto deck
             self.start()    # Some sustem may need to start before we load_home_page()
@@ -260,7 +260,7 @@ class Deck(ABC):
                         logger.debug(f"load: includes: ..included")
 
 
-                    logger.info(f"load: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')})")
+                    logger.info(f"load: deck {self.name}: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')}), contains {len(this_page.buttons)} buttons")
                 # else:
                 #     logger.warning(f"load: file {p} not found")
 
@@ -273,6 +273,7 @@ class Deck(ABC):
             # self.load_default_page()
         else:
             self.set_home_page()
+            logger.info(f"load: deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
 
     def change_page(self, page: str):
         """
@@ -302,6 +303,7 @@ class Deck(ABC):
             self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
             logger.debug(f"change_page: deck {self.name} ..done")
+            logger.info(f"change_page: deck {self.name} changed page to {page}")
             return self.current_page.name
         else:
             logger.warning(f"change_page: deck {self.name}: page {page} not found")
@@ -322,7 +324,7 @@ class Deck(ABC):
             else:
                 logger.debug(f"set_home_page: deck {self.name}: no home page named {self.default_home_page_name}")
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.info(f"set_home_page: deck {self.name}: home page {self.home_page.name}")
+            logger.debug(f"set_home_page: deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
         """
@@ -330,9 +332,9 @@ class Deck(ABC):
         """
         if self.home_page is not None:
             self.change_page(self.home_page.name)
-            logger.info(f"load_home_page: deck {self.name}, home page {self.home_page.name} loaded")
+            logger.debug(f"load_home_page: deck {self.name}, home page {self.home_page.name} loaded")
         else:
-            logger.info(f"load_home_page: deck {self.name} has no home page")
+            logger.debug(f"load_home_page: deck {self.name} has no home page")
 
     # #######################################
     # Deck Specific Functions
@@ -374,7 +376,7 @@ class Deck(ABC):
         # self.cockpit.icons[self.default_icon_name] = self.icons[self.default_icon_name]
         logger.debug(f"make_default_icon: create default {self.default_icon_name} icon ({self.icons.keys()})")
 
-    def make_icon_for_device(self):
+    def load_icons(self):
         """
         Each device model requires a different icon format (size).
         We could build a set per Stream Deck model rather than stream deck instance...
@@ -386,7 +388,7 @@ class Deck(ABC):
                 with open(cache, "rb") as fp:
                     icons_temp = pickle.load(fp)
                     self.icons.update(icons_temp)
-                logger.info(f"make_icon_for_device: {len(self.icons)} icons loaded from cache")
+                logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons loaded from cache")
                 return
 
         if self.device is not None:
@@ -396,9 +398,9 @@ class Deck(ABC):
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
                 with open(cache, "wb") as fp:
                     pickle.dump(self.icons, fp)
-            logger.info(f"make_icon_for_device: deck {self.name} icons ready")
+            logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons loaded")
         else:
-            logger.warning(f"make_icon_for_device: deck {self.name} has no device")
+            logger.warning(f"load_icons: deck {self.name} has no device")
 
     def create_icon_for_key(self, button, colors):
         if self.pil_helper is not None:

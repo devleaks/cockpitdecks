@@ -223,7 +223,7 @@ class Button:
             logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
         else:
             logger.debug(f"init: button {self.name}: already has a value ({self.current_value}), initial value ignored")
-        # logger.info(f"init: button {self.name}: {self.id()}")
+        # logger.debug(f"init: button {self.name}: {self.id()}")
 
     def set_current_value(self, value):
         if self._first_value_not_saved:
