@@ -120,47 +120,79 @@ buttons:
 
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
+    type: push
     name: SAMGroundVehicle
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: sam/main_window
-    formula: ${state:activation_count} 2 %
-    initial-value: 0
     label: SAM/GV
-  - index: 9
-    name: GroundHandlingDeluxe
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: jd/ghd/show_widget
-    formula: ${state:activation_count} 2 %
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: sam/main_window
     initial-value: 0
+  - index: 9
+    type: push
+    name: GroundHandlingDeluxe
     label: GHDLX
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: jd/ghd/show_widget
+    initial-value: 0
 
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
+    type: push
     name: XTouchMini
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: SRS/X-Camera/Toggle_Control_Panel_on_or_off
-    formula: ${state:activation_count} 2 %
-    initial-value: 0
     label: X-Camera
-  - index: 17
-    name: X-ATC
-    type: push
-    multi-icons:
-      - AVAIL_GREEN_NONE
-      - NONE_ON_BLUE_FR
-    command: SRS/X-ATC-Chatter/Toggle_Control_Panel
-    formula: ${state:activation_count} 2 %
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: SRS/X-Camera/Toggle_Control_Panel_on_or_off
     initial-value: 0
+  - index: 17
+    type: push
+    name: X-ATC
     label: X-ATC
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: SRS/X-ATC-Chatter/Toggle_Control_Panel
+    initial-value: 0
 
 # ### LINE 4 ### 24-31 ######################################################
   # - index: 26
@@ -206,8 +238,15 @@ buttons:
   - index: 30
     name: RELOAD
     type: reload
-    icon: RELOAD
     label: RELOAD
+    label-size: 14
+    label-position: cm
+    text: ${fa:rotate-right}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 80
+    text-position: cm
+    text-bg-color: (94, 111, 130)
   - index: 31
     name: Index
     type: page

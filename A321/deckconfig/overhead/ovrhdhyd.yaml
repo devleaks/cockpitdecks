@@ -113,6 +113,15 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+  - index: 15
+    name: left
+    type: page
+    page: adirs
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-left}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 3 ### 16-23 ######################################################
   - index: 23
     name: down

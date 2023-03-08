@@ -3,8 +3,24 @@ buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0
     type: none
-    label: "ENG 1\nL TK PUMPS"
+    text: "ENG 1\nL TK PUMPS"
+  - index: 2
+    type: none
+    label: ACT
+    annunciator:
+      type: B
+      size: large
+      B0:
+        text: FAULT
+        color: darkorange
+      B1:
+        text: "FWD"
+        color: deepskyblue
+        framed: true
   - index: 3
+    type: none
+    text: "CTR TK"
+  - index: 4
     type: none
     annunciator:
       type: B
@@ -18,9 +34,12 @@ buttons:
         color: white
         framed: true
         formula: 1
+  - index: 5
+    type: none
+    text: "CTR TK"
   - index: 6
     type: none
-    label: "ENG 2\nR TK PUMPS"
+    text: "ENG 2\nR TK PUMPS"
   - index: 7
     name: up
     type: page
@@ -56,19 +75,6 @@ buttons:
       B1:
         text: "OFF"
         color: white
-        framed: true
-  - index: 10
-    type: none
-    label: ACT
-    annunciator:
-      type: B
-      size: large
-      B0:
-        text: FAULT
-        color: darkorange
-      B1:
-        text: "FWD"
-        color: deepskyblue
         framed: true
   - index: 11
     type: none

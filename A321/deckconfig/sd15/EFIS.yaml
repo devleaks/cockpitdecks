@@ -103,9 +103,13 @@ buttons:
     type: push
     name: CHRONO
     command: AirbusFBW/CaptChronoButton
-    icon: TEST
     label: CHRONO
     label-size: 10
+    push-switch:
+      button-size: 120
+      button-fill-color: black
+      button-stroke-width: 0
+      witness-size: 0
   - index: 7
     name: ND MODE
     type: updown
@@ -194,7 +198,12 @@ buttons:
     command: sim/autopilot/knots_mach_toggle
     dataref: sim/cockpit/autopilot/airspeed_is_mach
     initial-value: 0
-    icon: TEST
+    push-switch:
+      button-size: 120
+      button-fill-color: black
+      button-stroke-width: 0
+      witness-size: 10
+      witness-color: red
 # ### LINE 3 ### 10 - 14 ######################################################
   - index: 10
     name: FD 1

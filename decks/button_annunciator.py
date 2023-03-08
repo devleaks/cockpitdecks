@@ -15,7 +15,7 @@ from .rpc import RPC
 from .button_representation import Icon
 
 logger = logging.getLogger("Annunciator")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # Yeah, shouldn't be globals.
@@ -24,6 +24,12 @@ logger.setLevel(logging.DEBUG)
 ICON_SIZE = 256 # px
 DEFAULT_INVERT_COLOR = "white"
 TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
+
+
+class GUARD_TYPES(Enum):
+    COVER = "cover"
+    GRID = "grid"
+
 
 class AnnunciatorPart:
 
@@ -280,10 +286,6 @@ class AnnunciatorPart:
                 draw.polygon(triangle, outline=color, width=STROKE_THICK)
             else:
                 logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
-
-class GUARD_TYPES(Enum):
-    COVER = "cover"
-    GRID = "grid"
 
 
 class Annunciator(Icon):

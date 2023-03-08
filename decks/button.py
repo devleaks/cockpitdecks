@@ -53,7 +53,6 @@ class Button:
         # Working variables
         self._first_value_not_saved = True
         self._first_value = None    # first value the button will get
-        self._use_activation_state = False
         self._last_activation_state = None
         self.initial_value = config.get("initial-value")
         self.current_value = None
@@ -355,9 +354,10 @@ class Button:
         dataref_rpn = base.get(FORMULA)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall(PATTERN_DOLCB, dataref_rpn)
+            datarefs = list(filter(is_dref, datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"scan_datarefs: button {self.name}: added formula datarefs {datarefs}")
+                logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
 
         # Use of datarefs in label or text
         #
@@ -366,7 +366,7 @@ class Button:
         label = base.get("label")
         if label is not None and type(label) == str:
             datarefs = re.findall(PATTERN_DOLCB, label)
-            datarefs = list(filter(lambda x: is_dref(x), datarefs))
+            datarefs = list(filter(is_dref, datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
@@ -594,12 +594,10 @@ class Button:
         """
         Button ultimately returns either one value or an array of values if representation requires it.
         """
-        def has_no_state():
-            return self._activation._has_no_value or self._config.get("type") == "none"
 
         # 1. Special cases (Annunciator): Each annunciator part has its own evaluation
         if isinstance(self._representation, Annunciator):
-            logger.debug(f"button_value: button {self.name}: is Annunciator, returning part values")
+            logger.debug(f"button_value: button {self.name}: is Annunciator, getting part values")
             return self._representation.get_current_values()
 
         # 2. No dataref
@@ -622,7 +620,7 @@ class Button:
         if len(self.all_datarefs) > 1:
             # 4.1 Mutiple Dataref with a formula, returns only one value
             if self.dataref_rpn is not None:
-                logger.debug(f"button_value: button {self.name}: getting formula with several datarefs")
+                logger.debug(f"button_value: button {self.name}: getting formula with more than one datarefs")
                 return self.execute_formula(formula=self.dataref_rpn)
             # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
             # !! May be we should return them all?
@@ -630,23 +628,26 @@ class Button:
             for d in self.all_datarefs:
                 v = self.get_dataref_value(d)
                 r[d] = v
-            logger.debug(f"button_value: button {self.name}: returning dict of datarefs")
+            logger.debug(f"button_value: button {self.name}: getting dict of datarefs")
             return r
 
         # 5. Value is based on activation state:
-        if not has_no_state():
-            logger.warning(f"button_value: button {self.page.name}/{self.index}/{self.name}: use internal activation value")
-        self._use_activation_state = True
+        if not self.use_internal_state():
+            logger.warning(f"button_value: button {self.name}: use internal state")
         self._last_activation_state = self._activation.get_status()
-        # logger.log(SPAM, f"button_value: button {self.name}: returning activation current value ({self._last_activation_state})")
         if "current_value" in self._last_activation_state:
-            logger.debug(f"button_value: button {self.name}: returning activation current value ({self._last_activation_state['current_value']})")
+            logger.debug(f"button_value: button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
             return self._last_activation_state["current_value"]
+
+        logger.debug(f"button_value: button {self.name}: getting entire state ({self._last_activation_state})")
         return self._last_activation_state
 
     # ##################################
     # External API
     #
+    def use_internal_state(self) -> bool:
+        return len(self.all_datarefs) == 0 or self._activation._has_no_value
+
     def dataref_changed(self, dataref: "Dataref"):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
@@ -666,9 +667,12 @@ class Button:
         @todo: Return a status from activate()
         """
         if not self._activation.is_valid():
-            logger.warning(f"activate: button {self.name}: activation is not valid")
+            logger.warning(f"activate: button {self.name}: activation is not valid, nothing executed")
             return
         self._activation.activate(state)
+        if self.use_internal_state():
+            logger.debug(f"activate: button {self.name}: uses internal state, setting value")
+            self.set_current_value(self.button_value())
         if self.has_changed():
             logger.log(SPAM, f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
@@ -708,7 +712,7 @@ class Button:
             else:
                 logger.debug(f"render: button {self.name} not on current page")
         else:
-            logger.debug(f"render: button {self.name} has no deck")
+            logger.warning(f"render: button {self.name} has no deck")  # error
 
     def clean(self):
         """

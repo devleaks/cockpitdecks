@@ -122,13 +122,13 @@ class Icon(Representation):
 
     def mk_uniform_icon(self):
         deck = self.button.deck
-        if self.icon_color is not None:
-            self.icon_color = convert_color(self.icon_color)
-            self.icon = f"_default_{self.button.page.name}_{self.button.name}_icon.png"
-            deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
-            logger.debug(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
-        else:
-            logger.warning(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: no icon color")
+        if self.icon_color is None:
+            self.icon_color = deck.cockpit_color
+            logger.debug(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: no icon color, using cockpit color {self.icon_color}")
+        self.icon_color = convert_color(self.icon_color)
+        self.icon = f"_default_{self.button.page.name}_{self.button.name}_icon.png"
+        deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
+        logger.debug(f"mk_uniform_icon: button {self.button.name}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...

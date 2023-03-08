@@ -17,13 +17,13 @@ decks:
   - name: XPDeckXL
     layout: overhead
     type: streamdeck
-    brightness: 70
+    brightness: 80
     default-label-font: DIN Bold.ttf
     default-label-size: 16
   - name: XPTouch
     type: xtouchmini
     layout: xtouchold
-    brightness: 70
+    brightness: 80
     # disabled: True
     # We use X-Touch from X-Keypad for better control
 # This is at global level

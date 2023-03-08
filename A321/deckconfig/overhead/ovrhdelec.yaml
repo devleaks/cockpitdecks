@@ -52,8 +52,8 @@ buttons:
         dataref: AirbusFBW/BatOHPArray[0]
     command: toliss_airbus/eleccommands/Bat1Toggle
   - index: 4
-    name: BAT_1
-    label: BAT 1
+    name: BAT_2
+    label: BAT 2
     type: push
     annunciator:
       type: B

@@ -71,6 +71,15 @@ buttons:
         size: 80
         font: DIN Condensed Bold
         formula: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
+  - index: 15
+    name: left
+    type: page
+    page: ovrhdhyd
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-right}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
 # ### LINE 3 ### 16-23 ######################################################
   - index: 16
     # name must be unique on page

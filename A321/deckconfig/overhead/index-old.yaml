@@ -185,7 +185,15 @@ buttons:
   - index: 30
     name: RELOAD
     type: reload
-    icon: RELOAD
+    label: RELOAD
+    label-size: 14
+    label-position: cm
+    text: ${fa:rotate-right}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 80
+    text-position: cm
+    text-bg-color: (94, 111, 130)
   - index: 31
     name: xplane
     type: page
