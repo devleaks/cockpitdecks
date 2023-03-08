@@ -92,6 +92,7 @@ buttons:
     command: LiveTraffic/Info_Staus_Wnd/Open
   - index: 6
     name: FollowTheGreens
+    label: F.GREENS
     type: onoff
     icon-off: F.GREENS_OFF
     icon-animate:
@@ -107,7 +108,6 @@ buttons:
       - XPPython3/followthegreens/main_windown_toggle
     formula: ${state:activation_count} 2 %
     initial-value: 0
-    label: F.GREENS
   - index: 7
     name: XPLANEDATA
     type: push
@@ -117,7 +117,6 @@ buttons:
     label: "XPLANE\nCOCKPIT\nDATA"
     label-color: black
     label-position: cm
-
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     type: push
@@ -214,6 +213,7 @@ buttons:
     label-color: red
     label-position: "cm"
     what: desc
+    options: framed-icon
   - index: 27
     name: INSPECT
     type: inspect

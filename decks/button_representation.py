@@ -565,16 +565,13 @@ class IconAnimation(MultiIcons):
         self.counter = 0
         self.thread = None
         self.running = False
-        self.finished = None
 
     def loop(self):
-        self.finished = threading.Event()
         while self.running:
             self.button.render()
             self.counter = self.counter + 1
             self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
             time.sleep(self.speed)
-        self.finished.set()
 
     def should_run(self) -> bool:
         """
@@ -595,15 +592,17 @@ class IconAnimation(MultiIcons):
         else:
             logger.warning(f"anim_start: button {self.button_name()}: already started")
 
-    def anim_stop(self):
+    def anim_stop(self, render: bool = True):
         """
         Stops animation
         """
         if self.running:
             self.running = False
-            if not self.finished.wait(timeout=2*self.speed):
+            self.thread.join(timeout=2*self.speed)
+            if self.thread.is_alive():
                 logger.warning(f"anim_stop: button {self.button_name()}: did not get finished signal")
-            self.render()
+            if render:
+                self.render()
         else:
             logger.debug(f"anim_stop: button {self.button_name()}: already stopped")
 
@@ -611,7 +610,9 @@ class IconAnimation(MultiIcons):
         """
         Stops animation and remove icon from deck
         """
-        self.anim_stop()
+        logger.info(f"clean: button {self.button_name()}: cleaning requested")
+        self.anim_stop(render=False)
+        logger.info(f"clean: button {self.button_name()}: stopped")
         super().clean()
 
     def render(self):

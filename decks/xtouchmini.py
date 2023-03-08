@@ -187,9 +187,12 @@ class XTouchMini(Deck):
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
-        logger.info(f"Threads BEFORE: {[t.name for t in threading.enumerate()]}")
-        self.device.stop()
-        logger.info(f"Threads AFTER STOP: {[t.name for t in threading.enumerate()]}")
+        XTouchMini.terminate_device(self.device, self.name)
         del self.device
-        logger.info(f"Threads AFTER DEL: {[t.name for t in threading.enumerate()]}")
         logger.debug(f"terminate: {self.name} stopped")
+
+    @staticmethod
+    def terminate_device(device, name: str = "unspecified"):
+        device.stop()  # terminates the loop.
+        del device
+        logger.info(f"terminate_device: {name} terminated")

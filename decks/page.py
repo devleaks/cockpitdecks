@@ -14,7 +14,8 @@ class Page:
     """
     A Page is a collection of buttons.
     """
-    def __init__(self, name: str, config: dict, deck: "Streamdeck"):
+    def __init__(self, name: str, config: dict, deck: "Deck"):
+        self.logging_level = "INFO"
         self._config = config
         self.name = name
         self.deck = deck
@@ -44,22 +45,29 @@ class Page:
             logger.warning(f"get_button_value: invalid name {name}")
         return None
 
-    def load_defaults(self, config, src):
-        self.default_label_font = config.get("default-label-font", src.default_label_font)
-        self.default_label_size = config.get("default-label-size", src.default_label_size)
-        self.default_label_color = config.get("default-label-color", src.default_label_color)
+    def load_defaults(self, config: dict, base):
+        # Logging level
+        self.logging_level = config.get("logging-level", "INFO")
+        llvalue = getattr(logging, self.logging_level)
+        if llvalue is not None:
+            logger.setLevel(llvalue)
+            logger.debug(f"load_defaults: logging level set to {self.logging_level}")
+
+        self.default_label_font = config.get("default-label-font", base.default_label_font)
+        self.default_label_size = config.get("default-label-size", base.default_label_size)
+        self.default_label_color = config.get("default-label-color", base.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = config.get("default-icon-color", self.name + src.default_icon_name)
-        self.default_icon_color = config.get("default-icon-color", src.default_icon_color)
+        self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.light_off_intensity = config.get("light-off", src.light_off_intensity)
-        self.fill_empty_keys = config.get("fill-empty-keys", src.fill_empty_keys)
-        self.empty_key_fill_color = config.get("empty-key-fill-color", src.empty_key_fill_color)
+        self.light_off_intensity = config.get("light-off", base.light_off_intensity)
+        self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
+        self.empty_key_fill_color = config.get("empty-key-fill-color", base.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-        self.empty_key_fill_icon = config.get("empty-key-fill-icon", src.empty_key_fill_icon)
-        self.annunciator_style = config.get("annunciator-style", src.annunciator_style)
+        self.empty_key_fill_icon = config.get("empty-key-fill-icon", base.empty_key_fill_icon)
+        self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-        self.cockpit_color = config.get("cockpit-color", src.cockpit_color)
+        self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
 
     def inspect(self, what: str = None):
@@ -149,6 +157,14 @@ class Page:
             button.clean()  # knows how to clean itself
         logger.debug(f"clean: page {self.name}: ..done")
 
+    def is_current_page(self):
+        """
+        Returns whether button is on current page
+        """
+        return self.deck.current_page == self
+
     def terminate(self):
+        if self.is_current_page() and self.xp is not None:
+            self.xp.remove_datarefs_to_monitor(self.datarefs)
         self.clean()
         self.buttons = {}

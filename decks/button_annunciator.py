@@ -1,5 +1,5 @@
 # ###########################
-# Special Airbus Button Rendering
+# Annunciator Rendering
 #
 import logging
 import threading
@@ -536,17 +536,14 @@ class AnnunciatorAnimate(Annunciator):
         # Working attributes
         self.running = None  # state unknown
         self.thread = None
-        self.finished = None
         self.blink = True
 
     def loop(self):
-        self.finished = threading.Event()
         while self.running:
             self.button.render()
             self.blink = not self.blink
             self.all_lit(self.blink)
             time.sleep(self.speed)
-        self.finished.set()
 
     def should_run(self) -> bool:
         """
@@ -569,16 +566,18 @@ class AnnunciatorAnimate(Annunciator):
         else:
             logger.warning(f"anim_start: button {self.button.name}: already started")
 
-    def anim_stop(self):
+    def anim_stop(self, render: bool = True):
         """
         Stops animation
         """
         if self.running:
             self.running = False
-            if not self.finished.wait(timeout=2*self.speed):
+            self.thread.join(timeout=2*self.speed)
+            if self.thread.is_alive():
                 logger.warning(f"anim_stop: button {self.button.name}: did not get finished signal")
             self.all_lit(False)
-            return super().render()
+            if render:
+                return super().render()
         else:
             logger.debug(f"anim_stop: button {self.button.name}: already stopped")
 
@@ -587,7 +586,7 @@ class AnnunciatorAnimate(Annunciator):
         Stops animation and remove icon from deck
         """
         logger.debug(f"clean: button {self.button.name}: cleaning requested")
-        self.anim_stop()
+        self.anim_stop(render=False)
         logger.debug(f"clean: button {self.button.name}: stopped")
         super().clean()
 

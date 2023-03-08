@@ -29,6 +29,7 @@ class Cockpit:
     Is started when aicraft is loaded and aircraft contains CONFIG_DIR folder.
     """
     def __init__(self, xp):
+        self.logging_level = "INFO"
         self.xp = xp(self)
         self._config = None
         self.name = "Cockpitdecks"
@@ -72,7 +73,6 @@ class Cockpit:
         Loads all Stream Deck devices connected to this computer.
         """
         self.scan_devices()
-        self.start_reload_loop()
 
     def get_id(self):
         return self.name
@@ -285,7 +285,15 @@ class Cockpit:
                 config = yaml.safe_load(fp)
                 logger.debug(f"create_decks: loaded config {fn}")
                 self._config = config
-                self.name = self._config.get("name", self._config.get("aircraft", "Cockpitdecks4"))
+
+                # Logging level
+                self.logging_level = self._config.get("logging-level", "INFO")
+                llvalue = getattr(logging, self.logging_level)
+                if llvalue is not None:
+                    logger.setLevel(llvalue)
+                    logger.debug(f"create_decks: logging level set to {self.logging_level}")
+
+                self.name = self._config.get("name", self._config.get("aircraft", "Cockpitdecks"))
                 self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
                 self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
                 self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
@@ -527,25 +535,30 @@ class Cockpit:
             logger.info(f"terminate_this_aircraft: {[t.name for t in threading.enumerate()]}")
         logger.info(f"terminate_this_aircraft: ..done")
 
-    def start_this_aircraft(self):
-        logger.info(f"start_this_aircraft: starting..")
-        for deck in self.cockpit.values():
-            deck.start()
-        if not self.xp.use_flight_loop:
-            logger.info(f"start_this_aircraft: {len(threading.enumerate())} threads")
-            logger.info(f"start_this_aircraft: {[t.name for t in threading.enumerate()]}")
-        logger.info(f"start_this_aircraft: ..done")
+    def terminate_devices(self):
+        for deck in self.devices:
+            decktype = deck.get("type")
+            if decktype not in DECK_TYPES.keys():
+                logger.warning(f"create_default_decks: invalid deck type {decktype}, ignoring")
+                continue
+            device = deck["device"]
+            DECK_TYPES[decktype][0].terminate_device(device, deck["serial_number"])
 
     def terminate_all(self):
         logger.info(f"terminate_all: terminating..")
+        # Terminate decks
         self.terminate_this_aircraft()
+        # Terminate dataref collection
         if self.xp is not None:
             self.xp.terminate()
             logger.info(f"terminate_all: ..deleting..")
             del self.xp
             self.xp = None
             logger.info(f"terminate_all: ..xp deleted..")
+        # Terminate reload loop
         self.end_reload_loop()
+        logger.info(f"terminate_all: ..terminating devices..")
+        self.terminate_devices()
         logger.info(f"terminate_all: ..done")
         left = len(threading.enumerate())
         if left > 1:  # [MainThread]
@@ -554,6 +567,10 @@ class Cockpit:
 
     def run(self):
         if len(self.cockpit) > 0:
+            # Each deck should have been started
+            # Start reload loop
+            self.start_reload_loop()
+            # Start dataref collection
             self.xp.start()
             logger.info(f"run: active")
             if not self.xp.use_flight_loop:

@@ -35,6 +35,7 @@ class Deck(ABC):
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
+        self.logging_level = "INFO"
         self._config = config
         self.name = name
         self.cockpit = cockpit
@@ -105,31 +106,38 @@ class Deck(ABC):
                 logger.warning(f"get_button_value: not my deck {a[0]} ({self.name})")
         return None
 
-    def set_default(self, src: dict, base):
+    def set_default(self, config: dict, base):
         """
         Loads a layout global configuration parameters.
 
         :param      fn:   The function
         :type       fn:   Function
         """
-        self.default_label_font = src.get("default-label-font", base.default_label_font)
-        self.default_label_size = src.get("default-label-size", base.default_label_size)
-        self.default_label_color = src.get("default-label-color", base.default_label_color)
+        # Logging level
+        self.logging_level = config.get("logging-level", "INFO")
+        llvalue = getattr(logging, self.logging_level)
+        if llvalue is not None:
+            logger.setLevel(llvalue)
+            logger.debug(f"set_default: logging level set to {self.logging_level}")
+
+        self.default_label_font = config.get("default-label-font", base.default_label_font)
+        self.default_label_size = config.get("default-label-size", base.default_label_size)
+        self.default_label_color = config.get("default-label-color", base.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
-        self.default_icon_name = src.get("default-icon-color", self.name + base.default_icon_name)
-        self.default_icon_color = src.get("default-icon-color", base.default_icon_color)
+        self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
+        self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.light_off_intensity = src.get("light-off", base.light_off_intensity)
-        self.fill_empty_keys = src.get("fill-empty-keys", base.fill_empty_keys)
-        self.empty_key_fill_color = src.get("empty-key-fill-color", base.empty_key_fill_color)
+        self.light_off_intensity = config.get("light-off", base.light_off_intensity)
+        self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
+        self.empty_key_fill_color = config.get("empty-key-fill-color", base.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-        self.empty_key_fill_icon = src.get("empty-key-fill-icon", base.empty_key_fill_icon)
-        self.annunciator_style = src.get("annunciator-style", base.annunciator_style)
-        self.cockpit_color = src.get("cockpit-color", base.cockpit_color)
+        self.empty_key_fill_icon = config.get("empty-key-fill-icon", base.empty_key_fill_icon)
+        self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
+        self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
-        self.logo = src.get("default-wallpaper-logo", base.default_logo)
-        self.wallpaper = src.get("default-wallpaper", base.default_wallpaper)
-        self.default_home_page_name = src.get("default-homepage-name", base.default_home_page_name)
+        self.logo = config.get("default-wallpaper-logo", base.default_logo)
+        self.wallpaper = config.get("default-wallpaper", base.default_wallpaper)
+        self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
 
 
     def load_layout_config(self, fn):
@@ -447,8 +455,6 @@ class Deck(ABC):
         pass
 
     def terminate(self):
-        if self.current_page is not None:
-            self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
         for p in self.pages.values():
             p.terminate()
         self.pages = {}

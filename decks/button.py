@@ -36,10 +36,12 @@ class Button:
     def __init__(self, config: dict, page: "Page"):
 
         # Definition and references
+        self.logging_level = "INFO"
         self._config = config
         self.page = page
         self.deck = page.deck
         self.xp = self.deck.cockpit.xp  # shortcut alias
+
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
@@ -49,6 +51,13 @@ class Button:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
             if len(idxnum) > 0:
                 self.num_index = idxnum[0]
+
+        # Logging level
+        self.logging_level = config.get("logging-level", "INFO")
+        llvalue = getattr(logging, self.logging_level)
+        if llvalue is not None:
+            logger.setLevel(llvalue)
+            logger.debug(f"__init__: button {self.name}: logging level set to {self.logging_level}")
 
         # Working variables
         self._first_value_not_saved = True

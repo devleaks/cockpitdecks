@@ -115,17 +115,17 @@ class Loupedeck(Deck):
         self.device.draw_image(image_right, display="right")
 
         # Add index 0 only button:
-        page_config = {
-            "name": DEFAULT_PAGE_NAME
-        }
-        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
+        page0 = Page(name=DEFAULT_PAGE_NAME,
+                     config={
+                                "name": DEFAULT_PAGE_NAME
+                     },
+                     deck=self)
         button0 = Button(config={
                                     "index": 0,
                                     "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
-                                    "label": "Map",
-                                    "icon": self.default_icon_name
+                                    "text": "MAP"
                                 }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
@@ -383,15 +383,19 @@ class Loupedeck(Deck):
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
-        with self.device:
-            self.device.set_callback(None)
-            self.device.reset()
-            self.device.stop()  # terminates the loop.
-            self.running = False
-
+        Loupedeck.terminate_device(self.device, self.name)
+        self.running = False
         # logger.debug(f"terminate: closing {type(self.device).__name__}..")
         # del self.device     # closes connection and stop serial _read thread
         # logger.debug(f"terminate: closed")
         logger.info(f"terminate: deck {self.name} terminated")
+
+    @staticmethod
+    def terminate_device(device, name: str = "unspecified"):
+        with device:
+            device.set_callback(None)
+            device.reset()
+            device.stop()  # terminates the loop.
+        logger.info(f"terminate_device: {name} terminated")
 
 

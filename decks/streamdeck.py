@@ -144,17 +144,17 @@ class Streamdeck(Deck):
                 self.device.set_key_image(k, key_image)
 
         # Add index 0 only button:
-        page_config = {
-            "name": DEFAULT_PAGE_NAME
-        }
-        page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
+        page0 = Page(name=DEFAULT_PAGE_NAME,
+                     config={
+                                "name": DEFAULT_PAGE_NAME
+                     },
+                     deck=self)
         button0 = Button(config={
                                     "index": 0,
                                     "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
-                                    "label": "Map",
-                                    "icon": "MAP"
+                                    "text": "MAP"
                                 }, page=page0)
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
@@ -240,12 +240,16 @@ class Streamdeck(Deck):
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
-        with self.device:
-            self.device.set_key_callback(None)
-            self.device._setup_reader(None) # terminates the _read() loop on serial line (thread).
-            self.device.reset()
-            self.device.close()  # terminates the loop.
-            self.running = False
+        Streamdeck.terminate_device(self.device, self.name)
+        self.running = False
         logger.info(f"terminate: deck {self.name} terminated")
 
+    @staticmethod
+    def terminate_device(device, name: str = "unspecified"):
+        with device:
+            device.set_key_callback(None)
+            device._setup_reader(None) # terminates the _read() loop on serial line (thread).
+            device.reset()
+            # device.stop()  # terminates the loop.
+        logger.info(f"terminate_device: {name} terminated")
 
