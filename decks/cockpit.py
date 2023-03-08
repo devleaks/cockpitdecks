@@ -25,7 +25,7 @@ logger = logging.getLogger("Cockpit")
 
 class Cockpit:
     """
-    Contains all stream deck configurations for a given aircraft.
+    Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_DIR folder.
     """
     def __init__(self, xp):
@@ -180,18 +180,26 @@ class Cockpit:
             self.load_icons()
             self.load_fonts()
             self.create_decks()
-            if self.default_pages is not None:
-                logger.debug(f"load_aircraft: default_pages {self.default_pages.keys()}")
-                for name, deck in self.cockpit.items():
-                    if name in self.default_pages.keys():
-                        if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
-                            deck.change_page(self.default_pages[name])
-                self.default_pages = None
+            self.load_pages()
         else:
             logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_DIR}' in aircraft folder {acpath}")
             self.create_default_decks()
 
-    def reload_page(self):
+    def load_pages(self):
+        if self.default_pages is not None:
+            logger.debug(f"load_pages: default_pages {self.default_pages.keys()}")
+            for name, deck in self.cockpit.items():
+                if name in self.default_pages.keys():
+                    if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
+                        deck.change_page(self.default_pages[name])
+                    else:
+                        deck.change_page()
+            self.default_pages = None
+        else:
+            for deck in self.cockpit.values():
+                deck.change_page()
+
+    def reload_pages(self):
         for name, deck in self.cockpit.items():
             deck.reload_page()
 
@@ -234,7 +242,7 @@ class Cockpit:
         else:
             logger.debug(f"load_defaults: font {DEFAULT_LABEL_FONT} already loaded")
 
-        # 2.2 Try to load from streamdecks resources folder
+        # 2.2 Try to load from cockpitdecks resources folder
         if DEFAULT_LABEL_FONT not in self.fonts.keys():
             fn = None
             try:
@@ -574,12 +582,13 @@ class Cockpit:
             self.start_reload_loop()
             logger.info(f"run: ..reload loop started..")
             # Start dataref collection
-            self.xp.start()
-            logger.info(f"run: ..xp started..")
+            # self.xp.start()
+            # logger.info(f"run: ..xp started..")
             if not self.xp.use_flight_loop:
                 logger.info(f"run: {len(threading.enumerate())} threads")
                 logger.info(f"run: {[t.name for t in threading.enumerate()]}")
                 logger.info(f"run: ..started")
+                logger.info(f"run: serving {self.name}")
                 for t in threading.enumerate():
                     try:
                         t.join()

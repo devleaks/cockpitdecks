@@ -254,5 +254,5 @@ class PythonInterface:
                             else:  # not a yaml file
                                 print(self.Info, f"PI::get_beginend_commands: ignoring file {page}")
         else:
-            print(self.Info, f"PI::get_beginend_commands: Looking in '{config_fn}' to scan for stream deck device layout: directory not found.")
+            print(self.Info, f"PI::get_beginend_commands: Looking in '{config_fn}' to scan for deck layout: directory not found.")
         return commands

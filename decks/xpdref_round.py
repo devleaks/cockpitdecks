@@ -1,5 +1,6 @@
 # Internal: Round a few rapidly changing datarefs
 DATAREF_ROUND = {
+    "sim/cockpit/autopilot/heading_mag": 2,
     "AirbusFBW/BatVolts[0]": 1,
     "AirbusFBW/BatVolts[1]": 1,
     "AirbusFBW/OHPLightsATA34[6]": 3,

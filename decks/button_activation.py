@@ -9,7 +9,7 @@ from datetime import datetime
 from .color import is_integer
 
 logger = logging.getLogger("Activation")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # logger.setLevel(SPAM)
 
 BACKPAGE = "back"
@@ -147,6 +147,7 @@ class Activation:
         return {
             "activation_type": type(self).__name__,
             "activation_count": self.activation_count,
+            "current_value": self.activation_count,     # !
             "all_activations": self.activations_count,
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
@@ -429,10 +430,11 @@ class OnOff(Activation):
     def activate(self, state):
         super().activate(state)
         if state:
-            if self.is_off():
-                self.button.xp.commandOnce(self.commands[0])
-            else:
-                self.button.xp.commandOnce(self.commands[1])
+            if self.num_commands() > 1:
+                if self.is_off():
+                    self.button.xp.commandOnce(self.commands[0])
+                else:
+                    self.button.xp.commandOnce(self.commands[1])
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
             self.write_dataref(self.onoff_current_value)
@@ -555,7 +557,7 @@ class UpDown(Activation):
             nextval = int(currval + 1 if self.go_up else currval - 1)
             logger.debug(f"activate: {currval}, {nextval}, {self.go_up}")
             if self.go_up:
-                if self.num_commands() > 1:
+                if self.num_commands() > 0:
                     self.button.xp.commandOnce(self.commands[0])  # up
                 if nextval >= (self.stops - 1):
                     nextval = self.stops - 1
@@ -563,8 +565,6 @@ class UpDown(Activation):
             else:
                 if self.num_commands() > 1:
                     self.button.xp.commandOnce(self.commands[1])  # down
-                else:
-                    logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} missing up-down command")
                 if nextval <= 0:
                     nextval = 0
                     self.go_up = True

@@ -29,6 +29,7 @@ class Representation:
         self._config = config
         self.button = button
         self._sound = config.get("vibrate")
+        self.datarefs = None
 
     def button_name(self):
         return self.button.name if self.button is not None else 'no button'
@@ -408,6 +409,16 @@ class IconSide(Icon):
         self.labels = self.side.get("labels")
         self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
 
+    def get_datarefs(self):
+        if self.datarefs is None:
+            self.datarefs = []
+            if self.labels is not None:
+                for label in self.labels:
+                    dref = label.get("managed")
+                    if dref is not None:
+                        self.datarefs.append(dref)
+        return self.datarefs
+
     def is_valid(self):
         if self.button.index not in ["left", "right"]:
             logger.debug(f"is_valid: button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}")
@@ -529,7 +540,11 @@ class MultiIcons(Icon):
         if value is None:
             logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None
-        value = int(value)
+        if type(value) in [str, int, float]:
+            value = int(value)
+        else:
+            logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: complex value {value}")
+            return None
         if self.num_icons() > 0:
             if  value >= 0 and value < self.num_icons():
                 self.icon = self.multi_icons[value]

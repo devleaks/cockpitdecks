@@ -156,30 +156,32 @@ class XPlaneBeacon:
 
     def connect_loop(self):
         logger.debug("connect_loop: connecting..")
-        while not self.connected and self.should_run:
-            try:
-                self.FindIp()
-                if "IP" in self.BeaconData:
-                    self.connected = True
-                    self.should_run = False
-                logger.info(self.BeaconData)
-                logger.debug("connect_loop: ..starting..")
-                self.start()
-            except XPlaneVersionNotSupported:
-                self.BeaconData = {}
-                self.connected = False
-                logger.error("connect_loop: XPlane Version not supported.")
-            except XPlaneIpNotFound:
-                self.BeaconData = {}
-                self.connected = False
-                # logger.error("connect_loop: XPlane IP not found. Probably there is no XPlane running in your local network.")
-            if not self.connected and self.should_run:
+        while self.should_run:
+            if not self.connected:
+                try:
+                    self.FindIp()
+                    if "IP" in self.BeaconData:
+                        self.connected = True
+    #                    self.should_run = False
+                    logger.info(self.BeaconData)
+                    logger.debug("connect_loop: ..starting..")
+                    self.start()
+                    logger.info(f"connect_loop: connected, loop started")  # ignore
+                except XPlaneVersionNotSupported:
+                    self.BeaconData = {}
+                    self.connected = False
+                    logger.error("connect_loop: XPlane Version not supported.")
+                except XPlaneIpNotFound:
+                    self.BeaconData = {}
+                    self.connected = False
+                    # logger.error("connect_loop: XPlane IP not found. Probably there is no XPlane running in your local network.")
+                if not self.connected:
+                    time.sleep(RECONNECT_TIMEOUT)
+                    logger.debug("connect_loop: ..trying..")
+            else:
                 time.sleep(RECONNECT_TIMEOUT)
-                logger.debug("connect_loop: ..trying..")
-        if self.should_run:
-            logger.debug("connect_loop: ..connected; connect_loop ended")
-        else:
-            logger.debug("connect_loop: ..ended")
+                logger.debug("connect_loop: ..awake..")
+        logger.debug("connect_loop: ..ended")
 
     def connect(self):
         if not self.connected:
@@ -189,16 +191,15 @@ class XPlaneBeacon:
         logger.debug("connect: connect_loop started")
 
     def start(self):
-        pass
+        logger.warning("start: nothing to start")
 
     def terminate(self):
         self.should_run = False
         logger.debug(f"terminate: asked to stop.. (this may last {RECONNECT_TIMEOUT} secs.)")
         self.connect_thread.join(timeout=RECONNECT_TIMEOUT)
-        if not self.connect_thread.is_alive():
-            logger.debug("terminate: ..stopped")
-        else:
+        if self.connect_thread.is_alive():
             logger.warning(f"terminate: ..thread may hang..")
+        logger.debug("terminate: ..stopped")
 
 class XPlaneUDP(XPlane, XPlaneBeacon):
     '''
@@ -242,6 +243,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
+        if not self.is_connected():
+            logger.warning(f"WriteDataRef: no IP connection ({dataref})")
+            return
+
         cmd = b"DREF\x00"
         dataref = dataref + '\x00'
         string = dataref.ljust(500).encode()
@@ -294,6 +299,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         """
         try:
             # Receive packet
+            self.socket.settimeout(10)
             data, addr = self.socket.recvfrom(1472) # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
             # Decode Packet
             retvalues = {}
@@ -359,11 +365,12 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     nexttime = DATA_REFRESH - (later - now)
                     total_to = 0
                 except XPlaneTimeout:
-                    logger.debug(f"loop: XPlaneTimeout ({total_to})")  # ignore
+                    logger.info(f"loop: XPlaneTimeout ({total_to})")  # ignore
                     total_to = total_to + 1
                     if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
-                        logger.warning(f"loop: XPlaneTimeout ({total_to})")  # ignore
-                        self.disconnect()
+                        logger.warning(f"loop: too many times out, disconnecting, ending loop")  # ignore
+                        self.connected = False  # notify above that connection lost
+                        self.running = False    # auto stop
 
             if nexttime > 0:
                 time.sleep(nexttime)
@@ -431,10 +438,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                 self.thread.start()
                 logger.info(f"start: XPlaneUDP started")
             else:
-                logger.debug(f"start: XPlaneUDP already running.")
+                logger.info(f"start: XPlaneUDP already running.")
             # When restarted after network failure, should clean all datarefs
             # then reload datarefs from current page of each deck
-            self.cockpit.reload_page()
+            self.cockpit.reload_pages()
         else:
             logger.warning(f"start: no IP address. could not start.")
 

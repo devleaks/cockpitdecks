@@ -76,7 +76,7 @@ class Deck(ABC):
             self.layout = config["layout"]  # config["layout"] may be None to choose no layout
         else:
             self.layout = DEFAULT_LAYOUT
-            logger.warning(f"__init__: stream deck has no layout, using default")
+            logger.warning(f"__init__: deck has no layout, using default")
 
         self.valid = True
 
@@ -84,12 +84,13 @@ class Deck(ABC):
     # Deck Common Functions
     #
     def init(self):
-        if self.valid:
-            self.make_default_icon()
-            self.load_icons()
-            self.load()     # will load default page if no page found
-            self.load_home_page()   # loads home page onto deck
-            self.start()    # Some sustem may need to start before we load_home_page()
+        if not self.valid:
+            logger.warning(f"init: deck {self.name}: is invalid")
+            return
+        self.make_default_icon()
+        self.load_icons()
+        self.load()     # will load default page if no page found
+        self.start()    # Some system may need to start before we can load a page
 
     def get_id(self):
         return ID_SEP.join([self.cockpit.get_id(), self.name])
@@ -275,7 +276,7 @@ class Deck(ABC):
             self.set_home_page()
             logger.info(f"load: deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
 
-    def change_page(self, page: str):
+    def change_page(self, page: str = None):
         """
         Returns the currently loaded page name
 
@@ -283,6 +284,9 @@ class Deck(ABC):
         :type       page:  str
         """
         logger.debug(f"change_page: deck {self.name} change page to {page}..")
+        if page is None:
+            self.load_home_page()
+            return
         if page == BACKPAGE:
             if len(self.page_history) > 1:
                 page = self.page_history.pop()  # this page
@@ -379,7 +383,7 @@ class Deck(ABC):
     def load_icons(self):
         """
         Each device model requires a different icon format (size).
-        We could build a set per Stream Deck model rather than stream deck instance...
+        We could build a set per deck model rather than deck instance...
         """
         dn = self.cockpit.icon_folder
         if dn is not None:

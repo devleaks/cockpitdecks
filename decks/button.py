@@ -644,6 +644,7 @@ class Button:
         if not self.use_internal_state():
             logger.warning(f"button_value: button {self.name}: use internal state")
         self._last_activation_state = self._activation.get_status()
+
         if "current_value" in self._last_activation_state:
             logger.debug(f"button_value: button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
             return self._last_activation_state["current_value"]
