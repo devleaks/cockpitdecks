@@ -453,16 +453,22 @@ class OnOff(Activation):
         """
         Describe what the button does in plain English
         """
-        a = [
-            f"The button executes command {self.commands[0]} when its current value is OFF (0).",
-            f"The button executes command {self.commands[1]} when its current value is ON (not 0).",
-            f"The button does nothing when it is de-activated (released)."
-        ]
-        if False:
-            a.append(f"The button gets its curent value from its button value (dataref, or formula).")
+        a = []
+        if self.commands is not None and len(self.commands) > 1:
+            a = a + [
+                f"The button executes command {self.commands[0]} when its current value is OFF (0).",
+                f"The button executes command {self.commands[1]} when its current value is ON (not 0).",
+            ]
+        a.append(f"The button does nothing when it is de-activated (released).")
+        if self.writable_dataref is not None:
+            a.append(f"The button writes its value in dataref {self.writable_dataref}.")
+
+        if self.button.has_external_value():
+            a.append(f"The button gets its current value from its button value (dataref, or formula).")
         else:
-            a.append(f"The button gets its curent value from an internal counter that increases by 1 each time it is pressed.")
-            a.append(f"The current value is {'ON' if self.is_on() else 'OFF'}.")
+            a.append(f"The button gets its current value from an internal counter that increases by 1 each time it is pressed.")
+
+        a.append(f"The current value is {'ON' if self.is_on() else 'OFF'}.")
         return "\n\r".join(a)
 
 
@@ -586,12 +592,16 @@ class UpDown(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join([
-            f"The button executes command {self.commands[0]} when it increases its current value.",
-            f"The button executes command {self.commands[1]} when it decreases its current value.",
-            f"The button does nothing when it is de-activated (released).",
-            f"The button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed.",
-            f"The current value is {self.stop_current_value}. Value will {'increase' if self.go_up else 'decrease'}"])
+        a = []
+        if self.commands is not None and len(self.commands) > 1:
+            a.append(f"The button executes command {self.commands[0]} when it increases its current value.")
+            a.append(f"The button executes command {self.commands[1]} when it decreases its current value.")
+        a.append(f"The button does nothing when it is de-activated (released).")
+        if self.writable_dataref is not None:
+            a.append(f"The button writes its value in dataref {self.writable_dataref}.")
+        a.append(f"The button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed.")
+        a.append(f"The current value is {self.stop_current_value}. Value will {'increase' if self.go_up else 'decrease'}")
+        return "\n\r".join(a)
 
 #
 # ###############################

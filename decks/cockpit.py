@@ -100,10 +100,20 @@ class Cockpit:
 
         if "thread" in what:
             logger.info(f"Threads: {[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
+        elif what in ["datarefs"]:
+            self.inspect_datarefs(what)
         else:
             for v in self.cockpit.values():
                 v.inspect(what)
 
+    def inspect_datarefs(self, what: str = None):
+        if what == "datarefs":
+            for dref in self.xp.all_datarefs.values():
+                logger.info(f"{dref.path} = {dref.value()}")
+                for l in dref.listeners:
+                    logger.info(f"    {l.name}")
+        else:
+            logger.info(f"to do")
 
     def scan_devices(self):
         for decktype, builder in DECK_TYPES.items():
@@ -312,6 +322,7 @@ class Cockpit:
                 self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
                 self.empty_key_fill_color = config.get("fill-empty-keys")
                 self.cockpit_color = config.get("cockpit-color", COCKPIT_COLOR)
+                self.default_home_page_name = config.get("default-homepage-name", HOME_PAGE)
 
                 if "decks" in config:
                     cnt = 0
@@ -581,9 +592,6 @@ class Cockpit:
             logger.info(f"run: starting..")
             self.start_reload_loop()
             logger.info(f"run: ..reload loop started..")
-            # Start dataref collection
-            # self.xp.start()
-            # logger.info(f"run: ..xp started..")
             if not self.xp.use_flight_loop:
                 logger.info(f"run: {len(threading.enumerate())} threads")
                 logger.info(f"run: {[t.name for t in threading.enumerate()]}")

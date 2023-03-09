@@ -176,9 +176,13 @@ class Button:
         """
         Return information aout button status
         """
+        if "invalid" in what:
+            if not self.is_valid():
+                logger.info(f"Button {self.name} IS INVALID")
+                return
         logger.info(f"Button {self.name} -- {what}")
-        if "datarefs" in what:
-            logger.info("-- Datarefs:")
+        if "dataref" in what:
+            # logger.info("-- Datarefs:")
             for d in self.get_datarefs():
                 v = self.get_dataref_value(d)
                 logger.info(f"    {d} = {v}")
@@ -191,9 +195,14 @@ class Button:
         if "status" in what:
             logger.info("-- Status:")
             logger.info(yaml.dump(self.get_status()))
+        if "valid" in what:
+            logger.info(f"-- {'is valid' if self.is_valid() else 'IS INVALID'}")
         if "desc" in what:
             logger.info("-- Description:")
-            logger.info(self.describe())
+            if self.is_valid():
+                logger.info(self.describe())
+            else:
+                logger.info(f"inspect: button {self.name}: is invalid")
         if "config" in what:
             logger.info("-- Config:")
             logger.info(f"\n{yaml.dump(self._config)}")
@@ -599,6 +608,9 @@ class Button:
     # ##################################
     # Value
     #
+    def has_external_value(self) -> bool:
+        return self.all_datarefs is not None and len(self.all_datarefs) > 1
+
     def button_value(self):
         """
         Button ultimately returns either one value or an array of values if representation requires it.

@@ -139,7 +139,7 @@ class Deck(ABC):
         self.logo = config.get("default-wallpaper-logo", base.default_logo)
         self.wallpaper = config.get("default-wallpaper", base.default_wallpaper)
         self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
-
+        self.home_page_name = config.get("homepage-name", self.default_home_page_name)
 
     def load_layout_config(self, fn):
         """
@@ -323,10 +323,10 @@ class Deck(ABC):
             self.valid = False
             logger.error(f"set_home_page: deck {self.name} has no page, ignoring")
         else:
-            if self.default_home_page_name in self.pages.keys():
-                self.home_page = self.pages[self.default_home_page_name]
+            if self.home_page_name in self.pages.keys():
+                self.home_page = self.pages[self.home_page_name]
             else:
-                logger.debug(f"set_home_page: deck {self.name}: no home page named {self.default_home_page_name}")
+                logger.debug(f"set_home_page: deck {self.name}: no home page named {self.home_page_name}")
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
             logger.debug(f"set_home_page: deck {self.name}: home page {self.home_page.name}")
 

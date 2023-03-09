@@ -25,6 +25,8 @@ DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
                     # must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produce.
 LOOP_ALIVE   = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
+
+SOCKET_TIMEOUT    = 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
 
 # XPlaneBeacon
@@ -52,10 +54,11 @@ class XPlaneBeacon:
     def __init__(self):
         # Open a UDP Socket to receive on Port 49000
         self.socket = None
-        # values from xplane
+
         self.connected = False
+        self.should_run = False
+
         self.connect_thread = None
-        self.should_run = True
         self.BeaconData = {}
 
     def FindIp(self):
@@ -144,15 +147,11 @@ class XPlaneBeacon:
 
         return self.BeaconData
 
+    def start(self):
+        logger.warning("start: nothing to start")
 
-    def disconnect(self, try_reconnect: bool = True):
-        logger.debug("disconnect: disconnecting..")
-        self.connected = False
-        self.terminate()
-        logger.debug("disconnect: ..disconnected")
-        if try_reconnect:
-            self.connect()
-
+    def stop(self):
+        logger.warning("stop: nothing to stop")
 
     def connect_loop(self):
         logger.debug("connect_loop: connecting..")
@@ -183,23 +182,33 @@ class XPlaneBeacon:
                 logger.debug("connect_loop: ..awake..")
         logger.debug("connect_loop: ..ended")
 
+    # ################################
+    # Interface
+    #
     def connect(self):
-        if not self.connected:
+        if not self.should_run:
+            self.should_run = True
             self.connect_thread = threading.Thread(target=self.connect_loop)
             self.connect_thread.name = "XPlaneBeacon::connect_loop"
             self.connect_thread.start()
-        logger.debug("connect: connect_loop started")
+            logger.debug("connect: connect_loop started")
+        else:
+            logger.debug("connect: connect_loop already started")
 
-    def start(self):
-        logger.warning("start: nothing to start")
+    def disconnect(self):
+        if self.should_run:
+            logger.debug("disconnect: disconnecting..")
+            self.connected = False
+            self.should_run = False
+            wait = RECONNECT_TIMEOUT
+            logger.debug(f"disconnect: ..asked to stop connect_loop.. (this may last {wait} secs.)")
+            self.connect_thread.join(timeout=wait)
+            if self.connect_thread.is_alive():
+                logger.warning(f"disconnect: ..thread may hang..")
+            logger.debug("disconnect: ..disconnected")
+        else:
+            logger.debug("disconnect: not connected")
 
-    def terminate(self):
-        self.should_run = False
-        logger.debug(f"terminate: asked to stop.. (this may last {RECONNECT_TIMEOUT} secs.)")
-        self.connect_thread.join(timeout=RECONNECT_TIMEOUT)
-        if self.connect_thread.is_alive():
-            logger.warning(f"terminate: ..thread may hang..")
-        logger.debug("terminate: ..stopped")
 
 class XPlaneUDP(XPlane, XPlaneBeacon):
     '''
@@ -230,7 +239,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     def __del__(self):
         for i in range(len(self.datarefs)):
             self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
-        self.disconnect(try_reconnect=False)
+        self.disconnect()
 
     def get_dataref(self, path):
         if path in self.all_datarefs.keys():
@@ -299,7 +308,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         """
         try:
             # Receive packet
-            self.socket.settimeout(10)
+            self.socket.settimeout(SOCKET_TIMEOUT)
             data, addr = self.socket.recvfrom(1472) # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
             # Decode Packet
             retvalues = {}
@@ -426,9 +435,6 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
         super().remove_datarefs_to_monitor(datarefs)
 
-    # ################################
-    # Cockpit interface
-    #
     def start(self):
         if self.is_connected():
             if not self.running:
@@ -445,16 +451,26 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         else:
             logger.warning(f"start: no IP address. could not start.")
 
-    def terminate(self):
-        XPlaneBeacon.terminate(self)
-        logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
+    def stop(self):
         if self.running:
+            logger.debug(f"stop: stopping..")
             self.running = False
-            wait = 10 * DATA_REFRESH + 4  # 2 seconds is net latency to get recvfrom() on UDP
-            logger.debug(f"terminate: ..waiting {wait}sec. permission to be deleted..")
+            wait = SOCKET_TIMEOUT
+            logger.debug(f"stop: ..asked to stop loop.. (this may last {wait} secs.)")
             self.thread.join(wait)
-            if not self.thread.is_alive():
-                logger.debug(f"terminate: ..got it. I can now die in peace..")
-            else:
-                logger.warning(f"terminate: ..did not get permission to delete (thread may hang in socket.recvfrom())..")
+            if self.thread.is_alive():
+                logger.warning(f"stop: ..did not get permission to delete (thread may hang in socket.recvfrom())..")
+            logger.debug(f"stop: ..stopped")
+        else:
+            logger.info(f"stop: not running")
+
+    # ################################
+    # Cockpit interface
+    #
+    def terminate(self):
+        logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
+        logger.info(f"terminate: ..disconnecting..")
+        self.disconnect()
+        logger.info(f"terminate: ..stopping..")
+        self.stop()
         logger.info(f"terminate: ..terminated")

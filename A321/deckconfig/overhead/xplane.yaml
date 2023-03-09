@@ -192,6 +192,47 @@ buttons:
         framed: true
     command: SRS/X-ATC-Chatter/Toggle_Control_Panel
     initial-value: 0
+  - index: 19
+    name: DESCRIBE
+    type: inspect
+    icon: COCKPITDECKS
+    label: "DESCRIBE"
+    label-color: red
+    label-position: "cm"
+    what: desc
+  - index: 20
+    name: INSPECT
+    type: inspect
+    icon: COCKPITDECKS
+    label: "INSPECT"
+    label-color: red
+    label-position: "cm"
+    what: status
+  - index: 21
+    name: DATAREF
+    type: inspect
+    icon: COCKPITDECKS
+    label: "BUTTON\nDATAREFS"
+    label-color: red
+    label-position: "cm"
+    what: dataref
+  - index: 22
+    name: DREFVALUES
+    type: inspect
+    icon: COCKPITDECKS
+    label: "DREFVALUES"
+    label-color: red
+    label-position: "cm"
+    what: datarefs
+  - index: 23
+    name: THREADS
+    type: inspect
+    icon: COCKPITDECKS
+    label: "THREADS"
+    label-color: red
+    label-position: "cm"
+    what: threads
+
 
 # ### LINE 4 ### 24-31 ######################################################
   # - index: 26
@@ -205,23 +246,6 @@ buttons:
     name: STOP_COCKPITDECKS
     type: stop
     icon: PANIC
-  - index: 26
-    name: DESCRIBE
-    type: inspect
-    icon: COCKPITDECKS
-    label: "DESCRIBE"
-    label-color: red
-    label-position: "cm"
-    what: desc
-    options: framed-icon
-  - index: 27
-    name: INSPECT
-    type: inspect
-    icon: COCKPITDECKS
-    label: "INSPECT"
-    label-color: red
-    label-position: "cm"
-    what: status
   - index: 28
     name: XP PYTHON
     type: push
@@ -250,4 +274,5 @@ buttons:
   - index: 31
     name: Index
     type: page
+    page: index
     icon: TOLISS-A321
