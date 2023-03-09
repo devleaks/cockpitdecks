@@ -247,9 +247,9 @@ class Streamdeck(Deck):
     @staticmethod
     def terminate_device(device, name: str = "unspecified"):
         with device:
+            device.reset() # causes an issue when device was not set up
             device.set_key_callback(None)
             device._setup_reader(None) # terminates the _read() loop on serial line (thread).
-            # device.reset() # causes an issue when device was not set up
             # device.stop()  # terminates the loop.
         logger.info(f"terminate_device: {name} terminated")
 

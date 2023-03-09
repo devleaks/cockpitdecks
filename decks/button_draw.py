@@ -832,7 +832,10 @@ class PushSwitch(SwitchCommonBase):
 #
 class DrawAnimation(Icon):
     """
+    https://stackoverflow.com/questions/5114292/break-interrupt-a-time-sleep-in-python
     """
+
+    MAX_WAIT_TIME = 2
 
     def __init__(self, config: dict, button: "Button"):
 
@@ -842,27 +845,20 @@ class DrawAnimation(Icon):
 
         # Base definition
         self.speed = float(self._animation.get("speed", 1))
-        self._int_sleep = min(10, self.speed)
 
         # Working attributes
         self.tween = 0
 
         self.running = None  # state unknown
+        self.exit = None
         self.thread = None
 
     def loop(self):
-        self._int_sleep = min(10, self.speed)
-        _sleep = 0
-        while self.running:
-            if _sleep >= self.speed:
-                self.animate()
-                self.button.render()
-                _sleep = 0
-            nextsleep = self._int_sleep
-            if _sleep + self._int_sleep > self.speed:
-                nextsleep = _sleep + self._int_sleep - self.speed
-            time.sleep(nextsleep)
-            _sleep = _sleep + nextsleep
+        self.exit = threading.Event()
+        while not self.exit.is_set():
+            self.animate()
+            self.button.render()
+            self.exit.wait(self.speed)
 
     def should_run(self) -> bool:
         """
@@ -900,6 +896,7 @@ class DrawAnimation(Icon):
         """
         if self.running:
             self.running = False
+            self.exit.set()
             self.thread.join(timeout=2*self.speed)
             if self.thread.is_alive():
                 logger.warning(f"anim_stop: button {self.button.name}: animation did not terminate")
@@ -920,7 +917,9 @@ class DrawAnimation(Icon):
         """
         Renders icon_off or current icon in list
         """
+        logger.debug(f"render: button {self.button.name}: enter")
         if self.is_valid():
+            logger.debug(f"render: button {self.button.name}: is valid {self.should_run()}, {self.running}")
             if self.should_run():
                 if not self.running:
                     self.anim_start()

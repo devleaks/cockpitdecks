@@ -80,7 +80,7 @@ buttons:
     label: "Weather"
     weather:
       station: OTHH
-      refresh: 20
+      refresh: 2
   - index: 7
     name: up
     type: page
@@ -91,16 +91,16 @@ buttons:
     label-size: 60
     label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
-  - index: 14
-    name: meteo
-    type: page
-    page: ovrhdaircond
-    icon-color: (94, 111, 130)
-#    label: "\uf062"
-    label: ${wi:wi_day_rain_wind}
-    label-font: weathericons.otf
-    label-size: 40
-    label-position: cm
+#   - index: 14
+#     name: meteo
+#     type: page
+#     page: ovrhdaircond
+#     icon-color: (94, 111, 130)
+# #    label: "\uf062"
+#     label: ${wi:wi_day_rain_wind}
+#     label-font: weathericons.otf
+#     label-size: 40
+#     label-position: cm
   - index: 15
     name: right
     type: page

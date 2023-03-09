@@ -198,6 +198,7 @@ class XPlaneBeacon:
     def disconnect(self):
         if self.should_run:
             logger.debug("disconnect: disconnecting..")
+            self.BeaconData = {}
             self.connected = False
             self.should_run = False
             wait = RECONNECT_TIMEOUT
@@ -234,7 +235,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.init()
 
     def init(self):
-        self.connect()
+        pass
+        # self.connect()
 
     def __del__(self):
         for i in range(len(self.datarefs)):
@@ -253,7 +255,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
         if not self.is_connected():
-            logger.warning(f"WriteDataRef: no IP connection ({dataref})")
+            logger.warning(f"WriteDataRef: no connection ({dataref})")
             return
 
         cmd = b"DREF\x00"
@@ -278,6 +280,9 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         '''
+        if not self.is_connected():
+            logger.warning(f"AddDataRef: no connection ({dataref}, {freq})")
+            return
         idx = -9999
         if freq is None:
             freq = self.defaultFreq
@@ -336,15 +341,15 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         return self.xplaneValues
 
     def ExecuteCommand(self, command: str):
-        if self.is_connected():
-            if command.lower() in ["none", "placeholder"]:
-                logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
-                return
-            message = 'CMND0' + command
-            self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
-            logger.log(SPAM, f"ExecuteCommand: executed {command}")
-        else:
-            logger.warning(f"ExecuteCommand: no IP connection ({command})")
+        if not self.is_connected():
+            logger.warning(f"ExecuteCommand: no connection ({command})")
+            return
+        if command.lower() in ["none", "placeholder"]:
+            logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
+            return
+        message = 'CMND0' + command
+        self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
+        logger.log(SPAM, f"ExecuteCommand: executed {command}")
 
     def loop(self):
         logger.debug(f"loop: started..")
@@ -398,14 +403,17 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.ExecuteCommand(command+"/end")
 
     def clean_datarefs_to_monitor(self):
+        if not self.is_connected():
+            logger.warning(f"clean_datarefs_to_monitor: no connection")
+            return
         for i in range(len(self.datarefs)):
             self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
         super().clean_datarefs_to_monitor()
         logger.debug(f"clean_datarefs_to_monitor: done")
 
     def add_datarefs_to_monitor(self, datarefs):
-        if "IP" not in self.BeaconData:
-            logger.warning(f"add_datarefs_to_monitor: no IP connection")
+        if not self.is_connected():
+            logger.warning(f"add_datarefs_to_monitor: no connection")
             logger.debug(f"add_datarefs_to_monitor: would add {datarefs.keys()}")
             return
         # Add those to monitor
@@ -417,8 +425,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
-        if "IP" not in self.BeaconData:
-            logger.warning(f"remove_datarefs_to_monitor: no IP connection")
+        if not self.is_connected():
+            logger.warning(f"remove_datarefs_to_monitor: no connection")
             logger.debug(f"remove_datarefs_to_monitor: would remove {datarefs.keys()}")
             return
         # Add those to monitor
@@ -435,21 +443,34 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
         super().remove_datarefs_to_monitor(datarefs)
 
+    def add_all_datarefs_to_monitor(self):
+        if not self.is_connected():
+            logger.warning(f"add_all_datarefs_to_monitor: no connection")
+            return
+        # Add those to monitor
+        prnt = []
+        for path in self.datarefs_to_monitor.keys():
+            self.AddDataRef(path, freq=DATA_SENT)
+            prnt.append(path)
+        logger.log(SPAM, f"add_all_datarefs_to_monitor: added {prnt}")
+
     def start(self):
-        if self.is_connected():
-            if not self.running:
-                self.thread = threading.Thread(target=self.loop)
-                self.thread.name = f"XPlaneUDP::datarefs_watcher"
-                self.running = True
-                self.thread.start()
-                logger.info(f"start: XPlaneUDP started")
-            else:
-                logger.info(f"start: XPlaneUDP already running.")
-            # When restarted after network failure, should clean all datarefs
-            # then reload datarefs from current page of each deck
-            self.cockpit.reload_pages()
-        else:
+        if not self.is_connected():
             logger.warning(f"start: no IP address. could not start.")
+            return
+        if not self.running:
+            self.thread = threading.Thread(target=self.loop)
+            self.thread.name = f"XPlaneUDP::datarefs_watcher"
+            self.running = True
+            self.thread.start()
+            logger.info(f"start: XPlaneUDP started")
+        else:
+            logger.info(f"start: XPlaneUDP already running.")
+        # When restarted after network failure, should clean all datarefs
+        # then reload datarefs from current page of each deck
+        self.clean_datarefs_to_monitor()
+        self.add_all_datarefs_to_monitor()
+        self.cockpit.reload_pages()
 
     def stop(self):
         if self.running:
@@ -459,7 +480,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             logger.debug(f"stop: ..asked to stop loop.. (this may last {wait} secs.)")
             self.thread.join(wait)
             if self.thread.is_alive():
-                logger.warning(f"stop: ..did not get permission to delete (thread may hang in socket.recvfrom())..")
+                logger.warning(f"stop: ..thread may hang in socket.recvfrom()..")
             logger.debug(f"stop: ..stopped")
         else:
             logger.info(f"stop: not running")

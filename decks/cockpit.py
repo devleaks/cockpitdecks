@@ -595,6 +595,8 @@ class Cockpit:
             # Each deck should have been started
             # Start reload loop
             logger.info(f"run: starting..")
+            self.xp.connect()
+            logger.info(f"run: ..connect to X-Plane loop started..")
             self.start_reload_loop()
             logger.info(f"run: ..reload loop started..")
             if not self.xp.use_flight_loop:

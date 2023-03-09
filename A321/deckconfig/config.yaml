@@ -14,7 +14,6 @@ decks:
     light-off: 5
     default-label-font: DIN Medium.ttf
     default-label-size: 13
-    disabled: 1
   - name: XPDeckXL
     layout: overhead
     type: streamdeck
@@ -31,6 +30,4 @@ decks:
 default-wallpaper-logo: logo.png
 default-icon-color: (94, 111, 130)
 default-label-color: white
-default-label-font: DIN.ttf
-default-label-size: 14
 empty-key-fill-color: (94, 111, 130)

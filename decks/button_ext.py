@@ -33,11 +33,13 @@ class WeatherIcon(DrawAnimation):
         self.station = None
         if self.weather is not None:
             self.station = self.weather.get("station", "EBBR")
-        self.metar = Metar(self.station)
-        self.weather_icon = self.to_icon()
+        self.metar = None
+        self.weather_icon = None
 
-        speed = self.weather.get("refresh", 2)
-        self.speed = int(speed) ## * 60
+        speed = self.weather.get("refresh", 30)  # minutes, should be ~30
+        self.speed = int(speed) * 60
+
+        self.update()
         self.anim_start()
 
     def should_run(self) -> bool:
@@ -56,6 +58,7 @@ class WeatherIcon(DrawAnimation):
             self.metar.update()
         else:
             self.metar = Metar(self.station)
+        logger.info(f"update: Metar updated for {self.station}")
         self.weather_icon = self.to_icon()
 
     def get_image_for_icon(self):
