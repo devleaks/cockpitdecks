@@ -136,10 +136,18 @@ class Deck(ABC):
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
-        self.logo = config.get("default-wallpaper-logo", base.default_logo)
-        self.wallpaper = config.get("default-wallpaper", base.default_wallpaper)
+        self.default_logo = config.get("default-wallpaper-logo", base.default_logo)
+        self.default_wallpaper = config.get("default-wallpaper", base.default_wallpaper)
         self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
-        self.home_page_name = config.get("homepage-name", self.default_home_page_name)
+
+        if base == self:  # non default instances
+            self.logo = config.get("wallpaper-logo", base.logo)
+            self.wallpaper = config.get("wallpaper", base.wallpaper)
+            self.home_page_name = config.get("homepage-name", base.home_page_name)
+        else:
+            self.logo = config.get("wallpaper-logo", base.default_logo)
+            self.wallpaper = config.get("wallpaper", base.default_wallpaper)
+            self.home_page_name = config.get("homepage-name", base.default_home_page_name)
 
     def load_layout_config(self, fn):
         """
@@ -153,7 +161,7 @@ class Deck(ABC):
                 self.layout_config = yaml.safe_load(fp)
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
-                self.set_default(self.layout_config, self.cockpit)
+                self.set_default(self.layout_config, self)
         else:
             logger.debug(f"load_layout_config: no layout config file")
 

@@ -1,9 +1,0 @@
-name: views
-buttons:
-  # Last button of first row
-  - index: 7
-    type: push
-    name: back
-    command: SRS/X-Camera/Select_View_ID_8
-    led: single
-    dataref-rpn: 1

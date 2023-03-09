@@ -330,7 +330,12 @@ class Cockpit:
                         name = deck_config.get("name", f"Deck {cnt}")
 
                         disabled = deck_config.get("disabled")
-                        if type(disabled) == str and disabled.upper() in ["YES", "TRUE"] or disabled:
+                        if type(disabled) != bool:
+                            if type(disabled) == str:
+                                disabled = disabled.upper() in ["YES", "TRUE"]
+                            elif type(disabled) in [int, float]:
+                                disabled = int(disabled) != 0
+                        if disabled:
                             logger.info(f"create_decks: deck {name} disabled, ignoring")
                             continue
 

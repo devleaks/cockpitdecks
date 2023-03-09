@@ -14,7 +14,7 @@ from .constant import WEATHER_ICON_FONT, ICON_FONT
 from .color import convert_color, light_off
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
-from .button_draw import DrawBase
+from .button_draw import DrawBase, DrawAnimation
 from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
 
 
@@ -23,17 +23,33 @@ logger = logging.getLogger("ButtonExternal")
 # logger.setLevel(logging.DEBUG)
 
 
-class WeatherIcon(DrawBase):
+class WeatherIcon(DrawAnimation):
 
     def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+        config["animation"] = config.get("weather")
+        DrawAnimation.__init__(self, config=config, button=button)
 
         self.weather = config.get("weather")
-        self.station = "EBBR"
+        self.station = None
         if self.weather is not None:
             self.station = self.weather.get("station", "EBBR")
         self.metar = Metar(self.station)
         self.weather_icon = self.to_icon()
+
+        speed = self.weather.get("refresh", 2)
+        self.speed = int(speed) ## * 60
+        self.anim_start()
+
+    def should_run(self) -> bool:
+        """
+        Check conditions to animate the icon.
+        In this case, always runs
+        """
+        return True
+
+    def animate(self):
+        self.update()
+        return super().animate()
 
     def update(self):
         if self.metar is not None:
@@ -98,7 +114,7 @@ class WeatherIcon(DrawBase):
                 logger.warning(f"get_image_for_icon: no metar summary")
 
         # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
+        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.deck.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
         bg.alpha_composite(image)
         return bg.convert("RGB")
 

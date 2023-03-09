@@ -842,6 +842,7 @@ class DrawAnimation(Icon):
 
         # Base definition
         self.speed = float(self._animation.get("speed", 1))
+        self._int_sleep = min(10, self.speed)
 
         # Working attributes
         self.tween = 0
@@ -850,19 +851,24 @@ class DrawAnimation(Icon):
         self.thread = None
 
     def loop(self):
+        self._int_sleep = min(10, self.speed)
+        _sleep = 0
         while self.running:
-            self.animate()
-            self.button.render()
-            time.sleep(self.speed)
+            if _sleep >= self.speed:
+                self.animate()
+                self.button.render()
+                _sleep = 0
+            nextsleep = self._int_sleep
+            if _sleep + self._int_sleep > self.speed:
+                nextsleep = _sleep + self._int_sleep - self.speed
+            time.sleep(nextsleep)
+            _sleep = _sleep + nextsleep
 
     def should_run(self) -> bool:
         """
         Check conditions to animate the icon.
         """
-        value = self.get_current_value()
-        if type(value) == dict:
-            value = value[list(value.keys())[0]]
-        return value is not None and value != 0
+        return False
 
     def animate(self):
         """
@@ -872,6 +878,7 @@ class DrawAnimation(Icon):
         :rtype:     { return_type_description }
         """
         self.tween = self.tween + 1
+        # logger.debug(f"animate: tick")
         return super().render()
 
     def anim_start(self):
@@ -883,6 +890,7 @@ class DrawAnimation(Icon):
             self.thread = threading.Thread(target=self.loop)
             self.thread.name = f"ButtonAnimate::loop({self.button.name})"
             self.thread.start()
+            logger.debug(f"anim_start: started")
         else:
             logger.warning(f"anim_start: button {self.button.name}: already started")
 
@@ -895,6 +903,7 @@ class DrawAnimation(Icon):
             self.thread.join(timeout=2*self.speed)
             if self.thread.is_alive():
                 logger.warning(f"anim_stop: button {self.button.name}: animation did not terminate")
+            logger.debug(f"anim_stop: stopped")
         else:
             logger.debug(f"anim_stop: button {self.button.name}: already stopped")
 

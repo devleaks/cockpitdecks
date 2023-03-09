@@ -80,6 +80,7 @@ buttons:
     label: "Weather"
     weather:
       station: OTHH
+      refresh: 20
   - index: 7
     name: up
     type: page
