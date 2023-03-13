@@ -50,14 +50,6 @@ buttons:
     icon: NONE
     label: "CALL &\nINT.\nLIGHTS"
     label-position: cm
-  - index: 7
-    name: ISCS
-    type: push
-    multi-icons:
-      - P_TOLISS_ISCS_OFF
-      - P_TOLISS_ISCS_ON
-    command: toliss_airbus/iscs_open
-    initial-value: 0
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: adirs
@@ -182,7 +174,7 @@ buttons:
   #   icon: DATAREFTOOL
   #   command: leecbaker/datareftool/new_search_window
   #   label-position: ct
-  - index: 30
+  - index: 29
     name: RELOAD
     type: reload
     label: RELOAD
@@ -194,6 +186,11 @@ buttons:
     text-size: 80
     text-position: cm
     text-bg-color: (94, 111, 130)
+  - index: 30
+    name: ISCS
+    type: page
+    page: toliss
+    icon: P_TOLISS_ISCS_ON
   - index: 31
     name: xplane
     type: page

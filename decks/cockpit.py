@@ -14,6 +14,7 @@ from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAU
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
 from .color import convert_color, has_ext
 
+from . import __version__
 from .devices import DECK_TYPES
 from .streamdeck import FLIP_DESCRIPTION
 
@@ -97,22 +98,23 @@ class Cockpit:
         """
         This function is called on all instances of Deck.
         """
-        logger.info(f"Cockpitdecks -- {what}")
+        logger.info(f"Cockpitdecks Rel. {__version__} -- {what}")
 
         if "thread" in what:
             logger.info(f"Threads: {[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
-        elif what in ["datarefs"]:
+        elif what.startswith("datarefs"):
             self.inspect_datarefs(what)
         else:
             for v in self.cockpit.values():
                 v.inspect(what)
 
     def inspect_datarefs(self, what: str = None):
-        if what == "datarefs":
+        if what.startswith("datarefs"):
             for dref in self.xp.all_datarefs.values():
-                logger.info(f"{dref.path} = {dref.value()}")
-                for l in dref.listeners:
-                    logger.info(f"    {l.name}")
+                logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)})")
+                if what.endswith("listener"):
+                    for l in dref.listeners:
+                        logger.info(f"    {l.name}")
         else:
             logger.info(f"to do")
 
@@ -174,6 +176,7 @@ class Cockpit:
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
             self.terminate_aircraft()
+            self.xp.clean_datarefs_to_monitor()
 
         if len(self.devices) == 0:
             logger.warning(f"load_aircraft: no device")

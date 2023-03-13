@@ -122,10 +122,10 @@ class Streamdeck(Deck):
 
             # Create a new key-sized image, and paste in the cropped section of the
             # larger image.
-            key_image = PILHelper.create_image(deck)
+            key_image = self.pil_helper.create_image(deck)
             key_image.paste(segment)
 
-            return PILHelper.to_native_format(deck, key_image)
+            return self.pil_helper.to_native_format(deck, key_image)
 
         logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
@@ -206,7 +206,7 @@ class Streamdeck(Deck):
     #
     def _send_key_image_to_device(self, key, image):
         with self.device:
-            i = PILHelper.to_native_format(self.device, image)
+            i = self.pil_helper.to_native_format(self.device, image)
             self.device.set_key_image(int(key), i)
 
     def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):

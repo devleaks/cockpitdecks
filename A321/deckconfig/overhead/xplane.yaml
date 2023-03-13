@@ -90,7 +90,7 @@ buttons:
         text-color: deepskyblue
         framed: true
     command: LiveTraffic/Info_Staus_Wnd/Open
-  - index: 6
+  - index: 7
     name: FollowTheGreens
     label: F.GREENS
     type: onoff
@@ -108,15 +108,6 @@ buttons:
       - XPPython3/followthegreens/main_windown_toggle
     formula: ${state:activation_count} 2 %
     initial-value: 0
-  - index: 7
-    name: XPLANEDATA
-    type: push
-    icon: XPLANE_OUTPUT
-    command: sim/operation/toggle_data_output_cockpit
-    formula: ${state:activation_count} 2 %
-    label: "XPLANE\nCOCKPIT\nDATA"
-    label-color: black
-    label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     type: push
@@ -253,6 +244,15 @@ buttons:
     name: STOP_COCKPITDECKS
     type: stop
     icon: PANIC
+  - index: 27
+    name: XPLANEDATA
+    type: push
+    icon: XPLANE_OUTPUT
+    command: sim/operation/toggle_data_output_cockpit
+    formula: ${state:activation_count} 2 %
+    label: "XPLANE\nCOCKPIT\nDATA"
+    label-color: black
+    label-position: cm
   - index: 28
     name: XP PYTHON
     type: push
