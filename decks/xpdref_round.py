@@ -1,6 +1,8 @@
 # Internal: Round a few rapidly changing datarefs
 DATAREF_ROUND = {
     "sim/cockpit/autopilot/heading_mag": 2,
+    "sim/flightmodel/position/latitude": 8,    # used in Weather button, 3 or 4 decimals sufficient...
+    "sim/flightmodel/position/longitude": 8,
     "AirbusFBW/BatVolts[0]": 1,
     "AirbusFBW/BatVolts[1]": 1,
     "AirbusFBW/OHPLightsATA34[6]": 3,

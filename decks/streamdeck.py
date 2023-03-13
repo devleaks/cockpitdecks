@@ -2,7 +2,6 @@
 #
 import os
 import logging
-import yaml
 import threading
 import pickle
 from time import sleep
@@ -11,7 +10,7 @@ from PIL import Image, ImageFont, ImageOps
 
 from StreamDeck.ImageHelpers import PILHelper
 
-from .constant import CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
+from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, YAML_BUTTONS_KW
 from .color import convert_color
 from .deck import Deck
 from .page import Page

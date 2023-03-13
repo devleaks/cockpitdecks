@@ -2,7 +2,6 @@
 #
 import os
 import logging
-import yaml
 import threading
 import pickle
 import inspect
@@ -12,16 +11,18 @@ from enum import Enum
 from abc import ABC, abstractmethod
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from StreamDeck.ImageHelpers import PILHelper
+from ruamel.yaml import YAML
 
-from .constant import ID_SEP, ANNUNCIATOR_STYLES, CONFIG_DIR, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT
-from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW
+from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW, CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER
+from .constant import ID_SEP, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT
 from .color import convert_color
 from .page import Page
 from .button import Button
 
 logger = logging.getLogger("Deck")
 # logger.setLevel(logging.DEBUG)
+
+yaml = YAML()
 
 
 DEFAULT_PAGE_NAME = "X-Plane"
@@ -158,7 +159,7 @@ class Deck(ABC):
         """
         if os.path.exists(fn):
             with open(fn, "r") as fp:
-                self.layout_config = yaml.safe_load(fp)
+                self.layout_config = yaml.load(fp)
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
                 self.set_default(self.layout_config, self)
@@ -212,7 +213,7 @@ class Deck(ABC):
             self.make_default_page()
             return
 
-        dn = os.path.join(self.cockpit.acpath, CONFIG_DIR, self.layout)
+        dn = os.path.join(self.cockpit.acpath, CONFIG_FOLDER, self.layout)
         if not os.path.exists(dn):
             logger.warning(f"load: deck has no layout folder '{self.layout}', loading default page")
             self.make_default_page()
@@ -228,7 +229,7 @@ class Deck(ABC):
                 fn = os.path.join(dn, p)
                 # if os.path.exists(fn):  # we know the file should exists...
                 with open(fn, "r") as fp:
-                    page_config = yaml.safe_load(fp)
+                    page_config = yaml.load(fp)
 
                     name = ".".join(p.split(".")[:-1])  # build default page name, remove extension ".yaml" or ".yml" from filename
                     if "name" in page_config:
@@ -260,7 +261,7 @@ class Deck(ABC):
                             fni = os.path.join(dn, inc + ".yaml")
                             if os.path.exists(fni):
                                 with open(fni, "r") as fpi:
-                                    inc_config = yaml.safe_load(fpi)
+                                    inc_config = yaml.load(fpi)
                                     # how to merge? for now, just merge buttons
                                     if YAML_BUTTONS_KW in inc_config:
                                         load_buttons(this_page, inc_config[YAML_BUTTONS_KW])
@@ -381,7 +382,7 @@ class Deck(ABC):
         """
         # Add default icon for this deck
         if self.device is not None:
-            self.icons[self.default_icon_name] = PILHelper.create_image(deck=self.device, background=self.default_icon_color)
+            self.icons[self.default_icon_name] = self.pil_helper.create_image(deck=self.device, background=self.default_icon_color)
         else:
             self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=self.default_icon_color)
         # copy it at highest level too

@@ -74,6 +74,7 @@ class XPlaneBeacon:
         self.BeaconData = {}
 
         # open socket for multicast group.
+        # this socker is for getting the beacon, it can be closed when beacon is found.
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if platform.system() == "Windows":
@@ -165,7 +166,7 @@ class XPlaneBeacon:
                     logger.info(self.BeaconData)
                     logger.debug("connect_loop: ..starting..")
                     self.start()
-                    logger.info(f"connect_loop: connected, loop started")  # ignore
+                    logger.info(f"connect_loop: connected, dataref listener started")  # ignore
                 except XPlaneVersionNotSupported:
                     self.BeaconData = {}
                     self.connected = False
@@ -382,7 +383,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     logger.info(f"loop: XPlaneTimeout ({total_to})")  # ignore
                     total_to = total_to + 1
                     if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
-                        logger.warning(f"loop: too many times out, disconnecting, ending loop")  # ignore
+                        logger.warning(f"loop: too many times out, disconnecting, dataref listener terminated")  # ignore
                         self.connected = False  # notify above that connection lost
                         self.running = False    # auto stop
 

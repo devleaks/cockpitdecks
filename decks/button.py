@@ -8,8 +8,9 @@ Maintain a value.
 import re
 import logging
 import math
-import yaml
+import sys
 from datetime import datetime
+from ruamel.yaml import YAML
 
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
@@ -24,6 +25,8 @@ from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 logger = logging.getLogger("Button")
 # logger.setLevel(SPAM)
 # logger.setLevel(logging.DEBUG)
+
+yaml = YAML()
 
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
@@ -194,7 +197,7 @@ class Button:
             self._representation.inspect(what)
         if "status" in what:
             logger.info("-- Status:")
-            logger.info(yaml.dump(self.get_status()))
+            logger.info(yaml.dump(self.get_status(), sys.stdout))
         if "valid" in what:
             logger.info(f"-- {'is valid' if self.is_valid() else 'IS INVALID'}")
         if "desc" in what:
@@ -205,7 +208,7 @@ class Button:
                 logger.info(f"inspect: button {self.name}: is invalid")
         if "config" in what:
             logger.info("-- Config:")
-            logger.info(f"\n{yaml.dump(self._config)}")
+            logger.info(f"\n{yaml.dump(self._config, sys.stdout)}")
 
     def describe(self):
         return "\n\r".join([self._activation.describe(), self._representation.describe()])

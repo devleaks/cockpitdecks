@@ -192,6 +192,14 @@ buttons:
         framed: true
     command: SRS/X-ATC-Chatter/Toggle_Control_Panel
     initial-value: 0
+  - index: 18
+    name: STATUS
+    type: inspect
+    icon: COCKPITDECKS
+    label: "STATUS"
+    label-color: red
+    label-position: "cm"
+    what: status
   - index: 19
     name: DESCRIBE
     type: inspect
@@ -254,7 +262,6 @@ buttons:
   - index: 29
     name: DATAREFTOOL
     type: push
-    icon: NONE
     label: DataRefTool
     icon: DATAREFTOOL
     command: leecbaker/datareftool/new_search_window

@@ -6,7 +6,7 @@ import re
 import logging
 import threading
 import time
-import yaml
+from ruamel.yaml import YAML
 
 from PIL import ImageDraw, ImageFont
 

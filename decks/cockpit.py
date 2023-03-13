@@ -2,14 +2,14 @@
 #
 import os
 import threading
-import yaml
 import logging
 import pickle
 from queue import Queue
 
 from PIL import Image, ImageFont
+from ruamel.yaml import YAML
 
-from .constant import ID_SEP, SPAM, CONFIG_DIR, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
+from .constant import ID_SEP, SPAM, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
 from .color import convert_color, has_ext
@@ -22,11 +22,12 @@ logging.addLevelName(SPAM, "SPAM")
 logger = logging.getLogger("Cockpit")
 # logger.setLevel(logging.DEBUG)
 
+yaml = YAML()
 
 class Cockpit:
     """
     Contains all deck configurations for a given aircraft.
-    Is started when aicraft is loaded and aircraft contains CONFIG_DIR folder.
+    Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
     def __init__(self, xp):
         self.logging_level = "INFO"
@@ -185,14 +186,14 @@ class Cockpit:
 
         self.load_defaults()
 
-        if os.path.exists(os.path.join(acpath, CONFIG_DIR)):
+        if os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
             self.load_icons()
             self.load_fonts()
             self.create_decks()
             self.load_pages()
         else:
-            logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_DIR}' in aircraft folder {acpath}")
+            logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
             self.create_default_decks()
 
     def load_pages(self):
@@ -221,7 +222,7 @@ class Cockpit:
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
         if os.path.exists(fn):
             with open(fn, "r") as fp:
-                self.default_config = yaml.safe_load(fp)
+                self.default_config = yaml.load(fp)
                 logger.debug(f"load_defaults: loaded default config {fn}")
         if self.default_config is not None:
             self.default_logo = self.default_config.get("default-wallpaper-logo", DEFAULT_LOGO)
@@ -292,16 +293,16 @@ class Cockpit:
         logger.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
 
     def create_decks(self):
-        fn = os.path.join(self.acpath, CONFIG_DIR, CONFIG_FILE)
-        sn = os.path.join(self.acpath, CONFIG_DIR, SECRET_FILE)
+        fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
+        sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = {}
         if os.path.exists(sn):
             with open(sn, "r") as fp:
-                serial_numbers = yaml.safe_load(fp)
+                serial_numbers = yaml.load(fp)
 
         if os.path.exists(fn):
             with open(fn, "r") as fp:
-                config = yaml.safe_load(fp)
+                config = yaml.load(fp)
                 logger.debug(f"create_decks: loaded config {fn}")
                 self._config = config
 
@@ -403,7 +404,7 @@ class Cockpit:
     def load_icons(self):
         # Loading icons
         #
-        dn = os.path.join(self.acpath, CONFIG_DIR, ICONS_FOLDER)
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, ICONS_FOLDER)
         if os.path.exists(dn):
             self.icon_folder = dn
             cache = os.path.join(dn, "_icon_cache.pickle")
@@ -447,7 +448,7 @@ class Cockpit:
                         logger.debug(f"load_fonts: font {i} already loaded")
 
         # 1. Load fonts supplied by the user in the configuration
-        dn = os.path.join(self.acpath, CONFIG_DIR, FONTS_FOLDER)
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, FONTS_FOLDER)
         if os.path.exists(dn):
             fonts = os.listdir(dn)
             for i in fonts:

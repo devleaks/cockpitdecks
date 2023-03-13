@@ -8,7 +8,7 @@ from enum import Enum
 
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
-CONFIG_DIR = "deckconfig"
+CONFIG_FOLDER = "deckconfig"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 

@@ -78,9 +78,7 @@ buttons:
     name: METAR
     type: none
     label: "Weather"
-    weather:
-      station: OTHH
-      refresh: 2
+    weather: true
   - index: 7
     name: up
     type: page
