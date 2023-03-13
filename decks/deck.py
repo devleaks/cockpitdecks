@@ -356,7 +356,14 @@ class Deck(ABC):
     # Deck Specific Functions : Definition
     #
     @abstractmethod
-    def make_default_page(self):
+    def get_device_for_pil(self):
+        """
+        Return device or device element to use for PIL.
+        """
+        pass
+
+    @abstractmethod
+    def make_default_page(self, b: str = None):
         """
         Connects to device and send initial keys.
         """
