@@ -578,15 +578,18 @@ class IconAnimation(MultiIcons):
 
         # Internal variables
         self.counter = 0
+        self.exit = None
         self.thread = None
         self.running = False
 
     def loop(self):
-        while self.running:
+        self.exit = threading.Event()
+        while not self.exit.is_set():
             self.button.render()
             self.counter = self.counter + 1
             self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
-            time.sleep(self.speed)
+            self.exit.wait(self.speed)
+        logger.debug(f"loop: exited")
 
     def should_run(self) -> bool:
         """
@@ -613,9 +616,10 @@ class IconAnimation(MultiIcons):
         """
         if self.running:
             self.running = False
+            self.exit.set()
             self.thread.join(timeout=2*self.speed)
             if self.thread.is_alive():
-                logger.warning(f"anim_stop: button {self.button_name()}: did not get finished signal")
+                logger.warning(f"anim_stop: ..thread may hang..")
             if render:
                 self.render()
         else:

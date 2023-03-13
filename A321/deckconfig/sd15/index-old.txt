@@ -18,7 +18,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[30]
+          formula: ${AirbusFBW/SDENG}
         B1:
           text: ENG
           color: white
@@ -37,7 +37,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[31]
+          formula: ${AirbusFBW/SDBLEED}
         B1:
           text: BLEED
           color: white
@@ -56,7 +56,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[32]
+          formula: ${AirbusFBW/SDPRESS}
         B1:
           text: PRESS
           color: white
@@ -75,7 +75,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[33]
+          formula: ${AirbusFBW/SDELEC}
         B1:
           text: ELEC
           color: white
@@ -94,7 +94,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[34]
+          formula: ${AirbusFBW/SDHYD}
         B1:
           text: HYD
           color: white
@@ -113,7 +113,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[35]
+          formula: ${AirbusFBW/SDFUEL}
         B1:
           text: FUEL
           color: white
@@ -132,7 +132,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[36]
+          formula: ${AirbusFBW/SDAPU}
         B1:
           text: APU
           color: white
@@ -151,7 +151,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[37]
+          formula: ${AirbusFBW/SDCOND}
         B1:
           text: COND
           color: white
@@ -170,7 +170,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[38]
+          formula: ${AirbusFBW/SDDOOR}
         B1:
           text: DOOR
           color: white
@@ -189,7 +189,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[39]
+          formula: ${AirbusFBW/SDWHEEL}
         B1:
           text: WHEEL
           color: white
@@ -208,7 +208,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[40]
+          formula: ${AirbusFBW/SDFCTL}
         B1:
           text: F/CTL
           color: white
@@ -227,7 +227,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[41]
+          formula: ${AirbusFBW/CLRillum}
         B1:
           text: CLR
           color: white
@@ -245,7 +245,7 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          dataref: AirbusFBW/OHPLightsATA31[40]
+          formula: ${AirbusFBW/SDSTATUS}
         B1:
           text: STS
           color: white

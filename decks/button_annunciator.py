@@ -536,14 +536,17 @@ class AnnunciatorAnimate(Annunciator):
         # Working attributes
         self.running = None  # state unknown
         self.thread = None
+        self.exit = None
         self.blink = True
 
     def loop(self):
-        while self.running:
+        self.exit = threading.Event()
+        while not self.exit.is_set():
             self.button.render()
             self.blink = not self.blink
             self.all_lit(self.blink)
-            time.sleep(self.speed)
+            self.exit.wait(self.speed)
+        logger.debug(f"loop: exited")
 
     def should_run(self) -> bool:
         """
@@ -560,6 +563,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         if not self.running:
             self.running = True
+            self.exit.set()
             self.thread = threading.Thread(target=self.loop)
             self.thread.name = f"ButtonAnimate::loop({self.button.name})"
             self.thread.start()
@@ -572,6 +576,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         if self.running:
             self.running = False
+            self.exit.set()
             self.thread.join(timeout=2*self.speed)
             if self.thread.is_alive():
                 logger.warning(f"anim_stop: button {self.button.name}: did not get finished signal")

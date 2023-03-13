@@ -859,6 +859,7 @@ class DrawAnimation(Icon):
             self.animate()
             self.button.render()
             self.exit.wait(self.speed)
+        logger.debug(f"loop: exited")
 
     def should_run(self) -> bool:
         """
