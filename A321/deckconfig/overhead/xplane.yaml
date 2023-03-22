@@ -91,23 +91,33 @@ buttons:
         framed: true
     command: LiveTraffic/Info_Staus_Wnd/Open
   - index: 7
-    name: FollowTheGreens
-    label: F.GREENS
+    name: FollowTheGreensAnimation
     type: onoff
-    icon-off: F.GREENS_OFF
-    icon-animate:
-      - F.GREENS_ON_1
-      - F.GREENS_ON_2
-      - F.GREENS_ON_3
+    ftg: True
     animation:
       speed: 0.2
-    animation-speed: 0.2
-#     command: XPPython3/followthegreens/main_windown_toggle
     commands:
       - XPPython3/followthegreens/main_windown_toggle
       - XPPython3/followthegreens/main_windown_toggle
     formula: ${state:activation_count} 2 %
     initial-value: 0
+#     name: FollowTheGreens
+#     label: F.GREENS
+#     type: onoff
+#     icon-off: F.GREENS_OFF
+#     icon-animate:
+#       - F.GREENS_ON_1
+#       - F.GREENS_ON_2
+#       - F.GREENS_ON_3
+#     animation:
+#       speed: 0.2
+#     animation-speed: 0.2
+# #     command: XPPython3/followthegreens/main_windown_toggle
+#     commands:
+#       - XPPython3/followthegreens/main_windown_toggle
+#       - XPPython3/followthegreens/main_windown_toggle
+#     formula: ${state:activation_count} 2 %
+#     initial-value: 0
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     type: push

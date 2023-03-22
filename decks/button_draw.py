@@ -815,7 +815,7 @@ class PushSwitch(SwitchCommonBase):
         if self.handle_size > 0:
             tl = [center[0]-self.handle_size/2, center[1]-self.handle_size/2]
             br = [center[0]+self.handle_size/2, center[1]+self.handle_size/2]
-            if hasattr(self.button._activation, "is_on") and self.button._activation.is_off():
+            if hasattr(self.button._activation, "is_off") and self.button._activation.is_off():
                 logger.debug(f"get_image_for_icon: button {self.button.name}: has on/off state and IS OFF")
                 draw.ellipse(tl+br, fill=self.handle_off_fill_color, outline=self.handle_off_stroke_color, width=self.handle_off_stroke_width)
             else:
@@ -835,13 +835,11 @@ class DrawAnimation(Icon):
     https://stackoverflow.com/questions/5114292/break-interrupt-a-time-sleep-in-python
     """
 
-    MAX_WAIT_TIME = 2
-
     def __init__(self, config: dict, button: "Button"):
 
         Icon.__init__(self, config=config, button=button)
 
-        self._animation = config.get("animation")
+        self._animation = config.get("animation", {})
 
         # Base definition
         self.speed = float(self._animation.get("speed", 1))
@@ -930,3 +928,91 @@ class DrawAnimation(Icon):
                     self.anim_stop()
                 return super().render()
         return None
+
+
+class DrawAnimationFTG(DrawAnimation):
+
+    def __init__(self, config: dict, button: "Button"):
+
+        DrawAnimation.__init__(self, config=config, button=button)
+
+
+    def should_run(self):
+        """
+        I.e. only works with onoff activations.
+        """
+        return hasattr(self.button._activation, "is_on") and self.button._activation.is_on()
+
+    def get_image_for_icon(self):
+        """
+        Can use self.running to check whether animated or not.
+        Can use self.tween to increase iterations.
+        Text, color, sizes are all hardcoded here.
+        """
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(20, 20, 20)) # self.button.page.cockpit_color
+        draw = ImageDraw.Draw(image)
+
+        # Button
+        cs = 4  # light size, px
+        lum = 5 # num flashing green center lines
+        nb = 2 * lum  # num side bleu lights, i.e. twice more blue lights than green ones
+        h0 = ICON_SIZE/16  # space from left/right sides
+        h1 = ICON_SIZE / 2 - h0  # space from bottom of upper middle part
+        s = (ICON_SIZE - (2*h0)) / (nb - 1) # spece between blue lights
+        # Taxiway borders, blue lights
+        for i in range(nb):
+            for h in [h0, h1]:
+                w = h0 + i * s
+                tl = [w-cs, h-cs]
+                br = [w+cs, h+cs]
+                draw.ellipse(tl+br, fill="blue")
+        # Taxiway center yellow line
+        h = ICON_SIZE / 4
+        draw.line([(h0, h), (ICON_SIZE - h0, h)], fill="yellow", width=4)
+
+        # Taxiway center lights, lit if animated
+        cs = 2 * cs
+        for i in range(lum):
+            w = h + i * s * 2 - s / 2
+            w = ICON_SIZE - w
+            tl = [w-cs, h-cs]
+            br = [w+cs, h+cs]
+            color = "lime" if self.running and (self.tween+i) % lum == 0 else "chocolate"
+            draw.ellipse(tl+br, fill=color)
+
+        # Text AVAIL (=off) or framed ON (=on)
+        fontname = self.get_font("DIN Bold")
+        inside = ICON_SIZE / 16
+        cx = ICON_SIZE / 2
+        cy = int( 3 * ICON_SIZE / 4 )
+        if self.running:
+            font = ImageFont.truetype(fontname, 80)
+            draw.multiline_text((cx, cy),
+                      text="ON",
+                      font=font,
+                      anchor="mm",
+                      align="center",
+                      fill="deepskyblue")
+            txtbb = draw.multiline_textbbox((cx, cy),  # min frame, just around the text
+                      text="ON",
+                      font=font,
+                      anchor="mm",
+                      align="center")
+            text_margin = 2 * inside  # margin "around" text, line will be that far from text
+            framebb = ((txtbb[0]-text_margin, txtbb[1]-text_margin/2), (txtbb[2]+text_margin, txtbb[3]+text_margin/2))
+            side_margin = 4 * inside  # margin from side of part of annunciator
+            framemax = ((cx - ICON_SIZE/2 + side_margin, cy - ICON_SIZE/4 + side_margin), (cx + ICON_SIZE/2 - side_margin, cy + ICON_SIZE/4 - side_margin))
+            frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
+            thick = int(ICON_SIZE / 32)
+            # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
+            draw.rectangle(frame, outline="deepskyblue", width=thick)
+        else:
+            font = ImageFont.truetype(fontname, 60)
+            draw.multiline_text((cx, cy),
+                      text="AVAIL",
+                      font=font,
+                      anchor="mm",
+                      align="center",
+                      fill="lime")
+
+        return image.convert("RGB")

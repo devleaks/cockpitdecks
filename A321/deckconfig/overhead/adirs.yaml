@@ -186,7 +186,8 @@ buttons:
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
     name: ADIRS1_OFF
-    type: push
+    type: onoff
+    label: ADR1
     annunciator:
       size: full
       type: B
@@ -202,9 +203,11 @@ buttons:
         font: DIN Condensed Bold
         formula: ${AirbusFBW/ADRLights[0]} 1 - abs
         framed: True
+    set-dataref: AirbusFBW/ADIRUSwitchArray[0]
   - index: 25
     name: ADIRS3_OFF
-    type: push
+    type: onoff
+    label: ADR3
     annunciator:
       size: full
       type: B
@@ -220,9 +223,11 @@ buttons:
         font: DIN Condensed Bold
         formula: ${AirbusFBW/ADRLights[2]} 1 - abs
         framed: True
+    set-dataref: AirbusFBW/ADIRUSwitchArray[2]
   - index: 26
     name: ADIRS2_OFF
-    type: push
+    type: onoff
+    label: ADR2
     annunciator:
       size: full
       type: B
@@ -238,6 +243,7 @@ buttons:
         font: DIN Condensed Bold
         formula: ${AirbusFBW/ADRLights[1]} 1 - abs
         framed: True
+    set-dataref: AirbusFBW/ADIRUSwitchArray[1]
   - index: 31
     name: Index
     type: page

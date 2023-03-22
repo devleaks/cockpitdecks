@@ -19,3 +19,10 @@ DATAREF_ROUND = {
     "AirbusFBW/OHPLightsATA21[13]": 3,   # cabin pressure ditching
     "dataref": 0
 }
+
+# THese datarefs don't need to be refreshed as often (normal is 2 per second)
+DATAREF_SLOW = {
+    "sim/flightmodel/position/latitude": 1,
+    "sim/flightmodel/position/longitude": 1,
+    "dataref": 0
+}

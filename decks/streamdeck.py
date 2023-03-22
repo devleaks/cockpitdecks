@@ -192,7 +192,8 @@ class Streamdeck(Deck):
             "weather",
             "switch",
             "circular-switch",
-            "push-switch"
+            "push-switch",
+            "ftg"
         ]
         return set(super().valid_representations() + valid_key_icon)
 

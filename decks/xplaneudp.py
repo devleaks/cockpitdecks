@@ -11,6 +11,7 @@ import time
 import datetime
 
 from .constant import SPAM
+from .xpdref_round import DATAREF_SLOW
 from .xplane import XPlane, Dataref
 from .button import Button
 
@@ -20,7 +21,7 @@ logger = logging.getLogger("XPlaneUDP")
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
-DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often = SLOW
+DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often will slow down X-PLANE.
 DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
                     # must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produce.
 LOOP_ALIVE   = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
@@ -421,7 +422,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         super().add_datarefs_to_monitor(datarefs)
         prnt = []
         for d in datarefs.values():
-            self.AddDataRef(d.path, freq=DATA_SENT)
+            self.AddDataRef(d.path, freq=DATAREF_SLOW.get(d.path, DATA_SENT))
             prnt.append(d.path)
         logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
 

@@ -6,6 +6,7 @@
 #
 import logging
 import random
+from datetime import datetime
 from avwx import Metar, station
 
 from PIL import Image, ImageDraw, ImageFont
@@ -80,6 +81,8 @@ class WeatherIcon(DrawAnimation):
 
         DrawAnimation.__init__(self, config=config, button=button)
 
+        self._last_updated = None
+        self._cache = None
         self.station = self.get_station()
         if self.station is None:
             self.station = self.weather.get("station", "EBBR")
@@ -89,8 +92,8 @@ class WeatherIcon(DrawAnimation):
         self.speed = int(speed) * 60                # minutes
 
         # Working variables
-        self.metar = Metar(self.station)
-        self.weather_icon = self.to_icon()
+        self.metar = None
+        self.weather_icon = None
 
         # Init
         self.update()
@@ -115,6 +118,15 @@ class WeatherIcon(DrawAnimation):
         return super().animate()
 
     def get_station(self):
+        MIN_UPDATE = 600  # seconds
+        if self._last_updated is not None:
+            now = datetime.now()
+            diff = now.timestamp() - self._last_updated.timestamp()
+            if diff < MIN_UPDATE:
+                logger.debug(f"get_station: updated less than {MIN_UPDATE} secs. ago ({diff}), skipping..")
+                return None
+            logger.debug(f"get_station: updated  {diff} secs. ago")
+
         lat = self.button.get_dataref_value("sim/flightmodel/position/latitude")
         lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
 
@@ -133,17 +145,39 @@ class WeatherIcon(DrawAnimation):
         return None
 
 
-    def update(self) -> bool:
+    def update(self, force: bool = False) -> bool:
+        """
+        Creates or updates Metar. Call to avwx may fail, so it is wrapped into try/except block
+
+        :param      force:  The force
+        :type       force:  bool
+
+        :returns:   { description_of_the_return_value }
+        :rtype:     bool
+        """
         updated = False
+        if force:
+            self._last_updated = None
         new = self.get_station()
         if new is not None and new != self.station:
             self.station = new
             logger.info(f"update: station changed to {self.station}")
-            self.metar = Metar(self.station)
-            updated = True
-        elif self.metar is not None:
-            self.metar.update()
-            updated = True
+            self.button._config["label"] = new
+            try:
+                self.metar = Metar(self.station)
+                self._last_updated = datetime.now()
+                updated = True
+            except:
+                self.metar = None
+                logger.warning(f"update: Metar not created", exc_info=True)
+        elif new is not None and self.metar is not None:
+            try:
+                self.metar.update()
+                self._last_updated = datetime.now()
+                updated = True
+            except:
+                self.metar = None
+                logger.warning(f"update: Metar not updated", exc_info=True)
         if updated:
             logger.info(f"update: Metar updated for {self.station}")
             self.weather_icon = self.to_icon()
@@ -157,7 +191,7 @@ class WeatherIcon(DrawAnimation):
         """
 
         if not self.update():
-            return None
+            self._cache
 
         image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
@@ -176,7 +210,7 @@ class WeatherIcon(DrawAnimation):
             w = image.width / 2
             h = image.height / 2
             draw.text((w, h),  # (image.width / 2, 15)
-                      text=self.weather_icon,
+                      text=self.weather_icon if self.weather_icon is not None else "\uf00d",
                       font=font,
                       anchor="mm",
                       align="center",
@@ -211,7 +245,8 @@ class WeatherIcon(DrawAnimation):
         # Paste image on cockpit background and return it.
         bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.deck.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
         bg.alpha_composite(image)
-        return bg.convert("RGB")
+        self._cache = bg.convert("RGB")
+        return self._cache
 
     def to_icon(self):
         # day or night

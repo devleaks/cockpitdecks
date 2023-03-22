@@ -265,13 +265,13 @@ class Icon(Representation):
             draw.polygon(pologon, fill="red", outline="white")
 
         # Add little check mark if not valid/fake
-        if self.button._config.get("type", "none") == "none":
-            image = image.copy()  # we will add text over it
-            draw = ImageDraw.Draw(image)
-            c1 = round(0.03 * image.width)  # % from edge
-            s = round(0.1 * image.width)   # size
-            pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
-            draw.polygon(pologon, fill="orange", outline="white")
+        # if self.button._config.get("type", "none") == "none":
+        #     image = image.copy()  # we will add text over it
+        #     draw = ImageDraw.Draw(image)
+        #     c1 = round(0.03 * image.width)  # % from edge
+        #     s = round(0.1 * image.width)   # size
+        #     pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
+        #     draw.polygon(pologon, fill="orange", outline="white")
 
         return self.overlay_text(image, "label")
 
@@ -768,7 +768,7 @@ class MultiLEDs(Representation):
 # "Icon" Buttons that are dynamically drawn
 #
 from .button_annunciator import Annunciator, AnnunciatorAnimate
-from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch
+from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 
 # Calls external services
 from .button_ext import WeatherIcon
@@ -795,5 +795,6 @@ REPRESENTATIONS = {
     "circular-switch": CircularSwitch,
     "push-switch": PushSwitch,
     "data": DataIcon,
+    "ftg": DrawAnimationFTG,
     "weather": WeatherIcon
 }
