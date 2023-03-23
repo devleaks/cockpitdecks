@@ -30,6 +30,9 @@ RECONNECT_TIMEOUT = 10  # seconds
 SOCKET_TIMEOUT    = 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
 
+# The command keywords are not executed, ignored with a warning
+NO_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
+
 # XPlaneBeacon
 # Beacon-specific error classes
 #
@@ -180,7 +183,7 @@ class XPlaneBeacon:
                     time.sleep(RECONNECT_TIMEOUT)
                     logger.debug("connect_loop: ..trying..")
             else:
-                time.sleep(RECONNECT_TIMEOUT)
+                time.sleep(RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
                 logger.debug("connect_loop: ..awake..")
         logger.debug("connect_loop: ..ended")
 
@@ -343,6 +346,9 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         return self.xplaneValues
 
     def ExecuteCommand(self, command: str):
+        if command is None or command in NO_COMMAND:
+            logger.warning(f"ExecuteCommand: command {command} not sent (command placeholder, no command, do nothing)")
+            return
         if not self.is_connected():
             logger.warning(f"ExecuteCommand: no connection ({command})")
             return

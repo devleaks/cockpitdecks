@@ -9,7 +9,7 @@ from datetime import datetime
 from .color import is_integer
 
 logger = logging.getLogger("Activation")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # logger.setLevel(SPAM)
 
 BACKPAGE = "back"
@@ -818,6 +818,7 @@ class EncoderOnOff(OnOff):
         return True  # super().is_valid()
 
     def activate(self, state):
+        print(">>>", state)
         if state < 2:
             super().activate(state)
         elif state == 2:  # rotate clockwise

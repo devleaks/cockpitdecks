@@ -178,6 +178,14 @@ class WeatherIcon(DrawAnimation):
             except:
                 self.metar = None
                 logger.warning(f"update: Metar not updated", exc_info=True)
+        elif self.station is not None and self.metar is None:
+            try:
+                self.metar = Metar(self.station)
+                self._last_updated = datetime.now()
+                updated = True
+            except:
+                self.metar = None
+                logger.warning(f"update: Metar not created", exc_info=True)
         if updated:
             logger.info(f"update: Metar updated for {self.station}")
             self.weather_icon = self.to_icon()

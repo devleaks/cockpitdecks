@@ -70,6 +70,40 @@ class Page:
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
 
+    def load_buttons(self, buttons):
+        for a in buttons:
+            button = None
+
+            # Where to place the button
+            idx = Button.guess_index(a)
+            if idx is None:
+                logger.error(f"load: page {self.name}: button has no index, ignoring {a}")
+                continue
+            if str(idx) not in self.deck.valid_indices():
+                logger.error(f"load: page {self.name}: button has invalid index '{idx}', ignoring {a}")
+                continue
+
+            # How the button will behave, it is does something
+            bty = Button.guess_activation_type(a)
+            if bty is None or bty not in self.deck.valid_activations(str(idx)):
+                logger.error(f"load: page {self.name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
+                continue
+
+            # How the button will be represented, if it is
+            valid_representations = self.deck.valid_representations(str(idx))
+            bty = Button.guess_representation_type(a, valid_representations)
+            if bty not in valid_representations:
+                logger.error(f"load: page {self.name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
+                continue
+            if bty == "none":
+                logger.debug(f"load: page {self.name}: button has no representation but it is ok")
+
+            button = Button(config=a, page=self)
+            if button is not None:
+                self.add_button(idx, button)
+                logger.debug(f"load: ..page {self.name}: added button index {idx} {button.name}..")
+
+
     def inspect(self, what: str = None):
         """
         This function is called on all buttons of this Page.

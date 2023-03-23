@@ -179,36 +179,6 @@ class Deck(ABC):
         """
         Loads Streamdeck pages during configuration
         """
-        def load_buttons(page, buttons):
-            for a in buttons:
-                button = None
-
-                # Where to place the button
-                idx = Button.guess_index(a)
-                if idx is None:
-                    logger.error(f"load: page {page.name}: button has no index, ignoring {a}")
-                    continue
-                if str(idx) not in self.valid_indices():
-                    logger.error(f"load: page {page.name}: button has invalid index '{idx}', ignoring {a}")
-                    continue
-
-                # How the button will behave, it is does something
-                bty = Button.guess_activation_type(a)
-                if bty is None or bty not in self.valid_activations(str(idx)):
-                    logger.error(f"load: page {page.name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
-                    continue
-
-                # How the button will be represented, if it is
-                bty = Button.guess_representation_type(a)
-                if bty not in self.valid_representations(str(idx)):
-                    logger.error(f"load: page {page.name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
-                    continue
-
-                button = Button(config=a, page=page)
-                if button is not None:
-                    page.add_button(idx, button)
-                    logger.debug(f"load: ..page {page.name}: added button index {idx} {button.name}..")
-
         if self.layout is None:
             self.make_default_page()
             return
@@ -249,7 +219,7 @@ class Deck(ABC):
                     self.pages[name] = this_page
 
                     # Page buttons
-                    load_buttons(this_page, page_config[YAML_BUTTONS_KW])
+                    this_page.load_buttons(page_config[YAML_BUTTONS_KW])
 
                     # Page includes
                     if YAML_INCLUDE_KW in page_config:
@@ -264,7 +234,7 @@ class Deck(ABC):
                                     inc_config = yaml.load(fpi)
                                     # how to merge? for now, just merge buttons
                                     if YAML_BUTTONS_KW in inc_config:
-                                        load_buttons(this_page, inc_config[YAML_BUTTONS_KW])
+                                        this_page.load_buttons(inc_config[YAML_BUTTONS_KW])
                             else:
                                 logger.warning(f"load: includes: {inc}: file {fni} not found")
                         logger.debug(f"load: includes: ..included")

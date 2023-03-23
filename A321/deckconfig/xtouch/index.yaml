@@ -1,59 +1,4 @@
-name: Index
 buttons:
-#
-# KNOB
-#
-# DO NOT use simple number to identify knobs.
-  - index: encoder0
-    name: KNOBLED
-    type: knob-led
-    commands:
-      - AirbusFBW/RMP1FreqDownLrg
-      - AirbusFBW/RMP1FreqUpLrg
-      - AirbusFBW/RMP1FreqDownSml
-      - AirbusFBW/RMP1FreqUpSml
-    led-mode: 0
-    formula: 8
-  - index: encoder1
-    name: KNOBLED
-    type: knob-led
-    commands:
-      - AirbusFBW/RMP1FreqDownLrg
-      - AirbusFBW/RMP1FreqUpLrg
-      - AirbusFBW/RMP1FreqDownSml
-      - AirbusFBW/RMP1FreqUpSml
-    led-mode: 1
-    formula: 6
-  - index: encoder2
-    name: KNOBLED
-    type: knob-led
-    commands:
-      - AirbusFBW/RMP1FreqDownLrg
-      - AirbusFBW/RMP1FreqUpLrg
-      - AirbusFBW/RMP1FreqDownSml
-      - AirbusFBW/RMP1FreqUpSml
-    led-mode: 2
-    formula: 8
-  - index: encoder3
-    name: KNOBLED
-    type: knob-led
-    commands:
-      - AirbusFBW/RMP1FreqDownLrg
-      - AirbusFBW/RMP1FreqUpLrg
-      - AirbusFBW/RMP1FreqDownSml
-      - AirbusFBW/RMP1FreqUpSml
-    led-mode: 3
-    formula: 6
-  - index: encoder4
-    name: KNOBLED
-    type: knob-led
-    commands:
-      - AirbusFBW/RMP1FreqDownLrg
-      - AirbusFBW/RMP1FreqUpLrg
-      - AirbusFBW/RMP1FreqDownSml
-      - AirbusFBW/RMP1FreqUpSml
-    led-mode: 4
-    formula: 1
 #
 # BUTTONS
 #
@@ -62,37 +7,51 @@ buttons:
     type: push
     command: sim/annunciator/clear_master_caution
     dataref: AirbusFBW/MasterCaut
+    led: true
   - index: 7
     name: MASTERWARN
     type: push
     command: sim/annunciator/clear_master_warning
     dataref: AirbusFBW/MasterWarn
-
+    led: true
   - index: 9
     name: ALLON
     type: push
     formula: 1
+    led: true
   - index: 10
     name: ALLOFF
     type: push
     formula: 0
+    led: true
   - index: 11
     name: ALLBLINK
     type: push
     formula: 1
     options: blink
+    led: true
   - index: 15
     name: RELOAD
     type: reload
+    led: true
+    formula: 1
 #
   - index: slider
     name: SLIDER
     type: slider
+    representation: false
+#
   - index: A
     name: Index
     type: page
-    icon: NONE
+    page: index
+    led: true
+    formula: 1
   - index: B
     name: Views
     type: page
-    icon: NONE
+    page: Views
+    led: true
+    formula: 0
+#
+includes: encoders

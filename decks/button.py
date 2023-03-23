@@ -91,7 +91,10 @@ class Button:
             self._activation = ACTIVATIONS["none"](config, self)
 
         self._representation = None
-        rtype = Button.guess_representation_type(config)
+
+        idx = Button.guess_index(config)
+        valid_representations = self.deck.valid_representations(str(idx))
+        rtype = Button.guess_representation_type(config, valid_representations)
         if rtype is not None and rtype in REPRESENTATIONS:
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"__init__: button {self.name} representation {rtype}")
@@ -134,7 +137,7 @@ class Button:
         return a
 
     @staticmethod
-    def guess_representation_type(config):
+    def guess_representation_type(config, valid_representations: list):
         a = []
         for r in REPRESENTATIONS.keys():
             if r in config:
@@ -142,8 +145,7 @@ class Button:
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
-            idx = config.get("index", "")
-            if not str(idx).startswith("knob"):
+            if "none" not in valid_representations:
                 logger.warning(f"guess_representation_type: no represetation in {config}")
         else:
             logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")

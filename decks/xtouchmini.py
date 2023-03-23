@@ -15,8 +15,10 @@ from .button import Button
 from .button_representation import LED, MultiLEDs
 
 logger = logging.getLogger("XTouchDeck")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
+ENCODE_PREFIX = "e"
+SLIDER = "slider"
 
 class XTouchMini(Deck):
     """
@@ -59,14 +61,14 @@ class XTouchMini(Deck):
         return []
 
     def valid_indices(self):
-        encoders = [f"e{i}" for i in range(8)]
+        encoders = [f"{ENCODE_PREFIX}{i}" for i in range(8)]
         buttons = [str(i) for i in range(16)]
-        return encoders + buttons + ["A", "B", "slider"]
+        return encoders + buttons + ["A", "B", SLIDER]
 
     def valid_activations(self, index = None):
         valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
         valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "knob"]
-        valid_slider = ["slider"]
+        valid_slider = [SLIDER]
 
         if index is not None:
             if index in self.valid_indices():
@@ -74,7 +76,7 @@ class XTouchMini(Deck):
                     return valid_push_encoder
                 if is_integer(index) or index in ["A", "B"]:
                     return valid_key
-                if index == "slider":
+                if index == SLIDER:
                     return valid_slider
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
@@ -92,12 +94,15 @@ class XTouchMini(Deck):
                     return valid_pushencoder
                 if is_integer(index) or index in ["A", "B"]:
                     return valid_key
-                if index == "slider":
+                if index == SLIDER:
                     return valid_slider
             else:
                 logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
                 return []
         return set(super().valid_representations() + valid_pushencoder + valid_key + valid_slider)
+
+    def load_icons(self):
+        pass
 
     def make_default_icon(self):
         pass
@@ -117,20 +122,27 @@ class XTouchMini(Deck):
         KEY_MAP = dict((v,k) for k, v in MAKIE_MAPPING.items())
         key1 = None
         if key >= 16 and key <= 23:     # turn encode
-            key1 = f"encoder{key - 16}"
+            key1 = f"{ENCODE_PREFIX}{key - 16}"
         elif key >= 32 and key <= 39:   # push on encoder
-            key1 = f"encoder{key - 32}"
+            key1 = f"{ENCODE_PREFIX}{key - 32}"
         elif key == 8:                  # slider
-            key1 = f"slider"
+            key1 = SLIDER
         else:                           # push a button
             key1 = KEY_MAP[key]
-        logger.debug(f"key_change_callback: {key} => {key1} {state}")
+        logger.debug(f"key_change_processing: {key} => {key1} {state}")
         if self.current_page is not None and key1 in self.current_page.buttons.keys():
             self.current_page.buttons[key1].activate(state)
 
     # #######################################
     # Deck Specific Functions : Representation
     #
+    def get_device_for_pil(self, b: str = None):
+        """
+        Return device or device element to use for PIL.
+        In this case, no image, no PIL
+        """
+        return None
+
     def _set_encoder_led(self, button):
         # logger.debug(f"test: button {button.name}: {'='*50}")
         # self.device.test()
@@ -161,7 +173,7 @@ class XTouchMini(Deck):
         if self.device is None:
             logger.warning("render: no device")
             return
-        if str(button.index) == "slider":
+        if str(button.index) == SLIDER:
             logger.debug(f"render: button type {button.index} has no representation")
             return
 
