@@ -2,6 +2,8 @@
 Button action and activation abstraction
 """
 import logging
+import threading
+import time
 
 from datetime import datetime
 
@@ -32,8 +34,8 @@ class Activation:
 
         # Commands
         self._view = config.get("view")  # Optional additional command, usually to set a view
-
-        # Datarefs                                         # but could be anything.
+                                         # but could be anything.
+        # Datarefs
         self.writable_dataref = config.get("set-dataref")
 
         # Working variables, internal state
@@ -297,6 +299,11 @@ class Push(Activation):
     Defines a Push activation.
     The supplied command is executed each time a button is pressed.
     """
+
+    # Default values
+    AUTO_REPEAT_DELAY = 1     # seconds
+    AUTO_REPEAT_SPEED = 0.2   # seconds
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
@@ -305,6 +312,19 @@ class Push(Activation):
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
+
+        # Auto-repeat
+        self.exit = None
+
+        self.auto_repeat = self.button.has_option("auto-repeat")
+        self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
+        if self.auto_repeat:
+            self.auto_repeat_speed = self.button.option_value("auto-repeat")  # seconds
+            if type(self.auto_repeat_speed) in [str, int, float]:  # may return bool...
+                self.auto_repeat_speed = float(self.auto_repeat_speed)
+            else:
+                self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
+        # may be could pass options as auto-repeat=delay,speed
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join([
@@ -328,7 +348,15 @@ class Push(Activation):
         super().activate(state)
         if state:
             self.button.xp.commandOnce(self.command)
-            self.view()
+            if self.auto_repeat and self.exit is None:
+                # Auto repeat starts after this:
+                time.sleep(Push.AUTO_REPEAT_DELAY)
+                self.auto_repeat_start()
+            else:
+                self.view()
+        else:
+            if self.auto_repeat:
+                self.auto_repeat_stop()
 
     def describe(self):
         """
@@ -338,6 +366,39 @@ class Push(Activation):
             f"The button executes {self.command} when it is activated (pressed).",
             f"The button does nothing when it is de-activated (released)."
         ])
+
+    # Auto repeat
+    def auto_repeat_loop(self):
+        while not self.exit.is_set():
+            self.activate(self.pressed)
+            self.exit.wait(self.auto_repeat_speed)
+        logger.debug(f"auto_repeat: exited")
+
+    def auto_repeat_start(self):
+        """
+        Starts auto_repeat
+        """
+        if self.exit is None:
+            self.exit = threading.Event()
+            self.thread = threading.Thread(target=self.auto_repeat_loop)
+            self.thread.name = f"Activation::auto_repeat({self.button_name()})"
+            self.thread.start()
+        else:
+            logger.warning(f"auto_repeat_start: button {self.button_name()}: already started")
+
+    def auto_repeat_stop(self):
+        """
+        Stops auto_repeat
+        """
+        if self.exit is not None:
+            self.exit.set()
+            self.thread.join(timeout=2*self.auto_repeat_speed)
+            if self.thread.is_alive():
+                logger.warning(f"auto_repeat_stop: ..thread may hang..")
+            else:
+                self.exit = None
+        else:
+            logger.debug(f"auto_repeat_stop: button {self.button_name()}: already stopped")
 
 
 class Longpress(Push):
