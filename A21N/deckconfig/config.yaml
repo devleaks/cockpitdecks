@@ -7,7 +7,7 @@ decks:
     layout: live
     brightness: 80
     light-off: 5
-    disabled: false
+    disabled: true
   - name: XPDeck
     type: streamdeck
     layout: sd15

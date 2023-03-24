@@ -1,0 +1,250 @@
+name: adirs
+# To do: AirbusFBW/ADIRUOnBat
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: ADIRS_ON_BAT
+    type: none
+    annunciator:
+      size: small
+      A0:
+        text: ON BAT
+        size: 48
+        color: darkorange
+        formula: ${AirbusFBW/ADIRUOnBat}
+  - index: 2
+    name: ADIRS_FAST_ALIGN
+    type: push
+    icon: P_TOLISS_ISCS_OFF
+    command: AirbusFBW/ADIRU_fast_align
+    label: "ADIR\nF/ALIGN"
+    label-position: cb
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    name: ADIRS1_INDICATOR
+    type: none
+    annunciator:
+      size: full
+      type: B
+      B0:
+        text: FAIL
+        color: darkorange
+        size: 60
+        formula: "0"
+      B1:
+        text: ALIGN
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        formula: ${AirbusFBW/OHPLightsATA34[6]} 2 * floor
+  - index: 9
+    name: ADIRS3_INDICATOR
+    type: none
+    annunciator:
+      size: full
+      type: B
+      B0:
+        text: FAIL
+        color: darkorange
+        size: 60
+        formula: "0"
+      B1:
+        text: ALIGN
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        formula: ${AirbusFBW/OHPLightsATA34[10]} 2 * floor
+  - index: 10
+    name: ADIRS2_INDICATOR
+    type: none
+    annunciator:
+      size: full
+      type: B
+      B0:
+        text: FAIL
+        color: darkorange
+        size: 60
+        formula: "0"
+      B1:
+        text: ALIGN
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        formula: ${AirbusFBW/OHPLightsATA34[8]} 2 * floor
+  - index: 15
+    name: left
+    type: page
+    page: ovrhdhyd
+    icon-color: (94, 111, 130)
+    label: ${fa:arrow-right}
+    label-font: fontawesome.otf
+    label-size: 60
+    label-position: cm
+# ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    # name must be unique on page
+    name: ADIRS1
+    # if present, label around icon
+    # label: switch
+    # this is the activation part:
+    type: updown
+    stops: 3
+    label: IR1
+    commands:
+      - toliss_airbus/adirucommands/ADIRU1SwitchUp
+      - toliss_airbus/adirucommands/ADIRU1SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[0]
+    initial-value: 0
+    circular-switch:
+      switch-style: large
+      down: 50
+      button-size: 70
+      button-fill-color: (30, 40, 50)
+      button-stroke-color: black
+      handle-fill-color: (60, 70, 80)
+      tick-from: 140
+      tick-to: 220
+      tick-color: white
+      tick-space: 36
+      tick-width: 8
+      tick-length: 24
+      tick-labels:
+        - "OFF"
+        - "NAV"
+        - "ATT"
+      tick-label-font: DIN Bold
+      tick-label-size: 30
+      needle-underline-width: 8
+  - index: 17
+    # name must be unique on page
+    name: ADIRS3
+    # if present, label around icon
+    # label: switch
+    # this is the activation part:
+    type: updown
+    stops: 3
+    label: IR3
+    commands:
+      - toliss_airbus/adirucommands/ADIRU3SwitchUp
+      - toliss_airbus/adirucommands/ADIRU3SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[2]
+    initial-value: 0
+    circular-switch:
+      switch-style: large
+      down: 50
+      button-size: 70
+      button-fill-color: (30, 40, 50)
+      button-stroke-color: black
+      handle-fill-color: (60, 70, 80)
+      tick-from: 140
+      tick-to: 220
+      tick-color: white
+      tick-space: 36
+      tick-width: 8
+      tick-length: 24
+      tick-labels:
+        - "OFF"
+        - "NAV"
+        - "ATT"
+      tick-label-font: DIN Bold
+      tick-label-size: 30
+      needle-underline-width: 8
+  - index: 18
+    # name must be unique on page
+    name: ADIRS2
+    # if present, label around icon
+    # label: switch
+    # this is the activation part:
+    type: updown
+    stops: 3
+    label: IR2
+    commands:
+      - toliss_airbus/adirucommands/ADIRU2SwitchUp
+      - toliss_airbus/adirucommands/ADIRU2SwitchDown
+    dataref: AirbusFBW/ADIRUSwitchArray[1]
+    initial-value: 0
+    circular-switch:
+      switch-style: large
+      down: 50
+      button-size: 70
+      button-fill-color: (30, 40, 50)
+      button-stroke-color: black
+      handle-fill-color: (60, 70, 80)
+      tick-from: 140
+      tick-to: 220
+      tick-color: white
+      tick-space: 36
+      tick-width: 8
+      tick-length: 24
+      tick-labels:
+        - "OFF"
+        - "NAV"
+        - "ATT"
+      tick-label-font: DIN Bold
+      tick-label-size: 30
+      needle-underline-width: 8
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 24
+    name: ADIRS1_OFF
+    type: onoff
+    label: ADR1
+    annunciator:
+      size: full
+      type: B
+      B0:
+        text: FAIL
+        color: darkorange
+        size: 60
+        formula: "0"
+      B1:
+        text: "OFF"
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        formula: ${AirbusFBW/ADRLights[0]} 1 - abs
+        framed: True
+    set-dataref: AirbusFBW/ADIRUSwitchArray[0]
+  - index: 25
+    name: ADIRS3_OFF
+    type: onoff
+    label: ADR3
+    annunciator:
+      size: full
+      type: B
+      B0:
+        text: FAIL
+        color: darkorange
+        size: 60
+        formula: "0"
+      B1:
+        text: "OFF"
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        formula: ${AirbusFBW/ADRLights[2]} 1 - abs
+        framed: True
+    set-dataref: AirbusFBW/ADIRUSwitchArray[2]
+  - index: 26
+    name: ADIRS2_OFF
+    type: onoff
+    label: ADR2
+    annunciator:
+      size: full
+      type: B
+      B0:
+        text: FAIL
+        color: darkorange
+        size: 60
+        formula: "0"
+      B1:
+        text: "OFF"
+        color: peachpuff
+        size: 80
+        font: DIN Condensed Bold
+        formula: ${AirbusFBW/ADRLights[1]} 1 - abs
+        framed: True
+    set-dataref: AirbusFBW/ADIRUSwitchArray[1]
+  - index: 31
+    name: Index
+    type: page
+    icon: TOLISS-A321

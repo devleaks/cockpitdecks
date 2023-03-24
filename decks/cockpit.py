@@ -585,7 +585,8 @@ class Cockpit:
             self.xp = None
             logger.debug(f"terminate_all: ..xp deleted..")
         # Terminate reload loop
-        self.end_reload_loop()
+        if self.reload_loop_run:
+            self.end_reload_loop()
         logger.info(f"terminate_all: ..terminating devices..")
         self.terminate_devices()
         logger.info(f"terminate_all: ..done")

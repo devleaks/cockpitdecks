@@ -1,0 +1,186 @@
+name: xplane
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: X-Plane Map
+    label: Map
+    type: push
+    annunciator:
+      type: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: sim/map/show_current
+  - index: 1
+    name: Airport Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: pikitanga/AptNav/ToggleMap
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: Airport
+  - index: 2
+    name: AVS Map
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: flightfactor/avs/toggle
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: AVS
+  - index: 3
+    name: AviTab
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    label: AviTab
+    command: AviTab/toggle_tablet
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+  # - index: 4
+  #   name: Ground Services
+  #   type: page
+  #   label: Ground Services
+  - index: 5
+    name: LiveTraffic
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: LiveTraffic/Info_Staus_Wnd/Open
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: Live/T
+  - index: 6
+    name: FollowTheGreens
+    type: onoff
+    icon-off: F.GREENS_OFF
+    icon-animate:
+      - F.GREENS_ON_1
+      - F.GREENS_ON_2
+      - F.GREENS_ON_3
+    animation:
+      speed: 0.2
+    animation-speed: 0.2
+#     command: XPPython3/followthegreens/main_windown_toggle
+    commands:
+      - XPPython3/followthegreens/main_windown_toggle
+      - XPPython3/followthegreens/main_windown_toggle
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: F.GREENS
+  - index: 7
+    name: XPLANEDATA
+    type: push
+    icon: XPLANE_OUTPUT
+    command: sim/operation/toggle_data_output_cockpit
+    formula: ${state:activation_count} 2 %
+    label: "XPLANE\nCOCKPIT\nDATA"
+    label-color: black
+    label-position: cm
+
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    name: SAMGroundVehicle
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: sam/main_window
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: SAM/GV
+  - index: 9
+    name: GroundHandlingDeluxe
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: jd/ghd/show_widget
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: GHDLX
+
+# ### LINE 3 ### 16-23 ######################################################
+  - index: 16
+    name: XTouchMini
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: SRS/X-Camera/Toggle_Control_Panel_on_or_off
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: X-Camera
+  - index: 17
+    name: X-ATC
+    type: push
+    multi-icons:
+      - AVAIL_GREEN_NONE
+      - NONE_ON_BLUE_FR
+    command: SRS/X-ATC-Chatter/Toggle_Control_Panel
+    formula: ${state:activation_count} 2 %
+    initial-value: 0
+    label: X-ATC
+
+# ### LINE 4 ### 24-31 ######################################################
+  # - index: 26
+  #   name: XPLANEDATA2
+  #   type: push
+  #   icon: XPLANE_OUTPUT
+  #   label: "COCKPIT\nDATA"
+  #   command: sim/operation/toggle_data_output_cockpit
+  #   options: framed-icon
+  - index: 24
+    name: STOP_COCKPITDECKS
+    type: stop
+    icon: PANIC
+  - index: 26
+    name: DESCRIBE
+    type: inspect
+    icon: COCKPITDECKS
+    label: "DESCRIBE"
+    label-color: red
+    label-position: "cm"
+    what: desc
+  - index: 27
+    name: INSPECT
+    type: inspect
+    icon: COCKPITDECKS
+    label: "INSPECT"
+    label-color: red
+    label-position: "cm"
+    what: status
+  - index: 28
+    name: XP PYTHON
+    type: push
+    icon: XP-PYTHON
+    command: XPPython3/reloadScripts
+    label: XPPython3
+  - index: 29
+    name: DATAREFTOOL
+    type: push
+    icon: NONE
+    label: DataRefTool
+    icon: DATAREFTOOL
+    command: leecbaker/datareftool/new_search_window
+  - index: 30
+    name: RELOAD
+    type: reload
+    icon: RELOAD
+    label: RELOAD
+  - index: 31
+    name: Index
+    type: page
+    icon: TOLISS-A321
