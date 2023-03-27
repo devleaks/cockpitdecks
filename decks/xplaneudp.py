@@ -387,7 +387,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     nexttime = DATA_REFRESH - (later - now)
                     total_to = 0
                 except XPlaneTimeout:
-                    logger.info(f"loop: XPlaneTimeout ({total_to})")  # ignore
+                    logger.info(f"loop: XPlaneTimeout ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
                     total_to = total_to + 1
                     if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning(f"loop: too many times out, disconnecting, dataref listener terminated")  # ignore

@@ -170,6 +170,7 @@ class XTouchMini(Deck):
             self.device.set_control(key=key, value=value, mode=mode)
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
+        print(">>>", type(self).__name__, type(self.device).__name__)
         if self.device is None:
             logger.warning("render: no device")
             return

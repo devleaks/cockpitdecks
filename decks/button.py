@@ -414,6 +414,8 @@ class Button:
     #
     def get_dataref_value(self, dataref, default = None):
         d = self.page.datarefs.get(dataref)
+        if d is not None:
+            print("***", type(d).__name__, d.path, d.xp_datatype, d.data_type)
         return d.current_value if d is not None else default
 
     def is_managed(self):
@@ -440,7 +442,8 @@ class Button:
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         """
-        if type(message) == int or type(message) == float:  # probably formula is a contant value
+        print(">>>>>>>", message, default, formatting)
+        if type(message) == int or type(message) == float:  # probably formula is a constant value
             value_str = message
             if formatting is not None:
                 if formatting is not None:
@@ -452,8 +455,10 @@ class Button:
             return value_str
 
         dataref_names = re.findall(PATTERN_DOLCB, message)
+
         if len(dataref_names) == 0:
             return message
+
         if formatting is not None:
             if type(formatting) == list:
                 if len(dataref_names) != len(formatting):
@@ -462,10 +467,13 @@ class Button:
             elif type(formatting) != str:
                 logger.warning(f"substitute_dataref_values: button {self.name}: single format is not a string, cannot proceed.")
                 return message
+
         retmsg = message
         cnt = 0
+        print(">>>>>>>", message, default, formatting)
         for dataref_name in dataref_names:
             value = self.get_dataref_value(dataref_name)
+            print(">>>>>>>", dataref_name, value)
             value_str = ""
             if formatting is not None and value is not None:
                 if type(formatting) == list:

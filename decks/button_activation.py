@@ -3,7 +3,6 @@ Button action and activation abstraction
 """
 import logging
 import threading
-import time
 
 from datetime import datetime
 
@@ -11,10 +10,10 @@ from datetime import datetime
 from .color import is_integer
 
 logger = logging.getLogger("Activation")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # logger.setLevel(SPAM)
 
-BACKPAGE = "back"
+BACKPAGE_KEYWORD = "back"
 
 
 # ##########################################
@@ -180,7 +179,7 @@ class LoadPage(Activation):
         self._has_no_value = True
 
         # Commands
-        self.page = config.get("page", BACKPAGE)  # default is to go to previously loaded page, if any
+        self.page = config.get("page", BACKPAGE_KEYWORD)  # default is to go to previously loaded page, if any
         self.remote_deck = config.get("deck")
 
     def is_valid(self):
@@ -200,7 +199,7 @@ class LoadPage(Activation):
             if self.remote_deck is not None and self.remote_deck in decks.keys():
                 deck = decks[self.remote_deck]
 
-            if self.page == BACKPAGE or self.page in deck.pages.keys():
+            if self.page == BACKPAGE_KEYWORD or self.page in deck.pages.keys():
                 logger.debug(f"activate: {type(self).__name__} change page to {self.page}")
                 new_name = deck.change_page(self.page)
             else:
@@ -314,23 +313,43 @@ class Push(Activation):
         self.pressed = False  # True while the button is pressed, False when released
 
         # Auto-repeat
-        self.exit = None
-
         self.auto_repeat = self.button.has_option("auto-repeat")
+        self.auto_repeat_delay = Push.AUTO_REPEAT_DELAY
         self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
-        if self.auto_repeat:
-            self.auto_repeat_speed = self.button.option_value("auto-repeat")  # seconds
-            if type(self.auto_repeat_speed) in [str, int, float]:  # may return bool...
-                self.auto_repeat_speed = float(self.auto_repeat_speed)
-            else:
-                self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
-        # may be could pass options as auto-repeat=delay,speed
+        self.exit = None
+        self.set_auto_repeat()
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join([
                 f"command: {self.command}",
                 f"is_valid: {self.is_valid()}"
         ])
+
+    def set_auto_repeat(self):
+        if not self.auto_repeat:
+            return
+
+        value = self.button.option_value("auto-repeat")
+        if type(value) == bool:  # options: auto-repeat; uses default
+            return
+        elif "/" in str(value):  # options: auto-repeat=1/0.2; set both
+            arr = value.split("/")
+            if len(arr) > 1:
+                self.auto_repeat_delay = float(arr[0])
+                if self.auto_repeat_delay <= 0:
+                    self.auto_repeat_delay = Push.AUTO_REPEAT_DELAY
+                self.auto_repeat_speed = float(arr[1])
+                if self.auto_repeat_speed <= 0:
+                    self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
+            elif len(arr) > 0:
+                self.auto_repeat_speed = float(arr[0])
+                if self.auto_repeat_speed <= 0:
+                    self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
+        else:  # options: auto-repeat=1; set speed only, default delay
+            self.auto_repeat_speed = float(value)
+            if self.auto_repeat_speed <= 0:
+                self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
+        logger.debug(f"set_auto_repeat: {self.auto_repeat_delay}, {self.auto_repeat_speed}")
 
     def is_on(self):
         return self.activation_count % 2 == 1
@@ -349,8 +368,6 @@ class Push(Activation):
         if state:
             self.button.xp.commandOnce(self.command)
             if self.auto_repeat and self.exit is None:
-                # Auto repeat starts after this:
-                time.sleep(Push.AUTO_REPEAT_DELAY)
                 self.auto_repeat_start()
             else:
                 self.view()
@@ -369,6 +386,7 @@ class Push(Activation):
 
     # Auto repeat
     def auto_repeat_loop(self):
+        self.exit.wait(self.auto_repeat_delay)
         while not self.exit.is_set():
             self.activate(self.pressed)
             self.exit.wait(self.auto_repeat_speed)
@@ -1057,11 +1075,19 @@ class Slider(Activation):  # Cursor?
     """
     A Encoder that can turn left/right.
     """
+    SLIDER_MAX = 8064
+    SLIDER_MIN = -8192
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
         self.value_min = float(config.get("value-min", 0))
         self.value_max = float(config.get("value-max", 100))
+        self.value_step = float(config.get("value-step", 0))
+        if self.value_min > self.value_max:
+            temp = self.value_min
+            self.value_min = self.value_max
+            self.value_max = temp
 
     def is_valid(self):
         if self.writable_dataref is None:
@@ -1071,14 +1097,19 @@ class Slider(Activation):  # Cursor?
 
     def activate(self, state):
         super().activate(state)
-        logger.info(f"activate: button {self.button_name()}: {type(self).__name__} has no action (value={state})")
+        frac = abs(state - Slider.SLIDER_MAX) / (Slider.SLIDER_MAX - Slider.SLIDER_MIN)
+        if self.value_step != 0:
+            nstep = (self.value_max - self.value_min) / self.value_step
+            frac = int(frac * nstep) / nstep
+        value = self.value_min + frac * (self.value_max - self.value_min)
+        logger.debug(f"activate: button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
 
     def describe(self):
         """
         Describe what the button does in plain English
         """
         a = [
-            f"This slider produces a value between [{self.value_min}-{self.value_max}].",
+            f"This slider produces a value between [{self.value_min}, {self.value_max}].",
             f"The raw value from slider is modified by formula {self.button.formula}."
         ]
         if self.writable_dataref is not None:

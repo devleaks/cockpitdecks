@@ -1,0 +1,26 @@
+buttons:
+  - index: 8
+    name: RADIO
+    type: page
+    page: radio
+    label: RADIO
+    text-bgcolor: (94, 111, 130)
+    text: ${fa:arrow-left}
+    text-font: fontawesome.otf
+    text-size: 60
+    text-position: cm
+  - index: 15
+    name: XPNDR
+    type: page
+    page: xpndr
+    label: XPNDR
+    text-bgcolor: (94, 111, 130)
+    text: ${fa:arrow-right}
+    text-font: fontawesome.otf
+    text-size: 60
+    text-position: cm
+  - index: 31
+    name: Index
+    type: page
+    page: index-old
+    icon: TOLISS-A321

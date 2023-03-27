@@ -378,7 +378,7 @@ class IconText(Icon):
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
-        self.text = config.get("text")
+        self.text = str(config.get("text"))
 
         self.icon_color = config.get("text-bg-color")
         self.mk_uniform_icon()
