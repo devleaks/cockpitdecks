@@ -24,3 +24,16 @@ buttons:
     type: page
     page: index-old
     icon: TOLISS-A321
+
+    # Pitch (center)
+    # command: sim/flight_controls/pitch_trim_down
+    # command: sim/flight_controls/pitch_trim_up
+    #
+    # Speed brakes (left)
+    # command: ckpt/speedbrakeUp/anim
+    # dataref: sim/cockpit2/controls/speedbrake_ratio
+    #
+    # Flaps (right)
+    # dataref: AirbusFBW/FlapRequestPos  (-1, 1, 2, 3, 4)
+    # dataref: AirbusFBW/FlapSlatText
+    #

@@ -239,7 +239,6 @@ buttons:
           text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/LOCbutton
-    options: auto-repeat=3/3
   - index: 10
     name: APPR
     type: push

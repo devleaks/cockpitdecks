@@ -414,8 +414,8 @@ class Button:
     #
     def get_dataref_value(self, dataref, default = None):
         d = self.page.datarefs.get(dataref)
-        if d is not None:
-            print("***", type(d).__name__, d.path, d.xp_datatype, d.data_type)
+        # if d is not None:
+        #     print("***", type(d).__name__, d.path, d.xp_datatype, d.data_type)
         return d.current_value if d is not None else default
 
     def is_managed(self):
@@ -441,8 +441,8 @@ class Button:
     def substitute_dataref_values(self, message: str, default: str = "0.0", formatting = None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
+        @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
         """
-        print(">>>>>>>", message, default, formatting)
         if type(message) == int or type(message) == float:  # probably formula is a constant value
             value_str = message
             if formatting is not None:
@@ -470,10 +470,8 @@ class Button:
 
         retmsg = message
         cnt = 0
-        print(">>>>>>>", message, default, formatting)
         for dataref_name in dataref_names:
             value = self.get_dataref_value(dataref_name)
-            print(">>>>>>>", dataref_name, value)
             value_str = ""
             if formatting is not None and value is not None:
                 if type(formatting) == list:

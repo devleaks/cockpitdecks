@@ -289,7 +289,7 @@ class Loupedeck(Deck):
     # #######################################
     # Deck Specific Functions : Representation
     #
-    def get_device_for_pil(self, b: str = None):
+    def get_display_for_pil(self, b: str = None):
         """
         Return device or device element to use for PIL.
         """
@@ -299,12 +299,14 @@ class Loupedeck(Deck):
 
     def create_icon_for_key(self, button, colors):
         if self.pil_helper is not None:
-            return self.pil_helper.create_image(deck=self.get_device_for_pil(button.index), background=colors)
+            display = self.get_display_for_pil(button.index)
+            return self.pil_helper.create_image(deck=self.device, background=colors, display=display)
         return None
 
     def scale_icon_for_key(self, button, image):
         if self.pil_helper is not None:
-            return self.pil_helper.create_scaled_image(deck=self.get_device_for_pil(button.index), image=image)
+            display = self.get_display_for_pil(button.index)
+            return self.pil_helper.create_scaled_image(deck=self.device, image=image, display=display)
         return None
 
     def _vibrate(self, pattern: str):
@@ -335,7 +337,7 @@ class Loupedeck(Deck):
                     mw = sizes[0]
                     mh = sizes[1]
                     if image.width > mw or image.height > mh:
-                        image = self.pil_helper.create_scaled_image(self.get_device_for_pil(), image)
+                        image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=self.get_display_for_pil(button.index))
                 else:
                     logger.warning("set_key_image: cannot get device key image size")
             else:
@@ -389,6 +391,7 @@ class Loupedeck(Deck):
         self.running = False
         # logger.debug(f"terminate: closing {type(self.device).__name__}..")
         # del self.device     # closes connection and stop serial _read thread
+        # self.device = None
         # logger.debug(f"terminate: closed")
         logger.info(f"terminate: deck {self.name} terminated")
 

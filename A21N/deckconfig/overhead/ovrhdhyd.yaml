@@ -28,7 +28,7 @@ buttons:
 # ### LINE 2 ###  8-15 ######################################################
   - index: 8
     name: ENG1PUMP
-    type: push
+    type: none
     label: ENG 1 PUMP
     annunciator:
       type: B
@@ -40,9 +40,10 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/HydOHPArray[0]} 1 - abs
   - index: 9
     name: RAT
-    type: push
+    type: none
     label: RAT MAN ON
     annunciator:
       type: A
@@ -53,10 +54,11 @@ buttons:
         framed: true
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[2]
+    command: toliss_airbus/hydcommands/PressRATReleaseButton
   - index: 10
     name: ELECPUMP1
-    type: push
-    label: ELEC PUMP
+    type: none
+    label: ELEC PUMP/BLUE
     annunciator:
       type: B
       size: large
@@ -67,13 +69,14 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/HydOHPArray[2]} 1 - abs
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[1]
       type: grid
-      color: (20,20,20)
+      color: (40,40,40)
   - index: 11
     name: PTU
-    type: push
+    type: none
     label: PTU
     annunciator:
       type: B
@@ -85,9 +88,10 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/HydOHPArray[4]} 1 - abs
   - index: 12
     name: ENG2PUMP
-    type: push
+    type: none
     label: ENG 2 PUMP
     annunciator:
       type: B
@@ -99,9 +103,10 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/HydOHPArray[1]} 1 - abs
   - index: 13
-    name: ELECPUMP2
-    type: push
+    name: ELECPUMP
+    type: none
     label: ELEC PUMP
     annunciator:
       type: B
@@ -109,10 +114,12 @@ buttons:
       B0:
         text: FAULT
         color: darkorange
+        formula: ${AirbusFBW/HydYElecMode} 2 eq
       B1:
-        text: "OFF"
+        text: "ON"
         color: white
         framed: true
+        dataref: AirbusFBW/fmod/sys/hydpumps[0]
   - index: 15
     name: left
     type: page

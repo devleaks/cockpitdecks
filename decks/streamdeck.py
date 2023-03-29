@@ -130,10 +130,10 @@ class Streamdeck(Deck):
         logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
         key_spacing = (36, 36)
-        image = create_full_deck_sized_image(self.get_device_for_pil(), key_spacing, fn)
+        image = create_full_deck_sized_image(deck=self.device, key_spacing=key_spacing, image_filename=fn)
         key_images = dict()
         for k in range(self.device.key_count()):
-            key_images[k] = crop_key_image_from_deck_sized_image(self.get_device_for_pil(), image, key_spacing, k)
+            key_images[k] = crop_key_image_from_deck_sized_image(deck=self.device, image=image, key_spacing=key_spacing, key=k)
 
         with self.device:
             # Draw the individual key images to each of the keys.
@@ -197,6 +197,16 @@ class Streamdeck(Deck):
         ]
         return set(super().valid_representations() + valid_key_icon)
 
+    def create_icon_for_key(self, button, colors):
+        if self.pil_helper is not None:
+            return self.pil_helper.create_image(deck=self.device, background=colors)
+        return None
+
+    def scale_icon_for_key(self, button, image):
+        if self.pil_helper is not None:
+            return self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+        return None
+
     # #######################################
     # Deck Specific Functions : Activation
     #
@@ -207,7 +217,7 @@ class Streamdeck(Deck):
     #
     def _send_key_image_to_device(self, key, image):
         with self.device:
-            i = self.pil_helper.to_native_format(self.get_device_for_pil(), image)
+            i = self.pil_helper.to_native_format(deck=self.device, image=image)
             self.device.set_key_image(int(key), i)
 
     def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
@@ -230,7 +240,7 @@ class Streamdeck(Deck):
     # #######################################
     # Deck Specific Functions : Device
     #
-    def get_device_for_pil(self, b: str = None):
+    def get_display_for_pil(self, b: str = None):
         """
         Return device or device element to use for PIL.
         """

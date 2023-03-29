@@ -1,14 +1,5 @@
 buttons:
-  - index: 8
-    name: XPNDR
-    type: page
-    page: piedestal
-    label: PIEDESTAL
-    text-bgcolor: (94, 111, 130)
-    text: ${fa:arrow-left}
-    text-font: fontawesome.otf
-    text-size: 60
-    text-position: cm
+# ### LINE 1 ###  0- 7 ######################################################
   - index: 1
     # name must be unique on page
     name: ATC ON
@@ -64,56 +55,17 @@ buttons:
     text-size: 40
     command: AirbusFBW/ATCCodeKey3
 
-  - index: 10
-    name: ATCCodeKey4
-    type: push
-    text-bg-color: (20, 20, 20)
-    text-color: white
-    text: "4"
-    text-size: 40
-    command: AirbusFBW/ATCCodeKey4
-  - index: 11
-    name: ATCCodeKey5
-    type: push
-    text-bg-color: (20, 20, 20)
-    text-color: white
-    text: "5"
-    text-size: 40
-    command: AirbusFBW/ATCCodeKey5
-  - index: 12
-    name: ATCCodeKey6
-    type: push
-    text-bg-color: (20, 20, 20)
-    text-color: white
-    text: "6"
-    text-size: 40
-    command: AirbusFBW/ATCCodeKey6
-
-  - index: 18
-    name: ATCCodeKey7
-    type: push
-    text-bg-color: (20, 20, 20)
-    text-color: white
-    text: "7"
-    text-size: 40
-    command: AirbusFBW/ATCCodeKey7
-  - index: 19
-    name: ATCCodeKey0
-    type: push
-    text-bg-color: (20, 20, 20)
-    text-color: white
-    text: "0"
-    text-size: 40
-    command: AirbusFBW/ATCCodeKey0
-  - index: 20
-    name: ATCCodeKeyCLR
-    type: push
-    text-bg-color: (20, 20, 20)
-    text-color: white
-    text: "CLR"
-    text-size: 40
-    command: AirbusFBW/ATCCodeKey7
-
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 8
+    name: XPNDR
+    type: page
+    page: piedestal
+    label: PIEDESTAL
+    text-bgcolor: (94, 111, 130)
+    text: ${fa:arrow-left}
+    text-font: fontawesome.otf
+    text-size: 60
+    text-position: cm
   - index: 9
     # name must be unique on page
     name: ATC SYS
@@ -144,6 +96,51 @@ buttons:
       tick-label-font: DIN Bold
       tick-label-size: 30
       needle-underline-width: 8
+  - index: 10
+    name: ATCCodeKey4
+    type: push
+    text-bg-color: (20, 20, 20)
+    text-color: white
+    text: "4"
+    text-size: 40
+    command: AirbusFBW/ATCCodeKey4
+  - index: 11
+    name: ATCCodeKey5
+    type: push
+    text-bg-color: (20, 20, 20)
+    text-color: white
+    text: "5"
+    text-size: 40
+    command: AirbusFBW/ATCCodeKey5
+  - index: 12
+    name: ATCCodeKey6
+    type: push
+    text-bg-color: (20, 20, 20)
+    text-color: white
+    text: "6"
+    text-size: 40
+    command: AirbusFBW/ATCCodeKey6
+
+  - index: 14
+    name: TRANSPONDER CODE
+    type: none
+    text: ${sim/cockpit2/radios/actuators/transponder_code}
+    text-format: "{:4.0f}"
+    text-color: white
+    text-size: 40
+    text-font: Seven Segment.ttf
+    text-bg-color: (40, 40, 40)
+
+  - index: 15
+    type: push
+    name: ATC IDENT
+    label: IDENT
+    command: sim/transponder/transponder_ident
+    push-switch:
+      size: 30
+
+
+# ### LINE 3 ### 16-23 ######################################################
   - index: 17
     # name must be unique on page
     name: ATC ALT SELECT
@@ -174,29 +171,36 @@ buttons:
       tick-label-font: DIN Bold
       tick-label-size: 30
       needle-underline-width: 8
+  - index: 18
+    name: ATCCodeKey7
+    type: push
+    text-bg-color: (20, 20, 20)
+    text-color: white
+    text: "7"
+    text-size: 40
+    command: AirbusFBW/ATCCodeKey7
+  - index: 19
+    name: ATCCodeKey0
+    type: push
+    text-bg-color: (20, 20, 20)
+    text-color: white
+    text: "0"
+    text-size: 40
+    command: AirbusFBW/ATCCodeKey0
+  - index: 20
+    name: ATCCodeKeyCLR
+    type: push
+    text-bg-color: (20, 20, 20)
+    text-color: white
+    text: "CLR"
+    text-size: 40
+    command: AirbusFBW/ATCCodeKey7
   - index: 21
     type: none
     name: ATC OK
     label: ATC
     text: FAIL
     text-position: cb
-  - index: 15
-    type: push
-    name: ATC IDENT
-    label: IDENT
-    command: sim/transponder/transponder_ident
-    push-switch:
-      size: 30
-
-  - index: 14
-    name: TRANSPONDER CODE
-    type: none
-    text: ${sim/cockpit2/radios/actuators/transponder_code}
-    text-format: "{:4.0f}"
-    text-color: white
-    text-size: 40
-    text-font: Seven Segment.ttf
-    text-bg-color: (40, 40, 40)
 
   - index: 22
     # name must be unique on page
@@ -230,6 +234,9 @@ buttons:
       tick-label-size: 30
       needle-underline-width: 8
       needle-length: 20
+
+# ### LINE 4 ### 24-31 ######################################################
+
   - index: 31
     name: Index
     type: page

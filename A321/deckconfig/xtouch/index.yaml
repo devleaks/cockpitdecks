@@ -39,9 +39,7 @@ buttons:
   - index: slider
     name: SLIDER
     type: slider
-    set-dataref: Toto
     representation: false
-    value-step: 10
 #
   - index: A
     name: Index

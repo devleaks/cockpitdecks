@@ -15,21 +15,19 @@ from .button import Button
 from .button_representation import LED, MultiLEDs
 
 logger = logging.getLogger("XTouchDeck")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 ENCODE_PREFIX = "e"
 SLIDER = "slider"
+
 
 class XTouchMini(Deck):
     """
     Loads the configuration of a X-Touch Mini.
     """
-
-
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
 
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
-
         self.init()
 
     # #######################################
@@ -136,7 +134,7 @@ class XTouchMini(Deck):
     # #######################################
     # Deck Specific Functions : Representation
     #
-    def get_device_for_pil(self, b: str = None):
+    def get_display_for_pil(self, b: str = None):
         """
         Return device or device element to use for PIL.
         In this case, no image, no PIL
@@ -170,9 +168,8 @@ class XTouchMini(Deck):
             self.device.set_control(key=key, value=value, mode=mode)
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
-        print(">>>", type(self).__name__, type(self.device).__name__)
         if self.device is None:
-            logger.warning("render: no device")
+            logger.warning(f"render: no device ({hasattr(self, 'device')}, {type(self)})")
             return
         if str(button.index) == SLIDER:
             logger.debug(f"render: button type {button.index} has no representation")
@@ -201,10 +198,12 @@ class XTouchMini(Deck):
         super().terminate()  # cleanly unload current page, if any
         XTouchMini.terminate_device(self.device, self.name)
         del self.device
+        self.device = None
         logger.debug(f"terminate: {self.name} stopped")
 
     @staticmethod
     def terminate_device(device, name: str = "unspecified"):
         device.stop()  # terminates the loop.
         del device
+        device = None
         logger.info(f"terminate_device: {name} terminated")

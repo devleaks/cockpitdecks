@@ -19,6 +19,7 @@ TRACK_UPDATE = True # Reports when a dataref has changed
 class Dataref:
 
     def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
+
         self.path = path            # some/path/values[6]
         self.dataref = path         # some/path/values
         self.index = 0              # 6
@@ -34,6 +35,27 @@ class Dataref:
         self.listeners = []         # buttons using this dataref, will get notified if changes.
         self.round = DATAREF_ROUND.get(path)
 
+        # dataref/path:t where t in d, i, f, s, b.
+        if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
+            path = path[:-2]
+            typ = path[-1]
+            if typ == "d":
+                self.is_decimal = True
+                self.data_type = "int"
+            elif typ == "s":
+                self.is_string = True
+                self.data_type = "str"
+                self.is_array = True
+            elif typ == "b":
+                self.is_string = "byte"
+
+
+        if is_decimal and is_string:
+            loggerDataref.error(f"__init__: index {path} cannot be both decimal and string")
+
+        if length is not None and length > 1:
+            self.is_array = True
+
         # is dataref a path to an array element?
         if "[" in path:  # sim/some/values[4]
             self.dataref = self.path[:self.path.find("[")]
@@ -45,6 +67,19 @@ class Dataref:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
 
     def value(self):
+        return self.current_value
+
+    def value_typed(self):
+        # May fail during conversion
+        if self.current_value is None:
+            return None
+        if self.data_type == "float":
+            return float(self.current_value)
+        elif self.data_type == "int" or self.is_decimal:
+            return int(self.current_value)
+        elif self.data_type == "str" or self.data_type == "string" or self.is_string:
+            return str(self.current_value)
+        # arrays, etc
         return self.current_value
 
     def exists(self):

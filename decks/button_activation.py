@@ -10,8 +10,8 @@ from datetime import datetime
 from .color import is_integer
 
 logger = logging.getLogger("Activation")
-# logger.setLevel(logging.DEBUG)
 # logger.setLevel(SPAM)
+# logger.setLevel(logging.DEBUG)
 
 BACKPAGE_KEYWORD = "back"
 
@@ -470,7 +470,10 @@ class OnOff(Activation):
             return
         value = self.button.get_current_value()
         if value is not None:
-            self.onoff_current_value = value
+            if type(value) in [dict, tuple]:  # dataref, gets its value from internal state
+                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
+            else:
+                self.onoff_current_value = value
             logger.debug(f"init: button {self.button_name()} initialized on/off at {self.onoff_current_value}")
         elif self.initial_value is not None:
             if type(self.initial_value) == bool: # expect bool or number... (no check for number)

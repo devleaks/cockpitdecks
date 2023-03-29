@@ -129,8 +129,9 @@ buttons:
     icon: MCDU
   - index: 22
     name: Popup Pedestal1
-    type: push
-    command: AirbusFBW/PopUpPedestal1
+    type: page
+    page: piedestal
+    # command: AirbusFBW/PopUpPedestal1
     icon: PIEDESTAL_FRONT
   - index: 23
     name: Popup Pedestal2

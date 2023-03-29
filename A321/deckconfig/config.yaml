@@ -1,12 +1,15 @@
 # Definition of decks for Toliss A321
 #
+---
 aircraft: Toliss A321neo
+icao: A321
 decks:
   - name: XPLive
     type: loupedeck
     layout: live
     brightness: 80
     light-off: 5
+    disabled: true
   - name: XPDeck
     type: streamdeck
     layout: sd15
@@ -14,17 +17,19 @@ decks:
     light-off: 5
     default-label-font: DIN Medium.ttf
     default-label-size: 13
+    disabled: true
   - name: XPDeckXL
     layout: overhead
     type: streamdeck
     brightness: 80
     default-label-font: DIN Bold.ttf
     default-label-size: 16
+    disabled: true
   - name: XPTouch
     type: xtouchmini
     layout: xtouch
     brightness: 80
-    disabled: false
+    # disabled: True
     # We use X-Touch from X-Keypad for better control
 # This is at global level
 default-wallpaper-logo: logo.png

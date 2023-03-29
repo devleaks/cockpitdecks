@@ -326,7 +326,7 @@ class Deck(ABC):
     # Deck Specific Functions : Definition
     #
     @abstractmethod
-    def get_device_for_pil(self):
+    def get_display_for_pil(self):
         """
         Return device or device element to use for PIL.
         """
@@ -393,13 +393,9 @@ class Deck(ABC):
             logger.warning(f"load_icons: deck {self.name} has no device")
 
     def create_icon_for_key(self, button, colors):
-        if self.pil_helper is not None:
-            return self.pil_helper.create_image(deck=self.device, background=colors)
         return None
 
     def scale_icon_for_key(self, button, image):
-        if self.pil_helper is not None:
-            return self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
         return None
 
     # #######################################

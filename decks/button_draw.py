@@ -8,7 +8,6 @@ import math
 from random import randint
 
 from PIL import Image, ImageDraw, ImageFont
-from metar import Metar
 
 from .constant import WEATHER_ICON_FONT, ICON_FONT
 from .color import convert_color, light_off
@@ -39,8 +38,6 @@ class DataIcon(DrawBase):
 
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
-
-        self.metar = Metar.Metar("LFSB 201400Z 33008KT 7000 -SN SCT015 SCT030 01/M00 Q1025")
 
     def get_image_for_icon(self):
         """

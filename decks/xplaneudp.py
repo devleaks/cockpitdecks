@@ -16,8 +16,8 @@ from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-# logger.setLevel(logging.DEBUG)
 # logger.setLevel(SPAM)
+# logger.setLevel(logging.DEBUG)
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
