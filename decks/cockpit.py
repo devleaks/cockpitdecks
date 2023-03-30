@@ -35,6 +35,7 @@ class Cockpit:
         self.xp = xp(self)
         self._config = None
         self.name = "Cockpitdecks"
+        self.icao = "ZZZZ"
 
         self.disabled = False
         self.default_pages = None  # for debugging
@@ -296,13 +297,13 @@ class Cockpit:
         logger.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
 
     def create_decks(self):
-        fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = {}
         if os.path.exists(sn):
             with open(sn, "r") as fp:
                 serial_numbers = yaml.load(fp)
 
+        fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         if os.path.exists(fn):
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
@@ -317,6 +318,7 @@ class Cockpit:
                     logger.debug(f"create_decks: logging level set to {self.logging_level}")
 
                 self.name = self._config.get("name", self._config.get("aircraft", "Cockpitdecks"))
+                self.icao = self._config.get("icao", self._config.get("icao", "ZZZZ"))
                 self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
                 self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
                 self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
@@ -523,7 +525,7 @@ class Cockpit:
 
     def reload_loop(self):
         while self.reload_loop_run:
-            e = self.reload_queue.get()
+            e = self.reload_queue.get()  # blocks infinitely here
             if e == "reload":
                 self.reload_decks(just_do_it=True)
         logger.debug(f"reload_loop: ended")

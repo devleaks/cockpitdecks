@@ -15,14 +15,10 @@ decks:
     layout: efis-ecam
     brightness: 80
     light-off: 5
-    default-label-font: DIN Medium.ttf
-    default-label-size: 13
   - name: XPDeckXL
     layout: consoles
     type: streamdeck
     brightness: 80
-    default-label-font: DIN Bold.ttf
-    default-label-size: 16
   - name: XPTouch
     type: xtouchmini
     layout: comm-radio
@@ -32,5 +28,7 @@ decks:
 # This is at global level
 default-wallpaper-logo: logo.png
 default-icon-color: (94, 111, 130)
+default-label-font: DIN Medium.ttf
+default-label-size: 13
 default-label-color: white
 empty-key-fill-color: (94, 111, 130)

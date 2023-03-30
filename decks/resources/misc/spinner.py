@@ -11,8 +11,6 @@ import time
 import threading
 
 class Spinner:
-    busy = False
-    delay = 0.1
 
     @staticmethod
     def spinning_cursor():
@@ -20,23 +18,29 @@ class Spinner:
             for cursor in '|/-\\': yield cursor
 
     def __init__(self, delay=None):
+        self.thread = None
+        self.exit = None
+        self.delay = 0.1
         self.spinner_generator = self.spinning_cursor()
         if delay and float(delay): self.delay = delay
 
     def spinner_task(self):
-        while self.busy:
+        while not self.exit.is_set():
             sys.stdout.write(next(self.spinner_generator))
             sys.stdout.flush()
-            time.sleep(self.delay)
+            self.exit.wait(self.delay)
             sys.stdout.write('\b')
             sys.stdout.flush()
 
     def __enter__(self):
-        self.busy = True
-        threading.Thread(target=self.spinner_task).start()
+        self.exit = threading.Event()
+        self.thread = threading.Thread(target=self.spinner_task).start()
 
     def __exit__(self, exception, value, tb):
-        self.busy = False
-        time.sleep(self.delay)
+        self.exit.set()
+        self.thread.join(timeout=self.delay)
+        # if self.thread.is_alive():
+        #     print(f"anim_stop: ..thread may hang..")
+        self.exit = None
         if exception is not None:
             return False

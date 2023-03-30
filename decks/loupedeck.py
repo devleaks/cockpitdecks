@@ -2,7 +2,6 @@
 #
 import os
 import logging
-import threading
 import pickle
 from time import sleep
 from enum import Enum
@@ -18,7 +17,7 @@ from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
 
 logger = logging.getLogger("Loupedeck")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 VIBRATION_MODES = [
@@ -51,6 +50,9 @@ VIBRATION_MODES = [
     "RUMBLE1",
     "VERY_LONG"  # 10 sec high freq (!)
 ]
+
+BUTTON_PREFIX = "b"
+KNOB_PREFIX = "knob"
 
 class Loupedeck(Deck):
     """
@@ -138,7 +140,7 @@ class Loupedeck(Deck):
     def valid_indices(self):
         encoders = ["knobTL", "knobCL", "knobBL", "knobTR", "knobCR", "knobBR"]
         keys = [str(i) for i in range(12)]
-        buttons = [f"b{i}" for i in range(8)]
+        buttons = [f"{BUTTON_PREFIX}{i}" for i in range(8)]
         return encoders + keys + buttons + ["left", "right"]
 
     def valid_activations(self, index = None):
@@ -148,9 +150,9 @@ class Loupedeck(Deck):
 
         if index is not None:
             if index in self.valid_indices():
-                if index.startswith("knob"):
+                if index.startswith(KNOB_PREFIX):
                     return valid_push_encoder
-                if index.startswith("b") or is_integer(index):
+                if index.startswith(BUTTON_PREFIX) or is_integer(index):
                     return valid_colored_button
                 if is_integer(index):
                     return valid_key
@@ -183,9 +185,9 @@ class Loupedeck(Deck):
             if index in self.valid_indices():
                 if index in ["left", "right"]:
                     return valid_side_icon
-                if index.startswith("knob"):
+                if index.startswith(KNOB_PREFIX):
                     return valid_knob
-                if index.startswith("b"):
+                if index.startswith(BUTTON_PREFIX):
                     return valid_colored_button
                 if is_integer(index):
                     return valid_key_icon
@@ -223,12 +225,12 @@ class Loupedeck(Deck):
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
-            if not key.startswith("knob"):
+            if not key.startswith(KNOB_PREFIX):
                 if key == "circle":
                     key = 0
                 try:
                     num = int(key)
-                    key = f"b{key}"
+                    key = f"{BUTTON_PREFIX}{key}"
                 except ValueError:
                     logger.warning(f"key_change_callback: invalid button key {key}")
             transfer(deck, key, state)
@@ -354,16 +356,66 @@ class Loupedeck(Deck):
         if color is None:
             logger.warning("set_key_image: button returned no representation color, using default")
             color = (240, 240, 240)
-        idx = button.index.lower().replace("b", "")
+        idx = button.index.lower().replace(BUTTON_PREFIX, "")
         if idx == "0":
             idx = "circle"
         self.device.set_button_color(idx, color)
+
+    def print_page(self, page: Page):
+        """
+        Ask each button to send its representation and create an image of the deck.
+        """
+        if page is None:
+            page = self.current_page
+
+        nw, nh = self.device.key_layout()
+        iw, ih = (90, 90)
+        sw = 60
+        sh = 270
+
+        ICON_SIZE = iw
+        INTER_ICON = int(iw/10)
+        w = nw * ICON_SIZE + (nw + 1) * INTER_ICON + 2 * sw
+        h = nh * ICON_SIZE + (nw - 1) * INTER_ICON
+        i = 0
+
+        image = Image.new(mode="RGBA", size=(w, h))
+        logger.debug(f"print_page: page {self.name}: image {image.width}x{image.height}..")
+        for button in page.buttons.values():
+            logger.debug(f"print_page: doing {button.name}..")
+            if str(button.index).startswith(BUTTON_PREFIX):
+                logger.debug(f"print_page: ..color led has no image")
+                continue
+            if str(button.index).startswith(KNOB_PREFIX):
+                logger.debug(f"print_page: ..encoder has no image")
+                continue
+            if button.index in ["left", "right"]:
+                x = 0 if button.index == "left" else (sw + INTER_ICON + nw * (ICON_SIZE + INTER_ICON))
+                y = INTER_ICON
+                b = button.get_representation()
+                bs = b.resize((sw, sh))
+                image.paste(bs, (x, y))
+                logger.debug(f"print_page: added {button.name} at ({x}, {y})")
+                continue
+            i = int(button.index)
+            mx = i % nw
+            x = (sw + INTER_ICON) + mx * (ICON_SIZE + INTER_ICON)
+            my = int(i/nw)
+            y = my * (ICON_SIZE + INTER_ICON)
+            b = button.get_representation()
+            bs = b.resize((ICON_SIZE, ICON_SIZE))
+            image.paste(bs, (x, y))
+            logger.debug(f"print_page: added {button.name} (index={button.index}) at ({x}, {y})")
+        logger.debug(f"print_page: page {self.name}: ..saving..")
+        with open(page.name + ".png", "wb") as im:
+            image.save(im, format="PNG")
+        logger.debug(f"print_page: page {self.name}: ..done")
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("render: no device")
             return
-        if str(button.index).startswith("knob"):
+        if str(button.index).startswith(KNOB_PREFIX):
             logger.debug(f"render: button type {button.index} has no representation")
             return
         representation = button._representation

@@ -2,7 +2,6 @@
 #
 import os
 import logging
-import threading
 import pickle
 import inspect
 

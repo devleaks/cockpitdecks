@@ -269,18 +269,26 @@ buttons:
 #     text-size: 24
 #     text-font: Seven Segment.ttf
 #     text-bg-color: (40, 40, 40)
+  # - index: 11
+  #   name: RELOAD
+  #   type: reload
+  #   label: RELOAD
+  #   label-size: 14
+  #   label-position: cm
+  #   text: ${fa:rotate-right}
+  #   text-font: fontawesome.otf
+  #   text-color: lime
+  #   text-size: 80
+  #   text-position: cm
+  #   text-bg-color: (94, 111, 130)
   - index: 11
-    name: RELOAD
-    type: reload
-    label: RELOAD
-    label-size: 14
-    label-position: cm
-    text: ${fa:rotate-right}
-    text-font: fontawesome.otf
-    text-color: lime
-    text-size: 80
-    text-position: cm
-    text-bg-color: (94, 111, 130)
+    name: STATUS
+    type: inspect
+    icon: COCKPITDECKS
+    label: "PRINT"
+    label-color: red
+    label-position: "cm"
+    what: print
 #
 # SIDE KEYS
 #

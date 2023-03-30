@@ -2,7 +2,6 @@
 #
 import os
 import logging
-import threading
 import pickle
 from time import sleep
 from enum import Enum
@@ -240,10 +239,12 @@ class Streamdeck(Deck):
         """
         if page is None:
             page = self.current_page
-        ICON_SIZE = 96
-        INTER_ICON = 10
-        nw = 8
-        nh = 4
+
+        nh, nw = self.device.key_layout()
+        iw, ih = self.device.key_image_format()['size']
+
+        ICON_SIZE = iw
+        INTER_ICON = int(iw/10)
         w = nw * ICON_SIZE + (nw - 1) * INTER_ICON
         h = nh * ICON_SIZE + (nw - 1) * INTER_ICON
         i = 0

@@ -3,7 +3,6 @@
 import os
 import re
 import logging
-import threading
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
