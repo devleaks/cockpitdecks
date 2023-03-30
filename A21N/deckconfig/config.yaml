@@ -1,33 +1,34 @@
-# Definition of decks for Toliss A321 + neo add-on
 #
 ---
 aircraft: Toliss A321neo
+description: Definition of decks for Toliss A321 + neo add-on
 icao: A21N
+model: Airbus A321-253N (CFM LEAP-1A33)
 decks:
   - name: XPLive
     type: loupedeck
-    layout: live
+    layout: fcu
     brightness: 80
     light-off: 5
   - name: XPDeck
     type: streamdeck
-    layout: sd15
+    layout: efis-ecam
     brightness: 80
     light-off: 5
     default-label-font: DIN Medium.ttf
     default-label-size: 13
   - name: XPDeckXL
-    layout: overhead
+    layout: consoles
     type: streamdeck
     brightness: 80
     default-label-font: DIN Bold.ttf
     default-label-size: 16
   - name: XPTouch
     type: xtouchmini
-    layout: xtouch
+    layout: comm-radio
     brightness: 80
-    disabled: false
     # We use X-Touch from X-Keypad for better control
+    # disabled: true
 # This is at global level
 default-wallpaper-logo: logo.png
 default-icon-color: (94, 111, 130)

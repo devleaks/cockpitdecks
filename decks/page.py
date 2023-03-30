@@ -110,8 +110,11 @@ class Page:
         """
         logger.info(f"-"*60)
         logger.info(f"Page {self.name} -- {what}")
-        for v in self.buttons.values():
-            v.inspect(what)
+        if what == "print":
+            self.print()
+        else:
+            for v in self.buttons.values():
+                v.inspect(what)
 
     def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():
@@ -190,6 +193,9 @@ class Page:
         for button in self.buttons.values():
             button.clean()  # knows how to clean itself
         logger.debug(f"clean: page {self.name}: ..done")
+
+    def print(self):
+        self.deck.print_page(self)
 
     def is_current_page(self):
         """

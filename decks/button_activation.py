@@ -900,7 +900,6 @@ class EncoderOnOff(OnOff):
         return True  # super().is_valid()
 
     def activate(self, state):
-        print(">>>", state)
         if state < 2:
             super().activate(state)
         elif state == 2:  # rotate clockwise

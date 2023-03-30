@@ -1,13 +1,7 @@
-name: efis
 version: 3.0.0
 description: EFIS display selector + some FCU commands
-note: final version for Streamdeck 15 keys
 buttons:
 # ### LINE 1 ###  0 -  4 ######################################################
-  - index: 31
-    type: page
-    page: back
-    icon: TOLISS-A321
   - index: 0
     name: CSTR
     type: push
@@ -18,11 +12,13 @@ buttons:
         B0:
           color: lime
           led: bars
-          formula: ${AirbusFBW/NDShowCSTRCapt}
+          dataref: AirbusFBW/OHPLightsATA31[16]
+          # formula: ${AirbusFBW/NDShowCSTRCapt}
         B1:
           text: CSTR
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptCstrPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -36,11 +32,13 @@ buttons:
         B0:
           color: lime
           led: bars
-          formula: ${AirbusFBW/NDShowWPTCapt}
+          dataref: AirbusFBW/OHPLightsATA31[17]
+          # formula: ${AirbusFBW/NDShowWPTCapt}
         B1:
           text: WPT
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptWptPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -54,11 +52,13 @@ buttons:
         B0:
           color: lime
           led: bars
-          formula: ${AirbusFBW/NDShowVORDCapt}
+          dataref: AirbusFBW/OHPLightsATA31[18]
+          # formula: ${AirbusFBW/NDShowVORDCapt}
         B1:
           text: VOR.D
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptVorDPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -72,11 +72,13 @@ buttons:
         B0:
           color: lime
           led: bars
-          formula: ${AirbusFBW/NDShowNDBCapt}
+          dataref: AirbusFBW/OHPLightsATA31[19]
+          # formula: ${AirbusFBW/NDShowNDBCapt}
         B1:
           text: NDB
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptNdbPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -90,11 +92,13 @@ buttons:
         B0:
           color: lime
           led: bars
-          formula: ${AirbusFBW/NDShowARPTCapt}
+          dataref: AirbusFBW/OHPLightsATA31[20]
+          # formula: ${AirbusFBW/NDShowARPTCapt}
         B1:
           text: ARPT
           color: white
           text-size: 40
+          text-font: DIN Bold
           formula: "1"
     command: toliss_airbus/dispcommands/CaptArptPushButton
     view: SRS/X-Camera/Select_View_ID_1
@@ -103,74 +107,14 @@ buttons:
     type: push
     name: CHRONO
     command: AirbusFBW/CaptChronoButton
-    icon: TEST
     label: CHRONO
     label-size: 10
-  - index: 6
-    name: FD 1
-    type: push
-    annunciator:
-      size: medium
-      type: B
-      parts:
-        B0:
-          color: lime
-          led: bars
-          formula: ${AirbusFBW/FD1Engage}
-        B1:
-          text: FD
-          color: white
-          text-size: 64
-          formula: "1"
-    command: toliss_airbus/fd1_push
+    push-switch:
+      button-size: 120
+      button-fill-color: black
+      button-stroke-width: 0
+      witness-size: 0
   - index: 7
-    name: LS 1
-    type: push
-    annunciator:
-      size: medium
-      type: B
-      parts:
-        B0:
-          color: lime
-          led: bars
-          formula: ${AirbusFBW/ILSonCapt}
-        B1:
-          text: LS
-          color: white
-          text-size: 64
-          formula: "1"
-    command: toliss_airbus/dispcommands/CaptLSButtonPush
-    view: SRS/X-Camera/Select_View_ID_1
-  - index: 8
-    name: LOC 1
-    type: push
-    annunciator:
-      size: medium
-      type: B
-      parts:
-        B0:
-          color: lime
-          led: bars
-          formula: ${AirbusFBW/LOCilluminated}
-        B1:
-          text: LOC
-          color: white
-          text-size: 64
-          formula: "1"
-    command: AirbusFBW/LOCbutton
-  - index: 9
-    name: SPD/MACH
-    type: push
-    label: SPD/MACH
-    label-size: 10
-    command: sim/autopilot/knots_mach_toggle
-    dataref: sim/cockpit/autopilot/airspeed_is_mach
-    initial-value: 0
-    multi-icons:
-      - SWITCH_ROUND_TOP
-      - SWITCH_ROUND_BOT
-# ### LINE 3 ### 10 - 14 ######################################################
-  - index: 10
     name: ND MODE
     type: updown
     stops: 5
@@ -198,7 +142,7 @@ buttons:
       - sim/instruments/EFIS_mode_up
       - sim/instruments/EFIS_mode_dn
     dataref: AirbusFBW/NDmodeCapt
-  - index: 11
+  - index: 8
     name: ND RANGE
     type: updown
     stops: 6
@@ -227,7 +171,7 @@ buttons:
       - sim/instruments/map_zoom_out
       - sim/instruments/map_zoom_in
     dataref: AirbusFBW/NDrangeCapt
-  - index: 14
+  - index: 6
     name: TERRONND1
     type: push
     label: TERR ON ND
@@ -243,11 +187,66 @@ buttons:
           text-color: lime
           text-size: 70
           text-font: DIN Bold
-          formula: ${AirbusFBW/TerrainSelectedND1}
+          dataref: AirbusFBW/OHPLightsATA34[24]
+          # formula: ${AirbusFBW/TerrainSelectedND1}
           framed: ON
-    options: square
+    options: square,seal
+    # simple highlight
+    seal-color: coral
+    seal-width: 4
     command: toliss_airbus/dispcommands/TerrOnND1Toggle
-
+  - index: 9
+    name: SPD/MACH
+    type: push
+    label: SPD/MACH
+    label-size: 10
+    command: sim/autopilot/knots_mach_toggle
+    dataref: sim/cockpit/autopilot/airspeed_is_mach
+    initial-value: 0
+    push-switch:
+      button-size: 120
+      button-fill-color: black
+      button-stroke-width: 0
+      witness-size: 10
+      witness-color: red
+# ### LINE 3 ### 10 - 14 ######################################################
+  - index: 10
+    name: FD 1
+    type: push
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref: AirbusFBW/OHPLightsATA31[26]
+        B1:
+          text: FD
+          color: white
+          text-size: 64
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/fd1_push
+  - index: 11
+    name: LS 1
+    type: push
+    annunciator:
+      size: medium
+      type: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          dataref: AirbusFBW/OHPLightsATA31[28]
+        B1:
+          text: LS
+          color: white
+          text-size: 64
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/dispcommands/CaptLSButtonPush
+    view: SRS/X-Camera/Select_View_ID_1
   - index: 12
     name: ADFVOR1
     type: updown
@@ -280,4 +279,8 @@ buttons:
     options: 3way,horizontal
     dataref: ckpt/fcu/adf2Left/anim
     set-dataref: ckpt/fcu/adf2Left/anim
-
+  - index: 14
+    name: ECAM
+    type: page
+    page: ECAM
+    icon: TOLISS-A321

@@ -1,12 +1,8 @@
-name: ecam
+name: ECAM
 version: 2.0.0
 description: ECAM display selector
 note: final version for Streamdeck 15 keys
 buttons:
-  - index: 31
-    type: page
-    page: back
-    icon: TOLISS-A321
   - index: 0
     name: END
     type: push
@@ -17,11 +13,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDENG}
+          dataref: AirbusFBW/OHPLightsATA31[30]
         B1:
           text: ENG
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectEnginePage
     view: SRS/X-Camera/Select_View_ID_3
@@ -35,11 +32,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDBLEED}
+          dataref: AirbusFBW/OHPLightsATA31[31]
         B1:
           text: BLEED
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectBleedPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -53,11 +51,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDPRESS}
+          dataref: AirbusFBW/OHPLightsATA31[32]
         B1:
           text: PRESS
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectPressPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -71,11 +70,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDELEC}
+          dataref: AirbusFBW/OHPLightsATA31[33]
         B1:
           text: ELEC
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectElecACPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -89,11 +89,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDHYD}
+          dataref: AirbusFBW/OHPLightsATA31[34]
         B1:
           text: HYD
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectHydraulicPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -107,11 +108,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDFUEL}
+          dataref: AirbusFBW/OHPLightsATA31[35]
         B1:
           text: FUEL
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectFuelPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -125,11 +127,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDAPU}
+          dataref: AirbusFBW/OHPLightsATA31[36]
         B1:
           text: APU
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectAPUPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -143,11 +146,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDCOND}
+          dataref: AirbusFBW/OHPLightsATA31[37]
         B1:
           text: COND
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectConditioningPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -161,11 +165,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDDOOR}
+          dataref: AirbusFBW/OHPLightsATA31[38]
         B1:
           text: DOOR
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectDoorOxyPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -179,11 +184,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDWHEEL}
+          dataref: AirbusFBW/OHPLightsATA31[39]
         B1:
           text: WHEEL
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectWheelPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -197,11 +203,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDFCTL}
+          dataref: AirbusFBW/OHPLightsATA31[40]
         B1:
           text: F/CTL
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectFlightControlPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -215,11 +222,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/CLRillum}
+          dataref: AirbusFBW/OHPLightsATA31[41]
         B1:
           text: CLR
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/CaptainClear
   - index: 12
@@ -232,11 +240,12 @@ buttons:
         B0:
           color: greenyellow
           led: led
-          formula: ${AirbusFBW/SDSTATUS}
+          dataref: AirbusFBW/OHPLightsATA31[40]
         B1:
           text: STS
           color: white
           text-size: 48
+          text-font: DIN Bold
           formula: "1"
     command: AirbusFBW/ECP/SelectStatusPage
     view: SRS/X-Camera/Select_View_ID_3
@@ -247,7 +256,13 @@ buttons:
       size: medium
       text: ALL
       color: white
-      font-text-size: 48
+      text-size: 48
+      text-font: DIN Bold
       formula: "1"
     command: AirbusFBW/ECAMAll
     options: nostate
+  - index: 14
+    name: EFIS
+    type: page
+    page: efis
+    icon: TOLISS-A321

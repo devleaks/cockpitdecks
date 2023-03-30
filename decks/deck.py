@@ -432,6 +432,10 @@ class Deck(ABC):
         pass
 
     @abstractmethod
+    def print_page(self, page: Page):
+        pass
+
+    @abstractmethod
     def render(self, button: Button):
         pass
 

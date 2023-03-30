@@ -234,6 +234,37 @@ class Streamdeck(Deck):
         else:
             logger.warning(f"set_key_image: not a valid button type {type(representation).__name__} for {type(self).__name__}")
 
+    def print_page(self, page: Page):
+        """
+        Ask each button to send its representation and create an image of the deck.
+        """
+        if page is None:
+            page = self.current_page
+        ICON_SIZE = 96
+        INTER_ICON = 10
+        nw = 8
+        nh = 4
+        w = nw * ICON_SIZE + (nw - 1) * INTER_ICON
+        h = nh * ICON_SIZE + (nw - 1) * INTER_ICON
+        i = 0
+
+        image = Image.new(mode="RGBA", size=(w, h))
+        logger.debug(f"print_page: page {self.name}: image {image.width}x{image.height}..")
+        for button in page.buttons.values():
+            i = int(button.index)
+            mx = i % nw
+            x = mx * ICON_SIZE + mx * INTER_ICON
+            my = int(i/nw)
+            y = my * ICON_SIZE + my * INTER_ICON
+            b = button.get_representation()
+            bs = b.resize((ICON_SIZE, ICON_SIZE))
+            image.paste(bs, (x, y))
+            logger.debug(f"print_page: added {button.name} at ({x}, {y})")
+        logger.debug(f"print_page: page {self.name}: ..saving..")
+        with open(page.name + ".png", "wb") as im:
+            image.save(im, format="PNG")
+        logger.debug(f"print_page: page {self.name}: ..done")
+
     def render(self, button: Button): # idx: int, image: str, label: str = None):
         self._set_key_image(button)
 
