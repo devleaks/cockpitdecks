@@ -16,7 +16,7 @@ from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-# logger.setLevel(SPAM)
+# logger.setLevel(SPAM)  # To see which dataref are requested
 # logger.setLevel(logging.DEBUG)
 
 # Data too delicate to be put in constant.py

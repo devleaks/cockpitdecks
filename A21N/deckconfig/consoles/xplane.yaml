@@ -99,7 +99,8 @@ buttons:
     commands:
       - XPPython3/followthegreens/main_windown_toggle
       - XPPython3/followthegreens/main_windown_toggle
-    formula: ${state:activation_count} 2 %
+    dataref: XPPython3/followthegreens/is_running
+#   formula: ${state:activation_count} 2 %
     initial-value: 0
 #     name: FollowTheGreens
 #     label: F.GREENS

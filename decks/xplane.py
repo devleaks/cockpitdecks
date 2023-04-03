@@ -7,9 +7,11 @@ import time
 from .constant import SPAM
 
 loggerDataref = logging.getLogger("Dataref")
-# loggerDataref.setLevel(SPAM)
+loggerDataref.setLevel(SPAM)
+# loggerDataref.setLevel(logging.DEBUG)
 
 logger = logging.getLogger("XPlane")
+# logger.setLevel(SPAM)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
 from .xpdref_round import DATAREF_ROUND

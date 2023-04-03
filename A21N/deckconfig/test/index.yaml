@@ -1,0 +1,26 @@
+name: test
+buttons:
+  - index: 7
+    name: FollowTheGreensAnimation
+    type: onoff
+    ftg: True
+    animation:
+      speed: 0.2
+    commands:
+      - XPPython3/followthegreens/main_windown_toggle
+      - XPPython3/followthegreens/main_windown_toggle
+    dataref: XPPython3/followthegreens/is_running
+#   formula: ${state:activation_count} 2 %
+    initial-value: 0
+  - index: 30
+    name: RELOAD
+    type: reload
+    label: RELOAD
+    label-size: 14
+    label-position: cm
+    text: ${fa:rotate-right}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 80
+    text-position: cm
+    text-bg-color: (94, 111, 130)

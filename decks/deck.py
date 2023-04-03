@@ -430,7 +430,6 @@ class Deck(ABC):
     def _send_key_image_to_device(self, key, image):
         pass
 
-    @abstractmethod
     def print_page(self, page: Page):
         pass
 

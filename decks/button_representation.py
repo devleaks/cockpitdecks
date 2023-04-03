@@ -31,6 +31,11 @@ class Representation:
         self._sound = config.get("vibrate")
         self.datarefs = None
 
+        self.init()
+
+    def init(self):  # ~ABC
+        pass
+
     def button_name(self):
         return self.button.name if self.button is not None else 'no button'
 

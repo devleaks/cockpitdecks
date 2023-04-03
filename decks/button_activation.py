@@ -47,6 +47,8 @@ class Activation:
         self.pressed = False
         self.initial_value = config.get("initial-value")
 
+        self.init()
+
     def init(self):  # ~ABC
         pass
 
@@ -319,6 +321,14 @@ class Push(Activation):
         self.exit = None
         self.set_auto_repeat()
 
+        self.onoff_current_value = None
+        self.initial_value = config.get("initial-value")
+        if self.initial_value is not None:
+            if type(self.initial_value) == bool:
+                self.onoff_current_value = self.initial_value
+            else:
+                self.onoff_current_value = self.initial_value != 0
+
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join([
                 f"command: {self.command}",
@@ -352,10 +362,23 @@ class Push(Activation):
         logger.debug(f"set_auto_repeat: {self.auto_repeat_delay}, {self.auto_repeat_speed}")
 
     def is_on(self):
-        return self.activation_count % 2 == 1
+        value = self.button.get_current_value()
+        if value is not None:
+            if type(value) in [dict, tuple]:  # gets its value from internal state
+                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
+            elif type(value) == bool: # expect bool or number... (no check for number)
+                    self.onoff_current_value = value
+            else:
+                self.onoff_current_value = self.initial_value != 0  # @todo: fails if not number...
+            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value}")
+        else:
+            self.onoff_current_value = self.activation_count % 2 == 1
+            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value} from internal state")
+
+        return self.onoff_current_value
 
     def is_off(self):
-        return self.activation_count % 2 == 0
+        return not self.is_on()
 
     def is_valid(self):
         if self.command is None:
@@ -452,18 +475,16 @@ class OnOff(Activation):
     On or Off status is determined by the number of time a button is pressed.
     """
     def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
 
         # Commands
         self.commands = config.get("commands", [])
-        self.onoff_current_value = None  # bool on or off, true = on
 
+        # Internal variables
+        self.onoff_current_value = None  # bool on or off, true = on
         self.initial_value = config.get("initial-value")
-        if self.initial_value is not None:
-            if type(self.initial_value) == bool:
-                self.onoff_current_value = self.initial_value
-            else:
-                self.onoff_current_value = self.initial_value != 0
+
+        Activation.__init__(self, config=config, button=button)
+
 
     def init(self):
         if self._inited:
@@ -504,10 +525,22 @@ class OnOff(Activation):
         return super().is_valid()
 
     def is_on(self):
+        value = self.button.get_current_value()
+        if value is not None:
+            if type(value) in [dict, tuple]:  # gets its value from internal state
+                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
+            elif type(value) == bool: # expect bool or number... (no check for number)
+                    self.onoff_current_value = value
+            else:
+                self.onoff_current_value = value != 0  # @todo: fails if not number...
+            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value}")
+        else:
+            self.onoff_current_value = self.activation_count % 2 == 1
+            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value} from internal state")
         return self.onoff_current_value
 
     def is_off(self):
-        return not self.onoff_current_value
+        return not self.is_on()
 
     def activate(self, state):
         super().activate(state)
@@ -562,8 +595,6 @@ class UpDown(Activation):
     another one when the value decreases.
     """
     def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
-
         # Commands
         self.commands = config.get("commands")
 
@@ -573,18 +604,9 @@ class UpDown(Activation):
         if stops is not None:
             self.stops = int(stops)
         self.go_up = True
-
-        # We redo initial value setting...
         self.stop_current_value = None
-        if self.initial_value is not None and is_integer(self.initial_value):
-            value = abs(self.initial_value)
-            if value > self.stops - 1:
-                logger.warning(f"__init__: button {self.button_name()} initial value {value} too large. Set to {self.stops - 1}.")
-                value = self.stops - 1
-            if self.initial_value < 0:
-                self.go_up = False # reverse direction
-            self.initial_value = value
-            self.stop_current_value = value
+
+        Activation.__init__(self, config=config, button=button)
 
     def init(self):
         if self._inited:
@@ -612,7 +634,6 @@ class UpDown(Activation):
             logger.debug(f"init: button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value")
         if self.stop_current_value is not None:
             self._inited = True
-
 
     def __str__(self):  # print its status
         return super() + "\n" + ", ".join([f"commands: {self.commands}",
@@ -877,8 +898,8 @@ class EncoderOnOff(OnOff):
     Sixth command: Executed when turned counter-clockwise and OFF
     """
     def __init__(self, config: dict, button: "Button"):
-        OnOff.__init__(self, config=config, button=button)
 
+        OnOff.__init__(self, config=config, button=button)
 
         self.dual = self.button.has_option("dual")
 
@@ -976,7 +997,6 @@ class EncoderValue(OnOff):
     Activation that maintains an internal value and optionally write that value to a dataref
     """
     def __init__(self, config: dict, button: "Button"):
-        OnOff.__init__(self, config=config, button=button)
 
         self.step = float(config.get("step", 1))
         self.stepxl = float(config.get("stepxl", 10))
@@ -988,6 +1008,8 @@ class EncoderValue(OnOff):
         self._cw = 0
         self._ccw = 0
         self.encoder_current_value = 0
+
+        OnOff.__init__(self, config=config, button=button)
 
     def init(self):
         if self._inited:
