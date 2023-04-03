@@ -39,7 +39,7 @@ buttons:
   - index: slider
     name: SLIDER
     type: slider
-    set-dataref: DummyDatarefPlaceholder
+    set-dataref: DatarefPlaceholder
     representation: false
     value-step: 10
 #

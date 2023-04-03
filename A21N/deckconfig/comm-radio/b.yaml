@@ -48,7 +48,9 @@ buttons:
   - index: slider
     name: SLIDER
     type: slider
-#
+    set-dataref: DatarefPlaceholder
+    representation: false
+
   - index: A
     name: A
     type: page

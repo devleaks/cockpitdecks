@@ -50,7 +50,7 @@ buttons:
         text: "OFF"
         color: white
         framed: true
-        dataref: AirbusFBW/BatOHPArray[0]
+        formula: ${AirbusFBW/BatOHPArray[0]} not
     command: toliss_airbus/eleccommands/Bat1Toggle
   - index: 4
     name: BAT_2
@@ -66,7 +66,7 @@ buttons:
         text: "OFF"
         color: white
         framed: true
-        dataref: AirbusFBW/BatOHPArray[1]
+        formula: ${AirbusFBW/BatOHPArray[1]} not
     command: toliss_airbus/eleccommands/Bat2Toggle
   - index: 5
     name: BAT_VOLT_2
@@ -133,10 +133,12 @@ buttons:
       B0:
         text: FAULT
         color: darkorange
+        formula: ${AirbusFBW/EngGenOHPArray[0]} 3 eq
       B1:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/EngGenOHPArray[0]} 2 eq
   - index: 10
     name: APU GEN
     label: APU GEN
@@ -151,6 +153,7 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/APUGenOHPArray[0]} not
   - index: 11
     name: BUS TIE
     label: BUS TIE
@@ -162,6 +165,7 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/BusCrossTie} not
   - index: 12
     name: EXPPOWER
     type: push
@@ -191,10 +195,12 @@ buttons:
       B0:
         text: FAULT
         color: darkorange
+        formula: ${AirbusFBW/EngGenOHPArray[1]} 3 eq
       B1:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/EngGenOHPArray[1]} 2 eq
   - index: 14
     name: IDG 2
     label: IDG 2

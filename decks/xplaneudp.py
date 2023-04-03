@@ -454,6 +454,15 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
         super().remove_datarefs_to_monitor(datarefs)
 
+    def remove_all_datarefs(self):
+        if not self.is_connected():
+            logger.warning(f"remove_all_datarefs: no connection")
+            logger.debug(f"remove_all_datarefs: would remove {self.all_datarefs.keys()}")
+            return
+        # Not necessary:
+        # self.remove_datarefs_to_monitor(self.all_datarefs)
+        super().remove_all_datarefs()
+
     def add_all_datarefs_to_monitor(self):
         if not self.is_connected():
             logger.warning(f"add_all_datarefs_to_monitor: no connection")
@@ -501,6 +510,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     #
     def terminate(self):
         logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
+        self.remove_all_datarefs()
         logger.info(f"terminate: terminating..disconnecting..")
         self.disconnect()
         logger.info(f"terminate: ..stopping..")

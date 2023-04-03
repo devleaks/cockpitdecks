@@ -34,7 +34,7 @@ class Dataref:
         self.previous_value = None
         self.current_value = None
         self.current_array = []
-        self.listeners = []         # buttons using this dataref, will get notified if changes.
+        self.listeners = {}         # buttons using this dataref, will get notified if changes.
         self.round = DATAREF_ROUND.get(path)
 
         # dataref/path:t where t in d, i, f, s, b.
@@ -109,16 +109,17 @@ class Dataref:
                 self.notify()
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
 
-    def add_listener(self, obj):
-        if obj not in self.listeners:
-            self.listeners.append(obj)
-        loggerDataref.debug(f"add_listener: {self.dataref} added {obj.name} ({len(self.listeners)})")
+    def add_listener(self, button):
+        self.listeners[button.get_id()] = button
+        # if obj not in self.listeners:
+        #     self.listeners.append(obj)
+        loggerDataref.debug(f"add_listener: {self.dataref} added {button.get_id()} ({len(self.listeners)})")
 
     def notify(self):
         if self.has_changed():
-            for l in self.listeners:
-                l.dataref_changed(self)
-                loggerDataref.log(SPAM, f"notify: {self.path}: notified {l.name}")
+            for k, v in self.listeners.items():
+                v.dataref_changed(self)
+                loggerDataref.log(SPAM, f"notify: {self.path}: notified {v.page.name}/{v.name}")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 
@@ -212,6 +213,15 @@ class XPlane:
                 logger.warning(f"remove_datarefs_to_monitor: dataref {d.path} not monitored")
         logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
         logger.debug(f"remove_datarefs_to_monitor: currently monitoring {self.datarefs_to_monitor}")
+
+    def remove_all_datarefs(self):
+        logger.debug(f"remove_all_datarefs: removing..")
+        self.all_datarefs = {}
+        self.datarefs_to_monitor = {}
+        self.xplaneValues = {}
+        self.previous_values = {}
+        self.current_values = {}
+        logger.debug(f"remove_all_datarefs: ..removed")
 
     def start(self):
         logger.debug(f"start: not implemented")
