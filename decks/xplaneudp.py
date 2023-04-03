@@ -498,7 +498,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     #
     def terminate(self):
         logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
-        logger.info(f"terminate: ..disconnecting..")
+        logger.info(f"terminate: terminating..disconnecting..")
         self.disconnect()
         logger.info(f"terminate: ..stopping..")
         self.stop()

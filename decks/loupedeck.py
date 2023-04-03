@@ -17,7 +17,8 @@ from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
 
 logger = logging.getLogger("Loupedeck")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
+# Warning, the logger in package Loupedeck is also called "Loupedeck".
 
 
 VIBRATION_MODES = [

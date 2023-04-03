@@ -15,6 +15,7 @@ from .button_representation import LED, MultiLEDs
 
 logger = logging.getLogger("XTouchDeck")
 # logger.setLevel(logging.DEBUG)
+# Warning, the logger in package XTouchMini is called "XTouchMini".
 
 ENCODE_PREFIX = "e"
 SLIDER = "slider"
