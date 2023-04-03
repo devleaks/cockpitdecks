@@ -121,38 +121,44 @@ buttons:
     command: AirbusFBW/PopUpSD
     dataref: AirbusFBW/PopUpStateArray[7]
     icon: ECAM_DOOR
-  - index: 21
+  - index: 22
     name: Popup MCDU
     type: push
     command: AirbusFBW/UndockMCDU1
     dataref: AirbusFBW/PopUpStateArray[0]
     icon: MCDU
-  - index: 22
-    name: Popup Pedestal1
-    type: page
-    page: piedestal
-    # command: AirbusFBW/PopUpPedestal1
-    icon: PIEDESTAL_FRONT
   - index: 23
-    name: Popup Pedestal2
+    name: Popup MCDU COPILOT
     type: push
-    command: AirbusFBW/PopUpPedestal2
-    icon: PIEDESTAL_BACK
+    command: AirbusFBW/UndockMCDU2
+    dataref: AirbusFBW/PopUpStateArray[1]
+    icon: MCDU
   - index: 24
     name: efis
     type: page
     page: efis
     icon: FCU
   - index: 25
-    name: ECAM
-    type: page
-    page: ecam
-    icon: ECAM_SELECTOR.png
-  - index: 26
     name: FCU
     type: page
     page: fcu
     icon: FCU
+  - index: 26
+    name: Popup Pedestal1
+    type: page
+    page: piedestal
+    # command: AirbusFBW/PopUpPedestal1
+    icon: PIEDESTAL_FRONT
+  - index: 27
+    name: Popup Pedestal2
+    type: push
+    command: AirbusFBW/PopUpPedestal2
+    icon: PIEDESTAL_BACK
+  - index: 28
+    name: ECAM
+    type: page
+    page: ecam
+    icon: ECAM_SELECTOR.png
 # ### LINE 4 ### 24-31 ######################################################
   # - index: 27
   #   name: INSPECT
