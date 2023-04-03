@@ -8,7 +8,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -27,7 +27,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -46,7 +46,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -65,7 +65,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -84,7 +84,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -103,7 +103,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -122,7 +122,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -141,7 +141,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -160,7 +160,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -179,7 +179,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -198,7 +198,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -217,7 +217,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow
@@ -235,7 +235,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: greenyellow

@@ -25,6 +25,8 @@ ICON_SIZE = 256 # px
 DEFAULT_INVERT_COLOR = "white"
 TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
 
+ANNUNCIATOR_MODEL = "model"
+
 
 class GUARD_TYPES(Enum):
     COVER = "cover"
@@ -296,6 +298,7 @@ class Annunciator(Icon):
         self.icon = config.get("icon")
         self.annunciator = config.get("annunciator")  # keep raw
         self.annunciator_style = config.get("annunciator-style", button.page.annunciator_style)
+        self.model = None
 
         # Normalize annunciator parts in parts attribute if not present
         if self.annunciator is None:
@@ -313,14 +316,23 @@ class Annunciator(Icon):
                 if p is not None:
                     arr[part_name] = AnnunciatorPart(name=part_name, config=p, annunciator=self)
             if len(arr) > 0:
+                ctrl = list(set([k[0] for k in arr.keys()]))
+                if len(ctrl) != 1:
+                    logger.error(f"__init__: button {self.button.name}: multiple annunciator models {ctrl}")
+                self.model = ctrl[0]
                 self.annunciator_parts = arr
                 logger.debug(f"__init__: button {self.button.name}: annunciator parts normalized ({list(self.annunciator_parts.keys())})")
             else:
-                self.annunciator["type"] = "A"
+                self.annunciator[ANNUNCIATOR_MODEL] = "A"
+                self.model = "A"
                 arr["A0"] = AnnunciatorPart(name="A0", config=self.annunciator, annunciator=self)
                 self.annunciator_parts = arr
                 logger.debug(f"__init__: button {self.button.name}: annunciator has no part, assuming single A0 part")
         else:
+            ctrl = list(set([k[0] for k in parts.keys()]))
+            if len(ctrl) != 1:
+                logger.error(f"__init__: button {self.button.name}: multiple annunciator models {ctrl}")
+            self.model = ctrl[0]
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
         for a in ["dataref", FORMULA]:
@@ -329,6 +341,9 @@ class Annunciator(Icon):
 
         if self.annunciator_parts is None:
             logger.error(f"__init__: button {self.button.name}: annunciator has no part")
+
+        if self.model is None:
+            logger.error(f"__init__: button {self.button.name}: annunciator has no model")
 
         # Working variables
         self.lit = {}  # parts of annunciator that are lit
@@ -354,7 +369,7 @@ class Annunciator(Icon):
         Build annunciator part index list
         """
         if self._part_iterator is None:
-            t = self.annunciator.get("type", "A")
+            t = self.annunciator.get(ANNUNCIATOR_MODEL, "A")
             if t not in "ABCDEF":
                 logger.warning(f"part_iterator: button {self.button.name}: invalid annunciator type {t}")
                 return []
@@ -481,7 +496,7 @@ class Annunciator(Icon):
 
         # PART 4: Guard
         if self.button.guard is not None:
-            cover = self.button.guard.get("type", GUARD_TYPES.COVER.value)
+            cover = self.button.guard.get(ANNUNCIATOR_MODEL, GUARD_TYPES.COVER.value)
             guard_color = self.button.guard.get("color", "red")
             guard_color = convert_color(guard_color)
             sw = self.button.guard.get("grid-width", 16)
@@ -515,7 +530,7 @@ class Annunciator(Icon):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get("type", "A")
+        t = self.annunciator.get(ANNUNCIATOR_MODEL, "A")
         a = [
             f"The representation displays an annunciator of type {t}."
         ]
@@ -614,7 +629,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get("type", "A")
+        t = self.annunciator.get(ANNUNCIATOR_MODEL, "A")
         a = [
             f"The representation displays an annunciator of type {t}.",
             f"This annunciator is blinking every {self.speed} seconds when it is ON."

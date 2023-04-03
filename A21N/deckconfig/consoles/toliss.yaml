@@ -17,11 +17,11 @@ buttons:
     label: EXT.POWER
     type: onoff
     annunciator:
-      type: B
+      model: B
       B0:
         text: "AVAIL"
-        color: line
-        dataref: AirbusFBW/EnableExternalPower 1 - abs
+        color: lime
+        formula: ${AirbusFBW/EnableExternalPower} not
       B1:
         text: "ON"
         framed: True
@@ -33,11 +33,11 @@ buttons:
     label: HP AIR
     type: onoff
     annunciator:
-      type: B
+      model: B
       B0:
         text: "AVAIL"
-        color: line
-        dataref: AirbusFBW/GroundHPAir 1 - abs
+        color: lime
+        formula: ${AirbusFBW/GroundHPAir} not
       B1:
         text: "ON"
         framed: True
@@ -49,11 +49,11 @@ buttons:
     label: LP AIR
     type: onoff
     annunciator:
-      type: B
+      model: B
       B0:
         text: "AVAIL"
-        color: line
-        dataref: AirbusFBW/GroundLPAir 1 - abs
+        color: lime
+        formula: ${AirbusFBW/GroundLPAir} not
       B1:
         text: "ON"
         framed: True
@@ -66,11 +66,11 @@ buttons:
     label-color: yellow
     type: onoff
     annunciator:
-      type: B
+      model: B
       B0:
         text: "AVAIL"
-        color: line
-        dataref: AirbusFBW/Chocks 1 - abs
+        color: lime
+        formula: ${AirbusFBW/Chocks} not
       B1:
         text: "ON"
         framed: True

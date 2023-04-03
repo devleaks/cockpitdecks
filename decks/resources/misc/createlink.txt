@@ -1,2 +1,0 @@
-/opt/homebrew/Caskroom/miniforge/base/envs/cockpit/lib ~/Developer/cockpitdecks
-(cockpit) pierre@Mini-de-Pierre lib % ln -s /opt/homebrew/lib/libhidapi.dylib .

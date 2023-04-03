@@ -5,7 +5,7 @@ buttons:
     name: PROBE/WINDOW HEAT
     type: onoff
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAIL
@@ -23,7 +23,7 @@ buttons:
   - index: 3
     type: onoff
     annunciator:
-      type: B
+      model: B
       B1:
         dataref: AirbusFBW/CabPressMode
         text: MAN
@@ -34,7 +34,7 @@ buttons:
   - index: 5
     type: onoff
     annunciator:
-      type: B
+      model: B
       B1:
         dataref: AirbusFBW/OHPLightsATA21[13]
         text: "ON"
@@ -44,8 +44,8 @@ buttons:
     set-dataref: AirbusFBW/OHPLightsATA21[13]
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[4]
-      type: grid
-      color: (255, 0, 0, 100)
+      model: grid
+      color: (40, 40, 40)
 # ### LINE 2 ###  8-15 ######################################################
   - index: 15
     name: up
@@ -58,7 +58,7 @@ buttons:
     type: push
     annunciator:
       size: large
-      type: B
+      model: B
       parts:
         B1:
           text: "ON"
@@ -71,6 +71,7 @@ buttons:
   - index: 19
     name: STBY COMPASS
     label: STBY COMPASS
+    label-font: DIN Condensed Regular
     type: onoff
     switch:
       button-fill-color: black
@@ -142,7 +143,7 @@ buttons:
     type: push
     annunciator:
       size: large
-      type: B
+      model: B
       parts:
         B0:
           text: AVAIL
@@ -197,7 +198,7 @@ buttons:
     type: none
     label: EMERGENCY
     annunciator:
-      type: B
+      model: B
       B1:
         text: "OFF"
         text-color: darkorange

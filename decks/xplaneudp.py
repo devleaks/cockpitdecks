@@ -322,6 +322,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             data, addr = self.socket.recvfrom(1472) # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
             # Decode Packet
             retvalues = {}
+            check = set()
             # * Read the Header "RREFO".
             header=data[0:5]
             if header != b"RREF,": # (was b"RREFO" for XPlane10)
@@ -340,6 +341,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                         if value < 0.0 and value > -0.001 :
                             value = 0.0
                         retvalues[self.datarefs[idx]] = value
+                        check.add(idx)
+            # print(check)  # to see which datref get sent
             self.xplaneValues.update(retvalues)
         except:
             raise XPlaneTimeout

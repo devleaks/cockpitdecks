@@ -57,10 +57,10 @@ class Activation:
 
     def activate(self, state):
         """
-        Function that is executed when a button is pressed (state=True) or released (state=False) on the Stream Deck device.
+        Function that is executed when a button is activated (pressed, released, turned, etc.).
         Default is to tally number of times this button was pressed. It should have been released as many times :-D.
         **** No command gets executed here **** except if there is an associated view with the button.
-        Also, removes guard if it was present. @todo: close guard
+        It removes guard if it was present and closed.
         """
         if not self._inited:
             self.init()

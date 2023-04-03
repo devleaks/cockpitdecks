@@ -6,7 +6,7 @@ buttons:
     label: Map
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -24,7 +24,7 @@ buttons:
     type: push
     command: pikitanga/AptNav/ToggleMap
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -40,7 +40,7 @@ buttons:
     label: AVS
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -57,7 +57,7 @@ buttons:
     label: AviTab
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -78,7 +78,7 @@ buttons:
     label: Live/T
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -125,7 +125,7 @@ buttons:
     name: SAMGroundVehicle
     label: SAM/GV
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -143,7 +143,7 @@ buttons:
     name: GroundHandlingDeluxe
     label: GHDLX
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -163,7 +163,7 @@ buttons:
     name: XTouchMini
     label: X-Camera
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs
@@ -181,7 +181,7 @@ buttons:
     name: X-ATC
     label: X-ATC
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         formula: ${state:activation_count} 2 % 1 - abs

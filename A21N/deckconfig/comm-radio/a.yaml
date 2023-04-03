@@ -39,20 +39,20 @@ buttons:
   - index: slider
     name: SLIDER
     type: slider
-    set-dataref: Toto
+    set-dataref: DummyDatarefPlaceholder
     representation: false
     value-step: 10
 #
   - index: A
-    name: Index
+    name: A
     type: page
-    page: index
+    page: a
     led: true
     formula: 1
   - index: B
-    name: Views
+    name: B
     type: page
-    page: Views
+    page: b
     led: true
     formula: 0
 #

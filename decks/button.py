@@ -105,7 +105,12 @@ class Button:
         # Datarefs
         self.dataref = config.get("dataref")
         self.dataref_rpn = config.get(FORMULA)
-        self.managed = config.get("managed")
+        self.managed = None
+        self.manager = config.get("guard")
+        if self.manager is not None:
+            self.guarded = self.manager.get("dataref")
+            if self.guarded is None:
+                logger.warning(f"__init__: button {self.name} has manager but no dataref")
 
         self.guarded = None
         self.guard = config.get("guard")
@@ -355,7 +360,10 @@ class Button:
             logger.debug(f"scan_datarefs: button {self.name}: added single dataref {dataref}")
 
         # 1b. Managed values
-        managed = base.get("managed")
+        managed = None
+        managed_dict = base.get("managed")
+        if managed_dict is not None:
+            managed = managed_dict.get("dataref")
         if managed is not None:
             r.append(managed)
             logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
@@ -568,13 +576,14 @@ class Button:
 
         # HACK 1
         if self.is_managed():      # managed
-            if root == "label" and self.has_option("dot"): # label
+            lblmod = self.manager.get("label-modifier", "dot")
+            if root == "label" and lblmod == "dot": # label
                 return text + DOT  # ---•
             elif root == "text":   # formula value as text
-                if self.has_option("std"):    # QNH Std
+                if lblmod.lower() in ["std", "standard"]:    # QNH Std
                     return "Std"
-                elif self.has_option("dash"):  # --- dash=4 or simply dash (defaults to dash=3)
-                    n = self.option_value("dash")
+                elif lblmod.lower() == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
+                    n = self.option_value("dash", self.option_value("dashes", True))
                     if type(n) == bool:
                         n = 3
                     return "-" * int(n) + " " + DOT

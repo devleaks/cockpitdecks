@@ -31,7 +31,7 @@ buttons:
     type: none
     label: ENG 1 PUMP
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -40,13 +40,13 @@ buttons:
         text: "OFF"
         color: white
         framed: true
-        formula: ${AirbusFBW/HydOHPArray[0]} 1 - abs
+        formula: ${AirbusFBW/HydOHPArray[0]} not
   - index: 9
     name: RAT
     type: none
     label: RAT MAN ON
     annunciator:
-      type: A
+      model: A
       size: large
       A0:
         text: "ON"
@@ -60,7 +60,7 @@ buttons:
     type: none
     label: ELEC PUMP/BLUE
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -69,17 +69,17 @@ buttons:
         text: "OFF"
         color: white
         framed: true
-        formula: ${AirbusFBW/HydOHPArray[2]} 1 - abs
+        formula: ${AirbusFBW/HydOHPArray[2]} not
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[1]
-      type: grid
+      model: grid
       color: (40,40,40)
   - index: 11
     name: PTU
     type: none
     label: PTU
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -88,13 +88,13 @@ buttons:
         text: "OFF"
         color: white
         framed: true
-        formula: ${AirbusFBW/HydOHPArray[4]} 1 - abs
+        formula: ${AirbusFBW/HydOHPArray[4]} not
   - index: 12
     name: ENG2PUMP
     type: none
     label: ENG 2 PUMP
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -103,13 +103,13 @@ buttons:
         text: "OFF"
         color: white
         framed: true
-        formula: ${AirbusFBW/HydOHPArray[1]} 1 - abs
+        formula: ${AirbusFBW/HydOHPArray[1]} not
   - index: 13
     name: ELECPUMP
     type: none
     label: ELEC PUMP
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT

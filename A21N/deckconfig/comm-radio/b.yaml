@@ -1,4 +1,3 @@
-name: Views
 buttons:
   - index: 0
     name: View 0
@@ -51,15 +50,15 @@ buttons:
     type: slider
 #
   - index: A
-    name: Index
+    name: A
     type: page
-    page: index
+    page: a
     led: true
     formula: 0
   - index: B
-    name: Views
+    name: B
     type: page
-    page: Views
+    page: b
     led: true
     formula: 1
 #

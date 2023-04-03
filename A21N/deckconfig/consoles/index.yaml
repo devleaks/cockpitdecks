@@ -5,7 +5,7 @@ buttons:
     name: ICE WING
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAIL
@@ -27,7 +27,7 @@ buttons:
     name: ICE ENG1
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAIL
@@ -44,7 +44,7 @@ buttons:
     name: ICE ENG2
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAIL
@@ -61,7 +61,7 @@ buttons:
     name: PROBE/WINDOW HEAT
     type: onoff
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAIL
@@ -187,7 +187,7 @@ buttons:
     type: push
     annunciator:
       size: large
-      type: B
+      model: B
       parts:
         B1:
           text: "ON"
@@ -280,7 +280,7 @@ buttons:
     type: push
     annunciator:
       size: large
-      type: B
+      model: B
       parts:
         B0:
           text: AVAIL

@@ -7,7 +7,7 @@ buttons:
     type: push
     annunciator:
       size: small
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -27,7 +27,7 @@ buttons:
     type: push
     annunciator:
       size: small
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -47,7 +47,7 @@ buttons:
     type: push
     annunciator:
       size: small
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -67,7 +67,7 @@ buttons:
     type: push
     annunciator:
       size: small
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -87,7 +87,7 @@ buttons:
     type: push
     annunciator:
       size: small
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -180,7 +180,7 @@ buttons:
     label-size: 12
     annunciator:
       size: large
-      type: B
+      model: B
       parts:
         B1:
           text: "ON"
@@ -215,7 +215,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -233,7 +233,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: lime

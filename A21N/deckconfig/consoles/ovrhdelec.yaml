@@ -6,7 +6,7 @@ buttons:
     label: COMMERCIAL
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B1:
         text: "OFF"
@@ -17,7 +17,7 @@ buttons:
     label: GALLEY
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -26,13 +26,14 @@ buttons:
         text: "OFF"
         color: white
         framed: true
+        formula: ${AirbusFBW/GalleyPBLight} not
   - index: 2
     name: BAT_VOLT_1
     type: none
     text: ${AirbusFBW/BatVolts[0]}
     text-format: "{:2.1f}"
     text-color: white
-    text-size: 60
+    text-size: 56
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
   - index: 3
@@ -40,7 +41,7 @@ buttons:
     label: BAT 1
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -56,7 +57,7 @@ buttons:
     label: BAT 2
     type: push
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -73,7 +74,7 @@ buttons:
     text: ${AirbusFBW/BatVolts[1]}
     text-format: "{:2.1f}"
     text-color: white
-    text-size: 60
+    text-size: 56
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
     # type: none
@@ -89,7 +90,7 @@ buttons:
     label: AC ESS FEED
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -113,21 +114,21 @@ buttons:
     label: IDG 1
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
         color: darkorange
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[5]
-      type: grid
+      model: grid
       color: (255,0,0,100)
   - index: 9
     name: GEN_1
     label: GEN 1
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -141,7 +142,7 @@ buttons:
     label: APU GEN
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -155,7 +156,7 @@ buttons:
     label: BUS TIE
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B1:
         text: "OFF"
@@ -166,12 +167,12 @@ buttons:
     type: push
     annunciator:
       size: large
-      type: B
+      model: B
       parts:
         B0:
           text: AVAIL
           color: lime
-          formula: ${sim/cockpit2/switches/avionics_power_on} 1 - abs ${AirbusFBW/SDExtPowBox} *
+          formula: ${sim/cockpit2/switches/avionics_power_on} not ${AirbusFBW/SDExtPowBox} *
         B1:
           text: "ON"
           color: deepskyblue
@@ -185,7 +186,7 @@ buttons:
     label: GEN 2
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
@@ -199,14 +200,14 @@ buttons:
     label: IDG 2
     type: none
     annunciator:
-      type: B
+      model: B
       size: large
       B0:
         text: FAULT
         color: darkorange
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[6]
-      type: grid
+      model: grid
       color: (255,0,0,100)
 # ### LINE 3 ### 16-23 ######################################################
   - index: 23

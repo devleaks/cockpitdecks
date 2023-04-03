@@ -57,10 +57,17 @@ class Representation:
 
     def get_status(self):
         return {
-            "representation_type": type(self).__name__
+            "representation_type": type(self).__name__,
+            "sound": self._sound
         }
 
     def render(self):
+        """
+        This is the main rendering function for all representations.
+        It returns what is appropriate to the button render() function which passes
+        it to the deck's render() function which takes appropriate action
+        to pass the returned value to the appropriate device function for display.
+        """
         logger.debug(f"render: button {self.button_name()}: {type(self).__name__} has no rendering")
         return None
 
@@ -260,14 +267,42 @@ class Icon(Representation):
             logger.warning(f"get_image: button {self.button_name()}: {type(self).__name__} no image")
             return None
 
-        # Add little check mark if not valid/fake
-        if not self.button.is_valid() or self.button.has_option("placeholder"):
+        if self.button.has_option("placeholder"):
+            # Add little blue check mark if placeholder
             image = image.copy()  # we will add text over it
             draw = ImageDraw.Draw(image)
             c = round(0.97 * image.width)  # % from edge
-            s = round(0.1 * image.width)   # size
+            s = round(0.10 * image.width)   # size
             pologon = ( (c, c), (c, c-s), (c-s, c), (c, c) )  # lower right corner
-            draw.polygon(pologon, fill="red", outline="white")
+            draw.polygon(pologon, fill="deepskyblue")
+        else:
+            # Button is invalid, add a little red mark
+            # if not self.button.is_valid():
+            #     image = image.copy()  # we will add text over it
+            #     draw = ImageDraw.Draw(image)
+            #     c = round(0.97 * image.width)  # % from edge
+            #     s = round(0.10 * image.width)  # size
+            #     pologon = ( (c, c), (c, c-s), (c-s, c), (c, c) )  # lower right corner
+            #     draw.polygon(pologon, fill="red", outline="white")
+
+            # Representation is invalid, add a little orange mark
+            if not self.is_valid():
+                image = image.copy()  # we will add text over it
+                draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.15 * image.width)   # size
+                pologon = ( (c, c), (c, c-s), (c-s, c), (c, c) )  # lower right corner
+                draw.polygon(pologon, fill="orange")
+
+            # Activation is invalid, add a little red mark (may be on top of above mark...)
+            if self.button._activation is not None and not self.button._activation.is_valid():
+                image = image.copy()  # we will add text over it
+                draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.08 * image.width)   # size
+                pologon = ( (c, c), (c, c-s), (c-s, c), (c, c) )  # lower right corner
+                draw.polygon(pologon, fill="red", outline="white")
+
 
         # Add little check mark if not valid/fake
         # if self.button._config.get("type", "none") == "none":
@@ -421,6 +456,7 @@ class IconSide(Icon):
                 for label in self.labels:
                     dref = label.get("managed")
                     if dref is not None:
+                        logger.debug(f"get_datarefs: button {self.button_name()}: added label dataref {dref}")
                         self.datarefs.append(dref)
         return self.datarefs
 
@@ -463,11 +499,12 @@ class IconSide(Icon):
                 managed = label.get("managed")
                 if managed is not None:
                     value = self.button.get_dataref_value(managed)
+                    txto = txt
                     if value:
                         txt = txt + "•"  # \n•"
                     else:
-                        txt = txt + ""   # \n"
-                    logger.debug(f"get_image_for_icon: watching {managed}: {value}")
+                        txt = txt + " "   # \n"
+                    logger.debug(f"get_image_for_icon: watching {managed}: {value}, {txto} -> {txt}")
 
                 fontname = self.get_font(label.get("label-font", self.label_font))
                 if fontname is None:

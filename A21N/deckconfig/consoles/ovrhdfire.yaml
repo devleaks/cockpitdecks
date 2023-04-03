@@ -22,7 +22,7 @@ buttons:
     name: ENG1AGENT1
     label: AGENT 1
     annunciator:
-      type: B
+      model: B
       B0:
         text: SQUIB
         text-color: darkorange
@@ -34,7 +34,7 @@ buttons:
     name: ENG1AGENT2
     label: AGENT 2
     annunciator:
-      type: B
+      model: B
       B0:
         text: SQUIB
         text-color: darkorange
@@ -46,7 +46,7 @@ buttons:
     name: APUAGENT
     label: AGENT
     annunciator:
-      type: B
+      model: B
       B0:
         text: SQUIB
         text-color: darkorange
@@ -58,7 +58,7 @@ buttons:
     name: ENG2AGENT1
     label: AGENT 1
     annunciator:
-      type: B
+      model: B
       B0:
         text: SQUIB
         text-color: darkorange
@@ -70,7 +70,7 @@ buttons:
     name: ENG2AGENT2
     label: AGENT 2
     annunciator:
-      type: B
+      model: B
       B0:
         text: SQUIB
         text-color: darkorange
@@ -82,7 +82,7 @@ buttons:
     type: none
     name: ENG1FIRE
     annunciator:
-      type: A
+      model: A
       A0:
         text: FIRE
         text-color: black
@@ -90,12 +90,12 @@ buttons:
         dataref: AirbusFBW/FireAgentSwitchAnim[10]
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[17]
-      type: grid
+      model: grid
   - index: 19
     type: none
     name: APUFIRE
     annunciator:
-      type: A
+      model: A
       A0:
         text: FIRE
         text-color: black
@@ -103,12 +103,12 @@ buttons:
         dataref: AirbusFBW/FireAgentSwitchAnim[14]
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[19]
-      type: grid
+      model: grid
   - index: 21
     type: none
     name: ENG2FIRE
     annunciator:
-      type: A
+      model: A
       A0:
         text: FIRE
         text-color: black
@@ -116,7 +116,7 @@ buttons:
         dataref: AirbusFBW/FireAgentSwitchAnim[11]
     guard:
       dataref: AirbusFBW/OHPGuardsAllATA[18]
-      type: grid
+      model: grid
   - index: 23
     name: down
     type: page

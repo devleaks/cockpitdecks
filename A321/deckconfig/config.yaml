@@ -2,6 +2,7 @@
 #
 ---
 aircraft: Toliss A321
+description: Definition of decks for Toliss A321 without neo addon
 icao: A321
 model: Airbus A321-231 (IAE V2533-A5)
 decks:

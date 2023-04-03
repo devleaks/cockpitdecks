@@ -95,7 +95,8 @@ buttons:
     text-font: Seven Segment.ttf
     text-position: cm
     text-bg-color: (40, 40, 40)
-    managed: AirbusFBW/SPDmanaged
+    managed:
+      dataref: AirbusFBW/SPDmanaged
     options: dash
   - index: 1
     name: MASTER CAUTION
@@ -137,7 +138,8 @@ buttons:
     text-size: 24
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
-    managed: AirbusFBW/ALTmanaged
+    managed:
+      dataref: AirbusFBW/ALTmanaged
   - index: 4
     label: HDG
     label-font: DIN Bold
@@ -147,7 +149,8 @@ buttons:
     type: none
     text: "${sim/cockpit/autopilot/heading_mag}"
     text-format: "{:03.0f}"
-    managed: AirbusFBW/HDGmanaged
+    managed:
+      dataref: AirbusFBW/HDGmanaged
     options: dash
 #    formula: ${status:activation_count}
 #    formula: ${sim/cockpit/autopilot/heading_mag}
@@ -160,7 +163,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -178,7 +181,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -219,14 +222,15 @@ buttons:
     text-font: Seven Segment
     text-bg-color: (40, 40, 40)
     formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
-    managed: AirbusFBW/BaroStdCapt
+    managed:
+      dataref: AirbusFBW/BaroStdCapt
     options: std
   - index: 9
     name: LOC
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -245,7 +249,7 @@ buttons:
     type: push
     annunciator:
       size: medium
-      type: B
+      model: B
       parts:
         B0:
           color: lime
@@ -269,26 +273,26 @@ buttons:
 #     text-size: 24
 #     text-font: Seven Segment.ttf
 #     text-bg-color: (40, 40, 40)
-  # - index: 11
-  #   name: RELOAD
-  #   type: reload
-  #   label: RELOAD
-  #   label-size: 14
-  #   label-position: cm
-  #   text: ${fa:rotate-right}
-  #   text-font: fontawesome.otf
-  #   text-color: lime
-  #   text-size: 80
-  #   text-position: cm
-  #   text-bg-color: (94, 111, 130)
   - index: 11
-    name: STATUS
-    type: inspect
-    icon: COCKPITDECKS
-    label: "PRINT"
-    label-color: red
-    label-position: "cm"
-    what: print
+    name: RELOAD
+    type: reload
+    label: RELOAD
+    label-size: 14
+    label-position: cm
+    text: ${fa:rotate-right}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 80
+    text-position: cm
+    text-bg-color: (94, 111, 130)
+  # - index: 11
+  #   name: STATUS
+  #   type: inspect
+  #   icon: COCKPITDECKS
+  #   label: "PRINT"
+  #   label-color: red
+  #   label-position: "cm"
+  #   what: print
 #
 # SIDE KEYS
 #

@@ -25,7 +25,7 @@ buttons:
     type: none
     annunciator:
       size: full
-      type: B
+      model: B
       B0:
         text: FAIL
         color: darkorange
@@ -42,7 +42,7 @@ buttons:
     type: none
     annunciator:
       size: full
-      type: B
+      model: B
       B0:
         text: FAIL
         color: darkorange
@@ -59,7 +59,7 @@ buttons:
     type: none
     annunciator:
       size: full
-      type: B
+      model: B
       B0:
         text: FAIL
         color: darkorange
@@ -190,7 +190,7 @@ buttons:
     label: ADR1
     annunciator:
       size: full
-      type: B
+      model: B
       B0:
         text: FAIL
         color: darkorange
@@ -201,7 +201,7 @@ buttons:
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        formula: ${AirbusFBW/ADRLights[0]} 1 - abs
+        formula: ${AirbusFBW/ADRLights[0]} not
         framed: True
     set-dataref: AirbusFBW/ADIRUSwitchArray[0]
   - index: 25
@@ -210,7 +210,7 @@ buttons:
     label: ADR3
     annunciator:
       size: full
-      type: B
+      model: B
       B0:
         text: FAIL
         color: darkorange
@@ -221,7 +221,7 @@ buttons:
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        formula: ${AirbusFBW/ADRLights[2]} 1 - abs
+        formula: ${AirbusFBW/ADRLights[2]} not
         framed: True
     set-dataref: AirbusFBW/ADIRUSwitchArray[2]
   - index: 26
@@ -230,7 +230,7 @@ buttons:
     label: ADR2
     annunciator:
       size: full
-      type: B
+      model: B
       B0:
         text: FAIL
         color: darkorange
@@ -241,7 +241,7 @@ buttons:
         color: peachpuff
         size: 80
         font: DIN Condensed Bold
-        formula: ${AirbusFBW/ADRLights[1]} 1 - abs
+        formula: ${AirbusFBW/ADRLights[1]} not
         framed: True
     set-dataref: AirbusFBW/ADIRUSwitchArray[1]
   - index: 31
