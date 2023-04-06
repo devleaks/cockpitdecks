@@ -197,7 +197,10 @@ class Cockpit:
             self.create_decks()
             self.load_pages()
         else:
-            logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
+            if not os.path.exists(acpath):
+                logger.error(f"load_aircraft: no aircraft folder {acpath}")
+            else:
+                logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
             self.create_default_decks()
 
     def load_pages(self):

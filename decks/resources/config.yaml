@@ -1,4 +1,6 @@
-# This is at global level
+# This is at Cockpitdeck level, for all aircrafts
+#
+---
 default-wallpaper-logo: logo.png
 default-label-color: white
 default-label-font: DIN.ttf

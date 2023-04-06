@@ -231,6 +231,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         XPlane.__init__(self, decks=decks)
         XPlaneBeacon.__init__(self)
 
+        self.exit_loop = None
         self.defaultFreq = 1
 
         # list of requested datarefs with index number
@@ -368,7 +369,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         total_to = 0
         j1, j2 = 0, 0
         tot1, tot2 = 0.0, 0.0
-        while self.running:
+        while not self.exit_loop.is_set():
             nexttime = DATA_REFRESH
             i = i + 1
             if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0 and j1 > 0:
@@ -395,10 +396,11 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning(f"loop: too many times out, disconnecting, dataref listener terminated")  # ignore
                         self.connected = False  # notify above that connection lost
-                        self.running = False    # auto stop
+                        self.exit_loop.set()
 
-            if nexttime > 0:
-                time.sleep(nexttime)
+            if not self.exit_loop.is_set() and nexttime > 0:
+                self.exit_loop.wait(nexttime)
+        self.exit_loop = None
         logger.debug(f"loop: ..terminated")
 
     # ################################
@@ -436,7 +438,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
-        if not self.is_connected():
+        if not self.is_connected() and len(self.datarefs_to_monitor) > 0:
             logger.warning(f"remove_datarefs_to_monitor: no connection")
             logger.debug(f"remove_datarefs_to_monitor: would remove {datarefs.keys()}")
             return
@@ -455,7 +457,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         super().remove_datarefs_to_monitor(datarefs)
 
     def remove_all_datarefs(self):
-        if not self.is_connected():
+        if not self.is_connected() and len(self.all_datarefs) > 0:
             logger.warning(f"remove_all_datarefs: no connection")
             logger.debug(f"remove_all_datarefs: would remove {self.all_datarefs.keys()}")
             return
@@ -478,10 +480,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         if not self.is_connected():
             logger.warning(f"start: no IP address. could not start.")
             return
-        if not self.running:
+        if self.exit_loop is None:
+            self.exit_loop = threading.Event()
             self.thread = threading.Thread(target=self.loop)
             self.thread.name = f"XPlaneUDP::datarefs_watcher"
-            self.running = True
             self.thread.start()
             logger.info(f"start: XPlaneUDP started")
         else:
@@ -493,14 +495,14 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.cockpit.reload_pages()
 
     def stop(self):
-        if self.running:
+        if self.exit_loop is not None:
+            self.exit_loop.set()
             logger.debug(f"stop: stopping..")
-            self.running = False
-            wait = SOCKET_TIMEOUT
-            logger.debug(f"stop: ..asked to stop loop.. (this may last {wait} secs.)")
-            self.thread.join(wait)
+            logger.debug(f"stop: ..asked to stop loop (this may last {SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
+            self.thread.join(SOCKET_TIMEOUT)
             if self.thread.is_alive():
                 logger.warning(f"stop: ..thread may hang in socket.recvfrom()..")
+            self.exit_loop = None
             logger.debug(f"stop: ..stopped")
         else:
             logger.info(f"stop: not running")
@@ -509,7 +511,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     # Cockpit interface
     #
     def terminate(self):
-        logger.debug(f"terminate: currently {'not ' if not self.running else ''}running. terminating..")
+        logger.debug(f"terminate: currently {'not ' if self.exit_loop is None else ''}running. terminating..")
         self.remove_all_datarefs()
         logger.info(f"terminate: terminating..disconnecting..")
         self.disconnect()

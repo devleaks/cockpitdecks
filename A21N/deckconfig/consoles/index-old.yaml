@@ -1,4 +1,11 @@
+# Larger icon with images of portion of the cockpit dashboard
+#
+# CHANGELOG
+# 1.0.0  03-APR-2023  Moved MCDU for both side to middle row
+#
+---
 name: index-old
+version: 1.0.0
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0

@@ -1,9 +1,9 @@
 """
 https://stackoverflow.com/questions/4995733/how-to-create-a-spinning-command-line-cursor
+usage:
 
 with Spinner():
   # ... some long-running operations
-  # time.sleep(3)
 
 """
 import sys
@@ -14,14 +14,14 @@ class Spinner:
 
     @staticmethod
     def spinning_cursor():
-        while 1: 
+        while True:
             for cursor in '|/-\\': yield cursor
 
     def __init__(self, delay=None):
         self.thread = None
         self.exit = None
         self.delay = 0.1
-        self.spinner_generator = self.spinning_cursor()
+        self.spinner_generator = Spinner.spinning_cursor()
         if delay and float(delay): self.delay = delay
 
     def spinner_task(self):
@@ -34,7 +34,8 @@ class Spinner:
 
     def __enter__(self):
         self.exit = threading.Event()
-        self.thread = threading.Thread(target=self.spinner_task).start()
+        self.thread = threading.Thread(target=self.spinner_task)
+        self.thread.start()
 
     def __exit__(self, exception, value, tb):
         self.exit.set()
