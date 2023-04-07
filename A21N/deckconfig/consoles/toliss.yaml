@@ -1,3 +1,12 @@
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+---
+aircraft: Toliss A321neo
+description: Toliss aircraft specific actions, not available in real aircraft...
+version: 1.0.0
+# ########################
 buttons:
   - index: 31
     name: Old Index
@@ -77,3 +86,4 @@ buttons:
         color: yellow
         dataref: AirbusFBW/Chocks
     set-dataref: AirbusFBW/Chocks
+includes: popups

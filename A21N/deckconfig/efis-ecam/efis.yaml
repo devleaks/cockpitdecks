@@ -1,5 +1,14 @@
+# CHANGELOG
+#
+# 3.0.0  03-APR-2023  Latest version
+#
+---
+aircraft: Toliss A321neo
 version: 3.0.0
-description: EFIS display selector + some FCU commands
+description: EFIS display selector + some FCU commands for Streamdeck 15 keys
+# ########################
+# BUTTONS
+#
 buttons:
 # ### LINE 1 ###  0 -  4 ######################################################
   - index: 0

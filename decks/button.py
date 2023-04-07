@@ -15,7 +15,7 @@ from ruamel.yaml import YAML
 from .button_activation import ACTIVATIONS
 from .button_representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
-from .constant import ID_SEP, SPAM, FORMULA, WEATHER_ICON_FONT, ICON_FONT
+from .constant import ID_SEP, SPAM, KW_FORMULA, WEATHER_ICON_FONT, ICON_FONT
 from .rpc import RPC
 
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons ${fa-arrow-up}
@@ -28,8 +28,13 @@ logger = logging.getLogger("Button")
 
 yaml = YAML()
 
+# Attribute keybords
+KW_GUARD = "guard"
+KW_MANAGED = "managed"
+KW_DATAREF = "dataref"
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
+
 
 # ##########################################
 # BUTTONS
@@ -48,7 +53,7 @@ class Button:
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
-        self.name = config.get("name", "-".join((self.page.name, str(self.index))))
+        self.name = config.get("name", str(self.index))
         self.num_index = None
         if type(self.index) == str:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
@@ -103,19 +108,19 @@ class Button:
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
-        self.dataref = config.get("dataref")
-        self.dataref_rpn = config.get(FORMULA)
+        self.dataref = config.get(KW_DATAREF)
+        self.dataref_rpn = config.get(KW_FORMULA)
         self.managed = None
-        self.manager = config.get("guard")
+        self.manager = config.get(KW_GUARD)
         if self.manager is not None:
-            self.guarded = self.manager.get("dataref")
+            self.guarded = self.manager.get(KW_DATAREF)
             if self.guarded is None:
                 logger.warning(f"__init__: button {self.name} has manager but no dataref")
 
         self.guarded = None
-        self.guard = config.get("guard")
+        self.guard = config.get(KW_GUARD)
         if self.guard is not None:
-            self.guarded = self.guard.get("dataref")
+            self.guarded = self.guard.get(KW_DATAREF)
             if self.guarded is None:
                 logger.warning(f"__init__: button {self.name} has guard but no dataref")
 
@@ -354,25 +359,25 @@ class Button:
         # Direct use of datarefs:
         #
         # 1. Single
-        dataref = base.get("dataref")
+        dataref = base.get(KW_DATAREF)
         if dataref is not None:
             r.append(dataref)
             logger.debug(f"scan_datarefs: button {self.name}: added single dataref {dataref}")
 
         # 1b. Managed values
         managed = None
-        managed_dict = base.get("managed")
+        managed_dict = base.get(KW_MANAGED)
         if managed_dict is not None:
-            managed = managed_dict.get("dataref")
+            managed = managed_dict.get(KW_DATAREF)
         if managed is not None:
             r.append(managed)
             logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
 
         # 1c. Guarded buttons
         guarded = None
-        guard_dict = base.get("guard")
+        guard_dict = base.get(KW_GUARD)
         if guard_dict is not None:
-            guarded = guard_dict.get("dataref")
+            guarded = guard_dict.get(KW_DATAREF)
         if guarded is not None:
             r.append(guarded)
             logger.debug(f"scan_datarefs: button {self.name}: added guarding dataref {guarded}")
@@ -382,7 +387,7 @@ class Button:
         # Use of datarefs in formula:
         #
         # 2. Formula datarefs
-        dataref_rpn = base.get(FORMULA)
+        dataref_rpn = base.get(KW_FORMULA)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall(PATTERN_DOLCB, dataref_rpn)
             datarefs = list(filter(is_dref, datarefs))
@@ -412,8 +417,8 @@ class Button:
                 logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
 
         # Clean up
-        if FORMULA in r:  # label or text may contain ${formula}, FORMULA is not a dataref.
-            r.remove(FORMULA)
+        if KW_FORMULA in r:  # label or text may contain ${formula}, KW_FORMULA is not a dataref.
+            r.remove(KW_FORMULA)
 
         return list(set(r))  # removes duplicates
 
@@ -605,10 +610,10 @@ class Button:
 
         # Formula in text
         text_format = base.get(f"{root}-format")
-        FORMULA_STR = f"${{{FORMULA}}}"   # "${formula}"
-        if FORMULA_STR in str(text):
+        KW_FORMULA_STR = f"${{{KW_FORMULA}}}"   # "${formula}"
+        if KW_FORMULA_STR in str(text):
             # If text contains ${formula}, it is replaced by the value of the formula calculation.
-            dataref_rpn = base.get(FORMULA)
+            dataref_rpn = base.get(KW_FORMULA)
             if dataref_rpn is not None:
                 res = self.execute_formula(formula=dataref_rpn)
                 if res != "":  # Format output if format present
@@ -617,9 +622,9 @@ class Button:
                         res = text_format.format(res)
                     else:
                         res = str(res)
-                text = text.replace(FORMULA_STR, res)
+                text = text.replace(KW_FORMULA_STR, res)
             else:
-                logger.warning(f"get_text: button {self.name}: text contains {FORMULA_STR} but no {FORMULA} attribute found")
+                logger.warning(f"get_text: button {self.name}: text contains {KW_FORMULA_STR} but no {KW_FORMULA} attribute found")
 
         text = self.substitute_values(text, formatting=text_format, default="---")
 

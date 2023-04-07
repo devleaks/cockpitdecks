@@ -7,7 +7,7 @@ import time
 from .constant import SPAM
 
 loggerDataref = logging.getLogger("Dataref")
-loggerDataref.setLevel(SPAM)
+# loggerDataref.setLevel(SPAM)
 # loggerDataref.setLevel(logging.DEBUG)
 
 logger = logging.getLogger("XPlane")
@@ -129,7 +129,6 @@ class XPlane:
     """
     def __init__(self, decks):
         self.cockpit = decks
-        self.connected = False
         self.use_flight_loop = False
         self.running = False
         self.all_datarefs = {}
@@ -143,9 +142,6 @@ class XPlane:
 
         self.dataref_db_lock = threading.RLock()
         self._need_reload = True
-
-    def is_connected(self):
-        return self.connected
 
     def detect_changed(self):
         """

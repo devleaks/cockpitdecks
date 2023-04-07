@@ -4,6 +4,7 @@ import os
 import threading
 import logging
 import pickle
+import pkg_resources
 from queue import Queue
 
 from PIL import Image, ImageFont
@@ -11,7 +12,8 @@ from ruamel.yaml import YAML
 
 from .constant import ID_SEP, SPAM, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
-from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
+from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
+from .constant import COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
 from .color import convert_color, has_ext
 
 from . import __version__
@@ -57,13 +59,13 @@ class Cockpit:
         self.default_label_font = DEFAULT_LABEL_FONT
         self.default_label_size = DEFAULT_LABEL_SIZE
         self.default_label_color = convert_color(DEFAULT_LABEL_COLOR)
+        self.default_label_position = DEFAULT_LABEL_POSITION
 
         self.icon_folder = None
         self.icons = {}
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
         self.fill_empty_keys = True
-        self.light_off_intensity = DEFAULT_LIGHT_OFF_INTENSITY
         self.empty_key_fill_color = None
         self.empty_key_fill_icon = None
         self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
@@ -122,7 +124,7 @@ class Cockpit:
     def scan_devices(self):
         for decktype, builder in DECK_TYPES.items():
             decks = builder[1]().enumerate()
-            logger.info(f"scan_devices: found {len(decks)} {decktype}")
+            logger.info(f"scan_devices: found {len(decks)} {decktype} ({decktype} {pkg_resources.get_distribution(decktype).version})")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
@@ -237,6 +239,7 @@ class Cockpit:
             self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
             self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
             self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
+            self.default_label_position = self.default_config.get("default-label-position", convert_color(DEFAULT_LABEL_POSITION))
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
             self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
@@ -325,6 +328,7 @@ class Cockpit:
                 self.default_label_font = config.get("default-label-font", DEFAULT_LABEL_FONT)
                 self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
                 self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
+                self.default_label_position = config.get("default-label-position", DEFAULT_LABEL_POSITION)
                 self.default_icon_name = DEFAULT_ICON_NAME
                 self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
                 self.default_logo = config.get("default-wallpaper-logo", DEFAULT_LOGO)
@@ -563,8 +567,9 @@ class Cockpit:
         for deck in self.cockpit.values():
             deck.terminate()
         self.cockpit = {}
-        if not self.xp.use_flight_loop:
-            logger.info(f"terminate_aircraft: {len(threading.enumerate())} threads")
+        nt = len(threading.enumerate())
+        if not self.xp.use_flight_loop and nt > 1:
+            logger.info(f"terminate_aircraft: {nt} threads")
             logger.info(f"terminate_aircraft: {[t.name for t in threading.enumerate()]}")
         logger.info(f"terminate_aircraft: ..done")
 

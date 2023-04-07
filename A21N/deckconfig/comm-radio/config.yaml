@@ -1,1 +1,10 @@
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+---
+aircraft: Toliss A321neo
+description: Configuration parameters for X-Touch mini
+version: 1.0.0
+# ########################
 homepage-name: a

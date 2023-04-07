@@ -23,7 +23,7 @@ logger = logging.getLogger("XPlaneUDP")
 # !! adjust with care !!
 DATA_SENT    = 2    # times per second, X-Plane send that data on UDP every that often. Too often will slow down X-PLANE.
 DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
-                    # must be < 0.1 for UDP, and < 1/DATA_SENT to consume faster than produce.
+                    # must be << 1/DATA_SENT to consume faster than produce.
 LOOP_ALIVE   = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 
@@ -59,11 +59,14 @@ class XPlaneBeacon:
         # Open a UDP Socket to receive on Port 49000
         self.socket = None
 
-        self.connected = False
-        self.should_run = False
+        self.beacon_data = {}
 
-        self.connect_thread = None
-        self.BeaconData = {}
+        self.should_not_connect = None  # threading.Event()
+        self.connect_thread = None      # threading.Thread()
+
+    @property
+    def connected(self):
+        return "IP" in self.beacon_data.keys()
 
     def FindIp(self):
         '''
@@ -75,7 +78,7 @@ class XPlaneBeacon:
             self.socket = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        self.BeaconData = {}
+        self.beacon_data = {}
 
         # open socket for multicast group.
         # this socker is for getting the beacon, it can be closed when beacon is found.
@@ -134,11 +137,11 @@ class XPlaneBeacon:
                 if beacon_major_version == 1 \
                     and beacon_minor_version <= 2 \
                     and application_host_id == 1:
-                    self.BeaconData["IP"] = sender[0]
-                    self.BeaconData["Port"] = port
-                    self.BeaconData["hostname"] = hostname.decode()
-                    self.BeaconData["XPlaneVersion"] = xplane_version_number
-                    self.BeaconData["role"] = role
+                    self.beacon_data["IP"] = sender[0]
+                    self.beacon_data["Port"] = port
+                    self.beacon_data["hostname"] = hostname.decode()
+                    self.beacon_data["XPlaneVersion"] = xplane_version_number
+                    self.beacon_data["role"] = role
                     logger.info(f"FindIp: XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
                 else:
                     logger.warning(f"FindIp: XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
@@ -150,7 +153,7 @@ class XPlaneBeacon:
         finally:
             sock.close()
 
-        return self.BeaconData
+        return self.beacon_data
 
     def start(self):
         logger.warning("start: nothing to start")
@@ -158,41 +161,47 @@ class XPlaneBeacon:
     def stop(self):
         logger.warning("stop: nothing to stop")
 
+    def cleanup(self):
+        logger.warning("cleanup: nothing to clean up")
+
     def connect_loop(self):
-        logger.debug("connect_loop: connecting..")
-        while self.should_run:
+        """
+        Trys to connect to X-Plane indefinitely until self.should_not_connect is set.
+        If a connection fails, drops, disappears, will try periodically to restore it.
+        """
+        logger.debug("connect_loop: starting..")
+        while self.should_not_connect is not None and not self.should_not_connect.is_set():
             if not self.connected:
                 try:
                     self.FindIp()
-                    if "IP" in self.BeaconData:
-                        self.connected = True
-    #                    self.should_run = False
-                    logger.info(self.BeaconData)
-                    logger.debug("connect_loop: ..starting..")
-                    self.start()
-                    logger.info(f"connect_loop: connected, dataref listener started")  # ignore
+                    if self.connected:
+                        logger.info(self.beacon_data)
+                        logger.debug("connect_loop: ..connected, starting dataref listener..")
+                        self.start()
+                        logger.info(f"connect_loop: ..dataref listener started..")
                 except XPlaneVersionNotSupported:
-                    self.BeaconData = {}
-                    self.connected = False
-                    logger.error("connect_loop: XPlane Version not supported.")
+                    self.beacon_data = {}
+                    logger.error("connect_loop: ..XPlane Version not supported..")
                 except XPlaneIpNotFound:
-                    self.BeaconData = {}
-                    self.connected = False
-                    # logger.error("connect_loop: XPlane IP not found. Probably there is no XPlane running in your local network.")
+                    self.beacon_data = {}
+                    logger.error("connect_loop: ..no XPlane instance not found on local network..")
                 if not self.connected:
-                    time.sleep(RECONNECT_TIMEOUT)
+                    self.should_not_connect.wait(RECONNECT_TIMEOUT)
                     logger.debug("connect_loop: ..trying..")
             else:
-                time.sleep(RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
-                logger.debug("connect_loop: ..awake..")
+                self.should_not_connect.wait(RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
+                logger.debug("connect_loop: ..monitoring connection..")
         logger.debug("connect_loop: ..ended")
 
     # ################################
     # Interface
     #
     def connect(self):
-        if not self.should_run:
-            self.should_run = True
+        """
+        Starts connect loop.
+        """
+        if self.should_not_connect is None:
+            self.should_not_connect = threading.Event()
             self.connect_thread = threading.Thread(target=self.connect_loop)
             self.connect_thread.name = "XPlaneBeacon::connect_loop"
             self.connect_thread.start()
@@ -201,19 +210,27 @@ class XPlaneBeacon:
             logger.debug("connect: connect_loop already started")
 
     def disconnect(self):
-        if self.should_run:
+        """
+        End connect loop and disconnect
+        """
+        if self.should_not_connect is not None:
             logger.debug("disconnect: disconnecting..")
-            self.BeaconData = {}
-            self.connected = False
-            self.should_run = False
+            self.cleanup()
+            self.beacon_data = {}
+            self.should_not_connect.set()
             wait = RECONNECT_TIMEOUT
             logger.debug(f"disconnect: ..asked to stop connect_loop.. (this may last {wait} secs.)")
             self.connect_thread.join(timeout=wait)
             if self.connect_thread.is_alive():
                 logger.warning(f"disconnect: ..thread may hang..")
+            self.should_not_connect = None
             logger.debug("disconnect: ..disconnected")
         else:
-            logger.debug("disconnect: not connected")
+            if self.connected:
+                self.beacon_data = {}
+                logger.debug("disconnect: ..connect_loop not running..disconnected")
+            else:
+                logger.debug("disconnect: ..not connected")
 
 
 class XPlaneUDP(XPlane, XPlaneBeacon):
@@ -231,7 +248,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         XPlane.__init__(self, decks=decks)
         XPlaneBeacon.__init__(self)
 
-        self.exit_loop = None
+        self.no_dref_listener = None
         self.defaultFreq = 1
 
         # list of requested datarefs with index number
@@ -260,8 +277,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
-        if not self.is_connected():
-            logger.warning(f"WriteDataRef: no connection ({dataref})")
+        if not self.connected:
+            logger.warning(f"WriteDataRef: no connection ({dataref}={value})")
             return
 
         cmd = b"DREF\x00"
@@ -276,9 +293,9 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert(len(message)==509)
-        logger.debug(f"WriteDataRef: ({self.BeaconData['IP']}, {self.BeaconData['Port']}): {dataref}={value} ..")
+        logger.debug(f"WriteDataRef: ({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
         logger.log(SPAM, f"WriteDataRef: {dataref}={value}")
-        self.socket.sendto(message, (self.BeaconData["IP"], self.BeaconData["Port"]))
+        self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.debug(f"WriteDataRef: .. sent")
 
     def AddDataRef(self, dataref, freq = None):
@@ -286,7 +303,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         '''
-        if not self.is_connected():
+        if not self.connected:
             logger.warning(f"AddDataRef: no connection ({dataref}, {freq})")
             return
         idx = -9999
@@ -308,7 +325,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         string = dataref.encode()
         message = struct.pack("<5sii400s", cmd, freq, idx, string)
         assert(len(message)==413)
-        self.socket.sendto(message, (self.BeaconData["IP"], self.BeaconData["Port"]))
+        self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         if self.datarefidx%100 == 0:
             time.sleep(0.2)
 
@@ -353,27 +370,27 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         if command is None or command in NO_COMMAND:
             logger.warning(f"ExecuteCommand: command {command} not sent (command placeholder, no command, do nothing)")
             return
-        if not self.is_connected():
+        if not self.connected:
             logger.warning(f"ExecuteCommand: no connection ({command})")
             return
         if command.lower() in ["none", "placeholder"]:
             logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
             return
         message = 'CMND0' + command
-        self.socket.sendto(message.encode(), (self.BeaconData["IP"], self.BeaconData["Port"]))
+        self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.log(SPAM, f"ExecuteCommand: executed {command}")
 
-    def loop(self):
-        logger.debug(f"loop: started..")
+    def dataref_listener(self):
+        logger.debug(f"dataref_listener: starting..")
         i = 0
         total_to = 0
         j1, j2 = 0, 0
         tot1, tot2 = 0.0, 0.0
-        while not self.exit_loop.is_set():
+        while not self.no_dref_listener.is_set():
             nexttime = DATA_REFRESH
             i = i + 1
             if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0 and j1 > 0:
-                logger.debug(f"loop: {i}: {datetime.datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
+                logger.debug(f"dataref_listener: {i}: {datetime.datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
             if len(self.datarefs) > 0:
                 try:
                     now = time.time()
@@ -391,17 +408,17 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     nexttime = DATA_REFRESH - (later - now)
                     total_to = 0
                 except XPlaneTimeout:
-                    logger.info(f"loop: XPlaneTimeout ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
                     total_to = total_to + 1
-                    if total_to > MAX_TIMEOUT_COUNT:  # attemps to reconnect
-                        logger.warning(f"loop: too many times out, disconnecting, dataref listener terminated")  # ignore
-                        self.connected = False  # notify above that connection lost
-                        self.exit_loop.set()
+                    logger.info(f"dataref_listener: XPlaneTimeout ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
+                        logger.warning(f"dataref_listener: too many times out, disconnecting, dataref listener terminated")  # ignore
+                        self.beacon_data = {}
+                        self.no_dref_listener.set()
 
-            if not self.exit_loop.is_set() and nexttime > 0:
-                self.exit_loop.wait(nexttime)
-        self.exit_loop = None
-        logger.debug(f"loop: ..terminated")
+            if not self.no_dref_listener.is_set() and nexttime > 0:
+                self.no_dref_listener.wait(nexttime)
+        self.no_dref_listener = None
+        logger.debug(f"dataref_listener: ..terminated")
 
     # ################################
     # X-Plane Interface
@@ -416,7 +433,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.ExecuteCommand(command+"/end")
 
     def clean_datarefs_to_monitor(self):
-        if not self.is_connected():
+        if not self.connected:
             logger.warning(f"clean_datarefs_to_monitor: no connection")
             return
         for i in range(len(self.datarefs)):
@@ -425,7 +442,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.debug(f"clean_datarefs_to_monitor: done")
 
     def add_datarefs_to_monitor(self, datarefs):
-        if not self.is_connected():
+        if not self.connected:
             logger.warning(f"add_datarefs_to_monitor: no connection")
             logger.debug(f"add_datarefs_to_monitor: would add {datarefs.keys()}")
             return
@@ -438,7 +455,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
-        if not self.is_connected() and len(self.datarefs_to_monitor) > 0:
+        if not self.connected and len(self.datarefs_to_monitor) > 0:
             logger.warning(f"remove_datarefs_to_monitor: no connection")
             logger.debug(f"remove_datarefs_to_monitor: would remove {datarefs.keys()}")
             return
@@ -457,7 +474,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         super().remove_datarefs_to_monitor(datarefs)
 
     def remove_all_datarefs(self):
-        if not self.is_connected() and len(self.all_datarefs) > 0:
+        if not self.connected and len(self.all_datarefs) > 0:
             logger.warning(f"remove_all_datarefs: no connection")
             logger.debug(f"remove_all_datarefs: would remove {self.all_datarefs.keys()}")
             return
@@ -466,7 +483,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         super().remove_all_datarefs()
 
     def add_all_datarefs_to_monitor(self):
-        if not self.is_connected():
+        if not self.connected:
             logger.warning(f"add_all_datarefs_to_monitor: no connection")
             return
         # Add those to monitor
@@ -476,14 +493,21 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             prnt.append(path)
         logger.log(SPAM, f"add_all_datarefs_to_monitor: added {prnt}")
 
+    def cleanup(self):
+        """
+        Called when before disconnecting.
+        Just before disconnecting, we try to cancel dataref UDP reporting in X-Plane
+        """
+        self.clean_datarefs_to_monitor()
+
     def start(self):
-        if not self.is_connected():
+        if not self.connected:
             logger.warning(f"start: no IP address. could not start.")
             return
-        if self.exit_loop is None:
-            self.exit_loop = threading.Event()
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"XPlaneUDP::datarefs_watcher"
+        if self.no_dref_listener is None:
+            self.no_dref_listener = threading.Event()
+            self.thread = threading.Thread(target=self.dataref_listener)
+            self.thread.name = f"XPlaneUDP::datarefs_listener"
             self.thread.start()
             logger.info(f"start: XPlaneUDP started")
         else:
@@ -492,26 +516,27 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # then reload datarefs from current page of each deck
         self.clean_datarefs_to_monitor()
         self.add_all_datarefs_to_monitor()
-        self.cockpit.reload_pages()
+        self.cockpit.reload_pages()  # to take into account updated values
 
     def stop(self):
-        if self.exit_loop is not None:
-            self.exit_loop.set()
+        if self.no_dref_listener is not None:
+            self.no_dref_listener.set()
             logger.debug(f"stop: stopping..")
-            logger.debug(f"stop: ..asked to stop loop (this may last {SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
-            self.thread.join(SOCKET_TIMEOUT)
+            wait = SOCKET_TIMEOUT
+            logger.debug(f"stop: ..asked to stop dataref listener (this may last {wait} secs. for UDP socket to timeout)..")
+            self.thread.join(wait)
             if self.thread.is_alive():
                 logger.warning(f"stop: ..thread may hang in socket.recvfrom()..")
-            self.exit_loop = None
+            self.no_dref_listener = None
             logger.debug(f"stop: ..stopped")
         else:
-            logger.info(f"stop: not running")
+            logger.debug(f"stop: not running")
 
     # ################################
     # Cockpit interface
     #
     def terminate(self):
-        logger.debug(f"terminate: currently {'not ' if self.exit_loop is None else ''}running. terminating..")
+        logger.debug(f"terminate: currently {'not ' if self.no_dref_listener is None else ''}running. terminating..")
         self.remove_all_datarefs()
         logger.info(f"terminate: terminating..disconnecting..")
         self.disconnect()

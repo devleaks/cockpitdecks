@@ -23,7 +23,6 @@ class XPlaneSDK(XPlane):
     def __init__(self, decks):
         XPlane.__init__(self, decks=decks)
         self.use_flight_loop = True
-        self.connected = True
 
         self.events = Queue()
 
@@ -34,6 +33,10 @@ class XPlaneSDK(XPlane):
         self.procflfreq = 0.5
 
         self.datarefs = {}          # key = dataref-path, value = Dataref()
+
+    @property
+    def connected(self):
+        return True
 
     def get_dataref(self, path):
         if path in self.all_datarefs.keys():

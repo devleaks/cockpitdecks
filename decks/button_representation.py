@@ -12,11 +12,14 @@ from PIL import ImageDraw, ImageFont
 
 from XTouchMini.Devices.xtouchmini import LED_MODE
 from .color import convert_color, is_integer, has_ext, add_ext
-from .constant import DEFAULT_LABEL_POSITION
 
 logger = logging.getLogger("Representation")
 # logger.setLevel(logging.DEBUG)
 
+# Attribute keyworkds
+KW_MANAGED = "managed"
+
+DEFAULT_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
 # ##########################################
 # REPRESENTATION
@@ -99,10 +102,10 @@ class Icon(Representation):
         self.label_size = int(config.get("label-size", page.default_label_size))
         self.label_color = config.get("label-color", page.default_label_color)
         self.label_color = convert_color(self.label_color)
-        self.label_position = config.get("label-position", DEFAULT_LABEL_POSITION)
+        self.label_position = config.get("label-position", page.default_label_position)
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default")
-            self.label_position = DEFAULT_LABEL_POSITION
+            self.label_position = page.default_label_position
 
         self.icon_color = config.get("icon-color", page.default_icon_color)
         self.icon = config.get("icon")
@@ -162,7 +165,6 @@ class Icon(Representation):
         return self.get_image()
 
     def get_text_detail(self, config, which_text):
-        DEFAULT_TEXT_POSITION = "cm"  # text centered on icon
         text = self.button.get_text(config, which_text)
         text_format = config.get(f"{which_text}-format")
 
@@ -171,7 +173,7 @@ class Icon(Representation):
         text_size = config.get(f"{which_text}-size", page.default_label_size)
         text_color = config.get(f"{which_text}-color", page.default_label_color)
         text_color = convert_color(text_color)
-        text_position = config.get(f"{which_text}-position", DEFAULT_LABEL_POSITION if which_text == "label" else DEFAULT_TEXT_POSITION)
+        text_position = config.get(f"{which_text}-position", page.default_label_position if which_text == "label" else DEFAULT_TEXT_POSITION)
         if text_position[0] not in "lcr" or text_position[1] not in "tmb":
             logger.warning(f"get_text_detail: button {self.button_name()}: {type(self).__name__}: invalid label position code {text_position}, using default")
 
@@ -454,7 +456,7 @@ class IconSide(Icon):
             self.datarefs = []
             if self.labels is not None:
                 for label in self.labels:
-                    dref = label.get("managed")
+                    dref = label.get(KW_MANAGED)
                     if dref is not None:
                         logger.debug(f"get_datarefs: button {self.button_name()}: added label dataref {dref}")
                         self.datarefs.append(dref)
@@ -496,7 +498,7 @@ class IconSide(Icon):
                 txt = label.get("label")
                 if li >= len(vcenter) or txt is None:
                     continue
-                managed = label.get("managed")
+                managed = label.get(KW_MANAGED)
                 if managed is not None:
                     value = self.button.get_dataref_value(managed)
                     txto = txt

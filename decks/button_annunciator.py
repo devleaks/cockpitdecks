@@ -9,7 +9,7 @@ from math import sqrt
 
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
 
-from .constant import FORMULA, ANNUNCIATOR_STYLES
+from .constant import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE
 from .color import convert_color, light_off
 from .rpc import RPC
 from .button_representation import Icon
@@ -17,16 +17,17 @@ from .button_representation import Icon
 logger = logging.getLogger("Annunciator")
 # logger.setLevel(logging.DEBUG)
 
+# Attribute keybords
+KW_ANNUNCIATOR_MODEL = "model"
+KW_DATAREF = "dataref"
 
-# Yeah, shouldn't be globals.
-# Localized here for convenience
-# Can be moved lated.
+# Local default values
+ANNUNCIATOR_DEFAULT_MODEL = "A"
+ANNUNCIATOR_DEFAULT_MODEL_PART = "A0"
+
 ICON_SIZE = 256 # px
 DEFAULT_INVERT_COLOR = "white"
 TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
-
-ANNUNCIATOR_MODEL = "model"
-
 
 class GUARD_TYPES(Enum):
     COVER = "cover"
@@ -35,7 +36,7 @@ class GUARD_TYPES(Enum):
 
 class AnnunciatorPart:
 
-    ANNUNCIATOR_TYPES = {
+    ANNUNCIATOR_PARTS = {
         "A0": [0.50, 0.50],
         "B0": [0.50, 0.25],
         "B1": [0.50, 0.75],
@@ -67,14 +68,14 @@ class AnnunciatorPart:
         self._center_w = None
         self._center_h = None
 
-        if self.name not in AnnunciatorPart.ANNUNCIATOR_TYPES.keys():
+        if self.name not in AnnunciatorPart.ANNUNCIATOR_PARTS.keys():
             logger.error(f"__init__: invalid annunciator part name {self.name}")
 
     def set_sizes(self, annun_width, annun_height):
-        if self.name not in AnnunciatorPart.ANNUNCIATOR_TYPES.keys():
+        if self.name not in AnnunciatorPart.ANNUNCIATOR_PARTS.keys():
             logger.error(f"set_sizes: invalid annunciator part name {self.name}, sizes not set")
             return
-        w, h = AnnunciatorPart.ANNUNCIATOR_TYPES[self.name]
+        w, h = AnnunciatorPart.ANNUNCIATOR_PARTS[self.name]
         self._width = annun_width if w == 0.5 else annun_width / 2
         self._height = annun_height if h == 0.5 else annun_height / 2
         self._center_w = int(w * annun_width)
@@ -106,14 +107,14 @@ class AnnunciatorPart:
             return True
 
         ret = None
-        if FORMULA in self._config:
-            calc = self._config[FORMULA]
+        if KW_FORMULA in self._config:
+            calc = self._config[KW_FORMULA]
             expr = self.annunciator.button.substitute_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
-        elif "dataref" in self._config:
-            dataref = self._config["dataref"]
+        elif KW_DATAREF in self._config:
+            dataref = self._config[KW_DATAREF]
             ret = self.annunciator.button.get_dataref_value(dataref)
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
         else:
@@ -160,7 +161,7 @@ class AnnunciatorPart:
 
         if not self.is_lit():
             try:
-                color = self._config.get("off-color", light_off(color, lightness=self.annunciator.button.page.light_off_intensity/100))
+                color = self._config.get("off-color", light_off(color, lightness=DEFAULT_LIGHT_OFF_INTENSITY/100))
             except ValueError:
                 logger.debug(f"get_color: button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using grey")
                 color = (128, 128, 128)
@@ -305,7 +306,6 @@ class Annunciator(Icon):
             logger.error(f"__init__: button {button.name}: annunciator has no property")
             return
 
-        # self.annunciator = merge({}, ANNUNCIATOR_DEFAULTS, self.annunciator)
         self._part_iterator = None  # cache
         self.annunciator_parts = None
         parts = self.annunciator.get("parts")
@@ -323,11 +323,11 @@ class Annunciator(Icon):
                 self.annunciator_parts = arr
                 logger.debug(f"__init__: button {self.button.name}: annunciator parts normalized ({list(self.annunciator_parts.keys())})")
             else:
-                self.annunciator[ANNUNCIATOR_MODEL] = "A"
-                self.model = "A"
-                arr["A0"] = AnnunciatorPart(name="A0", config=self.annunciator, annunciator=self)
+                self.annunciator[KW_ANNUNCIATOR_MODEL] = ANNUNCIATOR_DEFAULT_MODEL
+                self.model = ANNUNCIATOR_DEFAULT_MODEL
+                arr[ANNUNCIATOR_DEFAULT_MODEL_PART] = AnnunciatorPart(name=ANNUNCIATOR_DEFAULT_MODEL_PART, config=self.annunciator, annunciator=self)
                 self.annunciator_parts = arr
-                logger.debug(f"__init__: button {self.button.name}: annunciator has no part, assuming single A0 part")
+                logger.debug(f"__init__: button {self.button.name}: annunciator has no part, assuming single {ANNUNCIATOR_DEFAULT_MODEL_PART} part")
         else:
             ctrl = list(set([k[0] for k in parts.keys()]))
             if len(ctrl) != 1:
@@ -335,7 +335,7 @@ class Annunciator(Icon):
             self.model = ctrl[0]
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        for a in ["dataref", FORMULA]:
+        for a in [KW_DATAREF, KW_FORMULA]:
             if a in config:
                 logger.warning(f"__init__: button {self.button.name}: annunciator parent button has property {a} which is ignored")
 
@@ -369,7 +369,7 @@ class Annunciator(Icon):
         Build annunciator part index list
         """
         if self._part_iterator is None:
-            t = self.annunciator.get(ANNUNCIATOR_MODEL, "A")
+            t = self.annunciator.get(KW_ANNUNCIATOR_MODEL, ANNUNCIATOR_DEFAULT_MODEL)
             if t not in "ABCDEF":
                 logger.warning(f"part_iterator: button {self.button.name}: invalid annunciator type {t}")
                 return []
@@ -496,7 +496,7 @@ class Annunciator(Icon):
 
         # PART 4: Guard
         if self.button.guard is not None:
-            cover = self.button.guard.get(ANNUNCIATOR_MODEL, GUARD_TYPES.COVER.value)
+            cover = self.button.guard.get(KW_ANNUNCIATOR_MODEL, GUARD_TYPES.COVER.value)
             guard_color = self.button.guard.get("color", "red")
             guard_color = convert_color(guard_color)
             sw = self.button.guard.get("grid-width", 16)
@@ -530,7 +530,7 @@ class Annunciator(Icon):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get(ANNUNCIATOR_MODEL, "A")
+        t = self.annunciator.get(KW_ANNUNCIATOR_MODEL, ANNUNCIATOR_DEFAULT_MODEL)
         a = [
             f"The representation displays an annunciator of type {t}."
         ]
@@ -629,7 +629,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get(ANNUNCIATOR_MODEL, "A")
+        t = self.annunciator.get(KW_ANNUNCIATOR_MODEL, ANNUNCIATOR_DEFAULT_MODEL)
         a = [
             f"The representation displays an annunciator of type {t}.",
             f"This annunciator is blinking every {self.speed} seconds when it is ON."

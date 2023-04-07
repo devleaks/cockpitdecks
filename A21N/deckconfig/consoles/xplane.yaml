@@ -1,3 +1,12 @@
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+---
+aircraft: Toliss A321neo
+description: X-Plane specific actions, not linked to aircraft
+version: 1.0.0
+# ########################
 name: xplane
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
@@ -158,90 +167,6 @@ buttons:
     initial-value: 0
 
 # ### LINE 3 ### 16-23 ######################################################
-  - index: 16
-    type: push
-    name: XTouchMini
-    label: X-Camera
-    annunciator:
-      model: B
-      size: large
-      B0:
-        formula: ${state:activation_count} 2 % 1 - abs
-        text: AVAIL
-        text-color: lime
-      B1:
-        formula: ${state:activation_count} 2 %
-        text: "ON"
-        text-color: deepskyblue
-        framed: true
-    command: SRS/X-Camera/Toggle_Control_Panel_on_or_off
-    initial-value: 0
-  - index: 17
-    type: push
-    name: X-ATC
-    label: X-ATC
-    annunciator:
-      model: B
-      size: large
-      B0:
-        formula: ${state:activation_count} 2 % 1 - abs
-        text: AVAIL
-        text-color: lime
-      B1:
-        formula: ${state:activation_count} 2 %
-        text: "ON"
-        text-color: deepskyblue
-        framed: true
-    command: SRS/X-ATC-Chatter/Toggle_Control_Panel
-    initial-value: 0
-  - index: 18
-    name: STATUS
-    type: inspect
-    icon: COCKPITDECKS
-    label: "STATUS"
-    label-color: red
-    label-position: "cm"
-    what: status
-  - index: 19
-    name: DESCRIBE
-    type: inspect
-    icon: COCKPITDECKS
-    label: "DESCRIBE"
-    label-color: red
-    label-position: "cm"
-    what: desc
-  - index: 20
-    name: INSPECT
-    type: inspect
-    icon: COCKPITDECKS
-    label: "INSPECT"
-    label-color: red
-    label-position: "cm"
-    what: status
-  - index: 21
-    name: DATAREF
-    type: inspect
-    icon: COCKPITDECKS
-    label: "BUTTON\nDATAREFS"
-    label-color: red
-    label-position: "cm"
-    what: dataref
-  - index: 22
-    name: DREFVALUES
-    type: inspect
-    icon: COCKPITDECKS
-    label: "DREFVALUES"
-    label-color: red
-    label-position: "cm"
-    what: datarefs
-  - index: 23
-    name: THREADS
-    type: inspect
-    icon: COCKPITDECKS
-    label: "THREADS"
-    label-color: red
-    label-position: "cm"
-    what: threads
 
 # ### LINE 4 ### 24-31 ######################################################
   # - index: 26
@@ -255,6 +180,11 @@ buttons:
     name: STOP_COCKPITDECKS
     type: stop
     icon: PANIC
+  - index: 26
+    name: Cockpitdecks
+    type: page
+    page: cockpitdecks
+    icon: COCKPITDECKS
   - index: 27
     name: XPLANEDATA
     type: push

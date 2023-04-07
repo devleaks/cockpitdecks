@@ -1,3 +1,12 @@
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+---
+aircraft: Toliss A321neo
+description: Include with all views for Loupedeck Live
+version: 1.0.0
+# ########################
 buttons:
   - index: b0
     name: View Circle Dot

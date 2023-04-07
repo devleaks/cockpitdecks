@@ -1,10 +1,13 @@
-# Definition of decks for Toliss A321
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
 #
 ---
 aircraft: Toliss A321neo
 description: Definition of decks for Toliss A321 + neo add-on
 icao: A21N
 model: Airbus A321-253N (CFM LEAP-1A33)
+# ########################
 decks:
   - name: XPLive
     type: loupedeck
@@ -24,9 +27,8 @@ decks:
     type: xtouchmini
     layout: comm-radio
     brightness: 80
-    # We use X-Touch from X-Keypad for better control
     # disabled: true
-# This is at global level
+# This is at aircraft-level level
 default-wallpaper-logo: logo.png
 default-icon-color: (94, 111, 130)
 default-label-font: DIN Medium.ttf

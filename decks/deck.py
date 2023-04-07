@@ -12,8 +12,8 @@ from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from ruamel.yaml import YAML
 
-from .constant import YAML_BUTTONS_KW, YAML_INCLUDE_KW, CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER
-from .constant import ID_SEP, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT
+from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER
+from .constant import ID_SEP, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import convert_color
 from .page import Page
 from .button import Button
@@ -23,9 +23,10 @@ logger = logging.getLogger("Deck")
 
 yaml = YAML()
 
-
-DEFAULT_PAGE_NAME = "X-Plane"
-BACKPAGE = "back"
+# Attribute keybords
+KW_BUTTONS = "buttons"
+KW_INCLUDES = "includes"
+KW_BACKPAGE = "back"
 
 
 class Deck(ABC):
@@ -93,7 +94,7 @@ class Deck(ABC):
         self.start()    # Some system may need to start before we can load a page
 
     def get_id(self):
-        return ID_SEP.join([self.cockpit.get_id(), self.name])
+        return ID_SEP.join([self.cockpit.get_id(), self.name, self.layout])
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -125,10 +126,10 @@ class Deck(ABC):
         self.default_label_size = config.get("default-label-size", base.default_label_size)
         self.default_label_color = config.get("default-label-color", base.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
+        self.default_label_position = config.get("default-label-position", base.default_label_position)
         self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.light_off_intensity = config.get("light-off", base.light_off_intensity)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
         self.empty_key_fill_color = config.get("empty-key-fill-color", base.empty_key_fill_color)
         self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
@@ -208,8 +209,8 @@ class Deck(ABC):
                         logger.warning(f"load: page {name}: duplicate name, ignored")
                         continue
 
-                    if not YAML_BUTTONS_KW in page_config:
-                        logger.error(f"load: {name} has no button definition '{YAML_BUTTONS_KW}', ignoring")
+                    if not KW_BUTTONS in page_config:
+                        logger.error(f"load: {name} has no button definition '{KW_BUTTONS}', ignoring")
                         continue
 
                     logger.debug(f"load: loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
@@ -218,26 +219,29 @@ class Deck(ABC):
                     self.pages[name] = this_page
 
                     # Page buttons
-                    this_page.load_buttons(page_config[YAML_BUTTONS_KW])
+                    this_page.load_buttons(page_config[KW_BUTTONS])
 
                     # Page includes
-                    if YAML_INCLUDE_KW in page_config:
-                        includes = page_config[YAML_INCLUDE_KW]
-                        if type(page_config[YAML_INCLUDE_KW]) == str:  # just one file
-                            includes = [includes]
-                        logger.debug(f"load: includes: {includes} to page {name}..")
+                    if KW_INCLUDES in page_config:
+                        includes = page_config[KW_INCLUDES]
+                        if type(page_config[KW_INCLUDES]) == str:  # just one file
+                            includes = includes.split(",")
+                        logger.debug(f"load: deck {self.name}: page {name} includes {includes}..")
+                        ipb = 0
                         for inc in includes:
                             fni = os.path.join(dn, inc + ".yaml")
                             if os.path.exists(fni):
                                 with open(fni, "r") as fpi:
                                     inc_config = yaml.load(fpi)
                                     # how to merge? for now, just merge buttons
-                                    if YAML_BUTTONS_KW in inc_config:
-                                        this_page.load_buttons(inc_config[YAML_BUTTONS_KW])
+                                    if KW_BUTTONS in inc_config:
+                                        before = len(this_page.buttons)
+                                        this_page.load_buttons(inc_config[KW_BUTTONS])
+                                        ipb = len(this_page.buttons) - before
                             else:
                                 logger.warning(f"load: includes: {inc}: file {fni} not found")
+                        logger.info(f"load: deck {self.name}: page {name} includes {inc} (from file {fni.replace(self.cockpit.acpath, '... ')}), include contains {ipb} buttons")
                         logger.debug(f"load: includes: ..included")
-
 
                     logger.info(f"load: deck {self.name}: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')}), contains {len(this_page.buttons)} buttons")
                 # else:
@@ -265,7 +269,7 @@ class Deck(ABC):
         if page is None:
             self.load_home_page()
             return
-        if page == BACKPAGE:
+        if page == KW_BACKPAGE:
             if len(self.page_history) > 1:
                 page = self.page_history.pop()  # this page
                 page = self.page_history.pop()  # previous one

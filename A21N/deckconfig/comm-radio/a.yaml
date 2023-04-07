@@ -1,3 +1,12 @@
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+---
+aircraft: Toliss A321neo
+description: Encoders and push buttons on "Page A" of X-Touch mini
+version: 1.0.0
+# ########################
 buttons:
 #
 # BUTTONS

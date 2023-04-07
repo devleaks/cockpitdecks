@@ -27,7 +27,7 @@ class Activation:
     def __init__(self, config: dict, button: "Button"):
         self._config = config
         self.button = button
-        self._has_no_value = False
+        self._has_no_value = False       # Marker that control whether activation has a feedback value
         self._inited = False
         # Options
 
