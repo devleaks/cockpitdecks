@@ -6,7 +6,8 @@
 aircraft: Toliss A321neo
 description: Definition of decks for Toliss A321 + neo add-on
 icao: A21N
-model: Airbus A321-253N (CFM LEAP-1A33)
+model: Airbus A321-253NY (CFM LEAP-1A33)
+# NY = A321 XLR
 # ########################
 decks:
   - name: XPLive

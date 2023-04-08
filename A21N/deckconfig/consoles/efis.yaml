@@ -1,7 +1,9 @@
-name: efis
-version: 3.0.0
+---
+aircraft: Toliss A321neo
 description: EFIS display selector + some FCU commands
-note: final version for Streamdeck 15 keys
+version: 1.0.0
+# ########################
+name: efis
 buttons:
 # ### LINE 1 ###  0 -  4 ######################################################
   - index: 31

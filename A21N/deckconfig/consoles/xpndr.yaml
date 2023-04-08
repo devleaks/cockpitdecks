@@ -240,5 +240,5 @@ buttons:
   - index: 31
     name: Index
     type: page
-    page: index-old
+    page: index-alt
     icon: TOLISS-A321

@@ -32,6 +32,7 @@ MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect,
 
 # The command keywords are not executed, ignored with a warning
 NO_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
+NOT_A_DATAREF = ["DatarefPlaceholder"]
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -263,7 +264,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
 
     def __del__(self):
         for i in range(len(self.datarefs)):
-            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
+            self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
 
     def get_dataref(self, path):
@@ -271,14 +272,18 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             return self.all_datarefs[path]
         return self.register(Dataref(path))
 
-    def WriteDataRef(self, dataref, value, vtype='float'):
+    def write_dataref(self, dataref, value, vtype='float'):
         '''
         Write Dataref to XPlane
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
         if not self.connected:
-            logger.warning(f"WriteDataRef: no connection ({dataref}={value})")
+            logger.warning(f"write_dataref: no connection ({dataref}={value})")
+            return
+
+        if dataref in NOT_A_DATAREF:
+            logger.warning(f"write_dataref: not a dataref ({dataref})")
             return
 
         cmd = b"DREF\x00"
@@ -293,19 +298,24 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert(len(message)==509)
-        logger.debug(f"WriteDataRef: ({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
-        logger.log(SPAM, f"WriteDataRef: {dataref}={value}")
+        logger.debug(f"write_dataref: ({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
+        logger.log(SPAM, f"write_dataref: {dataref}={value}")
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
-        logger.debug(f"WriteDataRef: .. sent")
+        logger.debug(f"write_dataref: .. sent")
 
-    def AddDataRef(self, dataref, freq = None):
+    def add_dataref_to_monitor(self, dataref, freq = None):
         '''
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         '''
         if not self.connected:
-            logger.warning(f"AddDataRef: no connection ({dataref}, {freq})")
+            logger.warning(f"add_dataref_to_monitor: no connection ({dataref}, {freq})")
             return
+
+        if dataref in NOT_A_DATAREF:
+            logger.warning(f"write_dataref: not a dataref ({dataref})")
+            return
+
         idx = -9999
         if freq is None:
             freq = self.defaultFreq
@@ -329,7 +339,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         if self.datarefidx%100 == 0:
             time.sleep(0.2)
 
-    def GetValues(self):
+    def get_values(self):
         """
         Gets the values from X-Plane for each dataref in self.datarefs.
         On returns {dataref-name: value} dict.
@@ -366,19 +376,19 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             raise XPlaneTimeout
         return self.xplaneValues
 
-    def ExecuteCommand(self, command: str):
+    def execute_command(self, command: str):
         if command is None or command in NO_COMMAND:
-            logger.warning(f"ExecuteCommand: command {command} not sent (command placeholder, no command, do nothing)")
+            logger.warning(f"execute_command: command {command} not sent (command placeholder, no command, do nothing)")
             return
         if not self.connected:
-            logger.warning(f"ExecuteCommand: no connection ({command})")
+            logger.warning(f"execute_command: no connection ({command})")
             return
         if command.lower() in ["none", "placeholder"]:
-            logger.debug(f"ExecuteCommand: not executed command '{command}' (place holder)")
+            logger.debug(f"execute_command: not executed command '{command}' (place holder)")
             return
         message = 'CMND0' + command
         self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
-        logger.log(SPAM, f"ExecuteCommand: executed {command}")
+        logger.log(SPAM, f"execute_command: executed {command}")
 
     def dataref_listener(self):
         logger.debug(f"dataref_listener: starting..")
@@ -395,7 +405,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                 try:
                     now = time.time()
                     with self.dataref_db_lock:
-                        self.current_values = self.GetValues()
+                        self.current_values = self.get_values()
                     later = time.time()
                     j2 = j2 + 1
                     tot2 = tot2 + (later - now)
@@ -424,20 +434,20 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     # X-Plane Interface
     #
     def commandOnce(self, command: str):
-        self.ExecuteCommand(command)
+        self.execute_command(command)
 
     def commandBegin(self, command: str):
-        self.ExecuteCommand(command+"/begin")
+        self.execute_command(command+"/begin")
 
     def commandEnd(self, command: str):
-        self.ExecuteCommand(command+"/end")
+        self.execute_command(command+"/end")
 
     def clean_datarefs_to_monitor(self):
         if not self.connected:
             logger.warning(f"clean_datarefs_to_monitor: no connection")
             return
         for i in range(len(self.datarefs)):
-            self.AddDataRef(next(iter(self.datarefs.values())), freq=0)
+            self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         super().clean_datarefs_to_monitor()
         logger.debug(f"clean_datarefs_to_monitor: done")
 
@@ -450,7 +460,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         super().add_datarefs_to_monitor(datarefs)
         prnt = []
         for d in datarefs.values():
-            self.AddDataRef(d.path, freq=DATAREF_SLOW.get(d.path, DATA_SENT))
+            self.add_dataref_to_monitor(d.path, freq=DATAREF_SLOW.get(d.path, DATA_SENT))
             prnt.append(d.path)
         logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
 
@@ -464,7 +474,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         for d in datarefs.values():
             if d.path in self.datarefs_to_monitor.keys():
                 if self.datarefs_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
-                    self.AddDataRef(d.path, freq=0)
+                    self.add_dataref_to_monitor(d.path, freq=0)
                     prnt.append(d.path)
                 else:
                     logger.debug(f"remove_datarefs_to_monitor: {d.path} monitored {self.datarefs_to_monitor[d.path]} times")
@@ -489,7 +499,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # Add those to monitor
         prnt = []
         for path in self.datarefs_to_monitor.keys():
-            self.AddDataRef(path, freq=DATA_SENT)
+            self.add_dataref_to_monitor(path, freq=DATA_SENT)
             prnt.append(path)
         logger.log(SPAM, f"add_all_datarefs_to_monitor: added {prnt}")
 

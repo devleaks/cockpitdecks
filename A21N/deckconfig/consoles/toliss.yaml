@@ -11,7 +11,7 @@ buttons:
   - index: 31
     name: Old Index
     type: page
-    page: index-old
+    page: index-alt
     icon: TOLISS-A321
   - index: 6
     name: ISCS

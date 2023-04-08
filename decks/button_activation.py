@@ -103,7 +103,7 @@ class Activation:
         Should be the last call in activate() if activation succeeded.
         """
         if dataref is not None:
-            self.button.xp.WriteDataRef(dataref=dataref, value=value, vtype='float')
+            self.button.xp.write_dataref(dataref=dataref, value=value, vtype='float')
             logger.debug(f"write_dataref: button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
         else:
             logger.debug(f"write_dataref: button {self.button_name()}: {type(self).__name__} has no set-dataref")

@@ -6,11 +6,11 @@ import re
 import logging
 import threading
 import time
+from enum import Enum
 from ruamel.yaml import YAML
 
 from PIL import ImageDraw, ImageFont
 
-from XTouchMini.Devices.xtouchmini import LED_MODE
 from .color import convert_color, is_integer, has_ext, add_ext
 
 logger = logging.getLogger("Representation")
@@ -763,6 +763,15 @@ class ColoredLED(Representation):
             f"The representation turns ON or OFF a single LED light and changes the color of the LED."
         ]
         return "\n\r".join(a)
+
+
+# from XTouchMini.Devices.XTouchMini import LED_MODE
+
+class LED_MODE(Enum):
+    SINGLE = 0
+    TRIM = 1
+    FAN = 2
+    SPREAD = 3
 
 
 class MultiLEDs(Representation):

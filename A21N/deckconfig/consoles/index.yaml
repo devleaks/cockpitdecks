@@ -1,3 +1,8 @@
+---
+aircraft: Toliss A321neo
+description: Bottom part of overhead panel
+version: 1.0.0
+# ########################
 name: index
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
@@ -320,7 +325,7 @@ buttons:
   - index: 31
     name: Index
     type: page
-    page: index-old
+    page: index-alt
     icon: TOLISS-A321
 # AirbusFBW/OHPLightSwitches
 # Strobe: 7 0,1,2

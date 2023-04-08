@@ -1,5 +1,9 @@
+---
+aircraft: Toliss A321neo
+description: ADIRS Start/stop
+version: 1.0.0
+# ########################
 name: adirs
-# To do: AirbusFBW/ADIRUOnBat
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0

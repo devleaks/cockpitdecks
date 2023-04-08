@@ -1,7 +1,9 @@
-name: ecam
-version: 2.0.0
+---
+aircraft: Toliss A321neo
 description: ECAM display selector
-note: final version for Streamdeck 15 keys
+version: 1.0.0
+# ########################
+name: ecam
 buttons:
   - index: 31
     type: page

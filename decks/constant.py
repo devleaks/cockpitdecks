@@ -53,4 +53,4 @@ class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"           # k(orry): backlit, glowing
     VIVISUN = "v"         # v(ivisun): bright, sharp.
 
-DEFAULT_ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.VIVISUN
+DEFAULT_ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.KORRY

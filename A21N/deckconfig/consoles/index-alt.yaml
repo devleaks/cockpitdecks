@@ -4,8 +4,9 @@
 # 1.0.0  03-APR-2023  Moved MCDU for both side to middle row
 #
 ---
-name: index-old
+name: index-alt
 version: 1.0.0
+note:
 buttons:
 # ### LINE 1 ###  0- 7 ######################################################
   - index: 0

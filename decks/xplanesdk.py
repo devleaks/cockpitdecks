@@ -46,16 +46,16 @@ class XPlaneSDK(XPlane):
     # ################################
     # Dataref values reading (poll loop)
     #
-    def GetValues(self):
+    def get_values(self):
         """
         Gets the values from X-Plane for each dataref in self.datarefs.
         Only returns {dataref-name: value} dict.
         """
         self.xplaneValues = {}
         for dataref in self.datarefs.values():
-            # logger.debug(f"GetValues: getting {dataref.path}.")
+            # logger.debug(f"get_values: getting {dataref.path}.")
             self.xplaneValues[dataref.path] = dataref.value
-            # logger.debug(f"GetValues: .. got {dataref.path} = {self.xplaneValues[dataref.path]}")
+            # logger.debug(f"get_values: .. got {dataref.path} = {self.xplaneValues[dataref.path]}")
         return self.xplaneValues
 
     def dataref_fl(self, elapsedSinceLastCall, elapsedTimeSinceLastFlightLoop, counter, inRefcon):
@@ -66,7 +66,7 @@ class XPlaneSDK(XPlane):
         try:
             if len(self.datarefs) > 0:
                 # logger.debug(f"dataref_fl: getting values..")
-                self.current_values = self.GetValues()
+                self.current_values = self.get_values()
                 # logger.debug(f"dataref_fl: ..done")
                 self.detect_changed()
             else:
@@ -101,7 +101,7 @@ class XPlaneSDK(XPlane):
     # X-Plane Interface
     #
     def commandOnce(self, command: str):
-        cmdref = xp.findCommand(command)
+        cmdref = xp.findCommand(command)  # should may be cache cmdref?
         if cmdref is not None:
             xp.commandOnce(cmdref)
         else:
