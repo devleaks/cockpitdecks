@@ -48,16 +48,29 @@ ln -s /opt/homebrew/lib/libhidapi.dylib .
 
 If you use xtouchmini, you must use python<3.11 beecause as today (20-MAR-2023) rtmidi does not compile on cython 3.11.
 
-## Publicly available
+## Global packages required by Cockpitdecks
 
 ```
-$ pip install ruamel.yaml pillow avwx-engine scipy pyserial python-rtmidi mido streamdeck
+$ pip install ruamel.yaml pillow 'avwx-engine[scipy]''
 ```
 
-## Private repos (not in pip repository)
+## Packages required depending on the deck(s) model(s) used
+
+### Elgato Streamdeck
+
+```
+$ pip install streamdeck
+```
+
+### Loupedeck LoupedeckLive
 
 ```
 $ pip install git+https://github.com/devleaks/python-loupedeck-live.git
+```
+
+### Beringher X Touch Mini
+
+```
 $ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
 ```
 

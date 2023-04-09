@@ -18,7 +18,6 @@ from .color import convert_color, has_ext
 
 from . import __version__
 from .devices import DECK_TYPES
-from .streamdeck import FLIP_DESCRIPTION
 
 logging.addLevelName(SPAM, "SPAM")
 
@@ -154,7 +153,7 @@ class Cockpit:
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
-                    logger.debug(f"get_device: deck {deck['serial_number']}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees, {FLIP_DESCRIPTION[image_format['flip']] if image_format['flip'] is not None else 'None'}")
+                    logger.debug(f"get_device: deck {deck['serial_number']}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees")
                 else:
                     logger.debug(f"get_device: deck {deck['serial_number']}: no visual")
                 device.reset()
