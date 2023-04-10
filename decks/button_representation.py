@@ -823,9 +823,6 @@ class MultiLEDs(Representation):
 from .button_annunciator import Annunciator, AnnunciatorAnimate
 from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 
-# Calls external services
-from .button_ext import WeatherIcon
-
 #
 # ###############################
 # REPRESENTATIONS
@@ -848,6 +845,22 @@ REPRESENTATIONS = {
     "circular-switch": CircularSwitch,
     "push-switch": PushSwitch,
     "data": DataIcon,
-    "ftg": DrawAnimationFTG,
-    "weather": WeatherIcon
+    "ftg": DrawAnimationFTG
 }
+
+
+#
+# ###############################
+# OPTIONAL REPRESENTATIONS
+#
+#
+# Will only load if AVWX is installed
+try:
+    from .button_ext import WeatherIcon
+    REPRESENTATIONS["weather"] = WeatherIcon
+    logger.info(f"WeatherIcon installed")
+except ImportError:
+    pass
+
+
+
