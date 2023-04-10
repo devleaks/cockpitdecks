@@ -121,6 +121,10 @@ class Cockpit:
             logger.info(f"to do")
 
     def scan_devices(self):
+        if len(DECK_TYPES) == 0:
+            logger.error(f"scan_devices: no driver")
+            return
+        logger.info(f"scan_devices: drivers installed for {', '.join(DECK_TYPES.keys())}; scanning..")
         for decktype, builder in DECK_TYPES.items():
             decks = builder[1]().enumerate()
             logger.info(f"scan_devices: found {len(decks)} {decktype} ({decktype} {pkg_resources.get_distribution(decktype).version})")
@@ -137,6 +141,7 @@ class Cockpit:
                     "serial_number": serial
                 })
             logger.debug(f"scan_devices: using {len(decks)} {decktype}")
+        logger.debug(f"scan_devices: ..scanned")
 
 
     def get_device(self, req_serial: str, req_type: str):

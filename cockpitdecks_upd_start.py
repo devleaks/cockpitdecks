@@ -22,6 +22,7 @@ try:
     #     logger.info(f"..debug..")
     s = Cockpit(XPlaneUDP)
     s.start_aircraft(os.path.join(os.path.dirname(__file__), ac))
+    logger.info(f"..{ac} terminated.")
 except KeyboardInterrupt:
     if s is not None:
         s.terminate_all()

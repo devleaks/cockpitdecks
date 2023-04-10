@@ -157,6 +157,8 @@ class Button:
         elif len(a) == 0:
             if "none" not in valid_representations:
                 logger.warning(f"guess_representation_type: no represetation in {config}")
+            else:
+                logger.warning(f"guess_representation_type: no represetation in {config}, but no representation is OK (should be in {', '.join(REPRESENTATIONS.keys())})")
         else:
             logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")
         return "none"
