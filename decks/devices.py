@@ -2,29 +2,34 @@
 #
 # If a model of deck listed below is not available, comment out the lines.
 #
+import logging
+logger = logging.getLogger("Device")
+logger.setLevel(logging.INFO)
 
-# Hardware deck device handlers
-from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
-from Loupedeck  import DeviceManager as LoupedeckDeviceManager
-from XTouchMini import DeviceManager as XTouchMiniDeviceManager
+DECK_TYPES = {}
 
-# Cockpitdecks representations of decks
-from .streamdeck import Streamdeck
-from .loupedeck  import Loupedeck
-from .xtouchmini import XTouchMini
+try:
+    from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
+    from .streamdeck import Streamdeck
+    DECK_TYPES["streamdeck"] = [Streamdeck, StreamDeckDeviceManager]
+    logger.info(f"Streamdeck drivers installed")
+except ImportError:
+    pass
 
 
-# Deck type matches attribute type in config.yaml file:
-#
-# decks:
-#   type: loupedeck
-#
-# This links the deck type, its hardware device manager, and Cockpitdecks representating class.
-#
-# DECK_TYPES = { "type": [ CockpitdecksClass, DeckDeviceManager ], ... }
-#
-DECK_TYPES = {
-    "streamdeck": [Streamdeck, StreamDeckDeviceManager],
-    "loupedeck":  [Loupedeck,  LoupedeckDeviceManager],
-    "xtouchmini": [XTouchMini, XTouchMiniDeviceManager]
-}
+try:
+    from Loupedeck  import DeviceManager as LoupedeckDeviceManager
+    from .loupedeck  import Loupedeck
+    DECK_TYPES["loupedeck"] = [Loupedeck,  LoupedeckDeviceManager]
+    logger.info(f"Loupedeck drivers installed")
+except ImportError:
+    pass
+
+
+try:
+    from XTouchMini import DeviceManager as XTouchMiniDeviceManager
+    from .xtouchmini import XTouchMini
+    DECK_TYPES["xtouchmini"] = [XTouchMini, XTouchMiniDeviceManager]
+    logger.info(f"Berhinger drivers installed")
+except ImportError:
+    pass
