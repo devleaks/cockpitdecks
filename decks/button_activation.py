@@ -1165,30 +1165,3 @@ class Swipe(Activation):
             f"This surface is used to monitor swipes of a finger over the surface.",
             f"There currently is no handling of this type of activation."
         ])
-
-
-#
-# ###############################
-# ACTIVATIONS
-#
-#
-ACTIVATIONS = {
-    "none": Activation,
-    "page": LoadPage,
-    "reload": Reload,
-    "inspect": Inspect,
-    "stop": Stop,
-    "push": Push,
-    "longpress": Longpress,
-    "onoff": OnOff,
-    "updown": UpDown,
-    "encoder": Encoder,
-    "encoder-push": EncoderPush,
-    "encoder-onoff": EncoderOnOff,
-    "encoder-value": EncoderValue,
-    "knob": EncoderValue,
-    "slider": Slider,
-    "cursor": Slider,
-    "swipe": Swipe
-}
-

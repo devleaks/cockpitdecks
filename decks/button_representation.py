@@ -1,5 +1,6 @@
 """
-Button display and rendering abstraction
+Button display and rendering abstraction.
+All representations are listed at the end of this file.
 """
 import logging
 import re
@@ -816,18 +817,16 @@ class MultiLEDs(Representation):
         return "\n\r".join(a)
 
 #
-# ###############################
+# #############################################################################################
+# #############################################################################################
+#
+# REPRESENTATIONS
 #
 # "Icon" Buttons that are dynamically drawn
 #
 from .button_annunciator import Annunciator, AnnunciatorAnimate
 from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 
-#
-# ###############################
-# REPRESENTATIONS
-#
-#
 REPRESENTATIONS = {
     "none": Representation,
     "icon": Icon,
@@ -847,7 +846,6 @@ REPRESENTATIONS = {
     "data": DataIcon,
     "ftg": DrawAnimationFTG
 }
-
 
 #
 # ###############################

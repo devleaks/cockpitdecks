@@ -12,8 +12,8 @@ import sys
 from datetime import datetime
 from ruamel.yaml import YAML
 
-from .button_activation import ACTIVATIONS
-from .button_representation import REPRESENTATIONS, Annunciator
+from .activation import ACTIVATIONS
+from .representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
 from .constant import ID_SEP, SPAM, KW_FORMULA, WEATHER_ICON_FONT, ICON_FONT
 from .rpc import RPC
