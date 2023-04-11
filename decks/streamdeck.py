@@ -11,7 +11,7 @@ from StreamDeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import convert_color
-from .deck import Deck
+from .deck import DeckWithIcons
 from .page import Page
 from .button import Button
 from .button_representation import Icon  # valid representations for this type of deck
@@ -29,14 +29,14 @@ FLIP_DESCRIPTION = {
     (True, True): "mirrored horizontally/vertically"
 }
 
-class Streamdeck(Deck):
+class Streamdeck(DeckWithIcons):
     """
     Loads the configuration of a Stream Deck.
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
 
-        Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
+        DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.pil_helper = PILHelper
 

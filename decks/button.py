@@ -156,11 +156,15 @@ class Button:
             return a[0]
         elif len(a) == 0:
             if "none" not in valid_representations:
-                logger.warning(f"guess_representation_type: no represetation in {config}")
+                logger.warning(f"guess_representation_type: no representation in {config}")
+            elif "representation" in config:
+                r = config.get("representation")
+                if r is None:
+                    logger.debug(f"guess_representation_type: no representation")
             else:
-                logger.warning(f"guess_representation_type: no represetation in {config}, but no representation is OK (should be in {', '.join(REPRESENTATIONS.keys())})")
+                logger.debug(f"guess_representation_type: no representation in {config}, but no representation is OK (should be in {', '.join(REPRESENTATIONS.keys())})")
         else:
-            logger.warning(f"guess_representation_type: multiple represetation {a} in {config}")
+            logger.warning(f"guess_representation_type: multiple representation {a} in {config}")
         return "none"
 
     def get_id(self):

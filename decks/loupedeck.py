@@ -11,7 +11,7 @@ from Loupedeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
 from .color import convert_color, is_integer
-from .deck import Deck
+from .deck import DeckWithIcons
 from .page import Page
 from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
@@ -55,14 +55,14 @@ VIBRATION_MODES = [
 BUTTON_PREFIX = "b"
 KNOB_PREFIX = "knob"
 
-class Loupedeck(Deck):
+class Loupedeck(DeckWithIcons):
     """
     Loads the configuration of a Loupedeck.
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
 
-        Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
+        DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.pil_helper = PILHelper
 

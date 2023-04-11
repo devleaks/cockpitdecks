@@ -44,9 +44,6 @@ class Deck(ABC):
 
         self.set_default(config, cockpit)
 
-        self.pil_helper = None
-        self.icons = {}  # icons ready for this deck
-
         self.layout_config = {}
         self.pages = {}
         self.home_page = None           # this is a Page, not a str.
@@ -88,8 +85,6 @@ class Deck(ABC):
         if not self.valid:
             logger.warning(f"init: deck {self.name}: is invalid")
             return
-        self.make_default_icon()
-        self.load_icons()
         self.load()     # will load default page if no page found
         self.start()    # Some system may need to start before we can load a page
 
@@ -322,19 +317,6 @@ class Deck(ABC):
         else:
             logger.debug(f"load_home_page: deck {self.name} has no home page")
 
-    # #######################################
-    # Deck Specific Functions
-    #
-    # #######################################
-    # Deck Specific Functions : Definition
-    #
-    @abstractmethod
-    def get_display_for_pil(self):
-        """
-        Return device or device element to use for PIL.
-        """
-        pass
-
     @abstractmethod
     def make_default_page(self, b: str = None):
         """
@@ -355,6 +337,87 @@ class Deck(ABC):
 
     def valid_representations(self, index = None):
         return ["none"]
+
+    # #######################################
+    # Deck Specific Functions : Activation
+    #
+    def key_change_callback(self, deck, key, state):
+        """
+        This is the function that is called when a key is pressed.
+        """
+        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
+        if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+            self.cockpit.xp.events.put([self.name, key, state])
+            logger.debug(f"key_change_callback: {key} {state} enqueued")
+        else:
+            # logger.debug(f"key_change_callback: {key} {state}")
+            self.key_change_processing(deck, key, state)
+
+    def key_change_processing(self, deck, key, state):
+        """
+        This is the function that is called when a key is pressed.
+        """
+        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
+        if self.current_page is not None and key in self.current_page.buttons.keys():
+            self.current_page.buttons[key].activate(state)
+
+    # #######################################
+    # Deck Specific Functions : Representation
+    #
+    def print_page(self, page: Page):
+        pass
+
+    @abstractmethod
+    def render(self, button: Button):
+        pass
+
+    # #######################################
+    # Deck Specific Functions : Device
+    #
+    @abstractmethod
+    def start(self):
+        pass
+
+    def terminate(self):
+        for p in self.pages.values():
+            p.terminate()
+        self.pages = {}
+
+
+class DeckWithIcons(Deck):
+    """
+    Loads the configuration of a Deck.
+    A Deck has a collection of Pages, and knows which one is currently being displayed.
+    """
+
+    def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
+
+        Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
+
+        self.pil_helper = None
+        self.icons = {}  # icons ready for this deck
+
+    # #######################################
+    # Deck Specific Functions
+    #
+    # #######################################
+    # Deck Specific Functions : Installation
+    #
+    def init(self):
+        if not self.valid:
+            logger.warning(f"init: deck {self.name}: is invalid")
+            return
+        self.make_default_icon()
+        self.load_icons()
+        self.load()     # will load default page if no page found
+        self.start()    # Some system may need to start before we can load a page
+
+    def get_display_for_pil(self):
+        """
+        Return device or device element to use for PIL.
+        """
+        return None
 
     def make_default_icon(self):
         """
@@ -402,53 +465,7 @@ class Deck(ABC):
         return None
 
     # #######################################
-    # Deck Specific Functions : Activation
+    # Deck Specific Functions : Rendering
     #
-    def key_change_callback(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
-        if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-            self.cockpit.xp.events.put([self.name, key, state])
-            logger.debug(f"key_change_callback: {key} {state} enqueued")
-        else:
-            # logger.debug(f"key_change_callback: {key} {state}")
-            self.key_change_processing(deck, key, state)
-
-    def key_change_processing(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
-        if self.current_page is not None and key in self.current_page.buttons.keys():
-            self.current_page.buttons[key].activate(state)
-
-    # #######################################
-    # Deck Specific Functions : Representation
-    #
-    def _vibrate(self, pattern: str):
-        pass
-
     def _send_key_image_to_device(self, key, image):
         pass
-
-    def print_page(self, page: Page):
-        pass
-
-    @abstractmethod
-    def render(self, button: Button):
-        pass
-
-    # #######################################
-    # Deck Specific Functions : Device
-    #
-    @abstractmethod
-    def start(self):
-        pass
-
-    def terminate(self):
-        for p in self.pages.values():
-            p.terminate()
-        self.pages = {}
