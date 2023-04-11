@@ -17,9 +17,10 @@ from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
 
 logger = logging.getLogger("Loupedeck")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # Warning, the logger in package Loupedeck is also called "Loupedeck".
 
+SIDE_INDIVIDUAL_KEYS = True
 
 VIBRATION_MODES = [
     "SHORT",
@@ -208,6 +209,7 @@ class Loupedeck(DeckWithIcons):
             """
             Either execute function direactly or enqueue it for later dequeue.
             """
+            logger.debug(f"key_change_callback: Deck {this_deck.id()} Key {this_key} = {this_state}")
             if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
                 self.cockpit.xp.events.put([self.name, this_key, this_state])
                 # logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
@@ -220,6 +222,7 @@ class Loupedeck(DeckWithIcons):
             logger.debug(f"key_change_callback: invalid message {msg}")
             return
 
+        L = 270
         key = msg["id"]
         action = msg["action"]
 
@@ -252,7 +255,21 @@ class Loupedeck(DeckWithIcons):
                 transfer(deck, key, state)
             else:
                 self.touches[msg["id"]] = msg
-                logger.warning(f"key_change_callback: side bar touched, no processing")
+                if SIDE_INDIVIDUAL_KEYS:
+                    k = None
+                    i = 0
+                    while k is None and i < 3:
+                        if msg["y"] >= int(i*L/3) and msg["y"] < int((i+1)*L/3):
+                            k = f"{msg['screen'][0].upper()}{i}"
+                        i = i + 1
+                    logger.debug(f"key_change_callback: side bar pressed, SIDE_INDIVIDUAL_KEYS event {k} = {state}")
+                    # This transfer a (virtual) button push event
+                    transfer(deck, k, state)
+                    # WATCH OUT! If the release occurs in another key (virtual or not),
+                    # the corresponding release event will be not be sent to the same, original key
+                else:
+                    logger.warning(f"key_change_callback: side bar touched, no processing")
+                    logger.debug(f"key_change_callback: side bar touched, no processing msg={msg}")
 
         elif action == "touchend":  # since user can "release" touch in another key, we send the touchstart one.
             state = 0
@@ -264,8 +281,8 @@ class Loupedeck(DeckWithIcons):
                 else:
                     dx = msg["x"] - self.touches[msg["id"]]["x"]
                     dy = msg["y"] - self.touches[msg["id"]]["y"]
-                    kstart = msg["key"] if msg["key"] is not None else msg["screen"]
-                    kend = self.touches[msg["id"]]["key"] if self.touches[msg["id"]]["key"] is not None else self.touches[msg["id"]]["screen"]
+                    kstart = self.touches[msg["id"]]["key"] if self.touches[msg["id"]]["key"] is not None else self.touches[msg["id"]]["screen"]
+                    kend = msg["key"] if msg["key"] is not None else msg["screen"]
                     same_key = kstart == kend
                     event_dict = {
                         "begin_key": kstart,
@@ -281,7 +298,36 @@ class Loupedeck(DeckWithIcons):
                     event = [self.touches[msg["id"]]["x"], self.touches[msg["id"]]["y"], kstart]
                     event = event + [msg["x"], msg["y"], kend]
                     event = event + [dx, dy, same_key]
-                    logger.debug(f"key_change_callback: side bar touched, no processing event={event_dict}")
+                    if same_key and SIDE_INDIVIDUAL_KEYS:
+                        # if the press and the release occurs in the same key, we send an individual release of virtual button.
+                        # if the release occurs in another button (virtual or not), we send the release in the button that
+                        # was pressed, and not the button where it was released.
+                        # 1. Where the pressed occured:
+                        pressed = None
+                        i = 0
+                        while pressed is None and i < 3:
+                            if event_dict["begin_y"] >= int(i*L/3) and event_dict["begin_y"] < int((i+1)*L/3):
+                                pressed = f"{event_dict['begin_key'][0].upper()}{i}"
+                            i = i + 1
+
+                        released = None
+                        i = 0
+                        while released is None and i < 3:
+                            if event_dict["end_y"] >= int(i*L/3) and event_dict["end_y"] < int((i+1)*L/3):
+                                released = f"{event_dict['end_key'][0].upper()}{i}"
+                            i = i + 1
+
+                        if pressed is None:
+                            logger.warning(f"key_change_callback: side bar released but no button press found, ignoring")
+                        else:
+                            if pressed != released:
+                                logger.warning(f"key_change_callback: side bar pressed in {pressed} but released {released}, assuming release in {pressed}")
+                            event_dict["small_key"] = pressed
+                            event = event + [pressed]
+                            logger.debug(f"key_change_callback: side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
+                            # This transfer a (virtual) button release event
+                            transfer(deck, pressed, state)
+
                     transfer(deck, kstart, event)
             else:
                 logger.error(f"key_change_callback: received touchend but no matching touchstart found")
