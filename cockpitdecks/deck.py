@@ -76,6 +76,12 @@ class Deck(ABC):
             self.layout = DEFAULT_LAYOUT
             logger.warning(f"__init__: deck has no layout, using default")
 
+        # Local non default values are initialized from defaults
+        # May be overwritten by configuration parameters.
+        self.logo = config.get("logo", cockpit.default_logo)
+        self.wallpaper = config.get("wallpaper", cockpit.default_wallpaper)
+        self.home_page_name = config.get("homepage-name", cockpit.default_home_page_name)
+
         self.valid = True
 
     # #######################################
@@ -132,16 +138,16 @@ class Deck(ABC):
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
-        self.default_logo = config.get("default-wallpaper-logo", base.default_logo)
+        self.default_logo = config.get("default-logo", base.default_logo)
         self.default_wallpaper = config.get("default-wallpaper", base.default_wallpaper)
         self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
 
         if base == self:  # non default instances
-            self.logo = config.get("wallpaper-logo", base.logo)
+            self.logo = config.get("logo", base.logo)
             self.wallpaper = config.get("wallpaper", base.wallpaper)
             self.home_page_name = config.get("homepage-name", base.home_page_name)
         else:
-            self.logo = config.get("wallpaper-logo", base.default_logo)
+            self.logo = config.get("logo", base.default_logo)
             self.wallpaper = config.get("wallpaper", base.default_wallpaper)
             self.home_page_name = config.get("homepage-name", base.default_home_page_name)
 

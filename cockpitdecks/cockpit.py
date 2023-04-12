@@ -238,12 +238,12 @@ class Cockpit:
                 self.default_config = yaml.load(fp)
                 logger.debug(f"load_defaults: loaded default config {fn}")
         if self.default_config is not None:
-            self.default_logo = self.default_config.get("default-wallpaper-logo", DEFAULT_LOGO)
+            self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
             self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
             self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
             self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
             self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
-            self.default_label_position = self.default_config.get("default-label-position", convert_color(DEFAULT_LABEL_POSITION))
+            self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
             self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
@@ -335,7 +335,7 @@ class Cockpit:
                 self.default_label_position = config.get("default-label-position", DEFAULT_LABEL_POSITION)
                 self.default_icon_name = DEFAULT_ICON_NAME
                 self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
-                self.default_logo = config.get("default-wallpaper-logo", DEFAULT_LOGO)
+                self.default_logo = config.get("default-logo", DEFAULT_LOGO)
                 self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
                 self.empty_key_fill_color = config.get("fill-empty-keys")
                 self.cockpit_color = config.get("cockpit-color", COCKPIT_COLOR)

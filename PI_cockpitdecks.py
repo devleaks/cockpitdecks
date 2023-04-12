@@ -12,8 +12,8 @@ from traceback import print_exc
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib", "StreamDeck"))
 
 
-from decks import Cockpit, __version__ as RELEASE
-from decks.xplanesdk import XPlaneSDK
+from cockpitdecks import Cockpit, __version__ as RELEASE
+from cockpitdecks.xplanesdk import XPlaneSDK
 
 logging.basicConfig(level=logging.DEBUG, filename=os.path.basename(__file__)+".log", filemode='a')
 

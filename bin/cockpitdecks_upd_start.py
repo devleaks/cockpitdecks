@@ -2,9 +2,11 @@ import os
 import logging
 import sys
 
-from decks import Cockpit
-from decks import __NAME__, __version__, __COPYRIGHT__
-from decks.xplaneudp import XPlaneUDP
+sys.path.append('..')
+
+from cockpitdecks import Cockpit
+from cockpitdecks import __NAME__, __version__, __COPYRIGHT__
+from cockpitdecks.xplaneudp import XPlaneUDP
 
 # logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
 logging.basicConfig(level=logging.INFO)

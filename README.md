@@ -27,20 +27,11 @@ $ brew install libhidapi
 
 ### Make libhidapi known from python
 
-Then make sure the path where the library is installed into is accessible to dlopen(3)
+Make sure the path where the library is installed into is accessible to dlopen(3)
 or whatever call your version of Python uses to locate the library.
-
-Either add
 
 ```
 export DYLD_LIBRARY_PATH=/opt/homebrew/lib
-```
-
-Or create a symbolic link to it in your Python environment library path:
-
-```
-cd /opt/homebrew/Caskroom/miniforge/base/envs/${ENVNAME}/lib
-ln -s /opt/homebrew/lib/libhidapi.dylib .
 ```
 
 
@@ -51,8 +42,15 @@ If you use xtouchmini, you must use python<3.11 beecause as today (20-MAR-2023) 
 ## Global packages required by Cockpitdecks
 
 ```
-$ pip install ruamel.yaml pillow 'avwx-engine[scipy]''
+$ pip install ruamel.yaml pillow
 ```
+
+If you want to use the Metar representation on a key, add:
+
+```
+$ pip install ruamel.yaml 'avwx-engine[scipy]'
+```
+
 
 ## Packages required depending on the deck(s) model(s) used
 

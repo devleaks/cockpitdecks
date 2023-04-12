@@ -10,17 +10,17 @@ from PIL import Image, ImageOps
 from Loupedeck.ImageHelpers import PILHelper
 
 from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
-from .color import convert_color, is_integer
+from .color import convert_color, is_integer, DEFAULT_COLOR
 from .deck import DeckWithIcons
 from .page import Page
 from .button import Button
 from .button_representation import Icon, ColoredLED  # valid representations for this type of deck
 
 logger = logging.getLogger("Loupedeck")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # Warning, the logger in package Loupedeck is also called "Loupedeck".
 
-SIDE_INDIVIDUAL_KEYS = True
+SIDE_INDIVIDUAL_KEYS = False
 
 VIBRATION_MODES = [
     "SHORT",
@@ -53,6 +53,10 @@ VIBRATION_MODES = [
     "VERY_LONG"  # 10 sec high freq (!)
 ]
 
+# Note:
+# Keys are large icon-backed portions of the LCD screen.
+# Buttons are smaller, colored push buttons labeled 0 (dotted circle) to 7.
+# Knobs are rotating knobs on either side.
 BUTTON_PREFIX = "b"
 KNOB_PREFIX = "knob"
 
@@ -92,6 +96,7 @@ class Loupedeck(DeckWithIcons):
             image = None
             if os.path.exists(image_filename):
                 image = Image.open(image_filename).convert("RGBA")
+                image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
             else:
                 logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
                 image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
@@ -103,8 +108,6 @@ class Loupedeck(DeckWithIcons):
                     image.paste(logo2, (inside, inside), logo2)
                 else:
                     logger.warning(f"make_default_page: deck {self.name}: no logo image {fn} found, using default")
-
-            image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
             return image
 
         logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
@@ -136,14 +139,24 @@ class Loupedeck(DeckWithIcons):
         self.home_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
+    def side_individual_keys(self):
+        return [f"L{i}" for i in range(3)] + [f"R{i}" for i in range(3)]
+
+
     def valid_indices_with_image(self):
-        return [str(i) for i in range(12)] + ["left", "right"]
+        if SIDE_INDIVIDUAL_KEYS:
+            return [str(i) for i in range(12)] + self.side_individual_keys()
+        else:
+            return [str(i) for i in range(12)] + ["left", "right"]
 
     def valid_indices(self):
         encoders = ["knobTL", "knobCL", "knobBL", "knobTR", "knobCR", "knobBR"]
         keys = [str(i) for i in range(12)]
         buttons = [f"{BUTTON_PREFIX}{i}" for i in range(8)]
-        return encoders + keys + buttons + ["left", "right"]
+        if SIDE_INDIVIDUAL_KEYS:
+            return encoders + keys + buttons + self.side_individual_keys()
+        else:
+            return encoders + keys + buttons + ["left", "right"]
 
     def valid_activations(self, index = None):
         valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
@@ -402,7 +415,7 @@ class Loupedeck(DeckWithIcons):
         color = button.get_representation()
         if color is None:
             logger.warning("set_key_image: button returned no representation color, using default")
-            color = (240, 240, 240)
+            color = DEFAULT_COLOR
         idx = button.index.lower().replace(BUTTON_PREFIX, "")
         if idx == "0":
             idx = "circle"

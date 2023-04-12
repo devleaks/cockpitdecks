@@ -18,7 +18,7 @@ decks:
   - name: XPDeck
     type: streamdeck
     layout: efis-ecam
-    brightness: 80
+    brightness: 100
     light-off: 5
   - name: XPDeckXL
     layout: consoles
@@ -30,7 +30,6 @@ decks:
     brightness: 80
     # disabled: true
 # This is at aircraft-level level
-default-wallpaper-logo: logo.png
 default-icon-color: (94, 111, 130)
 default-label-font: DIN Medium.ttf
 default-label-size: 13

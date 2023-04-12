@@ -82,19 +82,21 @@ class Streamdeck(DeckWithIcons):
             # helper function in Pillow's ImageOps module so that the image's aspect
             # ratio is preserved.
             image = None
+            deck_width, deck_height = full_deck_image_size
             if os.path.exists(image_filename):
                 image = Image.open(image_filename).convert("RGBA")
+                image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             else:
                 logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
-                image = Image.new(mode="RGBA", size=(2000, 2000), color=self.default_icon_color)
+                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
+                    inside = 20
                     logo = Image.open(fn).convert("RGBA")
-                    image.paste(logo, (500, 500), logo)
+                    logo2 = ImageOps.fit(logo, (deck_width - 2*inside, deck_height - 2*inside), Image.LANCZOS)
+                    image.paste(logo2, (inside, inside), logo2)
                 else:
                     logger.warning(f"make_default_page: deck {self.name}: no logo image {fn} found, using default")
-
-            image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             return image
 
 
