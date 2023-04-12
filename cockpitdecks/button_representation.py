@@ -180,7 +180,7 @@ class Icon(Representation):
 
         return text, text_format, text_font, text_color, text_size, text_position
 
-    def get_font(self, fontname):
+    def get_font(self, fontname: str, fontsize: int):
         """
         Helper function to get valid font, depending on button or global preferences
         """
@@ -202,41 +202,47 @@ class Icon(Representation):
                 f2 = add_ext(fn, ".otf")
                 if f2 in fonts_available:
                     return all_fonts[f2]
-                logger.warning(f"get_font: button {this_button}: button label font '{fn}' not found")
+                logger.warning(f"get_font: button {this_button}: font '{fn}' not found")
             return None
 
         # 1. Tries button specific font
         f = try_ext(fontname)
         if f is not None:
-            return f
+            return ImageFont.truetype(f, fontsize)
 
         # 2. Tries default fonts
         #    Tries page default font
         default_font = page.default_label_font
         f = try_ext(default_font)
         if f is not None:
-            return f
+            return ImageFont.truetype(f, fontsize)
 
         # 2. Tries deck default font
         default_font = deck.default_label_font
         f = try_ext(default_font)
         if f is not None:
-            return f
+            return ImageFont.truetype(f, fontsize)
 
-        # 3. Tries cockpit default font
+        # 3. Tries cockpit default label font
         default_font = cockpit.default_label_font
         f = try_ext(default_font)
         if f is not None:
-            return f
+            return ImageFont.truetype(f, fontsize)
 
         # 4. Returns first font, if any
         if len(fonts_available) > 0:
-            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {page.default_label_font}, {deck.default_label_font}, {cockpit.default_label_font}. Returning first font found ({fonts_available[0]})")
-            return all_fonts[fonts_available[0]]
-        else:
-            logger.error(f"get_font: button {this_button}: no font")
+            f = all_fonts[fonts_available[0]]
+            logger.warning(f"get_font: button {this_button} cockpit default label font not found in {fonts_available}, tried {page.default_label_font}, {deck.default_label_font}, {cockpit.default_label_font}. Returning first font found ({f})")
+            return ImageFont.truetype(f, fontsize)
 
-        return None
+        # 5. Tries cockpit default font
+        default_font = cockpit.default_font
+        f = try_ext(default_font)
+        if f is not None:
+            return ImageFont.truetype(f, fontsize)
+
+        logger.error(f"get_font: no font, using pillow default")
+        return ImageFont.load_default()
 
     def get_image_for_icon(self):
         image = None
@@ -354,39 +360,37 @@ class Icon(Representation):
             text_size = int(text_size * image.width / 72)
 
         # logger.debug(f"overlay_text: {text}")
-        if text is not None:
-            fontname = self.get_font(text_font)
-            if fontname is None:
-                logger.warning(f"overlay_text: no font, cannot overlay text")
-            else:
-                # logger.debug(f"overlay_text: font {fontname}")
-                image = image.copy()  # we will add text over it
-                draw = ImageDraw.Draw(image)
-                font = ImageFont.truetype(fontname, text_size)
-                inside = round(0.04 * image.width + 0.5)
-                w = image.width / 2
-                p = "m"
-                a = "center"
-                if text_position[0] == "l":
-                    w = inside
-                    p = "l"
-                    a = "left"
-                elif text_position[0] == "r":
-                    w = image.width - inside
-                    p = "r"
-                    a = "right"
-                h = image.height / 2
-                if text_position[1] == "t":
-                    h = inside + text_size / 2
-                elif text_position[1] == "r":
-                    h = image.height - inside - text_size / 2
-                # logger.debug(f"overlay_text: position {(w, h)}")
-                draw.multiline_text((w, h),  # (image.width / 2, 15)
-                          text=text,
-                          font=font,
-                          anchor=p+"m",
-                          align=a,
-                          fill=text_color)
+        if text is None:
+            return image
+
+        font = self.get_font(text_font, text_size)
+        # logger.debug(f"overlay_text: font {fontname}")
+        image = image.copy()  # we will add text over it
+        draw = ImageDraw.Draw(image)
+        inside = round(0.04 * image.width + 0.5)
+        w = image.width / 2
+        p = "m"
+        a = "center"
+        if text_position[0] == "l":
+            w = inside
+            p = "l"
+            a = "left"
+        elif text_position[0] == "r":
+            w = image.width - inside
+            p = "r"
+            a = "right"
+        h = image.height / 2
+        if text_position[1] == "t":
+            h = inside + text_size / 2
+        elif text_position[1] == "r":
+            h = image.height - inside - text_size / 2
+        # logger.debug(f"overlay_text: position {(w, h)}")
+        draw.multiline_text((w, h),  # (image.width / 2, 15)
+                  text=text,
+                  font=font,
+                  anchor=p+"m",
+                  align=a,
+                  fill=text_color)
         return image
 
     def clean(self):
@@ -509,40 +513,37 @@ class IconSide(Icon):
                         txt = txt + " "   # \n"
                     logger.debug(f"get_image_for_icon: watching {managed}: {value}, {txto} -> {txt}")
 
-                fontname = self.get_font(label.get("label-font", self.label_font))
-                if fontname is None:
-                    logger.warning(f"get_image_for_icon: no font, cannot overlay label")
-                else:
-                    # logger.debug(f"get_image: font {fontname}")
-                    lsize = label.get("label-size", self.label_size)
-                    font = ImageFont.truetype(fontname, lsize)
-                    # Horizontal centering is not an issue...
-                    label_position = label.get("label-position", self.label_position)
-                    w = image.width / 2
-                    p = "m"
-                    a = "center"
-                    if label_position == "l":
-                        w = inside
-                        p = "l"
-                        a = "left"
-                    elif label_position == "r":
-                        w = image.width - inside
-                        p = "r"
-                        a = "right"
-                    # Vertical centering is black magic...
-                    h = vcenter[li] - lsize / 2
-                    if label_position[1] == "t":
-                        h = vcenter[li] - vheight
-                    elif label_position[1] == "b":
-                        h = vcenter[li] + vheight - lsize
+                # logger.debug(f"get_image: font {fontname}")
+                lfont = label.get("label-font", self.label_font)
+                lsize = label.get("label-size", self.label_size)
+                font = self.get_font(lfont, lsize)
+                # Horizontal centering is not an issue...
+                label_position = label.get("label-position", self.label_position)
+                w = image.width / 2
+                p = "m"
+                a = "center"
+                if label_position == "l":
+                    w = inside
+                    p = "l"
+                    a = "left"
+                elif label_position == "r":
+                    w = image.width - inside
+                    p = "r"
+                    a = "right"
+                # Vertical centering is black magic...
+                h = vcenter[li] - lsize / 2
+                if label_position[1] == "t":
+                    h = vcenter[li] - vheight
+                elif label_position[1] == "b":
+                    h = vcenter[li] + vheight - lsize
 
-                    # logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
-                    draw.multiline_text((w, h),  # (image.width / 2, 15)
-                              text=txt,
-                              font=font,
-                              anchor=p+"m",
-                              align=a,
-                              fill=label.get("label-color", self.label_color))
+                # logger.debug(f"get_image: position {self.label_position}: {(w, h)}, anchor={p+'m'}")
+                draw.multiline_text((w, h),  # (image.width / 2, 15)
+                          text=txt,
+                          font=font,
+                          anchor=p+"m",
+                          align=a,
+                          fill=label.get("label-color", self.label_color))
                 li = li + 1
         return image
 

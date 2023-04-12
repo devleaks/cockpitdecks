@@ -10,7 +10,7 @@ from datetime import datetime
 from .color import is_integer
 
 logger = logging.getLogger("Activation")
-# logger.setLevel(SPAM)
+# logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
 BACKPAGE_KEYWORD = "back"

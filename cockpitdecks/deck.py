@@ -9,7 +9,7 @@ from time import sleep
 from enum import Enum
 from abc import ABC, abstractmethod
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageOps
 from ruamel.yaml import YAML
 
 from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER

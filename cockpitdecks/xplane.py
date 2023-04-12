@@ -4,14 +4,14 @@ import threading
 import logging
 import time
 
-from .constant import SPAM
+from .constant import SPAM_LEVEL
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM)
 # loggerDataref.setLevel(logging.DEBUG)
 
 logger = logging.getLogger("XPlane")
-# logger.setLevel(SPAM)  # To see when dataref are updated
+# logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
 from .xpdref_round import DATAREF_ROUND
@@ -104,7 +104,7 @@ class Dataref:
         else:
             self.current_value = new_value
         if self.has_changed():
-            loggerDataref.log(SPAM, f"update_value: dataref {self.path} updated {self.previous_value} -> {self.current_value}")
+            loggerDataref.log(SPAM_LEVEL, f"update_value: dataref {self.path} updated {self.previous_value} -> {self.current_value}")
             if cascade:
                 self.notify()
         # loggerDataref.error(f"update_value: dataref {self.path} updated")
@@ -119,7 +119,7 @@ class Dataref:
         if self.has_changed():
             for k, v in self.listeners.items():
                 v.dataref_changed(self)
-                loggerDataref.log(SPAM, f"notify: {self.path}: notified {v.page.name}/{v.name}")
+                loggerDataref.log(SPAM_LEVEL, f"notify: {self.path}: notified {v.page.name}/{v.name}")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 

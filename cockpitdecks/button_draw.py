@@ -7,9 +7,9 @@ import time
 import math
 from random import randint
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
-from .constant import WEATHER_ICON_FONT, ICON_FONT
+from .constant import WEATHER_ICON_FONT, ICON_FONT, DEFAULT_LABEL_FONT
 from .color import convert_color, light_off
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
@@ -66,20 +66,16 @@ class DataIcon(DrawBase):
             icon_str = "*"
 
         icon_font = data.get("icon-font", ICON_FONT)
-        fontname = self.get_font(icon_font)
-        if fontname is None:
-            logger.warning(f"get_image_for_icon: icon font not found, cannot overlay icon {icon_name} in {icon_font}")
-        else:
-            font = ImageFont.truetype(fontname, int(icon_size))
-            inside = round(0.04 * image.width + 0.5)
-            w = inside
-            h = image.height / 2
-            draw.text((w, h),  # (image.width / 2, 15)
-                      text=icon_str,
-                      font=font,
-                      anchor="lm",
-                      align="left",
-                      fill=icon_color)
+        font = self.get_font(icon_font, int(icon_size))
+        inside = round(0.04 * image.width + 0.5)
+        w = inside
+        h = image.height / 2
+        draw.text((w, h),  # (image.width / 2, 15)
+                  text=icon_str,
+                  font=font,
+                  anchor="lm",
+                  align="left",
+                  fill=icon_color)
 
         # Data
         DATA_UNIT_SEP = " "
@@ -97,34 +93,30 @@ class DataIcon(DrawBase):
 
         data_progress = data.get("data-progress")
 
-        fontname = self.get_font(data_font)
-        if fontname is None:
-            logger.warning(f"get_image_for_icon: data font {data_font} not found, cannot overlay data")
-        else:
-            font = ImageFont.truetype(fontname, data_size)
-            font_unit = ImageFont.truetype(fontname, int(data_size * 0.50))
-            inside = round(0.04 * image.width + 0.5)
+        font = self.get_font(data_font, data_size)
+        font_unit = self.get_font(data_font, int(data_size * 0.50))
+        inside = round(0.04 * image.width + 0.5)
+        w = image.width - inside
+        h = image.height / 2 + data_size / 2 - inside
+        # if dataprogress is not None:
+        #     h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
+        if data_unit is not None:
+            w = w - draw.textlength(DATA_UNIT_SEP + data_unit, font=font_unit)
+        draw.text((w, h),  # (image.width / 2, 15)
+                  text=data_str,
+                  font=font,
+                  anchor="rs",
+                  align="right",
+                  fill=data_color)
+
+        if data_unit is not None:
             w = image.width - inside
-            h = image.height / 2 + data_size / 2 - inside
-            # if dataprogress is not None:
-            #     h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
-            if data_unit is not None:
-                w = w - draw.textlength(DATA_UNIT_SEP + data_unit, font=font_unit)
             draw.text((w, h),  # (image.width / 2, 15)
-                      text=data_str,
-                      font=font,
+                      text=DATA_UNIT_SEP + data_unit,
+                      font=font_unit,
                       anchor="rs",
                       align="right",
                       fill=data_color)
-
-            if data_unit is not None:
-                w = image.width - inside
-                draw.text((w, h),  # (image.width / 2, 15)
-                          text=DATA_UNIT_SEP + data_unit,
-                          font=font_unit,
-                          anchor="rs",
-                          align="right",
-                          fill=data_color)
 
         # Progress bar
         DATA_PROGRESS_SPACE = 8
@@ -146,20 +138,17 @@ class DataIcon(DrawBase):
         #print(">"*10, "BOTL", bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position)
 
         if bottom_line is not None:
-            fontname = self.get_font(botl_font)
-            if fontname is None:
-                logger.warning(f"get_image_for_icon: bottom line font {botl_font} not found, cannot print bottom line")
-            else:
-                font = ImageFont.truetype(fontname, botl_size)
-                w = image.width / 2
-                h = image.height / 2
-                h = image.height - inside - botl_size / 2  # forces BOTTOM position
-                draw.multiline_text((w, h),  # (image.width / 2, 15)
-                          text=bottom_line,
-                          font=font,
-                          anchor="md",
-                          align="center",
-                          fill=botl_color)
+            font = self.get_font(botl_font, botl_size)
+            w = image.width / 2
+            h = image.height / 2
+            h = image.height - inside - botl_size / 2  # forces BOTTOM position
+            draw.multiline_text((w, h),  # (image.width / 2, 15)
+                      text=bottom_line,
+                      font=font,
+                      anchor="md",
+                      align="center",
+                      fill=botl_color)
+
         return image.convert("RGB")
 
 
@@ -315,8 +304,7 @@ class CircularSwitch(SwitchCommonBase):
 
         # Labels
         # print("-<-<", label_anchors)
-        fontname = self.get_font(self.tick_label_font)
-        font = ImageFont.truetype(fontname, int(self.tick_label_size))
+        font = self.get_font(self.tick_label_font, int(self.tick_label_size))
         for i in range(self.tick_steps):
             angle = int(label_anchors[i][0])
             tolerence = 30
@@ -666,8 +654,7 @@ class Switch(SwitchCommonBase):
                     draw.ellipse(tl+br, fill=self.handle_dot_color)
 
         # Labels
-        fontname = self.get_font(self.tick_label_font)
-        font = ImageFont.truetype(fontname, int(self.tick_label_size))
+        font = self.get_font(self.tick_label_font, int(self.tick_label_size))
         if self.vertical:
             label_left = ICON_SIZE/2 - self.tick_space - self.tick_length
             align="right"
@@ -978,12 +965,11 @@ class DrawAnimationFTG(DrawAnimation):
             draw.ellipse(tl+br, fill=color)
 
         # Text AVAIL (=off) or framed ON (=on)
-        fontname = self.get_font("DIN Bold")
+        font = self.get_font(DEFAULT_LABEL_FONT, 80)
         inside = ICON_SIZE / 16
         cx = ICON_SIZE / 2
         cy = int( 3 * ICON_SIZE / 4 )
         if self.running:
-            font = ImageFont.truetype(fontname, 80)
             draw.multiline_text((cx, cy),
                       text="ON",
                       font=font,
@@ -1004,7 +990,7 @@ class DrawAnimationFTG(DrawAnimation):
             # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
             draw.rectangle(frame, outline="deepskyblue", width=thick)
         else:
-            font = ImageFont.truetype(fontname, 60)
+            font = self.get_font(DEFAULT_LABEL_FONT, 60)
             draw.multiline_text((cx, cy),
                       text="AVAIL",
                       font=font,

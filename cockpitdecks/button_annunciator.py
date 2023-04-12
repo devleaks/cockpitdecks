@@ -7,7 +7,7 @@ import time
 from enum import Enum
 from math import sqrt
 
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
+from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
 from .constant import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE
 from .color import convert_color, light_off
@@ -207,9 +207,10 @@ class AnnunciatorPart:
             #
             # Annunciator part will display text
             #
-            fontname = self.annunciator.get_font(self._config.get("text-font"))
+            fontname = self._config.get("text-font")
             fontsize = int(self._config.get("text-size", TEXT_SIZE))
-            font = ImageFont.truetype(fontname, fontsize)
+            font = self.annunciator.get_font(fontname, fontsize)
+
             if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
 
                 if self.is_lit() and self.is_invert():

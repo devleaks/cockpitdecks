@@ -24,7 +24,8 @@ DEFAULT_PAGE_NAME = "X-Plane"
 
 # Fonts
 FONTS_FOLDER = "fonts"
-DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS
+DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS, if above not found
+
 DEFAULT_LABEL_FONT = "DIN.ttf"
 DEFAULT_LABEL_SIZE = 10
 DEFAULT_LABEL_COLOR = "white"
@@ -46,7 +47,8 @@ DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
 KW_FORMULA = "formula"
 
 # Debug, internals
-SPAM = 15
+SPAM_LEVEL = 15
+SPAM = "SPAM"
 ID_SEP = "/"
 
 class ANNUNCIATOR_STYLES(Enum):

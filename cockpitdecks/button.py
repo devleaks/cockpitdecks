@@ -15,7 +15,7 @@ from ruamel.yaml import YAML
 from .activation import ACTIVATIONS
 from .representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
-from .constant import ID_SEP, SPAM, KW_FORMULA, WEATHER_ICON_FONT, ICON_FONT
+from .constant import ID_SEP, SPAM_LEVEL, KW_FORMULA, WEATHER_ICON_FONT, ICON_FONT
 from .rpc import RPC
 
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons ${fa-arrow-up}
@@ -23,7 +23,7 @@ from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 
 
 logger = logging.getLogger("Button")
-# logger.setLevel(SPAM)
+# logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
@@ -442,7 +442,7 @@ class Button:
             return False
         d = self.get_dataref_value(self.managed, default= 0)
         if d != 0:
-            logger.log(SPAM, f"is_managed: button {self.name}: is managed ({d}).")
+            logger.log(SPAM_LEVEL, f"is_managed: button {self.name}: is managed ({d}).")
             return True
         return False
         # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
@@ -452,7 +452,7 @@ class Button:
             return False
         d = self.get_dataref_value(self.guarded, default=0)
         if d == 0:
-            logger.log(SPAM, f"is_guarded: button {self.name}: is guarded ({d}).")
+            logger.log(SPAM_LEVEL, f"is_guarded: button {self.name}: is guarded ({d}).")
             return True
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
@@ -551,13 +551,13 @@ class Button:
             return text
         t1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != t1:
-            logger.log(SPAM, f"substitute_values: button {self.name}: {text} => {t1}")
+            logger.log(SPAM_LEVEL, f"substitute_values: button {self.name}: {text} => {t1}")
         # t2 = self.substitute_button_values(t1, default=default, formatting=formatting)
-        # logger.log(SPAM, f"substitute_values: button {self.name}: {t1} => {t2}")
+        # logger.log(SPAM_LEVEL, f"substitute_values: button {self.name}: {t1} => {t2}")
         t2 = t1
         t3 = self.substitute_dataref_values(t2, default=default, formatting=formatting)
         if t3 != t2:
-            logger.log(SPAM, f"substitute_values: button {self.name}: {t2} => {t3}")
+            logger.log(SPAM_LEVEL, f"substitute_values: button {self.name}: {t2} => {t3}")
         return t3
 
     def execute_formula(self, formula, default: float = 0.0):
@@ -569,7 +569,7 @@ class Button:
         # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
-        logger.log(SPAM, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
+        logger.log(SPAM_LEVEL, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
         return value
 
     # ##################################
@@ -710,7 +710,7 @@ class Button:
             return
         self.set_current_value(self.button_value())
         if self.has_changed() or dataref.has_changed():
-            logger.log(SPAM, f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
+            logger.log(SPAM_LEVEL, f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
         else:
             logger.debug(f"dataref_changed: button {self.name}: no change")
@@ -727,7 +727,7 @@ class Button:
             logger.debug(f"activate: button {self.name}: uses internal state, setting value")
             self.set_current_value(self.button_value())
         if self.has_changed():
-            logger.log(SPAM, f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
+            logger.log(SPAM_LEVEL, f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
         else:
             logger.debug(f"activate: button {self.name}: no change")

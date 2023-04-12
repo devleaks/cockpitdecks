@@ -10,13 +10,13 @@ import logging
 import time
 import datetime
 
-from .constant import SPAM
+from .constant import SPAM_LEVEL
 from .xpdref_round import DATAREF_SLOW
 from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger("XPlaneUDP")
-# logger.setLevel(SPAM)  # To see which dataref are requested
+# logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
 # logger.setLevel(logging.DEBUG)
 
 # Data too delicate to be put in constant.py
@@ -299,7 +299,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
 
         assert(len(message)==509)
         logger.debug(f"write_dataref: ({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
-        logger.log(SPAM, f"write_dataref: {dataref}={value}")
+        logger.log(SPAM_LEVEL, f"write_dataref: {dataref}={value}")
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.debug(f"write_dataref: .. sent")
 
@@ -388,7 +388,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
             return
         message = 'CMND0' + command
         self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
-        logger.log(SPAM, f"execute_command: executed {command}")
+        logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
 
     def dataref_listener(self):
         logger.debug(f"dataref_listener: starting..")
@@ -462,7 +462,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         for d in datarefs.values():
             self.add_dataref_to_monitor(d.path, freq=DATAREF_SLOW.get(d.path, DATA_SENT))
             prnt.append(d.path)
-        logger.log(SPAM, f"add_datarefs_to_monitor: added {prnt}")
+        logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
         if not self.connected and len(self.datarefs_to_monitor) > 0:
@@ -501,7 +501,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         for path in self.datarefs_to_monitor.keys():
             self.add_dataref_to_monitor(path, freq=DATA_SENT)
             prnt.append(path)
-        logger.log(SPAM, f"add_all_datarefs_to_monitor: added {prnt}")
+        logger.log(SPAM_LEVEL, f"add_all_datarefs_to_monitor: added {prnt}")
 
     def cleanup(self):
         """

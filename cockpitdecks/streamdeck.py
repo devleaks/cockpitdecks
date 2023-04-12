@@ -5,7 +5,7 @@ import logging
 import pickle
 from time import sleep
 from enum import Enum
-from PIL import Image, ImageFont, ImageOps
+from PIL import Image, ImageOps
 
 from StreamDeck.ImageHelpers import PILHelper
 
