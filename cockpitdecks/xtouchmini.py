@@ -13,7 +13,7 @@ from .page import Page
 from .button import Button
 from .button_representation import LED, MultiLEDs
 
-logger = logging.getLogger("XTouchDeck")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 # Warning, the logger in package XTouchMini is called "XTouchMini".
 

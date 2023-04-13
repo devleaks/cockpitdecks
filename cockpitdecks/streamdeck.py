@@ -16,7 +16,7 @@ from .page import Page
 from .button import Button
 from .button_representation import Icon  # valid representations for this type of deck
 
-logger = logging.getLogger("Streamdeck")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 

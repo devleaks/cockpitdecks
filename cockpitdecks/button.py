@@ -22,7 +22,7 @@ from .resources.icons import icons as FA_ICONS        # Font Awesome Icons ${fa-
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 
 
-logger = logging.getLogger("Button")
+logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
@@ -49,6 +49,8 @@ class Button:
         self.page = page
         self.deck = page.deck
         self.xp = self.deck.cockpit.xp  # shortcut alias
+
+        self.deck.cockpit.set_logging_level(__name__)
 
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.

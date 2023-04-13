@@ -8,7 +8,7 @@ from .button_representation import LED, ColoredLED, MultiLEDs
 from .button_annunciator import Annunciator, AnnunciatorAnimate
 from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 
-logger = logging.getLogger("Representation")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 

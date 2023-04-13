@@ -10,7 +10,7 @@ from queue import Queue
 from PIL import Image, ImageFont
 from ruamel.yaml import YAML
 
-from .constant import ID_SEP, SPAM, SPAM_LEVEL, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
+from .constant import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
 from .constant import COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
@@ -21,7 +21,7 @@ from .devices import DECK_TYPES
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
-logger = logging.getLogger("Cockpit")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
@@ -33,7 +33,7 @@ class Cockpit:
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
     def __init__(self, xp):
-        self.logging_level = "INFO"
+        self._debug = ROOT_DEBUG  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
         self.xp = xp(self)
         self._config = None
         self.name = "Cockpitdecks"
@@ -145,6 +145,11 @@ class Cockpit:
             logger.debug(f"scan_devices: using {len(decks)} {decktype}")
         logger.debug(f"scan_devices: ..scanned")
 
+    def set_logging_level(self, name):
+        if name in self._debug:
+            l = logging.getLogger(name)
+            l.setLevel(logging.DEBUG)
+            l.debug(f"set_logging_level: {name} set to debug")
 
     def get_device(self, req_serial: str, req_type: str):
         """
@@ -241,30 +246,30 @@ class Cockpit:
             # 1. Try "system" font
             try:
                 test = ImageFont.truetype(fontname, self.default_label_size)
-                logger.debug(f"load_defaults: locate_font: font {fontname} found on computer")
+                logger.debug(f"load_defaults: locate_font: font {fontname} found in computer system fonts")
                 return fontname
             except:
-                logger.debug(f"load_defaults: locate_font: font {fontname} not found on computer")
+                logger.debug(f"load_defaults: locate_font: font {fontname} not found in computer system fonts")
 
             # 2. Try font in resources folder
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
                 test = ImageFont.truetype(fn, self.default_label_size)
-                logger.debug(f"load_defaults: locate_font: font {fn} found locally ({RESOURCES_FOLDER} folder)")
+                logger.debug(f"load_defaults: locate_font: font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
-                logger.debug(f"load_defaults: locate_font: font {fn} not found locally ({RESOURCES_FOLDER} folder)")
+                logger.debug(f"load_defaults: locate_font: font {fontname} not found locally ({RESOURCES_FOLDER} folder)")
 
             # 3. Try font in resources/fonts folder
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
                 test = ImageFont.truetype(fn, self.default_label_size)
-                logger.debug(f"load_defaults: locate_font: font {fn} found locally ({FONTS_FOLDER} folder)")
+                logger.debug(f"load_defaults: locate_font: font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
-                logger.debug(f"load_defaults: locate_font: font {fn} not found locally ({FONTS_FOLDER} folder)")
+                logger.debug(f"load_defaults: locate_font: font {fontname} not found locally ({FONTS_FOLDER} folder)")
 
             logger.debug(f"load_defaults: locate_font: font {fontname} not found")
             return None
@@ -306,6 +311,7 @@ class Cockpit:
             if f is not None:  # found one, perfect
                 self.fonts[self.default_label_font] = f
                 self.default_font = f
+                logger.debug(f"load_defaults: default label font set to {self.default_label_font}")
             else:  # if we are here, self.default_label_font is not found, we must find another one
                 self.default_label_font = None
 
@@ -316,26 +322,30 @@ class Cockpit:
                 self.default_label_font = DEFAULT_LABEL_FONT
                 self.fonts[DEFAULT_LABEL_FONT] = f
                 self.default_font = f
+                logger.debug(f"load_defaults: default label font set to {DEFAULT_LABEL_FONT}")
             # if we are here, self.default_label_font is not found, we must find another one
 
         # 2.3 We try the "default system font"
-        if self.default_label_font is None:
-            f = locate_font(DEFAULT_SYSTEM_FONT)
-            if f is not None:  # found it, perfect
+        f = locate_font(DEFAULT_SYSTEM_FONT)
+        if f is not None:  # found it, perfect, keep it as default font for all purposes
+            self.fonts[DEFAULT_SYSTEM_FONT] = f
+            self.default_font = f
+            logger.debug(f"load_defaults: default font set to {DEFAULT_SYSTEM_FONT}")
+            if self.default_label_font is None:  # additionnally, if we don't have a default label font, use it
                 self.default_label_font = DEFAULT_SYSTEM_FONT
-                self.fonts[DEFAULT_SYSTEM_FONT] = f
-                self.default_font = f
+                logger.debug(f"load_defaults: default label font set to {DEFAULT_SYSTEM_FONT}")
 
         if self.default_label_font is None and len(self.fonts) > 0:
             first_one = list(self.fonts.keys())[0]
             self.default_label_font = first_one
             self.default_font = first_one
+            logger.debug(f"load_defaults: no default font found, using first available font")
 
         if self.default_label_font is None:
             logger.error(f"load_defaults: no default font")
 
         # 4. report summary if debugging
-        logger.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font} ({self.default_label_font})")
+        logger.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font}, default label={self.default_label_font}")
 
     def create_decks(self):
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
@@ -352,11 +362,8 @@ class Cockpit:
                 self._config = config
 
                 # Logging level
-                self.logging_level = self._config.get("logging-level", "INFO")
-                llvalue = getattr(logging, self.logging_level)
-                if llvalue is not None:
-                    logger.setLevel(llvalue)
-                    logger.debug(f"create_decks: logging level set to {self.logging_level}")
+                self._debug = self._config.get("debug", "").split(",")  # array of classes to enable
+                self.set_logging_level(__name__)
 
                 self.name = self._config.get("name", self._config.get("aircraft", "Cockpitdecks"))
                 self.icao = self._config.get("icao", self._config.get("icao", "ZZZZ"))
@@ -371,6 +378,8 @@ class Cockpit:
                 self.empty_key_fill_color = config.get("fill-empty-keys")
                 self.cockpit_color = config.get("cockpit-color", COCKPIT_COLOR)
                 self.default_home_page_name = config.get("default-homepage-name", HOME_PAGE)
+
+                logger.debug(f"create_decks: new defaults: label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}")
 
                 if "decks" in config:
                     cnt = 0

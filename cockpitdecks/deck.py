@@ -18,7 +18,7 @@ from .color import convert_color
 from .page import Page
 from .button import Button
 
-logger = logging.getLogger("Deck")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
@@ -41,6 +41,8 @@ class Deck(ABC):
         self.name = name
         self.cockpit = cockpit
         self.device = device
+
+        self.cockpit.set_logging_level("Deck")
 
         self.set_default(config, cockpit)
 

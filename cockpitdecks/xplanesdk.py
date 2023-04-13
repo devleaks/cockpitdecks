@@ -12,7 +12,7 @@ from .xplane import XPlane
 from .button import Button
 from .xpdref import XPDref
 
-logger = logging.getLogger("XPlaneSDK")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 class XPlaneSDK(XPlane):

@@ -14,7 +14,7 @@ from .color import convert_color, light_off
 from .rpc import RPC
 from .button_representation import Icon
 
-logger = logging.getLogger("Annunciator")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 # Attribute keybords

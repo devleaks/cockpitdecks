@@ -10,7 +10,7 @@ loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM)
 # loggerDataref.setLevel(logging.DEBUG)
 
-logger = logging.getLogger("XPlane")
+logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
@@ -142,6 +142,8 @@ class XPlane:
 
         self.dataref_db_lock = threading.RLock()
         self._need_reload = True
+
+        self.cockpit.set_logging_level(__name__)
 
     def detect_changed(self):
         """

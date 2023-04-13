@@ -14,7 +14,7 @@ from PIL import ImageDraw, ImageFont
 
 from .color import convert_color, is_integer, has_ext, add_ext
 
-logger = logging.getLogger("Representation")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 # Attribute keyworkds
@@ -34,6 +34,8 @@ class Representation:
         self.button = button
         self._sound = config.get("vibrate")
         self.datarefs = None
+
+        self.button.deck.cockpit.set_logging_level(__name__)
 
         self.init()
 

@@ -15,7 +15,7 @@ from .xpdref_round import DATAREF_SLOW
 from .xplane import XPlane, Dataref
 from .button import Button
 
-logger = logging.getLogger("XPlaneUDP")
+logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
 # logger.setLevel(logging.DEBUG)
 
@@ -255,6 +255,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # list of requested datarefs with index number
         self.datarefidx = 0
         self.datarefs = {} # key = idx, value = dataref
+
+        self.cockpit.set_logging_level(__name__)
 
         self.init()
 

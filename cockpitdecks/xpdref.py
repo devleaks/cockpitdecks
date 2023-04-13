@@ -8,7 +8,7 @@ import xp
 from decimal import Decimal as D
 from .xplane import Dataref
 
-logger = logging.getLogger("XPDref")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 

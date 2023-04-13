@@ -9,7 +9,7 @@ from datetime import datetime
 #from .constant import SPAM
 from .color import is_integer
 
-logger = logging.getLogger("Activation")
+logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
@@ -29,6 +29,9 @@ class Activation:
         self.button = button
         self._has_no_value = False       # Marker that control whether activation has a feedback value
         self._inited = False
+
+        self.button.deck.cockpit.set_logging_level(__name__)
+
         # Options
 
         # Commands

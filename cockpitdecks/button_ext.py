@@ -19,7 +19,7 @@ from .button_draw import DrawBase, DrawAnimation
 from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
 
 
-logger = logging.getLogger("ButtonExternal")
+logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 

@@ -16,7 +16,7 @@ from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
 from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
 
-logger = logging.getLogger("DrawIcon")
+logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 

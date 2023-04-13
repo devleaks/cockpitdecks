@@ -6,7 +6,7 @@ import colorsys
 
 from PIL import ImageColor
 
-logger = logging.getLogger("Color")
+logger = logging.getLogger(__name__)
 
 DEFAULT_COLOR = (128, 128, 128)
 

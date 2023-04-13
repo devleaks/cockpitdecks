@@ -2,7 +2,7 @@ import os
 import logging
 import sys
 
-sys.path.append('..')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from cockpitdecks import Cockpit
 from cockpitdecks import __NAME__, __version__, __COPYRIGHT__
