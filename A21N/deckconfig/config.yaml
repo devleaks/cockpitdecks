@@ -35,4 +35,3 @@ default-label-font: DIN Medium.ttf
 default-label-size: 13
 default-label-color: white
 empty-key-fill-color: (94, 111, 130)
-debug: cockpitdecks.button

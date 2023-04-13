@@ -13,6 +13,8 @@ CONFIG_FOLDER = "deckconfig"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 
+DEFAULT_AIRCRAFT = "AIRCRAFT"
+
 RESOURCES_FOLDER = "resources"
 
 DEFAULT_WALLPAPER = "wallpaper.png"
@@ -51,7 +53,7 @@ SPAM_LEVEL = 15
 SPAM = "SPAM"
 ID_SEP = "/"
 
-ROOT_DEBUG = "cockpitdecks.xplaneudp"
+ROOT_DEBUG = ""
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"           # k(orry): backlit, glowing

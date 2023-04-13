@@ -22,7 +22,7 @@ from .devices import DECK_TYPES
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
 
@@ -159,6 +159,30 @@ class Cockpit:
         :param      req_serial:  The request serial
         :type       req_serial:  str
         """
+        # No serial, return deck if only one deck of that type
+        if req_serial is None:
+            i = 0
+            good = None
+            for deck in self.devices:
+                if deck["type"] == req_type:
+                    good = deck
+                    i = i + 1
+            if i == 1 and good is not None:
+                logger.debug(f"get_device: only one deck of type {req_type}, returning it")
+                device = good["device"]
+                device.open()
+                if device.is_visual():
+                    image_format = device.key_image_format()
+                    logger.debug(f"get_device: deck {good['type']}: key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees")
+                else:
+                    logger.debug(f"get_device: deck {good['type']}: no visual")
+                device.reset()
+                return device
+            else:
+                if i > 1:
+                    logger.warning(f"get_device: more than one deck of type {req_type}, no serial to disambiguate")
+            return None
+        ## Got serial, search for it
         for deck in self.devices:
             if deck["serial_number"] == req_serial:
                 device = deck["device"]
@@ -191,6 +215,7 @@ class Cockpit:
         if len(self.cockpit) > 0:
             self.terminate_aircraft()
             self.xp.clean_datarefs_to_monitor()
+            logger.warning(f"load_aircraft: {os.path.basename(self.acpath)} unloaded")
 
         if len(self.devices) == 0:
             logger.warning(f"load_aircraft: no device")
@@ -353,6 +378,8 @@ class Cockpit:
         if os.path.exists(sn):
             with open(sn, "r") as fp:
                 serial_numbers = yaml.load(fp)
+        else:
+            logger.info(f"create_decks: no secret file")
 
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         if os.path.exists(fn):
@@ -381,7 +408,17 @@ class Cockpit:
 
                 logger.debug(f"create_decks: new defaults: label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}")
 
+
+
                 if "decks" in config:
+                    deck_type_count = {}
+                    for deck_config in config["decks"]:
+                        ty = deck_config.get("type")
+                        if ty is not None:
+                            if ty not in deck_type_count:
+                                deck_type_count[ty] = 0
+                            deck_type_count[ty] = deck_type_count[ty] + 1
+
                     cnt = 0
                     for deck_config in config["decks"]:
                         name = deck_config.get("name", f"Deck {cnt}")
@@ -405,19 +442,26 @@ class Cockpit:
                         if serial is None:  # get it from the secret file
                             serial = serial_numbers[name] if name in serial_numbers.keys() else None
 
-                        if serial is not None:
-                            device = self.get_device(req_serial=serial, req_type=decktype)
-                            if device is not None:
-                                #
+                        # if serial is not None:
+                        device = self.get_device(req_serial=serial, req_type=decktype)
+                        if device is not None:
+                            #
+                            if serial is None:
+                                if deck_type_count[decktype] > 1:
+                                    logger.warning(f"create_decks: deck type {decktype}: only one deck of that type but more than one configuration in config.yaml for decks of that type, ignoring")
+                                    continue
+                                deck_config["serial"] = device.get_serial_number()
+                                logger.info(f"load: deck {decktype} {name} has serial {deck_config['serial']}")
+                            else:
                                 deck_config["serial"] = serial
-                                if name not in self.cockpit.keys():
-                                    self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
-                                    cnt = cnt + 1
-                                    logger.info(f"load: deck {decktype} {name} added")
-                                else:
-                                    logger.warning(f"create_decks: deck {name} already exist, ignoring")
-                        else:
-                            logger.error(f"load: deck {decktype} {name} has no serial number, ignoring")
+                            if name not in self.cockpit.keys():
+                                self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
+                                cnt = cnt + 1
+                                logger.info(f"load: deck {decktype} {name} added")
+                            else:
+                                logger.warning(f"create_decks: deck {name} already exist, ignoring")
+                        # else:
+                        #     logger.error(f"load: deck {decktype} {name} has no serial number, ignoring")
                 else:
                     logger.warning(f"load: no deck in file {fn}")
         else:

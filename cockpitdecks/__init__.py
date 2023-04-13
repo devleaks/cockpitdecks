@@ -12,3 +12,4 @@ __authorurl__ = "https://github.com/devleaks/cockpitdecks"
 
 from .cockpit import Cockpit
 from .xplaneudp import XPlaneUDP
+from .constant import DEFAULT_AIRCRAFT
