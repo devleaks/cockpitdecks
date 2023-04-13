@@ -595,13 +595,15 @@ class Cockpit:
             e = self.reload_queue.get()  # blocks infinitely here
             if e == "reload":
                 self.reload_decks(just_do_it=True)
+            elif e == "stop":
+                self.stop_decks(just_do_it=True)
         logger.debug(f"reload_loop: ended")
 
     def end_reload_loop(self):
         if self.reload_loop_run:
             self.reload_loop_run = False
-            self.reload_queue.put("stop")  # to unblock the Queue.get()
-            self.reload_loop_thread.join()
+            self.reload_queue.put("wake up!")  # to unblock the Queue.get()
+            # self.reload_loop_thread.join()
             logger.debug(f"end_reload_loop: stopped")
         else:
             logger.warning(f"end_reload_loop: not running")
@@ -621,6 +623,18 @@ class Cockpit:
         else:
             self.reload_queue.put("reload")
             logger.debug(f"reload_decks: enqueued")
+
+    def stop_decks(self, just_do_it: bool = False):
+        """
+        Stop decks gracefully. Since it also terminates self.reload_loop_thread we cannot wait for it
+        since we are called from it ... So we just tell it to terminate.
+        """
+        if just_do_it:
+            logger.info(f"stop_decks: stopping decks..")
+            self.stop()
+        else:
+            self.reload_queue.put("stop")
+            logger.debug(f"stop_decks: enqueued")
 
     def terminate_aircraft(self):
         logger.info(f"terminate_aircraft: terminating..")

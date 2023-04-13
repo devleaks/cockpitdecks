@@ -229,7 +229,7 @@ class Reload(Activation):
         self._has_no_value = True
 
     def activate(self, state):
-        if state:
+        if state == 0:  # trigger on button "release"
             self.button.deck.cockpit.reload_decks()
 
     def describe(self):
@@ -282,8 +282,8 @@ class Stop(Activation):
         self._has_no_value = True
 
     def activate(self, state):
-        if state:
-            self.button.deck.cockpit.stop()
+        if state == 0:  # trigger on button "release"
+            self.button.deck.cockpit.stop_decks()
 
     def describe(self):
         """

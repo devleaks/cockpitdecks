@@ -135,6 +135,13 @@ class Loupedeck(DeckWithIcons):
                                     "text": "MAP"
                                 }, page=page0)
         page0.add_button(button0.index, button0)
+        button1 = Button(config={
+                                    "index": 1,
+                                    "name": "Exit",
+                                    "type": "stop",
+                                    "icon": "PANIC"
+                                }, page=page0)
+        page0.add_button(button1.index, button1)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
