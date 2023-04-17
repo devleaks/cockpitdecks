@@ -1,0 +1,21 @@
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+---
+aircraft: Laminar Cesna 172 SP
+description: Sample layout file using Laminar Cesna aicraft
+icao: C172
+model: Cesna 172 SP
+# ########################
+decks:
+  - name: ADeck
+    type: loupedeck
+    layout: layout
+    # disabled: true
+# This is at aircraft-level level
+default-icon-color: (94, 111, 130)
+default-label-font: B612-Bold
+default-label-size: 12
+default-label-color: white
+empty-key-fill-color: (94, 111, 130)

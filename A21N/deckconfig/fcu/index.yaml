@@ -106,7 +106,7 @@ buttons:
     text-bg-color: (40, 40, 40)
     managed:
       dataref: AirbusFBW/SPDmanaged
-    options: dash
+      text-modifier: dash
   - index: 1
     name: MASTER CAUTION
     type: push
@@ -158,15 +158,13 @@ buttons:
     type: none
     text: "${sim/cockpit/autopilot/heading_mag}"
     text-format: "{:03.0f}"
-    managed:
-      dataref: AirbusFBW/HDGmanaged
-    options: dash
-#    formula: ${status:activation_count}
-#    formula: ${sim/cockpit/autopilot/heading_mag}
     text-color: khaki
     text-size: 36
     text-font: Seven Segment.ttf
     text-bg-color: (40, 40, 40)
+    managed:
+      dataref: AirbusFBW/HDGmanaged
+      text-modifier: dash
   - index: 5
     name: A/THR
     type: push
@@ -233,7 +231,7 @@ buttons:
     formula: ${sim/cockpit/misc/barometer_setting} 33.8639 *
     managed:
       dataref: AirbusFBW/BaroStdCapt
-    options: std
+      text-modifier: std
   - index: 9
     name: LOC
     type: push

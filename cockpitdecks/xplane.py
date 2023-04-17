@@ -7,7 +7,7 @@ import time
 from .constant import SPAM_LEVEL
 
 loggerDataref = logging.getLogger("Dataref")
-# loggerDataref.setLevel(SPAM)
+# loggerDataref.setLevel(SPAM_LEVEL)
 # loggerDataref.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)

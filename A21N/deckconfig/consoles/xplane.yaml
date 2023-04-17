@@ -179,7 +179,12 @@ buttons:
   - index: 24
     name: STOP_COCKPITDECKS
     type: stop
-    icon: PANIC
+    icon: STOP
+  - index: 25
+    name: DASHBOARD
+    type: page
+    page: dashboard
+    icon: DASHBOARD
   - index: 26
     name: Cockpitdecks
     type: page

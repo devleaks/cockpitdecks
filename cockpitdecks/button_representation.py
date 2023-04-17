@@ -365,8 +365,13 @@ class Icon(Representation):
         if text is None:
             return image
 
+        if self.button.is_managed() and which_text == "text":
+            txtmod = self.button.manager.get(f"text-modifier", "dot").lower()
+            if txtmod in ["std", "standard"]:    # QNH Std
+                text_font = "AirbusFCU" # hardcoded
+
+        # print(">>>>>>", which_text, text, text_font)
         font = self.get_font(text_font, text_size)
-        # logger.debug(f"overlay_text: font {fontname}")
         image = image.copy()  # we will add text over it
         draw = ImageDraw.Draw(image)
         inside = round(0.04 * image.width + 0.5)
@@ -492,9 +497,7 @@ class IconSide(Icon):
             image = image.copy()  # we will add text over it
             draw = ImageDraw.Draw(image)
             inside = round(0.04 * image.width + 0.5)
-            vposition = "TCB"
             vheight = 38 - inside
-
             vcenter = [43, 150, 227]  # this determines the number of acceptable labels, organized vertically
             cnt = self.side.get("centers")
             if cnt is not None:

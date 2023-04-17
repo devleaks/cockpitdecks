@@ -149,7 +149,7 @@ class XPlaneBeacon:
                     raise XPlaneVersionNotSupported()
 
         except socket.timeout:
-            logger.warning("FindIp: XPlane IP not found.")
+            logger.debug("FindIp: XPlane IP not found.")
             raise XPlaneIpNotFound()
         finally:
             sock.close()
@@ -171,6 +171,8 @@ class XPlaneBeacon:
         If a connection fails, drops, disappears, will try periodically to restore it.
         """
         logger.debug("connect_loop: starting..")
+        WARN_FREQ = 10
+        cnt = 0
         while self.should_not_connect is not None and not self.should_not_connect.is_set():
             if not self.connected:
                 try:
@@ -182,10 +184,12 @@ class XPlaneBeacon:
                         logger.info(f"connect_loop: ..dataref listener started..")
                 except XPlaneVersionNotSupported:
                     self.beacon_data = {}
-                    logger.error("connect_loop: ..XPlane Version not supported..")
+                    logger.error("connect_loop: ..X-Plane Version not supported..")
                 except XPlaneIpNotFound:
                     self.beacon_data = {}
-                    logger.error("connect_loop: ..no XPlane instance not found on local network..")
+                    if cnt % WARN_FREQ == 0:
+                        logger.error(f"connect_loop: ..X-Plane instance not found on local network.. ({datetime.datetime.now().strftime('%H:%M:%S')})")
+                    cnt = cnt + 1
                 if not self.connected:
                     self.should_not_connect.wait(RECONNECT_TIMEOUT)
                     logger.debug("connect_loop: ..trying..")
@@ -421,7 +425,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
                     total_to = 0
                 except XPlaneTimeout:
                     total_to = total_to + 1
-                    logger.info(f"dataref_listener: XPlaneTimeout ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    logger.info(f"dataref_listener: XPlaneTimeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning(f"dataref_listener: too many times out, disconnecting, dataref listener terminated")  # ignore
                         self.beacon_data = {}

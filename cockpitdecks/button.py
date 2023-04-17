@@ -62,12 +62,12 @@ class Button:
             if len(idxnum) > 0:
                 self.num_index = idxnum[0]
 
-        # Logging level
-        self.logging_level = config.get("logging-level", "INFO")
-        llvalue = getattr(logging, self.logging_level)
-        if llvalue is not None:
-            logger.setLevel(llvalue)
-            logger.debug(f"__init__: button {self.name}: logging level set to {self.logging_level}")
+        # # Logging level
+        # self.logging_level = config.get("logging-level", "INFO")
+        # llvalue = getattr(logging, self.logging_level)
+        # if llvalue is not None:
+        #     logger.setLevel(llvalue)
+        #     logger.debug(f"__init__: button {self.name}: logging level set to {self.logging_level}")
 
         # Working variables
         self._first_value_not_saved = True
@@ -113,10 +113,10 @@ class Button:
         self.dataref = config.get(KW_DATAREF)
         self.dataref_rpn = config.get(KW_FORMULA)
         self.managed = None
-        self.manager = config.get(KW_GUARD)
+        self.manager = config.get(KW_MANAGED)
         if self.manager is not None:
-            self.guarded = self.manager.get(KW_DATAREF)
-            if self.guarded is None:
+            self.managed = self.manager.get(KW_DATAREF)
+            if self.managed is None:
                 logger.warning(f"__init__: button {self.name} has manager but no dataref")
 
         self.guarded = None
@@ -441,11 +441,13 @@ class Button:
 
     def is_managed(self):
         if self.managed is None:
+            logger.debug(f"is_managed: button {self.name}: is managed is none.")
             return False
         d = self.get_dataref_value(self.managed, default= 0)
         if d != 0:
-            logger.log(SPAM_LEVEL, f"is_managed: button {self.name}: is managed ({d}).")
+            logger.debug(f"is_managed: button {self.name}: is managed ({d}).")
             return True
+        logger.debug(f"is_managed: button {self.name}: is not managed ({d}).")
         return False
         # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
 
@@ -454,7 +456,7 @@ class Button:
             return False
         d = self.get_dataref_value(self.guarded, default=0)
         if d == 0:
-            logger.log(SPAM_LEVEL, f"is_guarded: button {self.name}: is guarded ({d}).")
+            logger.debug(f"is_guarded: button {self.name}: is guarded ({d}).")
             return True
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
@@ -589,17 +591,16 @@ class Button:
 
         # HACK 1
         if self.is_managed():      # managed
-            lblmod = self.manager.get("label-modifier", "dot")
-            if root == "label" and lblmod == "dot": # label
+            txtmod = self.manager.get(f"{root}-modifier", "dot").lower()
+            if txtmod == "dot": # label
                 return text + DOT  # ---•
-            elif root == "text":   # formula value as text
-                if lblmod.lower() in ["std", "standard"]:    # QNH Std
+            elif txtmod in ["std", "standard"]:    # QNH Std
                     return "Std"
-                elif lblmod.lower() == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
-                    n = self.option_value("dash", self.option_value("dashes", True))
-                    if type(n) == bool:
-                        n = 3
-                    return "-" * int(n) + " " + DOT
+            elif txtmod == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
+                n = self.option_value("dash", self.option_value("dashes", True))
+                if type(n) == bool:
+                    n = 3
+                return "-" * int(n) + " " + DOT
 
         # HACK 2
         bizfonts = {
@@ -614,7 +615,7 @@ class Button:
                 for i in icons:
                     if i in v[1].keys():
                         text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"get_text_detail: button {self.name}: substituing {i}")
+                        logger.debug(f"get_text: button {self.name}: substituing {i}")
 
         # Formula in text
         text_format = base.get(f"{root}-format")

@@ -445,10 +445,11 @@ class DeckWithIcons(Deck):
         Each device model requires a different icon format (size).
         We could build a set per deck model rather than deck instance...
         """
+        logger.info(f"load_icons: deck {self.name}: use cache {self.cockpit.cache_icon}")
         dn = self.cockpit.icon_folder
         if dn is not None:
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-            if os.path.exists(cache):
+            if os.path.exists(cache) and self.cockpit.cache_icon:
                 with open(cache, "rb") as fp:
                     icons_temp = pickle.load(fp)
                     self.icons.update(icons_temp)
@@ -460,9 +461,12 @@ class DeckWithIcons(Deck):
                 self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
             if dn is not None:
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-                with open(cache, "wb") as fp:
-                    pickle.dump(self.icons, fp)
-            logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons loaded")
+                if self.cockpit.cache_icon:
+                    with open(cache, "wb") as fp:
+                        pickle.dump(self.icons, fp)
+                    logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons cached")
+                else:
+                    logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons loaded")
         else:
             logger.warning(f"load_icons: deck {self.name} has no device")
 

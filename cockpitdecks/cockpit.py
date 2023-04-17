@@ -22,7 +22,7 @@ from .devices import DECK_TYPES
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
 
@@ -64,6 +64,7 @@ class Cockpit:
 
         self.icon_folder = None
         self.icons = {}
+        self.cache_icon = False
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
         self.fill_empty_keys = True
@@ -314,6 +315,7 @@ class Cockpit:
             self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
             self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
             self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
+            self.cache_icon = self.default_config.get("cache-icon", self.cache_icon)
             self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
             self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
             self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
@@ -398,6 +400,7 @@ class Cockpit:
                 self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
                 self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
                 self.default_label_position = config.get("default-label-position", DEFAULT_LABEL_POSITION)
+                self.cache_icon = config.get("cache-icon", self.cache_icon)
                 self.default_icon_name = DEFAULT_ICON_NAME
                 self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
                 self.default_logo = config.get("default-logo", DEFAULT_LOGO)
@@ -504,11 +507,12 @@ class Cockpit:
     def load_icons(self):
         # Loading icons
         #
+        logger.info(f"load_icons: use cache {self.cache_icon}")
         dn = os.path.join(self.acpath, CONFIG_FOLDER, ICONS_FOLDER)
         if os.path.exists(dn):
             self.icon_folder = dn
             cache = os.path.join(dn, "_icon_cache.pickle")
-            if os.path.exists(cache):
+            if os.path.exists(cache) and self.cache_icon:
                 with open(cache, "rb") as fp:
                     self.icons = pickle.load(fp)
                 logger.info(f"load_icons: {len(self.icons)} icons loaded from cache")
@@ -519,9 +523,12 @@ class Cockpit:
                         fn = os.path.join(dn, i)
                         image = Image.open(fn)
                         self.icons[i] = image
-                with open(cache, "wb") as fp:
-                    pickle.dump(self.icons, fp)
-                logger.info(f"load_icons: {len(self.icons)} icons loaded")
+                if self.cache_icon:
+                    with open(cache, "wb") as fp:
+                        pickle.dump(self.icons, fp)
+                    logger.info(f"load_icons: {len(self.icons)} icons cached")
+                else:
+                    logger.info(f"load_icons: {len(self.icons)} icons loaded")
 
     def load_fonts(self):
         # Loading fonts.
@@ -701,7 +708,8 @@ class Cockpit:
                 logger.info(f"run: terminated")
         else:
             logger.warning(f"run: no deck")
-            self.terminate_all()
+            if self.acpath is not None:
+                self.terminate_all()
 
     # #########################################################
     # XPPython Plugin Hooks

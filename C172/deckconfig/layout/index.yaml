@@ -1,0 +1,31 @@
+# CHANGELOG
+#
+# 1.0.0  01-APR-2023  One line explanation of update
+#
+---
+name: page-name
+description:
+version: 1.0.0
+# ########################
+# This config is at aircraft level
+# This config is at deck level
+# This config is at page page
+#
+# BUTTONS
+#
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: name
+    label: text
+    type: type
+    icon: NONE
+# ### LINE 2 ###  8-15 ######################################################
+# ### LINE 3 ### 16-23 ######################################################
+# ### LINE 4 ### 24-31 ######################################################
+# ### Buttons
+# ### A/B Pager
+# ### Encoders
+# ### Sliders
+# ### Side buttons
+# ### Colored LED

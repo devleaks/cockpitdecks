@@ -39,6 +39,13 @@ class DataIcon(DrawBase):
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
 
+    def get_datarefs(self):
+        if self.datarefs is None:
+            data = self._config["data"]
+            if data is not None:
+                self.datarefs = self.button.scan_datarefs(base=data)
+        return self.datarefs
+
     def get_image_for_icon(self):
         """
         Helper function to get button image and overlay label on top of it.

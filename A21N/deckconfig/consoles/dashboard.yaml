@@ -1,0 +1,56 @@
+# CHANGELOG
+#
+# 1.0.0  17-APR-2023  Creation
+#
+---
+aircraft: Toliss A321neo
+description: Cockpitdecks Special Dashboard of A21N
+version: 1.0.0
+name: dashboard
+# ########################
+# Fuel, 1 icon per tank
+# Elec: V and I(A)
+# Misc other parameters
+#
+# BUTTONS
+#
+buttons:
+# ### LINE 1 ###  0- 7 ######################################################
+  - index: 0
+    name: METAR
+    type: none
+    label: "Weather"
+    weather:
+      weather-font: B612
+  - index: 4
+    name: FOB
+    type: none
+    data:
+      icon-name: "gas-pump"
+      icon-size: 60
+      icon-color: darkorange
+      data: ${formula}
+      data-format: "{:03.1f}"
+      data-font: DIN Condensed Light
+      data-size: 80
+      data-color: white
+      data-unit: "Kg"
+      data-progress: 31
+      formula: ${sim/flightmodel/weight/m_fuel_total} 1000 /
+      bottomline: FOB
+      bottomline-size: 30
+      bottomline-color: lime
+# ### LINE 2 ###  8-15 ######################################################
+# ### LINE 3 ### 16-23 ######################################################
+# ### LINE 4 ### 24-31 ######################################################
+  - index: 31
+    name: xplane
+    type: page
+    page: xplane
+    icon: XPLANE12
+# ### Buttons
+# ### A/B Pager
+# ### Encoders
+# ### Sliders
+# ### Side buttons
+# ### Colored LED

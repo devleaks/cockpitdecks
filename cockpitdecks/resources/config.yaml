@@ -4,3 +4,4 @@
 default-label-color: white
 default-label-font: DIN.ttf
 default-label-size: 14
+cache-icon: True
