@@ -507,7 +507,6 @@ class Cockpit:
     def load_icons(self):
         # Loading icons
         #
-        logger.info(f"load_icons: use cache {self.cache_icon}")
         dn = os.path.join(self.acpath, CONFIG_FOLDER, ICONS_FOLDER)
         if os.path.exists(dn):
             self.icon_folder = dn
@@ -517,13 +516,25 @@ class Cockpit:
                     self.icons = pickle.load(fp)
                 logger.info(f"load_icons: {len(self.icons)} icons loaded from cache")
             else:
+                # Global, resource folder icons
+                rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
+                if os.path.exists(rf):
+                    icons = os.listdir(rf)
+                    for i in icons:
+                        if has_ext(i, "png"):  # later, might load JPG as well.
+                            fn = os.path.join(rf, i)
+                            image = Image.open(fn)
+                            self.icons[i] = image
+
+                # Aircraft specific folder icons
                 icons = os.listdir(dn)
                 for i in icons:
                     if has_ext(i, "png"):  # later, might load JPG as well.
                         fn = os.path.join(dn, i)
                         image = Image.open(fn)
                         self.icons[i] = image
-                if self.cache_icon:
+
+                if self.cache_icon:  # we cache both folders of icons
                     with open(cache, "wb") as fp:
                         pickle.dump(self.icons, fp)
                     logger.info(f"load_icons: {len(self.icons)} icons cached")
