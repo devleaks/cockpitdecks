@@ -13,6 +13,7 @@ from ruamel.yaml import YAML
 from PIL import ImageDraw, ImageFont
 
 from .color import convert_color, is_integer, has_ext, add_ext
+from .constant import KW_FORMULA
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -403,8 +404,6 @@ class Icon(Representation):
     def clean(self):
         """
         Removes icon from deck
-        (@todo: Should create a button with no activation and icon representation that has
-        default color/icon.)
         """
         icon = None
         deck = self.button.deck
@@ -436,7 +435,7 @@ class IconText(Icon):
 
         self.icon_color = config.get("text-bg-color")
         self.mk_uniform_icon()
-        # self.texts = config.get("texts")  # @todo later
+        # self.texts = config.get("multi-texts")  # @todo later
 
     def get_image(self):
         """
@@ -744,18 +743,31 @@ class LED(Representation):
 
 
 class ColoredLED(Representation):
-    """
-    @todo: later: Adjust the color of the LED from the button.get_button_value().
-    """
+
     def __init__(self, config: dict, button: "Button"):
+        self._color = config.get("colored-led", button.page.deck.cockpit.cockpit_color)
+        self.color = (128, 128, 256)
         Representation.__init__(self, config=config, button=button)
 
-        color = config.get("colored-led", button.page.deck.cockpit.cockpit_color)  # color should hold a tuple of 3 or 4 int or float
-        self.color = convert_color(color)
+    def init(self):
+        if type(self._color) == dict:
+            self.datarefs = self.button.scan_datarefs(self._color)
+            if self.datarefs is not None and len(self.datarefs) > 0:
+                logger.debug(f"get_color: button {self.button_name()}: adding datarefs {self.datarefs} for color")
+        else:
+            self.color = convert_color(self._color)
+
+
+    def get_color(self):
+        """
+        Compute color from formula/datarefs if any
+        """
+        return self.color
 
     def render(self):
-        logger.debug(f"render: {type(self).__name__}: {self.color}")
-        return self.color
+        color = self.get_color()
+        logger.debug(f"render: {type(self).__name__}: {color}")
+        return color
 
     def clean(self):
         logger.debug(f"clean: {type(self).__name__}")

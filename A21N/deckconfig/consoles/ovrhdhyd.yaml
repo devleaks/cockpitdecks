@@ -106,7 +106,7 @@ buttons:
         formula: ${AirbusFBW/HydOHPArray[1]} not
   - index: 13
     name: ELECPUMP
-    type: none
+    type: onoff
     label: ELEC PUMP
     annunciator:
       model: B
@@ -120,6 +120,7 @@ buttons:
         color: white
         framed: true
         dataref: AirbusFBW/fmod/sys/hydpumps[0]
+    set-dataref: AirbusFBW/fmod/sys/hydpumps[0]
   - index: 15
     name: left
     type: page

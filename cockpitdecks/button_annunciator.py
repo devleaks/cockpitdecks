@@ -29,10 +29,19 @@ ICON_SIZE = 256 # px
 DEFAULT_INVERT_COLOR = "white"
 TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
 
+
 class GUARD_TYPES(Enum):
     COVER = "cover"
     GRID = "grid"
 
+
+class ANNUNCIATOR_LED(Enum):
+    BARS = "bars"
+    BLOCK = "block"
+    DEFAULT = "block"
+    DOT = "dot"
+    LED = "led"
+    LGEAR = "lgear"
 
 class AnnunciatorPart:
 
@@ -254,13 +263,13 @@ class AnnunciatorPart:
 
         if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
             ninside = 6
-            if led in ["block", "led"]:
+            if led in [ANNUNCIATOR_LED.BLOCK.value, ANNUNCIATOR_LED.LED.value]:
                 LED_BLOC_HEIGHT = int(self.height() / 2)
                 if size == "large":
                     LED_BLOC_HEIGHT = int(LED_BLOC_HEIGHT * 1.25)
                 frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_BLOC_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_BLOC_HEIGHT / 2))
                 draw.rectangle(frame, fill=color)
-            elif led in ["bar", "bars"]:
+            elif led in ["bar", ANNUNCIATOR_LED.BARS.value]:
                 LED_BAR_COUNT = int(self._config.get("bars", 3))
                 LED_BAR_HEIGHT = max(int(self.height() / (2 * LED_BAR_COUNT)), 2)
                 if size == "large":
@@ -271,20 +280,20 @@ class AnnunciatorPart:
                     frame = ((self.center_w() - self.width()/2 + ninside * inside, hstart), (self.center_w() + self.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
                     draw.rectangle(frame, fill=color)
                     hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
-            elif led == "dot":
+            elif led == ANNUNCIATOR_LED.DOT.value:
                 DOT_RADIUS = int(min(self.width(), self.height()) / 5)
                 # Plot a series of circular dot on a line
                 frame = ((self.center_w() - DOT_RADIUS, self.center_h() - DOT_RADIUS), (self.center_w() + DOT_RADIUS, self.center_h() + DOT_RADIUS))
                 draw.ellipse(frame, fill=color)
-            elif led == "lgear":
+            elif led == ANNUNCIATOR_LED.LGEAR.value:
                 STROKE_THICK = int(min(self.width(), self.height()) / 8)
-                UNIT = int(min(self.width(), self.height()) / 3)  # triangle half length of side
-                unit5 = int(sqrt(3) * UNIT / 2)
-                origin = (self.center_w() - UNIT, self.center_h() - unit5)
+                tr_hwidth  = int(self.width()  / 2   - ninside)  # triangle half length of width
+                tr_hheight = int(self.height() / 2.5 - ninside)  # triangle half height
+                origin = (self.center_w() - tr_hwidth, self.center_h() - tr_hheight)
                 triangle = [
                     origin,
-                    (self.center_w() + UNIT, self.center_h() - unit5),
-                    (self.center_w(), self.center_h() + unit5),  # lower center point
+                    (self.center_w() + tr_hwidth, self.center_h() - tr_hheight),
+                    (self.center_w(), self.center_h() + tr_hheight),  # lower center point
                     origin
                 ]
                 draw.polygon(triangle, outline=color, width=STROKE_THICK)

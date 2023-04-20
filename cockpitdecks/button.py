@@ -355,6 +355,7 @@ class Button:
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
         def is_dref(r):
+            # ${state:button-value} is not a dataref
             PREFIX = ["fa", "wi", "button", "state"]
             SEP = ":"
             for s in PREFIX:
@@ -405,7 +406,7 @@ class Button:
 
         # Use of datarefs in label or text
         #
-        # 3. LABEL datarefs
+        # 3. LABEL datarefs (should be avoided, label should be static message)
         # 3.1 Label
         label = base.get("label")
         if label is not None and type(label) == str:

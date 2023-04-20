@@ -203,6 +203,11 @@ buttons:
           formula: ${AirbusFBW/APUMaster}
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
+  - index: 23
+    name: C3000
+    type: page
+    page: c3000
+    text: C3000
 # AirbusFBW/OHPLightsATA49
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24
