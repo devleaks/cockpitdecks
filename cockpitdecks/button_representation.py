@@ -7,6 +7,7 @@ import re
 import logging
 import threading
 import time
+import inspect
 from enum import Enum
 from ruamel.yaml import YAML
 
@@ -16,7 +17,7 @@ from .color import convert_color, is_integer, has_ext, add_ext
 from .constant import KW_FORMULA
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 # Attribute keyworkds
 KW_MANAGED = "managed"
@@ -112,46 +113,35 @@ class Icon(Representation):
             self.label_position = page.default_label_position
 
         self.icon_color = config.get("icon-color", page.default_icon_color)
-        self.icon = config.get("icon")
+        self.cockpit_texture = config.get("cockpit-texture")
 
+        self.icon = None
         deck = self.button.deck
-        if self.icon is not None:  # 2.1 if supplied, use it
-            self.icon = add_ext(self.icon, ".png")
-            if self.icon not in deck.icons.keys():
-                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}")
-                self.icon = None
+        candidate_icon = config.get("icon")
+        if candidate_icon is not None:
+            for ext in [".png", ".jpg", ".jpeg"]:
+                fn = add_ext(candidate_icon, ext)
+                if fn in deck.icons.keys():
+                    self.icon = fn
+            if self.icon is None:
+                self.icon = self.button.page.default_icon_name
+                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}, using page default {self.icon}")
 
-        # If we have no icon, but an icon-color, we create a uniform color icon and store it.
-        if self.icon is None:
-            self.mk_uniform_icon()
-
-        # self.icon_color = convert_color(self.icon_color)
-        # # the icon size varies for center "buttons" and left and right side "buttons".
-        # if type(self.deck.device).__name__.startswith("StreamDeck"):
-        #     imgtype = self.deck.device
-        # else:
-        #     imgtype = "button" if self.index not in ["left", "right"] else self.index
-        # # self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
-        # if self.deck.pil_helper is not None:
-        #     self.default_icon_image = self.deck.pil_helper.create_image(deck=imgtype, background=self.icon_color)
-        #     self.default_icon = f"_default_{self.page.name}_{self.name}_icon.png"
-        # # self.default_icon = add_ext(self.default_icon, ".png")
-        # # logger.debug(f"__init__: button {self.name}: creating icon '{self.default_icon}' with color {self.icon_color}")
-        # # register it globally
-        #     self.deck.cockpit.icons[self.default_icon] = self.default_icon_image
-        # # add it to icon for this deck too since it was created at proper size
-        #     self.deck.icons[self.default_icon] = self.default_icon_image
-        #     self.icon = self.default_icon
-
-    def mk_uniform_icon(self):
-        deck = self.button.deck
-        if self.icon_color is None:
-            self.icon_color = deck.cockpit_color
-            logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: no icon color, using cockpit color {self.icon_color}")
-        self.icon_color = convert_color(self.icon_color)
-        self.icon = f"_default_{self.button.page.name}_{self.button_name()}_icon.png"
-        deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
-        logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
+    def get_default_icon(self):
+        # Add default icon for this button
+        fname = inspect.currentframe().f_code.co_name
+        if not hasattr(self.button.deck, fname): # deck cannot display icon anyway
+            logger.warning(f"get_default_icon: button {self.name}: deck cannot display icon")
+            return None
+        icons = self.button.deck.icons
+        if self.default_icon_name not in icons.keys():
+            image = self.button.deck.cockpit.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Button {self.name}")
+            if self.deck.device is not None:
+                icons[self.default_icon_name] = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+            else:
+                icons[self.default_icon_name] = image
+            logger.debug(f"get_default_icon: button {self.name}: created default {self.default_icon_name} icon")
+        return icons[self.default_icon_name]
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
@@ -432,10 +422,9 @@ class IconText(Icon):
         Icon.__init__(self, config=config, button=button)
 
         self.text = str(config.get("text"))
-
-        self.icon_color = config.get("text-bg-color")
-        self.mk_uniform_icon()
         # self.texts = config.get("multi-texts")  # @todo later
+
+        self.icon_color = config.get("text-bg-color", self.icon_color)
 
     def get_image(self):
         """
@@ -750,7 +739,7 @@ class ColoredLED(Representation):
         Representation.__init__(self, config=config, button=button)
 
     def init(self):
-        if type(self._color) == dict:
+        if type(self._color) == dict:  # @todo: does not currently work
             self.datarefs = self.button.scan_datarefs(self._color)
             if self.datarefs is not None and len(self.datarefs) > 0:
                 logger.debug(f"get_color: button {self.button_name()}: adding datarefs {self.datarefs} for color")

@@ -23,7 +23,7 @@ decks:
   - name: XPDeckXL
     layout: consoles
     type: streamdeck
-    brightness: 80
+    brightness: 100
   - name: XPTouch
     type: xtouchmini
     layout: comm-radio
@@ -35,4 +35,4 @@ default-label-font: B612-Bold
 default-label-size: 12
 default-label-color: white
 empty-key-fill-color: (94, 111, 130)
-# debug: cockpitdecks.xplaneudp
+debug: cockpitdecks.cockpit

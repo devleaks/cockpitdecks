@@ -102,7 +102,7 @@ class XTouchMini(Deck):
     def load_icons(self):
         pass
 
-    def make_default_icon(self):
+    def get_default_icon(self):
         pass
 
     def make_icon_for_device(self):
@@ -181,7 +181,7 @@ class XTouchMini(Deck):
         elif isinstance(representation, MultiLEDs):
             self._set_encoder_led(button)
         else:
-            logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"render: button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device

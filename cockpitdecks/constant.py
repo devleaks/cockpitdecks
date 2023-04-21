@@ -38,11 +38,13 @@ WEATHER_ICON_FONT = "weathericons.otf"
 
 # Icons
 ICONS_FOLDER = "icons"
+ICON_SIZE = 256 # px
 DEFAULT_ICON_NAME = "_default_icon.png"
 DEFAULT_ICON_COLOR = (0, 0, 100)
 
 # Decor, colors
 COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name
+COCKPIT_TEXTURE = "COCKPIT_TEXTURE.png"
 DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
 
 # Attribute keybords

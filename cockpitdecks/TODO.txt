@@ -1,0 +1,27 @@
+BUG:
+Word FORMULA appears in managed altitude?
+
+
+To do:
+Add ability to choose color from dataref value
+
+
+
+---
+
+Think about more flexibility for TEXT icon. Allow different version?
+1. Version selection: 0, 1, 2... => index in array
+2. Each version as different set of text-*
+
+Make kind of "multi-texts" selector.
+
+Examples:
+Airspeed: Knots vs. Mach indication
+
+Altitude: Feet/Meters
+Vertical speed: Ft/m or angle of descend.
+
+
+---
+
+Rather than default color for cockpit, use a defaul background image with texture

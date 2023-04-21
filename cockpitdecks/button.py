@@ -169,6 +169,9 @@ class Button:
             logger.warning(f"guess_representation_type: multiple representation {a} in {config}")
         return "none"
 
+    def button_name(self):
+        return self.name
+
     def get_id(self):
         return ID_SEP.join([self.page.get_id(), self.name])
 

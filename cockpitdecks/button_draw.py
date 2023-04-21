@@ -9,12 +9,12 @@ from random import randint
 
 from PIL import Image, ImageDraw
 
-from .constant import WEATHER_ICON_FONT, ICON_FONT, DEFAULT_LABEL_FONT
+from .constant import WEATHER_ICON_FONT, ICON_FONT, ICON_SIZE, DEFAULT_LABEL_FONT
 from .color import convert_color, light_off
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
-from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
+from .button_annunciator import TRANSPARENT_PNG_COLOR
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -191,6 +191,12 @@ class SwitchCommonBase(DrawBase):
         self.handle_stroke_color = self.switch.get("handle-stroke-color", "white")
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.switch.get("handle-stroke-width", 4)
+
+        self.top_fill_color = self.switch.get("top-fill-color", "(100,100,100)")
+        self.top_fill_color = convert_color(self.top_fill_color)
+        self.top_stroke_color = self.switch.get("top-stroke-color", "white")
+        self.top_stroke_color = convert_color(self.top_stroke_color)
+        self.top_stroke_width = self.switch.get("top-stroke-width", 4)
 
         # Ticks
         self.tick_space = self.switch.get("tick-space", 10)
@@ -445,7 +451,7 @@ class Switch(SwitchCommonBase):
         self.handle_dot_color = self.switch.get("switch-length", "white")
 
         # Switch
-        self.switch_length = self.switch.get("switch-length", ICON_SIZE/3)
+        self.switch_length = self.switch.get("switch-length", ICON_SIZE / 2.75)
         self.switch_width = self.switch.get("switch-width", 32)
 
         # Options
@@ -519,33 +525,34 @@ class Switch(SwitchCommonBase):
 
         if not (self.three_way and value == 1):  # extreme positions
             if self.vertical:
-                y1 = center[1]+pos*self.switch_length
+                y1 = center[1] + pos * self.switch_length
                 ew = self.switch_width
-
-                # top
-                tl = [center[0]-ew/2, y1-ew/2]
-                br = [center[0]+ew/2, y1+ew/2]
-                if self.switch_style == "round":
-                    draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
-                elif self.switch_style == "rect":
-                    tl = [center[0]-ew, y1-ew/3]
-                    br = [center[0]+ew, y1+ew/3]
-                    draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=int(self.handle_stroke_width * 1.5))
-                else: # complicate 3 dot rectangle
-                    tl = [center[0]-rw, y1-rw/3]
-                    br = [center[0]+rw, y1+rw/3]
-                    # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=int(self.handle_stroke_width * 1.5))
 
                 # Handle
                 if self.handle_stroke_width > 0:
-                    ew = ew + 2*self.handle_stroke_width
+                    ew = ew + 2 * self.handle_stroke_width
                     draw.line([tuple(center), (center[0], y1)],
                               width=ew,
                               fill=self.handle_stroke_color) #!STROKE color
                 draw.line([tuple(center), (center[0], y1)],
                               width=self.switch_width,
                               fill=self.handle_fill_color)
+
+                # top
+                tl = [center[0]-ew/2, y1-ew/2]
+                br = [center[0]+ew/2, y1+ew/2]
+                if self.switch_style == "round":
+                    draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+                elif self.switch_style == "rect":
+                    rw = int(self.switch_width / 2 + 4)
+                    tl = [center[0]-rw, y1-rw/2]
+                    br = [center[0]+rw, y1+rw/2]
+                    draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+                else: # complicate 3 dot rectangle
+                    tl = [center[0]-rw, y1-rw/3]
+                    br = [center[0]+rw, y1+rw/3]
+                    # draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
 
                 if self.switch_style == "3dot": # complicate 3 dot rectangle
                     cx = center[0] - cr - cs
@@ -568,23 +575,24 @@ class Switch(SwitchCommonBase):
                 draw.ellipse(tl+br, fill=self.handle_fill_color)
 
             else:
-                x1 = center[0]+pos*self.switch_length
+                x1 = center[0] + pos * self.switch_length
                 ew = self.switch_width
 
                 # top
                 tl = [x1-ew/2, center[1]-ew/2]
                 br = [x1+ew/2, center[1]+ew/2]
                 if self.switch_style == "round":
-                    draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
                 elif self.switch_style == "rect":
-                    tl = [x1-ew/2, center[1]-ew]
-                    br = [x1+ew/2, center[1]+ew]
-                    draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    rw = int(self.switch_width / 2 + 4)
+                    tl = [x1-ew/2, center[1]-rw]
+                    br = [x1+ew/2, center[1]+rw]
+                    draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
                 else: # complicate 3 dot rectangle
                     tl = [x1-rw/2, center[1]-rw]
                     br = [x1+rw/2, center[1]+rw]
-                    # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    # draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
 
                 # Tick
                 if self.handle_stroke_width > 0:
@@ -619,11 +627,11 @@ class Switch(SwitchCommonBase):
             tl = [center[0]-ew/2, center[1]-ew/2]
             br = [center[0]+ew/2, center[1]+ew/2]
             if self.switch_style == "round":
-                draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
             elif self.switch_style == "rect":
                 tl = [center[0]-ew, center[1]-ew/2]
                 br = [center[0]+ew, center[1]+ew/2]
-                draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
             else: # complicate 3 dot rectangle
                 if self.vertical:
                     tl = [center[0]-rw, center[1]-rw/2]

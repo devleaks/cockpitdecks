@@ -135,11 +135,13 @@ class Deck(ABC):
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
         self.empty_key_fill_color = config.get("empty-key-fill-color", base.empty_key_fill_color)
-        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        if self.empty_key_fill_color is not None:
+            self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.empty_key_fill_icon = config.get("empty-key-fill-icon", base.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
+        self.cockpit_texture = config.get("cockpit-texture")
         self.default_logo = config.get("default-logo", base.default_logo)
         self.default_wallpaper = config.get("default-wallpaper", base.default_wallpaper)
         self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
@@ -152,6 +154,7 @@ class Deck(ABC):
             self.logo = config.get("logo", base.default_logo)
             self.wallpaper = config.get("wallpaper", base.default_wallpaper)
             self.home_page_name = config.get("homepage-name", base.default_home_page_name)
+
 
     def load_layout_config(self, fn):
         """
@@ -168,6 +171,7 @@ class Deck(ABC):
                 self.set_default(self.layout_config, self)
         else:
             logger.debug(f"load_layout_config: no layout config file")
+
 
     def inspect(self, what: str = None):
         """
@@ -416,7 +420,7 @@ class DeckWithIcons(Deck):
         if not self.valid:
             logger.warning(f"init: deck {self.name}: is invalid")
             return
-        self.make_default_icon()
+        dummy = self.get_default_icon()  # may not be necessary to do it beforehand
         self.load_icons()
         self.load()     # will load default page if no page found
         self.start()    # Some system may need to start before we can load a page
@@ -427,18 +431,16 @@ class DeckWithIcons(Deck):
         """
         return None
 
-    def make_default_icon(self):
-        """
-        Connects to device and send initial keys.
-        """
+    def get_default_icon(self):
         # Add default icon for this deck
-        if self.device is not None:
-            self.icons[self.default_icon_name] = self.pil_helper.create_image(deck=self.device, background=self.default_icon_color)
-        else:
-            self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=self.default_icon_color)
-        # copy it at highest level too
-        # self.cockpit.icons[self.default_icon_name] = self.icons[self.default_icon_name]
-        logger.debug(f"make_default_icon: create default {self.default_icon_name} icon ({self.icons.keys()})")
+        if self.default_icon_name not in self.icons.keys():
+            image = self.cockpit.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Deck {self.name}")
+            if self.device is not None:
+                self.icons[self.default_icon_name] = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+            else:
+                self.icons[self.default_icon_name] = image
+            logger.debug(f"get_default_icon: deck {self.name}: created default {self.default_icon_name} icon")
+        return self.icons[self.default_icon_name]
 
     def load_icons(self):
         """

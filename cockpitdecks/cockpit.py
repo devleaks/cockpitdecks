@@ -13,7 +13,7 @@ from ruamel.yaml import YAML
 from .constant import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
-from .constant import COCKPIT_COLOR, DEFAULT_LIGHT_OFF_INTENSITY
+from .constant import COCKPIT_COLOR, COCKPIT_TEXTURE, DEFAULT_LIGHT_OFF_INTENSITY, ICON_SIZE
 from .color import convert_color, has_ext
 
 from . import __version__
@@ -22,7 +22,7 @@ from .devices import DECK_TYPES
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
 
@@ -33,14 +33,14 @@ class Cockpit:
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
     def __init__(self, xp):
-        self._debug = ROOT_DEBUG  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
+        self._debug = ROOT_DEBUG        # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
         self.xp = xp(self)
-        self._config = None
+        self._config = None             # content of deckconfig/config.yaml
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
 
         self.disabled = False
-        self.default_pages = None  # for debugging
+        self.default_pages = None       # for debugging
 
         self.reload_loop_run = False
         self.reload_loop_thread = None
@@ -51,7 +51,7 @@ class Cockpit:
         self.acpath = None
         self.cockpit = {}  # all decks: { deckname: deck }
 
-        self.default_config = None
+        self.default_config = None      # content of resources/config.yaml
         self.default_logo = DEFAULT_LOGO
         self.default_wallpaper = DEFAULT_WALLPAPER
 
@@ -301,6 +301,7 @@ class Cockpit:
             return None
 
         # 0. Some variables defaults
+        self.default_config = {}
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
         if os.path.exists(fn):
             with open(fn, "r") as fp:
@@ -308,24 +309,29 @@ class Cockpit:
                 logger.debug(f"load_defaults: loaded default config {fn}")
         else:
             logger.debug(f"load_defaults: no default config {fn}")
-        if self.default_config is not None:
-            self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
-            self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
-            self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
-            self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
-            self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
-            self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
-            self.cache_icon = self.default_config.get("cache-icon", self.cache_icon)
-            self.default_icon_color = self.default_config.get("default-icon-color", convert_color(DEFAULT_ICON_COLOR))
-            self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
-            self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
-            self.annunciator_style = self.default_config.get("annunciator-style", DEFAULT_ANNUNCIATOR_STYLE.value)
-            self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-            self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
+
+        # Load global defaults from resources/config.yaml file or use application default
+        self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
+        self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
+        self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
+        self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
+        self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
+        self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
+        self.cache_icon = self.default_config.get("cache-icon", self.cache_icon)
+        self.default_icon_name = DEFAULT_ICON_NAME
+        self.default_icon_color = self.default_config.get("default-icon-color", DEFAULT_ICON_COLOR)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
+        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+        self.cockpit_texture = self.default_config.get("cockpit-texture", COCKPIT_TEXTURE)
+        self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
+        self.cockpit_color = convert_color(self.cockpit_color)
+        self.annunciator_style = self.default_config.get("annunciator-style", DEFAULT_ANNUNCIATOR_STYLE.value)
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
+        self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
 
         # 1. Creating default icon
-        self.icons[self.default_icon_name] = Image.new(mode="RGBA", size=(256, 256), color=DEFAULT_ICON_COLOR)
-        logger.debug(f"load_defaults: create default {self.default_icon_name} icon")
+        dummy = self.get_default_icon()  # may not be necessary to do it beforehand
         logger.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
 
         # 2. Finding a default font for Pillow
@@ -374,6 +380,35 @@ class Cockpit:
         # 4. report summary if debugging
         logger.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font}, default label={self.default_label_font}")
 
+
+    def mk_icon_bg(self, texture, color, who: "Mystery"):
+        image = None
+        if texture is not None:
+            dirs = []
+            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
+            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
+            if self.acpath is not None:  # add to search path
+                dirs.append(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+                dirs.append(os.path.join(self.acpath, CONFIG_FOLDER, ICONS_FOLDER))
+            for dn in dirs:
+                if image is None:
+                    fn = os.path.join(dn, texture)
+                    if os.path.exists(fn):
+                        image = Image.open(fn)
+                        logger.debug(f"mk_icon_bg: {who}: texture {texture} in {dn}")
+        if image is None:
+            if texture is not None:
+                logger.debug(f"mk_icon_bg: {who}: texture {texture} not found")
+            image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=color)
+            logger.debug(f"mk_icon_bg: {who}: uniform color {color}")
+        return image
+
+    def get_default_icon(self):
+        # Add default icon for this cockpit
+        if self.default_icon_name not in self.icons.keys():
+            self.icons[self.default_icon_name] = self.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Cockpit {self.name}")
+        return self.icons[self.default_icon_name]
+
     def create_decks(self):
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = {}
@@ -394,24 +429,32 @@ class Cockpit:
                 self._debug = self._config.get("debug", "").split(",")  # array of classes to enable
                 self.set_logging_level(__name__)
 
+                # Adjust some global defaults from aircraft config file
                 self.name = self._config.get("name", self._config.get("aircraft", "Cockpitdecks"))
-                self.icao = self._config.get("icao", self._config.get("icao", "ZZZZ"))
+                self.icao = self._config.get("icao", "ZZZZ")
+
                 self.default_label_font = config.get("default-label-font", self.default_font)
-                self.default_label_size = config.get("default-label-size", DEFAULT_LABEL_SIZE)
-                self.default_label_color = config.get("default-label-color", DEFAULT_LABEL_COLOR)
-                self.default_label_position = config.get("default-label-position", DEFAULT_LABEL_POSITION)
+                self.default_label_size = config.get("default-label-size", self.default_label_size)
+                self.default_label_color = config.get("default-label-color", self.default_label_color)
+                self.default_label_color = convert_color(self.default_label_color)
+                self.default_label_position = config.get("default-label-position", self.default_label_position)
                 self.cache_icon = config.get("cache-icon", self.cache_icon)
-                self.default_icon_name = DEFAULT_ICON_NAME
-                self.default_icon_color = config.get("default-icon-color", DEFAULT_ICON_COLOR)
-                self.default_logo = config.get("default-logo", DEFAULT_LOGO)
-                self.default_wallpaper = config.get("default-wallpaper", DEFAULT_WALLPAPER)
+                self.default_icon_color = config.get("default-icon-color", self.default_icon_color)
+                self.default_icon_color = convert_color(self.default_icon_color)
+                self.default_logo = config.get("default-logo", self.default_logo)
+                self.default_wallpaper = config.get("default-wallpaper", self.default_wallpaper)
                 self.empty_key_fill_color = config.get("fill-empty-keys")
-                self.cockpit_color = config.get("cockpit-color", COCKPIT_COLOR)
-                self.default_home_page_name = config.get("default-homepage-name", HOME_PAGE)
+                if self.empty_key_fill_color is not None:
+                    self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
+                self.cockpit_texture = config.get("cockpit-texture", self.cockpit_texture)
+                self.cockpit_color = config.get("cockpit-color", self.cockpit_color)
+                self.cockpit_color = convert_color(self.cockpit_color)
+                self.default_home_page_name = config.get("default-homepage-name", self.default_home_page_name)
 
-                logger.debug(f"create_decks: new defaults: label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}")
-
-
+                if self.default_icon_name in self.icons.keys():
+                    del self.icons[self.default_icon_name]
+                dummy = self.get_default_icon()  # redo default icons
+                logger.debug(f"create_decks: new defaults: label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
 
                 if "decks" in config:
                     deck_type_count = {}
@@ -466,7 +509,7 @@ class Cockpit:
                         # else:
                         #     logger.error(f"load: deck {decktype} {name} has no serial number, ignoring")
                 else:
-                    logger.warning(f"load: no deck in file {fn}")
+                    logger.warning(f"load: no deck in config file {fn}")
         else:
             logger.warning(f"load: no config file {fn}")
 
@@ -669,7 +712,7 @@ class Cockpit:
         for deck in self.devices:
             decktype = deck.get("type")
             if decktype not in DECK_TYPES.keys():
-                logger.warning(f"create_default_decks: invalid deck type {decktype}, ignoring")
+                logger.warning(f"terminate_devices: invalid deck type {decktype}, ignoring")
                 continue
             device = deck["device"]
             DECK_TYPES[decktype][0].terminate_device(device, deck["serial_number"])

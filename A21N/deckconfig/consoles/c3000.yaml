@@ -293,7 +293,7 @@ buttons:
     command: sim/annunciator/clear_master_warning
     annunciator-animate:
       text: "MASTER\nWARN"
-      text-color: firebrick
+      text-color: red
       text-font: DIN Condensed Black.otf
       text-size: 72
       dataref: AirbusFBW/MasterWarn
@@ -357,7 +357,7 @@ buttons:
     name: Index
     type: page
     page: index
-    representation: false
+    icon-color: (200, 0, 0)
 #    icon: TOLISS-A321
   - index: 21
     name: LGEARL
@@ -369,7 +369,7 @@ buttons:
       parts:
         B0:
           text: "UNLK"
-          color: firebrick
+          color: red
           size: 40
           formula: ${AirbusFBW/LeftGearInd} 2 mod
         B1:
@@ -387,7 +387,7 @@ buttons:
       parts:
         B0:
           text: "UNLK"
-          color: firebrick
+          color: red
           size: 40
           formula: ${AirbusFBW/NoseGearInd} 2 mod
         B1:

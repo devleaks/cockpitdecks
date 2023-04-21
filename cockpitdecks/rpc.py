@@ -44,7 +44,7 @@ class RPC:
             elif token == "/":
                 number2 = stack.pop()
                 stack.append(stack.pop() / number2)
-            elif token == "%":
+            elif token == "%" or  token == "mod":
                 number2 = stack.pop()
                 stack.append(stack.pop() % number2)
             elif token == "floor":

@@ -11,12 +11,12 @@ from avwx import Metar, station
 
 from PIL import Image, ImageDraw
 
-from .constant import WEATHER_ICON_FONT, ICON_FONT
+from .constant import WEATHER_ICON_FONT, ICON_FONT, ICON_SIZE
 from .color import convert_color, light_off
 from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
 from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_draw import DrawBase, DrawAnimation
-from .button_annunciator import ICON_SIZE, TRANSPARENT_PNG_COLOR
+from .button_annunciator import TRANSPARENT_PNG_COLOR
 
 
 logger = logging.getLogger(__name__)
@@ -243,7 +243,7 @@ class WeatherIcon(DrawAnimation):
             logger.warning(f"get_image_for_icon: no metar summary")
 
         # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.deck.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
+        bg = self.get_default_icon()
         bg.alpha_composite(image)
         self._cache = bg.convert("RGB")
         return self._cache

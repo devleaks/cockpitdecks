@@ -9,7 +9,7 @@ from math import sqrt
 
 from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
-from .constant import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE
+from .constant import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
 from .color import convert_color, light_off
 from .rpc import RPC
 from .button_representation import Icon
@@ -25,7 +25,6 @@ KW_DATAREF = "dataref"
 ANNUNCIATOR_DEFAULT_MODEL = "A"
 ANNUNCIATOR_DEFAULT_MODEL_PART = "A0"
 
-ICON_SIZE = 256 # px
 DEFAULT_INVERT_COLOR = "white"
 TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
 
@@ -286,8 +285,8 @@ class AnnunciatorPart:
                 frame = ((self.center_w() - DOT_RADIUS, self.center_h() - DOT_RADIUS), (self.center_w() + DOT_RADIUS, self.center_h() + DOT_RADIUS))
                 draw.ellipse(frame, fill=color)
             elif led == ANNUNCIATOR_LED.LGEAR.value:
-                STROKE_THICK = int(min(self.width(), self.height()) / 8)
-                tr_hwidth  = int(self.width()  / 2   - ninside)  # triangle half length of width
+                STROKE_THICK = int(min(self.width(), self.height()) / 8) + 1
+                tr_hwidth  = int(self.width()  / 2.5 - ninside)  # triangle half length of width
                 tr_hheight = int(self.height() / 2.5 - ninside)  # triangle half height
                 origin = (self.center_w() - tr_hwidth, self.center_h() - tr_hheight)
                 triangle = [

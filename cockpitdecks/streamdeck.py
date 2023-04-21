@@ -233,7 +233,7 @@ class Streamdeck(DeckWithIcons):
                 image = self.icons[self.default_icon_name]
             self._send_key_image_to_device(button.index, image)
         else:
-            logger.warning(f"set_key_image: not a valid button type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"_set_key_image: button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     def print_page(self, page: Page):
         """
@@ -245,10 +245,10 @@ class Streamdeck(DeckWithIcons):
         nh, nw = self.device.key_layout()
         iw, ih = self.device.key_image_format()['size']
 
-        ICON_SIZE = iw
+        icon_size = iw
         INTER_ICON = int(iw/10)
-        w = nw * ICON_SIZE + (nw - 1) * INTER_ICON
-        h = nh * ICON_SIZE + (nw - 1) * INTER_ICON
+        w = nw * icon_size + (nw - 1) * INTER_ICON
+        h = nh * icon_size + (nw - 1) * INTER_ICON
         i = 0
 
         image = Image.new(mode="RGBA", size=(w, h))
@@ -256,11 +256,11 @@ class Streamdeck(DeckWithIcons):
         for button in page.buttons.values():
             i = int(button.index)
             mx = i % nw
-            x = mx * ICON_SIZE + mx * INTER_ICON
+            x = mx * icon_size + mx * INTER_ICON
             my = int(i/nw)
-            y = my * ICON_SIZE + my * INTER_ICON
+            y = my * icon_size + my * INTER_ICON
             b = button.get_representation()
-            bs = b.resize((ICON_SIZE, ICON_SIZE))
+            bs = b.resize((icon_size, icon_size))
             image.paste(bs, (x, y))
             logger.debug(f"print_page: added {button.name} at ({x}, {y})")
         logger.debug(f"print_page: page {self.name}: ..saving..")

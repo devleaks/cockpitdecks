@@ -491,7 +491,7 @@ class Loupedeck(DeckWithIcons):
         elif isinstance(representation, ColoredLED):
             self._set_button_color(button)
         else:
-            logger.warning(f"render: not a valid button type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"render: button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device
