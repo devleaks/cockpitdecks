@@ -134,10 +134,6 @@ class Deck(ABC):
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
-        self.empty_key_fill_color = config.get("empty-key-fill-color", base.empty_key_fill_color)
-        if self.empty_key_fill_color is not None:
-            self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-        self.empty_key_fill_icon = config.get("empty-key-fill-icon", base.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)

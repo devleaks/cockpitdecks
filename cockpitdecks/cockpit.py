@@ -68,8 +68,6 @@ class Cockpit:
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = DEFAULT_ICON_COLOR
         self.fill_empty_keys = True
-        self.empty_key_fill_color = None
-        self.empty_key_fill_icon = None
         self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
         self.cockpit_color = COCKPIT_COLOR
         self.default_home_page_name = HOME_PAGE
@@ -321,8 +319,6 @@ class Cockpit:
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = self.default_config.get("default-icon-color", DEFAULT_ICON_COLOR)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.empty_key_fill_color = self.default_config.get("fill-empty-keys")
-        self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
         self.cockpit_texture = self.default_config.get("cockpit-texture", COCKPIT_TEXTURE)
         self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
         self.cockpit_color = convert_color(self.cockpit_color)
@@ -443,9 +439,6 @@ class Cockpit:
                 self.default_icon_color = convert_color(self.default_icon_color)
                 self.default_logo = config.get("default-logo", self.default_logo)
                 self.default_wallpaper = config.get("default-wallpaper", self.default_wallpaper)
-                self.empty_key_fill_color = config.get("fill-empty-keys")
-                if self.empty_key_fill_color is not None:
-                    self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
                 self.cockpit_texture = config.get("cockpit-texture", self.cockpit_texture)
                 self.cockpit_color = config.get("cockpit-color", self.cockpit_color)
                 self.cockpit_color = convert_color(self.cockpit_color)

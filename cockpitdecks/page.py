@@ -61,10 +61,6 @@ class Page:
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
-        self.empty_key_fill_color = config.get("empty-key-fill-color", base.empty_key_fill_color)
-        if self.empty_key_fill_color is not None:
-            self.empty_key_fill_color = convert_color(self.empty_key_fill_color)
-        self.empty_key_fill_icon = config.get("empty-key-fill-icon", base.empty_key_fill_icon)
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
@@ -188,14 +184,14 @@ class Page:
             for key in self.deck.valid_indices_with_image():
                 if key not in busy_keys:
                     image = None
-                    if self.empty_key_fill_icon in self.deck.icons.keys():
-                        image = self.deck.icons[self.empty_key_fill_icon]
-                    elif self.empty_key_fill_color is not None:
+                    if self.default_icon_name in self.deck.icons.keys():
+                        image = self.deck.icons[self.default_icon_name]
+                    elif self.default_icon_color is not None:
                         class Butemp:
                             index = key
                         button = Butemp()
                         # setattr(button, "index", key)
-                        image = self.deck.create_icon_for_key(button, colors=self.empty_key_fill_color)
+                        image = self.deck.create_icon_for_key(button, colors=self.default_icon_color)
                     if image is None:
                         image = self.get_default_icon()
                     if image is not None:

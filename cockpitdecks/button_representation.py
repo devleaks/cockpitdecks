@@ -399,10 +399,10 @@ class Icon(Representation):
         deck = self.button.deck
         page = self.button.page
         color = deck.cockpit_color
-        if page.empty_key_fill_icon in deck.icons.keys():
-            icon = deck.icons[page.empty_key_fill_icon]
-        elif page.empty_key_fill_color is not None:
-            icon = deck.create_icon_for_key(self.button, colors=page.empty_key_fill_color)
+        if page.default_icon_name in deck.icons.keys():
+            icon = deck.icons[page.default_icon_name]
+        elif page.default_icon_color is not None:
+            icon = deck.create_icon_for_key(self.button, colors=page.default_icon_color)
         elif deck.cockpit_color is not None:
             icon = deck.create_icon_for_key(self.button, colors=deck.cockpit_color)
 
