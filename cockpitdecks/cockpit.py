@@ -22,7 +22,7 @@ from .devices import DECK_TYPES
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
 

@@ -14,10 +14,10 @@ from ruamel.yaml import YAML
 from PIL import ImageDraw, ImageFont
 
 from .color import convert_color, is_integer, has_ext, add_ext
-from .constant import KW_FORMULA
+from .constant import KW_FORMULA, ICON_SIZE
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # Attribute keyworkds
 KW_MANAGED = "managed"
@@ -121,27 +121,56 @@ class Icon(Representation):
         if candidate_icon is not None:
             for ext in [".png", ".jpg", ".jpeg"]:
                 fn = add_ext(candidate_icon, ext)
-                if fn in deck.icons.keys():
+                if self.icon is None and fn in deck.icons.keys():
                     self.icon = fn
+                    logger.debug(f"__init__: button {self.button_name()}: {type(self).__name__}: icon {self.icon} found")
             if self.icon is None:
-                self.icon = self.button.page.default_icon_name
-                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}, using page default {self.icon}")
+                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}")
+
+        if self.icon is None:
+            self.mk_uniform_icon()
+
+    def mk_uniform_icon(self):
+        deck = self.button.deck
+        if self.cockpit_texture is not None:
+            self.icon = f"_default_{self.button.page.name}_{self.button_name()}_icon.png"
+            image = deck.cockpit.mk_icon_bg(self.cockpit_texture, self.icon_color, f"Button {self.name}")
+            deck.icons[self.icon] = deck.scale_icon_for_key(self.button, image)
+            logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: created textured icon {self.icon}={self.icon_texture}")
+        else:
+            if self.icon_color is None:
+                self.icon_color = deck.cockpit_color
+                logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: no icon color, using cockpit color {self.icon_color}")
+            self.icon_color = convert_color(self.icon_color)
+            self.icon = f"_default_{self.button.page.name}_{self.button_name()}_icon.png"
+            deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
+            logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
+
+
+    def mk_icon_bg(self):
+        deck = self.button.deck
+        image = None
+        if self.cockpit_texture is not None:
+            image = deck.cockpit.mk_icon_bg(self.cockpit_texture, self.icon_color, f"Button {self.name}")
+            logger.debug(f"mk_icon_bg: button {self.button_name()}: {type(self).__name__}: created textured icon background ({self.cockpit_texture})")
+        else:
+            color = self.icon_color
+            if self.icon_color is None:
+                color = deck.cockpit_color
+                logger.debug(f"mk_icon_bg: button {self.button_name()}: {type(self).__name__}: no icon color, using cockpit color {color}")
+            color = convert_color(color)
+            image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=color)
+            logger.debug(f"mk_icon_bg: button {self.button_name()}: {type(self).__name__}: created uniform color icon background ({self.icon_color})")
+        return image
 
     def get_default_icon(self):
         # Add default icon for this button
+        # THIS NEED TO BE ADJUSTED FOR BUTTON KEY IMAGE SIZE (ex. Loupedeck left and right, Streamdeck+ bottom, etc.)
         fname = inspect.currentframe().f_code.co_name
         if not hasattr(self.button.deck, fname): # deck cannot display icon anyway
             logger.warning(f"get_default_icon: button {self.name}: deck cannot display icon")
             return None
-        icons = self.button.deck.icons
-        if self.default_icon_name not in icons.keys():
-            image = self.button.deck.cockpit.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Button {self.name}")
-            if self.deck.device is not None:
-                icons[self.default_icon_name] = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
-            else:
-                icons[self.default_icon_name] = image
-            logger.debug(f"get_default_icon: button {self.name}: created default {self.default_icon_name} icon")
-        return icons[self.default_icon_name]
+        return self.button.page.get_default_icon()
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
@@ -361,7 +390,6 @@ class Icon(Representation):
             if txtmod in ["std", "standard"]:    # QNH Std
                 text_font = "AirbusFCU" # hardcoded
 
-        # print(">>>>>>", which_text, text, text_font)
         font = self.get_font(text_font, text_size)
         image = image.copy()  # we will add text over it
         draw = ImageDraw.Draw(image)
@@ -395,14 +423,15 @@ class Icon(Representation):
         """
         Removes icon from deck
         """
+        # icon = self.get_default_icon()  # does not work for loupedeck left/right
         icon = None
         deck = self.button.deck
         page = self.button.page
         color = deck.cockpit_color
         if page.default_icon_name in deck.icons.keys():
             icon = deck.icons[page.default_icon_name]
-        elif page.default_icon_color is not None:
-            icon = deck.create_icon_for_key(self.button, colors=page.default_icon_color)
+        elif page.cockpit_color is not None:
+            icon = deck.create_icon_for_key(self.button, colors=page.cockpit_color)
         elif deck.cockpit_color is not None:
             icon = deck.create_icon_for_key(self.button, colors=deck.cockpit_color)
 
@@ -413,7 +442,7 @@ class Icon(Representation):
             logger.warning(f"clean: button {self.button_name()}: {type(self).__name__}: no fill icon")
 
     def describe(self):
-        return "The representation produces an icon with optional label overlay."
+        return "The representation places an icon with optional label overlay."
 
 
 class IconText(Icon):
@@ -436,7 +465,7 @@ class IconText(Icon):
         return self.overlay_text(image, "text")
 
     def describe(self):
-        return "The representation produces an icon with optional text and label overlay."
+        return "The representation places an icon with optional text and label overlay."
 
 
 class IconSide(Icon):

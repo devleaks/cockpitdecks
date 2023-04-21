@@ -221,7 +221,16 @@ class WeatherIcon(DrawAnimation):
                   fill=light_off(icon_color, 0.2))
 
         # Weather Data
-        if self.metar and self.metar.summary:
+        lines = None
+        try:
+            if self.metar is not None and self.metar.summary:
+                lines = self.metar.summary.split(",")  # ~ 6-7 short lines
+        except:
+            lines = None
+            logger.warning(f"get_image_for_icon: Metar has no summary")
+            # logger.warning(f"get_image_for_icon: Metar has no summary", exc_info=True)
+
+        if lines is not None:
             text_font = self._config.get("weather-font", self.label_font)
             text_size = int(image.width / 10)
             font = self.get_font(text_font, text_size)
@@ -230,7 +239,6 @@ class WeatherIcon(DrawAnimation):
             a = "left"
             h = image.height / 3
             il = text_size
-            lines = self.metar.summary.split(",")  # ~ 6-7 short lines
             for line in lines:
                 draw.text((w, h),  # (image.width / 2, 15)
                           text=line.strip(),
@@ -243,7 +251,9 @@ class WeatherIcon(DrawAnimation):
             logger.warning(f"get_image_for_icon: no metar summary")
 
         # Paste image on cockpit background and return it.
-        bg = self.get_default_icon()
+        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.page.cockpit_color)
+        # icon_bg = self.get_default_icon()
+        # bg.paste(icon_bg)
         bg.alpha_composite(image)
         self._cache = bg.convert("RGB")
         return self._cache

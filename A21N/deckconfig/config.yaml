@@ -34,5 +34,4 @@ default-icon-color: (94, 111, 130)
 default-label-font: B612-Bold
 default-label-size: 12
 default-label-color: white
-empty-key-fill-color: (94, 111, 130)
-debug: cockpitdecks.cockpit
+# debug: cockpitdecks.cockpit

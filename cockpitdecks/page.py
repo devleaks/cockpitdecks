@@ -179,25 +179,16 @@ class Page:
         for button in self.buttons.values():
             button.render()
             logger.debug(f"render: page {self.name}: button {button.name} rendered")
-        if self.fill_empty_keys:
-            busy_keys = [str(i) for i in self.buttons.keys()]
-            for key in self.deck.valid_indices_with_image():
-                if key not in busy_keys:
-                    image = None
-                    if self.default_icon_name in self.deck.icons.keys():
-                        image = self.deck.icons[self.default_icon_name]
-                    elif self.default_icon_color is not None:
-                        class Butemp:
-                            index = key
-                        button = Butemp()
-                        # setattr(button, "index", key)
-                        image = self.deck.create_icon_for_key(button, colors=self.default_icon_color)
-                    if image is None:
-                        image = self.get_default_icon()
-                    if image is not None:
-                        self.deck._send_key_image_to_device(key, image)
-                    else:
-                        logger.warning(f"render: page {self.name}: {key}: no fill icon")
+        if not self.fill_empty_keys:
+            return
+        busy_keys  = [str(item) for item in self.buttons.keys()]
+        empty_keys = [str(item) for item in self.deck.valid_indices_with_image() if str(item) not in busy_keys]
+        for key in empty_keys:
+            image = self.get_default_icon()
+            if image is not None:
+                self.deck._send_key_image_to_device(key, image)
+            else:
+                logger.warning(f"render: page {self.name}: {key}: no fill icon")
 
     def clean(self):
         """

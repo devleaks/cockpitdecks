@@ -8,7 +8,7 @@ description: Configuration parameters for Streamdeck 32 keys
 version: 1.0.0
 # ########################
 # This config is at deck level
-empty-key-fill-color: (94, 111, 130)
+default-icon-color: (94, 111, 130)
 default-label-size: 12
 default-label-font: DIN Medium.ttf
 annunciator-style: k
