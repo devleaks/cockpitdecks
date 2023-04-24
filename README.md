@@ -13,7 +13,7 @@ The project is in active development.
 Please head to the [wiki](https://github.com/devleaks/cockpitdecks/wiki) for more information.
 
 
-![Cockpitdecks Icon](https://raw.githubusercontent.com/devleaks/cockpitdecks/main/cockpitdecks/resources/icon.png)
+![Cockpitdecks Icon](relative cockpitdecks/resources/icon.png)
 
 # Installation
 
