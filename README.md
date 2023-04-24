@@ -13,6 +13,8 @@ The project is in active development.
 Please head to the [wiki](https://github.com/devleaks/cockpitdecks/wiki) for more information.
 
 
+![Cockpitdecks Icon](https://raw.githubusercontent.com/devleaks/cockpitdecks/main/cockpitdecks/resources/icon.png)
+
 # Installation
 
 ## Libhidapi
@@ -75,7 +77,7 @@ $ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
 ## Start
 
 ```
-$ python python cockpitdecks_upd_start.py /path/to/your/aircraft/folder
+$ python bin/cockpitdecks_upd_start.py /path/to/your/aircraft/folder
 ```
 
 Enjoy.
