@@ -11,7 +11,7 @@ from PIL import Image, ImageFont
 from ruamel.yaml import YAML
 
 from .constant import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEXTURE, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
 from .constant import COCKPIT_COLOR, COCKPIT_TEXTURE, DEFAULT_LIGHT_OFF_INTENSITY, ICON_SIZE
 from .color import convert_color, has_ext
@@ -66,10 +66,14 @@ class Cockpit:
         self.icons = {}
         self.cache_icon = False
         self.default_icon_name = DEFAULT_ICON_NAME
-        self.default_icon_color = DEFAULT_ICON_COLOR
+        self.default_icon_color = convert_color(DEFAULT_ICON_COLOR)
+        self.default_icon_texture = DEFAULT_ICON_TEXTURE
+
         self.fill_empty_keys = True
         self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
-        self.cockpit_color = COCKPIT_COLOR
+        self.cockpit_color = convert_color(COCKPIT_COLOR)
+        self.cockpit_texture = COCKPIT_TEXTURE
+
         self.default_home_page_name = HOME_PAGE
 
         self.init()
@@ -125,10 +129,10 @@ class Cockpit:
         if len(DECK_TYPES) == 0:
             logger.error(f"scan_devices: no driver")
             return
-        logger.info(f"scan_devices: drivers installed for {', '.join(DECK_TYPES.keys())}; scanning..")
+        logger.info(f"scan_devices: drivers installed for {', '.join([f'{decktype} {pkg_resources.get_distribution(decktype).version}' for decktype in DECK_TYPES.keys()])}; scanning..")
         for decktype, builder in DECK_TYPES.items():
             decks = builder[1]().enumerate()
-            logger.info(f"scan_devices: found {len(decks)} {decktype} ({decktype} {pkg_resources.get_distribution(decktype).version})")
+            logger.info(f"scan_devices: found {len(decks)} {decktype}") # " ({decktype} {pkg_resources.get_distribution(decktype).version})")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
@@ -317,6 +321,7 @@ class Cockpit:
         self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
         self.cache_icon = self.default_config.get("cache-icon", self.cache_icon)
         self.default_icon_name = DEFAULT_ICON_NAME
+        self.default_icon_texture = self.default_config.get("default-icon-texture", DEFAULT_ICON_TEXTURE)
         self.default_icon_color = self.default_config.get("default-icon-color", DEFAULT_ICON_COLOR)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.cockpit_texture = self.default_config.get("cockpit-texture", COCKPIT_TEXTURE)
@@ -327,8 +332,7 @@ class Cockpit:
         self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
 
         # 1. Creating default icon
-        dummy = self.get_default_icon()  # may not be necessary to do it beforehand
-        logger.debug(f"load_defaults: default icons {self.icons.keys()}, default={self.default_icon_name}")
+        #    No longer necessary
 
         # 2. Finding a default font for Pillow
         #    WE MUST find a default, system font at least
@@ -377,34 +381,6 @@ class Cockpit:
         logger.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font}, default label={self.default_label_font}")
 
 
-    def mk_icon_bg(self, texture, color, who: "Mystery"):
-        image = None
-        if texture is not None:
-            dirs = []
-            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
-            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
-            if self.acpath is not None:  # add to search path
-                dirs.append(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
-                dirs.append(os.path.join(self.acpath, CONFIG_FOLDER, ICONS_FOLDER))
-            for dn in dirs:
-                if image is None:
-                    fn = os.path.join(dn, texture)
-                    if os.path.exists(fn):
-                        image = Image.open(fn)
-                        logger.debug(f"mk_icon_bg: {who}: texture {texture} in {dn}")
-        if image is None:
-            if texture is not None:
-                logger.debug(f"mk_icon_bg: {who}: texture {texture} not found")
-            image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=color)
-            logger.debug(f"mk_icon_bg: {who}: uniform color {color}")
-        return image
-
-    def get_default_icon(self):
-        # Add default icon for this cockpit
-        if self.default_icon_name not in self.icons.keys():
-            self.icons[self.default_icon_name] = self.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Cockpit {self.name}")
-        return self.icons[self.default_icon_name]
-
     def create_decks(self):
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = {}
@@ -443,10 +419,6 @@ class Cockpit:
                 self.cockpit_color = config.get("cockpit-color", self.cockpit_color)
                 self.cockpit_color = convert_color(self.cockpit_color)
                 self.default_home_page_name = config.get("default-homepage-name", self.default_home_page_name)
-
-                if self.default_icon_name in self.icons.keys():
-                    del self.icons[self.default_icon_name]
-                dummy = self.get_default_icon()  # redo default icons
                 logger.debug(f"create_decks: new defaults: label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
 
                 if "decks" in config:

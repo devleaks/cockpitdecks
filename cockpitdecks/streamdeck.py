@@ -198,15 +198,23 @@ class Streamdeck(DeckWithIcons):
         ]
         return set(super().valid_representations() + valid_key_icon)
 
-    def create_icon_for_key(self, button, colors):
-        if self.pil_helper is not None:
-            return self.pil_helper.create_image(deck=self.device, background=colors)
-        return None
+    def create_icon_for_key(self, index, colors, texture = None):
+        image = None
+        if self.device is not None and self.pil_helper is not None:
+            bg = self.pil_helper.create_image(deck=self.device, background=colors)
+            image = self.get_icon_background(name=str(index), width=bg.width, height=bg.height, texture_in=texture, color_in=colors, use_texture=True, who="Deck")
+        return image
 
-    def scale_icon_for_key(self, button, image):
+    def scale_icon_for_key(self, index, image, name: str = None):
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
         if self.pil_helper is not None:
-            return self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
-        return None
+            image = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+            image = image.convert("RGB")
+            if image is not None and name is not None:
+                self.icons[name] = image
+        return image
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -303,4 +311,3 @@ class Streamdeck(DeckWithIcons):
             device._setup_reader(None) # terminates the _read() loop on serial line (thread).
             # device.stop()  # terminates the loop.
         logger.info(f"terminate_device: {name} terminated")
-

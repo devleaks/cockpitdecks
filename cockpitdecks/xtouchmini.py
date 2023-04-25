@@ -102,9 +102,6 @@ class XTouchMini(Deck):
     def load_icons(self):
         pass
 
-    def get_default_icon(self):
-        pass
-
     def make_icon_for_device(self):
         pass
 

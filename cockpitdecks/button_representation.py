@@ -113,7 +113,8 @@ class Icon(Representation):
             self.label_position = page.default_label_position
 
         self.icon_color = config.get("icon-color", page.default_icon_color)
-        self.cockpit_texture = config.get("cockpit-texture")
+        self.icon_color = convert_color(self.icon_color)
+        self.icon_texture = config.get("icon-texture", page.default_icon_texture)
 
         self.icon = None
         deck = self.button.deck
@@ -128,49 +129,14 @@ class Icon(Representation):
                 logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}")
 
         if self.icon is None:
-            self.mk_uniform_icon()
+            self.make_icon()
 
-    def mk_uniform_icon(self):
+    def make_icon(self):
         deck = self.button.deck
-        if self.cockpit_texture is not None:
-            self.icon = f"_default_{self.button.page.name}_{self.button_name()}_icon.png"
-            image = deck.cockpit.mk_icon_bg(self.cockpit_texture, self.icon_color, f"Button {self.name}")
-            deck.icons[self.icon] = deck.scale_icon_for_key(self.button, image)
-            logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: created textured icon {self.icon}={self.icon_texture}")
-        else:
-            if self.icon_color is None:
-                self.icon_color = deck.cockpit_color
-                logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: no icon color, using cockpit color {self.icon_color}")
-            self.icon_color = convert_color(self.icon_color)
-            self.icon = f"_default_{self.button.page.name}_{self.button_name()}_icon.png"
-            deck.icons[self.icon] = deck.create_icon_for_key(self.button, colors=self.icon_color)
-            logger.debug(f"mk_uniform_icon: button {self.button_name()}: {type(self).__name__}: created colored icon {self.icon}={self.icon_color}")
-
-
-    def mk_icon_bg(self):
-        deck = self.button.deck
-        image = None
-        if self.cockpit_texture is not None:
-            image = deck.cockpit.mk_icon_bg(self.cockpit_texture, self.icon_color, f"Button {self.name}")
-            logger.debug(f"mk_icon_bg: button {self.button_name()}: {type(self).__name__}: created textured icon background ({self.cockpit_texture})")
-        else:
-            color = self.icon_color
-            if self.icon_color is None:
-                color = deck.cockpit_color
-                logger.debug(f"mk_icon_bg: button {self.button_name()}: {type(self).__name__}: no icon color, using cockpit color {color}")
-            color = convert_color(color)
-            image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=color)
-            logger.debug(f"mk_icon_bg: button {self.button_name()}: {type(self).__name__}: created uniform color icon background ({self.icon_color})")
-        return image
-
-    def get_default_icon(self):
-        # Add default icon for this button
-        # THIS NEED TO BE ADJUSTED FOR BUTTON KEY IMAGE SIZE (ex. Loupedeck left and right, Streamdeck+ bottom, etc.)
-        fname = inspect.currentframe().f_code.co_name
-        if not hasattr(self.button.deck, fname): # deck cannot display icon anyway
-            logger.warning(f"get_default_icon: button {self.name}: deck cannot display icon")
-            return None
-        return self.button.page.get_default_icon()
+        image = deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
+        self.icon = self.button_name()
+        image = deck.scale_icon_for_key(index=self.button.index, image=image, name=self.icon)
+        logger.debug(f"make_icon: button {self.button_name()}: {type(self).__name__}: created icon")
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
@@ -269,17 +235,26 @@ class Icon(Representation):
     def get_image_for_icon(self):
         image = None
         deck = self.button.deck
+        if self.icon in deck.icons.keys():
+            return deck.icons.get(self.icon)
+
         this_button = f"{self.button_name()}: {type(self).__name__}"
-        self.icon = add_ext(self.icon, "png")
-        if self.icon in deck.icons.keys():  # look for properly sized image first...
-            logger.debug(f"get_image_for_icon: button {this_button}: found {self.icon} in deck")
-            image = deck.icons[self.icon]
-        elif self.icon in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
-            logger.debug(f"get_image_for_icon: button {this_button}: found {self.icon} in cockpit")
-            image = deck.cockpit.icons[self.icon]
-            image = deck.scale_icon_for_key(self.button, image)
-        else:
+
+        for ext in ["png", "jpg"]:
+            if image is None:
+                fn = add_ext(self.icon, ext)
+                if fn in deck.icons.keys():  # look for properly sized image first...
+                    logger.debug(f"get_image_for_icon: button {this_button}: found {fn} in deck")
+                    self.icon = fn
+                    image = deck.icons[self.icon]
+                elif fn in deck.cockpit.icons.keys(): # then icon, but need to resize it if necessary
+                    logger.debug(f"get_image_for_icon: button {this_button}: found {fn} in cockpit")
+                    self.icon = fn
+                    image = deck.cockpit.icons[self.icon]
+                    image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck
+        if image is None:
             logger.warning(f"get_image_for_icon: button {this_button}: {self.icon} not found")
+
         return image
 
     def get_image(self):
@@ -427,13 +402,8 @@ class Icon(Representation):
         icon = None
         deck = self.button.deck
         page = self.button.page
-        color = deck.cockpit_color
-        if page.default_icon_name in deck.icons.keys():
-            icon = deck.icons[page.default_icon_name]
-        elif page.cockpit_color is not None:
-            icon = deck.create_icon_for_key(self.button, colors=page.cockpit_color)
-        elif deck.cockpit_color is not None:
-            icon = deck.create_icon_for_key(self.button, colors=deck.cockpit_color)
+        icon = deck.create_icon_for_key(self.button.index, colors=page.cockpit_color, texture=page.cockpit_texture)
+        icon = icon.convert("RGB")
 
         if icon is not None:
             image = deck.pil_helper.to_native_format(deck.device, icon)

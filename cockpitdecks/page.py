@@ -58,6 +58,7 @@ class Page:
         self.default_label_color = convert_color(self.default_label_color)
         self.default_label_position = config.get("default-label-position", base.default_label_position)
         self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
+        self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
@@ -66,21 +67,6 @@ class Page:
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
         self.cockpit_texture = config.get("cockpit-texture")
-
-    def get_default_icon(self):
-        # Add default icon for this page
-        if not hasattr(self.deck, "get_default_icon"): # deck cannot display icon anyway
-            return None
-        deck = self.deck
-        icons = self.deck.icons
-        if self.default_icon_name not in icons.keys():
-            image = deck.cockpit.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Page {self.name}")
-            if deck.device is not None:
-                icons[self.default_icon_name] = deck.pil_helper.create_scaled_image(deck.device, image, margins=[0, 0, 0, 0])
-            else:
-                icons[self.default_icon_name] = image
-            logger.debug(f"get_default_icon: page {self.name}: created default {self.default_icon_name} icon")
-        return icons[self.default_icon_name]
 
     def load_buttons(self, buttons):
         for a in buttons:
@@ -181,12 +167,15 @@ class Page:
             logger.debug(f"render: page {self.name}: button {button.name} rendered")
         if not self.fill_empty_keys:
             return
+
+        deck = self.deck
         busy_keys  = [str(item) for item in self.buttons.keys()]
         empty_keys = [str(item) for item in self.deck.valid_indices_with_image() if str(item) not in busy_keys]
         for key in empty_keys:
-            image = self.get_default_icon()
-            if image is not None:
-                self.deck._send_key_image_to_device(key, image)
+            icon = deck.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture)
+            icon = icon.convert("RGB")
+            if icon is not None:
+                self.deck._send_key_image_to_device(key, icon)
             else:
                 logger.warning(f"render: page {self.name}: {key}: no fill icon")
 

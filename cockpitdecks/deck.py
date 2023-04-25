@@ -12,8 +12,8 @@ from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw, ImageOps
 from ruamel.yaml import YAML
 
-from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER
-from .constant import ID_SEP, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
+from .constant import ID_SEP, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
 from .color import convert_color
 from .page import Page
 from .button import Button
@@ -131,6 +131,7 @@ class Deck(ABC):
         self.default_label_color = convert_color(self.default_label_color)
         self.default_label_position = config.get("default-label-position", base.default_label_position)
         self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
+        self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
@@ -416,27 +417,15 @@ class DeckWithIcons(Deck):
         if not self.valid:
             logger.warning(f"init: deck {self.name}: is invalid")
             return
-        dummy = self.get_default_icon()  # may not be necessary to do it beforehand
         self.load_icons()
         self.load()     # will load default page if no page found
         self.start()    # Some system may need to start before we can load a page
 
-    def get_display_for_pil(self):
+    def get_display_for_pil(self, b: str = None):
         """
         Return device or device element to use for PIL.
         """
-        return None
-
-    def get_default_icon(self):
-        # Add default icon for this deck
-        if self.default_icon_name not in self.icons.keys():
-            image = self.cockpit.mk_icon_bg(self.cockpit_texture, self.default_icon_color, f"Deck {self.name}")
-            if self.device is not None:
-                self.icons[self.default_icon_name] = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
-            else:
-                self.icons[self.default_icon_name] = image
-            logger.debug(f"get_default_icon: deck {self.name}: created default {self.default_icon_name} icon")
-        return self.icons[self.default_icon_name]
+        return self.device
 
     def load_icons(self):
         """
@@ -468,10 +457,68 @@ class DeckWithIcons(Deck):
         else:
             logger.warning(f"load_icons: deck {self.name} has no device")
 
-    def create_icon_for_key(self, button, colors):
+    def get_icon_background(self, name: str, width: int, height: int, texture_in, color_in, use_texture = True, who: str = "Cockpit"):
+        """
+        Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
+        """
+        def get_textures():
+            tarr = []
+            if texture_in is not None:
+                tarr.append(texture_in)
+            if self.default_icon_texture is not None:
+                tarr.append(self.default_icon_texture)
+            if self.cockpit_texture is not None:
+                tarr.append(self.cockpit_texture)
+            return tarr
+
+        def get_color():
+            for t in [color_in, self.default_icon_color, self.cockpit_color]:
+                if t is not None:
+                    return t
+            return COCKPIT_COLOR
+
+        if name in self.cockpit.icons.keys():
+            return self.cockpit.icons[name]
+
+        image = None
+
+        textures = get_textures()
+        if use_texture and len(textures) > 0:
+            dirs = []
+            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
+            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
+            if self.cockpit.acpath is not None:  # add to search path
+                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, ICONS_FOLDER))
+            for dn in dirs:
+                for texture in textures:
+                    if image is None:
+                        fn = os.path.join(dn, texture)
+                        if os.path.exists(fn):
+                            image = Image.open(fn)
+                            image = image.resize((width, height))
+                            logger.debug(f"get_icon_background: {who}: texture {texture} in {dn}")
+                        else:
+                            logger.debug(f"get_icon_background: {who}: no {fn}")
+
+        if image is not None:  # found a texture as requested
+            return image
+
+        if use_texture and len(textures) == 0:
+            logger.debug(f"get_icon_background: {who}: should use texture but no texture found, using uniform color")
+
+        color = get_color()
+        image = Image.new(mode="RGBA", size=(width, height), color=color)
+        logger.debug(f"get_icon_background: {who}: uniform color {color}")
+        self.cockpit.icons[name] = image
+        return image
+
+    def create_icon_for_key(self, index, colors, texture = None):
+        # Abstact
         return None
 
-    def scale_icon_for_key(self, button, image):
+    def scale_icon_for_key(self, index, image, name: str = None):
+        # Abstact
         return None
 
     # #######################################

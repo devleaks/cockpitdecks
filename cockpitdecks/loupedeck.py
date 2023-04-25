@@ -358,25 +358,33 @@ class Loupedeck(DeckWithIcons):
     # #######################################
     # Deck Specific Functions : Representation
     #
-    def get_display_for_pil(self, b: str = None):
+    def get_display_for_pil(self, index: str = None):
         """
         Return device or device element to use for PIL.
         """
-        if b not in ["full", "center", "left", "right"]:
+        if index not in ["full", "center", "left", "right"]:
             return "button"
-        return b
+        return index
 
-    def create_icon_for_key(self, button, colors):
-        if self.pil_helper is not None:
-            display = self.get_display_for_pil(button.index)
-            return self.pil_helper.create_image(deck=self.device, background=colors, display=display)
-        return None
+    def create_icon_for_key(self, index, colors, texture = None):
+        image = None
+        if self.device is not None and self.pil_helper is not None:
+            display = self.get_display_for_pil(index)
+            bg = self.pil_helper.create_image(deck=self.device, background=colors, display=display)
+            image = self.get_icon_background(name=str(index), width=bg.width, height=bg.height, texture_in=texture, color_in=colors, use_texture=True, who="Deck")
+        return image
 
-    def scale_icon_for_key(self, button, image):
+    def scale_icon_for_key(self, index, image, name: str = None):
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
         if self.pil_helper is not None:
-            display = self.get_display_for_pil(button.index)
-            return self.pil_helper.create_scaled_image(deck=self.device, image=image, display=display)
-        return None
+            display = self.get_display_for_pil(index)
+            image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=display)
+            image = image.convert("RGB")
+            if image is not None and name is not None:
+                self.icons[name] = image
+        return image
 
     def _vibrate(self, pattern: str):
         self.device.vibrate(pattern)
@@ -386,11 +394,11 @@ class Loupedeck(DeckWithIcons):
 
     def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("set_key_image: no device")
+            logger.warning("_set_key_image: no device")
             return
         image = button.get_representation()
         if image is None and button.index not in ["left", "right"]:
-            logger.warning("set_key_image: button returned no image, using default")
+            logger.warning("_set_key_image: button returned no image, using default")
             image = self.icons[self.default_icon_name]
 
         if image is not None and button.index in ["left", "right"]:
@@ -408,20 +416,20 @@ class Loupedeck(DeckWithIcons):
                     if image.width > mw or image.height > mh:
                         image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=self.get_display_for_pil(button.index))
                 else:
-                    logger.warning("set_key_image: cannot get device key image size")
+                    logger.warning("_set_key_image: cannot get device key image size")
             else:
-                logger.warning("set_key_image: cannot get device key image format")
+                logger.warning("_set_key_image: cannot get device key image format")
             self._send_key_image_to_device(button.index, image)
         else:
-            logger.warning(f"set_key_image: no image for {button.name}")
+            logger.warning(f"_set_key_image: no image for {button.name}")
 
     def _set_button_color(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("set_key_image: no device")
+            logger.warning("_set_button_color: no device")
             return
         color = button.get_representation()
         if color is None:
-            logger.warning("set_key_image: button returned no representation color, using default")
+            logger.warning("_set_button_color: button returned no representation color, using default")
             color = DEFAULT_COLOR
         idx = button.index.lower().replace(BUTTON_PREFIX, "")
         if idx == "0":
