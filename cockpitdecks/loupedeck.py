@@ -366,12 +366,19 @@ class Loupedeck(DeckWithIcons):
             return "button"
         return index
 
-    def create_icon_for_key(self, index, colors, texture = None):
+    def create_icon_for_key(self, index, colors, texture, name: str = None):
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
         image = None
         if self.device is not None and self.pil_helper is not None:
             display = self.get_display_for_pil(index)
             bg = self.pil_helper.create_image(deck=self.device, background=colors, display=display)
             image = self.get_icon_background(name=str(index), width=bg.width, height=bg.height, texture_in=texture, color_in=colors, use_texture=True, who="Deck")
+            if image is not None:
+                image = image.convert("RGB")
+                if name is not None:
+                    self.icons[name] = image
         return image
 
     def scale_icon_for_key(self, index, image, name: str = None):
@@ -381,9 +388,10 @@ class Loupedeck(DeckWithIcons):
         if self.pil_helper is not None:
             display = self.get_display_for_pil(index)
             image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=display)
-            image = image.convert("RGB")
-            if image is not None and name is not None:
-                self.icons[name] = image
+            if image is not None:
+                image = image.convert("RGB")
+                if name is not None:
+                    self.icons[name] = image
         return image
 
     def _vibrate(self, pattern: str):

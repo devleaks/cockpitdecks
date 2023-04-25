@@ -239,7 +239,7 @@ class SwitchCommonBase(DrawBase):
             image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
         # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)
+        bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
         bg.alpha_composite(image)
         return bg.convert("RGB")
 
@@ -432,7 +432,7 @@ class CircularSwitch(SwitchCommonBase):
         image = image.crop((cl, ct, cl+ICON_SIZE, ct+ICON_SIZE))
 
         # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.cockpit_color)                     # annunciator text and leds , color=(0, 0, 0, 0)
+        bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
         bg.alpha_composite(image)
         return bg.convert("RGB")
 

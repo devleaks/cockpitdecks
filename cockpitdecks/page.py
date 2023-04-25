@@ -172,8 +172,7 @@ class Page:
         busy_keys  = [str(item) for item in self.buttons.keys()]
         empty_keys = [str(item) for item in self.deck.valid_indices_with_image() if str(item) not in busy_keys]
         for key in empty_keys:
-            icon = deck.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture)
-            icon = icon.convert("RGB")
+            icon = deck.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture, name=f"{self.name}:empty:{key}")
             if icon is not None:
                 self.deck._send_key_image_to_device(key, icon)
             else:

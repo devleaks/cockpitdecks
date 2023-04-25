@@ -138,7 +138,7 @@ class Deck(ABC):
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
-        self.cockpit_texture = config.get("cockpit-texture")
+        self.cockpit_texture = config.get("cockpit-texture", base.cockpit_texture)
         self.default_logo = config.get("default-logo", base.default_logo)
         self.default_wallpaper = config.get("default-wallpaper", base.default_wallpaper)
         self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
@@ -461,7 +461,7 @@ class DeckWithIcons(Deck):
         """
         Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
         """
-        def get_textures():
+        def get_texture():
             tarr = []
             if texture_in is not None:
                 tarr.append(texture_in)
@@ -469,7 +469,20 @@ class DeckWithIcons(Deck):
                 tarr.append(self.default_icon_texture)
             if self.cockpit_texture is not None:
                 tarr.append(self.cockpit_texture)
-            return tarr
+
+            dirs = []
+            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
+            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
+            if self.cockpit.acpath is not None:  # add to search path
+                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, ICONS_FOLDER))
+
+            for dn in dirs:
+                for texture in tarr:
+                    fn = os.path.join(dn, texture)
+                    if os.path.exists(fn):
+                        return fn
+            return None
 
         def get_color():
             for t in [color_in, self.default_icon_color, self.cockpit_color]:
@@ -477,43 +490,30 @@ class DeckWithIcons(Deck):
                     return t
             return COCKPIT_COLOR
 
-        if name in self.cockpit.icons.keys():
-            return self.cockpit.icons[name]
-
         image = None
 
-        textures = get_textures()
-        if use_texture and len(textures) > 0:
-            dirs = []
-            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
-            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
-            if self.cockpit.acpath is not None:  # add to search path
-                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
-                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, ICONS_FOLDER))
-            for dn in dirs:
-                for texture in textures:
-                    if image is None:
-                        fn = os.path.join(dn, texture)
-                        if os.path.exists(fn):
-                            image = Image.open(fn)
-                            image = image.resize((width, height))
-                            logger.debug(f"get_icon_background: {who}: texture {texture} in {dn}")
-                        else:
-                            logger.debug(f"get_icon_background: {who}: no {fn}")
+        texture = get_texture()
+        if use_texture and texture is not None:
+            if texture in self.cockpit.icons.keys():
+                image = self.cockpit.icons[texture]
+            else:
+                image = Image.open(texture)
+                self.cockpit.icons[texture] = image
+            logger.debug(f"get_icon_background: {who}: texture {texture_in} in {texture}")
 
         if image is not None:  # found a texture as requested
+            image = image.resize((width, height))
             return image
 
-        if use_texture and len(textures) == 0:
+        if use_texture and texture is None:
             logger.debug(f"get_icon_background: {who}: should use texture but no texture found, using uniform color")
 
         color = get_color()
         image = Image.new(mode="RGBA", size=(width, height), color=color)
-        logger.debug(f"get_icon_background: {who}: uniform color {color}")
-        self.cockpit.icons[name] = image
+        logger.debug(f"get_icon_background: {who}: uniform color {color} (color_in={color_in})")
         return image
 
-    def create_icon_for_key(self, index, colors, texture = None):
+    def create_icon_for_key(self, index, colors, texture, name: str = None):
         # Abstact
         return None
 

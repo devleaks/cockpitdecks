@@ -116,6 +116,8 @@ class Icon(Representation):
         self.icon_color = convert_color(self.icon_color)
         self.icon_texture = config.get("icon-texture", page.default_icon_texture)
 
+        self.frame = config.get("frame")
+
         self.icon = None
         deck = self.button.deck
         candidate_icon = config.get("icon")
@@ -132,10 +134,8 @@ class Icon(Representation):
             self.make_icon()
 
     def make_icon(self):
-        deck = self.button.deck
-        image = deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
         self.icon = self.button_name()
-        image = deck.scale_icon_for_key(index=self.button.index, image=image, name=self.icon)
+        image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture, name=self.icon)
         logger.debug(f"make_icon: button {self.button_name()}: {type(self).__name__}: created icon")
 
     def is_valid(self):
@@ -233,13 +233,12 @@ class Icon(Representation):
         return ImageFont.load_default()
 
     def get_image_for_icon(self):
-        image = None
         deck = self.button.deck
         if self.icon in deck.icons.keys():
             return deck.icons.get(self.icon)
-
+        # Else, search for it and cache it
+        image = None
         this_button = f"{self.button_name()}: {type(self).__name__}"
-
         for ext in ["png", "jpg"]:
             if image is None:
                 fn = add_ext(self.icon, ext)
@@ -251,10 +250,9 @@ class Icon(Representation):
                     logger.debug(f"get_image_for_icon: button {this_button}: found {fn} in cockpit")
                     self.icon = fn
                     image = deck.cockpit.icons[self.icon]
-                    image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck
+                    image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
         if image is None:
             logger.warning(f"get_image_for_icon: button {this_button}: {self.icon} not found")
-
         return image
 
     def get_image(self):
@@ -264,7 +262,7 @@ class Icon(Representation):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         image = None
-        if self.button.has_option("framed-icon"):
+        if self.frame is not None:
             image = self.get_framed_icon()
         else:
             image = self.get_image_for_icon()
@@ -322,30 +320,28 @@ class Icon(Representation):
         return self.overlay_text(image, "label")
 
     def get_framed_icon(self):
-        FRAME = "FRAME"
-        FRAME_SIZE = (400, 400)
-        FRAME_CONTENT = (222, 222)
-        FRAME_POSITION = (90, 125)
+        frame = self.frame.get("frame")
+        frame_size = self.frame.get("frame-size")
+        frame_content = self.frame.get("content-size")
+        frame_position = self.frame.get("content-offset")
+
+        this_button = f"{self.button_name()}: {type(self).__name__}"
         image = None
         deck = self.button.deck
-        this_button = f"{self.button_name()}: {type(self).__name__}"
-        frame = add_ext(FRAME, "png")
-        if frame in deck.cockpit.icons.keys():  # look for properly sized image first...
-            logger.debug(f"frame_icon: button {this_button}: found {frame} in cockpit")
-            image = deck.cockpit.icons[frame]
+        if frame is None or frame_size is None or frame_position is None or frame_content is None:
+            logger.warning(f"frame_icon: button {this_button}: invalid frame {self.frame}, {frame}")
         else:
-            logger.warning(f"frame_icon: button {this_button}: {frame} not found")
-            return self.get_image_for_icon()
+            image = deck.get_icon_background(name=this_button, width=frame_size[0], height=frame_size[1], texture_in=frame, color_in=self.icon_color, use_texture=True, who="Frame")
 
         inside = self.get_image_for_icon()
-        if inside is not None:
-            inside = inside.resize(FRAME_CONTENT)
-            box = (90, 125, )  # FRAME_POSITION + (FRAME_POSITION[0]+FRAME_CONTENT[0],FRAME_POSITION[1]+FRAME_CONTENT[1])
+        if inside is not None and image is not None:
+            inside = inside.resize(frame_content)
+            box = (90, 125, )  # frame_position + (frame_position[0]+frame_content[0],frame_position[1]+frame_content[1])
             logger.debug(f"frame_icon: button {this_button}: {self.icon}, {frame}, {image}, {inside}, {box}")
             image.paste(inside, box)
             image = deck.scale_icon_for_key(self.button, image)
             return image
-        return None
+        return inside
 
     def overlay_text(self, image, which_text):  # which_text = {label|text}
         draw = None
@@ -402,14 +398,11 @@ class Icon(Representation):
         icon = None
         deck = self.button.deck
         page = self.button.page
-        icon = deck.create_icon_for_key(self.button.index, colors=page.cockpit_color, texture=page.cockpit_texture)
-        icon = icon.convert("RGB")
-
+        icon = deck.create_icon_for_key(self.button.index, colors=page.cockpit_color, texture=page.cockpit_texture, name=f"{self.button_name()}:clean")
         if icon is not None:
-            image = deck.pil_helper.to_native_format(deck.device, icon)
-            deck.device.set_key_image(self.button._key, image)
+            deck._send_key_image_to_device(self.button._key, icon)
         else:
-            logger.warning(f"clean: button {self.button_name()}: {type(self).__name__}: no fill icon")
+            logger.warning(f"clean: button {self.button_name()}: {type(self).__name__}: no clean icon")
 
     def describe(self):
         return "The representation places an icon with optional label overlay."

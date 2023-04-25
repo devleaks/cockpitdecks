@@ -20,11 +20,16 @@ buttons:
 # 8 ISI
   - index: 16
     name: Popup ISI
+    label: ISI
     type: push
     command: AirbusFBW/PopUpISI
     dataref: AirbusFBW/PopUpStateArray[8]
     icon: ISI
-    options: framed-icon
+    frame:
+      frame: FRAME.png
+      frame-size: [400, 400]
+      content-size: [222, 222]
+      content-offset: [90, 125]
   - index: 17
     name: Popup FD1
     type: push

@@ -4,7 +4,6 @@ Button display and rendering abstraction.
 import logging
 from .button_representation import Representation, Icon, IconText, MultiIcons, IconAnimation, IconSide
 from .button_representation import LED, ColoredLED, MultiLEDs
-from .button_representation import LED, ColoredLED, MultiLEDs
 from .button_annunciator import Annunciator, AnnunciatorAnimate
 from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 

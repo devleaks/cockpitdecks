@@ -13,49 +13,49 @@ buttons:
     name: ovrhdfire
     type: page
     page: ovrhdfire
-    icon: NONE
+    icon: TEXTURE_RI
     label: "FIRE"
     label-position: cm
   - index: 1
     name: ovrhdhyd
     type: page
     page: ovrhdhyd
-    icon: NONE
+    icon: TEXTURE_RI
     label: "HYD"
     label-position: cm
   - index: 2
     name: ovrhdfuel
     type: page
     page: ovrhdfuel
-    icon: NONE
+    icon: TEXTURE_RI
     label: "FUEL"
     label-position: cm
   - index: 3
     name: ovrhdelec
     type: page
     page: ovrhdelec
-    icon: NONE
+    icon: TEXTURE_RI
     label: "ELEC"
     label-position: cm
   - index: 4
     name: ovrhdaircond
     type: page
     page: ovrhdaircond
-    icon: NONE
+    icon: TEXTURE_RI
     label: "AIR\nCOND"
     label-position: cm
   - index: 5
     name: ovrhdextlights
     type: page
     page: index
-    icon: NONE
+    icon: TEXTURE_RI
     label: "EXT.\nLIGHTS"
     label-position: cm
   - index: 6
     name: ovrhdcall
     type: page
     page: ovrhdcall
-    icon: NONE
+    icon: TEXTURE_RI
     label: "CALL &\nINT.\nLIGHTS"
     label-position: cm
 # ### LINE 2 ###  8-15 ######################################################
@@ -63,28 +63,28 @@ buttons:
     name: adirs
     type: page
     page: adirs
-    icon: NONE
+    icon: TEXTURE_RI
     label: "ADIRS"
     label-position: cm
   - index: 9
     name: other
     type: page
     page: other
-    icon: NONE
+    icon: TEXTURE_RI
     label: "OTHER"
     label-position: cm
   - index: 13
     name: XPNDR
     type: page
     page: XPNDR
-    icon: NONE
+    icon: TEXTURE_RI
     label: XPNDR
     label-position: cm
   - index: 14
     name: radio
     type: page
     page: radio
-    icon: NONE
+    icon: TEXTURE_RI
     label: RADIO
     label-position: cm
 # ### LINE 3 ### 16-23 ######################################################

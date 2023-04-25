@@ -499,7 +499,7 @@ class Annunciator(Icon):
 
         # PART 3: Background
         # Paste the annunciator into the button background:
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.page.cockpit_color)
+        image = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
         draw = ImageDraw.Draw(image)
         image.paste(annunciator, box=(int(width_offset), int(height_offset)))
 
