@@ -1,6 +1,8 @@
 """
 Application constants
-
+Also contains default defaults :-D
+This file should NEVER be altered, it is part of the code.
+Adjust default values in file resources/config.yaml instead.
 """
 import os
 from inspect import stack

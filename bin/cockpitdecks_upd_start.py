@@ -2,7 +2,7 @@ import os
 import logging
 import sys
 
-COCKPIT_DECK_BASEDIR = os.path.join(os.path.dirname(__file__), '..')
+COCKPIT_DECK_BASEDIR = os.path.join(os.path.dirname(__file__), '..')  # we assume we're in subdir "bin/"
 sys.path.append(COCKPIT_DECK_BASEDIR)
 
 from cockpitdecks import Cockpit, DEFAULT_AIRCRAFT

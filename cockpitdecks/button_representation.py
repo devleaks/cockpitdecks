@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Attribute keyworkds
 KW_MANAGED = "managed"
+KW_FRAME = "frame"
 
 DEFAULT_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
@@ -116,7 +117,7 @@ class Icon(Representation):
         self.icon_color = convert_color(self.icon_color)
         self.icon_texture = config.get("icon-texture", page.default_icon_texture)
 
-        self.frame = config.get("frame")
+        self.frame = config.get(KW_FRAME)
 
         self.icon = None
         deck = self.button.deck
@@ -128,7 +129,7 @@ class Icon(Representation):
                     self.icon = fn
                     logger.debug(f"__init__: button {self.button_name()}: {type(self).__name__}: icon {self.icon} found")
             if self.icon is None:
-                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {self.icon}")
+                logger.warning(f"__init__: button {self.button_name()}: {type(self).__name__}: icon not found {candidate_icon}")
 
         if self.icon is None:
             self.make_icon()
@@ -320,6 +321,7 @@ class Icon(Representation):
         return self.overlay_text(image, "label")
 
     def get_framed_icon(self):
+        # We assume self.frame is a non null dict
         frame = self.frame.get("frame")
         frame_size = self.frame.get("frame-size")
         frame_content = self.frame.get("content-size")

@@ -55,6 +55,219 @@ class WI:
         "_light_wind"
     ]
 
+    DB = [
+        {
+            "iconName":   "wi-cloud",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["BKN"],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-cloudy",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["OVC"],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-cloudy-gusts",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["SCT", "BKN", "OVC"],
+            "wind":       [22, 63]
+        },
+        {
+            "iconName":   "wi-rain",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "RA",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-rain-wind",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "RA",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [22, 63]
+        },
+        {
+            "iconName":   "wi-showers",
+            "day":        2,
+            "descriptor": ["SH"],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 63]
+        },
+        {
+            "iconName":   "wi-fog",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": ["BR", "FG"],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 63]
+        },
+        {
+            "iconName":   "wi-storm-showers",
+            "day":        2,
+            "descriptor": ["TS", "SH"],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 63]
+        },
+        {
+            "iconName":   "wi-thunderstorm",
+            "day":        2,
+            "descriptor": ["TS"],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 63]
+        },
+        {
+            "iconName":   "wi-day-sunny",
+            "day":        1,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": ["CAVOK", "NCD"],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-windy",
+            "day":        1,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": ["CAVOK", "NCD"],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [22, 33]
+        },
+        {
+            "iconName":   "wi-strong-wind",
+            "day":        1,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": ["CAVOK", "NCD"],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [34, 63]
+        },
+        {
+            "iconName":   "wi-night-clear",
+            "day":        0,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": ["CAVOK", "NCD"],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-day-cloudy",
+            "day":        1,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["FEW", "SCT"],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-night-alt-cloudy",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["FEW", "SCT"],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-day-cloudy-gusts",
+            "day":        0,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["SCT", "BKN", "OVC"],
+            "wind":       [22, 63]
+        },
+        {
+            "iconName":   "wi-night-alt-cloudy-gusts",
+            "day":        1,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["SCT", "BKN", "OVC"],
+            "wind":       [22, 63]
+        },
+        {
+            "iconName":   "wi-day-cloudy-windy",
+            "day":        1,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["FEW", "SCT"],
+            "wind":       [22, 63]
+        },
+        {
+            "iconName":   "wi-night-alt-cloudy-windy",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      ["FEW", "SCT"],
+            "wind":       [22, 63]
+        },
+        {
+            "iconName":   "wi-snow",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "SN",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [0, 21]
+        },
+        {
+            "iconName":   "wi-snow-wind",
+            "day":        2,
+            "descriptor": [],
+            "precip":     "SN",
+            "visibility": [""],
+            "other":      [""],
+            "cloud":      [""],
+            "wind":       [22, 63]
+        },
+    ]
+
     def __init__(self, day: bool, cover=float, wind=float, precip=float, special=float):
         self.day = day          # night=False, time at location (local time)
         self.cover = cover      # 0=clear, 1=overcast
@@ -251,12 +464,48 @@ class WeatherIcon(DrawAnimation):
             logger.warning(f"get_image_for_icon: no metar summary")
 
         # Paste image on cockpit background and return it.
-        bg = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=self.button.page.cockpit_color)
-        # icon_bg = self.get_default_icon()
-        # bg.paste(icon_bg)
+        bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather")
         bg.alpha_composite(image)
         self._cache = bg.convert("RGB")
         return self._cache
+
+    def selectWeatherIcon(self):
+        # Needs improvement
+        # Stolen from https://github.com/flybywiresim/efb
+        icon = "wi-cloud"
+        rawtext = self.metar.raw
+        logger.debug(f"selectWeatherIcon: METAR {rawtext}")
+        date = datetime.now();
+        day = 1 if date.hour > 5 and date.hour < 19 else 0
+        precip = re.match("RA|SN|DZ|SG|PE|GR|GS", rawtext)
+        if precip is None:
+            precip = []
+        logger.debug(f"selectWeatherIcon: PRECIP {precip}")
+        wind = metar.data.wind_speed.value if hasattr(metar.data, "wind_speed") else 0
+        logger.debug(f"selectWeatherIcon: WIND {wind}")
+        findIcon = list(filter(lambda item:  (item["day"] == day or item["day"] == 2)
+                                    and reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item["descriptor"]], 0) == len(item["descriptor"])
+                                    and rawtext.find(item["precip"])
+                                    and reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item["cloud"]], 0) > 0
+                                    and (wind > item["wind"][0] and wind < item["wind"][1])
+                                    and reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item["visibility"]], 0) > 0,
+                          WI.DB))
+        logger.debug(f"selectWeatherIcon: STEP 1 {findIcon}")
+        l = len(findIcon)
+        if l == 1:
+            icon = findIcon[0].iconName
+        else:
+            if l > 1:
+                findIcon2 = []
+                if len(precip) > 0:
+                    findIcon2 = list(filter(lambda x: re("RA|SN|DZ|SG|PE|GR|GS").match(x["precip"]), findIcon))
+                else:
+                    findIcon2 = list(filter(lambda x: x["day"] == day, findIcon))
+                logger.debug(f"selectWeatherIcon: STEP 2 {findIcon2}")
+                if len(findIcon2) > 0:
+                    icon = findIcon2[0].iconName
+        logger.debug(f"selectWeatherIcon: returning {icon}")
+        return icon
 
     def to_icon(self):
         # day or night
