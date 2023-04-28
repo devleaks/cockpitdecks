@@ -164,6 +164,10 @@ class DataIcon(DrawBase):
 # SWITCH BUTTON REPRESENTATION
 #
 #
+DEFAULT_SWITCH_BASE_FILL_COLOR = "(150, 150, 150)"
+DEFAULT_SWITCH_HANDLE_FILL_COLOR = "(40, 40, 40)"
+DEFAULT_SWITCH_HANDLE_TOP_FILL_COLOR = "(100,100,100)"
+
 class SwitchCommonBase(DrawBase):
 
     def __init__(self, config: dict, button: "Button", switch_type: str):
@@ -177,7 +181,7 @@ class SwitchCommonBase(DrawBase):
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.switch.get("button-fill-color", "(150,150,150)")
+        self.button_fill_color = self.switch.get("button-fill-color", DEFAULT_SWITCH_BASE_FILL_COLOR)
         self.button_fill_color = convert_color(self.button_fill_color)
         self.button_stroke_color = self.switch.get("button-stroke-color", "white")
         self.button_stroke_color = convert_color(self.button_stroke_color)
@@ -186,13 +190,13 @@ class SwitchCommonBase(DrawBase):
         self.button_underline_color = convert_color(self.button_underline_color)
         self.button_underline_width = self.switch.get("button-underline-width", 4)
 
-        self.handle_fill_color = self.switch.get("handle-fill-color", "(100,100,100)")
+        self.handle_fill_color = self.switch.get("handle-fill-color", DEFAULT_SWITCH_HANDLE_FILL_COLOR)
         self.handle_fill_color = convert_color(self.handle_fill_color)
         self.handle_stroke_color = self.switch.get("handle-stroke-color", "white")
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
-        self.handle_stroke_width = self.switch.get("handle-stroke-width", 4)
+        self.handle_stroke_width = self.switch.get("handle-stroke-width", 0)
 
-        self.top_fill_color = self.switch.get("top-fill-color", "(100,100,100)")
+        self.top_fill_color = self.switch.get("top-fill-color", DEFAULT_SWITCH_HANDLE_TOP_FILL_COLOR)
         self.top_fill_color = convert_color(self.top_fill_color)
         self.top_stroke_color = self.switch.get("top-stroke-color", "white")
         self.top_stroke_color = convert_color(self.top_stroke_color)
@@ -460,6 +464,7 @@ class Switch(SwitchCommonBase):
         self.invert = self.button.has_option("invert")
         self.vertical = not self.button.has_option("horizontal")
         self.hexabase = self.button.has_option("hexa")
+        self.screw_rot = randint(0, 60)
 
 
     def get_image_for_icon(self):
@@ -492,7 +497,7 @@ class Switch(SwitchCommonBase):
         tl = [center[0]-self.button_size/2, center[1]-self.button_size/2]
         br = [center[0]+self.button_size/2, center[1]+self.button_size/2]
         if self.hexabase:
-            draw.regular_polygon((center[0], center[1], self.button_size/2), n_sides=6, rotation=randint(0, 60), fill=self.button_fill_color)
+            draw.regular_polygon((center[0], center[1], self.button_size/2), n_sides=6, rotation=self.screw_rot, fill=self.button_fill_color)
         else:
             draw.ellipse(tl+br, fill=self.button_fill_color)
         if self.button_underline_width > 0:
@@ -529,22 +534,26 @@ class Switch(SwitchCommonBase):
                 ew = self.switch_width
 
                 # Handle
+                p1 = (center[0]-ew/2, center[1])
+                p2 = (center[0]+ew/2, center[1])
+                p3 = (center[0]+ew, y1)
+                p4 = (center[0]-ew, y1)
                 if self.handle_stroke_width > 0:
-                    ew = ew + 2 * self.handle_stroke_width
-                    draw.line([tuple(center), (center[0], y1)],
-                              width=ew,
-                              fill=self.handle_stroke_color) #!STROKE color
-                draw.line([tuple(center), (center[0], y1)],
-                              width=self.switch_width,
-                              fill=self.handle_fill_color)
+                    draw.polygon([p1, p2, p3, p4, p1],
+                                  fill=self.handle_fill_color,
+                                  outline=self.handle_stroke_color,
+                                  width=self.handle_stroke_width)
+                else:
+                    draw.polygon([p1, p2, p3, p4, p1],
+                                  fill=self.handle_fill_color)
 
                 # top
-                tl = [center[0]-ew/2, y1-ew/2]
-                br = [center[0]+ew/2, y1+ew/2]
+                tl = [center[0]-ew, y1-ew]
+                br = [center[0]+ew, y1+ew]
                 if self.switch_style == "round":
                     draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
                 elif self.switch_style == "rect":
-                    rw = int(self.switch_width / 2 + 4)
+                    rw = int(self.switch_width + 4)
                     tl = [center[0]-rw, y1-rw/2]
                     br = [center[0]+rw, y1+rw/2]
                     draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
@@ -574,17 +583,17 @@ class Switch(SwitchCommonBase):
                 br = [center[0]+ew/2, center[1]+ew/4]
                 draw.ellipse(tl+br, fill=self.handle_fill_color)
 
-            else:
+            else:  # horizontal
                 x1 = center[0] + pos * self.switch_length
                 ew = self.switch_width
 
                 # top
-                tl = [x1-ew/2, center[1]-ew/2]
-                br = [x1+ew/2, center[1]+ew/2]
+                tl = [x1-ew, center[1]-ew]
+                br = [x1+ew, center[1]+ew]
                 if self.switch_style == "round":
                     draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
                 elif self.switch_style == "rect":
-                    rw = int(self.switch_width / 2 + 4)
+                    rw = int(self.switch_width + 4)
                     tl = [x1-ew/2, center[1]-rw]
                     br = [x1+ew/2, center[1]+rw]
                     draw.rectangle(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
@@ -627,6 +636,8 @@ class Switch(SwitchCommonBase):
             tl = [center[0]-ew/2, center[1]-ew/2]
             br = [center[0]+ew/2, center[1]+ew/2]
             if self.switch_style == "round":
+                tl = [center[0]-ew, center[1]-ew]
+                br = [center[0]+ew, center[1]+ew]
                 draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
             elif self.switch_style == "rect":
                 tl = [center[0]-ew, center[1]-ew/2]
@@ -637,7 +648,7 @@ class Switch(SwitchCommonBase):
                     tl = [center[0]-rw, center[1]-rw/2]
                     br = [center[0]+rw, center[1]+rw/2]
                     # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
                     cx = center[0] - cr - cs
                     tl = [cx-cr/2, center[1]-cr/2]
                     br = [cx+cr/2, center[1]+cr/2]
@@ -654,7 +665,7 @@ class Switch(SwitchCommonBase):
                     tl = [center[0]-rw/2, center[1]-rw]
                     br = [center[0]+rw/2, center[1]+rw]
                     # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
-                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                    draw.rounded_rectangle(tl+br, radius=rw/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
                     cy = center[1] - cr - cs
                     tl = [center[0]-cr/2, cy-cr/2]
                     br = [center[0]+cr/2, cy+cr/2]

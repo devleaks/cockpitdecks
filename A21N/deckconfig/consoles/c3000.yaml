@@ -16,6 +16,7 @@ buttons:
     stops: 3
     switch:
       switch-style: rect
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -26,6 +27,7 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
+      left: 20
     options: 3way,invert,hexa
     dataref: ckpt/oh/strobeLight/anim
     set-dataref: ckpt/oh/strobeLight/anim
@@ -34,6 +36,7 @@ buttons:
     label: BEACON
     type: onoff
     switch:
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -51,6 +54,7 @@ buttons:
     label: WING
     type: onoff
     switch:
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -70,6 +74,7 @@ buttons:
     stops: 3
     switch:
       button-fill-color: black
+      button-size: 140
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -158,6 +163,7 @@ buttons:
     type: onoff
     label: RWY TURN OFF
     switch:
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -177,6 +183,7 @@ buttons:
     stops: 3
     switch:
       switch-style: 3dot
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -197,6 +204,7 @@ buttons:
     stops: 3
     switch:
       switch-style: 3dot
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -216,6 +224,7 @@ buttons:
     type: updown
     stops: 3
     switch:
+      button-size: 140
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
@@ -498,5 +507,4 @@ buttons:
           size: 60
           formula: ${AirbusFBW/ABrkMaxButtonAnim} 1 eq
     command: AirbusFBW/AbrkMax
-
-
+annunciator-style: v

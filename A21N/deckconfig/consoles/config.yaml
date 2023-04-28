@@ -11,5 +11,5 @@ version: 1.0.0
 default-icon-color: (94, 111, 130)
 default-label-size: 12
 default-label-font: DIN Medium.ttf
-annunciator-style: k
+annunciator-style: v
 # homepage-name: xplane

@@ -36,3 +36,4 @@ default-label-size: 12
 default-label-color: white
 # debug: cockpitdecks.cockpit
 cockpit-texture: TEXTURE.png
+annunciator-style: v
