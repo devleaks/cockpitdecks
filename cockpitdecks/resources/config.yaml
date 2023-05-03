@@ -5,3 +5,28 @@ default-label-color: white
 default-label-font: DIN.ttf
 default-label-size: 14
 cache-icon: True
+roundings:
+    sim/cockpit/autopilot/heading_mag: 2
+    # used in Weather button 3 or 4 decimals sufficient...
+    sim/flightmodel/position/latitude: 8
+    sim/flightmodel/position/longitude: 8
+    sim/cockpit/misc/barometer_setting: 2
+    sim/weather/aircraft/qnh_pas: 0
+    AirbusFBW/BatVolts[0]: 1
+    AirbusFBW/BatVolts[1]: 1
+    AirbusFBW/OHPLightsATA34[6]: 3
+    AirbusFBW/OHPLightsATA34[8]: 3
+    AirbusFBW/OHPLightsATA34[10]: 3
+    AirbusFBW/OHPLightsATA30[0]: 3
+    AirbusFBW/OHPLightsATA30[1]: 3
+    AirbusFBW/OHPLightsATA30[2]: 3
+    AirbusFBW/OHPLightsATA30[3]: 3
+    AirbusFBW/OHPLightsATA30[4]: 3
+    AirbusFBW/OHPLightsATA30[5]: 3
+    AirbusFBW/OHPLightsATA30[10]: 3
+    AirbusFBW/OHPLightsATA30[11]: 3
+    # cabin pressure ditching
+    AirbusFBW/OHPLightsATA21[13]: 3
+slow-datarefs:
+    sim/flightmodel/position/latitude: 1
+    sim/flightmodel/position/longitude: 1

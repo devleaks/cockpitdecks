@@ -46,11 +46,6 @@ class Page:
             logger.warning(f"get_button_value: invalid name {name}")
         return None
 
-    def set_logging_level(self):
-        if self.deck is not None and self.deck.cockpit is not None and self.deck.cockpit.needs_debug(type(self).__name__):
-            logger.setLevel(logging.DEBUG)
-            logger.debug(f"set_logging_level: {type(self).__name__ } set to debug")
-
     def load_defaults(self, config: dict, base):
         self.default_label_font = config.get("default-label-font", base.default_label_font)
         self.default_label_size = config.get("default-label-size", base.default_label_size)

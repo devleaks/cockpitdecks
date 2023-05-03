@@ -151,8 +151,11 @@ class Cockpit:
     def set_logging_level(self, name):
         if name in self._debug:
             l = logging.getLogger(name)
-            l.setLevel(logging.DEBUG)
-            l.debug(f"set_logging_level: {name} set to debug")
+            if l is not None:
+                l.setLevel(logging.DEBUG)
+                l.debug(f"set_logging_level: {name} set to debug")
+            else:
+                logger.warning(f"set_logging_level: logger {name} not found")
 
     def get_device(self, req_serial: str, req_type: str):
         """
@@ -313,6 +316,9 @@ class Cockpit:
             logger.debug(f"load_defaults: no default config {fn}")
 
         # Load global defaults from resources/config.yaml file or use application default
+        self.xp.set_roundings(self.default_config.get("roundings", {}))
+        self.xp.set_slow_datarefs(self.default_config.get("slow-datarefs", {}))
+
         self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
         self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
         self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
@@ -682,7 +688,7 @@ class Cockpit:
             device = deck["device"]
             DECK_TYPES[decktype][0].terminate_device(device, deck["serial_number"])
 
-    def terminate_all(self):
+    def terminate_all(self, threads:int = 1):
         logger.info(f"terminate_all: terminating..")
         # Terminate decks
         self.terminate_aircraft()
@@ -701,7 +707,7 @@ class Cockpit:
         self.terminate_devices()
         logger.info(f"terminate_all: ..done")
         left = len(threading.enumerate())
-        if left > 1:  # [MainThread]
+        if left > threads:  # [MainThread and spinner]
             logger.error(f"terminate_all: {left} threads remaining")
             logger.error(f"terminate_all: {[t.name for t in threading.enumerate()]}")
 

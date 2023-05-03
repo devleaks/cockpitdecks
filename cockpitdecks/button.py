@@ -35,6 +35,13 @@ KW_DATAREF = "dataref"
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 
+FONT_PREFIX = {
+    "fa": (ICON_FONT, FA_ICONS),
+    "wi": (WEATHER_ICON_FONT, WEATHER_ICONS)
+}
+
+VARIABLE_PREFIX = ["button", "state"]
+
 
 # ##########################################
 # BUTTONS
@@ -338,6 +345,7 @@ class Button:
                 return self.all_datarefs
 
         r = self.scan_datarefs(self._config)
+        logger.debug(f"get_datarefs: button {self.name}: added button datarefs {r}")
         # Activation datarefs
         if self._activation is not None:
             datarefs = self._activation.get_datarefs()
@@ -359,12 +367,12 @@ class Button:
         """
         def is_dref(r):
             # ${state:button-value} is not a dataref
-            PREFIX = ["fa", "wi", "button", "state"]
+            PREFIX = list(FONT_PREFIX.keys()) + VARIABLE_PREFIX
             SEP = ":"
             for s in PREFIX:
                 if r.startswith(s+SEP):
                     return False
-            return True
+            return r != KW_FORMULA
 
         r = []
 
@@ -409,17 +417,17 @@ class Button:
 
         # Use of datarefs in label or text
         #
-        # 3. LABEL datarefs (should be avoided, label should be static message)
-        # 3.1 Label
-        label = base.get("label")
-        if label is not None and type(label) == str:
-            datarefs = re.findall(PATTERN_DOLCB, label)
-            datarefs = list(filter(is_dref, datarefs))
-            if len(datarefs) > 0:
-                r = r + datarefs
-                logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
+        # 3.1 Label datarefs (should be avoided, label should be static message)
+        # label = base.get("label")
+        # if label is not None and type(label) == str:
+        #     datarefs = re.findall(PATTERN_DOLCB, label)
+        #     datarefs = list(filter(is_dref, datarefs))
+        #     if len(datarefs) > 0:
+        #         r = r + datarefs
+        #         logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
+        # commented out 02-MAY-2023
 
-        # 3.2 Button Text
+        # 3.2 Text datarefs
         text = base.get("text")
         if text is not None and type(text) == str:
             datarefs = re.findall(PATTERN_DOLCB, text)
@@ -429,7 +437,7 @@ class Button:
                 logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
 
         # Clean up
-        if KW_FORMULA in r:  # label or text may contain ${formula}, KW_FORMULA is not a dataref.
+        if KW_FORMULA in r:  # label or text may contain like ${{KW_FORMULA}}, but {KW_FORMULA} is not a dataref.
             r.remove(KW_FORMULA)
 
         return list(set(r))  # removes duplicates
@@ -607,19 +615,15 @@ class Button:
                 return "-" * int(n) + " " + DOT
 
         # HACK 2
-        bizfonts = {
-            "fa": (ICON_FONT, FA_ICONS),
-            "wi": (WEATHER_ICON_FONT, WEATHER_ICONS)
-        }
         text_font = base.get(root+"-font", self.page.default_label_font)
-        for k, v in bizfonts.items():
+        for k, v in FONT_PREFIX.items():
             if text_font.lower().startswith(v[0]):
                 s = "\\${%s:([^\\}]+?)}" % (k)
                 icons = re.findall(s, text)
                 for i in icons:
                     if i in v[1].keys():
                         text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"get_text: button {self.name}: substituing {i}")
+                        logger.debug(f"get_text: button {self.name}: substituing font icon {i}")
 
         # Formula in text
         text_format = base.get(f"{root}-format")
@@ -662,15 +666,15 @@ class Button:
         # 2. No dataref
         if len(self.all_datarefs) == 0:
             if self.dataref_rpn is not None:
-                logger.debug(f"button_value: button {self.name}: getting formula without dataref")
+                logger.debug(f"button_value: button {self.name}: formula without dataref")
                 return self.execute_formula(formula=self.dataref_rpn)
 
         # 3. One dataref
         if len(self.all_datarefs) == 1:
             # if self.all_datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            logger.debug(f"button_value: button {self.name}: getting single dataref {self.all_datarefs[0]}")
+            logger.debug(f"button_value: button {self.name}: single dataref {self.all_datarefs[0]}")
             if self.dataref_rpn is not None:
-                logger.debug(f"button_value: button {self.name} getting formula with one dataref")
+                logger.debug(f"button_value: button {self.name} formula with one dataref")
                 return self.execute_formula(formula=self.dataref_rpn)
             else:  # if no formula, returns dataref as it is
                 return self.get_dataref_value(self.all_datarefs[0])
@@ -681,6 +685,10 @@ class Button:
             if self.dataref_rpn is not None:
                 logger.debug(f"button_value: button {self.name}: getting formula with more than one datarefs")
                 return self.execute_formula(formula=self.dataref_rpn)
+            # 4.1 bis: If button has a dataref in its attribute, we may favor that dataref first?
+            # if self.dataref is not None:
+            #     logger.debug(f"button_value: button {self.name}: more than one datarefs, but returning dataref attribute {self.dataref} value")
+            #     return self.get_dataref_value(self.dataref)
             # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
             # !! May be we should return them all?
             r = {}

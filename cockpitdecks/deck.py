@@ -36,13 +36,12 @@ class Deck(ABC):
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
-        self.logging_level = "INFO"
         self._config = config
         self.name = name
         self.cockpit = cockpit
         self.device = device
 
-        self.cockpit.set_logging_level("Deck")
+        self.cockpit.set_logging_level(__name__)
 
         self.set_default(config, cockpit)
 
@@ -118,13 +117,6 @@ class Deck(ABC):
         :param      fn:   The function
         :type       fn:   Function
         """
-        # Logging level
-        self.logging_level = config.get("logging-level", "INFO")
-        llvalue = getattr(logging, self.logging_level)
-        if llvalue is not None:
-            logger.setLevel(llvalue)
-            logger.debug(f"set_default: logging level set to {self.logging_level}")
-
         self.default_label_font = config.get("default-label-font", base.default_label_font)
         self.default_label_size = config.get("default-label-size", base.default_label_size)
         self.default_label_color = config.get("default-label-color", base.default_label_color)

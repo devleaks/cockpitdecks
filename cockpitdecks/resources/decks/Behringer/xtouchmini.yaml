@@ -1,0 +1,21 @@
+# This is the description of a deck's capabilities for a Behringer XTouch Mini device
+#
+---
+name: xtouchmini
+model: mini
+buttons:
+    - name: 1
+      action: push
+      view: led
+    - name: A
+      action: push
+      view: led
+    - name: B
+      action: push
+      view: led
+    - name: e0
+      action: encoder-push
+      view: encoder-leds
+    - name: slider
+      action: slider
+      view: none

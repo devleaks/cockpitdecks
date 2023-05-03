@@ -27,3 +27,19 @@ ACTIVATIONS = {
     "swipe": Swipe
 }
 
+#
+# ###############################
+# DECK ACTIVATION MAP
+#
+#
+push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown"]
+encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
+
+DECK_ACTIVATIONS = {
+    "push": push,
+    "encoder": encoder,
+    "encoder-push": push + encoder,
+    "slider": ["slider"],
+    "cursor": ["cursor"],
+    "swipe": push + ["swipe"]
+}

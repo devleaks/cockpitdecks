@@ -186,6 +186,7 @@ class Streamdeck(DeckWithIcons):
             "text",
             "icon-color",
             "multi-icons",
+            "multi-texts",
             "icon-animate",
             "annunciator",
             "annunciator-animate",

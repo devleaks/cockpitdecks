@@ -2,7 +2,7 @@
 Button display and rendering abstraction.
 """
 import logging
-from .button_representation import Representation, Icon, IconText, MultiIcons, IconAnimation, IconSide
+from .button_representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconAnimation, IconSide
 from .button_representation import LED, ColoredLED, MultiLEDs
 from .button_annunciator import Annunciator, AnnunciatorAnimate
 from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
@@ -17,6 +17,7 @@ REPRESENTATIONS = {
     "text": IconText,
     "icon-color": Icon,
     "multi-icons": MultiIcons,
+    "multi-texts": MultiTexts,
     "icon-animate": IconAnimation,
     "side": IconSide,
     "led": LED,
@@ -43,3 +44,22 @@ try:
     logger.info(f"WeatherIcon installed")
 except ImportError:
     pass
+
+#
+# ###############################
+# DECK DISPLAY MAP
+#
+#
+# Will only load if AVWX is installed
+images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
+drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg"]
+
+if "weather" in REPRESENTATIONS.keys():
+    drawn_buttons.append("weather")
+
+DECK_REPRESENTATIONS = {
+    "lcd": images + drawn_buttons,
+    "led": ["led"],
+    "colored-led": ["led", "colored-led"],
+    "encoder-leds": ["multi-leds"]
+}

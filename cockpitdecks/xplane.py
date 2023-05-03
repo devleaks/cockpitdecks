@@ -14,10 +14,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
-from .xpdref_round import DATAREF_ROUND
-TRACK_UPDATE = True # Reports when a dataref has changed
-
-
 class Dataref:
 
     def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
@@ -31,11 +27,13 @@ class Dataref:
         self.is_array = False       # array of above
         self.is_decimal = is_decimal
         self.is_string = is_string
+        self._previous_value = None  # raw values
+        self._current_value = None
         self.previous_value = None
         self.current_value = None
         self.current_array = []
         self.listeners = {}         # buttons using this dataref, will get notified if changes.
-        self.round = DATAREF_ROUND.get(path)
+        self.round = None
 
         # dataref/path:t where t in d, i, f, s, b.
         if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
@@ -68,6 +66,9 @@ class Dataref:
             if self.index >= self.length:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
 
+    def set_round(self, rounding):
+        self.round = rounding
+
     def value(self):
         return self.current_value
 
@@ -97,6 +98,8 @@ class Dataref:
         return self.current_value != self.previous_value
 
     def update_value(self, new_value, cascade: bool = False):
+        self._previous_value = self._current_value
+        self._current_value = new_value
         self.previous_value = self.current_value
         if self.round is not None:
             self.current_value = round(new_value, self.round)
@@ -143,7 +146,15 @@ class XPlane:
         self.dataref_db_lock = threading.RLock()
         self._need_reload = True
 
+        self.roundings = {}    # path: int
+        self.slow_datarefs = {}
         self.cockpit.set_logging_level(__name__)
+
+    def set_roundings(self, roundings):
+        self.roundings = roundings
+
+    def set_slow_datarefs(self, slow_datarefs):
+        self.slow_datarefs = slow_datarefs
 
     def detect_changed(self):
         """
@@ -176,6 +187,7 @@ class XPlane:
     def register(self, dataref):
         if dataref.path not in self.all_datarefs:
             if dataref.exists():
+                dataref.set_round(rounding=self.roundings.get(dataref.path))
                 self.all_datarefs[dataref.path] = dataref
             else:
                 logger.warning(f"register: invalid dataref {dataref.path}")

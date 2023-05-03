@@ -117,6 +117,8 @@ class Icon(Representation):
         self.icon_color = convert_color(self.icon_color)
         self.icon_texture = config.get("icon-texture", page.default_icon_texture)
 
+        self.text_config = config  # where to get text from
+
         self.frame = config.get(KW_FRAME)
 
         self.icon = None
@@ -349,9 +351,13 @@ class Icon(Representation):
         draw = None
         # Add label if any
 
-        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._config, which_text)
+        text_dict = self._config
+        if which_text == "text":  # hum.
+            text_dict = self.text_config
 
-        if which_text == "label":  # hum.
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
+
+        if which_text == "label":
             text_size = int(text_size * image.width / 72)
 
         # logger.debug(f"overlay_text: {text}")
@@ -416,8 +422,6 @@ class IconText(Icon):
         Icon.__init__(self, config=config, button=button)
 
         self.text = str(config.get("text"))
-        # self.texts = config.get("multi-texts")  # @todo later
-
         self.icon_color = config.get("text-bg-color", self.icon_color)
 
     def get_image(self):
@@ -431,6 +435,62 @@ class IconText(Icon):
 
     def describe(self):
         return "The representation places an icon with optional text and label overlay."
+
+
+class MultiTexts(IconText):
+
+    def __init__(self, config: dict, button: "Button"):
+        IconText.__init__(self, config=config, button=button)
+
+        self.multi_texts = config.get("text-animate")
+        if self.multi_texts is None:
+            self.multi_texts = config.get("multi-texts", [])
+        else:
+            logger.debug(f"__init__: button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
+
+    def get_datarefs(self):
+        datarefs = []
+        for text in self.multi_texts:
+            drefs = self.button.scan_datarefs(text)
+            if len(drefs) > 0:
+                datarefs = datarefs + drefs
+        return datarefs
+
+    def is_valid(self):
+        if self.multi_texts is None:
+            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: no icon")
+            return False
+        if len(self.multi_texts) == 0:
+            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: no icon")
+        return super().is_valid()
+
+    def num_texts(self):
+        return len(self.multi_texts)
+
+    def render(self):
+        value = self.get_current_value()
+        if value is None:
+            logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
+            return None
+        if type(value) in [str, int, float]:
+            value = int(value)
+        else:
+            logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: complex value {value}")
+            return None
+        if self.num_texts() > 0:
+            if  value >= 0 and value < self.num_texts():
+                self.text_config = self.multi_texts[value]
+            else:
+                self.text_config = self.multi_texts[value % self.multi_texts()]
+            return super().render()
+        else:
+            logger.warning(f"render: button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts()}")
+        return None
+
+    def describe(self):
+        return "\n\r".join([
+            f"The representation produces an icon with text, text is selected from a list of {len(self.multi_texts)} texts bsaed on the button's value."
+        ])
 
 
 class IconSide(Icon):
@@ -562,7 +622,7 @@ class MultiIcons(Icon):
             logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: no icon")
             return False
         if len(self.multi_icons) == 0:
-            logger.warning(f"is_vali: button {self.button_name()}: {type(self).__name__}: no icon")
+            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__}: no icon")
         return super().is_valid()
 
     def num_icons(self):
