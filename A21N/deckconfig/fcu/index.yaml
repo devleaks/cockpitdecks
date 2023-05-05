@@ -43,6 +43,7 @@ buttons:
       - AirbusFBW/PushAltitude
       - sim/autopilot/altitude_down
       - sim/autopilot/altitude_up
+    # - AirbusFBW/ALT100_1000
   - index: knobCR
     name: FCU V Speed
     type: encoder-value
@@ -281,17 +282,34 @@ buttons:
 #     text-font: Seven Segment.ttf
 #     text-bg-color: (40, 40, 40)
   - index: 11
-    name: RELOAD
-    type: reload
-    label: RELOAD
-    label-size: 14
-    label-position: cm
-    text: ${fa:rotate-right}
-    text-font: fontawesome.otf
-    text-color: lime
-    text-size: 80
-    text-position: cm
-    text-bg-color: (94, 111, 130)
+    name: AP2
+    type: push
+    annunciator:
+      size: medium
+      model: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          formula: ${AirbusFBW/AP2Engage}
+        B1:
+          text: AP2
+          text-color: white
+          text-size: 60
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/ap2_push
+    # name: RELOAD
+    # type: reload
+    # label: RELOAD
+    # label-size: 14
+    # label-position: cm
+    # text: ${fa:rotate-right}
+    # text-font: fontawesome.otf
+    # text-color: lime
+    # text-size: 80
+    # text-position: cm
+    # text-bg-color: (94, 111, 130)
   # - index: 11
   #   name: STATUS
   #   type: inspect

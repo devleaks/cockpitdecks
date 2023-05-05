@@ -50,7 +50,8 @@ except ImportError:
 # DECK DISPLAY MAP
 #
 #
-# Will only load if AVWX is installed
+# This estabishes the link between deck capabilities and Representations
+#
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
 drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg"]
 

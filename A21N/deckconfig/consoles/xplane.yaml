@@ -222,7 +222,6 @@ buttons:
     text-color: lime
     text-size: 80
     text-position: cm
-    text-bg-color: (94, 111, 130)
   - index: 31
     name: Index
     type: page

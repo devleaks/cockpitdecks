@@ -17,8 +17,8 @@ buttons:
     name: ISCS
     type: push
     multi-icons:
-      - ISCS
-      - ISCS
+      - ISCSBLUE
+      - ISCSBLUE
     command: toliss_airbus/iscs_open
     initial-value: 0
   - index: 2

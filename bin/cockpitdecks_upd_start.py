@@ -13,7 +13,7 @@ from cockpitdecks import __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.xplaneudp import XPlaneUDP
 
 # logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ac = sys.argv[1] if len(sys.argv) > 1 else os.path.join(COCKPIT_DECK_BASEDIR, DEFAULT_AIRCRAFT)

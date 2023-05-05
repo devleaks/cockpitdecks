@@ -32,6 +32,8 @@ ACTIVATIONS = {
 # DECK ACTIVATION MAP
 #
 #
+# This estabishes the link between deck capabilities and Activations
+#
 push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown"]
 encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
 

@@ -92,26 +92,19 @@ buttons:
 
 # ### LINE 4 ### 24-31 ######################################################
   - index: 29
-    name: RELOAD
-    type: reload
-    label: RELOAD
-    label-size: 14
-    label-position: cm
-    text: ${fa:rotate-right}
-    text-font: fontawesome.otf
-    text-color: lime
-    text-size: 80
-    text-position: cm
-    text-bg-color: (94, 111, 130)
+    name: xplane
+    type: page
+    page: xplane
+    icon: XPLANE12
   - index: 30
     name: ISCS
     type: page
     page: toliss
     icon: P_TOLISS_ISCS_ON
   - index: 31
-    name: xplane
+    name: Index
     type: page
-    page: xplane
-    icon: XPLANE12
+    page: index
+    icon: TOLISS-A321
 default-label-size: 20
 includes: popups

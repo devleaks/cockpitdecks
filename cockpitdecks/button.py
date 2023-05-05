@@ -596,25 +596,11 @@ class Button:
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
         """
-        DOT = "."  # • does not exist in all charsets
         text = base.get(root)
         if text is None:
             return None
 
-        # HACK 1
-        if self.is_managed():      # managed
-            txtmod = self.manager.get(f"{root}-modifier", "dot").lower()
-            if txtmod == "dot": # label
-                return text + DOT  # ---•
-            elif txtmod in ["std", "standard"]:    # QNH Std
-                    return "Std"
-            elif txtmod == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
-                n = self.option_value("dash", self.option_value("dashes", True))
-                if type(n) == bool:
-                    n = 3
-                return "-" * int(n) + " " + DOT
-
-        # HACK 2
+        # HACK 1: Special icon font substitution
         text_font = base.get(root+"-font", self.page.default_label_font)
         for k, v in FONT_PREFIX.items():
             if text_font.lower().startswith(v[0]):
@@ -644,6 +630,23 @@ class Button:
                 logger.warning(f"get_text: button {self.name}: text contains {KW_FORMULA_STR} but no {KW_FORMULA} attribute found")
 
         text = self.substitute_values(text, formatting=text_format, default="---")
+
+        # HACK 2: Change text if managed
+        # Note: we have to go through the whole text substitution before, because sometimes the text gets displayed anyway
+        if self.is_managed():      # managed
+            # • does not exist in all charsets, * is ok. I made my own font with b'\\u2022' (dec. 8226) set to "•"
+            DOT = "•"
+
+            txtmod = self.manager.get(f"{root}-modifier", "dot").lower()
+            if txtmod == "dot": # label
+                return text + DOT  # ---•
+            elif txtmod in ["std", "standard"]:    # QNH Std
+                    return "Std"
+            elif txtmod == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
+                n = self.option_value("dash", self.option_value("dashes", True))
+                if type(n) == bool:
+                    n = 3
+                return "-" * int(n) + " " + DOT
 
         return text
 
