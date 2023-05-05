@@ -44,6 +44,7 @@ ICON_SIZE = 256 # px
 DEFAULT_ICON_NAME = "_default_icon.png"
 DEFAULT_ICON_COLOR = (0, 0, 100)
 DEFAULT_ICON_TEXTURE = None
+DEFAULT_ANNUNCIATOR_COLOR = (0, 0, 0)
 
 # Decor, colors
 COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name

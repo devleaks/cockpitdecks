@@ -38,3 +38,4 @@ default-label-color: white
 # debug: cockpitdecks.cockpit
 cockpit-texture: TEXTURE.png
 annunciator-style: v
+# default-annunciator-texture: ANNUNCIATOR_TEXTURE.png

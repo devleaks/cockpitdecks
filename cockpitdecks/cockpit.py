@@ -10,9 +10,11 @@ from queue import Queue
 from PIL import Image, ImageFont
 from ruamel.yaml import YAML
 
-from .constant import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEXTURE, DEFAULT_LOGO, DEFAULT_WALLPAPER, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
+from .constant import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
+from .constant import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from .constant import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
+from .constant import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEXTURE, DEFAULT_LOGO, DEFAULT_WALLPAPER
+from .constant import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from .constant import COCKPIT_COLOR, COCKPIT_TEXTURE, DEFAULT_LIGHT_OFF_INTENSITY, ICON_SIZE
 from .color import convert_color, has_ext
 
@@ -68,6 +70,8 @@ class Cockpit:
         self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_color = convert_color(DEFAULT_ICON_COLOR)
         self.default_icon_texture = DEFAULT_ICON_TEXTURE
+        self.default_annun_texture = None
+        self.default_annun_color = convert_color(DEFAULT_ANNUNCIATOR_COLOR)
 
         self.fill_empty_keys = True
         self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
@@ -330,12 +334,20 @@ class Cockpit:
         self.default_icon_texture = self.default_config.get("default-icon-texture", DEFAULT_ICON_TEXTURE)
         self.default_icon_color = self.default_config.get("default-icon-color", DEFAULT_ICON_COLOR)
         self.default_icon_color = convert_color(self.default_icon_color)
+        self.default_annun_texture = self.default_config.get("default-annunciator-texture")
+        self.default_annun_color = self.default_config.get("default-annunciator-color", DEFAULT_ANNUNCIATOR_COLOR)
+        self.default_annun_color = convert_color(self.default_annun_color)
+        self.annunciator_style = self.default_config.get("annunciator-style", DEFAULT_ANNUNCIATOR_STYLE.value)
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.cockpit_texture = self.default_config.get("cockpit-texture", COCKPIT_TEXTURE)
         self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
         self.cockpit_color = convert_color(self.cockpit_color)
-        self.annunciator_style = self.default_config.get("annunciator-style", DEFAULT_ANNUNCIATOR_STYLE.value)
-        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
+        #
+        #
+        # DO NOT FORGET SET DEFAULTS IN create_decks()
+        #
+        #
 
         # 1. Creating default icon
         #    No longer necessary
@@ -419,6 +431,9 @@ class Cockpit:
                 self.cache_icon = config.get("cache-icon", self.cache_icon)
                 self.default_icon_color = config.get("default-icon-color", self.default_icon_color)
                 self.default_icon_color = convert_color(self.default_icon_color)
+                self.default_annun_texture = config.get("default-annunciator-texture", self.default_annun_texture)
+                self.default_annun_color = config.get("default-annunciator-color", self.default_annun_color)
+                self.default_annun_color = convert_color(self.default_annun_color)
                 self.default_logo = config.get("default-logo", self.default_logo)
                 self.default_wallpaper = config.get("default-wallpaper", self.default_wallpaper)
                 self.cockpit_texture = config.get("cockpit-texture", self.cockpit_texture)
@@ -426,6 +441,11 @@ class Cockpit:
                 self.cockpit_color = convert_color(self.cockpit_color)
                 self.default_home_page_name = config.get("default-homepage-name", self.default_home_page_name)
                 logger.debug(f"create_decks: new defaults: label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
+                #
+                #
+                # DO NOT FORGET SET DEFAULTS IN load_defaults()
+                #
+                #
 
                 if "decks" in config:
                     deck_type_count = {}

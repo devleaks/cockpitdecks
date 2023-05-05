@@ -56,12 +56,15 @@ class Page:
         self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
-        self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
+        self.default_annun_texture = config.get("default-annunciator-texture", base.default_annun_texture)
+        self.default_annun_color = config.get("default-annunciator-color", base.default_annun_color)
+        self.default_annun_color = convert_color(self.default_annun_color)
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
         self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
         self.cockpit_texture = config.get("cockpit-texture")
+        self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
 
     def load_buttons(self, buttons):
         for a in buttons:

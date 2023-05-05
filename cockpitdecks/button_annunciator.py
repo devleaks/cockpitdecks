@@ -26,8 +26,11 @@ ANNUNCIATOR_DEFAULT_MODEL = "A"
 ANNUNCIATOR_DEFAULT_MODEL_PART = "A0"
 
 DEFAULT_INVERT_COLOR = "white"
-TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)
+TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
+TRANSPARENT_PNG_COLOR_BLACK = (0, 0, 0, 0)  # black-based
 
+DEFAULT_COLOR = (128, 128, 128)
+DEFAULT_COLOR_NAME = "grey"
 
 class GUARD_TYPES(Enum):
     COVER = "cover"
@@ -162,8 +165,8 @@ class AnnunciatorPart:
             logger.warning(f"get_color: button {self.annunciator.button.name}: has both color and text-color set, using color {color}")
 
         if color is None:
-            logger.warning(f"get_color: button {self.annunciator.button.name}: no color found, using grey")
-            color = (128, 128, 128)
+            logger.warning(f"get_color: button {self.annunciator.button.name}: no color found, using {DEFAULT_COLOR_NAME}")
+            color = DEFAULT_COLOR
         if type(color) == tuple or type(color) == list:  # we transfort it back to a string, read on...
             color = "(" + ",".join([str(i) for i in color]) + ")"
 
@@ -171,16 +174,16 @@ class AnnunciatorPart:
             try:
                 color = self._config.get("off-color", light_off(color, lightness=DEFAULT_LIGHT_OFF_INTENSITY/100))
             except ValueError:
-                logger.debug(f"get_color: button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using grey")
-                color = (128, 128, 128)
+                logger.debug(f"get_color: button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using {DEFAULT_COLOR_NAME}")
+                color = DEFAULT_COLOR
         elif color.startswith("("):
             color = convert_color(color)
         else:
             try:
                 color = ImageColor.getrgb(color)
             except ValueError:
-                logger.debug(f"get_color: color {color} not found, using grey")
-                color = (128, 128, 128)
+                logger.debug(f"get_color: color {color} not found, using {DEFAULT_COLOR_NAME}")
+                color = DEFAULT_COLOR
         return color
 
     def has_frame(self):
@@ -310,6 +313,10 @@ class Annunciator(Icon):
         self.annunciator_style = config.get("annunciator-style", button.page.annunciator_style)
         self.model = None
 
+        self.annun_color = config.get("annunciator-color", button.page.default_annun_color)
+        self.annun_color = convert_color(self.annun_color)
+        self.annun_texture = config.get("annunciator-texture", button.page.default_annun_texture)
+
         # Normalize annunciator parts in parts attribute if not present
         if self.annunciator is None:
             logger.error(f"__init__: button {button.name}: annunciator has no property")
@@ -417,6 +424,27 @@ class Annunciator(Icon):
         logger.debug(f"get_current_values: button {self.button.name}: {type(self).__name__}: {v} => {l}")
         return v
 
+    def get_annunciator_background(self, width: int, height: int, use_texture: bool = True):
+        """
+        Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
+        """
+        image = None
+        if use_texture and self.annun_texture is not None:
+            if self.annun_texture in self.button.deck.cockpit.icons.keys():
+                image = self.button.deck.cockpit.icons[self.annun_texture]
+            logger.debug(f"get_annunciator_background: using texture {self.annun_texture}")
+
+        if image is not None:  # found a texture as requested
+            image = image.resize((width, height))
+            return image
+
+        if use_texture and self.annun_texture is None:
+            logger.debug(f"get_annunciator_background: should use texture but no texture found, using uniform color")
+
+        image = Image.new(mode="RGBA", size=(width, height), color=self.annun_color)
+        logger.debug(f"get_annunciator_background: using uniform color {self.annun_color}")
+        return image
+
     def get_image_for_icon(self):
         # If the part is not lit, a darker version is printed unless dark option is added to button
         # in which case nothing gets added to the button.
@@ -458,12 +486,15 @@ class Annunciator(Icon):
         # PART 1:
         # Texts that will glow if Korry style goes on glow.
         # Drawing that will not glow go on bgrd.
-        annun_bg = convert_color(self.annunciator.get("background-color", "(0,0,0,0)"))
-        bgrd = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_bg)     # annunciator background color, including invert ON modes
+        # bgrd = Image.new(mode="RGBA", size=(annun_width, annun_height), color=self.annun_color)  # annunciator background color, including invert ON modes
+        bgrd = self.get_annunciator_background(width=annun_width, height=annun_height)
+
         bgrd_draw = ImageDraw.Draw(bgrd)
-        glow = Image.new(mode="RGBA", size=(annun_width, annun_height), color=(0, 0, 0, 0)) # annunciator text and leds , color=(0, 0, 0, 0)
+        annun_color = (*self.annun_color, 0) if len(self.annun_color) == 3 else self.annun_color
+
+        glow = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_color) # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(glow)
-        guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(0, 0, 0, 0))     # annunuciator optional guard
+        guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=annun_color)     # annunuciator optional guard
         guard_draw = ImageDraw.Draw(guard)
 
         for part in self.annunciator_parts.values():
@@ -492,7 +523,7 @@ class Annunciator(Icon):
 
         # PART 2: Make annunciator
         # Paste the transparent text/glow into the annunciator background (and optional seal):
-        annunciator = Image.new(mode="RGBA", size=(annun_width, annun_height), color=(0, 0, 0, 0))
+        annunciator = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_color)
         annunciator.alpha_composite(bgrd)               # potential inverted colors
         # annunciator.alpha_composite(glow)    # texts
         annunciator.paste(glow, mask=glow)    # texts
