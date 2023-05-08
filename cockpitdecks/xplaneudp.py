@@ -322,15 +322,15 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         '''
         if dataref.startswith(DATA_PREFIX):
             logger.debug(f"add_dataref_to_monitor: {dataref} is local and does not need X-Plane monitoring")
-            return
+            return False
 
         if not self.connected:
             logger.warning(f"add_dataref_to_monitor: no connection ({dataref}, {freq})")
-            return
+            return False
 
         if dataref in NOT_A_DATAREF:
             logger.warning(f"write_dataref: not a dataref ({dataref})")
-            return
+            return False
 
         idx = -9999
         if freq is None:
@@ -354,6 +354,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         if self.datarefidx%100 == 0:
             time.sleep(0.2)
+        return True
 
     def get_values(self):
         """
@@ -458,6 +459,9 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     def commandEnd(self, command: str):
         self.execute_command(command+"/end")
 
+    def remove_local_datarefs(self, datarefs) -> list:
+        return list(filter(lambda d: not d.startswith(DATA_PREFIX), datarefs))
+
     def clean_datarefs_to_monitor(self):
         if not self.connected:
             logger.warning(f"clean_datarefs_to_monitor: no connection")
@@ -470,14 +474,17 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     def add_datarefs_to_monitor(self, datarefs):
         if not self.connected:
             logger.warning(f"add_datarefs_to_monitor: no connection")
-            logger.debug(f"add_datarefs_to_monitor: would add {datarefs.keys()}")
+            logger.debug(f"add_datarefs_to_monitor: would add {self.remove_local_datarefs(datarefs.keys())}")
             return
         # Add those to monitor
         super().add_datarefs_to_monitor(datarefs)
         prnt = []
         for d in datarefs.values():
-            self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT))
-            prnt.append(d.path)
+            if d.path.startswith(DATA_PREFIX):
+                logger.debug(f"add_datarefs_to_monitor: local dataref {d.path} is not monitored")
+                continue
+            if self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT)):
+                prnt.append(d.path)
         logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
 
     def remove_datarefs_to_monitor(self, datarefs):
@@ -488,10 +495,13 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # Add those to monitor
         prnt = []
         for d in datarefs.values():
+            if d.path.startswith(DATA_PREFIX):
+                logger.debug(f"remove_datarefs_to_monitor: local dataref {d.path} is not monitored")
+                continue
             if d.path in self.datarefs_to_monitor.keys():
                 if self.datarefs_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
-                    self.add_dataref_to_monitor(d.path, freq=0)
-                    prnt.append(d.path)
+                    if self.add_dataref_to_monitor(d.path, freq=0):
+                        prnt.append(d.path)
                 else:
                     logger.debug(f"remove_datarefs_to_monitor: {d.path} monitored {self.datarefs_to_monitor[d.path]} times")
             else:
@@ -515,8 +525,8 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # Add those to monitor
         prnt = []
         for path in self.datarefs_to_monitor.keys():
-            self.add_dataref_to_monitor(path, freq=DATA_SENT)
-            prnt.append(path)
+            if self.add_dataref_to_monitor(path, freq=DATA_SENT):
+                prnt.append(path)
         logger.log(SPAM_LEVEL, f"add_all_datarefs_to_monitor: added {prnt}")
 
     def cleanup(self):

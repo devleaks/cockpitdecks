@@ -203,6 +203,9 @@ class XPlane:
     def add_datarefs_to_monitor(self, datarefs: dict):
         prnt = []
         for d in datarefs.values():
+            if d.path.startswith(DATA_PREFIX):
+                logger.debug(f"add_datarefs_to_monitor: local dataref {d.path} is not monitored")
+                continue
             if d.path not in self.datarefs_to_monitor.keys():
                 self.datarefs_to_monitor[d.path] = 1
                 prnt.append(d.path)
@@ -214,6 +217,9 @@ class XPlane:
     def remove_datarefs_to_monitor(self, datarefs):
         prnt = []
         for d in datarefs.values():
+            if d.path.startswith(DATA_PREFIX):
+                logger.debug(f"remove_datarefs_to_monitor: local dataref {d.path} is not monitored")
+                continue
             if d.path in self.datarefs_to_monitor.keys():
                 self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] - 1
                 if self.datarefs_to_monitor[d.path] == 0:

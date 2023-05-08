@@ -19,7 +19,7 @@ from .constant import COCKPIT_COLOR, COCKPIT_TEXTURE, DEFAULT_LIGHT_OFF_INTENSIT
 from .color import convert_color, has_ext
 
 from . import __version__
-from .devices import DECK_TYPES
+from .decks import DECK_TYPES
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 

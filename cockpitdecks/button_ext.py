@@ -16,8 +16,7 @@ from PIL import Image, ImageDraw
 
 from .constant import WEATHER_ICON_FONT, ICON_FONT, ICON_SIZE
 from .color import convert_color, light_off
-from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
-from .resources.weathericons import WEATHER_ICONS     # Weather Icons
+from .resources.iconfonts import WEATHER_ICONS
 from .button_draw import DrawBase, DrawAnimation
 from .button_annunciator import TRANSPARENT_PNG_COLOR
 

@@ -35,9 +35,6 @@ DEFAULT_LABEL_SIZE = 10
 DEFAULT_LABEL_COLOR = "white"
 DEFAULT_LABEL_POSITION = "ct"
 
-ICON_FONT = "fontawesome.otf"
-WEATHER_ICON_FONT = "weathericons.otf"
-
 # Icons
 ICONS_FOLDER = "icons"
 ICON_SIZE = 256 # px
@@ -60,7 +57,7 @@ SPAM_LEVEL = 15
 SPAM = "SPAM"
 ID_SEP = "/"
 
-ROOT_DEBUG = "cockpitdecks.xplaneudp"
+ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"           # k(orry): backlit, glowing

@@ -9,10 +9,10 @@ from random import randint
 
 from PIL import Image, ImageDraw
 
-from .constant import WEATHER_ICON_FONT, ICON_FONT, ICON_SIZE, DEFAULT_LABEL_FONT
+from .constant import ICON_SIZE, DEFAULT_LABEL_FONT
+from .resources.iconfonts import ICON_FONTS
+
 from .color import convert_color, light_off
-from .resources.icons import icons as FA_ICONS        # Font Awesome Icons
-from .resources.weathericons import WEATHER_ICONS     # Weather Icons
 from .button_representation import Icon
 from .button_annunciator import TRANSPARENT_PNG_COLOR
 
@@ -71,13 +71,16 @@ class DataIcon(DrawBase):
         # Icon
         icon, icon_format, icon_font, icon_color, icon_size, icon_position = self.get_text_detail(data, "icon")
 
-        icon_name = data.get("icon-name")  # not "icon"...
-        if icon_name is not None:
-            icon_str = FA_ICONS.get(icon_name, "*")
+        icon_str = "*"
+        icon_arr = icon.split(":")
+        if len(icon_arr) == 0 or icon_arr[0] not in ICON_FONTS.keys():
+            logger.warning(f"get_image_for_icon: button {self.button.name}: invalid icon {icon}")
         else:
-            icon_str = "*"
+            icon_name = ":".join(icon_arr[1:])
+            icon_str = ICON_FONTS[icon_arr[0]][1].get(icon_name, "*")
+        print(">>>>>>>>", icon, icon_arr, icon_str, ICON_FONTS[icon_arr[0]][0])
 
-        icon_font = data.get("icon-font", ICON_FONT)
+        icon_font = data.get("icon-font", ICON_FONTS[icon_arr[0]][0])
         font = self.get_font(icon_font, int(icon_size))
         inside = round(0.04 * image.width + 0.5)
         w = inside

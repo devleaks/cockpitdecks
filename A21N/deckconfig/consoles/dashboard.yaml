@@ -28,7 +28,7 @@ buttons:
     data:
       top-line-color: red
       top-line-width: 10
-      icon-name: "gas-pump"
+      icon: fa:gas-pump
       icon-size: 60
       icon-color: darkorange
       data: ${formula}

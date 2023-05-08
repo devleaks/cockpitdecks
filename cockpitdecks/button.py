@@ -15,12 +15,10 @@ from ruamel.yaml import YAML
 from .activation import ACTIVATIONS
 from .representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
-from .constant import ID_SEP, SPAM_LEVEL, KW_FORMULA, WEATHER_ICON_FONT, ICON_FONT
+from .constant import ID_SEP, SPAM_LEVEL, KW_FORMULA
 from .rpc import RPC
 
-from .resources.icons import icons as FA_ICONS        # Font Awesome Icons ${fa-arrow-up}
-from .resources.weathericons import WEATHER_ICONS     # Weather Icons
-
+from .resources.iconfonts import ICON_FONTS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -34,11 +32,6 @@ KW_MANAGED = "managed"
 KW_DATAREF = "dataref"
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
-
-FONT_PREFIX = {
-    "fa": (ICON_FONT, FA_ICONS),
-    "wi": (WEATHER_ICON_FONT, WEATHER_ICONS)
-}
 
 VARIABLE_PREFIX = ["button", "state"]
 
@@ -366,8 +359,8 @@ class Button:
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
         def is_dref(r):
-            # ${state:button-value} is not a dataref
-            PREFIX = list(FONT_PREFIX.keys()) + VARIABLE_PREFIX
+            # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
+            PREFIX = list(ICON_FONTS.keys()) + VARIABLE_PREFIX
             SEP = ":"
             for s in PREFIX:
                 if r.startswith(s+SEP):
@@ -617,7 +610,7 @@ class Button:
 
         # HACK 1: Special icon font substitution
         text_font = base.get(root+"-font", self.page.default_label_font)
-        for k, v in FONT_PREFIX.items():
+        for k, v in ICON_FONTS.items():
             if text_font.lower().startswith(v[0]):
                 s = "\\${%s:([^\\}]+?)}" % (k)
                 icons = re.findall(s, text)
