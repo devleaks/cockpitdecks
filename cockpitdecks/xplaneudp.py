@@ -29,8 +29,10 @@ RECONNECT_TIMEOUT = 10  # seconds
 SOCKET_TIMEOUT    = 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
 
+DATA_PREFIX = "data:"
+
 # The command keywords are not executed, ignored with a warning
-NO_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
+NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
 NOT_A_DATAREF = ["DatarefPlaceholder"]
 
 # XPlaneBeacon
@@ -249,7 +251,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
     BEACON_TIMEOUT = 3.0  # seconds
 
     def __init__(self, decks):
+
         XPlane.__init__(self, decks=decks)
+        self.cockpit.set_logging_level(__name__)
+
         XPlaneBeacon.__init__(self)
 
         self.no_dref_listener = None
@@ -258,14 +263,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # list of requested datarefs with index number
         self.datarefidx = 0
         self.datarefs = {} # key = idx, value = dataref
-
-        self.cockpit.set_logging_level(__name__)
-
         self.init()
 
     def init(self):
         pass
-        # self.connect()
 
     def __del__(self):
         for i in range(len(self.datarefs)):
@@ -283,6 +284,12 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
+        if dataref.startswith(DATA_PREFIX):
+            d = self.get_dataref(dataref)
+            d.update_value(new_value=value, cascade=True)
+            logger.debug(f"write_dataref: written local dataref ({dataref}={value})")
+            return
+
         if not self.connected:
             logger.warning(f"write_dataref: no connection ({dataref}={value})")
             return
@@ -313,6 +320,10 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         '''
+        if dataref.startswith(DATA_PREFIX):
+            logger.debug(f"add_dataref_to_monitor: {dataref} is local and does not need X-Plane monitoring")
+            return
+
         if not self.connected:
             logger.warning(f"add_dataref_to_monitor: no connection ({dataref}, {freq})")
             return
@@ -382,7 +393,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         return self.xplaneValues
 
     def execute_command(self, command: str):
-        if command is None or command in NO_COMMAND:
+        if command is None or command in NOT_A_COMMAND:
             logger.warning(f"execute_command: command {command} not sent (command placeholder, no command, do nothing)")
             return
         if not self.connected:

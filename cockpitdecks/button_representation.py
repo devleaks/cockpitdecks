@@ -8,6 +8,8 @@ import logging
 import threading
 import time
 import inspect
+import colorsys
+
 from enum import Enum
 from ruamel.yaml import YAML
 
@@ -785,10 +787,12 @@ class LED(Representation):
         return "\n\r".join(a)
 
 
+KW_COLORED_LED = "colored-led"
+
 class ColoredLED(Representation):
 
     def __init__(self, config: dict, button: "Button"):
-        self._color = config.get("colored-led", button.page.deck.cockpit.cockpit_color)
+        self._color = config.get(KW_COLORED_LED, button.page.deck.cockpit.cockpit_color)
         self.color = (128, 128, 256)
         Representation.__init__(self, config=config, button=button)
 
@@ -801,10 +805,30 @@ class ColoredLED(Representation):
             self.color = convert_color(self._color)
 
 
-    def get_color(self):
+    def get_color(self, base: dict = None):
         """
         Compute color from formula/datarefs if any
+        the color can be a formula but no formula in it.
         """
+        if base is None:
+            base = self._config
+        color_str = base.get("color")
+        if color_str is None:
+            return self.color
+        # Formula in text
+        KW_FORMULA_STR = f"${{{KW_FORMULA}}}"   # "${formula}"
+        hue = 0  # red
+        if KW_FORMULA_STR in str(color_str):
+            dataref_rpn = base.get(KW_FORMULA)
+            if dataref_rpn is not None:
+                hue = self.button.execute_formula(formula=dataref_rpn)
+        else:
+            hue = int(color_str)
+            logger.warning(f"get_color: button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW_FORMULA} attribute found")
+
+        color_rgb = colorsys.hsv_to_rgb((int(hue) % 360)/360,1,1)
+        self.color = [int(255*i) for i in color_rgb]
+        logger.debug(f"get_color: {color_str}, {hue}, {[(int(hue) % 360)/360,1,1]}, {color_rgb}, {self.color}")
         return self.color
 
     def render(self):

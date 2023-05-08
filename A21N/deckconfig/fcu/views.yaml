@@ -27,9 +27,11 @@ buttons:
     name: View 2
     type: push
     colored-led: (255, 255, 0)
+    color: ${formula}
+    # Experimental
+    formula: ${sim/flightmodel/weight/m_fuel_total} 31517.875 / 360 * round
     label: FCU
     command: SRS/X-Camera/Select_View_ID_2
-    formula: 1
   - index: b3
     name: View 3
     type: push

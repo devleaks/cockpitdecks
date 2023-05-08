@@ -26,6 +26,8 @@ buttons:
     name: FOB
     type: none
     data:
+      top-line-color: red
+      top-line-width: 10
       icon-name: "gas-pump"
       icon-size: 60
       icon-color: darkorange
@@ -40,6 +42,10 @@ buttons:
       bottomline: FOB
       bottomline-size: 30
       bottomline-color: lime
+      mark: ${fa:arrow-right}
+      mark-font: fontawesome.otf
+      mark-size: 20
+      mark-color: lime
 # ### LINE 2 ###  8-15 ######################################################
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################

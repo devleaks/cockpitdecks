@@ -157,7 +157,7 @@ class Cockpit:
             l = logging.getLogger(name)
             if l is not None:
                 l.setLevel(logging.DEBUG)
-                l.debug(f"set_logging_level: {name} set to debug")
+                l.warning(f"set_logging_level: {name} set to debug")
             else:
                 logger.warning(f"set_logging_level: logger {name} not found")
 

@@ -62,9 +62,14 @@ class DataIcon(DrawBase):
             logger.warning(f"get_image_for_icon: button {self.button.name}: no data")
             return image
 
+        topbar = data.get("top-line-color")
+        if topbar is not None:
+            topbarcolor = convert_color(topbar)
+            linewidth = data.get("top-line-width", 6)
+            draw.line([(0, int(linewidth/2)), (image.width, int(linewidth/2))],fill=topbarcolor, width=linewidth)
+
         # Icon
         icon, icon_format, icon_font, icon_color, icon_size, icon_position = self.get_text_detail(data, "icon")
-        #print(">"*10, "ICON", icon, icon_format, icon_font, icon_color, icon_size, icon_position)
 
         icon_name = data.get("icon-name")  # not "icon"...
         if icon_name is not None:
@@ -155,6 +160,19 @@ class DataIcon(DrawBase):
                       anchor="md",
                       align="center",
                       fill=botl_color)
+
+        # Final mark
+        mark, mark_format, mark_font, mark_color, mark_size, mark_position = self.get_text_detail(data, "mark")
+        if mark is not None:
+            font = self.get_font(mark_font, mark_size)
+            w = image.width - 2 * inside
+            h = image.height - 2 * inside
+            draw.text((w, h),
+                      text=mark,
+                      font=font,
+                      anchor="rb",
+                      align="right",
+                      fill=mark_color)
 
         return image.convert("RGB")
 

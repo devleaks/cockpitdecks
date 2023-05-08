@@ -543,24 +543,39 @@ class Button:
             logger.warning(f"substitute_status_value: button {self.name}: unsubstituted status values {more}")
         return txtcpy
 
-    def substitute_button_values(self, text, default: str = "0.0", formatting = None):
+    def substitute_data_values(self, text, default: str = "0.0", formatting = None):
         txtcpy = text
-        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${data:([^\\}]+?)}", txtcpy)
+        for k, v in more.items():
+            s = f"${{data:{k}}}"      # @todo: !!possible injection!!
+            value = self.xp.get_data(k)
+            if value is not None:
+                txtcpy = txtcpy.replace(s, value)
+            else:
+                txtcpy = txtcpy.replace(s, default)
+        more = re.findall("\\${data:([^\\}]+?)}", txtcpy)
         if len(more) > 0:
-            for m in more:
-                v = self.deck.cockpit.get_button_value(m)  # starts at the top
-                if v is None:
-                    logger.warning(f"substitute_button_values: button {self.name}: {m} has no value")
-                    v = str(default)
-                else:
-                    v = str(v)  # @todo: later: use formatting
-                m_str = f"${{button:{m}}}"   # "${formula}"
-                txtcpy = txtcpy.replace(m_str, v)
-                logger.debug(f"substitute_button_values: button {self.name}: replaced {m_str} by {str(v)}. ({m})")
-        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-        if len(more) > 0:
-            logger.warning(f"substitute_button_values: button {self.name}: unsubstituted button values {more}")
+            logger.warning(f"substitute_data_value: button {self.name}: unsubstituted data values {more}")
         return txtcpy
+
+    # def substitute_button_values(self, text, default: str = "0.0", formatting = None):
+    #     txtcpy = text
+    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+    #     if len(more) > 0:
+    #         for m in more:
+    #             v = self.deck.cockpit.get_button_value(m)  # starts at the top
+    #             if v is None:
+    #                 logger.warning(f"substitute_button_values: button {self.name}: {m} has no value")
+    #                 v = str(default)
+    #             else:
+    #                 v = str(v)  # @todo: later: use formatting
+    #             m_str = f"${{button:{m}}}"   # "${formula}"
+    #             txtcpy = txtcpy.replace(m_str, v)
+    #             logger.debug(f"substitute_button_values: button {self.name}: replaced {m_str} by {str(v)}. ({m})")
+    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+    #     if len(more) > 0:
+    #         logger.warning(f"substitute_button_values: button {self.name}: unsubstituted button values {more}")
+    #     return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting = None):
         if type(text) != str or "$" not in text:  # no ${..} to stubstitute

@@ -144,10 +144,10 @@ class XPlane:
         self.current_values = {}
 
         self.dataref_db_lock = threading.RLock()
-        self._need_reload = True
 
         self.roundings = {}    # path: int
         self.slow_datarefs = {}
+
         self.cockpit.set_logging_level(__name__)
 
     def set_roundings(self, roundings):

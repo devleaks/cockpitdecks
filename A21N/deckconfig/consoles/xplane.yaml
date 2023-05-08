@@ -165,6 +165,24 @@ buttons:
         framed: true
     command: jd/ghd/show_widget
     initial-value: 0
+  - index: 10
+    type: push
+    name: SimpleGroundEquipmentAndServices
+    label: SGSE
+    annunciator:
+      model: B
+      size: large
+      B0:
+        formula: ${state:activation_count} 2 % 1 - abs
+        text: AVAIL
+        text-color: lime
+      B1:
+        formula: ${state:activation_count} 2 %
+        text: "ON"
+        text-color: deepskyblue
+        framed: true
+    command: Simple_Ground_Equipment_and_Services/Window/Toggle
+    initial-value: 0
 
 # ### LINE 3 ### 16-23 ######################################################
 
@@ -225,5 +243,5 @@ buttons:
   - index: 31
     name: Index
     type: page
-    page: index
+    page: index-alt
     icon: TOLISS-A321

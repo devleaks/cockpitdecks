@@ -19,7 +19,7 @@ Please head to the [wiki](https://github.com/devleaks/cockpitdecks/wiki) for mor
 
 ## Libhidapi
 
-There must ba a HIDAPI library on your system.
+There must be a HIDAPI library on your system, Elgato Streamdeck python package requires it.
 
 On MacOS, use
 
@@ -50,7 +50,7 @@ $ pip install ruamel.yaml pillow
 If you want to use the Metar representation on a key, add:
 
 ```
-$ pip install ruamel.yaml 'avwx-engine[scipy]'
+$ pip install 'avwx-engine[scipy]'
 ```
 
 
@@ -74,11 +74,24 @@ $ pip install git+https://github.com/devleaks/python-loupedeck-live.git
 $ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
 ```
 
+## Create or Copy Configuration Files
+
+If you copy from the provided files:
+
+```
+$ cp -rp A321/deckconfig /path/to/your/aircraft/folder
+```
+
 ## Start
 
 ```
 $ python bin/cockpitdecks_upd_start.py /path/to/your/aircraft/folder
 ```
 
-Enjoy.
+Alternatively, you can use the provided files directly:
 
+```
+$ python bin/cockpitdecks_upd_start.py A321
+```
+
+Fly safely.

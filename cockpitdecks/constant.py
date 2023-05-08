@@ -60,7 +60,7 @@ SPAM_LEVEL = 15
 SPAM = "SPAM"
 ID_SEP = "/"
 
-ROOT_DEBUG = ""
+ROOT_DEBUG = "cockpitdecks.xplaneudp"
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"           # k(orry): backlit, glowing
