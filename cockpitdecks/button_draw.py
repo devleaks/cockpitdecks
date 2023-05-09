@@ -78,7 +78,6 @@ class DataIcon(DrawBase):
         else:
             icon_name = ":".join(icon_arr[1:])
             icon_str = ICON_FONTS[icon_arr[0]][1].get(icon_name, "*")
-        print(">>>>>>>>", icon, icon_arr, icon_str, ICON_FONTS[icon_arr[0]][0])
 
         icon_font = data.get("icon-font", ICON_FONTS[icon_arr[0]][0])
         font = self.get_font(icon_font, int(icon_size))

@@ -153,10 +153,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 *.pickle
-A321/esdconfig/.DS_Store
+secret.yaml
+A321/
+C172/
+A330/
 .DS_Store
-A321/deckconfig/secret.yaml
-AIRCRAFT/deckconfig/secret.yaml
 *.zip
 *.tar
 *.taz

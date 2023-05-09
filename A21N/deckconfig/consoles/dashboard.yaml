@@ -22,7 +22,101 @@ buttons:
     label: "Weather"
     weather:
       weather-font: B612
+  - index: 1
+    name: PRESSURE
+    type: none
+    data:
+      top-line-color: deepskyblue
+      top-line-width: 10
+      icon: "fa:gauge"
+      icon-size: 60
+      icon-color: deepskyblue
+      data: ${formula}
+      data-format: "{:04.0f}"
+      data-font: DIN Condensed Light
+      data-size: 80
+      data-color: white
+#      data-unit: "hPa"
+      formula: ${data:weather:pressure}
+      bottomline: hPa
+      bottomline-size: 30
+      bottomline-color: red
+      mark: ${fa:arrow-right}
+      mark-size: 20
+      mark-font: fontawesome.otf
+      mark-color: red
+  - index: 2
+    name: TEMPERATURE
+    type: none
+    data:
+      top-line-color: gold
+      top-line-width: 10
+      icon: "fa:temperature-half"
+      icon-size: 60
+      icon-color: gold
+      data: ${formula}
+      data-format: "{:3.0f}"
+      data-font: DIN Condensed Light
+      data-size: 80
+      data-color: white
+#      data-unit: "°C"
+      formula: ${data:weather:temperature}
+      bottomline: "°C"
+      bottomline-size: 30
+      bottomline-color: red
+      mark: ${fa:arrow-right}
+      mark-size: 20
+      mark-font: fontawesome.otf
+      mark-color: red
+  - index: 3
+    name: WIND
+    type: none
+    data:
+      top-line-color: darkorchid
+      top-line-width: 10
+      icon: "fa:wind"
+      icon-size: 60
+      icon-color: darkorchid
+      data: ${formula}
+      data-format: "{:4.1f}"
+      data-font: DIN Condensed Light
+      data-size: 80
+      data-color: white
+#      data-unit: "mph"
+      formula: ${data:weather:wind}
+      bottomline: mph
+      bottomline-size: 30
+      bottomline-color: red
+      mark: ${fa:arrow-right}
+      mark-size: 20
+      mark-font: fontawesome.otf
+      mark-color: red
   - index: 4
+    name: DEWPOINT
+    type: none
+    data:
+      top-line-color: ivory
+      top-line-width: 10
+      icon: "fa:droplet"
+      icon-size: 60
+      icon-color: ivory
+      data: ${formula}
+      data-format: "{:3.0f}"
+      data-font: DIN Condensed Light
+      data-size: 80
+      data-color: white
+#      data-unit: "°C"
+      data-progress: 31
+      formula: ${data:weather:dew_point}
+      bottomline: "°C"
+      bottomline-size: 30
+      bottomline-color: red
+      mark: ${fa:arrow-right}
+      mark-size: 20
+      mark-font: fontawesome.otf
+      mark-color: red
+# ### LINE 2 ###  8-15 ######################################################
+  - index: 8
     name: FOB
     type: none
     data:
@@ -46,7 +140,6 @@ buttons:
       mark-font: fontawesome.otf
       mark-size: 20
       mark-color: lime
-# ### LINE 2 ###  8-15 ######################################################
 # ### LINE 3 ### 16-23 ######################################################
 # ### LINE 4 ### 24-31 ######################################################
   - index: 31

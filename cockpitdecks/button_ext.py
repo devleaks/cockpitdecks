@@ -8,22 +8,23 @@ import logging
 import random
 import re
 from functools import reduce
-from datetime import datetime
+from datetime import datetime, timezone
 
-from avwx import Metar, station
+from avwx import Metar, Station
+from suntime import Sun
 
 from PIL import Image, ImageDraw
 
-from .constant import WEATHER_ICON_FONT, ICON_FONT, ICON_SIZE
+from .constant import ICON_SIZE
+from .resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
 from .color import convert_color, light_off
-from .resources.iconfonts import WEATHER_ICONS
 from .button_draw import DrawBase, DrawAnimation
 from .button_annunciator import TRANSPARENT_PNG_COLOR
 
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class WI:
@@ -273,6 +274,9 @@ class WeatherIcon(DrawAnimation):
     """
     Depends on avwx-engine
     """
+    MIN_UPDATE = 600  # seconds between two station updates
+    DEFAULT_STATION = "EBBR"
+
     def __init__(self, config: dict, button: "Button"):
         self.weather = config.get("weather")
         if self.weather is not None and type(self.weather) == dict:
@@ -285,15 +289,16 @@ class WeatherIcon(DrawAnimation):
 
         self._last_updated = None
         self._cache = None
-        self.station = self.get_station()
-        if self.station is None:
-            self.station = self.weather.get("station", "EBBR")
 
         # "Animation" (refresh)
         speed = self.weather.get("refresh", 30)     # minutes, should be ~30 minutes
         self.speed = int(speed) * 60                # minutes
 
+        updated = self.weather.get("refresh-location", 10) # minutes
+        WeatherIcon.MIN_UPDATE = int(updated) * 60
+
         # Working variables
+        self.station = None
         self.metar = None
         self.weather_icon = None
 
@@ -305,7 +310,11 @@ class WeatherIcon(DrawAnimation):
         return [
             "sim/flightmodel/position/latitude",
             "sim/flightmodel/position/longitude",
-            "sim/cockpit2/clock_timer/local_time_hours"
+            "sim/cockpit2/clock_timer/local_time_hours",
+            "data:weather:pressure",
+            "data:weather:wind_speed",
+            "data:weather:temperature",
+            "data:weather:dew_point"
         ]
 
     def should_run(self) -> bool:
@@ -320,31 +329,30 @@ class WeatherIcon(DrawAnimation):
         return super().animate()
 
     def get_station(self):
-        MIN_UPDATE = 600  # seconds
         if self._last_updated is not None:
             now = datetime.now()
             diff = now.timestamp() - self._last_updated.timestamp()
-            if diff < MIN_UPDATE:
-                logger.debug(f"get_station: updated less than {MIN_UPDATE} secs. ago ({diff}), skipping..")
+            if diff < WeatherIcon.MIN_UPDATE:
+                logger.debug(f"get_station: updated less than {WeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
                 return None
             logger.debug(f"get_station: updated  {diff} secs. ago")
 
         lat = self.button.get_dataref_value("sim/flightmodel/position/latitude")
         lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
 
+        if lat is None or lon is None:
+            logger.warning(f"get_station: no coordinates")
+            return None
+
         logger.debug(f"get_station: closest station to lat={lat},lon={lon}")
-        nearest = station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
-        logger.debug(f"get_station: closest={nearest}")
-        if type(nearest) == dict and len(nearest) > 1:
-            s = nearest["station"]
-            logger.debug(f"get_station: closest station is {s.icao}")
-            return s.icao
-        elif type(nearest) == list and len(nearest) > 0:
-            s = list(nearest)[0]["station"]
-            logger.debug(f"get_station: closest station is {s.icao}")
-            return s.icao
-        logger.warning(f"get_station: no close station")
-        return None
+        (nearest, coords) = Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
+        logger.debug(f"get_station: nearest={nearest}")
+        if nearest is None:
+            logger.warning(f"get_station: no close station")
+            icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+            self.station = Station.from_icao(icao)
+            logger.debug(f"get_station: default station {icao}")
+        return nearest
 
     def update(self, force: bool = False) -> bool:
         """
@@ -360,36 +368,68 @@ class WeatherIcon(DrawAnimation):
         if force:
             self._last_updated = None
         new = self.get_station()
-        if new is not None and new != self.station:
-            self.station = new
-            logger.info(f"update: station changed to {self.station}")
-            self.button._config["label"] = new
+
+        if new is None:  # no station, we leave it as it is
+            return updated
+
+        if self.station is None:
             try:
-                self.metar = Metar(self.station)
+                self.station = new
+                self.metar = Metar(self.station.icao)
+                self.sun = Sun(self.station.latitude, self.station.longitude)
+                self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
                 updated = True
+                logger.info(f"update: new station {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(f"update: Metar not created", exc_info=True)
-        elif new is not None and self.metar is not None:
+                logger.warning(f"update: new station {new.icao}: Metar not created", exc_info=True)
+        elif new.icao != self.station.icao:
             try:
-                self.metar.update()
+                self.metar = Metar(self.station.icao)
+                self.station = new
+                self.sun = Sun(self.station.latitude, self.station.longitude)
+                self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
                 updated = True
+                logger.info(f"update: station changed to {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(f"update: Metar not updated", exc_info=True)
-        elif self.station is not None and self.metar is None:
+                logger.warning(f"update: change station to {new.icao}: Metar not created", exc_info=True)
+        elif self.metar is None:
             try:
-                self.metar = Metar(self.station)
+                self.metar = Metar(self.station.icao)
                 self._last_updated = datetime.now()
                 updated = True
+                logger.info(f"update: station {self.station.icao}, first Metar")
             except:
                 self.metar = None
-                logger.warning(f"update: Metar not created", exc_info=True)
+                logger.warning(f"update: station {self.station.icao}, first Metar not created", exc_info=True)
+        else:
+            try:
+                now = datetime.now()
+                diff = now.timestamp() - self._last_updated.timestamp()
+                if self._last_updated is None or diff > WeatherIcon.MIN_UPDATE:
+                    self.metar.update()
+                    self._last_updated = datetime.now()
+                    updated = True
+                    logger.info(f"update: station {self.station.icao}, Metar updated")
+                else:
+                    logger.debug(f"update: station {self.station.icao}, Metar does not need updating")
+            except:
+                self.metar = None
+                logger.warning(f"update: station {self.station.icao}: Metar not updated", exc_info=True)
+
+        # if new is None, we leave it as it is
         if updated:
-            logger.info(f"update: Metar updated for {self.station}")
+            # AVWX's Metar is not as comprehensive as python-metar's Metar...
+            if self.metar is not None and self.metar.data is not None:
+                self.button.xp.write_dataref(dataref="data:weather:pressure", value=self.metar.data.altimeter.value, vtype='float')
+                self.button.xp.write_dataref(dataref="data:weather:wind_speed", value=self.metar.data.wind_speed.value, vtype='float')
+                self.button.xp.write_dataref(dataref="data:weather:temperature", value=self.metar.data.temperature.value, vtype='float')
+                self.button.xp.write_dataref(dataref="data:weather:dew_point", value=self.metar.data.dewpoint.value, vtype='float')
             self.weather_icon = self.selectWeatherIcon()
+            logger.debug(f"update: Metar updated for {self.station.icao}")
         return updated
 
     def get_image_for_icon(self):
@@ -458,19 +498,47 @@ class WeatherIcon(DrawAnimation):
         return self._cache
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
-        # Numerous alternative possible
-        # This one uses the simulator local time
+        # Uses the simulator local time
         hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
-        return hours > sunrise and hours < sunset
+        if self.sun is not None:
+            sr = self.sun.get_sunrise_time()
+            ss = self.sun.get_sunset_time()
+        else:
+            sr = sunrise
+            ss = sunset
+        return hours > sr and hours < ss
 
-    def get_sun(self) -> tuple:
-        return (5, 19)
+    def get_timezone(self):
+        # tf = TimezoneFinder()
+        # tzname = tf.timezone_at(lng=self.station.longitude, lat=self.station.latitude)
+        # if tzname is not None:
+        #     return ZoneInfo(tzname)
+        return timezone.utc
+
+    def get_sun(self, moment: datetime = None):
+        if moment is None:
+            today_sr = self.sun.get_sunrise_time()
+            today_ss = self.sun.get_sunset_time()
+            return (today_sr.hour, today_ss.hour)
+        today_sr = self.sun.get_sunrise_time(moment)
+        today_ss = self.sun.get_sunset_time(moment)
+        return (today_sr.hour, today_ss.hour)
 
     def is_metar_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
-        # Deduce location and date/time from METAR. Month need to be guessed (default to current).
-        #
-        hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
-        return hours > sunrise and hours < sunset
+        time = self.metar.raw[7:12]
+        logger.debug(f"is_metar_day: zulu {time}")
+        if time[-1] != "Z":
+            print("no zulu?", time)
+            return True
+        tz = self.get_timezone()
+        logger.debug(f"is_metar_day: timezone {'UTC' if tz == timezone.utc else tz.key}")
+        utc = datetime.now(timezone.utc)
+        utc = utc.replace(hour=int(time[0:2]), minute=int(time[2:4]))
+        local = utc.astimezone(tz=tz)
+        sun = self.get_sun(local)
+        day = local.hour > sun[0] and local.hour < sun[1]
+        logger.debug(f"is_metar_day: local {local}, day={str(day)} ({sun})")
+        return day
 
     def selectWeatherIcon(self):
         # Needs improvement
@@ -480,7 +548,7 @@ class WeatherIcon(DrawAnimation):
             rawtext = self.metar.raw[13:]  # strip ICAO DDHHMMZ
             logger.debug(f"selectWeatherIcon: METAR {rawtext}")
             date = datetime.now();
-            day = 1 if self.is_day() else 0
+            day = 1 if self.is_metar_day() else 0
             precip = re.match("RA|SN|DZ|SG|PE|GR|GS", rawtext)
             if precip is None:
                 precip = []

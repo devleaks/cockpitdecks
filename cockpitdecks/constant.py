@@ -8,6 +8,9 @@ import os
 from inspect import stack
 from enum import Enum
 
+# ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
+ROOT_DEBUG = ""
+
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
 # Files
@@ -56,8 +59,6 @@ KW_FORMULA = "formula"
 SPAM_LEVEL = 15
 SPAM = "SPAM"
 ID_SEP = "/"
-
-ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"           # k(orry): backlit, glowing

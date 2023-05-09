@@ -100,7 +100,7 @@ class Loupedeck(DeckWithIcons):
             else:
                 logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
                 image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
-                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.logo)
+                fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
                     inside = 20
                     logo = Image.open(fn).convert("RGBA")
@@ -112,7 +112,7 @@ class Loupedeck(DeckWithIcons):
 
         logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
 
-        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, self.wallpaper)
+        fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.wallpaper)
         image = create_full_deck_sized_image(fn)
         image_left = image.copy().crop((0, 0, 60, image.height))
         self.device.draw_image(image_left, display="left")

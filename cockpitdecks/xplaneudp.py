@@ -11,7 +11,7 @@ import time
 import datetime
 
 from .constant import SPAM_LEVEL
-from .xplane import XPlane, Dataref
+from .xplane import XPlane, Dataref, DATA_PREFIX
 from .button import Button
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,6 @@ RECONNECT_TIMEOUT = 10  # seconds
 
 SOCKET_TIMEOUT    = 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
-
-DATA_PREFIX = "data:"
 
 # The command keywords are not executed, ignored with a warning
 NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]

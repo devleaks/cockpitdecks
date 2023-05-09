@@ -107,9 +107,9 @@ class Activation:
         """
         if dataref is not None:
             self.button.xp.write_dataref(dataref=dataref, value=value, vtype='float')
-            logger.debug(f"write_dataref: button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
+            logger.debug(f"_write_dataref: button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
         else:
-            logger.debug(f"write_dataref: button {self.button_name()}: {type(self).__name__} has no set-dataref")
+            logger.debug(f"_write_dataref: button {self.button_name()}: {type(self).__name__} has no set-dataref")
 
     def write_dataref(self, value: float):
         """

@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
+DATA_PREFIX = "data:"
+
 class Dataref:
 
     def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
