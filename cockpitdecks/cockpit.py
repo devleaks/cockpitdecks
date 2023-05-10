@@ -20,6 +20,7 @@ from .color import convert_color, has_ext
 
 from . import __version__
 from .decks import DECK_TYPES
+from .xplaneudp import XPlaneUDP
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
@@ -34,9 +35,9 @@ class Cockpit:
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
-    def __init__(self, xp):
+    def __init__(self):
         self._debug = ROOT_DEBUG        # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
-        self.xp = xp(self)
+        self.xp = XPlaneUDP(self)
         self._config = None             # content of deckconfig/config.yaml
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"

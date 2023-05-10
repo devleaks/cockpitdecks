@@ -5,11 +5,9 @@ __DESCRIPTION__ = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-T
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "6.21.1"
+__version__ = "7.0.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
 
 from .cockpit import Cockpit
-from .xplaneudp import XPlaneUDP
-# from .xplanesdk import XPlaneSDK
