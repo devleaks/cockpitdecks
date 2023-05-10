@@ -28,6 +28,8 @@ class XTouchMini(Deck):
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
 
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
+
+        self.cockpit.set_logging_level(__name__)
         self.init()
 
     # #######################################
@@ -53,6 +55,7 @@ class XTouchMini(Deck):
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
+        self.current_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def valid_indices_with_image(self):

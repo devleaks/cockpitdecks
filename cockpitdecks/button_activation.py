@@ -227,6 +227,7 @@ class Reload(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
+        self.button.deck.cockpit.has_reload = True  # this will ensure reload loop get started. Otherwise it is not started.
 
     def activate(self, state):
         if state == 0:  # trigger on button "release"
@@ -1129,6 +1130,7 @@ class Slider(Activation):  # Cursor?
             nstep = (self.value_max - self.value_min) / self.value_step
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
+        self.write_dataref(value)
         logger.debug(f"activate: button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
 
     def describe(self):

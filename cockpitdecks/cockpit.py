@@ -44,6 +44,7 @@ class Cockpit:
         self.disabled = False
         self.default_pages = None       # for debugging
 
+        self.has_reload = False
         self.reload_loop_run = False
         self.reload_loop_thread = None
         self.reload_queue = Queue()
@@ -238,14 +239,16 @@ class Cockpit:
 
         self.load_defaults()
 
-        if os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
+        if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
             self.load_icons()
             self.load_fonts()
             self.create_decks()
             self.load_pages()
         else:
-            if not os.path.exists(acpath):
+            if acpath is None:
+                logger.error(f"load_aircraft: no aircraft folder")
+            elif not os.path.exists(acpath):
                 logger.error(f"load_aircraft: no aircraft folder {acpath}")
             else:
                 logger.error(f"load_aircraft: no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
@@ -349,8 +352,16 @@ class Cockpit:
         #
         #
 
-        # 1. Creating default icon
-        #    No longer necessary
+        # 1. Load global icons
+        #    (They are never cached when loaded without aircraft.)
+        rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
+        if os.path.exists(rf):
+            icons = os.listdir(rf)
+            for i in icons:
+                if has_ext(i, "png"):  # later, might load JPG as well.
+                    fn = os.path.join(rf, i)
+                    image = Image.open(fn)
+                    self.icons[i] = image
 
         # 2. Finding a default font for Pillow
         #    WE MUST find a default, system font at least
@@ -550,15 +561,18 @@ class Cockpit:
                     self.icons = pickle.load(fp)
                 logger.info(f"load_icons: {len(self.icons)} icons loaded from cache")
             else:
-                # Global, resource folder icons
-                rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
-                if os.path.exists(rf):
-                    icons = os.listdir(rf)
-                    for i in icons:
-                        if has_ext(i, "png"):  # later, might load JPG as well.
-                            fn = os.path.join(rf, i)
-                            image = Image.open(fn)
-                            self.icons[i] = image
+                # # Global, resource folder icons
+                # #                                      # #
+                # # THEY ARE NOW LOADED IN LOAD_DEFAULTS # #
+                # #                                      # #
+                # rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
+                # if os.path.exists(rf):
+                #     icons = os.listdir(rf)
+                #     for i in icons:
+                #         if has_ext(i, "png"):  # later, might load JPG as well.
+                #             fn = os.path.join(rf, i)
+                #             image = Image.open(fn)
+                #             self.icons[i] = image
 
                 # Aircraft specific folder icons
                 icons = os.listdir(dn)
@@ -632,7 +646,13 @@ class Cockpit:
     # We do the reload from another thread, external to the callback,
     # that cleanly stops, initializes, and restarts the deck.
     #
+    # Note: Only started if has_reload is True. has_reload is set if a Reload button activation is configured.
+    #       (Otherwise there is no need to start the reload loop since nothing can provoke it.)
+    #
     def start_reload_loop(self):
+        if not self.has_reload:
+            logger.warning(f"start_reload_loop: no reload button detected, not starting")
+            return
         if not self.reload_loop_run:
             self.reload_loop_thread = threading.Thread(target=self.reload_loop)
             self.reload_loop_thread.name = f"Cockpit::reloader"
@@ -665,6 +685,11 @@ class Cockpit:
         Development function to reload page yaml without leaving the page
         Should not be used in production...
         """
+        # A security... if we get called we must ensure reloader is running...
+        if not self.reload_loop_run:
+            logger.warning(f"reload_decks: reload loop not running. Starting..")
+            self.has_reload = True
+            self.start_reload_loop()
         if just_do_it:
             logger.info(f"reload_decks: reloading decks..")
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}

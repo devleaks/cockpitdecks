@@ -50,7 +50,7 @@ $ pip install ruamel.yaml pillow
 If you want to use the Metar representation on a key, add:
 
 ```
-$ pip install 'avwx-engine[scipy]'
+$ pip install 'avwx-engine[scipy]' suntime
 ```
 
 

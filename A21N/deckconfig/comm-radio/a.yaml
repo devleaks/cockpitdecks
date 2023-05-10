@@ -48,7 +48,7 @@ buttons:
   - index: slider
     name: SLIDER
     type: slider
-    set-dataref: DatarefPlaceholder
+    set-dataref: data:xtmslider
     representation: false
     value-step: 10
 #

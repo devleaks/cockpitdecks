@@ -24,7 +24,7 @@ from .button_annunciator import TRANSPARENT_PNG_COLOR
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class WI:
@@ -509,6 +509,10 @@ class WeatherIcon(DrawAnimation):
         return hours > sr and hours < ss
 
     def get_timezone(self):
+        # pip install timezonefinder
+        # from zoneinfo import ZoneInfo
+        # from timezonefinder import TimezoneFinder
+        #
         # tf = TimezoneFinder()
         # tzname = tf.timezone_at(lng=self.station.longitude, lat=self.station.latitude)
         # if tzname is not None:

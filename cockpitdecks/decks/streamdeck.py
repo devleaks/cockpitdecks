@@ -38,6 +38,8 @@ class Streamdeck(DeckWithIcons):
 
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
+        self.cockpit.set_logging_level(__name__)
+
         self.pil_helper = PILHelper
 
         self.monitoring_thread = None
@@ -159,10 +161,7 @@ class Streamdeck(DeckWithIcons):
         page0.add_button(button0.index, button0)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
-        # self.current_page = page0
-        # self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
-        # self.device.set_key_callback(self.key_change_callback)
-        # self.running = True
+        self.current_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def valid_indices_with_image(self):

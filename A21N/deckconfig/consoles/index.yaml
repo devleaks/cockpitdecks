@@ -203,6 +203,12 @@ buttons:
           formula: ${AirbusFBW/APUMaster}
     command: toliss_airbus/apucommands/MasterToggle
     label: MASTER SW
+  - index: 22
+    name: SLIDER
+    type: none
+    text: ${data:xtmslider}
+    text-format: "{:4.0f}"
+    initial-value: 0
   - index: 23
     name: C3000
     type: page

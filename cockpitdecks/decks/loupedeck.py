@@ -69,6 +69,8 @@ class Loupedeck(DeckWithIcons):
 
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
+        self.cockpit.set_logging_level(__name__)
+
         self.pil_helper = PILHelper
 
         self.touches = {}
@@ -139,11 +141,12 @@ class Loupedeck(DeckWithIcons):
                                     "index": 1,
                                     "name": "Exit",
                                     "type": "stop",
-                                    "icon": "PANIC"
+                                    "icon": "STOP"
                                 }, page=page0)
         page0.add_button(button1.index, button1)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
+        self.current_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def side_individual_keys(self):
