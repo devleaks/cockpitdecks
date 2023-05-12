@@ -338,7 +338,7 @@ buttons:
     name: Index
     type: page
     page: index-alt
-    icon: TOLISS-A321
+    icon: TOLISS-A21N
 # AirbusFBW/OHPLightSwitches
 # Strobe: 7 0,1,2
 # Beacon: 0 0,1

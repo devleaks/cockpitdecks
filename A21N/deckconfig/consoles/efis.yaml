@@ -9,7 +9,7 @@ buttons:
   - index: 31
     type: page
     page: back
-    icon: TOLISS-A321
+    icon: TOLISS-A21N
   - index: 0
     name: CSTR
     type: push

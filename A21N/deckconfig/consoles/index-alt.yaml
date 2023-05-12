@@ -105,6 +105,6 @@ buttons:
     name: Index
     type: page
     page: index
-    icon: TOLISS-A321
+    icon: TOLISS-A21N
 default-label-size: 20
 includes: popups

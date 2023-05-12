@@ -1,6 +1,6 @@
 # CHANGELOG
 #
-# 1.0.0  03-APR-2023  Initial version
+# 1.0.0  20-APR-2023  Initial version
 #
 ---
 aircraft: Toliss A321
@@ -16,8 +16,6 @@ buttons:
     stops: 3
     switch:
       switch-style: rect
-      button-size: 140
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -27,8 +25,10 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-      left: 20
-    options: 3way,invert,hexa
+      right: 40
+      down: 20
+      scale: 0.8
+    options: 3way
     dataref: ckpt/oh/strobeLight/anim
     set-dataref: ckpt/oh/strobeLight/anim
   - index: 1
@@ -36,8 +36,7 @@ buttons:
     label: BEACON
     type: onoff
     switch:
-      button-size: 140
-      button-fill-color: black
+      switch-style: rect
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -46,7 +45,7 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: hexa,invert
+      right: 40
     dataref: ckpt/oh/beaconLight/anim
     set-dataref: ckpt/oh/beaconLight/anim
   - index: 2
@@ -54,8 +53,6 @@ buttons:
     label: WING
     type: onoff
     switch:
-      button-size: 140
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -64,7 +61,7 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: hexa,invert
+      right: 40
     dataref: ckpt/oh/wingLight/anim
     set-dataref: ckpt/oh/wingLight/anim
   - index: 3
@@ -73,8 +70,7 @@ buttons:
     type: updown
     stops: 3
     switch:
-      button-fill-color: black
-      button-size: 140
+      switch-style: rect
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -84,7 +80,8 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert,hexa
+      right: 40
+    options: 3way
     dataref: ckpt/oh/navLight/anim
     set-dataref: ckpt/oh/navLight/anim
   - index: 4
@@ -143,17 +140,19 @@ buttons:
     stops: 3
     switch:
       switch-style: rect
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
         - "BRT"
         - "DIM"
         - "OFF"
+      left: 40
+      down: 20
+      scale: 0.8
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert,hexa
+    options: 3way,label-opposite
     dataref: ckpt/oh/domeLight/anim
     set-dataref: ckpt/oh/domeLight/anim
 
@@ -163,8 +162,6 @@ buttons:
     type: onoff
     label: RWY TURN OFF
     switch:
-      button-size: 140
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -173,7 +170,7 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: hexa,invert
+      right: 40
     dataref: ckpt/oh/rwyTurnOff/anim
     set-dataref: ckpt/oh/rwyTurnOff/anim
   - index: 9
@@ -183,8 +180,6 @@ buttons:
     stops: 3
     switch:
       switch-style: 3dot
-      button-size: 140
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -194,7 +189,8 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert,hexa
+      right: 60
+    options: 3way
     dataref: ckpt/oh/ladningLightLeft/anim
     set-dataref: ckpt/oh/ladningLightLeft/anim
   - index: 10
@@ -204,18 +200,17 @@ buttons:
     stops: 3
     switch:
       switch-style: 3dot
-      button-size: 140
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
         - "ON"
         - "OFF"
         - "RETRACT"
+      right: 60
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert,hexa
+    options: 3way
     dataref: ckpt/oh/ladningLightRight/anim
     set-dataref: ckpt/oh/ladningLightRight/anim
   - index: 11
@@ -224,18 +219,17 @@ buttons:
     type: updown
     stops: 3
     switch:
-      button-size: 140
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
         - "T.O"
         - "TAXI"
         - "OFF"
+      right: 40
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert,hexa
+    options: 3way
     dataref: ckpt/oh/taxiLight/anim
     set-dataref: ckpt/oh/taxiLight/anim
   - index: 12
@@ -262,7 +256,6 @@ buttons:
     label: SEAT BELTS
     type: onoff
     switch:
-      button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
@@ -271,7 +264,7 @@ buttons:
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: hexa,invert
+      right: 40
     dataref: ckpt/oh/seatbelts/anim
     set-dataref: ckpt/oh/seatbelts/anim
   - index: 15
@@ -280,18 +273,18 @@ buttons:
     type: updown
     stops: 3
     switch:
-      switch-style: rect
-      button-fill-color: black
+      switch-style: round
       button-underline-width: 4
       button-underline-color: coral
       tick-labels:
         - "ON"
         - "AUTO"
         - "OFF"
+      right: 40
       tick-space: 10
       tick-label-size: 30
       tick-label-font: DIN Bold
-    options: 3way,invert,hexa
+    options: 3way
     dataref: ckpt/oh/nosmoking/anim
     set-dataref: ckpt/oh/nosmoking/anim
 
@@ -367,7 +360,7 @@ buttons:
     type: page
     page: index
     icon-color: (200, 0, 0)
-#    icon: TOLISS-A321
+#    icon: TOLISS-A21N
   - index: 21
     name: LGEARL
     type: none

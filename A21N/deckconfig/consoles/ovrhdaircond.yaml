@@ -325,22 +325,22 @@ buttons:
     label-size: 60
     label-position: cm
 # ### LINE 4 ### 24-31 ######################################################
-  - index: 30
-    name: RELOAD
-    type: reload
-    label: RELOAD
-    label-size: 14
-    label-position: cm
-    text: ${fa:rotate-right}
-    text-font: fontawesome.otf
-    text-color: lime
-    text-size: 80
-    text-position: cm
-    text-bg-color: (94, 111, 130)
+  # - index: 30
+  #   name: RELOAD
+  #   type: reload
+  #   label: RELOAD
+  #   label-size: 14
+  #   label-position: cm
+  #   text: ${fa:rotate-right}
+  #   text-font: fontawesome.otf
+  #   text-color: lime
+  #   text-size: 80
+  #   text-position: cm
+  #   text-bg-color: (94, 111, 130)
   - index: 31
     name: Index
     type: page
     page: index
-    icon: TOLISS-A321
+    icon: TOLISS-A21N
 default-label-size: 12
 default-label-font: DIN Medium.ttf

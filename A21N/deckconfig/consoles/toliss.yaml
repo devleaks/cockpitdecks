@@ -12,7 +12,7 @@ buttons:
     name: Old Index
     type: page
     page: index-alt
-    icon: TOLISS-A321
+    icon: TOLISS-A21N
   - index: 6
     name: ISCS
     type: push
