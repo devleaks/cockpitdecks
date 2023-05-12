@@ -281,6 +281,7 @@ class Stop(Activation):
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
+        self.button.deck.cockpit.has_reload = True  # this will ensure reload loop get started. Otherwise it is not started.
 
     def activate(self, state):
         if state == 0:  # trigger on button "release"

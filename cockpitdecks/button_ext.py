@@ -489,7 +489,8 @@ class WeatherIcon(DrawAnimation):
                           fill=self.label_color)
                 h = h + il
         else:
-            logger.warning(f"get_image_for_icon: no metar summary")
+            icao = self.station.icao if self.station is not None else "no station"
+            logger.warning(f"get_image_for_icon: no metar summary ({icao})")
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather")

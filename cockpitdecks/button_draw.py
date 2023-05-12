@@ -6,6 +6,7 @@ import threading
 import time
 import math
 from random import randint
+from enum import Enum
 
 from PIL import Image, ImageDraw
 
@@ -19,10 +20,9 @@ from .button_annunciator import TRANSPARENT_PNG_COLOR
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-
 #
 # ###############################
-# DISPLAY-ONLY REPRESENTATION
+# DRAWN REPRESENTATION (using Pillow)
 #
 #
 class DrawBase(Icon):
@@ -33,6 +33,10 @@ class DrawBase(Icon):
 
         self.cockpit_color = config.get("cockpit-color", self.button.page.cockpit_color)
 
+    def double_icon(self, width: int = ICON_SIZE*2, height: int = ICON_SIZE*2):
+        image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
+        draw = ImageDraw.Draw(image)
+        return image, draw
 
 class DataIcon(DrawBase):
 
@@ -52,8 +56,7 @@ class DataIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE))                     # annunciator text and leds , color=(0, 0, 0, 0)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Display Data
@@ -184,11 +187,36 @@ class DataIcon(DrawBase):
 # SWITCH BUTTON REPRESENTATION
 #
 #
-DEFAULT_SWITCH_BASE_FILL_COLOR = "(150, 150, 150)"
-DEFAULT_SWITCH_HANDLE_FILL_COLOR = "(40, 40, 40)"
-DEFAULT_SWITCH_HANDLE_TOP_FILL_COLOR = "(100,100,100)"
+def grey(i: int):
+    return (i, i, i)
 
-class SwitchCommonBase(DrawBase):
+class SWITCH_STYLE(Enum):
+    ROUND = "round"
+    FLAT  = "rect"
+    DOT3  = "3dot"
+
+SWITCH_BASE_FILL_COLOR = grey(40)
+SWITCH_BASE_STROKE_COLOR = grey(80)
+SWITCH_BASE_UNDERLINE_COLOR = "orange"
+
+SWITCH_HANDLE_BASE_COLOR = grey(240)
+
+SWITCH_HANDLE_FILL_COLOR = grey(40)
+SWITCH_HANDLE_STROKE_COLOR = grey(230)
+
+SWITCH_HANDLE_TOP_FILL_COLOR = grey(100)
+SWITCH_HANDLE_TOP_STROKE_COLOR = grey(150)
+
+HANDLE_TIP_COLOR = grey(255)
+
+NEEDLE_COLOR = grey(255)
+NEEDLE_UNDERLINE_COLOR = grey(0)
+MARKER_COLOR = "lime"
+
+TICK_COLOR = grey(255)
+LABEL_COLOR = grey(255)
+
+class SwitchBase(DrawBase):
 
     def __init__(self, config: dict, button: "Button", switch_type: str):
 
@@ -201,34 +229,40 @@ class SwitchCommonBase(DrawBase):
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.switch.get("button-fill-color", DEFAULT_SWITCH_BASE_FILL_COLOR)
+        self.button_fill_color = self.switch.get("button-fill-color", SWITCH_BASE_FILL_COLOR)
         self.button_fill_color = convert_color(self.button_fill_color)
-        self.button_stroke_color = self.switch.get("button-stroke-color", "white")
+        self.button_stroke_color = self.switch.get("button-stroke-color", SWITCH_BASE_STROKE_COLOR)
         self.button_stroke_color = convert_color(self.button_stroke_color)
         self.button_stroke_width = self.switch.get("button-stroke-width", 4)
-        self.button_underline_color = self.switch.get("button-underline-color", "white")
+        self.button_underline_color = self.switch.get("button-underline-color", SWITCH_BASE_UNDERLINE_COLOR)
         self.button_underline_color = convert_color(self.button_underline_color)
         self.button_underline_width = self.switch.get("button-underline-width", 4)
 
-        self.handle_fill_color = self.switch.get("handle-fill-color", DEFAULT_SWITCH_HANDLE_FILL_COLOR)
+        self.handle_base_fill_color = self.switch.get("handle-fill-color", SWITCH_HANDLE_BASE_COLOR)
+        self.handle_base_fill_color = convert_color(self.handle_base_fill_color)
+
+        self.handle_fill_color = self.switch.get("handle-fill-color", SWITCH_HANDLE_FILL_COLOR)
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.switch.get("handle-stroke-color", "white")
+        self.handle_stroke_color = self.switch.get("handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR)
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.switch.get("handle-stroke-width", 0)
 
-        self.top_fill_color = self.switch.get("top-fill-color", DEFAULT_SWITCH_HANDLE_TOP_FILL_COLOR)
+        self.top_fill_color = self.switch.get("top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR)
         self.top_fill_color = convert_color(self.top_fill_color)
-        self.top_stroke_color = self.switch.get("top-stroke-color", "white")
+        self.top_stroke_color = self.switch.get("top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR)
         self.top_stroke_color = convert_color(self.top_stroke_color)
-        self.top_stroke_width = self.switch.get("top-stroke-width", 4)
+        self.top_stroke_width = self.switch.get("top-stroke-width", 2)
+
+        self.handle_tip_fill_color = self.switch.get("handle-fill-color", HANDLE_TIP_COLOR)
+        self.handle_tip_fill_color = convert_color(self.handle_tip_fill_color)
 
         # Ticks
         self.tick_space = self.switch.get("tick-space", 10)
         self.tick_length = self.switch.get("tick-length", 16)
         self.tick_width = self.switch.get("tick-width", 4)
-        self.tick_color = self.switch.get("tick-color", "white")
+        self.tick_color = self.switch.get("tick-color", TICK_COLOR)
         self.tick_color = convert_color(self.tick_color)
-        self.tick_underline_color = self.switch.get("tick-underline-color", "white")
+        self.tick_underline_color = self.switch.get("tick-underline-color", TICK_COLOR)
         self.tick_underline_color = convert_color(self.tick_underline_color)
         self.tick_underline_width = self.switch.get("tick-underline-width", 4)
 
@@ -237,29 +271,32 @@ class SwitchCommonBase(DrawBase):
         self.tick_label_space = self.switch.get("tick-label-space", 10)
         self.tick_label_font = self.switch.get("tick-label-font", "DIN")
         self.tick_label_size = self.switch.get("tick-label-size", 50)
-        self.tick_label_color = self.switch.get("tick-label-color", "white")
+        self.tick_label_color = self.switch.get("tick-label-color", LABEL_COLOR)
         self.tick_label_color = convert_color(self.tick_label_color)
 
         # Handle needle
         self.needle_width = self.switch.get("needle-width", 8)
         self.needle_length = self.switch.get("needle-length", 50)  # % of radius
         self.needle_length = int(self.needle_length * self.button_size / 200)
-        self.needle_color = self.switch.get("needle-color", "white")
+        self.needle_color = self.switch.get("needle-color", NEEDLE_COLOR)
         self.needle_color = convert_color(self.needle_color)
         # Options
         self.needle_underline_width = self.switch.get("needle-underline-width", 4)
-        self.needle_underline_color = self.switch.get("needle-underline-color", "black")
+        self.needle_underline_color = self.switch.get("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
         self.needle_underline_color = convert_color(self.needle_underline_color)
+
+        self.marker_color = self.switch.get("marker-color", MARKER_COLOR)
 
     def move_and_send(self, image):
         # Move whole drawing around
         a = 1
         b = 0
-        c = self.switch.get("left", 0) + self.switch.get("right", 0)
+        c = self.switch.get("left", 0) - self.switch.get("right", 0)
         d = 0
         e = 1
         f = self.switch.get("up", 0) - self.switch.get("down", 0)  # up/down (i.e. 5/-5)
         if c != 0 or f != 0:
+            print(">>>", (a, b, c, d, e, f))
             image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
         cl = ICON_SIZE/2
@@ -271,27 +308,12 @@ class SwitchCommonBase(DrawBase):
         bg.alpha_composite(image)
         return bg.convert("RGB")
 
-        # # Move whole drawing around
-        # a = 1
-        # b = 0
-        # c = self.switch.get("left", 0) + self.switch.get("right", 0)
-        # d = 0
-        # e = 1
-        # f = self.switch.get("up", 0) - self.switch.get("down", 20)  # up/down (i.e. 5/-5)
-        # if c != 0 or f != 0:
-        #     image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
 
-        # # Paste image on cockpit background and return it.
-        # bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
-        # bg.alpha_composite(image)
-        # return bg.convert("RGB")
-
-
-class CircularSwitch(SwitchCommonBase):
+class CircularSwitch(SwitchBase):
 
     def __init__(self, config: dict, button: "Button"):
 
-        SwitchCommonBase.__init__(self, config=config, button=button, switch_type="circular-switch")
+        SwitchBase.__init__(self, config=config, button=button, switch_type="circular-switch")
 
         self.tick_from = self.switch.get("tick-from", 90)
         self.tick_to = self.switch.get("tick-to", 270)
@@ -323,8 +345,7 @@ class CircularSwitch(SwitchCommonBase):
                 return red(a)
             return a
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon()
 
         # Button
         center = [ICON_SIZE, ICON_SIZE]
@@ -391,8 +412,7 @@ class CircularSwitch(SwitchCommonBase):
         angle = red(self.tick_from + value * self.angular_step)
 
         if self.switch_style in ["medium", "large", "xlarge"]:   # handle style
-            overlay = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
-            overlay_draw = ImageDraw.Draw(overlay)
+            overlay, overlay_draw = self.double_icon()
             inner = self.button_size
 
             # Base circle
@@ -401,8 +421,7 @@ class CircularSwitch(SwitchCommonBase):
             overlay_draw.ellipse(tl+br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
 
             # Button handle needle
-            home = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2))                     # annunciator text and leds , color=(0, 0, 0, 0)
-            home_drawing = ImageDraw.Draw(home)
+            home, home_drawing = self.double_icon()
             handle_width = int(2*inner/3)
             handle_height = int(2*inner/3)
 
@@ -463,11 +482,11 @@ class CircularSwitch(SwitchCommonBase):
         return self.move_and_send(image)
 
 
-class Switch(SwitchCommonBase):
+class Switch(SwitchBase):
 
     def __init__(self, config: dict, button: "Button"):
 
-        SwitchCommonBase.__init__(self, config=config, button=button, switch_type="switch")
+        SwitchBase.__init__(self, config=config, button=button, switch_type="switch")
 
         # Alternate defaults
         self.switch_style = self.switch.get("switch-style", "round")
@@ -488,8 +507,415 @@ class Switch(SwitchCommonBase):
         self.hexabase = self.button.has_option("hexa")
         self.screw_rot = randint(0, 60)
 
+    # The following functions draw switches centered on 0, 0 on a a canvas of ICON_SIZE x ICON_SIZE
+    def draw_base(self, draw, radius: int = ICON_SIZE/4, hexa_base: bool = False):
+        # Base is either hexagonal or round
+        HOLE_COLOR = grey(80)
+        HOLE_UNDERLINE = grey(40)
+        HOLE_UWIDTH = 1
+        if hexa_base:
+            draw.regular_polygon((ICON_SIZE, ICON_SIZE, radius), n_sides=6, rotation=self.screw_rot, fill=self.button_fill_color)
+            # screw hole is circular
+            HOLE_FRACT = 3
+            tl = [ICON_SIZE-radius/HOLE_FRACT, ICON_SIZE-radius/HOLE_FRACT]
+            br = [ICON_SIZE+radius/HOLE_FRACT, ICON_SIZE+radius/HOLE_FRACT]
+            # print("H>", tl, br)
+            draw.ellipse(tl+br, fill=HOLE_COLOR, outline=HOLE_UNDERLINE, width=HOLE_UWIDTH)
+        else:
+            tl = [ICON_SIZE-radius, ICON_SIZE-radius]
+            br = [ICON_SIZE+radius, ICON_SIZE+radius]
+            draw.ellipse(tl+br, fill=self.button_fill_color)
+            # print("B>", tl, br)
+            # screw hole is oval (not elliptic)
+            HOLE_FRACT = 5
+            tl = [ICON_SIZE-radius/HOLE_FRACT, ICON_SIZE-2*radius/HOLE_FRACT]
+            br = [ICON_SIZE+radius/HOLE_FRACT, ICON_SIZE+2*radius/HOLE_FRACT]
+            # print("rr>", tl, br)
+            draw.rounded_rectangle(tl+br, radius=radius/HOLE_FRACT, fill=HOLE_COLOR, outline=HOLE_UNDERLINE, width=HOLE_UWIDTH)
+
+        if self.button_underline_width > 0:
+            OUT = 8  # space between button base and circle around it to highlight it
+            tl1 = [ICON_SIZE-radius-OUT, ICON_SIZE-radius-OUT]
+            br1 = [ICON_SIZE+radius+OUT, ICON_SIZE+radius+OUT]
+            # print("U>", tl1, br1)
+            draw.ellipse(tl1+br1, outline=self.button_underline_color, width=self.button_underline_width)
+
+    def draw_round_switch_from_top(self, draw, radius: int = ICON_SIZE / 16):
+        #### TOP
+        tl = [ICON_SIZE-2*radius, ICON_SIZE-2*radius]
+        br = [ICON_SIZE+2*radius, ICON_SIZE+2*radius]
+        # print(">R", tl, br)
+        draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+
+        # (white) tip
+        tl = [ICON_SIZE-radius, ICON_SIZE-radius]
+        br = [ICON_SIZE+radius, ICON_SIZE+radius]
+        # print(">tip", tl, br)
+        draw.ellipse(tl+br, fill=self.handle_tip_fill_color)
+
+    def draw_round_switch(self, draw, radius: int = ICON_SIZE / 16):
+        # A Handle is visible if not in "middle" position,
+        # in which case the button, as seen from top, has not handle.
+        # Base
+        self.handle_fill_color = grey(150)
+        # Little ellipsis at base
+        lr = radius - 4
+        tl = [ICON_SIZE-lr, ICON_SIZE-lr/2]
+        br = [ICON_SIZE+lr, ICON_SIZE+lr/2]
+        # print("|b", tl, br)
+        draw.ellipse(tl+br, fill=self.handle_base_fill_color)
+        # Little start of handle (height of little part = lph)
+        lph = radius
+        tl = [ICON_SIZE-lr, ICON_SIZE-lph]
+        br = [ICON_SIZE+lr, ICON_SIZE]
+        # print("|B", tl, br)
+        draw.rectangle(tl+br, fill=self.handle_base_fill_color)
+
+        # # larger part of handle (high of larger part = hheight, width of larger part at top = hwidth)
+        hheight = 5 * radius
+        hwidth  = 3 * radius
+        swtop = ICON_SIZE - lph
+        p1 = (ICON_SIZE-hwidth/2, swtop - hheight)
+        p2 = (ICON_SIZE+hwidth/2, swtop - hheight)
+        p3 = (ICON_SIZE+radius, swtop)
+        p4 = (ICON_SIZE-radius, swtop)
+        # print("|M", [p1, p2, p3, p4, p1])
+        draw.polygon([p1, p2, p3, p4, p1],
+                      fill=self.handle_fill_color,
+                      outline=self.handle_stroke_color,
+                      width=self.handle_stroke_width)
+        # #### TOP
+        tl = [ICON_SIZE-hwidth/2, swtop-hheight-hwidth/4]
+        br = [ICON_SIZE+hwidth/2, swtop-hheight+hwidth/4]
+        # print("|T", tl, br)
+        draw.ellipse(tl+br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+
+        # # (white) tip
+        hwidth = int(hwidth/2)
+        tl = [ICON_SIZE-hwidth/2, swtop-hheight-hwidth/4]
+        br = [ICON_SIZE+hwidth/2, swtop-hheight+hwidth/4]
+        # print("|tip", tl, br)
+        draw.ellipse(tl+br, fill=self.handle_tip_fill_color)
+
+    def draw_flat_switch_from_top(self, draw, radius: int = ICON_SIZE / 16):
+        # Then the flat part
+        w = 2 * radius
+        h = radius
+        tl = [ICON_SIZE-w, ICON_SIZE-h]
+        br = [ICON_SIZE+w, ICON_SIZE+h]
+        # print(">F", tl, br)
+        # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+        draw.rounded_rectangle(tl+br, radius=4, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+
+        #### (white) tip
+        # rrect in top 1/3 of flat part
+        nlines = 4
+        avail = int(8 * radius / 3)
+        separ  = int(avail / (nlines+1))
+        start = separ / 4
+        w = int((2 * radius - 2 * start))
+        h = (radius - 2 * start) / 2
+        tl = [ICON_SIZE-w, ICON_SIZE-h]
+        br = [ICON_SIZE+w, ICON_SIZE+h]
+        # print(">tip", tl, br, "wxh", w, h, "separ", separ, "start", start)
+        draw.rounded_rectangle(tl+br, radius=w/2, fill=self.handle_tip_fill_color)
+
+    def draw_flat_switch(self, draw, radius: int = ICON_SIZE / 16):
+        self.handle_fill_color = grey(150)
+        # Little ellipsis at base
+        lr = radius - 4
+        tl = [ICON_SIZE-lr, ICON_SIZE-lr/2]
+        br = [ICON_SIZE+lr, ICON_SIZE+lr/2]
+        # print("|b", tl, br)
+        draw.ellipse(tl+br, fill=self.handle_base_fill_color)
+
+        # Little start of handle (height of little part = lph)
+        lph = radius
+        tl = [ICON_SIZE-lr, ICON_SIZE-lph]
+        br = [ICON_SIZE+lr, ICON_SIZE]
+        # print("|B", tl, br)
+        draw.rectangle(tl+br, fill=self.handle_base_fill_color)
+
+        # First an enlargement of the little start of handle
+        hheight = 2 * radius
+        hwidth  = 4 * radius
+        swtop = ICON_SIZE - lph
+        p1 = (ICON_SIZE-hwidth/2, swtop - hheight)
+        p2 = (ICON_SIZE+hwidth/2, swtop - hheight)
+        p3 = (ICON_SIZE+radius, swtop)
+        p4 = (ICON_SIZE-radius, swtop)
+        # print("|m", [p1, p2, p3, p4, p1])
+        draw.polygon([p1, p2, p3, p4, p1],
+                      fill=self.handle_fill_color,
+                      outline=self.handle_stroke_color,
+                      width=self.handle_stroke_width)
+
+        # # Then the flat part
+        toph = 4 * radius
+        tl = [ICON_SIZE-hwidth/2, swtop - hheight - toph]
+        br = [ICON_SIZE+hwidth/2, swtop - hheight]
+        # print("|M", [p1, p2, p3, p4, p1], "h", toph)
+        draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+
+        # Decoration of the flat part
+        # small lines in bottom 2/3 of flat part
+        nlines = 4
+        avail = int(2 * toph / 4)
+        separ  = int(avail / nlines)
+        start = int(separ / 2)
+        for i in range(nlines):
+            h = swtop - hheight - start - i * separ
+            l = ICON_SIZE-hwidth/2 + separ
+            e = ICON_SIZE+hwidth/2 - separ
+            # print("|-", [(l, h),(e, h)], "avail", avail, "separ", separ, "bot", swtop - hheight, "2/3", swtop - hheight - avail)
+            draw.line([(l, h),(e, h)], width=2, fill=grey(210))
+
+        # #### (white) tip
+        # # rrect in top 1/3 of flat part
+        mid  = swtop - hheight - int(5 * toph / 6)
+        # topw = int(hwidth / 4)
+        # tl = [ICON_SIZE-hwidth/2 + separ, mid-topw/2]
+        # br = [ICON_SIZE+hwidth/2 - separ, mid+topw/2]
+        # # print("|=", [tl+br], "2/3=bot", swtop - avail, "top", swtop - hheight - toph, '5/6', swtop - hheight - int(5 * toph / 6))
+        # draw.rounded_rectangle(tl+br, radius=topw/4, fill=self.handle_tip_fill_color)
+
+
+        w = int((2 * radius - 2 * start))
+        h = (radius - 2 * start) / 2
+        tl = [ICON_SIZE-w, mid-h]
+        br = [ICON_SIZE+w, mid+h]
+        # print(">tip", tl, br, "wxh", w, h, "separ", separ, "start", start)
+        draw.rounded_rectangle(tl+br, radius=w/2, fill=self.handle_tip_fill_color)
+
+    def draw_3dot_switch_from_top(self, draw, radius: int = ICON_SIZE / 16):
+        # Big rounded rect
+        width = 10 * radius
+        height = 4 * radius
+        tl = [ICON_SIZE-width/2, ICON_SIZE-height/2]
+        br = [ICON_SIZE+width/2, ICON_SIZE+height/2]
+        # print(">3", tl, br)
+        draw.rounded_rectangle(tl+br, radius=height/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+
+        # Dots
+        ndots = 3
+        sep = width / (ndots + 1)
+        start = sep
+        dotr = 2 * radius
+        left = ICON_SIZE - (width/2) + start
+        for i in range(ndots):
+            x = left + i * sep
+            tl = [x-dotr/2, ICON_SIZE-dotr/2]
+            br = [x+dotr/2, ICON_SIZE+dotr/2]
+            # print(">•", tl, br, "x", x, width, left, sep, start)
+            draw.ellipse(tl+br, fill=self.handle_tip_fill_color)
+
+    def draw_3dot_switch(self, draw, radius: int = ICON_SIZE / 16):
+        self.handle_fill_color = grey(150)
+        # Little ellipsis at base
+        lr = radius - 4
+        tl = [ICON_SIZE-lr, ICON_SIZE-lr/2]
+        br = [ICON_SIZE+lr, ICON_SIZE+lr/2]
+        # print("|b", tl, br)
+        draw.ellipse(tl+br, fill=self.handle_base_fill_color)
+
+        # Little start of handle (height of little part = lph)
+        lph = radius
+        tl = [ICON_SIZE-lr, ICON_SIZE-lph]
+        br = [ICON_SIZE+lr, ICON_SIZE]
+        # print("|B", tl, br)
+        draw.rectangle(tl+br, fill=self.handle_base_fill_color)
+
+        # Then the handle
+        hh = 2 * radius
+        hw = radius
+        top0 = ICON_SIZE-lr
+        tl = [ICON_SIZE-hw, top0 - hh]
+        br = [ICON_SIZE+hw, top0]
+        # print("|M", tl+br)
+        draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+
+        # Big rounded rect
+        radius = radius * 2
+        width = 5 * radius
+        height = 2 * radius
+        top = top0 - hh - height/2
+        tl = [ICON_SIZE-width/2, top-height/2]
+        br = [ICON_SIZE+width/2, top+height/2]
+        # print(">3", tl, br)
+        draw.rounded_rectangle(tl+br, radius=height/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+
+        # Dots
+        ndots = 3
+        sep = width / (ndots + 1)
+        start = sep
+        dotr = int(radius)
+        left = ICON_SIZE - (width/2) + start
+        for i in range(ndots):
+            x = left + i * sep
+            tl = [x-dotr/2, top-dotr/2]
+            br = [x+dotr/2, top+dotr/2]
+            # print(">•", tl, br, "x", x, width, left, sep, start)
+            draw.ellipse(tl+br, fill=self.handle_tip_fill_color)
+
+    def draw_ticks(self, draw):
+        center = [ICON_SIZE, ICON_SIZE]
+        underline = center[0] - self.tick_space
+        tick_end = underline + self.tick_length
+        if self.label_opposite:
+            underline = center[0] + self.tick_space
+            tick_end = underline - self.tick_length
+        # top mark
+        draw.line([(underline, center[1] - self.switch_length),(tick_end, center[1] - self.switch_length)], width=self.tick_width, fill=self.tick_color)
+        # middle mark
+        if self.three_way:
+            draw.line([(underline, center[1]),(tick_end, center[1])], width=self.tick_width, fill=self.tick_color)
+        # bottom mark
+        draw.line([(underline, center[1] + self.switch_length),(tick_end, center[1] + self.switch_length)], width=self.tick_width, fill=self.tick_color)
+        # underline
+        if self.tick_underline_width > 0:
+            draw.line([(underline, center[1] - self.switch_length),(underline, center[1] + self.switch_length)], width=self.tick_underline_width, fill=self.tick_color)
+
+    def draw_labels(self, draw):
+        center = [ICON_SIZE, ICON_SIZE]
+        inside = ICON_SIZE / 32
+        font = self.get_font(self.tick_label_font, int(self.tick_label_size))
+        if self.vertical:
+            label_left = center[0]
+            align="right"
+            anchor="rm"
+            if self.invert:
+                label_left = center[0]
+                align="left"
+                anchor="lm"
+            draw.text((label_left, center[1] - self.switch_length),
+                      text=self.tick_labels[0],
+                      font=font,
+                      anchor=anchor,
+                      align=align,
+                      fill=self.tick_label_color)
+            n = 1
+            if self.three_way:
+                draw.text((label_left, center[1]),
+                          text=self.tick_labels[1],
+                          font=font,
+                          anchor=anchor,
+                          align=align,
+                          fill=self.tick_label_color)
+                n = 2
+            draw.text((label_left, center[1] + self.switch_length),
+                      text=self.tick_labels[n],
+                      font=font,
+                      anchor=anchor,
+                      align=align,
+                      fill=self.tick_label_color)
+            return
+
+        # Horizontal
+        label_top = center[0] #  - self.tick_space - self.tick_length - inside
+        align="center"
+        bl = "s"
+        if self.invert:
+            bl = "t"
+        anchor="m"+bl
+        draw.text((center[0] - ICON_SIZE/2 + inside, label_top),
+                  text=self.tick_labels[0],
+                  font=font,
+                  anchor="l"+bl,
+                  align=align,
+                  fill=self.tick_label_color)
+        n = 1
+        if self.three_way:
+            draw.text((center[0], label_top),
+                      text=self.tick_labels[1],
+                      font=font,
+                      anchor="m"+bl,
+                      align=align,
+                      fill=self.tick_label_color)
+            n = 2
+        draw.text((center[0] + ICON_SIZE/2 - inside, label_top),
+                  text=self.tick_labels[n],
+                  font=font,
+                  anchor="r"+bl,
+                  align=align,
+                  fill=self.tick_label_color)
 
     def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        # Value
+        value = self.button.get_current_value()  # 0, 1, or 2 if three_way
+        if value is None:
+            value = 0
+        pos = -1  # 1 or -1, or 0 if 3way
+        if value != 0:
+            if self.three_way:
+                if value == 1:
+                    pos = 0
+                else:
+                    pos = 1
+            else:
+                pos = 1  # force to 1 in case value > 1
+        if self.invert:
+            pos = pos * -1
+
+        # Canvas
+        image, draw = self.double_icon()
+
+        # Switch
+        self.draw_base(draw, radius=int(ICON_SIZE/5), hexa_base=True)
+        switch, switch_draw = self.double_icon()
+        if pos == 0:  # middle position
+            if self.switch_style == SWITCH_STYLE.ROUND.value:
+                self.draw_round_switch_from_top(switch_draw)
+            elif self.switch_style == SWITCH_STYLE.FLAT.value:
+                self.draw_flat_switch_from_top(switch_draw)
+            else:
+                self.draw_3dot_switch_from_top(switch_draw)
+        else:
+            if self.switch_style == SWITCH_STYLE.ROUND.value:
+                self.draw_round_switch(switch_draw)
+            elif self.switch_style == SWITCH_STYLE.FLAT.value:
+                self.draw_flat_switch(switch_draw)
+            else:
+                self.draw_3dot_switch(switch_draw)
+        if pos < 0:
+            switch = switch.transpose(method=Image.Transpose.FLIP_TOP_BOTTOM)
+        if not self.vertical:
+            switch = switch.transpose(method=Image.Transpose.ROTATE_90)
+        image.alpha_composite(switch)
+        # Tick marks
+        if self.tick_length > 0:
+            ticks, ticks_draw = self.double_icon()
+            self.draw_ticks(ticks_draw)
+            if not self.vertical:
+                ticks = ticks.transpose(method=Image.Transpose.ROTATE_270)
+            # Shift ticks
+            space = self.button_size
+            c = space if self.vertical else 0
+            f = space if not self.vertical else 0
+            ticks = ticks.transform(ticks.size, Image.AFFINE, (1, 0, c, 0, 1, f))
+            if self.invert:
+                ticks = ticks.transpose(method=Image.Transpose.ROTATE_180)
+            image.alpha_composite(ticks)
+        # # Tick labels
+        if len(self.tick_labels) > 0:
+            tick_labels, tick_labels_draw = self.double_icon()
+            self.draw_labels(tick_labels_draw)
+            space = self.button_size + self.tick_space + self.tick_length
+            c = space if self.vertical else 0
+            f = space if not self.vertical else 0
+            if self.invert:
+                c = -c
+                f = -f
+            tick_labels = tick_labels.transform(tick_labels.size, Image.AFFINE, (1, 0, c, 0, 1, f))
+            image.alpha_composite(tick_labels)
+
+        return self.move_and_send(image)
+
+    def get_image_for_icon_OLD(self):
         """
         Helper function to get button image and overlay label on top of it.
         Label may be updated at each activation since it can contain datarefs.
@@ -498,8 +924,7 @@ class Switch(SwitchCommonBase):
         OUT = 8
         inside = ICON_SIZE / 32
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=TRANSPARENT_PNG_COLOR)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon()
 
         # Button
         center = [ICON_SIZE, ICON_SIZE]
@@ -815,11 +1240,11 @@ class Switch(SwitchCommonBase):
         return self.move_and_send(image)
 
 
-class PushSwitch(SwitchCommonBase):
+class PushSwitch(SwitchBase):
 
     def __init__(self, config: dict, button: "Button"):
 
-        SwitchCommonBase.__init__(self, config=config, button=button, switch_type="push-switch")
+        SwitchBase.__init__(self, config=config, button=button, switch_type="push-switch")
 
         # Alternate defaults
         self.button_size = self.switch.get("button-size", 80)
@@ -845,11 +1270,7 @@ class PushSwitch(SwitchCommonBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        OUT = 8
-        inside = ICON_SIZE / 32
-
-        image = Image.new(mode="RGBA", size=(ICON_SIZE*2, ICON_SIZE*2), color=TRANSPARENT_PNG_COLOR)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon()
 
         # Button
         center = [ICON_SIZE, ICON_SIZE]
@@ -994,8 +1415,7 @@ class DrawAnimationFTG(DrawAnimation):
         Can use self.tween to increase iterations.
         Text, color, sizes are all hardcoded here.
         """
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=(20, 20, 20)) # self.button.page.cockpit_color
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
 
         # Button
         cs = 4  # light size, px
