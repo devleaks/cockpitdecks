@@ -135,7 +135,7 @@ class Button:
 
     @staticmethod
     def guess_index(config):
-        return config.get("index")
+        return str(config.get("index"))
 
     @staticmethod
     def guess_activation_type(config):

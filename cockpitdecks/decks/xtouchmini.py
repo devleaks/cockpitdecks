@@ -46,7 +46,7 @@ class XTouchMini(Deck):
         }
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
         button0 = Button(config={
-                                    "index": 8,
+                                    "index": 0,
                                     "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
@@ -57,50 +57,6 @@ class XTouchMini(Deck):
         self.home_page = page0
         self.current_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
-
-    def valid_indices_with_image(self):
-        return []
-
-    def valid_indices(self):
-        encoders = [f"{ENCODE_PREFIX}{i}" for i in range(8)]
-        buttons = [str(i) for i in range(16)]
-        return encoders + buttons + ["A", "B", SLIDER]
-
-    def valid_activations(self, index = None):
-        valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
-        valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "knob"]
-        valid_slider = [SLIDER]
-
-        if index is not None:
-            if index in self.valid_indices():
-                if index.startswith("e"):
-                    return valid_push_encoder
-                if is_integer(index) or index in ["A", "B"]:
-                    return valid_key
-                if index == SLIDER:
-                    return valid_slider
-            else:
-                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
-                return []
-        return set(super().valid_activations() + valid_push_encoder + valid_key + valid_slider)
-
-    def valid_representations(self, index = None):
-        valid_pushencoder = ["multi-leds"]
-        valid_key = ["led"]
-        valid_slider = ["none"]
-
-        if index is not None:
-            if index in self.valid_indices():
-                if index.startswith("e"):
-                    return valid_pushencoder
-                if is_integer(index) or index in ["A", "B"]:
-                    return valid_key
-                if index == SLIDER:
-                    return valid_slider
-            else:
-                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
-                return []
-        return set(super().valid_representations() + valid_pushencoder + valid_key + valid_slider)
 
     def load_icons(self):
         pass

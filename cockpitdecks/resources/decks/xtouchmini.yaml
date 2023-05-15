@@ -4,18 +4,21 @@
 name: xtouchmini
 model: mini
 buttons:
-    - name: 1
+    - name: 0
       action: push
       view: led
+      repeat: 16
+    - name: 0
+      prefix: e
+      action: encoder-push
+      view: encoder-leds
+      repeat: 8
     - name: A
       action: push
       view: led
     - name: B
       action: push
       view: led
-    - name: e0
-      action: encoder-push
-      view: encoder-leds
     - name: slider
       action: slider
       view: none

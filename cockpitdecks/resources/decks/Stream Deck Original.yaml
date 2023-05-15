@@ -7,6 +7,5 @@ buttons:
     - name: 0
       action: push
       view: image
-    - name: 14
-      action: push
-      view: image
+      image: [96, 96, 0, 0]
+      repeat: 15

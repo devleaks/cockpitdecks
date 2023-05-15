@@ -27,6 +27,8 @@ ACTIVATIONS = {
     "swipe": Swipe
 }
 
+DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
+
 #
 # ###############################
 # DECK ACTIVATION MAP
@@ -37,6 +39,10 @@ ACTIVATIONS = {
 push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown"]
 encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
 
+# ###############################
+# format is action: [ activation ]
+# action is used in deck definitions
+#
 DECK_ACTIVATIONS = {
     "push": push,
     "encoder": encoder,

@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 from .constant import ICON_SIZE, DEFAULT_LABEL_FONT
 from .resources.iconfonts import ICON_FONTS
 
-from .color import convert_color, light_off, linear_gradient
+from .color import convert_color, light_off
 from .button_representation import Icon
 from .button_annunciator import TRANSPARENT_PNG_COLOR
 

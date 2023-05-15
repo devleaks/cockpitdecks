@@ -32,6 +32,8 @@ REPRESENTATIONS = {
     "ftg": DrawAnimationFTG
 }
 
+DEFAULT_REPRESENTATIONS = ["none"]
+
 #
 # ###############################
 # OPTIONAL REPRESENTATIONS
@@ -58,7 +60,12 @@ drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circul
 if "weather" in REPRESENTATIONS.keys():
     drawn_buttons.append("weather")
 
+# ###############################
+# format is view: [ representation ]
+# view is used in deck definitions
+#
 DECK_REPRESENTATIONS = {
+    "image": images + drawn_buttons,
     "lcd": images + drawn_buttons,
     "led": ["led"],
     "colored-led": ["led", "colored-led"],

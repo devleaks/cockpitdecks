@@ -35,7 +35,7 @@ default-icon-color: (94, 111, 130)
 default-label-font: B612-Bold
 default-label-size: 12
 default-label-color: white
-# debug: cockpitdecks.cockpit
+# debug: cockpitdecks.deck
 cockpit-texture: TEXTURE.png
 annunciator-style: v
 # default-annunciator-texture: ANNUNCIATOR_TEXTURE.png

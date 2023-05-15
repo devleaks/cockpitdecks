@@ -8,6 +8,7 @@ import inspect
 from time import sleep
 from enum import Enum
 from abc import ABC, abstractmethod
+from functools import reduce
 
 from PIL import Image, ImageDraw, ImageOps
 from ruamel.yaml import YAML
@@ -17,17 +18,31 @@ from .constant import ID_SEP, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
 from .color import convert_color
 from .page import Page
 from .button import Button
+from .activation import DECK_ACTIVATIONS, DEFAULT_ACTIVATIONS
+from .representation import DECK_REPRESENTATIONS, DEFAULT_REPRESENTATIONS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
 
-# Attribute keybords
-KW_BUTTONS = "buttons"
-KW_INCLUDES = "includes"
-KW_BACKPAGE = "back"
+DECKS_FOLDER = "decks"
 
+# Attribute keybords
+KW_ACTION = "action"
+KW_ACTIVATIONS = "activations"
+KW_BACKPAGE = "back"
+KW_BUTTONS = "buttons"
+KW_IMAGE = "image"
+KW_INCLUDES = "includes"
+KW_INDEX = "index"
+KW_MODEL = "model"
+KW_NAME = "name"
+KW_NONE = "none"
+KW_PREFIX = "prefix"
+KW_REPEAT = "repeat"
+KW_REPRESENTATIONS = "representations"
+KW_VIEW = "view"
 
 class Deck(ABC):
     """
@@ -40,6 +55,10 @@ class Deck(ABC):
         self.name = name
         self.cockpit = cockpit
         self.device = device
+        self.model = config.get(KW_MODEL)
+        self._buttons = {}
+        self._activations = set()
+        self._representations = set()
 
         self.cockpit.set_logging_level(__name__)
 
@@ -85,6 +104,8 @@ class Deck(ABC):
 
         self.valid = True
 
+        self.read_definition()
+
     # #######################################
     # Deck Common Functions
     #
@@ -97,6 +118,83 @@ class Deck(ABC):
 
     def get_id(self):
         return ID_SEP.join([self.cockpit.get_id(), self.name, self.layout])
+
+    def read_definition(self):
+        dt = self.model if self.model is not None else type(self).__name__
+        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER, dt + ".yaml")
+        logger.debug(f"read_definition: {type(self).__name__}, {self.model}: {fn}")
+        if not os.path.exists(fn):
+            logger.error(f"read_definition: no deck config {fn} for {type(self).__name__}")
+            return
+
+        with open(fn, "r") as fp:
+            self.deck_content = yaml.load(fp)
+            logger.debug(f"read_definition: loaded layout config {fn}")
+
+        if self.deck_content is None:
+            logger.error(f"read_definition: no deck config for {type(self).__name__}")
+            return
+
+        cnt = 0
+        for button in self.deck_content[KW_BUTTONS]:
+            name = button.get(KW_NAME)
+            repeat = button.get(KW_REPEAT)
+            prefix = button.get(KW_PREFIX, "")
+
+            action = button.get(KW_ACTION)
+            activation = [KW_NONE]
+            if action is None or action.lower() == KW_NONE:
+                action = KW_NONE
+            else:
+                activation = DECK_ACTIVATIONS.get(action)
+                if activation is None:
+                    logger.warning(f"read_definition: deck {self.name}: action {button.get(KW_ACTION)} not found in DECK_ACTIVATIONS")
+
+            view = button.get(KW_VIEW)
+            r = [KW_NONE]
+            if view is None or view.lower() == KW_NONE:
+                view = KW_NONE
+            else:
+                representation = DECK_REPRESENTATIONS.get(view)
+                if representation is None:
+                    logger.warning(f"read_definition: deck {self.name}: view {button.get(KW_VIEW)} not found in DECK_REPRESENTATIONS")
+
+            if activation is not None and representation is not None:
+                if repeat is None:
+                    if name is None:
+                        name = "NO_NAME_" + str(cnt)
+                        cnt = cnt + 1
+                        logger.warning(f"read_definition: deck {self.name}: button has no name, using default {name}")
+
+                    self._buttons[prefix + name] = {
+                        KW_INDEX: prefix + name,
+                        "_index": 0,
+                        KW_ACTION: button.get(KW_ACTION),
+                        KW_VIEW: button.get(KW_VIEW),
+                        KW_ACTIVATIONS: activation,
+                        KW_REPRESENTATIONS: representation
+                    }
+                    if KW_IMAGE in button:
+                        self._buttons[prefix + str(i)][KW_IMAGE] = button.get(KW_IMAGE)
+                else:  # name is ignored
+                    for i in range(repeat):
+                        idx = str(i) if prefix is None else prefix + str(i)
+                        self._buttons[idx] = {
+                            KW_INDEX: idx,
+                            "_index": i,
+                            KW_ACTION: button.get(KW_ACTION),
+                            KW_VIEW: button.get(KW_VIEW),
+                            KW_ACTIVATIONS: activation,
+                            KW_REPRESENTATIONS: representation
+                        }
+                        if KW_IMAGE in button:
+                            self._buttons[idx][KW_IMAGE] = button.get(KW_IMAGE)
+            else:
+                logger.warning(f"read_definition: deck {self.name}: cannot proceed with {button} definition")
+        logger.debug(f"read_definition: deck {self.name}: buttons: {self._buttons.keys()}..")
+        self.valid_activations()        # will print debug
+        self.valid_representations()    # will print debug
+        logger.debug(f"read_definition: ..deck {self.name} done")
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -147,7 +245,6 @@ class Deck(ABC):
             self.wallpaper = config.get("wallpaper", base.default_wallpaper)
             self.home_page_name = config.get("homepage-name", base.default_home_page_name)
 
-
     def load_layout_config(self, fn):
         """
         Loads a layout global configuration parameters.
@@ -163,7 +260,6 @@ class Deck(ABC):
                 self.set_default(self.layout_config, self)
         else:
             logger.debug(f"load_layout_config: no layout config file")
-
 
     def inspect(self, what: str = None):
         """
@@ -328,19 +424,32 @@ class Deck(ABC):
         """
         pass
 
-    @abstractmethod
     def valid_indices(self):
-        return []
-
-    @abstractmethod
-    def valid_indices_with_image(self):
-        return []
+        return list(self._buttons.keys())
 
     def valid_activations(self, index = None):
-        return ["none"] + ["page", "reload", "inspect", "stop"]
+        if index is not None:
+            b = self._buttons.get(index)
+            if b is not None:
+                logger.debug(f"valid_activations: deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW_ACTIVATIONS]}")
+                return DEFAULT_ACTIVATIONS + b[KW_ACTIVATIONS]
+            else:
+                logger.warning(f"valid_activations: deck {self.name}: no button index {index}, returning default for deck")
+        all_activations = set(DEFAULT_ACTIVATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW_ACTIVATIONS, set()))), self._buttons.values(), set())))
+        logger.debug(f"valid_activations: deck {self.name}: {all_activations}")
+        return list(all_activations)
 
     def valid_representations(self, index = None):
-        return ["none"]
+        if index is not None:
+            b = self._buttons.get(index)
+            if b is not None:
+                logger.debug(f"valid_representations: deck {self.name}: button {index}: {DEFAULT_REPRESENTATIONS + b[KW_ACTIVATIONS]}")
+                return DEFAULT_REPRESENTATIONS + b[KW_REPRESENTATIONS]
+            else:
+                logger.warning(f"valid_representations: deck {self.name}: no button index {index}, returning default for deck")
+        all_representations = set(DEFAULT_REPRESENTATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW_REPRESENTATIONS, set()))), self._buttons.values(), set())))
+        logger.debug(f"valid_representations: deck {self.name}: {all_representations}")
+        return list(all_representations)
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -363,13 +472,22 @@ class Deck(ABC):
         """
         # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
-        if self.current_page is not None and key in self.current_page.buttons.keys():
-            self.current_page.buttons[key].activate(state)
+        if self.current_page is not None:
+            idx = str(key)
+            if idx in self.current_page.buttons.keys():
+                self.current_page.buttons[idx].activate(state)
+            else:
+                logger.debug(f"key_change_processing: {idx} not found on page {self.current_page.name}")
+        else:
+            logger.warning(f"key_change_processing: no current page")
 
     # #######################################
     # Deck Specific Functions : Representation
     #
     def print_page(self, page: Page):
+        pass
+
+    def fill_empty(self, key):
         pass
 
     @abstractmethod
@@ -515,6 +633,17 @@ class DeckWithIcons(Deck):
     def scale_icon_for_key(self, index, image, name: str = None):
         # Abstact
         return None
+
+    def get_image_size(self, index):
+        # Abstact
+        return (0, 0)
+
+    def fill_empty(self, key):
+        icon = self.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture, name=f"{self.name}:empty:{key}")
+        if icon is not None:
+            self._send_key_image_to_device(key, icon)
+        else:
+            logger.warning(f"fill_empty: deck {self.name}: {key}: no fill icon")
 
     # #######################################
     # Deck Specific Functions : Rendering

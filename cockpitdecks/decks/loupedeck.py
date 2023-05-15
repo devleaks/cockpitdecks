@@ -58,7 +58,15 @@ VIBRATION_MODES = [
 # Buttons are smaller, colored push buttons labeled 0 (dotted circle) to 7.
 # Knobs are rotating knobs on either side.
 BUTTON_PREFIX = "b"
-KNOB_PREFIX = "knob"
+ENCODER_PREFIX = "e"  # need to be found in _buttons definition from deck.yaml
+ENCODER_MAP = {
+    "knobTL": "e0",
+    "knobCL": "e1",
+    "knobBL": "e2",
+    "knobTR": "e3",
+    "knobCR": "e4",
+    "knobBR": "e5"
+}
 
 class Loupedeck(DeckWithIcons):
     """
@@ -130,7 +138,7 @@ class Loupedeck(DeckWithIcons):
                      },
                      deck=self)
         button0 = Button(config={
-                                    "index": 0,
+                                    "index": "0",
                                     "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
@@ -138,88 +146,17 @@ class Loupedeck(DeckWithIcons):
                                 }, page=page0)
         page0.add_button(button0.index, button0)
         button1 = Button(config={
-                                    "index": 1,
+                                    "index": "1",
                                     "name": "Exit",
                                     "type": "stop",
-                                    "icon": "STOP"
+                                    "icon": "STOP",
+                                    "label": "STOP"
                                 }, page=page0)
         page0.add_button(button1.index, button1)
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
         self.current_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
-
-    def side_individual_keys(self):
-        return [f"L{i}" for i in range(3)] + [f"R{i}" for i in range(3)]
-
-
-    def valid_indices_with_image(self):
-        if SIDE_INDIVIDUAL_KEYS:
-            return [str(i) for i in range(12)] + self.side_individual_keys()
-        else:
-            return [str(i) for i in range(12)] + ["left", "right"]
-
-    def valid_indices(self):
-        encoders = ["knobTL", "knobCL", "knobBL", "knobTR", "knobCR", "knobBR"]
-        keys = [str(i) for i in range(12)]
-        buttons = [f"{BUTTON_PREFIX}{i}" for i in range(8)]
-        if SIDE_INDIVIDUAL_KEYS:
-            return encoders + keys + buttons + self.side_individual_keys()
-        else:
-            return encoders + keys + buttons + ["left", "right"]
-
-    def valid_activations(self, index = None):
-        valid_key = super().valid_activations() + ["push", "onoff", "updown", "longpress"]
-        valid_push_encoder = valid_key + ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
-        valid_colored_button = valid_key
-
-        if index is not None:
-            if index in self.valid_indices():
-                if index.startswith(KNOB_PREFIX):
-                    return valid_push_encoder
-                if index.startswith(BUTTON_PREFIX) or is_integer(index):
-                    return valid_colored_button
-                if is_integer(index):
-                    return valid_key
-            else:
-                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
-                return []
-        return set(valid_key + valid_push_encoder + valid_colored_button)
-
-    def valid_representations(self, index = None):
-        valid_side_icon = ["none", "side"]
-        valid_key_icon = [
-            "none",
-            "icon",
-            "text",
-            "icon-color",
-            "multi-icons",
-            "icon-animate",
-            "annunciator",
-            "annunciator-animate",
-            "data",
-            "weather",
-            "switch",
-            "circular-switch",
-            "push-switch"
-        ]
-        valid_colored_button = ["colored-led"]
-        valid_knob = ["none"]
-
-        if index is not None:
-            if index in self.valid_indices():
-                if index in ["left", "right"]:
-                    return valid_side_icon
-                if index.startswith(KNOB_PREFIX):
-                    return valid_knob
-                if index.startswith(BUTTON_PREFIX):
-                    return valid_colored_button
-                if is_integer(index):
-                    return valid_key_icon
-            else:
-                logger.warning(f"valid_activations: invalid index for {type(self).__name__}")
-                return []
-        return set(super().valid_representations() + valid_key_icon + valid_side_icon + valid_colored_button)
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -249,10 +186,14 @@ class Loupedeck(DeckWithIcons):
         key = msg["id"]
         action = msg["action"]
 
+        # Map between our convenient "e3" and Loupedeck naming knobTR
+        if key in ENCODER_MAP.keys():
+            key = ENCODER_MAP[key]
+
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
-            if not key.startswith(KNOB_PREFIX):
+            if not key.startswith(ENCODER_PREFIX):
                 if key == "circle":
                     key = 0
                 try:
@@ -472,7 +413,7 @@ class Loupedeck(DeckWithIcons):
             if str(button.index).startswith(BUTTON_PREFIX):
                 logger.debug(f"print_page: ..color led has no image")
                 continue
-            if str(button.index).startswith(KNOB_PREFIX):
+            if str(button.index).startswith(ENCODER_PREFIX):
                 logger.debug(f"print_page: ..encoder has no image")
                 continue
             if button.index in ["left", "right"]:
@@ -501,7 +442,7 @@ class Loupedeck(DeckWithIcons):
         if self.device is None:
             logger.warning("render: no device")
             return
-        if str(button.index).startswith(KNOB_PREFIX):
+        if str(button.index).startswith(ENCODER_PREFIX):
             logger.debug(f"render: button type {button.index} has no representation")
             return
         representation = button._representation

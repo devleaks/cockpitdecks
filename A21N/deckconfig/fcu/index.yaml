@@ -11,7 +11,7 @@ buttons:
 #
 # KNOB
 #
-  - index: knobTL
+  - index: e0
     name: FCU Airspeed
     type: encoder-onoff
     commands:
@@ -19,7 +19,7 @@ buttons:
       - AirbusFBW/PushSPDSel
       - sim/autopilot/airspeed_down
       - sim/autopilot/airspeed_up
-  - index: knobCL
+  - index: e1
     name: FCU Heading
     type: encoder-onoff
     commands:
@@ -27,7 +27,7 @@ buttons:
       - AirbusFBW/PushHDGSel
       - sim/autopilot/heading_down
       - sim/autopilot/heading_up
-  - index: knobBL
+  - index: e2
     name: FCU Baro
     type: encoder-onoff
     commands:
@@ -35,7 +35,7 @@ buttons:
       - toliss_airbus/capt_baro_pull
       - sim/instruments/barometer_down
       - sim/instruments/barometer_up
-  - index: knobTR
+  - index: e3
     name: FCU Altitude
     type: encoder-onoff
     commands:
@@ -44,7 +44,7 @@ buttons:
       - sim/autopilot/altitude_down
       - sim/autopilot/altitude_up
     # - AirbusFBW/ALT100_1000
-  - index: knobCR
+  - index: e4
     name: FCU V Speed
     type: encoder-value
     dataref: sim/cockpit/autopilot/vertical_velocity
@@ -71,7 +71,7 @@ buttons:
   #     - AirbusFBW/PushVSSel
   #     - sim/autopilot/vertical_speed_down
   #     - sim/autopilot/vertical_speed_up
-  - index: knobBR
+  - index: e5
     name: FCU Unused
     type: none
     options: nostate

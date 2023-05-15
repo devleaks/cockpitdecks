@@ -75,18 +75,18 @@ class Page:
             if idx is None:
                 logger.error(f"load: page {self.name}: button has no index, ignoring {a}")
                 continue
-            if str(idx) not in self.deck.valid_indices():
-                logger.error(f"load: page {self.name}: button has invalid index '{idx}', ignoring {a}")
+            if idx not in self.deck.valid_indices():
+                logger.error(f"load: page {self.name}: button has invalid index '{idx}' (valid={self.deck.valid_indices()}), ignoring '{a}'")
                 continue
 
             # How the button will behave, it is does something
             bty = Button.guess_activation_type(a)
-            if bty is None or bty not in self.deck.valid_activations(str(idx)):
+            if bty is None or bty not in self.deck.valid_activations(idx):
                 logger.error(f"load: page {self.name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
                 continue
 
             # How the button will be represented, if it is
-            valid_representations = self.deck.valid_representations(str(idx))
+            valid_representations = self.deck.valid_representations(idx)
             bty = Button.guess_representation_type(a, valid_representations)
             if bty not in valid_representations:
                 logger.error(f"load: page {self.name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
@@ -163,18 +163,12 @@ class Page:
         for button in self.buttons.values():
             button.render()
             logger.debug(f"render: page {self.name}: button {button.name} rendered")
+
         if not self.fill_empty_keys:
             return
 
-        deck = self.deck
-        busy_keys  = [str(item) for item in self.buttons.keys()]
-        empty_keys = [str(item) for item in self.deck.valid_indices_with_image() if str(item) not in busy_keys]
-        for key in empty_keys:
-            icon = deck.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture, name=f"{self.name}:empty:{key}")
-            if icon is not None:
-                self.deck._send_key_image_to_device(key, icon)
-            else:
-                logger.warning(f"render: page {self.name}: {key}: no fill icon")
+        for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices()):
+            self.deck.fill_empty(key)
 
     def clean(self):
         """

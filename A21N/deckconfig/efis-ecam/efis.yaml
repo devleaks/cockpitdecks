@@ -266,7 +266,6 @@ buttons:
         - "ADF1"
         - "OFF"
         - "VOR1"
-      tick-space: 0
       tick-label-size: 30
       tick-label-font: DIN Bold
     options: 3way,horizontal
@@ -282,7 +281,6 @@ buttons:
         - "ADF2"
         - "OFF"
         - "VOR2"
-      tick-space: 0
       tick-label-size: 30
       tick-label-font: DIN Bold
     options: 3way,horizontal

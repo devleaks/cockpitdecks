@@ -30,3 +30,4 @@ roundings:
 slow-datarefs:
     sim/flightmodel/position/latitude: 1
     sim/flightmodel/position/longitude: 1
+# debug: cockpitdecks.deck

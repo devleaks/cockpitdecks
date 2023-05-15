@@ -152,7 +152,7 @@ class Streamdeck(DeckWithIcons):
                      },
                      deck=self)
         button0 = Button(config={
-                                    "index": 0,
+                                    "index": "0",
                                     "name": "X-Plane Map (default page)",
                                     "type": "push",
                                     "command": "sim/map/show_current",
@@ -163,40 +163,6 @@ class Streamdeck(DeckWithIcons):
         self.home_page = page0
         self.current_page = page0
         logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
-
-    def valid_indices_with_image(self):
-        return self.valid_indices()
-
-    def valid_indices(self):
-        key_rows, key_cols = self.device.key_layout()
-        numkeys = key_rows * key_cols
-        return [str(i) for i in range(numkeys)]
-
-    def valid_activations(self, index = None):
-        # only one type of button
-        valid_key_icon = ["push", "onoff", "updown", "longpress"]
-        return super().valid_activations() + valid_key_icon
-
-    def valid_representations(self, index = None):
-        # only one type of button
-        valid_key_icon = [
-            "none",
-            "icon",
-            "text",
-            "icon-color",
-            "multi-icons",
-            "multi-texts",
-            "icon-animate",
-            "annunciator",
-            "annunciator-animate",
-            "data",
-            "weather",
-            "switch",
-            "circular-switch",
-            "push-switch",
-            "ftg"
-        ]
-        return set(super().valid_representations() + valid_key_icon)
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
         if name is not None and name in self.icons.keys():

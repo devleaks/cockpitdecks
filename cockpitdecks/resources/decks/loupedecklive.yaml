@@ -7,12 +7,8 @@ buttons:
     - name: 0
       action: push
       view: image
-
-    - name: 11
-      action: push
-      view: image
       image: [90, 90, 0, 0]
-      # [ width, height, left, top ]
+      repeat: 12
     - name: left
       action: swipe
       view: image
@@ -25,16 +21,13 @@ buttons:
       action: swipe
       view: image
       image: [360, 270, 60, 0]
-    - name: TL
+    - name: 0
+      prefix: e
       action: encoder-push
       view: none
-    - name: TR
-      action: encoder-push
-      view: none
-    - name: b0
+      repeat: 6
+    - name: 0
+      prefix: b
       action: push
       view: colored-led
-
-    - name: b7
-      action: push
-      view: colored-led
+      repeat: 8

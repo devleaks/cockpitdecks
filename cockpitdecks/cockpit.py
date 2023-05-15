@@ -36,7 +36,7 @@ class Cockpit:
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
     def __init__(self):
-        self._debug = ROOT_DEBUG        # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
+        self._debug = ROOT_DEBUG.split(",")   # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
         self.xp = XPlaneUDP(self)
         self._config = None             # content of deckconfig/config.yaml
         self.name = "Cockpitdecks"
@@ -159,7 +159,7 @@ class Cockpit:
             l = logging.getLogger(name)
             if l is not None:
                 l.setLevel(logging.DEBUG)
-                l.warning(f"set_logging_level: {name} set to debug")
+                l.info(f"set_logging_level: {name} set to debug")
             else:
                 logger.warning(f"set_logging_level: logger {name} not found")
 
@@ -324,6 +324,9 @@ class Cockpit:
             logger.debug(f"load_defaults: no default config {fn}")
 
         # Load global defaults from resources/config.yaml file or use application default
+        self._debug = self.default_config.get("debug", ",".join(self._debug)).split(",")
+        self.set_logging_level(__name__)
+
         self.xp.set_roundings(self.default_config.get("roundings", {}))
         self.xp.set_slow_datarefs(self.default_config.get("slow-datarefs", {}))
 
@@ -428,7 +431,7 @@ class Cockpit:
                 self._config = config
 
                 # Logging level
-                self._debug = self._config.get("debug", "").split(",")  # array of classes to enable
+                self._debug = self._config.get("debug", ",".join(self._debug)).split(",")  # array of classes to enable
                 self.set_logging_level(__name__)
 
                 # Adjust some global defaults from aircraft config file
@@ -495,6 +498,7 @@ class Cockpit:
                         device = self.get_device(req_serial=serial, req_type=decktype)
                         if device is not None:
                             #
+                            deck_config["model"] = device.deck_type()
                             if serial is None:
                                 if deck_type_count[decktype] > 1:
                                     logger.warning(f"create_decks: deck type {decktype}: only one deck of that type but more than one configuration in config.yaml for decks of that type, ignoring")
