@@ -278,6 +278,7 @@ class WeatherIcon(DrawAnimation):
     DEFAULT_STATION = "EBBR"
 
     def __init__(self, config: dict, button: "Button"):
+        self._inited = False
         self.weather = config.get("weather")
         if self.weather is not None and type(self.weather) == dict:
             config["animation"] = config.get("weather")
@@ -305,6 +306,17 @@ class WeatherIcon(DrawAnimation):
         # Init
         self.update()
         self.anim_start()
+
+    def init(self):
+        if not self._inited:
+            icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+            self.station = Station.from_icao(icao)
+            self.metar = Metar(self.station.icao)
+            self.sun = Sun(self.station.latitude, self.station.longitude)
+            self.button._config["label"] = icao
+            self._last_updated = datetime.now()
+            self._inited = True
+            logger.debug(f"init: default station installed {icao}")
 
     def get_datarefs(self):
         return [
@@ -341,17 +353,17 @@ class WeatherIcon(DrawAnimation):
         lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
 
         if lat is None or lon is None:
-            logger.warning(f"get_station: no coordinates")
+            logger.warning(f"get_station: no coordinates ({self._inited})")
+            if self.station is None:
+                icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+                logger.warning(f"get_station: no station, getting default {icao}")
+                self._inited = True
+                return Station.from_icao(icao)
             return None
 
         logger.debug(f"get_station: closest station to lat={lat},lon={lon}")
         (nearest, coords) = Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
         logger.debug(f"get_station: nearest={nearest}")
-        if nearest is None:
-            logger.warning(f"get_station: no close station")
-            icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
-            self.station = Station.from_icao(icao)
-            logger.debug(f"get_station: default station {icao}")
         return nearest
 
     def update(self, force: bool = False) -> bool:

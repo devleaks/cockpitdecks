@@ -24,6 +24,11 @@ from .representation import DECK_REPRESENTATIONS, DEFAULT_REPRESENTATIONS
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+# Prevent aliasing
+# https://stackoverflow.com/questions/64716894/ruamel-yaml-disabling-alias-for-dumping
+import ruamel
+ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
+
 yaml = YAML()
 
 DECKS_FOLDER = "decks"
@@ -36,6 +41,7 @@ KW_BUTTONS = "buttons"
 KW_IMAGE = "image"
 KW_INCLUDES = "includes"
 KW_INDEX = "index"
+KW_INDEX_NUMRIC = "_index"
 KW_MODEL = "model"
 KW_NAME = "name"
 KW_NONE = "none"
@@ -62,7 +68,7 @@ class Deck(ABC):
 
         self.cockpit.set_logging_level(__name__)
 
-        self.set_default(config, cockpit)
+        self.set_defaults(config, cockpit)
 
         self.layout_config = {}
         self.pages = {}
@@ -104,8 +110,6 @@ class Deck(ABC):
 
         self.valid = True
 
-        self.read_definition()
-
     # #######################################
     # Deck Common Functions
     #
@@ -113,6 +117,7 @@ class Deck(ABC):
         if not self.valid:
             logger.warning(f"init: deck {self.name}: is invalid")
             return
+        self.read_definition()
         self.load()     # will load default page if no page found
         self.start()    # Some system may need to start before we can load a page
 
@@ -124,15 +129,16 @@ class Deck(ABC):
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER, dt + ".yaml")
         logger.debug(f"read_definition: {type(self).__name__}, {self.model}: {fn}")
         if not os.path.exists(fn):
-            logger.error(f"read_definition: no deck config {fn} for {type(self).__name__}")
+            logger.error(f"read_definition: no deck definition {fn} for {type(self).__name__}")
             return
 
         with open(fn, "r") as fp:
             self.deck_content = yaml.load(fp)
-            logger.debug(f"read_definition: loaded layout config {fn}")
+            logger.info(f"read_definition: loaded deck definition for {dt}")
+            logger.debug(f"read_definition: loaded deck definition {fn}")
 
         if self.deck_content is None:
-            logger.error(f"read_definition: no deck config for {type(self).__name__}")
+            logger.error(f"read_definition: no deck definition for {dt}")
             return
 
         cnt = 0
@@ -168,7 +174,7 @@ class Deck(ABC):
 
                     self._buttons[prefix + name] = {
                         KW_INDEX: prefix + name,
-                        "_index": 0,
+                        KW_INDEX_NUMRIC: 0,
                         KW_ACTION: button.get(KW_ACTION),
                         KW_VIEW: button.get(KW_VIEW),
                         KW_ACTIVATIONS: activation,
@@ -181,7 +187,7 @@ class Deck(ABC):
                         idx = str(i) if prefix is None else prefix + str(i)
                         self._buttons[idx] = {
                             KW_INDEX: idx,
-                            "_index": i,
+                            KW_INDEX_NUMRIC: i,
                             KW_ACTION: button.get(KW_ACTION),
                             KW_VIEW: button.get(KW_VIEW),
                             KW_ACTIVATIONS: activation,
@@ -189,9 +195,12 @@ class Deck(ABC):
                         }
                         if KW_IMAGE in button:
                             self._buttons[idx][KW_IMAGE] = button.get(KW_IMAGE)
+                        # else: don't set it, a sign that there is no image
             else:
                 logger.warning(f"read_definition: deck {self.name}: cannot proceed with {button} definition")
         logger.debug(f"read_definition: deck {self.name}: buttons: {self._buttons.keys()}..")
+        # with open(f"{dt}.out", "w") as fp:
+        #     yaml.dump(self._buttons, fp)
         self.valid_activations()        # will print debug
         self.valid_representations()    # will print debug
         logger.debug(f"read_definition: ..deck {self.name} done")
@@ -208,7 +217,7 @@ class Deck(ABC):
                 logger.warning(f"get_button_value: not my deck {a[0]} ({self.name})")
         return None
 
-    def set_default(self, config: dict, base):
+    def set_defaults(self, config: dict, base):
         """
         Loads a layout global configuration parameters.
 
@@ -257,7 +266,7 @@ class Deck(ABC):
                 self.layout_config = yaml.load(fp)
                 logger.debug(f"load_layout_config: loaded layout config {fn}")
             if self.layout_config is not None and type(self.layout_config) == dict:
-                self.set_default(self.layout_config, self)
+                self.set_defaults(self.layout_config, self)
         else:
             logger.debug(f"load_layout_config: no layout config file")
 
@@ -290,7 +299,7 @@ class Deck(ABC):
         for p in pages:
             if p == CONFIG_FILE:
                 continue
-            elif p.endswith(".yaml") or p.endswith(".yml"):
+            elif p.endswith(".yaml") or p.endswith(".yml"):  # does not work if case sensitive, no YAML or Yaml or YML...
                 fn = os.path.join(dn, p)
                 # if os.path.exists(fn):  # we know the file should exists...
                 with open(fn, "r") as fp:
@@ -424,6 +433,24 @@ class Deck(ABC):
         """
         pass
 
+    # #######################################
+    # Deck Specific Functions : Activation
+    #
+    def get_index_prefix(self, index):
+        b = self._buttons.get(index)
+        if b is not None:
+            return b.get(KW_PREFIX)
+        logger.warning(f"get_index_prefix: deck {self.name}: no button index {index}")
+        return None
+
+    def get_index_numeric(self, index):
+        # Useful to just get the int value of index
+        b = self._buttons.get(index)
+        if b is not None:
+            return b.get(KW_INDEX_NUMRIC)
+        logger.warning(f"get_index_prefix: deck {self.name}: no button index {index}")
+        return None
+
     def valid_indices(self):
         return list(self._buttons.keys())
 
@@ -530,6 +557,7 @@ class DeckWithIcons(Deck):
         if not self.valid:
             logger.warning(f"init: deck {self.name}: is invalid")
             return
+        self.read_definition()
         self.load_icons()
         self.load()     # will load default page if no page found
         self.start()    # Some system may need to start before we can load a page
@@ -539,6 +567,13 @@ class DeckWithIcons(Deck):
         Return device or device element to use for PIL.
         """
         return self.device
+
+    def get_index_image_size(self, index):
+        b = self._buttons.get(index)
+        if b is not None:
+            return b.get(KW_IMAGE)
+        logger.warning(f"get_index_image_size: deck {self.name}: no button index {index}")
+        return None
 
     def load_icons(self):
         """

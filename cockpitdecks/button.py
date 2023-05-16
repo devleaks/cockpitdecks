@@ -55,6 +55,8 @@ class Button:
         self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
+        self._definition = self.deck._buttons.get(self.index)  # kind of meta data capabilties of button
+
         self.name = config.get("name", str(self.index))
         self.num_index = None
         if type(self.index) == str:

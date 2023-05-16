@@ -75,7 +75,9 @@ class Activation:
             self.activations_count[s] = 1
         if state:
             self.activation_count = self.activation_count + 1
-            self.last_activated = datetime.now().timestamp()
+            now = datetime.now().timestamp()
+            self._fast = now - self.last_activated  # time between previous activation and this one
+            self.last_activated = now
             logger.debug(f"activate: button {self.button_name()}: {type(self).__name__} activated")
             self.pressed = True
 
@@ -94,6 +96,15 @@ class Activation:
                 return
 
         # logger.debug(f"activate: {type(self).__name__} activated ({state}, {self.activation_count})")
+
+    def is_pressed(self):
+        return self.pressed
+
+    def long_pressed(self, duration: float = 2) -> bool:
+        return self.duration > duration
+
+    def fast(self, duration: float = 0.1) -> bool:
+        return self._fast < duration
 
     def get_datarefs(self) -> list:
         if self.writable_dataref is not None:
@@ -125,9 +136,6 @@ class Activation:
     def view(self):
         if self._view is not None:
             self.button.xp.commandOnce(self._view)
-
-    def is_pressed(self):
-        return self.pressed
 
     def is_valid(self):
         if self.button is None:
