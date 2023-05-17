@@ -353,11 +353,10 @@ class WeatherIcon(DrawAnimation):
         lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
 
         if lat is None or lon is None:
-            logger.warning(f"get_station: no coordinates ({self._inited})")
-            if self.station is None:
+            logger.warning(f"get_station: no coordinates")
+            if self.station is None:  # If no station, attempt to suggest the default one if we find it
                 icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
                 logger.warning(f"get_station: no station, getting default {icao}")
-                self._inited = True
                 return Station.from_icao(icao)
             return None
 
@@ -381,8 +380,9 @@ class WeatherIcon(DrawAnimation):
             self._last_updated = None
         new = self.get_station()
 
-        if new is None:  # no station, we leave it as it is
-            return updated
+        if new is None:
+            if self.station is None:
+                return updated   # no new station, no existing station, we leave it as it is
 
         if self.station is None:
             try:
@@ -396,7 +396,7 @@ class WeatherIcon(DrawAnimation):
             except:
                 self.metar = None
                 logger.warning(f"update: new station {new.icao}: Metar not created", exc_info=True)
-        elif new.icao != self.station.icao:
+        elif new is not None and new.icao != self.station.icao:
             try:
                 self.metar = Metar(self.station.icao)
                 self.station = new
@@ -442,6 +442,7 @@ class WeatherIcon(DrawAnimation):
                 self.button.xp.write_dataref(dataref="data:weather:dew_point", value=self.metar.data.dewpoint.value, vtype='float')
             self.weather_icon = self.selectWeatherIcon()
             logger.debug(f"update: Metar updated for {self.station.icao}")
+
         return updated
 
     def get_image_for_icon(self):

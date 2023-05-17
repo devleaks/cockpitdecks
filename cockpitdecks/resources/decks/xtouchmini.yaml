@@ -20,5 +20,5 @@ buttons:
       action: push
       view: led
     - name: slider
-      action: slider
+      action: cursor
       view: none

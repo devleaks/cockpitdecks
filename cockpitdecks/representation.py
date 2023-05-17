@@ -10,7 +10,17 @@ from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnima
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-
+# ###############################
+# format is representation: Classname
+#
+# - index: b2
+#   name: Popup ND1
+#   type: push
+#   colored-led: (255, 128, 0)         <--------
+#   label: ND1
+#   command: AirbusFBW/PopUpND1
+#   dataref: AirbusFBW/PopUpStateArray[4]
+#
 REPRESENTATIONS = {
     "none": Representation,
     "icon": Icon,
@@ -38,7 +48,6 @@ DEFAULT_REPRESENTATIONS = ["none"]
 # ###############################
 # OPTIONAL REPRESENTATIONS
 #
-#
 # Will only load if AVWX is installed
 try:
     from .button_ext import WeatherIcon
@@ -52,7 +61,14 @@ except ImportError:
 # DECK DISPLAY MAP
 #
 #
-# This estabishes the link between deck capabilities and Representations
+# This estabishes the link between deck capabilities (view) and Representations
+#
+# - name: 0
+#   prefix: e
+#   action: push
+#   view: image         <--------
+#   image: [90, 90]
+#   repeat: 6
 #
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
 drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg"]
