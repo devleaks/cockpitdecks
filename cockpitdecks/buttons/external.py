@@ -15,11 +15,11 @@ from suntime import Sun
 
 from PIL import Image, ImageDraw
 
-from .constant import ICON_SIZE
-from .resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
-from .color import convert_color, light_off
-from .button_draw import DrawBase, DrawAnimation
-from .button_annunciator import TRANSPARENT_PNG_COLOR
+from cockpitdecks import ICON_SIZE
+from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
+from cockpitdecks.resources.color import convert_color, light_off
+from .draw import DrawBase, DrawAnimation
+from .annunciator import TRANSPARENT_PNG_COLOR
 
 
 logger = logging.getLogger(__name__)

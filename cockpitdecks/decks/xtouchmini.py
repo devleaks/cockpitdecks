@@ -6,12 +6,12 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks.constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
-from cockpitdecks.color import is_integer
+from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from cockpitdecks.resources.color import is_integer
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
-from cockpitdecks.button_representation import LED, MultiLEDs
+from cockpitdecks.buttons.representation import LED, MultiLEDs
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

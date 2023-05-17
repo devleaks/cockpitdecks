@@ -10,7 +10,7 @@ import logging
 import time
 import datetime
 
-from .constant import SPAM_LEVEL
+from cockpitdecks import SPAM_LEVEL
 from .xplane import XPlane, Dataref, DATA_PREFIX
 from .button import Button
 

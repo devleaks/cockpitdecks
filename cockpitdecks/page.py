@@ -2,8 +2,8 @@
 #
 import logging
 
-from .constant import ID_SEP, ANNUNCIATOR_STYLES
-from .color import convert_color
+from cockpitdecks import ID_SEP, ANNUNCIATOR_STYLES
+from cockpitdecks.resources.color import convert_color
 from .button import Button
 
 logger = logging.getLogger(__name__)

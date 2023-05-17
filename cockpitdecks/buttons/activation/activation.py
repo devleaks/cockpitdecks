@@ -6,8 +6,8 @@ import threading
 
 from datetime import datetime
 
-#from .constant import SPAM
-from .color import is_integer
+#from cockpitdecks import SPAM
+from cockpitdecks.resources.color import is_integer
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)

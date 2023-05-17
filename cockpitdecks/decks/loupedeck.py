@@ -9,12 +9,12 @@ from PIL import Image, ImageOps
 
 from Loupedeck.ImageHelpers import PILHelper
 
-from cockpitdecks.constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
-from cockpitdecks.color import convert_color, is_integer, DEFAULT_COLOR
+from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
+from cockpitdecks.resources.color import convert_color, is_integer, DEFAULT_COLOR
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
-from cockpitdecks.button_representation import Icon, ColoredLED  # valid representations for this type of deck
+from cockpitdecks.buttons.representation import Icon, ColoredLED  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

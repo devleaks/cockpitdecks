@@ -13,13 +13,13 @@ from functools import reduce
 from PIL import Image, ImageDraw, ImageOps
 from ruamel.yaml import YAML
 
-from .constant import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from .constant import ID_SEP, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
-from .color import convert_color
+from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
+from cockpitdecks import ID_SEP, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
+from cockpitdecks.resources.color import convert_color
 from .page import Page
 from .button import Button
-from .activation import DECK_ACTIVATIONS, DEFAULT_ACTIVATIONS
-from .representation import DECK_REPRESENTATIONS, DEFAULT_REPRESENTATIONS
+from cockpitdecks.buttons.activation import DECK_ACTIVATIONS, DEFAULT_ACTIVATIONS
+from cockpitdecks.buttons.representation import DECK_REPRESENTATIONS, DEFAULT_REPRESENTATIONS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -237,6 +237,7 @@ class Deck(ABC):
         self.default_annun_color = config.get("default-annunciator-color", base.default_annun_color)
         self.default_annun_color = convert_color(self.default_annun_color)
         self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)

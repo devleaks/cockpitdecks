@@ -15,8 +15,8 @@ from ruamel.yaml import YAML
 
 from PIL import ImageDraw, ImageFont
 
-from .color import convert_color, is_integer, has_ext, add_ext
-from .constant import KW_FORMULA, ICON_SIZE
+from cockpitdecks.resources.color import convert_color, is_integer, has_ext, add_ext
+from cockpitdecks import KW_FORMULA, ICON_SIZE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -909,8 +909,8 @@ class MultiLEDs(Representation):
 #
 # "Icon" Buttons that are dynamically drawn
 #
-from .button_annunciator import Annunciator, AnnunciatorAnimate
-from .button_draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
+from cockpitdecks.buttons.annunciator import Annunciator, AnnunciatorAnimate
+from cockpitdecks.buttons.draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 
 REPRESENTATIONS = {
     "none": Representation,

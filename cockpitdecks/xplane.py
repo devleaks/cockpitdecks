@@ -4,7 +4,7 @@ import threading
 import logging
 import time
 
-from .constant import SPAM_LEVEL
+from cockpitdecks import SPAM_LEVEL
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)

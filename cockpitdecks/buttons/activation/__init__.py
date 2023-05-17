@@ -1,11 +1,11 @@
 """
 Button action and activation abstraction
 """
-from .button_activation import Activation
-from .button_activation import LoadPage, Reload, Inspect, Stop
-from .button_activation import Push, Longpress, OnOff, UpDown
-from .button_activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue
-from .button_activation import Slider, Swipe
+from .activation import Activation
+from .activation import LoadPage, Reload, Inspect, Stop
+from .activation import Push, Longpress, OnOff, UpDown
+from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue
+from .activation import Slider, Swipe
 
 # ###############################
 # format is activation: Classname

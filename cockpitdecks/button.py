@@ -12,10 +12,10 @@ import sys
 from datetime import datetime
 from ruamel.yaml import YAML
 
-from .activation import ACTIVATIONS
-from .representation import REPRESENTATIONS, Annunciator
+from .buttons.activation import ACTIVATIONS
+from .buttons.representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
-from .constant import ID_SEP, SPAM_LEVEL, KW_FORMULA
+from cockpitdecks import ID_SEP, SPAM_LEVEL, KW_FORMULA
 from .rpc import RPC
 
 from .resources.iconfonts import ICON_FONTS

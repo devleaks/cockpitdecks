@@ -9,10 +9,10 @@ from math import sqrt
 
 from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
-from .constant import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
-from .color import convert_color, light_off
-from .rpc import RPC
-from .button_representation import Icon
+from cockpitdecks import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
+from cockpitdecks.resources.color import convert_color, light_off
+from cockpitdecks.rpc import RPC
+from .representation.representation import Icon  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

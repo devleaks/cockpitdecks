@@ -10,12 +10,12 @@ from enum import Enum
 
 from PIL import Image, ImageDraw
 
-from .constant import ICON_SIZE, DEFAULT_LABEL_FONT
-from .resources.iconfonts import ICON_FONTS
+from cockpitdecks import ICON_SIZE, DEFAULT_LABEL_FONT
+from cockpitdecks.resources.iconfonts import ICON_FONTS
 
-from .color import convert_color, light_off
-from .button_representation import Icon
-from .button_annunciator import TRANSPARENT_PNG_COLOR
+from cockpitdecks.resources.color import convert_color, light_off
+from .representation.representation import Icon  # explicit Icon from file to avoid circular import
+from .annunciator import TRANSPARENT_PNG_COLOR
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
