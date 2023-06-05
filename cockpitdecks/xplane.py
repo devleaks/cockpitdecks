@@ -3,6 +3,7 @@
 import threading
 import logging
 import time
+from abc import ABC, abstractmethod
 
 from cockpitdecks import SPAM_LEVEL
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
-DATA_PREFIX = "data:"
+DATA_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
 
 class Dataref:
 
@@ -67,6 +68,17 @@ class Dataref:
                 self.length = self.index + 1  # at least that many values
             if self.index >= self.length:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
+
+    @staticmethod
+    def is_internal_dataref(path):
+        return path.startswith(DATA_PREFIX)
+
+    @staticmethod
+    def mk_internal_dataref(path):
+        return DATA_PREFIX + path
+
+    def is_internal(self):
+        return self.path.startswith(DATA_PREFIX)
 
     def set_round(self, rounding):
         self.round = rounding
@@ -128,7 +140,7 @@ class Dataref:
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 
-class XPlane:
+class XPlane(ABC):
     """
     Abstract class for execution of operations in X-Plane
     """
@@ -241,20 +253,25 @@ class XPlane:
         self.current_values = {}
         logger.debug(f"remove_all_datarefs: ..removed")
 
+    @abstractmethod
     def start(self):
-        logger.debug(f"start: not implemented")
+        pass
 
+    @abstractmethod
     def terminate(self):
-        logger.debug(f"terminate: not implemented")
+        pass
 
     # ################################
     # X-Plane Interface
     #
+    @abstractmethod
     def commandOnce(self, command: str):
-        logger.debug(f"commandOnce: not implemented")
+        pass
 
+    @abstractmethod
     def commandBegin(self, command: str):
-        logger.debug(f"commandBegin: not implemented")
+        pass
 
+    @abstractmethod
     def commandEnd(self, command: str):
-        logger.debug(f"commandEnd: not implemented")
+        pass

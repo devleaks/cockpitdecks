@@ -84,6 +84,7 @@ buttons:
     type: none
     label: "Weather"
     weather:
+      # station: OTHH
       weather-font: B612
   - index: 7
     name: up
@@ -209,11 +210,6 @@ buttons:
     text: ${data:xtmslider}
     text-format: "{:4.0f}"
     initial-value: 0
-  - index: 23
-    name: C3000
-    type: page
-    page: c3000
-    text: C3000
 # AirbusFBW/OHPLightsATA49
 # ### LINE 4 ### 24-31 ######################################################
   - index: 24

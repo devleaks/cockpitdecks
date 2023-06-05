@@ -9,17 +9,13 @@ from math import sqrt
 
 from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
-from cockpitdecks import KW_FORMULA, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
+from cockpitdecks import KW, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
 from cockpitdecks.resources.color import convert_color, light_off
 from cockpitdecks.rpc import RPC
 from .representation.representation import Icon  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-# Attribute keybords
-KW_ANNUNCIATOR_MODEL = "model"
-KW_DATAREF = "dataref"
 
 # Local default values
 ANNUNCIATOR_DEFAULT_MODEL = "A"
@@ -33,17 +29,17 @@ DEFAULT_COLOR = (128, 128, 128)
 DEFAULT_COLOR_NAME = "grey"
 
 class GUARD_TYPES(Enum):
-    COVER = "cover"
-    GRID = "grid"
+    COVER = "cover"         # Full filled cover over the button
+    GRID = "grid"           # Plastic grid over the button
 
 
 class ANNUNCIATOR_LED(Enum):
-    BARS = "bars"
-    BLOCK = "block"
-    DEFAULT = "block"
-    DOT = "dot"
-    LED = "led"
-    LGEAR = "lgear"
+    BARS = "bars"           # Three (or more) horizontal bars
+    BLOCK = "block"         # Single rectangular led
+    DEFAULT = "block"       # Single rectangular led
+    DOT = "dot"             # Circular dot
+    LED = "led"             # Single rectangular led
+    LGEAR = "lgear"         # Triangular (hollow, downward pointing) shape used for landing gear representation
 
 class AnnunciatorPart:
 
@@ -118,14 +114,14 @@ class AnnunciatorPart:
             return True
 
         ret = None
-        if KW_FORMULA in self._config:
-            calc = self._config[KW_FORMULA]
+        if KW.FORMULA.value in self._config:
+            calc = self._config[KW.FORMULA.value]
             expr = self.annunciator.button.substitute_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
-        elif KW_DATAREF in self._config:
-            dataref = self._config[KW_DATAREF]
+        elif KW.DATAREF.value in self._config:
+            dataref = self._config[KW.DATAREF.value]
             ret = self.annunciator.button.get_dataref_value(dataref)
             logger.debug(f"get_current_value: button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
         else:
@@ -339,7 +335,7 @@ class Annunciator(Icon):
                 self.annunciator_parts = arr
                 logger.debug(f"__init__: button {self.button.name}: annunciator parts normalized ({list(self.annunciator_parts.keys())})")
             else:
-                self.annunciator[KW_ANNUNCIATOR_MODEL] = ANNUNCIATOR_DEFAULT_MODEL
+                self.annunciator[KW.ANNUNCIATOR_MODEL.value] = ANNUNCIATOR_DEFAULT_MODEL
                 self.model = ANNUNCIATOR_DEFAULT_MODEL
                 arr[ANNUNCIATOR_DEFAULT_MODEL_PART] = AnnunciatorPart(name=ANNUNCIATOR_DEFAULT_MODEL_PART, config=self.annunciator, annunciator=self)
                 self.annunciator_parts = arr
@@ -351,7 +347,7 @@ class Annunciator(Icon):
             self.model = ctrl[0]
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        for a in [KW_DATAREF, KW_FORMULA]:
+        for a in [KW.DATAREF.value, KW.FORMULA.value]:
             if a in config:
                 logger.warning(f"__init__: button {self.button.name}: annunciator parent button has property {a} which is ignored")
 
@@ -385,7 +381,7 @@ class Annunciator(Icon):
         Build annunciator part index list
         """
         if self._part_iterator is None:
-            t = self.annunciator.get(KW_ANNUNCIATOR_MODEL, ANNUNCIATOR_DEFAULT_MODEL)
+            t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
             if t not in "ABCDEF":
                 logger.warning(f"part_iterator: button {self.button.name}: invalid annunciator type {t}")
                 return []
@@ -536,7 +532,7 @@ class Annunciator(Icon):
 
         # PART 4: Guard
         if self.button.guard is not None:
-            cover = self.button.guard.get(KW_ANNUNCIATOR_MODEL, GUARD_TYPES.COVER.value)
+            cover = self.button.guard.get(KW.ANNUNCIATOR_MODEL.value, GUARD_TYPES.COVER.value)
             guard_color = self.button.guard.get("color", "red")
             guard_color = convert_color(guard_color)
             sw = self.button.guard.get("grid-width", 16)
@@ -570,7 +566,7 @@ class Annunciator(Icon):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get(KW_ANNUNCIATOR_MODEL, ANNUNCIATOR_DEFAULT_MODEL)
+        t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
         a = [
             f"The representation displays an annunciator of type {t}."
         ]
@@ -669,7 +665,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get(KW_ANNUNCIATOR_MODEL, ANNUNCIATOR_DEFAULT_MODEL)
+        t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
         a = [
             f"The representation displays an annunciator of type {t}.",
             f"This annunciator is blinking every {self.speed} seconds when it is ON."

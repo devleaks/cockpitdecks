@@ -18,13 +18,15 @@ from PIL import Image, ImageDraw
 from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
 from cockpitdecks.resources.color import convert_color, light_off
+from cockpitdecks.xplane import Dataref
+
 from .draw import DrawBase, DrawAnimation
 from .annunciator import TRANSPARENT_PNG_COLOR
 
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class WI:
@@ -279,8 +281,9 @@ class WeatherIcon(DrawAnimation):
 
     def __init__(self, config: dict, button: "Button"):
         self._inited = False
+        self._moved = False    # True if we get Metar for location at (lat, lon), False if Metar for default station
         self.weather = config.get("weather")
-        if self.weather is not None and type(self.weather) == dict:
+        if self.weather is not None and isinstance(self.weather, dict):
             config["animation"] = config.get("weather")
         else:
             config["animation"] = {}
@@ -318,15 +321,22 @@ class WeatherIcon(DrawAnimation):
             self._inited = True
             logger.debug(f"init: default station installed {icao}")
 
+    def at_default_station(self):
+        if self.weather is not None and self.station is not None:
+            logger.debug(f"at_default_station: default station installed {self.station.icao}, {self.weather.get('station', WeatherIcon.DEFAULT_STATION)}, {self._moved}")
+            return not self._moved and self.station.icao == self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+        logger.debug(f"at_default_station: True")
+        return True
+
     def get_datarefs(self):
         return [
             "sim/flightmodel/position/latitude",
             "sim/flightmodel/position/longitude",
             "sim/cockpit2/clock_timer/local_time_hours",
-            "data:weather:pressure",
-            "data:weather:wind_speed",
-            "data:weather:temperature",
-            "data:weather:dew_point"
+            Dataref.mk_internal_dataref("weather:pressure"),
+            Dataref.mk_internal_dataref("weather:wind_speed"),
+            Dataref.mk_internal_dataref("weather:temperature"),
+            Dataref.mk_internal_dataref("weather:dew_point")
         ]
 
     def should_run(self) -> bool:
@@ -341,7 +351,7 @@ class WeatherIcon(DrawAnimation):
         return super().animate()
 
     def get_station(self):
-        if self._last_updated is not None:
+        if self._last_updated is not None and not self.at_default_station():
             now = datetime.now()
             diff = now.timestamp() - self._last_updated.timestamp()
             if diff < WeatherIcon.MIN_UPDATE:
@@ -349,6 +359,7 @@ class WeatherIcon(DrawAnimation):
                 return None
             logger.debug(f"get_station: updated  {diff} secs. ago")
 
+        # If we are at the default station, we check where we are to see if we moved.
         lat = self.button.get_dataref_value("sim/flightmodel/position/latitude")
         lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
 
@@ -362,6 +373,7 @@ class WeatherIcon(DrawAnimation):
 
         logger.debug(f"get_station: closest station to lat={lat},lon={lon}")
         (nearest, coords) = Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
+        self._moved = True
         logger.debug(f"get_station: nearest={nearest}")
         return nearest
 
@@ -436,10 +448,10 @@ class WeatherIcon(DrawAnimation):
         if updated:
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
             if self.metar is not None and self.metar.data is not None:
-                self.button.xp.write_dataref(dataref="data:weather:pressure", value=self.metar.data.altimeter.value, vtype='float')
-                self.button.xp.write_dataref(dataref="data:weather:wind_speed", value=self.metar.data.wind_speed.value, vtype='float')
-                self.button.xp.write_dataref(dataref="data:weather:temperature", value=self.metar.data.temperature.value, vtype='float')
-                self.button.xp.write_dataref(dataref="data:weather:dew_point", value=self.metar.data.dewpoint.value, vtype='float')
+                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
+                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
+                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
+                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
             self.weather_icon = self.selectWeatherIcon()
             logger.debug(f"update: Metar updated for {self.station.icao}")
 

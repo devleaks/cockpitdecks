@@ -6,7 +6,7 @@ __DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-
 __LICENSE__      = "MIT"
 __LICENSEURL__   = "https://mit-license.org"
 __COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.2.0"
+__version__      = "7.2.1"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__    = "https://github.com/devleaks/cockpitdecks"
@@ -56,9 +56,6 @@ COCKPIT_TEXTURE = None
 
 DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
 
-# Attribute keybords
-KW_FORMULA = "formula"
-
 # Debug, internals
 SPAM_LEVEL = 15
 SPAM = "SPAM"
@@ -69,5 +66,31 @@ class ANNUNCIATOR_STYLES(Enum):
     VIVISUN = "v"         # v(ivisun): bright, sharp.
 
 DEFAULT_ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.KORRY
+
+# deckconfig attribute keywords
+class KW(Enum):
+    ACTION = "action"
+    ACTIVATIONS = "activations"
+    ANNUNCIATOR_MODEL = "model"
+    BACKPAGE = "back"
+    BUTTONS = "buttons"
+    COLORED_LED = "colored-led"
+    DATAREF = "dataref"
+    FORMULA = "formula"
+    FRAME = "frame"
+    GUARD = "guard"
+    IMAGE = "image"
+    INCLUDES = "includes"
+    INDEX = "index"
+    INDEX_NUMERIC = "_index"
+    MANAGED = "managed"
+    MODEL = "model"
+    NAME = "name"
+    NONE = "none"
+    PREFIX = "prefix"
+    REPEAT = "repeat"
+    REPRESENTATIONS = "representations"
+    VIEW = "view"
+
 
 from .cockpit import Cockpit

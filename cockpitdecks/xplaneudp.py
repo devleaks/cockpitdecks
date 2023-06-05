@@ -11,7 +11,7 @@ import time
 import datetime
 
 from cockpitdecks import SPAM_LEVEL
-from .xplane import XPlane, Dataref, DATA_PREFIX
+from .xplane import XPlane, Dataref
 from .button import Button
 
 logger = logging.getLogger(__name__)
@@ -282,7 +282,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         '''
-        if dataref.startswith(DATA_PREFIX):
+        if Dataref.is_internal_dataref(dataref):
             d = self.get_dataref(dataref)
             d.update_value(new_value=value, cascade=True)
             logger.debug(f"write_dataref: written local dataref ({dataref}={value})")
@@ -318,7 +318,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         '''
-        if dataref.startswith(DATA_PREFIX):
+        if Dataref.is_internal_dataref(dataref):
             logger.debug(f"add_dataref_to_monitor: {dataref} is local and does not need X-Plane monitoring")
             return False
 
@@ -458,7 +458,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         self.execute_command(command+"/end")
 
     def remove_local_datarefs(self, datarefs) -> list:
-        return list(filter(lambda d: not d.startswith(DATA_PREFIX), datarefs))
+        return list(filter(lambda d: not Dataref.is_internal_dataref(d), datarefs))
 
     def clean_datarefs_to_monitor(self):
         if not self.connected:
@@ -478,7 +478,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         super().add_datarefs_to_monitor(datarefs)
         prnt = []
         for d in datarefs.values():
-            if d.path.startswith(DATA_PREFIX):
+            if d.is_internal():
                 logger.debug(f"add_datarefs_to_monitor: local dataref {d.path} is not monitored")
                 continue
             if self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT)):
@@ -493,7 +493,7 @@ class XPlaneUDP(XPlane, XPlaneBeacon):
         # Add those to monitor
         prnt = []
         for d in datarefs.values():
-            if d.path.startswith(DATA_PREFIX):
+            if d.is_internal():
                 logger.debug(f"remove_datarefs_to_monitor: local dataref {d.path} is not monitored")
                 continue
             if d.path in self.datarefs_to_monitor.keys():

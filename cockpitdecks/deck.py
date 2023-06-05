@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageOps
 from ruamel.yaml import YAML
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import ID_SEP, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
+from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
 from cockpitdecks.resources.color import convert_color
 from .page import Page
 from .button import Button
@@ -33,23 +33,6 @@ yaml = YAML()
 
 DECKS_FOLDER = "decks"
 
-# Attribute keybords
-KW_ACTION = "action"
-KW_ACTIVATIONS = "activations"
-KW_BACKPAGE = "back"
-KW_BUTTONS = "buttons"
-KW_IMAGE = "image"
-KW_INCLUDES = "includes"
-KW_INDEX = "index"
-KW_INDEX_NUMRIC = "_index"
-KW_MODEL = "model"
-KW_NAME = "name"
-KW_NONE = "none"
-KW_PREFIX = "prefix"
-KW_REPEAT = "repeat"
-KW_REPRESENTATIONS = "representations"
-KW_VIEW = "view"
-
 class Deck(ABC):
     """
     Loads the configuration of a Deck.
@@ -61,7 +44,7 @@ class Deck(ABC):
         self.name = name
         self.cockpit = cockpit
         self.device = device
-        self.model = config.get(KW_MODEL)
+        self.model = config.get(KW.MODEL.value)
         self._buttons = {}
         self._activations = set()
         self._representations = set()
@@ -142,28 +125,28 @@ class Deck(ABC):
             return
 
         cnt = 0
-        for button in self.deck_content[KW_BUTTONS]:
-            name = button.get(KW_NAME)
-            repeat = button.get(KW_REPEAT)
-            prefix = button.get(KW_PREFIX, "")
+        for button in self.deck_content[KW.BUTTONS.value]:
+            name = button.get(KW.NAME.value)
+            repeat = button.get(KW.REPEAT.value)
+            prefix = button.get(KW.PREFIX.value, "")
 
-            action = button.get(KW_ACTION)
-            activation = [KW_NONE]
-            if action is None or action.lower() == KW_NONE:
-                action = KW_NONE
+            action = button.get(KW.ACTION.value)
+            activation = [KW.NONE.value]
+            if action is None or action.lower() == KW.NONE.value:
+                action = KW.NONE.value
             else:
                 activation = DECK_ACTIVATIONS.get(action)
                 if activation is None:
-                    logger.warning(f"read_definition: deck {self.name}: action {button.get(KW_ACTION)} not found in DECK_ACTIVATIONS")
+                    logger.warning(f"read_definition: deck {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
 
-            view = button.get(KW_VIEW)
-            r = [KW_NONE]
-            if view is None or view.lower() == KW_NONE:
-                view = KW_NONE
+            view = button.get(KW.VIEW.value)
+            r = [KW.NONE.value]
+            if view is None or view.lower() == KW.NONE.value:
+                view = KW.NONE.value
             else:
                 representation = DECK_REPRESENTATIONS.get(view)
                 if representation is None:
-                    logger.warning(f"read_definition: deck {self.name}: view {button.get(KW_VIEW)} not found in DECK_REPRESENTATIONS")
+                    logger.warning(f"read_definition: deck {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS")
 
             if activation is not None and representation is not None:
                 if repeat is None:
@@ -173,28 +156,28 @@ class Deck(ABC):
                         logger.warning(f"read_definition: deck {self.name}: button has no name, using default {name}")
 
                     self._buttons[prefix + name] = {
-                        KW_INDEX: prefix + name,
-                        KW_INDEX_NUMRIC: 0,
-                        KW_ACTION: button.get(KW_ACTION),
-                        KW_VIEW: button.get(KW_VIEW),
-                        KW_ACTIVATIONS: activation,
-                        KW_REPRESENTATIONS: representation
+                        KW.INDEX.value: prefix + name,
+                        KW.INDEX_NUMERIC.value: 0,
+                        KW.ACTION.value: button.get(KW.ACTION.value),
+                        KW.VIEW.value: button.get(KW.VIEW.value),
+                        KW.ACTIVATIONS.value: activation,
+                        KW.REPRESENTATIONS.value: representation
                     }
-                    if KW_IMAGE in button:
-                        self._buttons[prefix + str(i)][KW_IMAGE] = button.get(KW_IMAGE)
+                    if KW.IMAGE.value in button:
+                        self._buttons[prefix + str(i)][KW.IMAGE.value] = button.get(KW.IMAGE.value)
                 else:  # name is ignored
                     for i in range(repeat):
                         idx = str(i) if prefix is None else prefix + str(i)
                         self._buttons[idx] = {
-                            KW_INDEX: idx,
-                            KW_INDEX_NUMRIC: i,
-                            KW_ACTION: button.get(KW_ACTION),
-                            KW_VIEW: button.get(KW_VIEW),
-                            KW_ACTIVATIONS: activation,
-                            KW_REPRESENTATIONS: representation
+                            KW.INDEX.value: idx,
+                            KW.INDEX_NUMERIC.value: i,
+                            KW.ACTION.value: button.get(KW.ACTION.value),
+                            KW.VIEW.value: button.get(KW.VIEW.value),
+                            KW.ACTIVATIONS.value: activation,
+                            KW.REPRESENTATIONS.value: representation
                         }
-                        if KW_IMAGE in button:
-                            self._buttons[idx][KW_IMAGE] = button.get(KW_IMAGE)
+                        if KW.IMAGE.value in button:
+                            self._buttons[idx][KW.IMAGE.value] = button.get(KW.IMAGE.value)
                         # else: don't set it, a sign that there is no image
             else:
                 logger.warning(f"read_definition: deck {self.name}: cannot proceed with {button} definition")
@@ -314,8 +297,8 @@ class Deck(ABC):
                         logger.warning(f"load: page {name}: duplicate name, ignored")
                         continue
 
-                    if not KW_BUTTONS in page_config:
-                        logger.error(f"load: {name} has no button definition '{KW_BUTTONS}', ignoring")
+                    if not KW.BUTTONS.value in page_config:
+                        logger.error(f"load: {name} has no button definition '{KW.BUTTONS.value}', ignoring")
                         continue
 
                     logger.debug(f"load: loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
@@ -324,12 +307,12 @@ class Deck(ABC):
                     self.pages[name] = this_page
 
                     # Page buttons
-                    this_page.load_buttons(page_config[KW_BUTTONS])
+                    this_page.load_buttons(page_config[KW.BUTTONS.value])
 
                     # Page includes
-                    if KW_INCLUDES in page_config:
-                        includes = page_config[KW_INCLUDES]
-                        if type(page_config[KW_INCLUDES]) == str:  # just one file
+                    if KW.INCLUDES.value in page_config:
+                        includes = page_config[KW.INCLUDES.value]
+                        if type(page_config[KW.INCLUDES.value]) == str:  # just one file
                             includes = includes.split(",")
                         logger.debug(f"load: deck {self.name}: page {name} includes {includes}..")
                         ipb = 0
@@ -339,9 +322,9 @@ class Deck(ABC):
                                 with open(fni, "r") as fpi:
                                     inc_config = yaml.load(fpi)
                                     # how to merge? for now, just merge buttons
-                                    if KW_BUTTONS in inc_config:
+                                    if KW.BUTTONS.value in inc_config:
                                         before = len(this_page.buttons)
-                                        this_page.load_buttons(inc_config[KW_BUTTONS])
+                                        this_page.load_buttons(inc_config[KW.BUTTONS.value])
                                         ipb = len(this_page.buttons) - before
                             else:
                                 logger.warning(f"load: includes: {inc}: file {fni} not found")
@@ -374,7 +357,7 @@ class Deck(ABC):
         if page is None:
             self.load_home_page()
             return
-        if page == KW_BACKPAGE:
+        if page == KW.BACKPAGE.value:
             if len(self.page_history) > 1:
                 page = self.page_history.pop()  # this page
                 page = self.page_history.pop()  # previous one
@@ -440,7 +423,7 @@ class Deck(ABC):
     def get_index_prefix(self, index):
         b = self._buttons.get(index)
         if b is not None:
-            return b.get(KW_PREFIX)
+            return b.get(KW.PREFIX.value)
         logger.warning(f"get_index_prefix: deck {self.name}: no button index {index}")
         return None
 
@@ -448,7 +431,7 @@ class Deck(ABC):
         # Useful to just get the int value of index
         b = self._buttons.get(index)
         if b is not None:
-            return b.get(KW_INDEX_NUMRIC)
+            return b.get(KW.INDEX.value_NUMRIC)
         logger.warning(f"get_index_prefix: deck {self.name}: no button index {index}")
         return None
 
@@ -459,11 +442,11 @@ class Deck(ABC):
         if index is not None:
             b = self._buttons.get(index)
             if b is not None:
-                logger.debug(f"valid_activations: deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW_ACTIVATIONS]}")
-                return DEFAULT_ACTIVATIONS + b[KW_ACTIVATIONS]
+                logger.debug(f"valid_activations: deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}")
+                return DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]
             else:
                 logger.warning(f"valid_activations: deck {self.name}: no button index {index}, returning default for deck")
-        all_activations = set(DEFAULT_ACTIVATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW_ACTIVATIONS, set()))), self._buttons.values(), set())))
+        all_activations = set(DEFAULT_ACTIVATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW.ACTIVATIONS.value, set()))), self._buttons.values(), set())))
         logger.debug(f"valid_activations: deck {self.name}: {all_activations}")
         return list(all_activations)
 
@@ -471,11 +454,11 @@ class Deck(ABC):
         if index is not None:
             b = self._buttons.get(index)
             if b is not None:
-                logger.debug(f"valid_representations: deck {self.name}: button {index}: {DEFAULT_REPRESENTATIONS + b[KW_ACTIVATIONS]}")
-                return DEFAULT_REPRESENTATIONS + b[KW_REPRESENTATIONS]
+                logger.debug(f"valid_representations: deck {self.name}: button {index}: {DEFAULT_REPRESENTATIONS + b[KW.ACTIVATIONS.value]}")
+                return DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value]
             else:
                 logger.warning(f"valid_representations: deck {self.name}: no button index {index}, returning default for deck")
-        all_representations = set(DEFAULT_REPRESENTATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW_REPRESENTATIONS, set()))), self._buttons.values(), set())))
+        all_representations = set(DEFAULT_REPRESENTATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))), self._buttons.values(), set())))
         logger.debug(f"valid_representations: deck {self.name}: {all_representations}")
         return list(all_representations)
 
@@ -572,7 +555,7 @@ class DeckWithIcons(Deck):
     def get_index_image_size(self, index):
         b = self._buttons.get(index)
         if b is not None:
-            return b.get(KW_IMAGE)
+            return b.get(KW.IMAGE.value)
         logger.warning(f"get_index_image_size: deck {self.name}: no button index {index}")
         return None
 

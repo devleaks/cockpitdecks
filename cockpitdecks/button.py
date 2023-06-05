@@ -15,7 +15,8 @@ from ruamel.yaml import YAML
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
 from .xplane import Dataref
-from cockpitdecks import ID_SEP, SPAM_LEVEL, KW_FORMULA
+from cockpitdecks import ID_SEP, SPAM_LEVEL, KW
+from cockpitdecks.xplane import DATA_PREFIX
 from .rpc import RPC
 
 from .resources.iconfonts import ICON_FONTS
@@ -25,11 +26,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
-
-# Attribute keybords
-KW_GUARD = "guard"
-KW_MANAGED = "managed"
-KW_DATAREF = "dataref"
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 
@@ -112,19 +108,19 @@ class Button:
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
-        self.dataref = config.get(KW_DATAREF)
-        self.dataref_rpn = config.get(KW_FORMULA)
+        self.dataref = config.get(KW.DATAREF.value)
+        self.dataref_rpn = config.get(KW.FORMULA.value)
         self.managed = None
-        self.manager = config.get(KW_MANAGED)
+        self.manager = config.get(KW.MANAGED.value)
         if self.manager is not None:
-            self.managed = self.manager.get(KW_DATAREF)
+            self.managed = self.manager.get(KW.DATAREF.value)
             if self.managed is None:
                 logger.warning(f"__init__: button {self.name} has manager but no dataref")
 
         self.guarded = None
-        self.guard = config.get(KW_GUARD)
+        self.guard = config.get(KW.GUARD.value)
         if self.guard is not None:
-            self.guarded = self.guard.get(KW_DATAREF)
+            self.guarded = self.guard.get(KW.DATAREF.value)
             if self.guarded is None:
                 logger.warning(f"__init__: button {self.name} has guard but no dataref")
 
@@ -367,32 +363,32 @@ class Button:
             for s in PREFIX:
                 if r.startswith(s+SEP):
                     return False
-            return r != KW_FORMULA
+            return r != KW.FORMULA.value
 
         r = []
 
         # Direct use of datarefs:
         #
         # 1. Single
-        dataref = base.get(KW_DATAREF)
+        dataref = base.get(KW.DATAREF.value)
         if dataref is not None:
             r.append(dataref)
             logger.debug(f"scan_datarefs: button {self.name}: added single dataref {dataref}")
 
         # 1b. Managed values
         managed = None
-        managed_dict = base.get(KW_MANAGED)
+        managed_dict = base.get(KW.MANAGED.value)
         if managed_dict is not None:
-            managed = managed_dict.get(KW_DATAREF)
+            managed = managed_dict.get(KW.DATAREF.value)
         if managed is not None:
             r.append(managed)
             logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
 
         # 1c. Guarded buttons
         guarded = None
-        guard_dict = base.get(KW_GUARD)
+        guard_dict = base.get(KW.GUARD.value)
         if guard_dict is not None:
-            guarded = guard_dict.get(KW_DATAREF)
+            guarded = guard_dict.get(KW.DATAREF.value)
         if guarded is not None:
             r.append(guarded)
             logger.debug(f"scan_datarefs: button {self.name}: added guarding dataref {guarded}")
@@ -402,7 +398,7 @@ class Button:
         # Use of datarefs in formula:
         #
         # 2. Formula datarefs
-        dataref_rpn = base.get(KW_FORMULA)
+        dataref_rpn = base.get(KW.FORMULA.value)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall(PATTERN_DOLCB, dataref_rpn)
             datarefs = list(filter(is_dref, datarefs))
@@ -432,8 +428,8 @@ class Button:
                 logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
 
         # Clean up
-        if KW_FORMULA in r:  # label or text may contain like ${{KW_FORMULA}}, but {KW_FORMULA} is not a dataref.
-            r.remove(KW_FORMULA)
+        if KW.FORMULA.value in r:  # label or text may contain like ${{KW.FORMULA.value}}, but {KW.FORMULA.value} is not a dataref.
+            r.remove(KW.FORMULA.value)
 
         return list(set(r))  # removes duplicates
 
@@ -539,16 +535,17 @@ class Button:
         return txtcpy
 
     def substitute_data_values(self, text, default: str = "0.0", formatting = None):
+        # !!!IMPORTANT!!! DATA_PREFIX "data:" is hardcoded in regexp
         txtcpy = text
-        more = re.findall("\\${data:([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${"+DATA_PREFIX+"([^\\}]+?)}", txtcpy)
         for k, v in more.items():
-            s = f"${{data:{k}}}"      # @todo: !!possible injection!!
+            s = f"${{{DATA_PREFIX}{k}}}"      # @todo: !!possible injection!!
             value = self.xp.get_data(k)
             if value is not None:
                 txtcpy = txtcpy.replace(s, value)
             else:
                 txtcpy = txtcpy.replace(s, default)
-        more = re.findall("\\${data:([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${"+DATA_PREFIX+"([^\\}]+?)}", txtcpy)
         if len(more) > 0:
             logger.warning(f"substitute_data_value: button {self.name}: unsubstituted data values {more}")
         return txtcpy
@@ -623,10 +620,10 @@ class Button:
 
         # Formula in text
         text_format = base.get(f"{root}-format")
-        KW_FORMULA_STR = f"${{{KW_FORMULA}}}"   # "${formula}"
+        KW_FORMULA_STR = f"${{{KW.FORMULA.value}}}"   # "${formula}"
         if KW_FORMULA_STR in str(text):
             # If text contains ${formula}, it is replaced by the value of the formula calculation.
-            dataref_rpn = base.get(KW_FORMULA)
+            dataref_rpn = base.get(KW.FORMULA.value)
             if dataref_rpn is not None:
                 res = self.execute_formula(formula=dataref_rpn)
                 if res != "":  # Format output if format present
@@ -637,7 +634,7 @@ class Button:
                         res = str(res)
                 text = text.replace(KW_FORMULA_STR, res)
             else:
-                logger.warning(f"get_text: button {self.name}: text contains {KW_FORMULA_STR} but no {KW_FORMULA} attribute found")
+                logger.warning(f"get_text: button {self.name}: text contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
 
         text = self.substitute_values(text, formatting=text_format, default="---")
 

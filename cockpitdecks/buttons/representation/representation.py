@@ -16,14 +16,10 @@ from ruamel.yaml import YAML
 from PIL import ImageDraw, ImageFont
 
 from cockpitdecks.resources.color import convert_color, is_integer, has_ext, add_ext
-from cockpitdecks import KW_FORMULA, ICON_SIZE
+from cockpitdecks import KW, ICON_SIZE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-# Attribute keyworkds
-KW_MANAGED = "managed"
-KW_FRAME = "frame"
 
 DEFAULT_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
@@ -121,7 +117,7 @@ class Icon(Representation):
 
         self.text_config = config  # where to get text from
 
-        self.frame = config.get(KW_FRAME)
+        self.frame = config.get(KW.FRAME.value)
 
         self.icon = None
         deck = self.button.deck
@@ -512,7 +508,7 @@ class IconSide(Icon):
             self.datarefs = []
             if self.labels is not None:
                 for label in self.labels:
-                    dref = label.get(KW_MANAGED)
+                    dref = label.get(KW.MANAGED.value)
                     if dref is not None:
                         logger.debug(f"get_datarefs: button {self.button_name()}: added label dataref {dref}")
                         self.datarefs.append(dref)
@@ -552,7 +548,7 @@ class IconSide(Icon):
                 txt = label.get("label")
                 if li >= len(vcenter) or txt is None:
                     continue
-                managed = label.get(KW_MANAGED)
+                managed = label.get(KW.MANAGED.value)
                 if managed is not None:
                     value = self.button.get_dataref_value(managed)
                     txto = txt
@@ -787,12 +783,10 @@ class LED(Representation):
         return "\n\r".join(a)
 
 
-KW_COLORED_LED = "colored-led"
-
 class ColoredLED(Representation):
 
     def __init__(self, config: dict, button: "Button"):
-        self._color = config.get(KW_COLORED_LED, button.page.deck.cockpit.cockpit_color)
+        self._color = config.get(KW.COLORED_LED.value, button.page.deck.cockpit.cockpit_color)
         self.color = (128, 128, 256)
         Representation.__init__(self, config=config, button=button)
 
@@ -816,15 +810,15 @@ class ColoredLED(Representation):
         if color_str is None:
             return self.color
         # Formula in text
-        KW_FORMULA_STR = f"${{{KW_FORMULA}}}"   # "${formula}"
+        KW_FORMULA_STR = f"${{{KW.FORMULA.value}}}"   # "${formula}"
         hue = 0  # red
         if KW_FORMULA_STR in str(color_str):
-            dataref_rpn = base.get(KW_FORMULA)
+            dataref_rpn = base.get(KW.FORMULA.value)
             if dataref_rpn is not None:
                 hue = self.button.execute_formula(formula=dataref_rpn)
         else:
             hue = int(color_str)
-            logger.warning(f"get_color: button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW_FORMULA} attribute found")
+            logger.warning(f"get_color: button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
 
         color_rgb = colorsys.hsv_to_rgb((int(hue) % 360)/360,1,1)
         self.color = [int(255*i) for i in color_rgb]
