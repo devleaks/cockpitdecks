@@ -903,8 +903,8 @@ class MultiLEDs(Representation):
 #
 # "Icon" Buttons that are dynamically drawn
 #
-from cockpitdecks.buttons.annunciator import Annunciator, AnnunciatorAnimate
-from cockpitdecks.buttons.draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
+from .annunciator import Annunciator, AnnunciatorAnimate
+from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
 
 REPRESENTATIONS = {
     "none": Representation,

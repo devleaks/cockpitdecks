@@ -4,8 +4,8 @@ Button display and rendering abstraction.
 import logging
 from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconAnimation, IconSide
 from .representation import LED, ColoredLED, MultiLEDs
-from cockpitdecks.buttons.annunciator import Annunciator, AnnunciatorAnimate
-from cockpitdecks.buttons.draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG, Knob
+from .annunciator import Annunciator, AnnunciatorAnimate
+from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG, Knob
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -51,7 +51,7 @@ DEFAULT_REPRESENTATIONS = ["none"]
 #
 # Will only load if AVWX is installed
 try:
-    from cockpitdecks.buttons.external import WeatherIcon
+    from .external import WeatherIcon
     REPRESENTATIONS["weather"] = WeatherIcon
     logger.info(f"WeatherIcon installed")
 except ImportError:

@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageColor
 from cockpitdecks import KW, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
 from cockpitdecks.resources.color import convert_color, light_off
 from cockpitdecks.rpc import RPC
-from .representation.representation import Icon  # explicit Icon from file to avoid circular import
+from .representation import Icon  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

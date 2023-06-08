@@ -279,6 +279,8 @@ class WeatherIcon(DrawAnimation):
     def __init__(self, config: dict, button: "Button"):
         self._inited = False
         self._moved = False    # True if we get Metar for location at (lat, lon), False if Metar for default station
+        self._upd_calls = 0
+        self._upd_count = 0
         self.weather = config.get("weather")
         if self.weather is not None and isinstance(self.weather, dict):
             config["animation"] = config.get("weather")
@@ -304,19 +306,30 @@ class WeatherIcon(DrawAnimation):
         self.weather_icon = None
 
         # Init
-        self.update()
+        # self.update()  # not necessary, will be run in anim_start()
         self.anim_start()
 
     def init(self):
-        if not self._inited:
-            icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
-            self.station = Station.from_icao(icao)
-            self.metar = Metar(self.station.icao)
-            self.sun = Sun(self.station.latitude, self.station.longitude)
-            self.button._config["label"] = icao
-            self._last_updated = datetime.now()
-            self._inited = True
-            logger.debug(f"init: default station installed {icao}")
+        if self._inited:
+            return
+        icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+        self.station = Station.from_icao(icao)
+        self.metar = Metar(self.station.icao)
+        self.sun = Sun(self.station.latitude, self.station.longitude)
+        self.button._config["label"] = icao
+        self._last_updated = datetime.now()
+
+        # if self.metar is not None and self.metar.data is not None:
+        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
+        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
+        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
+        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
+        # else:
+        #     logger.debug(f"init: no metar for {self.station.icao}")
+        self.weather_icon = self.select_weather_icon()
+        # logger.debug(f"init: Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
+        self._inited = True
+        logger.debug(f"init: default station installed {icao}")
 
     def at_default_station(self):
         if self.weather is not None and self.station is not None:
@@ -343,9 +356,9 @@ class WeatherIcon(DrawAnimation):
         """
         return True
 
-    def animate(self):
-        self.update()
-        return super().animate()
+    # def animate(self):
+    #     # self.update() # not necessary, will run in get_image_for_icon
+    #     return super().animate()
 
     def get_station(self):
         if self._last_updated is not None and not self.at_default_station():
@@ -384,6 +397,8 @@ class WeatherIcon(DrawAnimation):
         :returns:   { description_of_the_return_value }
         :rtype:     bool
         """
+        self._upd_calls = self._upd_calls + 1
+
         updated = False
         if force:
             self._last_updated = None
@@ -402,7 +417,7 @@ class WeatherIcon(DrawAnimation):
                 self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
                 updated = True
-                logger.info(f"update: new station {self.station.icao}")
+                logger.info(f"update: UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
                 logger.warning(f"update: new station {new.icao}: Metar not created", exc_info=True)
@@ -415,7 +430,7 @@ class WeatherIcon(DrawAnimation):
                 self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
                 updated = True
-                logger.info(f"update: station changed to {self.station.icao}")
+                logger.info(f"update: UPDATED: station changed to {self.station.icao}")
             except:
                 self.metar = None
                 logger.warning(f"update: change station to {new.icao}: Metar not created", exc_info=True)
@@ -425,7 +440,7 @@ class WeatherIcon(DrawAnimation):
                 self.metar.update()
                 self._last_updated = datetime.now()
                 updated = True
-                logger.info(f"update: station {self.station.icao}, first Metar")
+                logger.info(f"update: UPDATED: station {self.station.icao}, first Metar")
             except:
                 self.metar = None
                 logger.warning(f"update: station {self.station.icao}, first Metar not created", exc_info=True)
@@ -437,7 +452,7 @@ class WeatherIcon(DrawAnimation):
                     self.metar.update()
                     self._last_updated = datetime.now()
                     updated = True
-                    logger.info(f"update: station {self.station.icao}, Metar updated")
+                    logger.info(f"update: UPDATED: station {self.station.icao}, Metar updated")
                 else:
                     logger.debug(f"update: station {self.station.icao}, Metar does not need updating")
             except:
@@ -447,7 +462,7 @@ class WeatherIcon(DrawAnimation):
         # if new is None, we leave it as it is
         if updated:
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
-            if self.metar is not None and self.metar.data is not None:
+            if self.has_metar("data"):
                 self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
                 self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
                 self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
@@ -455,7 +470,8 @@ class WeatherIcon(DrawAnimation):
             else:
                 logger.debug(f"update: no metar for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()
-            logger.debug(f"update: Metar updated for {self.station.icao}")
+            logger.debug(f"update: Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
+            self._upd_count = self._upd_count + 1
 
         return updated
 
@@ -466,8 +482,11 @@ class WeatherIcon(DrawAnimation):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
 
+        logger.debug(f"get_image_for_icon: updating..")
         if not self.update():
             self._cache
+            logger.debug(f"get_image_for_icon: ..not updated, using cache..")
+        logger.debug(f"get_image_for_icon: ..updated ({self._upd_count}/{self._upd_calls})")
 
         image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
@@ -481,8 +500,16 @@ class WeatherIcon(DrawAnimation):
         inside = round(0.04 * image.width + 0.5)
         w = image.width / 2
         h = image.height / 2
+        logger.debug(f"get_image_for_icon: icon: {self.weather_icon}")
+        icon_text = WEATHER_ICONS.get(self.weather_icon)
+        if icon_text is None:
+            logger.warning(f"get_image_for_icon: icon: {self.weather_icon} not found, using default")
+            icon_text = WEATHER_ICONS.get(DEFAULT_ICON)
+            if icon_text is None:
+                logger.warning(f"get_image_for_icon: default icon: not found, using default")
+                icon_text = "\uf00d"
         draw.text((w, h),  # (image.width / 2, 15)
-                  text=self.weather_icon if self.weather_icon is not None else "\uf00d",
+                  text=icon_text,
                   font=font,
                   anchor="mm",
                   align="center",
@@ -491,7 +518,7 @@ class WeatherIcon(DrawAnimation):
         # Weather Data
         lines = None
         try:
-            if self.metar is not None and self.metar.summary:
+            if self.has_metar("summary"):
                 lines = self.metar.summary.split(",")  # ~ 6-7 short lines
         except:
             lines = None
@@ -525,7 +552,16 @@ class WeatherIcon(DrawAnimation):
         self._cache = bg.convert("RGB")
         return self._cache
 
+    def has_metar(self, what: str = "raw"):
+        if what == "summary":
+            return self.metar is not None and self.metar.summary is not None
+        elif what == "data":
+            return self.metar is not None and self.metar.data is not None
+        return self.metar is not None and self.metar.raw is not None
+
     def is_metar_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
+        if not self.has_metar():
+            return True
         time = self.metar.raw[7:12]
         logger.debug(f"is_metar_day: zulu {time}")
         if time[-1] != "Z":
@@ -625,7 +661,7 @@ class WeatherIcon(DrawAnimation):
         # Needs improvement
         # Stolen from https://github.com/flybywiresim/efb
         icon = "wi_cloud"
-        if self.metar is not None and self.metar.raw is not None:
+        if self.has_metar():
             rawtext = self.metar.raw[13:]  # strip ICAO DDHHMMZ
             logger.debug(f"select_weather_icon: METAR {rawtext}")
             # Precipitations
@@ -677,8 +713,12 @@ class WeatherIcon(DrawAnimation):
         logger.debug(f"select_weather_icon: weather icon {icon}")
         day = self.is_metar_day()
         daynight_icon = self.day_night(icon, day)
+        if daynight_icon is None:
+            logger.warning(f"select_weather_icon: no icon, using default {DEFAULT_ICON}")
+            daynight_icon = DEFAULT_ICON
+        daynight_icon = daynight_icon.replace("-", "_")
         logger.debug(f"select_weather_icon: day/night version: {day}: {daynight_icon}")
-        return WEATHER_ICONS.get(daynight_icon)
+        return daynight_icon
 
     def select_random_weather_icon(self):
         # day or night
