@@ -24,6 +24,9 @@ def convert_color(instr):
     # process either a color name or a color tuple as a string "(1, 2, 3)"
     # and returns a tuple of 3 or 4 intergers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
+    if instr is None:
+        return None
+
     if type(instr) == tuple or type(instr) == list:
         return tuple(instr)
 
