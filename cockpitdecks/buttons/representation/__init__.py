@@ -5,7 +5,7 @@ import logging
 from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconAnimation, IconSide
 from .representation import LED, ColoredLED, MultiLEDs
 from cockpitdecks.buttons.annunciator import Annunciator, AnnunciatorAnimate
-from cockpitdecks.buttons.draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
+from cockpitdecks.buttons.draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG, Knob
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -36,6 +36,7 @@ REPRESENTATIONS = {
     "annunciator": Annunciator,
     "annunciator-animate": AnnunciatorAnimate,
     "switch": Switch,
+    "knob": Knob,
     "circular-switch": CircularSwitch,
     "push-switch": PushSwitch,
     "data": DataIcon,
@@ -70,7 +71,7 @@ except ImportError:
 #   repeat: 6
 #
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
-drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg"]
+drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob"]
 
 if "weather" in REPRESENTATIONS.keys():
     drawn_buttons.append("weather")
