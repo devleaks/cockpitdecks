@@ -17,6 +17,13 @@ logger = logging.getLogger(__name__)
 
 DATA_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
 
+class Command:
+
+    def __init__(self, path: str):
+
+        self.path = path            # some/command
+
+
 class Dataref:
 
     def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
