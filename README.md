@@ -50,7 +50,7 @@ $ pip install ruamel.yaml pillow
 If you want to use the Metar representation on a key, add:
 
 ```
-$ pip install 'avwx-engine[scipy]' suntime
+$ pip install timezonefinder suntime 'avwx-engine[scipy]'
 ```
 
 
@@ -71,6 +71,7 @@ $ pip install git+https://github.com/devleaks/python-loupedeck-live.git
 ### Beringher X Touch Mini
 
 ```
+$ pip install --upgrade --no-cache-dir --no-binary python-rtmidi python-rtmidi
 $ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
 ```
 
