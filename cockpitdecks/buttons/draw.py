@@ -1004,6 +1004,140 @@ class PushSwitch(SwitchBase):
 
         return self.move_and_send(image)
 
+
+class Knob(SwitchBase):
+
+    def __init__(self, config: dict, button: "Button"):
+
+        SwitchBase.__init__(self, config=config, button=button, switch_type="knob")
+
+        self.knob_type = self.switch.get("knob-type", "dent")
+        self.knob_mark = self.switch.get("knob-mark", "triangle")  # needle, triangle, bar (diameter)
+
+        # Alternate defaults
+        # self.button_size = self.switch.get("button-size", 80)
+        self.base_size = self.switch.get("base-size", int(ICON_SIZE / 1.25))
+        self.base_fill_color = self.switch.get("base-fill-color", grey(128))
+        self.base_stroke_color = self.switch.get("base-stroke-color", grey(20))
+        self.base_stroke_width = self.switch.get("base-stroke-width", 16)
+
+        self.base_underline_color = self.switch.get("base-underline-color", grey(240))
+        self.base_underline_width = self.switch.get("base-underline-width", int(self.base_stroke_width/2))
+
+        self.button_fill_color = self.switch.get("button-fill-color", grey(220))
+        self.button_stroke_color = self.switch.get("button-stroke-color", grey(0))
+        self.button_stroke_width = self.switch.get("button-stroke-width", 2)
+        self.button_dents = self.switch.get("button-dents", 36)
+        self.button_dent_size = self.switch.get("button-dent-size", 4)
+        self.button_dent_extension = self.switch.get("button-dent-extension", 4)
+        self.button_dent = self.switch.get("button-dent-negative", False)
+
+        if self.button_dent_size < self.button_dent_extension:
+            self.button_dent_size = self.button_dent_extension
+
+        self.mark_underline_outer = self.switch.get("mark-underline-outer", 12)
+        self.mark_underline_color = self.switch.get("mark-underline-color", "coral")
+        self.mark_underline_width = self.switch.get("mark-underline-width", 4)
+        self.mark_size = self.switch.get("witness-size", min(self.button_size/2, 40))
+        self.mark_fill_color = self.switch.get("witness-fill-color", None)
+        self.mark_fill_color = convert_color(self.mark_fill_color)
+        self.mark_stroke_color = self.switch.get("witness-stroke-color", "blue")
+        self.mark_stroke_color = convert_color(self.mark_stroke_color)
+        self.mark_stroke_width = self.switch.get("witness-stroke-width", 8)
+
+        self.mark_off_fill_color = self.switch.get("witness-fill-off-color", (0,0,0,0))
+        self.mark_off_fill_color = convert_color(self.mark_off_fill_color)
+        self.mark_off_stroke_color = self.switch.get("witness-stroke-off-color", (255,255,255, 0))
+        self.mark_off_stroke_color = convert_color(self.mark_off_stroke_color)
+        self.mark_off_stroke_width = self.switch.get("witness-stroke-off-width", 4)
+
+        self.rotation = randint(0, 359)
+
+    def set_rotation(self, rotation):
+        self.rotation = rotation
+
+    def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        def mk_dent(count, center):
+            dents_image, dents_draw = self.double_icon()
+
+            bsize = self.button_dent_size       # radius of little bubble added
+            bover = self.button_dent_extension  # size of button extention
+
+            radius = self.button_size/2 + bover - bsize
+            if 360 % count != 0: # must be a multiple of 360
+                count = 12
+            step = int(360 / count)
+            for i in range(count):
+                angle = math.radians(i * step)
+                lc = [center[0] + radius * math.cos(angle), center[1] + radius * math.sin(angle)]
+                tl = [lc[0]-bsize, lc[1]-bsize]
+                br = [lc[0]+bsize, lc[1]+bsize]
+                dents_draw.ellipse(tl+br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+            return dents_image, dents_draw
+
+        center = [ICON_SIZE, ICON_SIZE]
+        #
+        # Base
+        base_image, base_draw = self.double_icon()
+        base = self.base_size/2
+        tl = [center[0]-base, center[1]-base]
+        br = [center[0]+base, center[1]+base]
+        base_draw.ellipse(tl+br, fill=self.base_fill_color, outline=self.base_stroke_color, width=self.base_stroke_width)
+
+        # Base "underline", around it
+        if self.base_underline_width > 0:
+            base = self.base_size/2+self.base_underline_width/2
+            tl = [center[0]-base, center[1]-base]
+            br = [center[0]+base, center[1]+base]
+            base_draw.ellipse(tl+br, outline=self.base_underline_color, width=self.base_underline_width)
+
+        #
+        # Button
+        image, draw = self.double_icon()
+
+        base = self.button_size/2
+        tl = [center[0]-base, center[1]-base]
+        br = [center[0]+base, center[1]+base]
+
+        if self.button_dents:
+            # button with outline
+            draw.ellipse(tl+br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+            # add dents over
+            border_image, border = mk_dent(self.button_dents, center)
+            image.alpha_composite(border_image)
+            # button without outline
+            image2, draw2 = self.double_icon()
+            draw2.ellipse(tl+br, fill=self.button_fill_color)
+            image.alpha_composite(image2)
+        else:
+            draw.ellipse(tl+br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+
+        # Button-top mark underline
+        if self.mark_underline_width > 0:
+            base = self.button_size/2-self.mark_underline_outer
+            tl = [center[0]-base, center[1]-base]
+            br = [center[0]+base, center[1]+base]
+            draw.ellipse(tl+br, outline=self.mark_underline_color, width=self.mark_underline_width)
+
+        # Button-top mark
+        mark_image, mark = self.double_icon()
+        radius = int(ICON_SIZE / 8)
+        mark.regular_polygon((ICON_SIZE, ICON_SIZE, radius), n_sides=3,
+                             fill=self.mark_fill_color, outline=self.mark_stroke_color) #, width=self.mark_width, # https://github.com/python-pillow/Pillow/pull/7132
+
+        image.alpha_composite(mark_image)
+        image = image.rotate(self.rotation, resample=Image.Resampling.NEAREST, center=center)
+        base_image.alpha_composite(image)
+
+
+        return self.move_and_send(base_image)
+
+
 #
 # ###############################
 # ANIMATED DRAW REPRESENTATION
