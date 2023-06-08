@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 
 from avwx import Metar, Station
 from suntime import Sun
+from zoneinfo import ZoneInfo
+from timezonefinder import TimezoneFinder
 
 from PIL import Image, ImageDraw
 
@@ -27,6 +29,28 @@ from .annunciator import TRANSPARENT_PNG_COLOR
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 logger.setLevel(logging.DEBUG)
+
+# #############
+# Local constant
+#
+KW_NAME   = "iconName"      # "cloud",
+KW_DAY    = "day"           # 2,  0=night, 1=day, 2=day or night
+KW_NIGHT  = "night"         # 1,
+KW_TAGS   = "descriptor"    # [],
+KW_PRECIP = "precip"        # "RA",
+KW_VIS    = "visibility"    # [""],
+KW_CLOUD  = "cloud"         # ["BKN"],
+KW_WIND   = "wind"          # [0, 21]
+
+WI_PREFIX = "wi-"
+DAY       = "day-"
+NIGHT     = "night-"
+NIGHT_ALT = "night-alt-"
+
+KW_CAVOK  = "clear"         # Special keyword for CAVOK day or night
+CAVOK_DAY = "wi-day-sunny"
+CAVOK_NIGHT  = "wi-night-clear"
+DEFAULT_ICON = "wi-day-cloudy-high"
 
 
 class WI:
@@ -62,195 +86,168 @@ class WI:
 
     DB = [
         {
-            "iconName":   "wi_cloud",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["BKN"],
-            "wind":       [0, 21]
+            KW_NAME: KW_CAVOK,
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["CAVOK", "NCD"],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_cloudy",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["OVC"],
-            "wind":       [0, 21]
+            KW_NAME: "cloud",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["BKN"],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_cloudy_gusts",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["SCT", "BKN", "OVC"],
-            "wind":       [22, 63]
+            KW_NAME: "cloudy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["OVC"],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_rain",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "RA",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [0, 21]
+            KW_NAME: "cloudy-gusts",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["SCT", "BKN", "OVC"],
+            KW_WIND: [22, 63]
         },
         {
-            "iconName":   "wi_rain_wind",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "RA",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [22, 63]
+            KW_NAME: "rain",
+            KW_TAGS: [],
+            KW_PRECIP: "RA",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_showers",
-            "day":        2,
-            "descriptor": ["SH"],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [0, 63]
+            KW_NAME: "rain-wind",
+            KW_TAGS: [],
+            KW_PRECIP: "RA",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [22, 63]
         },
         {
-            "iconName":   "wi_fog",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": ["BR", "FG"],
-            "cloud":      [""],
-            "wind":       [0, 63]
+            KW_NAME: "showers",
+            KW_TAGS: ["SH"],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63]
         },
         {
-            "iconName":   "wi_storm_showers",
-            "day":        2,
-            "descriptor": ["TS", "SH"],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [0, 63]
+            KW_NAME: "fog",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["BR", "FG"],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63]
         },
         {
-            "iconName":   "wi_thunderstorm",
-            "day":        2,
-            "descriptor": ["TS"],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [0, 63]
+            KW_NAME: "storm-showers",
+            KW_TAGS: ["TS", "SH"],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63]
         },
         {
-            "iconName":   "wi_day_sunny",
-            "day":        1,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": ["CAVOK", "NCD"],
-            "cloud":      [""],
-            "wind":       [0, 21]
+            KW_NAME: "thunderstorm",
+            KW_TAGS: ["TS"],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63]
         },
         {
-            "iconName":   "wi_windy",
-            "day":        1,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": ["CAVOK", "NCD"],
-            "cloud":      [""],
-            "wind":       [22, 33]
+            KW_NAME: "windy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["CAVOK", "NCD"],
+            KW_CLOUD: [""],
+            KW_WIND: [22, 33]
         },
         {
-            "iconName":   "wi_strong_wind",
-            "day":        1,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": ["CAVOK", "NCD"],
-            "cloud":      [""],
-            "wind":       [34, 63]
+            KW_NAME: "strong-wind",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["CAVOK", "NCD"],
+            KW_CLOUD: [""],
+            KW_WIND: [34, 63]
         },
         {
-            "iconName":   "wi_night_clear",
-            "day":        0,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": ["CAVOK", "NCD"],
-            "cloud":      [""],
-            "wind":       [0, 21]
+            KW_NAME: "cloudy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_day_cloudy",
-            "day":        1,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["FEW", "SCT"],
-            "wind":       [0, 21]
+            KW_NAME: "cloudy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_night_alt_cloudy",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["FEW", "SCT"],
-            "wind":       [0, 21]
+            KW_NAME: "cloudy-gusts",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["SCT", "BKN", "OVC"],
+            KW_WIND: [22, 63]
         },
         {
-            "iconName":   "wi_day_cloudy_gusts",
-            "day":        0,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["SCT", "BKN", "OVC"],
-            "wind":       [22, 63]
+            KW_NAME: "cloudy-gusts",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["SCT", "BKN", "OVC"],
+            KW_WIND: [22, 63]
         },
         {
-            "iconName":   "wi_night_alt_cloudy_gusts",
-            "day":        1,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["SCT", "BKN", "OVC"],
-            "wind":       [22, 63]
+            KW_NAME: "cloudy-windy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [22, 63]
         },
         {
-            "iconName":   "wi_day_cloudy_windy",
-            "day":        1,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["FEW", "SCT"],
-            "wind":       [22, 63]
+            KW_NAME: "cloudy-windy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [22, 63]
         },
         {
-            "iconName":   "wi_night_alt_cloudy_windy",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "",
-            "visibility": [""],
-            "cloud":      ["FEW", "SCT"],
-            "wind":       [22, 63]
+            KW_NAME: "snow",
+            KW_TAGS: [],
+            KW_PRECIP: "SN",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 21]
         },
         {
-            "iconName":   "wi_snow",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "SN",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [0, 21]
-        },
-        {
-            "iconName":   "wi_snow_wind",
-            "day":        2,
-            "descriptor": [],
-            "precip":     "SN",
-            "visibility": [""],
-            "cloud":      [""],
-            "wind":       [22, 63]
+            KW_NAME: "snow-wind",
+            KW_TAGS: [],
+            KW_PRECIP: "SN",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [22, 63]
         },
     ]
+
+
 
     def __init__(self, day: bool, cover=float, wind=float, precip=float, special=float):
         self.day = day          # night=False, time at location (local time)
@@ -277,7 +274,7 @@ class WeatherIcon(DrawAnimation):
     Depends on avwx-engine
     """
     MIN_UPDATE = 600  # seconds between two station updates
-    DEFAULT_STATION = "EBBR"
+    DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
     def __init__(self, config: dict, button: "Button"):
         self._inited = False
@@ -400,6 +397,7 @@ class WeatherIcon(DrawAnimation):
             try:
                 self.station = new
                 self.metar = Metar(self.station.icao)
+                self.metar.update()
                 self.sun = Sun(self.station.latitude, self.station.longitude)
                 self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
@@ -410,8 +408,9 @@ class WeatherIcon(DrawAnimation):
                 logger.warning(f"update: new station {new.icao}: Metar not created", exc_info=True)
         elif new is not None and new.icao != self.station.icao:
             try:
-                self.metar = Metar(self.station.icao)
                 self.station = new
+                self.metar = Metar(self.station.icao)
+                self.metar.update()
                 self.sun = Sun(self.station.latitude, self.station.longitude)
                 self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
@@ -423,6 +422,7 @@ class WeatherIcon(DrawAnimation):
         elif self.metar is None:
             try:
                 self.metar = Metar(self.station.icao)
+                self.metar.update()
                 self._last_updated = datetime.now()
                 updated = True
                 logger.info(f"update: station {self.station.icao}, first Metar")
@@ -452,7 +452,9 @@ class WeatherIcon(DrawAnimation):
                 self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
                 self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
                 self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
-            self.weather_icon = self.selectWeatherIcon()
+            else:
+                logger.debug(f"update: no metar for {self.station.icao}")
+            self.weather_icon = self.select_weather_icon()
             logger.debug(f"update: Metar updated for {self.station.icao}")
 
         return updated
@@ -484,7 +486,7 @@ class WeatherIcon(DrawAnimation):
                   font=font,
                   anchor="mm",
                   align="center",
-                  fill=light_off(icon_color, 0.2))
+                  fill=light_off(icon_color, 0.6))
 
         # Weather Data
         lines = None
@@ -523,42 +525,11 @@ class WeatherIcon(DrawAnimation):
         self._cache = bg.convert("RGB")
         return self._cache
 
-    def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
-        # Uses the simulator local time
-        hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
-        if self.sun is not None:
-            sr = self.sun.get_sunrise_time()
-            ss = self.sun.get_sunset_time()
-        else:
-            sr = sunrise
-            ss = sunset
-        return hours > sr and hours < ss
-
-    def get_timezone(self):
-        # pip install timezonefinder
-        # from zoneinfo import ZoneInfo
-        # from timezonefinder import TimezoneFinder
-        #
-        # tf = TimezoneFinder()
-        # tzname = tf.timezone_at(lng=self.station.longitude, lat=self.station.latitude)
-        # if tzname is not None:
-        #     return ZoneInfo(tzname)
-        return timezone.utc
-
-    def get_sun(self, moment: datetime = None):
-        if moment is None:
-            today_sr = self.sun.get_sunrise_time()
-            today_ss = self.sun.get_sunset_time()
-            return (today_sr.hour, today_ss.hour)
-        today_sr = self.sun.get_sunrise_time(moment)
-        today_ss = self.sun.get_sunset_time(moment)
-        return (today_sr.hour, today_ss.hour)
-
     def is_metar_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
         time = self.metar.raw[7:12]
         logger.debug(f"is_metar_day: zulu {time}")
         if time[-1] != "Z":
-            print("no zulu?", time)
+            logger.warning(f"is_metar_day: no zulu? {time}")
             return True
         tz = self.get_timezone()
         logger.debug(f"is_metar_day: timezone {'UTC' if tz == timezone.utc else tz.key}")
@@ -570,29 +541,123 @@ class WeatherIcon(DrawAnimation):
         logger.debug(f"is_metar_day: local {local}, day={str(day)} ({sun})")
         return day
 
-    def selectWeatherIcon(self):
+    def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
+        # Uses the simulator local time
+        hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
+        if self.sun is not None:
+            sr = self.sun.get_sunrise_time()
+            ss = self.sun.get_sunset_time()
+        else:
+            sr = sunrise
+            ss = sunset
+        return hours >= sr and hours <= ss
+
+    def get_timezone(self):
+        # pip install timezonefinder
+        # from zoneinfo import ZoneInfo
+        # from timezonefinder import TimezoneFinder
+        #
+        tf = TimezoneFinder()
+        tzname = tf.timezone_at(lng=self.station.longitude, lat=self.station.latitude)
+        if tzname is not None:
+            return ZoneInfo(tzname)
+        return timezone.utc
+
+    def get_sun(self, moment: datetime = None):
+        # Returns sunrise and sunset rounded hours (24h)
+        if moment is None:
+            today_sr = self.sun.get_sunrise_time()
+            today_ss = self.sun.get_sunset_time()
+            return (today_sr.hour, today_ss.hour)
+        today_sr = self.sun.get_sunrise_time(moment)
+        today_ss = self.sun.get_sunset_time(moment)
+        return (today_sr.hour, today_ss.hour)
+
+
+    def day_night(self, icon, day: bool = True):
+        # Selects day or night variant of icon
+        logger.debug(f"day_night: search {icon}, {day}")
+
+        # Special case cavok
+        if icon == KW_CAVOK:
+            logger.debug(f"day_night: {KW_CAVOK}, {day}")
+            return CAVOK_DAY if day else CAVOK_NIGHT
+
+        # Do we have a variant?
+        try_icon = None
+        dft_name = None
+        for prefix in [WI_PREFIX, WI_PREFIX + DAY, WI_PREFIX + NIGHT, WI_PREFIX + NIGHT_ALT]:
+            if try_icon is None:
+                dft_name = prefix + icon
+                try_icon = WEATHER_ICONS.get(dft_name)
+        if try_icon is None:
+            logger.debug(f"day_night: no such icon or variant {icon}")
+            return DEFAULT_ICON
+        else:
+            logger.debug(f"day_night: exists {dft_name}")
+
+        # From now on, we are sure we can find an icon
+        # day
+        if not day:
+            icon_name = WI + NIGHT + icon
+            try_icon = WEATHER_ICONS.get(icon_name)
+            if try_icon is not None:
+                logger.debug(f"day_night: exists night {icon_name}")
+                return icon_name
+
+            icon_name = WI + NIGHT_ALT + icon
+            try_icon = WEATHER_ICONS.get(icon_name)
+            if try_icon is not None:
+                logger.debug(f"day_night: exists night-alt {try_icon}")
+                return icon_name
+
+        icon_name = WI + DAY + icon
+        try_icon = WEATHER_ICONS.get(icon_name)
+        if try_icon is not None:
+            logger.debug(f"day_night: exists day {icon_name}")
+            return icon_name
+
+        logger.debug(f"day_night: found {dft_name}")
+        return dft_name
+
+
+    def select_weather_icon(self):
         # Needs improvement
         # Stolen from https://github.com/flybywiresim/efb
         icon = "wi_cloud"
         if self.metar is not None and self.metar.raw is not None:
             rawtext = self.metar.raw[13:]  # strip ICAO DDHHMMZ
-            logger.debug(f"selectWeatherIcon: METAR {rawtext}")
-            date = datetime.now();
-            day = 1 if self.is_metar_day() else 0
+            logger.debug(f"select_weather_icon: METAR {rawtext}")
+            # Precipitations
             precip = re.match("RA|SN|DZ|SG|PE|GR|GS", rawtext)
             if precip is None:
                 precip = []
-            logger.debug(f"selectWeatherIcon: PRECIP {precip}")
+            logger.debug(f"select_weather_icon: PRECIP {precip}")
+            # Wind
             wind = self.metar.data.wind_speed.value if hasattr(self.metar.data, "wind_speed") else 0
-            logger.debug(f"selectWeatherIcon: WIND {wind}")
-            findIcon = list(filter(lambda item:  (item["day"] == day or item["day"] == 2)
-                                        and reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item["descriptor"]], 0) == len(item["descriptor"])
-                                        and rawtext.find(item["precip"])
-                                        and reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item["cloud"]], 0) > 0
-                                        and (wind > item["wind"][0] and wind < item["wind"][1])
-                                        and reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item["visibility"]], 0) > 0,
-                              WI.DB))
-            logger.debug(f"selectWeatherIcon: STEP 1 {findIcon}")
+            logger.debug(f"select_weather_icon: WIND {wind}")
+
+            findIcon = []
+            for item in WI.DB:
+                t1 = reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])
+                t_precip = ((len(item[KW_PRECIP]) == 0) or rawtext.find(item[KW_PRECIP]))
+                t_clouds = ((len(item[KW_CLOUD]) == 0) or (len(item[KW_CLOUD]) == 1 and item[KW_CLOUD][0] == "") or (reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item[KW_CLOUD]], 0) > 0))
+                t_wind = (wind > item[KW_WIND][0] and wind < item[KW_WIND][1])
+                t_vis = ((len(item[KW_VIS]) == 0) or (reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item[KW_VIS]], 0) > 0))
+                ok = t1 and t_precip and t_clouds and t_wind and t_vis
+                if ok:
+                    findIcon.append(item)
+                logger.debug(f"select_weather_icon: findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}")
+            logger.debug(f"select_weather_icon: STEP 1 {findIcon}")
+
+            # findIcon = list(filter(lambda item: reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])
+            #                             and ((len(item[KW_PRECIP]) == 0) or rawtext.find(item[KW_PRECIP]))
+            #                             and ((len(item[KW_CLOUD]) == 0) or (len(item[KW_CLOUD]) == 1 and item[KW_CLOUD][0] == "") or (reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item[KW_CLOUD]], 0) > 0))
+            #                             and (wind > item[KW_WIND][0] and wind < item[KW_WIND][1])
+            #                             and ((len(item[KW_VIS]) == 0) or (reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item[KW_VIS]], 0) > 0)),
+            #                   WI.DB))
+            # logger.debug(f"select_weather_icon: STEP 1 {findIcon}")
+
             l = len(findIcon)
             if l == 1:
                 icon = findIcon[0]["iconName"]
@@ -603,15 +668,19 @@ class WeatherIcon(DrawAnimation):
                         findIcon2 = list(filter(lambda x: re("RA|SN|DZ|SG|PE|GR|GS").match(x["precip"]), findIcon))
                     else:
                         findIcon2 = list(filter(lambda x: x["day"] == day, findIcon))
-                    logger.debug(f"selectWeatherIcon: STEP 2 {findIcon2}")
+                    logger.debug(f"select_weather_icon: STEP 2 {findIcon2}")
                     if len(findIcon2) > 0:
                         icon = findIcon2[0]["iconName"]
         else:
-            logger.debug(f"selectWeatherIcon: no metar")
-        logger.debug(f"selectWeatherIcon: returning {icon}")
-        return WEATHER_ICONS.get(icon)
+            logger.debug(f"select_weather_icon: no metar ({self.metar})")
 
-    def selectRandomWeatherIcon(self):
+        logger.debug(f"select_weather_icon: weather icon {icon}")
+        day = self.is_metar_day()
+        daynight_icon = self.day_night(icon, day)
+        logger.debug(f"select_weather_icon: day/night version: {day}: {daynight_icon}")
+        return WEATHER_ICONS.get(daynight_icon)
+
+    def select_random_weather_icon(self):
         # day or night
         # cloud cover
         # precipitation: type, quantity
