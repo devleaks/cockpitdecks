@@ -10,9 +10,9 @@ from math import sqrt
 from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
 from cockpitdecks import KW, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
-from cockpitdecks.resources.color import convert_color, light_off
+from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, TRANSPARENT_PNG_COLOR_BLACK, DEFAULT_COLOR, DEFAULT_COLOR_NAME, convert_color, light_off
 from cockpitdecks.rpc import RPC
-from .representation import Icon  # explicit Icon from file to avoid circular import
+from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -22,11 +22,6 @@ ANNUNCIATOR_DEFAULT_MODEL = "A"
 ANNUNCIATOR_DEFAULT_MODEL_PART = "A0"
 
 DEFAULT_INVERT_COLOR = "white"
-TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
-TRANSPARENT_PNG_COLOR_BLACK = (0, 0, 0, 0)  # black-based
-
-DEFAULT_COLOR = (128, 128, 128)
-DEFAULT_COLOR_NAME = "grey"
 
 class GUARD_TYPES(Enum):
     COVER = "cover"         # Full filled cover over the button
@@ -299,7 +294,7 @@ class AnnunciatorPart:
                 logger.warning(f"render: button {self.annunciator.button.name}: part {self.name}: invalid led {led}")
 
 
-class Annunciator(Icon):
+class Annunciator(DrawBase):
 
     def __init__(self, config: dict, button: "Button"):
 
@@ -364,7 +359,7 @@ class Annunciator(Icon):
         self.annunciator_datarefs = None  # cache
         self.annunciator_datarefs = self.get_datarefs()
 
-        Icon.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, config=config, button=button)
 
 
     def is_valid(self):
@@ -573,6 +568,10 @@ class Annunciator(Icon):
         return "\n\r".join(a)
 
 
+# ###############################
+# ANNUNCIATOR-BASED ANIMATION
+# (simple on/off blinking)
+#
 class AnnunciatorAnimate(Annunciator):
     """
     """

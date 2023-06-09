@@ -247,8 +247,6 @@ class WI:
         },
     ]
 
-
-
     def __init__(self, day: bool, cover=float, wind=float, precip=float, special=float):
         self.day = day          # night=False, time at location (local time)
         self.cover = cover      # 0=clear, 1=overcast
@@ -256,18 +254,6 @@ class WI:
         self.precip = precip    # 0=none, 1=rain1, 2=rain2, 3=snow, 4=hail
         self.special = special  # 0=none, 1=fog, 2=sandstorm
 
-    def icon(self):
-        return f"wi_{'day' if self.day else 'night'}" + random.choice(WI.I_S)
-
-    # @staticmethod
-    # def check():
-    #     err = 0
-    #     for i in WI.DB:
-    #         if i["iconName"] not in WEATHER_ICONS.keys():
-    #             logger.error(f"check: invalid icon {i['iconName']}")
-    #             err = err + 1
-    #     if err > 0:
-    #         logger.error(f"check: {err} invalid icons")
 
 class WeatherIcon(DrawAnimation):
     """
@@ -281,6 +267,9 @@ class WeatherIcon(DrawAnimation):
         self._moved = False    # True if we get Metar for location at (lat, lon), False if Metar for default station
         self._upd_calls = 0
         self._upd_count = 0
+
+        self.use_simulation = False  # If False, use current weather METAR/TAF, else use simulator METAR and date/time; no TAF.
+
         self.weather = config.get("weather")
         if self.weather is not None and isinstance(self.weather, dict):
             config["animation"] = config.get("weather")
@@ -305,8 +294,6 @@ class WeatherIcon(DrawAnimation):
         self.metar = None
         self.weather_icon = None
 
-        # Init
-        # self.update()  # not necessary, will be run in anim_start()
         self.anim_start()
 
     def init(self):
@@ -449,9 +436,9 @@ class WeatherIcon(DrawAnimation):
                 now = datetime.now()
                 diff = now.timestamp() - self._last_updated.timestamp()
                 if self._last_updated is None or diff > WeatherIcon.MIN_UPDATE:
-                    self.metar.update()
-                    self._last_updated = datetime.now()
-                    updated = True
+                    updated = self.metar.update()
+                    if updated:
+                        self._last_updated = datetime.now()
                     logger.info(f"update: UPDATED: station {self.station.icao}, Metar updated")
                 else:
                     logger.debug(f"update: station {self.station.icao}, Metar does not need updating")
@@ -506,7 +493,7 @@ class WeatherIcon(DrawAnimation):
             logger.warning(f"get_image_for_icon: icon: {self.weather_icon} not found, using default")
             icon_text = WEATHER_ICONS.get(DEFAULT_ICON)
             if icon_text is None:
-                logger.warning(f"get_image_for_icon: default icon: not found, using default")
+                logger.warning(f"get_image_for_icon: default icon not found, using default")
                 icon_text = "\uf00d"
         draw.text((w, h),  # (image.width / 2, 15)
                   text=icon_text,
@@ -574,7 +561,7 @@ class WeatherIcon(DrawAnimation):
         local = utc.astimezone(tz=tz)
         sun = self.get_sun(local)
         day = local.hour > sun[0] and local.hour < sun[1]
-        logger.debug(f"is_metar_day: local {local}, day={str(day)} ({sun})")
+        logger.debug(f"is_metar_day: local {local}, day={str(day)} {sun}")
         return day
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:

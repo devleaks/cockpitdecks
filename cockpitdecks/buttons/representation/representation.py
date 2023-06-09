@@ -652,105 +652,6 @@ class MultiIcons(Icon):
         ])
 
 
-class IconAnimation(MultiIcons):
-    """
-    To start the animation, set the button's current_value to something different from None or 0.
-    To stop the anination, set the button's current_value to 0.
-    When not running, an optional icon_off can be supplied, otherwise first icon in multi-icons list will be used.
-    """
-    def __init__(self, config: dict, button: "Button"):
-        MultiIcons.__init__(self, config=config, button=button)
-
-        self.speed = float(config.get("animation-speed", 1))
-        self.icon_off = config.get("icon-off")
-
-        if self.icon_off is None and len(self.multi_icons) > 0:
-            self.icon_off = self.multi_icons[0]
-
-        # Internal variables
-        self.counter = 0
-        self.exit = None
-        self.thread = None
-        self.running = False
-
-    def loop(self):
-        self.exit = threading.Event()
-        while not self.exit.is_set():
-            self.button.render()
-            self.counter = self.counter + 1
-            self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
-            self.exit.wait(self.speed)
-        logger.debug(f"loop: exited")
-
-    def should_run(self) -> bool:
-        """
-        Check conditions to animate the icon.
-        """
-        value = self.get_current_value()
-        return value is not None and value != 0
-
-    def anim_start(self):
-        """
-        Starts animation
-        """
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.button_name()})"
-            self.thread.start()
-        else:
-            logger.warning(f"anim_start: button {self.button_name()}: already started")
-
-    def anim_stop(self, render: bool = True):
-        """
-        Stops animation
-        """
-        if self.running:
-            self.running = False
-            self.exit.set()
-            self.thread.join(timeout=2*self.speed)
-            if self.thread.is_alive():
-                logger.warning(f"anim_stop: ..thread may hang..")
-            if render:
-                self.render()
-        else:
-            logger.debug(f"anim_stop: button {self.button_name()}: already stopped")
-
-    def clean(self):
-        """
-        Stops animation and remove icon from deck
-        """
-        logger.debug(f"clean: button {self.button_name()}: cleaning requested")
-        self.anim_stop(render=False)
-        logger.debug(f"clean: button {self.button_name()}: stopped")
-        super().clean()
-
-    def render(self):
-        """
-        Renders icon_off or current icon in list
-        """
-        if self.should_run():
-            self.icon = self.multi_icons[(self.counter % len(self.multi_icons))]
-            if not self.running:
-                self.anim_start()
-            return super().render()
-        if self.running:
-            self.anim_stop()
-        self.icon = self.icon_off
-        return super(MultiIcons, self).render()
-
-    def describe(self):
-        """
-        Describe what the button does in plain English
-        """
-        a = [
-            f"The representation produces an animation by displaying an icon from a list of {len(self.multi_icons)} icons"
-            f"and changing it every {self.speed} seconds."
-        ]
-        if self.icon_off is not None:
-            a.append(f"When the animation is not running, it displays an OFF icon {self.icon_off}.")
-        return "\n\r".join(a)
-
 
 #
 # ###############################
@@ -904,7 +805,8 @@ class MultiLEDs(Representation):
 # "Icon" Buttons that are dynamically drawn
 #
 from .annunciator import Annunciator, AnnunciatorAnimate
-from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG
+from .draw import DataIcon, Switch, CircularSwitch, PushSwitch
+from .animation import IconAnimation, DrawAnimationFTG
 
 REPRESENTATIONS = {
     "none": Representation,

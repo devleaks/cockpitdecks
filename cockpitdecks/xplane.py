@@ -39,6 +39,7 @@ class Dataref:
         self.is_string = is_string
         self._previous_value = None  # raw values
         self._current_value = None
+        self._last_updated = None
         self.previous_value = None
         self.current_value = None
         self.current_array = []

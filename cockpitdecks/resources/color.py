@@ -10,8 +10,11 @@ from PIL import ImageColor
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_COLOR = (128, 128, 128)
+TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
+TRANSPARENT_PNG_COLOR_BLACK = (0, 0, 0, 0)  # black-based
 
+DEFAULT_COLOR = (128, 128, 128)
+DEFAULT_COLOR_NAME = "grey"
 
 def is_integer(s):
     if type(s) == int:

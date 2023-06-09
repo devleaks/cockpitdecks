@@ -2,10 +2,11 @@
 Button display and rendering abstraction.
 """
 import logging
-from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconAnimation, IconSide
+from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconSide
 from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
-from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, DrawAnimationFTG, Knob
+from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob
+from .animation import IconAnimation, DrawAnimationFTG
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-BACKPAGE_KEYWORD = "back"
-
 
 # ##########################################
 # ACTIVATION
@@ -187,12 +185,14 @@ class LoadPage(Activation):
     """
     Defines a Page change activation.
     """
+    KW_BACKPAGE = "back"
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
 
         # Commands
-        self.page = config.get("page", BACKPAGE_KEYWORD)  # default is to go to previously loaded page, if any
+        self.page = config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = config.get("deck")
 
     def is_valid(self):
@@ -212,7 +212,7 @@ class LoadPage(Activation):
             if self.remote_deck is not None and self.remote_deck in decks.keys():
                 deck = decks[self.remote_deck]
 
-            if self.page == BACKPAGE_KEYWORD or self.page in deck.pages.keys():
+            if self.page == LoadPage.KW_BACKPAGE or self.page in deck.pages.keys():
                 logger.debug(f"activate: {type(self).__name__} change page to {self.page}")
                 new_name = deck.change_page(self.page)
             else:
