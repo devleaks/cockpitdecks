@@ -14,9 +14,8 @@ from ruamel.yaml import YAML
 
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
-from .xplane import Dataref
+from .simulator import Dataref, DATA_PREFIX
 from cockpitdecks import ID_SEP, SPAM_LEVEL, KW
-from cockpitdecks.xplane import DATA_PREFIX
 from .rpc import RPC
 
 from .resources.iconfonts import ICON_FONTS

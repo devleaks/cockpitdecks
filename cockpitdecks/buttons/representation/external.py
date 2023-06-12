@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
 from cockpitdecks.resources.color import convert_color, light_off
-from cockpitdecks.xplane import Dataref
+from cockpitdecks.simulator import Dataref
 
 from .draw import DrawBase, DrawAnimation
 from .annunciator import TRANSPARENT_PNG_COLOR

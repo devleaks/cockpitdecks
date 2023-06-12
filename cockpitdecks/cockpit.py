@@ -20,7 +20,7 @@ from cockpitdecks.resources.color import convert_color, has_ext
 
 from . import __version__
 from .decks import DECK_TYPES
-from .xplaneudp import XPlaneUDP
+from .xplane import XPlane
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 
@@ -37,7 +37,7 @@ class Cockpit:
     """
     def __init__(self):
         self._debug = ROOT_DEBUG.split(",")   # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
-        self.xp = XPlaneUDP(self)
+        self.xp = XPlane(self)
         self._config = None             # content of deckconfig/config.yaml
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
