@@ -11,7 +11,7 @@ import time
 import datetime
 
 from cockpitdecks import SPAM_LEVEL
-from .simulator import Simulator, Dataref
+from .simulator import Simulator, Dataref, Command
 from .button import Button
 
 logger = logging.getLogger(__name__)
@@ -391,17 +391,14 @@ class XPlane(Simulator, XPlaneBeacon):
             raise XPlaneTimeout
         return self.xplaneValues
 
-    def execute_command(self, command: str):
-        if command is None or command in NOT_A_COMMAND:
+    def execute_command(self, command: Command):
+        if command is None or command.path is None or command.path.lower() in NOT_A_COMMAND:
             logger.warning(f"execute_command: command {command} not sent (command placeholder, no command, do nothing)")
             return
         if not self.connected:
             logger.warning(f"execute_command: no connection ({command})")
             return
-        if command.lower() in ["none", "placeholder"]:
-            logger.debug(f"execute_command: not executed command '{command}' (place holder)")
-            return
-        message = 'CMND0' + command
+        message = 'CMND0' + command.path
         self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
 
@@ -448,14 +445,14 @@ class XPlane(Simulator, XPlaneBeacon):
     # ################################
     # X-Plane Interface
     #
-    def commandOnce(self, command: str):
+    def commandOnce(self, command: Command):
         self.execute_command(command)
 
-    def commandBegin(self, command: str):
-        self.execute_command(command+"/begin")
+    def commandBegin(self, command: Command):
+        self.execute_command(Command(command.path+"/begin"))
 
-    def commandEnd(self, command: str):
-        self.execute_command(command+"/end")
+    def commandEnd(self, command: Command):
+        self.execute_command(Command(command.path+"/end"))
 
     def remove_local_datarefs(self, datarefs) -> list:
         return list(filter(lambda d: not Dataref.is_internal_dataref(d), datarefs))

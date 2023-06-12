@@ -19,13 +19,14 @@ DATA_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start wit
 
 class Command:
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, name: str = None):
 
         self.path = path            # some/command
+        self.name = name
 
 
     def __str__(self) -> str:
-        return self.path
+        return self.path if self.name is None else self.path
 
 
 class Dataref:
@@ -277,13 +278,13 @@ class Simulator(ABC):
     # X-Plane Interface
     #
     @abstractmethod
-    def commandOnce(self, command: str):
+    def commandOnce(self, command: Command):
         pass
 
     @abstractmethod
-    def commandBegin(self, command: str):
+    def commandBegin(self, command: Command):
         pass
 
     @abstractmethod
-    def commandEnd(self, command: str):
+    def commandEnd(self, command: Command):
         pass

@@ -8,6 +8,7 @@ from datetime import datetime
 
 #from cockpitdecks import SPAM
 from cockpitdecks.resources.color import is_integer
+from cockpitdecks.simulator import Command
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -33,8 +34,8 @@ class Activation:
         # Options
 
         # Commands
-        self._view = config.get("view")  # Optional additional command, usually to set a view
-                                         # but could be anything.
+        self._view = Command(config.get("view"))  # Optional additional command, usually to set a view
+                                                  # but could be anything.
         # Datarefs
         self.writable_dataref = config.get("set-dataref")
 
@@ -322,7 +323,7 @@ class Push(Activation):
         Activation.__init__(self, config=config, button=button)
 
         # Commands
-        self.command = config.get("command")
+        self.command = Command(config.get("command"))
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -490,7 +491,7 @@ class OnOff(Activation):
     def __init__(self, config: dict, button: "Button"):
 
         # Commands
-        self.commands = config.get("commands", [])
+        self.commands = [Command(path) for path in config.get("commands", [])]
 
         # Internal variables
         self.onoff_current_value = None  # bool on or off, true = on
@@ -609,7 +610,7 @@ class UpDown(Activation):
     """
     def __init__(self, config: dict, button: "Button"):
         # Commands
-        self.commands = config.get("commands")
+        self.commands = [Command(path) for path in config.get("commands", [])]
 
         # Internal status
         self.stops = None
@@ -740,7 +741,7 @@ class Encoder(Activation):
         Activation.__init__(self, config=config, button=button)
 
         # Commands
-        self.commands = config.get("commands")
+        self.commands = [Command(path) for path in config.get("commands", [])]
 
         # Internal status
         self._turns = 0
@@ -808,7 +809,7 @@ class EncoderPush(Push):
         Push.__init__(self, config=config, button=button)
 
         # Commands
-        self.commands = config.get("commands")
+        self.commands = [Command(path) for path in config.get("commands", [])]
         if len(self.commands) > 0:
             self.command = self.commands[0]
         else:
