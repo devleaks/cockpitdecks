@@ -94,3 +94,4 @@ class KW(Enum):
 
 
 from .cockpit import Cockpit
+from .simulators.xplane import XPlane

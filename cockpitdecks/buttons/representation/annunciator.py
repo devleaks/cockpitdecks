@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
 from cockpitdecks import KW, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, TRANSPARENT_PNG_COLOR_BLACK, DEFAULT_COLOR, DEFAULT_COLOR_NAME, convert_color, light_off
-from cockpitdecks.rpc import RPC
+from cockpitdecks.resources.rpc import RPC
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)

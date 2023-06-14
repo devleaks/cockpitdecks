@@ -366,7 +366,7 @@ class Deck(ABC):
             logger.debug(f"change_page: deck {self.name} back page to {page}..")
         if page in self.pages.keys():
             if self.current_page is not None:
-                self.cockpit.xp.remove_datarefs_to_monitor(self.current_page.datarefs)
+                self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
                 self.current_page.clean()
             logger.debug(f"change_page: deck {self.name} ..installing new page..")
             self.previous_page = self.current_page
@@ -374,7 +374,7 @@ class Deck(ABC):
             self.page_history.append(self.current_page.name)
             logger.debug(f"change_page: ..reset device {self.name}..")
             self.device.reset()
-            self.cockpit.xp.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
+            self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
             logger.debug(f"change_page: deck {self.name} ..done")
             logger.info(f"change_page: deck {self.name} changed page to {page}")
@@ -470,8 +470,8 @@ class Deck(ABC):
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
-        if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-            self.cockpit.xp.events.put([self.name, key, state])
+        if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+            self.cockpit.sim.events.put([self.name, key, state])
             logger.debug(f"key_change_callback: {key} {state} enqueued")
         else:
             # logger.debug(f"key_change_callback: {key} {state}")

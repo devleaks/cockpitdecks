@@ -19,11 +19,10 @@ from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
-from cockpitdecks.resources.color import convert_color, light_off
+from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
 
-from .draw import DrawBase, DrawAnimation
-from .annunciator import TRANSPARENT_PNG_COLOR
+from .animation import DrawAnimation
 
 
 logger = logging.getLogger(__name__)
@@ -269,6 +268,7 @@ class WeatherIcon(DrawAnimation):
         self._upd_count = 0
 
         self.use_simulation = False  # If False, use current weather METAR/TAF, else use simulator METAR and date/time; no TAF.
+                                     # This should be decide by a dataref in XPlane, use real weather, use real date/time.
 
         self.weather = config.get("weather")
         if self.weather is not None and isinstance(self.weather, dict):
@@ -307,10 +307,10 @@ class WeatherIcon(DrawAnimation):
         self._last_updated = datetime.now()
 
         # if self.metar is not None and self.metar.data is not None:
-        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
-        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
-        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
-        #     self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
+        #     self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
+        #     self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
+        #     self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
+        #     self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
         # else:
         #     logger.debug(f"init: no metar for {self.station.icao}")
         self.weather_icon = self.select_weather_icon()
@@ -450,10 +450,10 @@ class WeatherIcon(DrawAnimation):
         if updated:
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
             if self.has_metar("data"):
-                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
-                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
-                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
-                self.button.xp.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
+                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
+                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
+                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
+                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
             else:
                 logger.debug(f"update: no metar for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()

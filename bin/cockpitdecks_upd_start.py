@@ -6,9 +6,11 @@ import itertools
 import threading
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..')) # we assume we're in subdir "bin/"
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 
-# logging.basicConfig(level=logging.DEBUG, filename="streamdecks.log", filemode='a')
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
+from cockpitdecks import XPlane  # The simulator we talk to
+
+# logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode='a')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ try:
     logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
     logger.info(f"Starting for {ac_desc}..")
     logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
-    s = Cockpit()
+    s = Cockpit(XPlane)
     s.start_aircraft(ac)
     logger.info(f"..{ac_desc} terminated.")
 except KeyboardInterrupt:

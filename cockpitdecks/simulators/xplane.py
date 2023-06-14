@@ -11,8 +11,8 @@ import time
 import datetime
 
 from cockpitdecks import SPAM_LEVEL
-from .simulator import Simulator, Dataref, Command
-from .button import Button
+from cockpitdecks.simulator import Simulator, Dataref, Command
+from cockpitdecks.button import Button
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
@@ -337,8 +337,8 @@ class XPlane(Simulator, XPlaneBeacon):
         if dataref in self.datarefs.values():
             idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(dataref)]
             if freq == 0:
-                if dataref in self.xplaneValues.keys():
-                    del self.xplaneValues[dataref]
+                if dataref in self.simlaneValues.keys():
+                    del self.simlaneValues[dataref]
                 del self.datarefs[idx]
         else:
             idx = self.datarefidx
@@ -386,10 +386,10 @@ class XPlane(Simulator, XPlaneBeacon):
                         retvalues[self.datarefs[idx]] = value
                         check.add(idx)
             # print(check)  # to see which datref get sent
-            self.xplaneValues.update(retvalues)
+            self.simlaneValues.update(retvalues)
         except:
             raise XPlaneTimeout
-        return self.xplaneValues
+        return self.simlaneValues
 
     def execute_command(self, command: Command):
         if command is None or command.path is None or command.path.lower() in NOT_A_COMMAND:

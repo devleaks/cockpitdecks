@@ -16,7 +16,7 @@ from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
 from .simulator import Dataref, DATA_PREFIX
 from cockpitdecks import ID_SEP, SPAM_LEVEL, KW
-from .rpc import RPC
+from .resources.rpc import RPC
 
 from .resources.iconfonts import ICON_FONTS
 
@@ -43,7 +43,7 @@ class Button:
         self._config = config
         self.page = page
         self.deck = page.deck
-        self.xp = self.deck.cockpit.xp  # shortcut alias
+        self.sim = self.deck.cockpit.sim  # shortcut alias
 
         self.deck.cockpit.set_logging_level(__name__)
 
@@ -539,7 +539,7 @@ class Button:
         more = re.findall("\\${"+DATA_PREFIX+"([^\\}]+?)}", txtcpy)
         for k, v in more.items():
             s = f"${{{DATA_PREFIX}{k}}}"      # @todo: !!possible injection!!
-            value = self.xp.get_data(k)
+            value = self.sim.get_data(k)
             if value is not None:
                 txtcpy = txtcpy.replace(s, value)
             else:

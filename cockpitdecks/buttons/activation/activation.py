@@ -116,7 +116,7 @@ class Activation:
         Should be the last call in activate() if activation succeeded.
         """
         if dataref is not None:
-            self.button.xp.write_dataref(dataref=dataref, value=value, vtype='float')
+            self.button.sim.write_dataref(dataref=dataref, value=value, vtype='float')
             logger.debug(f"_write_dataref: button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
         else:
             logger.debug(f"_write_dataref: button {self.button_name()}: {type(self).__name__} has no set-dataref")
@@ -134,7 +134,7 @@ class Activation:
 
     def view(self):
         if self._view is not None:
-            self.button.xp.commandOnce(self._view)
+            self.button.sim.commandOnce(self._view)
 
     def is_valid(self):
         if self.button is None:
@@ -403,7 +403,7 @@ class Push(Activation):
     def activate(self, state):
         super().activate(state)
         if state:
-            self.button.xp.commandOnce(self.command)
+            self.button.sim.commandOnce(self.command)
             if self.auto_repeat and self.exit is None:
                 self.auto_repeat_start()
             else:
@@ -467,9 +467,9 @@ class Longpress(Push):
     def activate(self, state):
         super().activate(state)
         if state:
-            self.button.xp.commandBegin(self.command)
+            self.button.sim.commandBegin(self.command)
         else:
-            self.button.xp.commandEnd(self.command)
+            self.button.sim.commandEnd(self.command)
             self.view()  # on release only
 
     def describe(self):
@@ -561,9 +561,9 @@ class OnOff(Activation):
         if state:
             if self.num_commands() > 1:
                 if self.is_off():
-                    self.button.xp.commandOnce(self.commands[0])
+                    self.button.sim.commandOnce(self.commands[0])
                 else:
-                    self.button.xp.commandOnce(self.commands[1])
+                    self.button.sim.commandOnce(self.commands[1])
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
             self.write_dataref(self.onoff_current_value)
@@ -681,13 +681,13 @@ class UpDown(Activation):
             logger.debug(f"activate: {currval}, {nextval}, {self.go_up}")
             if self.go_up:
                 if self.num_commands() > 0:
-                    self.button.xp.commandOnce(self.commands[0])  # up
+                    self.button.sim.commandOnce(self.commands[0])  # up
                 if nextval >= (self.stops - 1):
                     nextval = self.stops - 1
                     self.go_up = False
             else:
                 if self.num_commands() > 1:
-                    self.button.xp.commandOnce(self.commands[1])  # down
+                    self.button.sim.commandOnce(self.commands[1])  # down
                 if nextval <= 0:
                     nextval = 0
                     self.go_up = True
@@ -760,11 +760,11 @@ class Encoder(Activation):
     def activate(self, state):
         super().activate()
         if state == 2:  # rotate left
-            self.button.xp.commandOnce(self.commands[0])
+            self.button.sim.commandOnce(self.commands[0])
             self._turns = self._turns + 1
             self._cw = self._cw + 1
         elif state == 3:  # rotate right
-            self.button.xp.commandOnce(self.commands[1])
+            self.button.sim.commandOnce(self.commands[1])
             self._turns = self._turns - 1
             self._ccw = self._ccw + 1
         else:
@@ -840,27 +840,27 @@ class EncoderPush(Push):
         elif state == 2:  # rotate clockwise
             if self.longpush:
                 if self.is_pressed():
-                    self.button.xp.commandOnce(self.commands[2])
+                    self.button.sim.commandOnce(self.commands[2])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                 else:
-                    self.button.xp.commandOnce(self.commands[0])
+                    self.button.sim.commandOnce(self.commands[0])
                     self._turns = self._turns - 1
                     self._ccw = self._ccw + 1
             else:
-                self.button.xp.commandOnce(self.commands[1])
+                self.button.sim.commandOnce(self.commands[1])
         elif state == 3:  # rotate counter-clockwise
             if self.longpush:
                 if self.is_pressed():
-                    self.button.xp.commandOnce(self.commands[3])
+                    self.button.sim.commandOnce(self.commands[3])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                 else:
-                    self.button.xp.commandOnce(self.commands[1])
+                    self.button.sim.commandOnce(self.commands[1])
                     self._turns = self._turns - 1
                     self._ccw = self._ccw + 1
             else:
-                self.button.xp.commandOnce(self.commands[2])
+                self.button.sim.commandOnce(self.commands[2])
         else:
             logger.warning(f"activate: button {self.button_name()}: {type(self).__name__} invalid state {state}")
 
@@ -940,32 +940,32 @@ class EncoderOnOff(OnOff):
         elif state == 2:  # rotate clockwise
             if self.is_on():
                 if self.dual:
-                    self.button.xp.commandOnce(self.commands[2])
+                    self.button.sim.commandOnce(self.commands[2])
                 else:
-                    self.button.xp.commandOnce(self.commands[2])
+                    self.button.sim.commandOnce(self.commands[2])
                 self._turns = self._turns + 1
                 self._cw = self._cw + 1
             else:
                 if self.dual:
-                    self.button.xp.commandOnce(self.commands[4])
+                    self.button.sim.commandOnce(self.commands[4])
                 else:
-                    self.button.xp.commandOnce(self.commands[2])
+                    self.button.sim.commandOnce(self.commands[2])
                 self._turns = self._turns - 1
                 self._ccw = self._ccw + 1
             self.view()
         elif state == 3:  # rotate counter-clockwise
             if self.is_on():
                 if self.dual:
-                    self.button.xp.commandOnce(self.commands[3])
+                    self.button.sim.commandOnce(self.commands[3])
                 else:
-                    self.button.xp.commandOnce(self.commands[3])
+                    self.button.sim.commandOnce(self.commands[3])
                 self._turns = self._turns + 1
                 self._cw = self._cw + 1
             else:
                 if self.dual:
-                    self.button.xp.commandOnce(self.commands[5])
+                    self.button.sim.commandOnce(self.commands[5])
                 else:
-                    self.button.xp.commandOnce(self.commands[3])
+                    self.button.sim.commandOnce(self.commands[3])
                 self._turns = self._turns - 1
                 self._ccw = self._ccw + 1
             self.view()
@@ -1048,9 +1048,9 @@ class EncoderValue(OnOff):
         if state < 2:
             if state:
                 if self.is_off():
-                    self.button.xp.commandOnce(self.commands[0])
+                    self.button.sim.commandOnce(self.commands[0])
                 else:
-                    self.button.xp.commandOnce(self.commands[1])
+                    self.button.sim.commandOnce(self.commands[1])
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
                 self.view()

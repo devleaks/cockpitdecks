@@ -170,8 +170,8 @@ class Loupedeck(DeckWithIcons):
             Either execute function direactly or enqueue it for later dequeue.
             """
             logger.debug(f"key_change_callback: Deck {this_deck.id()} Key {this_key} = {this_state}")
-            if self.cockpit.xp.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                self.cockpit.xp.events.put([self.name, this_key, this_state])
+            if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+                self.cockpit.sim.events.put([self.name, this_key, this_state])
                 # logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
             else:
                 # logger.debug(f"key_change_callback: {key} {state}")

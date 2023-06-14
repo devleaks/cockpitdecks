@@ -37,7 +37,7 @@ class Dataref:
         self.dataref = path         # some/path/values
         self.index = 0              # 6
         self.length = length        # length of some/path/values array, if available.
-        self.xp_datatype = None
+        self.sim_datatype = None
         self.data_type = "float"    # int, float, byte
         self.is_array = False       # array of above
         self.is_decimal = is_decimal
@@ -164,7 +164,7 @@ class Simulator(ABC):
         self.all_datarefs = {}
 
         self.datarefs_to_monitor = {}  # dataref path and number of objects monitoring
-        self.xplaneValues = {}         # key = dataref-path, value = value
+        self.simlaneValues = {}         # key = dataref-path, value = value
 
         # Values of datarefs
         self.previous_values = {}
@@ -261,7 +261,7 @@ class Simulator(ABC):
         logger.debug(f"remove_all_datarefs: removing..")
         self.all_datarefs = {}
         self.datarefs_to_monitor = {}
-        self.xplaneValues = {}
+        self.simlaneValues = {}
         self.previous_values = {}
         self.current_values = {}
         logger.debug(f"remove_all_datarefs: ..removed")

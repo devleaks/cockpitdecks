@@ -19,7 +19,7 @@ class Page:
         self._config = config
         self.name = name
         self.deck = deck
-        self.xp = self.deck.cockpit.xp  # shortcut alias
+        self.sim = self.deck.cockpit.sim  # shortcut alias
 
         self.deck.cockpit.set_logging_level(__name__)
         self.load_defaults(config, deck)
@@ -126,7 +126,7 @@ class Page:
     def register_datarefs(self, button: Button):
         for d in button.get_datarefs():
             if d not in self.datarefs:
-                ref = self.xp.get_dataref(d)  # creates or return already defined dataref
+                ref = self.sim.get_dataref(d)  # creates or return already defined dataref
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
@@ -189,7 +189,7 @@ class Page:
         return self.deck.current_page == self
 
     def terminate(self):
-        if self.is_current_page() and self.xp is not None:
-            self.xp.remove_datarefs_to_monitor(self.datarefs)
+        if self.is_current_page() and self.sim is not None:
+            self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.clean()
         self.buttons = {}

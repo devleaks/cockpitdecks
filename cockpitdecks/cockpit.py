@@ -20,14 +20,30 @@ from cockpitdecks.resources.color import convert_color, has_ext
 
 from . import __version__
 from .decks import DECK_TYPES
-from .xplane import XPlane
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
-
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 yaml = YAML()
+
+
+class Config:
+
+    def __init__(self, filename: str):
+
+        self.filename = filename
+        self.data = None
+
+        if os.path.exists(fn):
+            with open(filename, "r") as fp:
+                self.data = yaml.load(fp)
+                logger.debug(f"__init__: loaded config from {filename}")
+        else:
+            logger.debug(f"__init__: no file {filename}")
+
+    def valid(self):
+        return self.data is not None
 
 
 class Cockpit:
@@ -35,9 +51,9 @@ class Cockpit:
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
-    def __init__(self):
+    def __init__(self, simulator):
         self._debug = ROOT_DEBUG.split(",")   # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
-        self.xp = XPlane(self)
+        self.sim = simulator(self)
         self._config = None             # content of deckconfig/config.yaml
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
@@ -123,7 +139,7 @@ class Cockpit:
 
     def inspect_datarefs(self, what: str = None):
         if what.startswith("datarefs"):
-            for dref in self.xp.all_datarefs.values():
+            for dref in self.sim.all_datarefs.values():
                 logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)})")
                 if what.endswith("listener"):
                     for l in dref.listeners:
@@ -226,7 +242,7 @@ class Cockpit:
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
             self.terminate_aircraft()
-            self.xp.clean_datarefs_to_monitor()
+            self.sim.clean_datarefs_to_monitor()
             logger.warning(f"load_aircraft: {os.path.basename(self.acpath)} unloaded")
 
         if len(self.devices) == 0:
@@ -327,8 +343,8 @@ class Cockpit:
         self._debug = self.default_config.get("debug", ",".join(self._debug)).split(",")
         self.set_logging_level(__name__)
 
-        self.xp.set_roundings(self.default_config.get("roundings", {}))
-        self.xp.set_slow_datarefs(self.default_config.get("slow-datarefs", {}))
+        self.sim.set_roundings(self.default_config.get("roundings", {}))
+        self.sim.set_slow_datarefs(self.default_config.get("slow-datarefs", {}))
 
         self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
         self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
@@ -724,7 +740,7 @@ class Cockpit:
             deck.terminate()
         self.cockpit = {}
         nt = len(threading.enumerate())
-        if not self.xp.use_flight_loop and nt > 1:
+        if not self.sim.use_flight_loop and nt > 1:
             logger.info(f"terminate_aircraft: {nt} threads")
             logger.info(f"terminate_aircraft: {[t.name for t in threading.enumerate()]}")
         logger.info(f"terminate_aircraft: ..done")
@@ -743,12 +759,12 @@ class Cockpit:
         # Terminate decks
         self.terminate_aircraft()
         # Terminate dataref collection
-        if self.xp is not None:
+        if self.sim is not None:
             logger.info(f"terminate_all: ..terminating xp..")
-            self.xp.terminate()
+            self.sim.terminate()
             logger.debug(f"terminate_all: ..deleting xp..")
-            del self.xp
-            self.xp = None
+            del self.sim
+            self.sim = None
             logger.debug(f"terminate_all: ..xp deleted..")
         # Terminate reload loop
         if self.reload_loop_run:
@@ -766,11 +782,11 @@ class Cockpit:
             # Each deck should have been started
             # Start reload loop
             logger.info(f"run: starting..")
-            self.xp.connect()
+            self.sim.connect()
             logger.info(f"run: ..connect to X-Plane loop started..")
             self.start_reload_loop()
             logger.info(f"run: ..reload loop started..")
-            if not self.xp.use_flight_loop:
+            if not self.sim.use_flight_loop:
                 logger.info(f"run: {len(threading.enumerate())} threads")
                 logger.info(f"run: {[t.name for t in threading.enumerate()]}")
                 logger.info(f"run: ..started")
