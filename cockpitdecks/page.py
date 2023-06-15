@@ -31,6 +31,12 @@ class Page:
     def get_id(self):
         return ID_SEP.join([self.deck.get_id(), self.name])
 
+    def is_current_page(self):
+        """
+        Returns whether button is on current page
+        """
+        return self.deck.current_page == self
+
     def get_button_value(self, name):
         a = name.split(ID_SEP)
         if len(a) > 0:
@@ -145,10 +151,10 @@ class Page:
         if dataref is None:
             logger.error(f"dataref_changed: page {self.name}: no dataref")
             return
-        if dataref.path in self.datarefs.keys():
-            self.datarefs[dataref].notify()
-        else:
+        if dataref.path not in self.datarefs.keys():
             logger.warning(f"dataref_changed: page {self.name}: dataref {dataref.path} not found")
+            return
+        self.datarefs[dataref].notify()
 
     def activate(self, idx: int):
         if idx in self.buttons.keys():
@@ -170,6 +176,9 @@ class Page:
         for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices()):
             self.deck.fill_empty(key)
 
+    def print(self):
+        self.deck.print_page(self)
+
     def clean(self):
         """
         Ask each button to stop rendering and clean its mess.
@@ -179,16 +188,10 @@ class Page:
             button.clean()  # knows how to clean itself
         logger.debug(f"clean: page {self.name}: ..done")
 
-    def print(self):
-        self.deck.print_page(self)
-
-    def is_current_page(self):
-        """
-        Returns whether button is on current page
-        """
-        return self.deck.current_page == self
-
     def terminate(self):
+        """
+        Cleans all individual buttons on the page
+        """
         if self.is_current_page() and self.sim is not None:
             self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.clean()

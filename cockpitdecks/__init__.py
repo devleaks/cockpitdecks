@@ -1,3 +1,6 @@
+# A few constants and default values
+# Adjust with care...
+#
 from datetime import datetime
 from enum import Enum
 

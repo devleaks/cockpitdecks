@@ -53,10 +53,11 @@ class Cockpit:
     """
     def __init__(self, simulator):
         self._debug = ROOT_DEBUG.split(",")   # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
-        self.sim = simulator(self)
         self._config = None             # content of deckconfig/config.yaml
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
+
+        self.sim = simulator(self)
 
         self.disabled = False
         self.default_pages = None       # for debugging
@@ -429,7 +430,6 @@ class Cockpit:
         # 4. report summary if debugging
         logger.debug(f"load_defaults: default fonts {self.fonts.keys()}, default={self.default_font}, default label={self.default_label_font}")
 
-
     def create_decks(self):
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = {}
@@ -733,6 +733,13 @@ class Cockpit:
         else:
             self.reload_queue.put("stop")
             logger.debug(f"stop_decks: enqueued")
+
+    def dataref_changed(self, dataref):
+        """
+        This gets called when dataref AIRCRAFT_DATAREF is changed, hence a new aircraft has been loaded.
+        """
+        logger.info(f"dataref_changed: new aircraft loaded {dataref.path}={dataref.value()}")
+
 
     def terminate_aircraft(self):
         logger.info(f"terminate_aircraft: terminating..")

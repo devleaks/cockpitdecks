@@ -1,9 +1,9 @@
 """
-Container object for one button.
+Container object for one "button".
 Contains how to interact with (_activation) and how to represent it (_representation).
 Has options.
 Manage interaction with X-Plane, fetch or write datarefs.
-Maintain a value.
+Maintain a "value", and some internal attributes.
 """
 import re
 import logging
@@ -15,10 +15,10 @@ from ruamel.yaml import YAML
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
 from .simulator import Dataref, DATA_PREFIX
-from cockpitdecks import ID_SEP, SPAM_LEVEL, KW
 from .resources.rpc import RPC
-
 from .resources.iconfonts import ICON_FONTS
+
+from cockpitdecks import ID_SEP, SPAM_LEVEL, KW
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -31,9 +31,6 @@ PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly b
 VARIABLE_PREFIX = ["button", "state"]
 
 
-# ##########################################
-# BUTTONS
-#
 class Button:
 
     def __init__(self, config: dict, page: "Page"):

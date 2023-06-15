@@ -1,5 +1,4 @@
-# Class for interface with X-Plane using X-Plane SDK
-# To be used when run as an external program via UDP access.
+# Class for interface with X-Plane using UDP protocol.
 #
 import socket
 import struct
@@ -32,6 +31,8 @@ MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect,
 # The command keywords are not executed, ignored with a warning
 NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
 NOT_A_DATAREF = ["DatarefPlaceholder"]
+
+AIRCRAFT_DATAREF = "sim/aircraft/view/acf_livery_path"
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -264,7 +265,9 @@ class XPlane(Simulator, XPlaneBeacon):
         self.init()
 
     def init(self):
-        pass
+        dref = Dataref(AIRCRAFT_DATAREF)
+        dref.add_listener(self.cockpit)  # Wow wow wow
+        self.register(dref)
 
     def __del__(self):
         for i in range(len(self.datarefs)):
@@ -471,6 +474,8 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.warning(f"add_datarefs_to_monitor: no connection")
             logger.debug(f"add_datarefs_to_monitor: would add {self.remove_local_datarefs(datarefs.keys())}")
             return
+        # Add aircraft path
+        datarefs[AIRCRAFT_DATAREF] = self.get_dataref(AIRCRAFT_DATAREF)
         # Add those to monitor
         super().add_datarefs_to_monitor(datarefs)
         prnt = []
@@ -487,6 +492,8 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.warning(f"remove_datarefs_to_monitor: no connection")
             logger.debug(f"remove_datarefs_to_monitor: would remove {datarefs.keys()}")
             return
+        # Add aircraft path
+        datarefs[AIRCRAFT_DATAREF] = self.get_dataref(AIRCRAFT_DATAREF)
         # Add those to monitor
         prnt = []
         for d in datarefs.values():

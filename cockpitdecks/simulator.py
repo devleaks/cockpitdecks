@@ -1,4 +1,4 @@
-# Base class for interface with X-Plane
+# Base classes for interface with the simulation software
 #
 import threading
 import logging
@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 DATA_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
 
 class Command:
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
 
     def __init__(self, path: str, name: str = None):
 
@@ -30,6 +34,10 @@ class Command:
 
 
 class Dataref:
+    """
+    A Dataref is an internal value of the simulation software made accessible to outside modules,
+    plugins, or other software in general.
+    """
 
     def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
 
@@ -149,13 +157,16 @@ class Dataref:
         if self.has_changed():
             for k, v in self.listeners.items():
                 v.dataref_changed(self)
-                loggerDataref.log(SPAM_LEVEL, f"notify: {self.path}: notified {v.page.name}/{v.name}")
+                if hasattr(v, "page") and v.page is not None:
+                    loggerDataref.log(SPAM_LEVEL, f"notify: {self.path}: notified {v.page.name}/{v.name}")
+                else:
+                    loggerDataref.log(SPAM_LEVEL, f"notify: {self.path}: notified {v.name} (not on a page)")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
 
 class Simulator(ABC):
     """
-    Abstract class for execution of operations in X-Plane
+    Abstract class for execution of operations and collection of data in the simulation software.
     """
     def __init__(self, decks):
         self.cockpit = decks

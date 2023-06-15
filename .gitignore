@@ -159,7 +159,4 @@ secret.yaml
 *.tar
 *.taz
 tests/
-A321/deckconfig
-C172/deckconfig
-A330/
-A350/
+aircrafts/
