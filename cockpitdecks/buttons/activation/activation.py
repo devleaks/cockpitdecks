@@ -77,13 +77,13 @@ class Activation:
             now = datetime.now().timestamp()
             self._fast = now - self.last_activated  # time between previous activation and this one
             self.last_activated = now
-            logger.debug(f"activate: button {self.button_name()}: {type(self).__name__} activated")
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} activated")
             self.pressed = True
 
             # Guard handling
             if self.button.is_guarded():
                 self._write_dataref(self.button.guarded, 1) # just open it
-                logger.debug(f"activate: button {self.button_name()}: {type(self).__name__}: guard removed")
+                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
                 return
         else:
             self.pressed = False
@@ -91,10 +91,10 @@ class Activation:
             # Guard handling
             if self.button.guard is not None and not self.button.is_guarded() and self.duration > 2:
                 self._write_dataref(self.button.guarded, 0) # close it
-                logger.debug(f"activate: button {self.button_name()}: {type(self).__name__}: guard replaced")
+                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
                 return
 
-        # logger.debug(f"activate: {type(self).__name__} activated ({state}, {self.activation_count})")
+        # logger.debug(f"{type(self).__name__} activated ({state}, {self.activation_count})")
 
     def is_pressed(self):
         return self.pressed
@@ -117,9 +117,9 @@ class Activation:
         """
         if dataref is not None:
             self.button.sim.write_dataref(dataref=dataref, value=value, vtype='float')
-            logger.debug(f"_write_dataref: button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
         else:
-            logger.debug(f"_write_dataref: button {self.button_name()}: {type(self).__name__} has no set-dataref")
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} has no set-dataref")
 
     def write_dataref(self, value: float):
         """
@@ -138,23 +138,23 @@ class Activation:
 
     def is_valid(self):
         if self.button is None:
-            logger.warning(f"is_valid: {type(self).__name__} has no button")
+            logger.warning(f"{type(self).__name__} has no button")
             return False
         return True
 
     def inspect(self, what: str = None):
-        logger.info(f"{self.button_name()}:{type(self).__name__}:")
-        logger.info(f"is_valid: {self.is_valid()}")
-        logger.info(f"view: {self._view}")
-        logger.info(f"initial value: {self.initial_value}")
+        logger.info(f"{type(self).__name__}:")
+        logger.info(f"{self.is_valid()}")
+        logger.info(f"{self._view}")
+        logger.info(f"{self.initial_value}")
 
-        logger.info(f"last state: {self._last_state}")
+        logger.info(f"{self._last_state}")
 
-        logger.info(f"activation_count: {self.activation_count}")
-        logger.info(f"activations_count: {self.activations_count}")
-        logger.info(f"last_activated: {self.last_activated}")
-        logger.info(f"last_activation_duration: {self.duration}")
-        logger.info(f"pressed: {self.pressed}")
+        logger.info(f"{self.activation_count}")
+        logger.info(f"{self.activations_count}")
+        logger.info(f"{self.last_activated}")
+        logger.info(f"{self.duration}")
+        logger.info(f"{self.pressed}")
 
     def get_status(self):
         return {
@@ -198,7 +198,7 @@ class LoadPage(Activation):
 
     def is_valid(self):
         if self.page is None:
-            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} has no page")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no page")
             return False
         return super().is_valid()
 
@@ -206,7 +206,7 @@ class LoadPage(Activation):
         super().activate(state)
         decks = self.button.deck.cockpit.cockpit
         if self.remote_deck is not None and self.remote_deck not in decks.keys():
-            logger.warning(f"activate: {type(self).__name__}: deck not found {self.remote_deck}")
+            logger.warning(f"{type(self).__name__}: deck not found {self.remote_deck}")
             self.remote_deck = None
         if state:
             deck = self.button.deck
@@ -214,10 +214,10 @@ class LoadPage(Activation):
                 deck = decks[self.remote_deck]
 
             if self.page == LoadPage.KW_BACKPAGE or self.page in deck.pages.keys():
-                logger.debug(f"activate: {type(self).__name__} change page to {self.page}")
+                logger.debug(f"{type(self).__name__} change page to {self.page}")
                 new_name = deck.change_page(self.page)
             else:
-                logger.warning(f"activate: {type(self).__name__}: page not found {self.page}")
+                logger.warning(f"{type(self).__name__}: page not found {self.page}")
 
     def describe(self):
         """
@@ -373,7 +373,7 @@ class Push(Activation):
             self.auto_repeat_speed = float(value)
             if self.auto_repeat_speed <= 0:
                 self.auto_repeat_speed = Push.AUTO_REPEAT_SPEED
-        logger.debug(f"set_auto_repeat: {self.auto_repeat_delay}, {self.auto_repeat_speed}")
+        logger.debug(f"{self.auto_repeat_delay}, {self.auto_repeat_speed}")
 
     def is_on(self):
         value = self.button.get_current_value()
@@ -384,10 +384,10 @@ class Push(Activation):
                     self.onoff_current_value = value
             else:
                 self.onoff_current_value = self.initial_value != 0  # @todo: fails if not number...
-            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value}")
+            logger.debug(f"button {self.button_name()} is {self.onoff_current_value}")
         else:
             self.onoff_current_value = self.activation_count % 2 == 1
-            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value} from internal state")
+            logger.debug(f"button {self.button_name()} is {self.onoff_current_value} from internal state")
 
         return self.onoff_current_value
 
@@ -396,7 +396,7 @@ class Push(Activation):
 
     def is_valid(self):
         if self.command is None:
-            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} has no command")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no command")
             return False
         return super().is_valid()
 
@@ -427,7 +427,7 @@ class Push(Activation):
         while not self.exit.is_set():
             self.activate(self.pressed)
             self.exit.wait(self.auto_repeat_speed)
-        logger.debug(f"auto_repeat: exited")
+        logger.debug(f"exited")
 
     def auto_repeat_start(self):
         """
@@ -439,7 +439,7 @@ class Push(Activation):
             self.thread.name = f"Activation::auto_repeat({self.button_name()})"
             self.thread.start()
         else:
-            logger.warning(f"auto_repeat_start: button {self.button_name()}: already started")
+            logger.warning(f"button {self.button_name()}: already started")
 
     def auto_repeat_stop(self):
         """
@@ -449,11 +449,11 @@ class Push(Activation):
             self.exit.set()
             self.thread.join(timeout=2*self.auto_repeat_speed)
             if self.thread.is_alive():
-                logger.warning(f"auto_repeat_stop: ..thread may hang..")
+                logger.warning(f"..thread may hang..")
             else:
                 self.exit = None
         else:
-            logger.debug(f"auto_repeat_stop: button {self.button_name()}: already stopped")
+            logger.debug(f"button {self.button_name()}: already stopped")
 
 
 class Longpress(Push):
@@ -509,13 +509,13 @@ class OnOff(Activation):
                 self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
             else:
                 self.onoff_current_value = value
-            logger.debug(f"init: button {self.button_name()} initialized on/off at {self.onoff_current_value}")
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value}")
         elif self.initial_value is not None:
             if type(self.initial_value) == bool: # expect bool or number... (no check for number)
                 self.onoff_current_value = self.initial_value
             else:
                 self.onoff_current_value = self.initial_value != 0
-            logger.debug(f"init: button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
         if self.onoff_current_value is not None:
             self._inited = True
         # self.onoff_current_value can still be None here...
@@ -531,10 +531,10 @@ class OnOff(Activation):
     def is_valid(self):
         if self.num_commands() > 0:
             if self.num_commands() < 2:
-                logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have at least two commands")
+                logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands")
                 return False
         elif self.writable_dataref is None:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         return super().is_valid()
 
@@ -547,10 +547,10 @@ class OnOff(Activation):
                     self.onoff_current_value = value
             else:
                 self.onoff_current_value = value != 0  # @todo: fails if not number...
-            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value}")
+            logger.debug(f"button {self.button_name()} is {self.onoff_current_value}")
         else:
             self.onoff_current_value = self.activation_count % 2 == 1
-            logger.debug(f"is_on: button {self.button_name()} is {self.onoff_current_value} from internal state")
+            logger.debug(f"button {self.button_name()} is {self.onoff_current_value} from internal state")
         return self.onoff_current_value
 
     def is_off(self):
@@ -634,18 +634,18 @@ class UpDown(Activation):
             elif self.stop_current_value <= 0:
                 self.stop_current_value = 0
                 self.go_up = True
-            logger.debug(f"init: button {self.button_name()} initialized stop at {self.stop_current_value}")
+            logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value}")
         elif self.initial_value is not None:
             if is_integer(self.initial_value):
                 value = abs(self.initial_value)
                 if value > self.stops - 1:
-                    logger.warning(f"__init__: button {self.button_name()} initial value {value} too large. Set to {self.stops - 1}.")
+                    logger.warning(f"button {self.button_name()} initial value {value} too large. Set to {self.stops - 1}.")
                     value = self.stops - 1
                 if self.initial_value < 0:
                     self.go_up = False # reverse direction
                 self.initial_value = value
                 self.stop_current_value = value
-            logger.debug(f"init: button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value")
+            logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value")
         if self.stop_current_value is not None:
             self._inited = True
 
@@ -660,13 +660,13 @@ class UpDown(Activation):
     def is_valid(self):
         if self.num_commands() > 0:
             if self.num_commands() < 2:
-                logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
+                logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
                 return False
         elif self.writable_dataref is None:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         if self.stops is None or self.stops == 0:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have a number of stops")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a number of stops")
             return False
         return super().is_valid()
 
@@ -678,7 +678,7 @@ class UpDown(Activation):
                 currval = 0
                 self.go_up = True
             nextval = int(currval + 1 if self.go_up else currval - 1)
-            logger.debug(f"activate: {currval}, {nextval}, {self.go_up}")
+            logger.debug(f"{currval}, {nextval}, {self.go_up}")
             if self.go_up:
                 if self.num_commands() > 0:
                     self.button.sim.commandOnce(self.commands[0])  # up
@@ -753,7 +753,7 @@ class Encoder(Activation):
 
     def is_valid(self):
         if self.num_commands() < 2:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
             return False
         return super().is_valid()
 
@@ -768,7 +768,7 @@ class Encoder(Activation):
             self._turns = self._turns - 1
             self._ccw = self._ccw + 1
         else:
-            logger.warning(f"activate: button {self.button_name()}: {type(self).__name__} invalid state {state}")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid state {state}")
 
     def get_status(self):
         a = super().get_status()
@@ -813,7 +813,7 @@ class EncoderPush(Push):
         if len(self.commands) > 0:
             self.command = self.commands[0]
         else:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have at least one command")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least one command")
 
         self.longpush = self.button.has_option("longpush")
 
@@ -827,10 +827,10 @@ class EncoderPush(Push):
 
     def is_valid(self):
         if self.longpush and self.num_commands() != 4:
-            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} must have 4 commands for longpush mode")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 4 commands for longpush mode")
             return False
         elif not self.longpush and self.num_commands() != 3:
-            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} must have 3 commands")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 3 commands")
             return False
         return True  # super().is_valid()
 
@@ -862,7 +862,7 @@ class EncoderPush(Push):
             else:
                 self.button.sim.commandOnce(self.commands[2])
         else:
-            logger.warning(f"activate: button {self.button_name()}: {type(self).__name__} invalid state {state}")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid state {state}")
 
     def get_status(self):
         a = super().get_status()
@@ -927,10 +927,10 @@ class EncoderOnOff(OnOff):
 
     def is_valid(self):
         if self.dual and self.num_commands() != 6:
-            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} must have 6 commands for dual mode")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 6 commands for dual mode")
             return False
         elif not self.dual and self.num_commands() != 4:
-            logger.warning(f"is_valid: button {self.button_name()}: {type(self).__name__} must have 4 commands")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 4 commands")
             return False
         return True  # super().is_valid()
 
@@ -1031,16 +1031,16 @@ class EncoderValue(OnOff):
         value = self.button.get_current_value()
         if value is not None:
             self.encoder_current_value = value
-            logger.debug(f"init: button {self.button_name()} initialized on/off at {self.encoder_current_value}")
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.encoder_current_value}")
         elif self.initial_value is not None:
             self.encoder_current_value = self.initial_value
-            logger.debug(f"init: button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
         if self.encoder_current_value is not None:
             self._inited = True
 
     def is_valid(self):
         if self.writable_dataref is None:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
 
@@ -1070,7 +1070,7 @@ class EncoderValue(OnOff):
             self._turns = self._turns - 1
             self._ccw = self._ccw + 1
         else:
-            logger.warning(f"activate: {type(self).__name__} invalid state {state}")
+            logger.warning(f"{type(self).__name__} invalid state {state}")
 
         if ok:
             self.encoder_current_value = x
@@ -1129,7 +1129,7 @@ class Slider(Activation):  # Cursor?
 
     def is_valid(self):
         if self.writable_dataref is None:
-            logger.error(f"is_valid: button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
 
@@ -1141,7 +1141,7 @@ class Slider(Activation):  # Cursor?
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
         self.write_dataref(value)
-        logger.debug(f"activate: button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
 
     def describe(self):
         """
@@ -1170,7 +1170,7 @@ class Swipe(Activation):
 
     def activate(self, state):
         super().activate(state)
-        logger.info(f"activate: button {self.button_name()} has no action (value={state})")
+        logger.info(f"button {self.button_name()} has no action (value={state})")
 
     def describe(self):
         """

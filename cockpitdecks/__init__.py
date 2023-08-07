@@ -1,15 +1,28 @@
 # A few constants and default values
 # Adjust with care...
 #
+import os
+import logging
+from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum
+import ruamel
+from ruamel.yaml import YAML
+
+# Prevent aliasing
+# https://stackoverflow.com/questions/64716894/ruamel-yaml-disabling-alias-for-dumping
+ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
+yaml = YAML()
+
+logger = logging.getLogger(__name__)
+# logger.setLevel(SPAM_LEVEL)
 
 __NAME__         = "cockpitdecks"
 __DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit"
 __LICENSE__      = "MIT"
 __LICENSEURL__   = "https://mit-license.org"
 __COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.4.2"
+__version__      = "7.5.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__    = "https://github.com/devleaks/cockpitdecks"
@@ -97,6 +110,40 @@ class KW(Enum):
     REPRESENTATIONS = "representations"
     VIEW = "view"
 
+class Config(MutableMapping):
+	"""
+	A dictionary that loads from a yaml config file.
+	"""
+	def __init__(self, filename: str):
+		self.store = dict()
+		if os.path.exists(filename):
+			with open(filename, "r") as fp:
+				self.store = yaml.load(fp)
+				self.store["__filename__"] = filename
+				logger.debug(f"loaded config from {filename}")
+		else:
+			logger.debug(f"no file {filename}")
+
+	def __getitem__(self, key):
+		return self.store[self._keytransform(key)]
+
+	def __setitem__(self, key, value):
+		self.store[self._keytransform(key)] = value
+
+	def __delitem__(self, key):
+		del self.store[self._keytransform(key)]
+
+	def __iter__(self):
+		return iter(self.store)
+	
+	def __len__(self):
+		return len(self.store)
+
+	def _keytransform(self, key):
+		return key
+
+	def is_valid(self):
+		return self.store is not None and len(self.store) > 1
 
 from .cockpit import Cockpit
 from .simulators.xplane import XPlane

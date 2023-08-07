@@ -11,10 +11,11 @@ from abc import ABC, abstractmethod
 from functools import reduce
 
 from PIL import Image, ImageDraw, ImageOps
-from ruamel.yaml import YAML
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
+from cockpitdecks import Config
+
 from cockpitdecks.resources.color import convert_color
 from .page import Page
 from .button import Button
@@ -23,13 +24,6 @@ from cockpitdecks.buttons.representation import DECK_REPRESENTATIONS, DEFAULT_RE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-# Prevent aliasing
-# https://stackoverflow.com/questions/64716894/ruamel-yaml-disabling-alias-for-dumping
-import ruamel
-ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
-
-yaml = YAML()
 
 DECKS_FOLDER = "decks"
 
@@ -70,7 +64,7 @@ class Deck(ABC):
             self.serial = config["serial"]
         else:
             self.valid = False
-            logger.error(f"__init__: {self.name}: has no serial number, cannot use")
+            logger.error(f"{self.name}: has no serial number, cannot use")
 
         self.brightness = 100
         if "brightness" in config:
@@ -83,7 +77,7 @@ class Deck(ABC):
             self.layout = config["layout"]  # config["layout"] may be None to choose no layout
         else:
             self.layout = DEFAULT_LAYOUT
-            logger.warning(f"__init__: deck has no layout, using default")
+            logger.warning(f"deck has no layout, using default")
 
         # Local non default values are initialized from defaults
         # May be overwritten by configuration parameters.
@@ -98,7 +92,7 @@ class Deck(ABC):
     #
     def init(self):
         if not self.valid:
-            logger.warning(f"init: deck {self.name}: is invalid")
+            logger.warning(f"deck {self.name}: is invalid")
             return
         self.read_definition()
         self.load()     # will load default page if no page found
@@ -110,18 +104,15 @@ class Deck(ABC):
     def read_definition(self):
         dt = self.model if self.model is not None else type(self).__name__
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER, dt + ".yaml")
-        logger.debug(f"read_definition: {type(self).__name__}, {self.model}: {fn}")
+        logger.debug(f"{type(self).__name__}, {self.model}: {fn}")
         if not os.path.exists(fn):
-            logger.error(f"read_definition: no deck definition {fn} for {type(self).__name__}")
+            logger.error(f"no deck definition {fn} for {type(self).__name__}")
             return
 
-        with open(fn, "r") as fp:
-            self.deck_content = yaml.load(fp)
-            logger.info(f"read_definition: loaded deck definition for {dt}")
-            logger.debug(f"read_definition: loaded deck definition {fn}")
+        self.deck_content = Config(fn)
 
-        if self.deck_content is None:
-            logger.error(f"read_definition: no deck definition for {dt}")
+        if not self.deck_content.is_valid():
+            logger.error(f"no deck definition for {dt}")
             return
 
         cnt = 0
@@ -137,7 +128,7 @@ class Deck(ABC):
             else:
                 activation = DECK_ACTIVATIONS.get(action)
                 if activation is None:
-                    logger.warning(f"read_definition: deck {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
+                    logger.warning(f"deck {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
 
             view = button.get(KW.VIEW.value)
             r = [KW.NONE.value]
@@ -146,14 +137,14 @@ class Deck(ABC):
             else:
                 representation = DECK_REPRESENTATIONS.get(view)
                 if representation is None:
-                    logger.warning(f"read_definition: deck {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS")
+                    logger.warning(f"deck {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS")
 
             if activation is not None and representation is not None:
                 if repeat is None:
                     if name is None:
                         name = "NO_NAME_" + str(cnt)
                         cnt = cnt + 1
-                        logger.warning(f"read_definition: deck {self.name}: button has no name, using default {name}")
+                        logger.warning(f"deck {self.name}: button has no name, using default {name}")
 
                     self._buttons[prefix + name] = {
                         KW.INDEX.value: prefix + name,
@@ -180,13 +171,13 @@ class Deck(ABC):
                             self._buttons[idx][KW.IMAGE.value] = button.get(KW.IMAGE.value)
                         # else: don't set it, a sign that there is no image
             else:
-                logger.warning(f"read_definition: deck {self.name}: cannot proceed with {button} definition")
-        logger.debug(f"read_definition: deck {self.name}: buttons: {self._buttons.keys()}..")
+                logger.warning(f"deck {self.name}: cannot proceed with {button} definition")
+        logger.debug(f"deck {self.name}: buttons: {self._buttons.keys()}..")
         # with open(f"{dt}.out", "w") as fp:
         #     yaml.dump(self._buttons, fp)
         self.valid_activations()        # will print debug
         self.valid_representations()    # will print debug
-        logger.debug(f"read_definition: ..deck {self.name} done")
+        logger.debug(f"..deck {self.name} done")
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -195,9 +186,9 @@ class Deck(ABC):
                 if a[1] in self.pages.keys():
                     return self.pages[a[1]].get_button_value(ID_SEP.join(a[1:]))
                 else:
-                    logger.warning(f"get_button_value: so such page {a[1]}")
+                    logger.warning(f"so such page {a[1]}")
             else:
-                logger.warning(f"get_button_value: not my deck {a[0]} ({self.name})")
+                logger.warning(f"not my deck {a[0]} ({self.name})")
         return None
 
     def set_defaults(self, config: dict, base):
@@ -245,14 +236,11 @@ class Deck(ABC):
         :param      fn:   The function
         :type       fn:   Function
         """
-        if os.path.exists(fn):
-            with open(fn, "r") as fp:
-                self.layout_config = yaml.load(fp)
-                logger.debug(f"load_layout_config: loaded layout config {fn}")
-            if self.layout_config is not None and type(self.layout_config) == dict:
-                self.set_defaults(self.layout_config, self)
+        self.layout_config = Config(fn)
+        if self.layout_config.is_valid():
+            self.set_defaults(self.layout_config, self)
         else:
-            logger.debug(f"load_layout_config: no layout config file")
+            logger.debug(f"no layout config file")
 
     def inspect(self, what: str = None):
         """
@@ -273,7 +261,7 @@ class Deck(ABC):
 
         dn = os.path.join(self.cockpit.acpath, CONFIG_FOLDER, self.layout)
         if not os.path.exists(dn):
-            logger.warning(f"load: deck has no layout folder '{self.layout}', loading default page")
+            logger.warning(f"deck has no layout folder '{self.layout}', loading default page")
             self.make_default_page()
             return
 
@@ -286,22 +274,21 @@ class Deck(ABC):
             elif p.endswith(".yaml") or p.endswith(".yml"):  # does not work if case sensitive, no YAML or Yaml or YML...
                 fn = os.path.join(dn, p)
                 # if os.path.exists(fn):  # we know the file should exists...
-                with open(fn, "r") as fp:
-                    page_config = yaml.load(fp)
-
+                page_config = Config(fn)
+                if page_config.is_valid():
                     name = ".".join(p.split(".")[:-1])  # build default page name, remove extension ".yaml" or ".yml" from filename
                     if "name" in page_config:
                         name = page_config["name"]
 
                     if name in self.pages.keys():
-                        logger.warning(f"load: page {name}: duplicate name, ignored")
+                        logger.warning(f"page {name}: duplicate name, ignored")
                         continue
 
                     if not KW.BUTTONS.value in page_config:
-                        logger.error(f"load: {name} has no button definition '{KW.BUTTONS.value}', ignoring")
+                        logger.error(f"{name} has no button definition '{KW.BUTTONS.value}', ignoring")
                         continue
 
-                    logger.debug(f"load: loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
+                    logger.debug(f"loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
                     this_page = Page(name, page_config, self)
                     this_page.load_defaults(page_config, self)
                     self.pages[name] = this_page
@@ -314,37 +301,35 @@ class Deck(ABC):
                         includes = page_config[KW.INCLUDES.value]
                         if type(page_config[KW.INCLUDES.value]) == str:  # just one file
                             includes = includes.split(",")
-                        logger.debug(f"load: deck {self.name}: page {name} includes {includes}..")
+                        logger.debug(f"deck {self.name}: page {name} includes {includes}..")
                         ipb = 0
                         for inc in includes:
                             fni = os.path.join(dn, inc + ".yaml")
-                            if os.path.exists(fni):
-                                with open(fni, "r") as fpi:
-                                    inc_config = yaml.load(fpi)
-                                    # how to merge? for now, just merge buttons
-                                    if KW.BUTTONS.value in inc_config:
-                                        before = len(this_page.buttons)
-                                        this_page.load_buttons(inc_config[KW.BUTTONS.value])
-                                        ipb = len(this_page.buttons) - before
+                            inc_config = Config(fni)
+                            if inc_config.is_valid():
+                                if KW.BUTTONS.value in inc_config:
+                                    before = len(this_page.buttons)
+                                    this_page.load_buttons(inc_config[KW.BUTTONS.value])
+                                    ipb = len(this_page.buttons) - before
                             else:
-                                logger.warning(f"load: includes: {inc}: file {fni} not found")
-                        logger.info(f"load: deck {self.name}: page {name} includes {inc} (from file {fni.replace(self.cockpit.acpath, '... ')}), include contains {ipb} buttons")
-                        logger.debug(f"load: includes: ..included")
+                                logger.warning(f"includes: {inc}: file {fni} not found")
+                        logger.info(f"deck {self.name}: page {name} includes {inc} (from file {fni.replace(self.cockpit.acpath, '... ')}), include contains {ipb} buttons")
+                        logger.debug(f"includes: ..included")
 
-                    logger.info(f"load: deck {self.name}: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')}), contains {len(this_page.buttons)} buttons")
+                    logger.info(f"deck {self.name}: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')}), contains {len(this_page.buttons)} buttons")
                 # else:
-                #     logger.warning(f"load: file {p} not found")
+                #     logger.warning(f"file {p} not found")
 
             else:  # not a yaml file
-                logger.debug(f"load: {dn}: ignoring file {p}")
+                logger.debug(f"{dn}: ignoring file {p}")
 
         if not len(self.pages) > 0:
             self.valid = False
-            logger.error(f"load: {self.name}: has no page, ignoring")
+            logger.error(f"{self.name}: has no page, ignoring")
             # self.load_default_page()
         else:
             self.set_home_page()
-            logger.info(f"load: deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
+            logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
 
     def change_page(self, page: str = None):
         """
@@ -353,7 +338,7 @@ class Deck(ABC):
         :param      page:  The page
         :type       page:  str
         """
-        logger.debug(f"change_page: deck {self.name} change page to {page}..")
+        logger.debug(f"deck {self.name} change page to {page}..")
         if page is None:
             self.load_home_page()
             return
@@ -363,24 +348,24 @@ class Deck(ABC):
                 page = self.page_history.pop()  # previous one
             else:
                 page = self.home_page.name
-            logger.debug(f"change_page: deck {self.name} back page to {page}..")
+            logger.debug(f"deck {self.name} back page to {page}..")
         if page in self.pages.keys():
             if self.current_page is not None:
                 self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
                 self.current_page.clean()
-            logger.debug(f"change_page: deck {self.name} ..installing new page..")
+            logger.debug(f"deck {self.name} ..installing new page..")
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
-            logger.debug(f"change_page: ..reset device {self.name}..")
+            logger.debug(f"..reset device {self.name}..")
             self.device.reset()
             self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             self.current_page.render()
-            logger.debug(f"change_page: deck {self.name} ..done")
-            logger.info(f"change_page: deck {self.name} changed page to {page}")
+            logger.debug(f"deck {self.name} ..done")
+            logger.info(f"deck {self.name} changed page to {page}")
             return self.current_page.name
         else:
-            logger.warning(f"change_page: deck {self.name}: page {page} not found")
+            logger.warning(f"deck {self.name}: page {page} not found")
             if self.current_page is not None:
                 return self.current_page.name
         return None
@@ -391,14 +376,14 @@ class Deck(ABC):
     def set_home_page(self):
         if not len(self.pages) > 0:
             self.valid = False
-            logger.error(f"set_home_page: deck {self.name} has no page, ignoring")
+            logger.error(f"deck {self.name} has no page, ignoring")
         else:
             if self.home_page_name in self.pages.keys():
                 self.home_page = self.pages[self.home_page_name]
             else:
-                logger.debug(f"set_home_page: deck {self.name}: no home page named {self.home_page_name}")
+                logger.debug(f"deck {self.name}: no home page named {self.home_page_name}")
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.debug(f"set_home_page: deck {self.name}: home page {self.home_page.name}")
+            logger.debug(f"deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
         """
@@ -406,9 +391,9 @@ class Deck(ABC):
         """
         if self.home_page is not None:
             self.change_page(self.home_page.name)
-            logger.debug(f"load_home_page: deck {self.name}, home page {self.home_page.name} loaded")
+            logger.debug(f"deck {self.name}, home page {self.home_page.name} loaded")
         else:
-            logger.debug(f"load_home_page: deck {self.name} has no home page")
+            logger.debug(f"deck {self.name} has no home page")
 
     @abstractmethod
     def make_default_page(self, b: str = None):
@@ -424,7 +409,7 @@ class Deck(ABC):
         b = self._buttons.get(index)
         if b is not None:
             return b.get(KW.PREFIX.value)
-        logger.warning(f"get_index_prefix: deck {self.name}: no button index {index}")
+        logger.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def get_index_numeric(self, index):
@@ -432,7 +417,7 @@ class Deck(ABC):
         b = self._buttons.get(index)
         if b is not None:
             return b.get(KW.INDEX.value_NUMRIC)
-        logger.warning(f"get_index_prefix: deck {self.name}: no button index {index}")
+        logger.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def valid_indices(self):
@@ -442,24 +427,24 @@ class Deck(ABC):
         if index is not None:
             b = self._buttons.get(index)
             if b is not None:
-                logger.debug(f"valid_activations: deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}")
+                logger.debug(f"deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}")
                 return DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]
             else:
-                logger.warning(f"valid_activations: deck {self.name}: no button index {index}, returning default for deck")
+                logger.warning(f"deck {self.name}: no button index {index}, returning default for deck")
         all_activations = set(DEFAULT_ACTIVATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW.ACTIVATIONS.value, set()))), self._buttons.values(), set())))
-        logger.debug(f"valid_activations: deck {self.name}: {all_activations}")
+        logger.debug(f"deck {self.name}: {all_activations}")
         return list(all_activations)
 
     def valid_representations(self, index = None):
         if index is not None:
             b = self._buttons.get(index)
             if b is not None:
-                logger.debug(f"valid_representations: deck {self.name}: button {index}: {DEFAULT_REPRESENTATIONS + b[KW.ACTIVATIONS.value]}")
+                logger.debug(f"deck {self.name}: button {index}: {DEFAULT_REPRESENTATIONS + b[KW.ACTIVATIONS.value]}")
                 return DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value]
             else:
-                logger.warning(f"valid_representations: deck {self.name}: no button index {index}, returning default for deck")
+                logger.warning(f"deck {self.name}: no button index {index}, returning default for deck")
         all_representations = set(DEFAULT_REPRESENTATIONS).union(set(reduce(lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))), self._buttons.values(), set())))
-        logger.debug(f"valid_representations: deck {self.name}: {all_representations}")
+        logger.debug(f"deck {self.name}: {all_representations}")
         return list(all_representations)
 
     # #######################################
@@ -469,28 +454,28 @@ class Deck(ABC):
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"key_change_callback: Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
             self.cockpit.sim.events.put([self.name, key, state])
-            logger.debug(f"key_change_callback: {key} {state} enqueued")
+            logger.debug(f"{key} {state} enqueued")
         else:
-            # logger.debug(f"key_change_callback: {key} {state}")
+            # logger.debug(f"{key} {state}")
             self.key_change_processing(deck, key, state)
 
     def key_change_processing(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
+        # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         if self.current_page is not None:
             idx = str(key)
             if idx in self.current_page.buttons.keys():
                 self.current_page.buttons[idx].activate(state)
             else:
-                logger.debug(f"key_change_processing: {idx} not found on page {self.current_page.name}")
+                logger.debug(f"{idx} not found on page {self.current_page.name}")
         else:
-            logger.warning(f"key_change_processing: no current page")
+            logger.warning(f"no current page")
 
     # #######################################
     # Deck Specific Functions : Representation
@@ -539,7 +524,7 @@ class DeckWithIcons(Deck):
     #
     def init(self):
         if not self.valid:
-            logger.warning(f"init: deck {self.name}: is invalid")
+            logger.warning(f"deck {self.name}: is invalid")
             return
         self.read_definition()
         self.load_icons()
@@ -556,7 +541,7 @@ class DeckWithIcons(Deck):
         b = self._buttons.get(index)
         if b is not None:
             return b.get(KW.IMAGE.value)
-        logger.warning(f"get_index_image_size: deck {self.name}: no button index {index}")
+        logger.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def load_icons(self):
@@ -564,7 +549,7 @@ class DeckWithIcons(Deck):
         Each device model requires a different icon format (size).
         We could build a set per deck model rather than deck instance...
         """
-        logger.info(f"load_icons: deck {self.name}: use cache {self.cockpit.cache_icon}")
+        logger.info(f"deck {self.name}: use cache {self.cockpit.cache_icon}")
         dn = self.cockpit.icon_folder
         if dn is not None:
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
@@ -572,7 +557,7 @@ class DeckWithIcons(Deck):
                 with open(cache, "rb") as fp:
                     icons_temp = pickle.load(fp)
                     self.icons.update(icons_temp)
-                logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons loaded from cache")
+                logger.info(f"deck {self.name}: {len(self.icons)} icons loaded from cache")
                 return
 
         if self.device is not None:
@@ -583,11 +568,11 @@ class DeckWithIcons(Deck):
                 if self.cockpit.cache_icon:
                     with open(cache, "wb") as fp:
                         pickle.dump(self.icons, fp)
-                    logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons cached")
+                    logger.info(f"deck {self.name}: {len(self.icons)} icons cached")
                 else:
-                    logger.info(f"load_icons: deck {self.name}: {len(self.icons)} icons loaded")
+                    logger.info(f"deck {self.name}: {len(self.icons)} icons loaded")
         else:
-            logger.warning(f"load_icons: deck {self.name} has no device")
+            logger.warning(f"deck {self.name} has no device")
 
     def get_icon_background(self, name: str, width: int, height: int, texture_in, color_in, use_texture = True, who: str = "Cockpit"):
         """
@@ -631,18 +616,18 @@ class DeckWithIcons(Deck):
             else:
                 image = Image.open(texture)
                 self.cockpit.icons[texture] = image
-            logger.debug(f"get_icon_background: {who}: texture {texture_in} in {texture}")
+            logger.debug(f"{who}: texture {texture_in} in {texture}")
 
         if image is not None:  # found a texture as requested
             image = image.resize((width, height))
             return image
 
         if use_texture and texture is None:
-            logger.debug(f"get_icon_background: {who}: should use texture but no texture found, using uniform color")
+            logger.debug(f"{who}: should use texture but no texture found, using uniform color")
 
         color = get_color()
         image = Image.new(mode="RGBA", size=(width, height), color=color)
-        logger.debug(f"get_icon_background: {who}: uniform color {color} (color_in={color_in})")
+        logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
         return image
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
@@ -662,7 +647,7 @@ class DeckWithIcons(Deck):
         if icon is not None:
             self._send_key_image_to_device(key, icon)
         else:
-            logger.warning(f"fill_empty: deck {self.name}: {key}: no fill icon")
+            logger.warning(f"deck {self.name}: {key}: no fill icon")
 
     # #######################################
     # Deck Specific Functions : Rendering

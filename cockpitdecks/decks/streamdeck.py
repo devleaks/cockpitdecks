@@ -89,7 +89,7 @@ class Streamdeck(DeckWithIcons):
                 image = Image.open(image_filename).convert("RGBA")
                 image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             else:
-                logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
+                logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
                 image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
@@ -98,7 +98,7 @@ class Streamdeck(DeckWithIcons):
                     logo2 = ImageOps.fit(logo, (deck_width - 2*inside, deck_height - 2*inside), Image.LANCZOS)
                     image.paste(logo2, (inside, inside), logo2)
                 else:
-                    logger.warning(f"make_default_page: deck {self.name}: no logo image {fn} found, using default")
+                    logger.warning(f"deck {self.name}: no logo image {fn} found, using default")
             return image
 
 
@@ -130,7 +130,7 @@ class Streamdeck(DeckWithIcons):
 
             return self.pil_helper.to_native_format(deck, key_image)
 
-        logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
+        logger.debug(f"loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.wallpaper)
         key_spacing = (36, 36)
         image = create_full_deck_sized_image(deck=self.device, key_spacing=key_spacing, image_filename=fn)
@@ -162,7 +162,7 @@ class Streamdeck(DeckWithIcons):
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
         self.current_page = page0
-        logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
+        logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
         if name is not None and name in self.icons.keys():
@@ -205,17 +205,17 @@ class Streamdeck(DeckWithIcons):
 
     def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("render: no device")
+            logger.warning("no device")
             return
         representation = button._representation
         if isinstance(representation, Icon):
             image = button.get_representation()
             if image is None:
-                logger.warning("render: button returned no image, using default")
+                logger.warning("button returned no image, using default")
                 image = self.icons[self.default_icon_name]
             self._send_key_image_to_device(button.index, image)
         else:
-            logger.warning(f"_set_key_image: button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     def print_page(self, page: Page):
         """
@@ -234,7 +234,7 @@ class Streamdeck(DeckWithIcons):
         i = 0
 
         image = Image.new(mode="RGBA", size=(w, h))
-        logger.debug(f"print_page: page {self.name}: image {image.width}x{image.height}..")
+        logger.debug(f"page {self.name}: image {image.width}x{image.height}..")
         for button in page.buttons.values():
             i = int(button.index)
             mx = i % nw
@@ -244,11 +244,11 @@ class Streamdeck(DeckWithIcons):
             b = button.get_representation()
             bs = b.resize((icon_size, icon_size))
             image.paste(bs, (x, y))
-            logger.debug(f"print_page: added {button.name} at ({x}, {y})")
-        logger.debug(f"print_page: page {self.name}: ..saving..")
+            logger.debug(f"added {button.name} at ({x}, {y})")
+        logger.debug(f"page {self.name}: ..saving..")
         with open(page.name + ".png", "wb") as im:
             image.save(im, format="PNG")
-        logger.debug(f"print_page: page {self.name}: ..done")
+        logger.debug(f"page {self.name}: ..done")
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
         self._set_key_image(button)
@@ -264,17 +264,17 @@ class Streamdeck(DeckWithIcons):
 
     def start(self):
         if self.device is None:
-            logger.warning(f"start: deck {self.name}: no device")
+            logger.warning(f"deck {self.name}: no device")
             return
         self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
         self.device.set_key_callback(self.key_change_callback)
-        logger.info(f"start: deck {self.name}: device started")
+        logger.info(f"deck {self.name}: device started")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
         Streamdeck.terminate_device(self.device, self.name)
         self.running = False
-        logger.info(f"terminate: deck {self.name} terminated")
+        logger.info(f"deck {self.name} terminated")
 
     @staticmethod
     def terminate_device(device, name: str = "unspecified"):
@@ -284,4 +284,4 @@ class Streamdeck(DeckWithIcons):
             device.set_key_callback(None)
             device._setup_reader(None) # terminates the _read() loop on serial line (thread).
             # device.stop()  # terminates the loop.
-        logger.info(f"terminate_device: {name} terminated")
+        logger.info(f"{name} terminated")

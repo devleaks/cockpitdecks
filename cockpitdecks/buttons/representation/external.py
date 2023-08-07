@@ -27,7 +27,7 @@ from .animation import DrawAnimation
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # #############
 # Local constant
@@ -312,17 +312,17 @@ class WeatherIcon(DrawAnimation):
         #     self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
         #     self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
         # else:
-        #     logger.debug(f"init: no metar for {self.station.icao}")
+        #     logger.debug(f"no metar for {self.station.icao}")
         self.weather_icon = self.select_weather_icon()
-        # logger.debug(f"init: Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
+        # logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
         self._inited = True
-        logger.debug(f"init: default station installed {icao}")
+        logger.debug(f"default station installed {icao}")
 
     def at_default_station(self):
         if self.weather is not None and self.station is not None:
-            logger.debug(f"at_default_station: default station installed {self.station.icao}, {self.weather.get('station', WeatherIcon.DEFAULT_STATION)}, {self._moved}")
+            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', WeatherIcon.DEFAULT_STATION)}, {self._moved}")
             return not self._moved and self.station.icao == self.weather.get("station", WeatherIcon.DEFAULT_STATION)
-        logger.debug(f"at_default_station: True")
+        logger.debug(f"True")
         return True
 
     def get_datarefs(self):
@@ -352,26 +352,26 @@ class WeatherIcon(DrawAnimation):
             now = datetime.now()
             diff = now.timestamp() - self._last_updated.timestamp()
             if diff < WeatherIcon.MIN_UPDATE:
-                logger.debug(f"get_station: updated less than {WeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
+                logger.debug(f"updated less than {WeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
                 return None
-            logger.debug(f"get_station: updated  {diff} secs. ago")
+            logger.debug(f"updated  {diff} secs. ago")
 
         # If we are at the default station, we check where we are to see if we moved.
         lat = self.button.get_dataref_value("sim/flightmodel/position/latitude")
         lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
 
         if lat is None or lon is None:
-            logger.warning(f"get_station: no coordinates")
+            logger.warning(f"no coordinates")
             if self.station is None:  # If no station, attempt to suggest the default one if we find it
                 icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
-                logger.warning(f"get_station: no station, getting default {icao}")
+                logger.warning(f"no station, getting default {icao}")
                 return Station.from_icao(icao)
             return None
 
-        logger.debug(f"get_station: closest station to lat={lat},lon={lon}")
+        logger.debug(f"closest station to lat={lat},lon={lon}")
         (nearest, coords) = Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
         self._moved = True
-        logger.debug(f"get_station: nearest={nearest}")
+        logger.debug(f"nearest={nearest}")
         return nearest
 
     def update(self, force: bool = False) -> bool:
@@ -404,7 +404,7 @@ class WeatherIcon(DrawAnimation):
                 self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
                 updated = True
-                logger.info(f"update: UPDATED: new station {self.station.icao}")
+                logger.info(f"UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
                 logger.warning(f"update: new station {new.icao}: Metar not created", exc_info=True)
@@ -417,7 +417,7 @@ class WeatherIcon(DrawAnimation):
                 self.button._config["label"] = new.icao
                 self._last_updated = datetime.now()
                 updated = True
-                logger.info(f"update: UPDATED: station changed to {self.station.icao}")
+                logger.info(f"UPDATED: station changed to {self.station.icao}")
             except:
                 self.metar = None
                 logger.warning(f"update: change station to {new.icao}: Metar not created", exc_info=True)
@@ -427,7 +427,7 @@ class WeatherIcon(DrawAnimation):
                 self.metar.update()
                 self._last_updated = datetime.now()
                 updated = True
-                logger.info(f"update: UPDATED: station {self.station.icao}, first Metar")
+                logger.info(f"UPDATED: station {self.station.icao}, first Metar")
             except:
                 self.metar = None
                 logger.warning(f"update: station {self.station.icao}, first Metar not created", exc_info=True)
@@ -439,9 +439,9 @@ class WeatherIcon(DrawAnimation):
                     updated = self.metar.update()
                     if updated:
                         self._last_updated = datetime.now()
-                    logger.info(f"update: UPDATED: station {self.station.icao}, Metar updated")
+                    logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
                 else:
-                    logger.debug(f"update: station {self.station.icao}, Metar does not need updating")
+                    logger.debug(f"station {self.station.icao}, Metar does not need updating")
             except:
                 self.metar = None
                 logger.warning(f"update: station {self.station.icao}: Metar not updated", exc_info=True)
@@ -455,9 +455,9 @@ class WeatherIcon(DrawAnimation):
                 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
                 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
             else:
-                logger.debug(f"update: no metar for {self.station.icao}")
+                logger.debug(f"no metar for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()
-            logger.debug(f"update: Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
+            logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
             self._upd_count = self._upd_count + 1
 
         return updated
@@ -469,11 +469,11 @@ class WeatherIcon(DrawAnimation):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
 
-        logger.debug(f"get_image_for_icon: updating..")
+        logger.debug(f"updating..")
         if not self.update():
             self._cache
-            logger.debug(f"get_image_for_icon: ..not updated, using cache..")
-        logger.debug(f"get_image_for_icon: ..updated ({self._upd_count}/{self._upd_calls})")
+            logger.debug(f"..not updated, using cache..")
+        logger.debug(f"..updated ({self._upd_count}/{self._upd_calls})")
 
         image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)                     # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
@@ -487,13 +487,13 @@ class WeatherIcon(DrawAnimation):
         inside = round(0.04 * image.width + 0.5)
         w = image.width / 2
         h = image.height / 2
-        logger.debug(f"get_image_for_icon: icon: {self.weather_icon}")
+        logger.debug(f"icon: {self.weather_icon}")
         icon_text = WEATHER_ICONS.get(self.weather_icon)
         if icon_text is None:
-            logger.warning(f"get_image_for_icon: icon: {self.weather_icon} not found, using default")
+            logger.warning(f"icon: {self.weather_icon} not found, using default")
             icon_text = WEATHER_ICONS.get(DEFAULT_ICON)
             if icon_text is None:
-                logger.warning(f"get_image_for_icon: default icon not found, using default")
+                logger.warning(f"default icon not found, using default")
                 icon_text = "\uf00d"
         draw.text((w, h),  # (image.width / 2, 15)
                   text=icon_text,
@@ -509,7 +509,7 @@ class WeatherIcon(DrawAnimation):
                 lines = self.metar.summary.split(",")  # ~ 6-7 short lines
         except:
             lines = None
-            logger.warning(f"get_image_for_icon: Metar has no summary")
+            logger.warning(f"Metar has no summary")
             # logger.warning(f"get_image_for_icon: Metar has no summary", exc_info=True)
 
         if lines is not None:
@@ -531,7 +531,7 @@ class WeatherIcon(DrawAnimation):
                 h = h + il
         else:
             icao = self.station.icao if self.station is not None else "no station"
-            logger.warning(f"get_image_for_icon: no metar summary ({icao})")
+            logger.warning(f"no metar summary ({icao})")
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather")
@@ -550,18 +550,18 @@ class WeatherIcon(DrawAnimation):
         if not self.has_metar():
             return True
         time = self.metar.raw[7:12]
-        logger.debug(f"is_metar_day: zulu {time}")
+        logger.debug(f"zulu {time}")
         if time[-1] != "Z":
-            logger.warning(f"is_metar_day: no zulu? {time}")
+            logger.warning(f"no zulu? {time}")
             return True
         tz = self.get_timezone()
-        logger.debug(f"is_metar_day: timezone {'UTC' if tz == timezone.utc else tz.key}")
+        logger.debug(f"timezone {'UTC' if tz == timezone.utc else tz.key}")
         utc = datetime.now(timezone.utc)
         utc = utc.replace(hour=int(time[0:2]), minute=int(time[2:4]))
         local = utc.astimezone(tz=tz)
         sun = self.get_sun(local)
         day = local.hour > sun[0] and local.hour < sun[1]
-        logger.debug(f"is_metar_day: local {local}, day={str(day)} {sun}")
+        logger.debug(f"local {local}, day={str(day)} {sun}")
         return day
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
@@ -599,11 +599,11 @@ class WeatherIcon(DrawAnimation):
 
     def day_night(self, icon, day: bool = True):
         # Selects day or night variant of icon
-        logger.debug(f"day_night: search {icon}, {day}")
+        logger.debug(f"search {icon}, {day}")
 
         # Special case cavok
         if icon == KW_CAVOK:
-            logger.debug(f"day_night: {KW_CAVOK}, {day}")
+            logger.debug(f"{KW_CAVOK}, {day}")
             return CAVOK_DAY if day else CAVOK_NIGHT
 
         # Do we have a variant?
@@ -614,10 +614,10 @@ class WeatherIcon(DrawAnimation):
                 dft_name = prefix + icon
                 try_icon = WEATHER_ICONS.get(dft_name)
         if try_icon is None:
-            logger.debug(f"day_night: no such icon or variant {icon}")
+            logger.debug(f"no such icon or variant {icon}")
             return DEFAULT_ICON
         else:
-            logger.debug(f"day_night: exists {dft_name}")
+            logger.debug(f"exists {dft_name}")
 
         # From now on, we are sure we can find an icon
         # day
@@ -625,22 +625,22 @@ class WeatherIcon(DrawAnimation):
             icon_name = WI + NIGHT + icon
             try_icon = WEATHER_ICONS.get(icon_name)
             if try_icon is not None:
-                logger.debug(f"day_night: exists night {icon_name}")
+                logger.debug(f"exists night {icon_name}")
                 return icon_name
 
             icon_name = WI + NIGHT_ALT + icon
             try_icon = WEATHER_ICONS.get(icon_name)
             if try_icon is not None:
-                logger.debug(f"day_night: exists night-alt {try_icon}")
+                logger.debug(f"exists night-alt {try_icon}")
                 return icon_name
 
         icon_name = WI + DAY + icon
         try_icon = WEATHER_ICONS.get(icon_name)
         if try_icon is not None:
-            logger.debug(f"day_night: exists day {icon_name}")
+            logger.debug(f"exists day {icon_name}")
             return icon_name
 
-        logger.debug(f"day_night: found {dft_name}")
+        logger.debug(f"found {dft_name}")
         return dft_name
 
 
@@ -650,15 +650,15 @@ class WeatherIcon(DrawAnimation):
         icon = "wi_cloud"
         if self.has_metar():
             rawtext = self.metar.raw[13:]  # strip ICAO DDHHMMZ
-            logger.debug(f"select_weather_icon: METAR {rawtext}")
+            logger.debug(f"METAR {rawtext}")
             # Precipitations
             precip = re.match("RA|SN|DZ|SG|PE|GR|GS", rawtext)
             if precip is None:
                 precip = []
-            logger.debug(f"select_weather_icon: PRECIP {precip}")
+            logger.debug(f"PRECIP {precip}")
             # Wind
             wind = self.metar.data.wind_speed.value if hasattr(self.metar.data, "wind_speed") else 0
-            logger.debug(f"select_weather_icon: WIND {wind}")
+            logger.debug(f"WIND {wind}")
 
             findIcon = []
             for item in WI.DB:
@@ -670,8 +670,8 @@ class WeatherIcon(DrawAnimation):
                 ok = t1 and t_precip and t_clouds and t_wind and t_vis
                 if ok:
                     findIcon.append(item)
-                logger.debug(f"select_weather_icon: findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}")
-            logger.debug(f"select_weather_icon: STEP 1 {findIcon}")
+                logger.debug(f"findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}")
+            logger.debug(f"STEP 1 {findIcon}")
 
             # findIcon = list(filter(lambda item: reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])
             #                             and ((len(item[KW_PRECIP]) == 0) or rawtext.find(item[KW_PRECIP]))
@@ -679,7 +679,7 @@ class WeatherIcon(DrawAnimation):
             #                             and (wind > item[KW_WIND][0] and wind < item[KW_WIND][1])
             #                             and ((len(item[KW_VIS]) == 0) or (reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item[KW_VIS]], 0) > 0)),
             #                   WI.DB))
-            # logger.debug(f"select_weather_icon: STEP 1 {findIcon}")
+            # logger.debug(f"STEP 1 {findIcon}")
 
             l = len(findIcon)
             if l == 1:
@@ -691,20 +691,20 @@ class WeatherIcon(DrawAnimation):
                         findIcon2 = list(filter(lambda x: re("RA|SN|DZ|SG|PE|GR|GS").match(x["precip"]), findIcon))
                     else:
                         findIcon2 = list(filter(lambda x: x["day"] == day, findIcon))
-                    logger.debug(f"select_weather_icon: STEP 2 {findIcon2}")
+                    logger.debug(f"STEP 2 {findIcon2}")
                     if len(findIcon2) > 0:
                         icon = findIcon2[0]["iconName"]
         else:
-            logger.debug(f"select_weather_icon: no metar ({self.metar})")
+            logger.debug(f"no metar ({self.metar})")
 
-        logger.debug(f"select_weather_icon: weather icon {icon}")
+        logger.debug(f"weather icon {icon}")
         day = self.is_metar_day()
         daynight_icon = self.day_night(icon, day)
         if daynight_icon is None:
-            logger.warning(f"select_weather_icon: no icon, using default {DEFAULT_ICON}")
+            logger.warning(f"no icon, using default {DEFAULT_ICON}")
             daynight_icon = DEFAULT_ICON
         daynight_icon = daynight_icon.replace("-", "_")
-        logger.debug(f"select_weather_icon: day/night version: {day}: {daynight_icon}")
+        logger.debug(f"day/night version: {day}: {daynight_icon}")
         return daynight_icon
 
     def select_random_weather_icon(self):

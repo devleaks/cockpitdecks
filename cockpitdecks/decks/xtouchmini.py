@@ -39,7 +39,7 @@ class XTouchMini(Deck):
     # Deck Specific Functions : Definition
     #
     def make_default_page(self):
-        logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
+        logger.debug(f"loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         # Add index 0 only button:
         page_config = {
             "name": DEFAULT_PAGE_NAME
@@ -56,7 +56,7 @@ class XTouchMini(Deck):
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
         self.current_page = page0
-        logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
+        logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def load_icons(self):
         pass
@@ -71,8 +71,8 @@ class XTouchMini(Deck):
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Key {key} = {state}")
-        # logger.debug(f"key_change_processing: Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
+        # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         KEY_MAP = dict((v,k) for k, v in MAKIE_MAPPING.items())
         key1 = None
         if key >= 16 and key <= 23:     # turn encode
@@ -83,7 +83,7 @@ class XTouchMini(Deck):
             key1 = SLIDER
         else:                           # push a button
             key1 = KEY_MAP[key]
-        logger.debug(f"key_change_processing: {key} => {key1} {state}")
+        logger.debug(f"{key} => {key1} {state}")
         if self.current_page is not None and key1 in self.current_page.buttons.keys():
             self.current_page.buttons[key1].activate(state)
 
@@ -98,19 +98,19 @@ class XTouchMini(Deck):
         return None
 
     def _set_encoder_led(self, button):
-        # logger.debug(f"test: button {button.name}: {'='*50}")
+        # logger.debug(f"button {button.name}: {'='*50}")
         # self.device.test()
-        # logger.debug(f"test: button {button.name}: {'='*50}")
+        # logger.debug(f"button {button.name}: {'='*50}")
         # return
         value, mode = button.get_representation()
         # find index in string
         i = int(button.index[1:])
-        logger.debug(f"set_encoder_led: button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
+        logger.debug(f"button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
         self._set_control(key=i, value=value, mode=mode)
 
     def _set_button_led(self, button):
         is_on = button.get_current_value()
-        logger.debug(f"set_button_led: button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
+        logger.debug(f"button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
         self._set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
 
     # Low-level wrapper around device API (direct forward)
@@ -125,10 +125,10 @@ class XTouchMini(Deck):
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning(f"render: no device ({hasattr(self, 'device')}, {type(self)})")
+            logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return
         if str(button.index) == SLIDER:
-            logger.debug(f"render: button type {button.index} has no representation")
+            logger.debug(f"button type {button.index} has no representation")
             return
 
         representation = button._representation
@@ -137,29 +137,29 @@ class XTouchMini(Deck):
         elif isinstance(representation, MultiLEDs):
             self._set_encoder_led(button)
         else:
-            logger.warning(f"render: button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device
     #
     def start(self):
         if self.device is None:
-            logger.warning(f"start: deck {self.name}: no device")
+            logger.warning(f"deck {self.name}: no device")
             return
         self.device.set_callback(self.key_change_callback)
         self.device.start()
-        logger.debug(f"start: deck {self.name}: started")
+        logger.debug(f"deck {self.name}: started")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
         XTouchMini.terminate_device(self.device, self.name)
         del self.device
         self.device = None
-        logger.debug(f"terminate: {self.name} stopped")
+        logger.debug(f"{self.name} stopped")
 
     @staticmethod
     def terminate_device(device, name: str = "unspecified"):
         device.stop()  # terminates the loop.
         del device
         device = None
-        logger.info(f"terminate_device: {name} terminated")
+        logger.info(f"{name} terminated")

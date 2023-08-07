@@ -45,11 +45,11 @@ class Page:
                 if b[0] in self.button_names.keys():
                     return self.button_names[b[0]].get_button_value(":".join(b[1:]) if len(b) > 1 else None)
                 else:
-                    logger.warning(f"get_button_value: so such button {b[0]} in {self.buttons.keys()}")
+                    logger.warning(f"so such button {b[0]} in {self.buttons.keys()}")
             else:
-                logger.warning(f"get_button_value: not my page {a[0]} ({self.name})")
+                logger.warning(f"not my page {a[0]} ({self.name})")
         else:
-            logger.warning(f"get_button_value: invalid name {name}")
+            logger.warning(f"invalid name {name}")
         return None
 
     def load_defaults(self, config: dict, base):
@@ -79,31 +79,31 @@ class Page:
             # Where to place the button
             idx = Button.guess_index(a)
             if idx is None:
-                logger.error(f"load: page {self.name}: button has no index, ignoring {a}")
+                logger.error(f"page {self.name}: button has no index, ignoring {a}")
                 continue
             if idx not in self.deck.valid_indices():
-                logger.error(f"load: page {self.name}: button has invalid index '{idx}' (valid={self.deck.valid_indices()}), ignoring '{a}'")
+                logger.error(f"page {self.name}: button has invalid index '{idx}' (valid={self.deck.valid_indices()}), ignoring '{a}'")
                 continue
 
             # How the button will behave, it is does something
-            bty = Button.guess_activation_type(a)
-            if bty is None or bty not in self.deck.valid_activations(idx):
-                logger.error(f"load: page {self.name}: button has invalid activation type {bty} for index {idx}, ignoring {a}")
+            aty = Button.guess_activation_type(a)
+            if aty is None or aty not in self.deck.valid_activations(idx):
+                logger.error(f"page {self.name}: button has invalid activation type {aty} for index {idx}, ignoring {a}")
                 continue
 
             # How the button will be represented, if it is
             valid_representations = self.deck.valid_representations(idx)
-            bty = Button.guess_representation_type(a, valid_representations)
-            if bty not in valid_representations:
-                logger.error(f"load: page {self.name}: button has invalid representation type {bty} for index {idx}, ignoring {a}")
+            rty = Button.guess_representation_type(a, valid_representations)
+            if rty not in valid_representations:
+                logger.error(f"page {self.name}: button has invalid representation type {rty} for index {idx}, ignoring {a}")
                 continue
-            if bty == "none":
-                logger.debug(f"load: page {self.name}: button has no representation but it is ok")
+            if rty == "none":
+                logger.debug(f"page {self.name}: button has no representation but it is ok")
 
             button = Button(config=a, page=self)
             if button is not None:
                 self.add_button(idx, button)
-                logger.debug(f"load: ..page {self.name}: added button index {idx} {button.name}..")
+                logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
 
 
     def inspect(self, what: str = None):
@@ -120,14 +120,14 @@ class Page:
 
     def add_button(self, idx, button: Button):
         if idx in self.buttons.keys():
-            logger.error(f"add_button: page {self.name}: button index {idx} already defined, ignoring {button.name}")
+            logger.error(f"page {self.name}: button index {idx} already defined, ignoring {button.name}")
             return
         if button.name is not None and button.name in self.button_names.keys():
-            logger.error(f"add_button: page {self.name}: button named {button.name} already defined, ignoring {button.name}")
+            logger.error(f"page {self.name}: button named {button.name} already defined, ignoring {button.name}")
             return
         self.buttons[idx] = button
         self.button_names[button.name] = button
-        logger.debug(f"add_button: page {self.name}: button {idx} {button.name} added")
+        logger.debug(f"page {self.name}: button {idx} {button.name} added")
 
     def register_datarefs(self, button: Button):
         for d in button.get_datarefs():
@@ -136,23 +136,23 @@ class Page:
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
-                    logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for new dataref {d}")
+                    logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
-                    logger.error(f"register_datarefs: page {self.name}: button {button.name}: failed to create dataref {d}")
+                    logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
                 self.datarefs[d].add_listener(button)
-                logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered for existing dataref {d}")
-        logger.debug(f"register_datarefs: page {self.name}: button {button.name} registered")
+                logger.debug(f"page {self.name}: button {button.name} registered for existing dataref {d}")
+        logger.debug(f"page {self.name}: button {button.name} registered")
 
     def dataref_changed(self, dataref):
         """
         For each button on this page, notifies the button if a dataref used by that button has changed.
         """
         if dataref is None:
-            logger.error(f"dataref_changed: page {self.name}: no dataref")
+            logger.error(f"page {self.name}: no dataref")
             return
         if dataref.path not in self.datarefs.keys():
-            logger.warning(f"dataref_changed: page {self.name}: dataref {dataref.path} not found")
+            logger.warning(f"page {self.name}: dataref {dataref.path} not found")
             return
         self.datarefs[dataref].notify()
 
@@ -160,7 +160,7 @@ class Page:
         if idx in self.buttons.keys():
             self.buttons[idx].activate()
         else:
-            logger.error(f"activate: page {self.name}: invalid button index {idx}")
+            logger.error(f"page {self.name}: invalid button index {idx}")
 
     def render(self):
         """
@@ -168,7 +168,7 @@ class Page:
         """
         for button in self.buttons.values():
             button.render()
-            logger.debug(f"render: page {self.name}: button {button.name} rendered")
+            logger.debug(f"page {self.name}: button {button.name} rendered")
 
         if not self.fill_empty_keys:
             return
@@ -183,10 +183,10 @@ class Page:
         """
         Ask each button to stop rendering and clean its mess.
         """
-        logger.debug(f"clean: page {self.name}: cleaning..")
+        logger.debug(f"page {self.name}: cleaning..")
         for button in self.buttons.values():
             button.clean()  # knows how to clean itself
-        logger.debug(f"clean: page {self.name}: ..done")
+        logger.debug(f"page {self.name}: ..done")
 
     def terminate(self):
         """

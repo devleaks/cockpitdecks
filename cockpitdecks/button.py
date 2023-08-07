@@ -10,7 +10,6 @@ import logging
 import math
 import sys
 from datetime import datetime
-from ruamel.yaml import YAML
 
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
@@ -18,13 +17,11 @@ from .simulator import Dataref, INTERNAL_DATAREF_PREFIX
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, KW
+from cockpitdecks import ID_SEP, SPAM_LEVEL, KW, yaml
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
-
-yaml = YAML()
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 
@@ -61,7 +58,7 @@ class Button:
         # llvalue = getattr(logging, self.logging_level)
         # if llvalue is not None:
         #     logger.setLevel(llvalue)
-        #     logger.debug(f"__init__: button {self.name}: logging level set to {self.logging_level}")
+        #     logger.debug(f"button {self.name}: logging level set to {self.logging_level}")
 
         # Working variables
         self._first_value_not_saved = True
@@ -86,9 +83,9 @@ class Button:
         atype = Button.guess_activation_type(config)
         if atype is not None and atype in ACTIVATIONS:
             self._activation = ACTIVATIONS[atype](config, self)
-            logger.debug(f"__init__: button {self.name} activation {atype}")
+            logger.debug(f"button {self.name} activation {atype}")
         else:
-            logger.warning(f"__init__: button {self.name} has no activation")
+            logger.warning(f"button {self.name} has no activation")
             self._activation = ACTIVATIONS["none"](config, self)
 
         self._representation = None
@@ -98,9 +95,9 @@ class Button:
         rtype = Button.guess_representation_type(config, valid_representations)
         if rtype is not None and rtype in REPRESENTATIONS:
             self._representation = REPRESENTATIONS[rtype](config, self)
-            logger.debug(f"__init__: button {self.name} representation {rtype}")
+            logger.debug(f"button {self.name} representation {rtype}")
         else:
-            logger.warning(f"__init__: button {self.name} has no representation")
+            logger.warning(f"button {self.name} has no representation")
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
@@ -111,14 +108,14 @@ class Button:
         if self.manager is not None:
             self.managed = self.manager.get(KW.DATAREF.value)
             if self.managed is None:
-                logger.warning(f"__init__: button {self.name} has manager but no dataref")
+                logger.warning(f"button {self.name} has manager but no dataref")
 
         self.guarded = None
         self.guard = config.get(KW.GUARD.value)
         if self.guard is not None:
             self.guarded = self.guard.get(KW.DATAREF.value)
             if self.guarded is None:
-                logger.warning(f"__init__: button {self.name} has guard but no dataref")
+                logger.warning(f"button {self.name} has guard but no dataref")
 
         self.all_datarefs = None                # all datarefs used by this button
         self.all_datarefs = self.get_datarefs() # cache them
@@ -135,10 +132,10 @@ class Button:
     def guess_activation_type(config):
         a = config.get("type")
         if a is None:
-            logger.debug(f"guess_activation_type: not type attribute, assuming 'none' type")
+            logger.debug(f"not type attribute, assuming 'none' type")
             a = "none"
         if a not in ACTIVATIONS.keys():
-            logger.warning(f"guess_activation_type: invalid activation type {a} in {config}")
+            logger.warning(f"invalid activation type {a} in {config}")
             return None
         return a
 
@@ -152,15 +149,15 @@ class Button:
             return a[0]
         elif len(a) == 0:
             if "none" not in valid_representations:
-                logger.warning(f"guess_representation_type: no representation in {config}")
+                logger.warning(f"no representation in {config}")
             elif "representation" in config:
                 r = config.get("representation")
                 if r is None:
-                    logger.debug(f"guess_representation_type: no representation")
+                    logger.debug(f"no representation")
             else:
-                logger.debug(f"guess_representation_type: no representation in {config}, but no representation is OK (should be in {', '.join(REPRESENTATIONS.keys())})")
+                logger.debug(f"no representation in {config}, but no representation is OK (should be in {', '.join(REPRESENTATIONS.keys())})")
         else:
-            logger.warning(f"guess_representation_type: multiple representation {a} in {config}")
+            logger.warning(f"multiple representation {a} in {config}")
         return "none"
 
     def button_name(self):
@@ -173,7 +170,7 @@ class Button:
         if name is None or len(name) == 0:
             v = self.get_current_value()
             if type(v) not in [int, float, str]:
-                logger.warning(f"get_button_value: value of {name} is {type(v)}")
+                logger.warning(f"value of {name} is {type(v)}")
             return v
         a = name.split(":")
         if len(a) > 1:
@@ -181,11 +178,11 @@ class Button:
             if a[1] in s.keys():
                 return s[a[1]]
             else:
-                logger.warning(f"get_button_value: so such variable {a[1]}")
+                logger.warning(f"so such variable {a[1]}")
         else:
             v = self.get_current_value()
             if type(v) not in [int, float, str]:
-                logger.warning(f"get_button_value: value of {name} is {type(v)}")
+                logger.warning(f"value of {name} is {type(v)}")
             return v
         return None
 
@@ -202,29 +199,29 @@ class Button:
                 return
         logger.info(f"Button {self.name} -- {what}")
         if "dataref" in what:
-            # logger.info("-- Datarefs:")
+            # logger.info("")
             for d in self.get_datarefs():
                 v = self.get_dataref_value(d)
                 logger.info(f"    {d} = {v}")
         if "activation" in what:
-            logger.info("-- Activation:")
+            logger.info("")
             self._activation.inspect(what)
         if "representation" in what:
-            logger.info("-- Representation:")
+            logger.info("")
             self._representation.inspect(what)
         if "status" in what:
-            logger.info("-- Status:")
+            logger.info("")
             logger.info(yaml.dump(self.get_status(), sys.stdout))
         if "valid" in what:
             logger.info(f"-- {'is valid' if self.is_valid() else 'IS INVALID'}")
         if "desc" in what:
-            logger.info("-- Description:")
+            logger.info("")
             if self.is_valid():
                 logger.info(self.describe())
             else:
-                logger.info(f"inspect: button {self.name}: is invalid")
+                logger.info(f"button {self.name}: is invalid")
         if "config" in what:
-            logger.info("-- Config:")
+            logger.info("")
             logger.info(f"\n{yaml.dump(self._config, sys.stdout)}")
 
     def describe(self):
@@ -242,17 +239,17 @@ class Button:
         """
         # Set initial value if not already set
         if self._first_value_not_saved:
-            logger.debug(f"init: button {self.name} setting initial value..")
+            logger.debug(f"button {self.name} setting initial value..")
             if self.initial_value is not None:
-                logger.debug(f"init: button {self.name} .. from initial-value")
+                logger.debug(f"button {self.name} .. from initial-value")
                 self.set_current_value(self.initial_value)
             else:
-                logger.debug(f"init: button {self.name} .. from button_value")
+                logger.debug(f"button {self.name} .. from button_value")
                 self.set_current_value(self.button_value())
-            logger.debug(f"init: button {self.name}: ..has value {self.current_value}.")
+            logger.debug(f"button {self.name}: ..has value {self.current_value}.")
         else:
-            logger.debug(f"init: button {self.name}: already has a value ({self.current_value}), initial value ignored")
-        # logger.debug(f"init: button {self.name}: {self.id()}")
+            logger.debug(f"button {self.name}: already has a value ({self.current_value}), initial value ignored")
+        # logger.debug(f"button {self.name}: {self.id()}")
 
     def set_current_value(self, value):
         if self._first_value_not_saved:
@@ -260,13 +257,13 @@ class Button:
             self._first_value_not_saved = False
         self.previous_value = self.current_value
         self.current_value = value
-        logger.debug(f"set_current_value: button {self.name}: {self.current_value}")
+        logger.debug(f"button {self.name}: {self.current_value}")
 
     def get_current_value(self):
         """
         Gets the current value, but does not provoke a calculation, just returns the current value.
         """
-        logger.debug(f"get_current_value: button {self.name}: {self.current_value}")
+        logger.debug(f"button {self.name}: {self.current_value}")
         return self.current_value
 
     def has_changed(self) -> bool:
@@ -283,22 +280,22 @@ class Button:
         Validate button data once and for all
         """
         if self.deck is None:
-            logger.warning(f"is_valid: button {self.name} has no deck")
+            logger.warning(f"button {self.name} has no deck")
             return False
         if self.index is None:
-            logger.warning(f"is_valid: button {self.name} has no index")
+            logger.warning(f"button {self.name} has no index")
             return False
         if self._activation is None:
-            logger.warning(f"is_valid: button {self.name} has no activation")
+            logger.warning(f"button {self.name} has no activation")
             return False
         if not self._activation.is_valid():
-            logger.warning(f"is_valid: button {self.name} activation is not valid")
+            logger.warning(f"button {self.name} activation is not valid")
             return False
         if self._representation is None:
-            logger.warning(f"is_valid: button {self.name} has no representation")
+            logger.warning(f"button {self.name} has no representation")
             return False
         if not self._representation.is_valid():
-            logger.warning(f"is_valid: button {self.name} representation is not valid")
+            logger.warning(f"button {self.name} representation is not valid")
             return False
         return True
 
@@ -332,19 +329,19 @@ class Button:
                 return self.all_datarefs
 
         r = self.scan_datarefs(self._config)
-        logger.debug(f"get_datarefs: button {self.name}: added button datarefs {r}")
+        logger.debug(f"button {self.name}: added button datarefs {r}")
         # Activation datarefs
         if self._activation is not None:
             datarefs = self._activation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added activation datarefs {datarefs}")
+                logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
         # Representation datarefs
         if self._representation is not None:
             datarefs = self._representation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
-                logger.debug(f"get_datarefs: button {self.name}: added representation datarefs {datarefs}")
+                logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
         return list(set(r))  # removes duplicates
 
     def scan_datarefs(self, base:dict):
@@ -369,7 +366,7 @@ class Button:
         dataref = base.get(KW.DATAREF.value)
         if dataref is not None:
             r.append(dataref)
-            logger.debug(f"scan_datarefs: button {self.name}: added single dataref {dataref}")
+            logger.debug(f"button {self.name}: added single dataref {dataref}")
 
         # 1b. Managed values
         managed = None
@@ -378,7 +375,7 @@ class Button:
             managed = managed_dict.get(KW.DATAREF.value)
         if managed is not None:
             r.append(managed)
-            logger.debug(f"scan_datarefs: button {self.name}: added managed dataref {managed}")
+            logger.debug(f"button {self.name}: added managed dataref {managed}")
 
         # 1c. Guarded buttons
         guarded = None
@@ -387,9 +384,9 @@ class Button:
             guarded = guard_dict.get(KW.DATAREF.value)
         if guarded is not None:
             r.append(guarded)
-            logger.debug(f"scan_datarefs: button {self.name}: added guarding dataref {guarded}")
+            logger.debug(f"button {self.name}: added guarding dataref {guarded}")
 
-        # logger.debug(f"get_datarefs: button {base.name}: {r}, {base.datarefs}")
+        # logger.debug(f"button {base.name}: {r}, {base.datarefs}")
 
         # Use of datarefs in formula:
         #
@@ -400,7 +397,7 @@ class Button:
             datarefs = list(filter(is_dref, datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
+                logger.debug(f"button {self.name}: added label datarefs {datarefs}")
 
         # Use of datarefs in label or text
         #
@@ -411,7 +408,7 @@ class Button:
         #     datarefs = list(filter(is_dref, datarefs))
         #     if len(datarefs) > 0:
         #         r = r + datarefs
-        #         logger.debug(f"scan_datarefs: button {self.name}: added label datarefs {datarefs}")
+        #         logger.debug(f"button {self.name}: added label datarefs {datarefs}")
         # commented out 02-MAY-2023
 
         # 3.2 Text datarefs
@@ -421,7 +418,7 @@ class Button:
             datarefs = list(filter(lambda x: is_dref(x), datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
-                logger.debug(f"scan_datarefs: button {self.name}: added text datarefs {datarefs}")
+                logger.debug(f"button {self.name}: added text datarefs {datarefs}")
 
         # Clean up
         if KW.FORMULA.value in r:  # label or text may contain like ${{KW.FORMULA.value}}, but {KW.FORMULA.value} is not a dataref.
@@ -440,13 +437,13 @@ class Button:
 
     def is_managed(self):
         if self.managed is None:
-            logger.debug(f"is_managed: button {self.name}: is managed is none.")
+            logger.debug(f"button {self.name}: is managed is none.")
             return False
         d = self.get_dataref_value(self.managed, default= 0)
         if d != 0:
-            logger.debug(f"is_managed: button {self.name}: is managed ({d}).")
+            logger.debug(f"button {self.name}: is managed ({d}).")
             return True
-        logger.debug(f"is_managed: button {self.name}: is not managed ({d}).")
+        logger.debug(f"button {self.name}: is not managed ({d}).")
         return False
         # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
 
@@ -455,7 +452,7 @@ class Button:
             return False
         d = self.get_dataref_value(self.guarded, default=0)
         if d == 0:
-            logger.debug(f"is_guarded: button {self.name}: is guarded ({d}).")
+            logger.debug(f"button {self.name}: is guarded ({d}).")
             return True
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
@@ -470,10 +467,10 @@ class Button:
             if formatting is not None:
                 if formatting is not None:
                     value_str = formatting.format(message)
-                    logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning as is.")
+                    logger.debug(f"button {self.name}: received int or float, returning as is.")
                 else:
                     value_str = str(message)
-                    logger.debug(f"substitute_dataref_values: button {self.name}: received int or float, returning formatted {formatting}.")
+                    logger.debug(f"button {self.name}: received int or float, returning formatted {formatting}.")
             return value_str
 
         dataref_names = re.findall(PATTERN_DOLCB, message)
@@ -484,10 +481,10 @@ class Button:
         if formatting is not None:
             if type(formatting) == list:
                 if len(dataref_names) != len(formatting):
-                    logger.warning(f"substitute_dataref_values: button {self.name}: number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed.")
+                    logger.warning(f"button {self.name}: number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed.")
                     return message
             elif type(formatting) != str:
-                logger.warning(f"substitute_dataref_values: button {self.name}: single format is not a string, cannot proceed.")
+                logger.warning(f"button {self.name}: single format is not a string, cannot proceed.")
                 return message
 
         retmsg = message
@@ -507,7 +504,7 @@ class Button:
 
         more = re.findall(PATTERN_DOLCB, retmsg) # XXXHERE
         if len(more) > 0:
-            logger.warning(f"substitute_dataref_values: button {self.name}: unsubstituted dataref values {more}")
+            logger.warning(f"button {self.name}: unsubstituted dataref values {more}")
 
         return retmsg
 
@@ -519,15 +516,15 @@ class Button:
             s = f"${{state:{k}}}"      # @todo: !!possible injection!!
             if s in txtcpy:
                 if v is None:
-                    logger.warning(f"substitute_status_value: button {self.name}: {k} has no value")
+                    logger.warning(f"button {self.name}: {k} has no value")
                     v = str(default)
                 else:
                     v = str(v)  # @todo: later: use formatting
                 txtcpy = txtcpy.replace(s, v)
-                logger.debug(f"substitute_status_value: button {self.name}: replaced {s} by {str(v)}. ({k})")
+                logger.debug(f"button {self.name}: replaced {s} by {str(v)}. ({k})")
         more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         if len(more) > 0:
-            logger.warning(f"substitute_status_value: button {self.name}: unsubstituted status values {more}")
+            logger.warning(f"button {self.name}: unsubstituted status values {more}")
         return txtcpy
 
     def substitute_data_values(self, text, default: str = "0.0", formatting = None):
@@ -543,7 +540,7 @@ class Button:
                 txtcpy = txtcpy.replace(s, default)
         more = re.findall("\\${"+INTERNAL_DATAREF_PREFIX+"([^\\}]+?)}", txtcpy)
         if len(more) > 0:
-            logger.warning(f"substitute_data_value: button {self.name}: unsubstituted data values {more}")
+            logger.warning(f"button {self.name}: unsubstituted data values {more}")
         return txtcpy
 
     # def substitute_button_values(self, text, default: str = "0.0", formatting = None):
@@ -553,16 +550,16 @@ class Button:
     #         for m in more:
     #             v = self.deck.cockpit.get_button_value(m)  # starts at the top
     #             if v is None:
-    #                 logger.warning(f"substitute_button_values: button {self.name}: {m} has no value")
+    #                 logger.warning(f"button {self.name}: {m} has no value")
     #                 v = str(default)
     #             else:
     #                 v = str(v)  # @todo: later: use formatting
     #             m_str = f"${{button:{m}}}"   # "${formula}"
     #             txtcpy = txtcpy.replace(m_str, v)
-    #             logger.debug(f"substitute_button_values: button {self.name}: replaced {m_str} by {str(v)}. ({m})")
+    #             logger.debug(f"button {self.name}: replaced {m_str} by {str(v)}. ({m})")
     #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
     #     if len(more) > 0:
-    #         logger.warning(f"substitute_button_values: button {self.name}: unsubstituted button values {more}")
+    #         logger.warning(f"button {self.name}: unsubstituted button values {more}")
     #     return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting = None):
@@ -585,7 +582,7 @@ class Button:
         Returns formula result.
         """
         expr = self.substitute_values(text=formula, default=str(default))
-        # logger.debug(f"execute_formula: button {self.name}: {formula} => {expr}")
+        # logger.debug(f"button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
         logger.log(SPAM_LEVEL, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
@@ -612,7 +609,7 @@ class Button:
                 for i in icons:
                     if i in v[1].keys():
                         text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"get_text: button {self.name}: substituing font icon {i}")
+                        logger.debug(f"button {self.name}: substituing font icon {i}")
 
         # Formula in text
         text_format = base.get(f"{root}-format")
@@ -624,13 +621,13 @@ class Button:
                 res = self.execute_formula(formula=dataref_rpn)
                 if res != "":  # Format output if format present
                     if text_format is not None:
-                        logger.debug(f"get_text: button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        logger.debug(f"button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                         res = text_format.format(res)
                     else:
                         res = str(res)
                 text = text.replace(KW_FORMULA_STR, res)
             else:
-                logger.warning(f"get_text: button {self.name}: text contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
+                logger.warning(f"button {self.name}: text contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
 
         text = self.substitute_values(text, formatting=text_format, default="---")
 
@@ -666,21 +663,21 @@ class Button:
 
         # 1. Special cases (Annunciator): Each annunciator part has its own evaluation
         if isinstance(self._representation, Annunciator):
-            logger.debug(f"button_value: button {self.name}: is Annunciator, getting part values")
+            logger.debug(f"button {self.name}: is Annunciator, getting part values")
             return self._representation.get_current_values()
 
         # 2. No dataref
         if len(self.all_datarefs) == 0:
             if self.dataref_rpn is not None:
-                logger.debug(f"button_value: button {self.name}: formula without dataref")
+                logger.debug(f"button {self.name}: formula without dataref")
                 return self.execute_formula(formula=self.dataref_rpn)
 
         # 3. One dataref
         if len(self.all_datarefs) == 1:
             # if self.all_datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            logger.debug(f"button_value: button {self.name}: single dataref {self.all_datarefs[0]}")
+            logger.debug(f"button {self.name}: single dataref {self.all_datarefs[0]}")
             if self.dataref_rpn is not None:
-                logger.debug(f"button_value: button {self.name} formula with one dataref")
+                logger.debug(f"button {self.name} formula with one dataref")
                 return self.execute_formula(formula=self.dataref_rpn)
             else:  # if no formula, returns dataref as it is
                 return self.get_dataref_value(self.all_datarefs[0])
@@ -689,11 +686,11 @@ class Button:
         if len(self.all_datarefs) > 1:
             # 4.1 Mutiple Dataref with a formula, returns only one value
             if self.dataref_rpn is not None:
-                logger.debug(f"button_value: button {self.name}: getting formula with more than one datarefs")
+                logger.debug(f"button {self.name}: getting formula with more than one datarefs")
                 return self.execute_formula(formula=self.dataref_rpn)
             # 4.1 bis: If button has a dataref in its attribute, we may favor that dataref first?
             # if self.dataref is not None:
-            #     logger.debug(f"button_value: button {self.name}: more than one datarefs, but returning dataref attribute {self.dataref} value")
+            #     logger.debug(f"button {self.name}: more than one datarefs, but returning dataref attribute {self.dataref} value")
             #     return self.get_dataref_value(self.dataref)
             # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
             # !! May be we should return them all?
@@ -701,19 +698,19 @@ class Button:
             for d in self.all_datarefs:
                 v = self.get_dataref_value(d)
                 r[d] = v
-            logger.debug(f"button_value: button {self.name}: getting dict of datarefs")
+            logger.debug(f"button {self.name}: getting dict of datarefs")
             return r
 
         # 5. Value is based on activation state:
         if not self.use_internal_state():
-            logger.warning(f"button_value: button {self.name}: use internal state")
+            logger.warning(f"button {self.name}: use internal state")
         self._last_activation_state = self._activation.get_status()
 
         if "current_value" in self._last_activation_state:
-            logger.debug(f"button_value: button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
+            logger.debug(f"button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
             return self._last_activation_state["current_value"]
 
-        logger.debug(f"button_value: button {self.name}: getting entire state ({self._last_activation_state})")
+        logger.debug(f"button {self.name}: getting entire state ({self._last_activation_state})")
         return self._last_activation_state
 
     # ##################################
@@ -727,31 +724,31 @@ class Button:
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
         if not isinstance(dataref, Dataref):
-            logger.error(f"dataref_changed: button {self.name}: not a dataref")
+            logger.error(f"button {self.name}: not a dataref")
             return
         self.set_current_value(self.button_value())
         if self.has_changed() or dataref.has_changed():
             logger.log(SPAM_LEVEL, f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
         else:
-            logger.debug(f"dataref_changed: button {self.name}: no change")
+            logger.debug(f"button {self.name}: no change")
 
     def activate(self, state: bool):
         """
         @todo: Return a status from activate()
         """
         if not self._activation.is_valid():
-            logger.warning(f"activate: button {self.name}: activation is not valid, nothing executed")
+            logger.warning(f"button {self.name}: activation is not valid, nothing executed")
             return
         self._activation.activate(state)
         if self.use_internal_state():
-            logger.debug(f"activate: button {self.name}: uses internal state, setting value")
+            logger.debug(f"button {self.name}: uses internal state, setting value")
             self.set_current_value(self.button_value())
         if self.has_changed():
             logger.log(SPAM_LEVEL, f"activate: button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
         else:
-            logger.debug(f"activate: button {self.name}: no change")
+            logger.debug(f"button {self.name}: no change")
 
     def get_status(self):
         """
@@ -770,7 +767,7 @@ class Button:
         It can be an image, a color, a binary value on/off...
         """
         if not self._representation.is_valid():
-            logger.warning(f"get_representation: button {self.name}: representation is not valid")
+            logger.warning(f"button {self.name}: representation is not valid")
             return None
         return self._representation.render()
 
@@ -782,11 +779,11 @@ class Button:
         if self.deck is not None:
             if self.on_current_page():
                 self.deck.render(self)
-                # logger.debug(f"render: button {self.name} rendered")
+                # logger.debug(f"button {self.name} rendered")
             else:
-                logger.debug(f"render: button {self.name} not on current page")
+                logger.debug(f"button {self.name} not on current page")
         else:
-            logger.warning(f"render: button {self.name} has no deck")  # error
+            logger.warning(f"button {self.name} has no deck")  # error
 
     def clean(self):
         """

@@ -94,13 +94,13 @@ class XPlaneBeacon:
 		# receive data
 		try:
 			packet, sender = sock.recvfrom(1472)
-			logger.debug(f"FindIp: XPlane Beacon: {packet.hex()}")
+			logger.debug(f"XPlane Beacon: {packet.hex()}")
 
 			# decode data
 			# * Header
 			header = packet[0:5]
 			if header != b"BECN\x00":
-				logger.warning(f"FindIp: Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
+				logger.warning(f"Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
 				logger.warning(packet)
 				logger.warning(binascii.hexlify(packet))
 
@@ -141,13 +141,13 @@ class XPlaneBeacon:
 					self.beacon_data["hostname"] = hostname.decode()
 					self.beacon_data["XPlaneVersion"] = xplane_version_number
 					self.beacon_data["role"] = role
-					logger.info(f"FindIp: XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+					logger.info(f"XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
 				else:
-					logger.warning(f"FindIp: XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+					logger.warning(f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
 					raise XPlaneVersionNotSupported()
 
 		except socket.timeout:
-			logger.debug("FindIp: XPlane IP not found.")
+			logger.debug("XPlane IP not found.")
 			raise XPlaneIpNotFound()
 		finally:
 			sock.close()
@@ -155,20 +155,20 @@ class XPlaneBeacon:
 		return self.beacon_data
 
 	def start(self):
-		logger.warning("start: nothing to start")
+		logger.warning("nothing to start")
 
 	def stop(self):
-		logger.warning("stop: nothing to stop")
+		logger.warning("nothing to stop")
 
 	def cleanup(self):
-		logger.warning("cleanup: nothing to clean up")
+		logger.warning("nothing to clean up")
 
 	def connect_loop(self):
 		"""
 		Trys to connect to X-Plane indefinitely until self.should_not_connect is set.
 		If a connection fails, drops, disappears, will try periodically to restore it.
 		"""
-		logger.debug("connect_loop: starting..")
+		logger.debug("starting..")
 		WARN_FREQ = 10
 		cnt = 0
 		while self.should_not_connect is not None and not self.should_not_connect.is_set():
@@ -177,24 +177,24 @@ class XPlaneBeacon:
 					self.FindIp()
 					if self.connected:
 						logger.info(self.beacon_data)
-						logger.debug("connect_loop: ..connected, starting dataref listener..")
+						logger.debug("..connected, starting dataref listener..")
 						self.start()
-						logger.info(f"connect_loop: ..dataref listener started..")
+						logger.info(f"..dataref listener started..")
 				except XPlaneVersionNotSupported:
 					self.beacon_data = {}
-					logger.error("connect_loop: ..X-Plane Version not supported..")
+					logger.error("..X-Plane Version not supported..")
 				except XPlaneIpNotFound:
 					self.beacon_data = {}
 					if cnt % WARN_FREQ == 0:
-						logger.error(f"connect_loop: ..X-Plane instance not found on local network.. ({datetime.datetime.now().strftime('%H:%M:%S')})")
+						logger.error(f"..X-Plane instance not found on local network.. ({datetime.datetime.now().strftime('%H:%M:%S')})")
 					cnt = cnt + 1
 				if not self.connected:
 					self.should_not_connect.wait(RECONNECT_TIMEOUT)
-					logger.debug("connect_loop: ..trying..")
+					logger.debug("..trying..")
 			else:
 				self.should_not_connect.wait(RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
-				logger.debug("connect_loop: ..monitoring connection..")
-		logger.debug("connect_loop: ..ended")
+				logger.debug("..monitoring connection..")
+		logger.debug("..ended")
 
 	# ################################
 	# Interface
@@ -208,32 +208,32 @@ class XPlaneBeacon:
 			self.connect_thread = threading.Thread(target=self.connect_loop)
 			self.connect_thread.name = "XPlaneBeacon::connect_loop"
 			self.connect_thread.start()
-			logger.debug("connect: connect_loop started")
+			logger.debug("connect_loop started")
 		else:
-			logger.debug("connect: connect_loop already started")
+			logger.debug("connect_loop already started")
 
 	def disconnect(self):
 		"""
 		End connect loop and disconnect
 		"""
 		if self.should_not_connect is not None:
-			logger.debug("disconnect: disconnecting..")
+			logger.debug("disconnecting..")
 			self.cleanup()
 			self.beacon_data = {}
 			self.should_not_connect.set()
 			wait = RECONNECT_TIMEOUT
-			logger.debug(f"disconnect: ..asked to stop connect_loop.. (this may last {wait} secs.)")
+			logger.debug(f"..asked to stop connect_loop.. (this may last {wait} secs.)")
 			self.connect_thread.join(timeout=wait)
 			if self.connect_thread.is_alive():
-				logger.warning(f"disconnect: ..thread may hang..")
+				logger.warning(f"..thread may hang..")
 			self.should_not_connect = None
-			logger.debug("disconnect: ..disconnected")
+			logger.debug("..disconnected")
 		else:
 			if self.connected:
 				self.beacon_data = {}
-				logger.debug("disconnect: ..connect_loop not running..disconnected")
+				logger.debug("..connect_loop not running..disconnected")
 			else:
-				logger.debug("disconnect: ..not connected")
+				logger.debug("..not connected")
 
 
 class XPlane(Simulator, XPlaneBeacon):
@@ -286,15 +286,15 @@ class XPlane(Simulator, XPlaneBeacon):
 		if Dataref.is_internal_dataref(dataref):
 			d = self.get_dataref(dataref)
 			d.update_value(new_value=value, cascade=True)
-			logger.debug(f"write_dataref: written local dataref ({dataref}={value})")
+			logger.debug(f"written local dataref ({dataref}={value})")
 			return
 
 		if not self.connected:
-			logger.warning(f"write_dataref: no connection ({dataref}={value})")
+			logger.warning(f"no connection ({dataref}={value})")
 			return
 
 		if dataref in NOT_A_DATAREF:
-			logger.warning(f"write_dataref: not a dataref ({dataref})")
+			logger.warning(f"not a dataref ({dataref})")
 			return
 
 		cmd = b"DREF\x00"
@@ -309,10 +309,10 @@ class XPlane(Simulator, XPlaneBeacon):
 			message = struct.pack("<5sI500s", cmd, int(value), string)
 
 		assert(len(message)==509)
-		logger.debug(f"write_dataref: ({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
+		logger.debug(f"({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
 		logger.log(SPAM_LEVEL, f"write_dataref: {dataref}={value}")
 		self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
-		logger.debug(f"write_dataref: .. sent")
+		logger.debug(f".. sent")
 
 	def add_dataref_to_monitor(self, dataref, freq = None):
 		'''
@@ -320,15 +320,15 @@ class XPlane(Simulator, XPlaneBeacon):
 		You can disable a dataref by setting freq to 0.
 		'''
 		if Dataref.is_internal_dataref(dataref):
-			logger.debug(f"add_dataref_to_monitor: {dataref} is local and does not need X-Plane monitoring")
+			logger.debug(f"{dataref} is local and does not need X-Plane monitoring")
 			return False
 
 		if not self.connected:
-			logger.warning(f"add_dataref_to_monitor: no connection ({dataref}, {freq})")
+			logger.warning(f"no connection ({dataref}, {freq})")
 			return False
 
 		if dataref in NOT_A_DATAREF:
-			logger.warning(f"write_dataref: not a dataref ({dataref})")
+			logger.warning(f"not a dataref ({dataref})")
 			return False
 
 		idx = -9999
@@ -370,7 +370,7 @@ class XPlane(Simulator, XPlaneBeacon):
 			# * Read the Header "RREFO".
 			header=data[0:5]
 			if header != b"RREF,": # (was b"RREFO" for XPlane10)
-				logger.warning(f"Unknown packet: {binascii.hexlify(data)}")
+				logger.warning(f"{binascii.hexlify(data)}")
 			else:
 				# * We get 8 bytes for every dataref sent:
 				#	 An integer for idx and the float value.
@@ -394,20 +394,20 @@ class XPlane(Simulator, XPlaneBeacon):
 
 	def execute_command(self, command: Command):
 		if command is None:
-			logger.warning(f"execute_command: no command")
+			logger.warning(f"no command")
 			return
 		elif not command.has_command():
-			logger.warning(f"execute_command: command '{command}' not sent (command placeholder, no command, do nothing)")
+			logger.warning(f"command '{command}' not sent (command placeholder, no command, do nothing)")
 			return
 		if not self.connected:
-			logger.warning(f"execute_command: no connection ({command})")
+			logger.warning(f"no connection ({command})")
 			return
 		message = 'CMND0' + command.path
 		self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
 		logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
 
 	def dataref_listener(self):
-		logger.debug(f"dataref_listener: starting..")
+		logger.debug(f"starting..")
 		i = 0
 		total_to = 0
 		j1, j2 = 0, 0
@@ -416,7 +416,7 @@ class XPlane(Simulator, XPlaneBeacon):
 			nexttime = DATA_REFRESH
 			i = i + 1
 			if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0 and j1 > 0:
-				logger.debug(f"dataref_listener: {i}: {datetime.datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
+				logger.debug(f"{i}: {datetime.datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
 			if len(self.datarefs) > 0:
 				try:
 					now = time.time()
@@ -435,16 +435,16 @@ class XPlane(Simulator, XPlaneBeacon):
 					total_to = 0
 				except XPlaneTimeout:
 					total_to = total_to + 1
-					logger.info(f"dataref_listener: XPlaneTimeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+					logger.info(f"XPlaneTimeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
 					if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
-						logger.warning(f"dataref_listener: too many times out, disconnecting, dataref listener terminated")  # ignore
+						logger.warning(f"too many times out, disconnecting, dataref listener terminated")  # ignore
 						self.beacon_data = {}
 						self.no_dref_listener.set()
 
 			if not self.no_dref_listener.is_set() and nexttime > 0:
 				self.no_dref_listener.wait(nexttime)
 		self.no_dref_listener = None
-		logger.debug(f"dataref_listener: ..terminated")
+		logger.debug(f"..terminated")
 
 	# ################################
 	# X-Plane Interface
@@ -463,17 +463,17 @@ class XPlane(Simulator, XPlaneBeacon):
 
 	def clean_datarefs_to_monitor(self):
 		if not self.connected:
-			logger.warning(f"clean_datarefs_to_monitor: no connection")
+			logger.warning(f"no connection")
 			return
 		for i in range(len(self.datarefs)):
 			self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
 		super().clean_datarefs_to_monitor()
-		logger.debug(f"clean_datarefs_to_monitor: done")
+		logger.debug(f"done")
 
 	def add_datarefs_to_monitor(self, datarefs):
 		if not self.connected:
-			logger.warning(f"add_datarefs_to_monitor: no connection")
-			logger.debug(f"add_datarefs_to_monitor: would add {self.remove_local_datarefs(datarefs.keys())}")
+			logger.warning(f"no connection")
+			logger.debug(f"would add {self.remove_local_datarefs(datarefs.keys())}")
 			return
 		# Add aircraft path
 		datarefs[AIRCRAFT_DATAREF] = self.get_dataref(AIRCRAFT_DATAREF)
@@ -482,7 +482,7 @@ class XPlane(Simulator, XPlaneBeacon):
 		prnt = []
 		for d in datarefs.values():
 			if d.is_internal():
-				logger.debug(f"add_datarefs_to_monitor: local dataref {d.path} is not monitored")
+				logger.debug(f"local dataref {d.path} is not monitored")
 				continue
 			if self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT)):
 				prnt.append(d.path)
@@ -490,8 +490,8 @@ class XPlane(Simulator, XPlaneBeacon):
 
 	def remove_datarefs_to_monitor(self, datarefs):
 		if not self.connected and len(self.datarefs_to_monitor) > 0:
-			logger.warning(f"remove_datarefs_to_monitor: no connection")
-			logger.debug(f"remove_datarefs_to_monitor: would remove {datarefs.keys()}")
+			logger.warning(f"no connection")
+			logger.debug(f"would remove {datarefs.keys()}")
 			return
 		# Add aircraft path
 		datarefs[AIRCRAFT_DATAREF] = self.get_dataref(AIRCRAFT_DATAREF)
@@ -499,23 +499,23 @@ class XPlane(Simulator, XPlaneBeacon):
 		prnt = []
 		for d in datarefs.values():
 			if d.is_internal():
-				logger.debug(f"remove_datarefs_to_monitor: local dataref {d.path} is not monitored")
+				logger.debug(f"local dataref {d.path} is not monitored")
 				continue
 			if d.path in self.datarefs_to_monitor.keys():
 				if self.datarefs_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
 					if self.add_dataref_to_monitor(d.path, freq=0):
 						prnt.append(d.path)
 				else:
-					logger.debug(f"remove_datarefs_to_monitor: {d.path} monitored {self.datarefs_to_monitor[d.path]} times")
+					logger.debug(f"{d.path} monitored {self.datarefs_to_monitor[d.path]} times")
 			else:
-				logger.debug(f"remove_datarefs_to_monitor: no need to remove {d.path}")
-		logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
+				logger.debug(f"no need to remove {d.path}")
+		logger.debug(f"removed {prnt}")
 		super().remove_datarefs_to_monitor(datarefs)
 
 	def remove_all_datarefs(self):
 		if not self.connected and len(self.all_datarefs) > 0:
-			logger.warning(f"remove_all_datarefs: no connection")
-			logger.debug(f"remove_all_datarefs: would remove {self.all_datarefs.keys()}")
+			logger.warning(f"no connection")
+			logger.debug(f"would remove {self.all_datarefs.keys()}")
 			return
 		# Not necessary:
 		# self.remove_datarefs_to_monitor(self.all_datarefs)
@@ -523,7 +523,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
 	def add_all_datarefs_to_monitor(self):
 		if not self.connected:
-			logger.warning(f"add_all_datarefs_to_monitor: no connection")
+			logger.warning(f"no connection")
 			return
 		# Add those to monitor
 		prnt = []
@@ -541,16 +541,16 @@ class XPlane(Simulator, XPlaneBeacon):
 
 	def start(self):
 		if not self.connected:
-			logger.warning(f"start: no IP address. could not start.")
+			logger.warning(f"no IP address. could not start.")
 			return
 		if self.no_dref_listener is None:
 			self.no_dref_listener = threading.Event()
 			self.thread = threading.Thread(target=self.dataref_listener)
 			self.thread.name = f"XPlaneUDP::datarefs_listener"
 			self.thread.start()
-			logger.info(f"start: XPlaneUDP started")
+			logger.info(f"XPlaneUDP started")
 		else:
-			logger.info(f"start: XPlaneUDP already running.")
+			logger.info(f"XPlaneUDP already running.")
 		# When restarted after network failure, should clean all datarefs
 		# then reload datarefs from current page of each deck
 		self.clean_datarefs_to_monitor()
@@ -560,25 +560,25 @@ class XPlane(Simulator, XPlaneBeacon):
 	def stop(self):
 		if self.no_dref_listener is not None:
 			self.no_dref_listener.set()
-			logger.debug(f"stop: stopping..")
+			logger.debug(f"stopping..")
 			wait = SOCKET_TIMEOUT
-			logger.debug(f"stop: ..asked to stop dataref listener (this may last {wait} secs. for UDP socket to timeout)..")
+			logger.debug(f"..asked to stop dataref listener (this may last {wait} secs. for UDP socket to timeout)..")
 			self.thread.join(wait)
 			if self.thread.is_alive():
-				logger.warning(f"stop: ..thread may hang in socket.recvfrom()..")
+				logger.warning(f"..thread may hang in socket.recvfrom()..")
 			self.no_dref_listener = None
-			logger.debug(f"stop: ..stopped")
+			logger.debug(f"..stopped")
 		else:
-			logger.debug(f"stop: not running")
+			logger.debug(f"not running")
 
 	# ################################
 	# Cockpit interface
 	#
 	def terminate(self):
-		logger.debug(f"terminate: currently {'not ' if self.no_dref_listener is None else ''}running. terminating..")
+		logger.debug(f"currently {'not ' if self.no_dref_listener is None else ''}running. terminating..")
 		self.remove_all_datarefs()
-		logger.info(f"terminate: terminating..disconnecting..")
+		logger.info(f"terminating..disconnecting..")
 		self.disconnect()
-		logger.info(f"terminate: ..stopping..")
+		logger.info(f"..stopping..")
 		self.stop()
-		logger.info(f"terminate: ..terminated")
+		logger.info(f"..terminated")

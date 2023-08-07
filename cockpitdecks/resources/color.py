@@ -34,7 +34,7 @@ def convert_color(instr):
         return tuple(instr)
 
     if type(instr) != str:
-        logger.debug(f"convert_color: color {instr} ({type(instr)}) not found, using {DEFAULT_COLOR}")
+        logger.debug(f"color {instr} ({type(instr)}) not found, using {DEFAULT_COLOR}")
         return DEFAULT_COLOR
 
     # it's a string...
@@ -46,10 +46,10 @@ def convert_color(instr):
         try:
             color = ImageColor.getrgb(instr)
         except ValueError:
-            logger.debug(f"convert_color: fail to convert color {instr} ({type(instr)}), using {DEFAULT_COLOR}")
+            logger.debug(f"fail to convert color {instr} ({type(instr)}), using {DEFAULT_COLOR}")
             color = DEFAULT_COLOR
         return color
-    logger.debug(f"convert_color: not a string {instr} ({type(instr)}), using {DEFAULT_COLOR}")
+    logger.debug(f"not a string {instr} ({type(instr)}), using {DEFAULT_COLOR}")
     return DEFAULT_COLOR
 
 

@@ -108,7 +108,7 @@ class Loupedeck(DeckWithIcons):
                 image = Image.open(image_filename).convert("RGBA")
                 image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
             else:
-                logger.warning(f"make_default_page: deck {self.name}: no wallpaper image {image_filename} found, using default")
+                logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
                 image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
@@ -117,10 +117,10 @@ class Loupedeck(DeckWithIcons):
                     logo2 = ImageOps.fit(logo, (deck_width - 2*inside, deck_height - 2*inside), Image.LANCZOS)
                     image.paste(logo2, (inside, inside), logo2)
                 else:
-                    logger.warning(f"make_default_page: deck {self.name}: no logo image {fn} found, using default")
+                    logger.warning(f"deck {self.name}: no logo image {fn} found, using default")
             return image
 
-        logger.debug(f"load: loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
+        logger.debug(f"loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
 
         fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.wallpaper)
         image = create_full_deck_sized_image(fn)
@@ -156,7 +156,7 @@ class Loupedeck(DeckWithIcons):
         self.pages = { DEFAULT_PAGE_NAME: page0 }
         self.home_page = page0
         self.current_page = page0
-        logger.debug(f"make_default_page: ..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
+        logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -169,17 +169,17 @@ class Loupedeck(DeckWithIcons):
             """
             Either execute function direactly or enqueue it for later dequeue.
             """
-            logger.debug(f"key_change_callback: Deck {this_deck.id()} Key {this_key} = {this_state}")
+            logger.debug(f"Deck {this_deck.id()} Key {this_key} = {this_state}")
             if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
                 self.cockpit.sim.events.put([self.name, this_key, this_state])
-                # logger.debug(f"key_change_callback: {this_key} {this_state} enqueued")
+                # logger.debug(f"{this_key} {this_state} enqueued")
             else:
-                # logger.debug(f"key_change_callback: {key} {state}")
+                # logger.debug(f"{key} {state}")
                 self.key_change_processing(this_deck, this_key, this_state)
 
-        # logger.debug(f"key_change_callback: {msg}")
+        # logger.debug(f"{msg}")
         if "action" not in msg or "id" not in msg:
-            logger.debug(f"key_change_callback: invalid message {msg}")
+            logger.debug(f"invalid message {msg}")
             return
 
         L = 270
@@ -200,7 +200,7 @@ class Loupedeck(DeckWithIcons):
                     num = int(key)
                     key = f"{BUTTON_PREFIX}{key}"
                 except ValueError:
-                    logger.warning(f"key_change_callback: invalid button key {key}")
+                    logger.warning(f"invalid button key {key}")
             transfer(deck, key, state)
 
         elif action == "rotate":
@@ -214,7 +214,7 @@ class Loupedeck(DeckWithIcons):
                 try:
                     key = int(key)
                 except ValueError:
-                    logger.warning(f"key_change_callback: invalid button key {key} {msg}")
+                    logger.warning(f"invalid button key {key} {msg}")
                 self.touches[msg["id"]] = msg
                 transfer(deck, key, state)
             else:
@@ -226,14 +226,14 @@ class Loupedeck(DeckWithIcons):
                         if msg["y"] >= int(i*L/3) and msg["y"] < int((i+1)*L/3):
                             k = f"{msg['screen'][0].upper()}{i}"
                         i = i + 1
-                    logger.debug(f"key_change_callback: side bar pressed, SIDE_INDIVIDUAL_KEYS event {k} = {state}")
+                    logger.debug(f"side bar pressed, SIDE_INDIVIDUAL_KEYS event {k} = {state}")
                     # This transfer a (virtual) button push event
                     transfer(deck, k, state)
                     # WATCH OUT! If the release occurs in another key (virtual or not),
                     # the corresponding release event will be not be sent to the same, original key
                 else:
-                    logger.warning(f"key_change_callback: side bar touched, no processing")
-                    logger.debug(f"key_change_callback: side bar touched, no processing msg={msg}")
+                    logger.warning(f"side bar touched, no processing")
+                    logger.debug(f"side bar touched, no processing msg={msg}")
 
         elif action == "touchend":  # since user can "release" touch in another key, we send the touchstart one.
             state = 0
@@ -282,22 +282,22 @@ class Loupedeck(DeckWithIcons):
                             i = i + 1
 
                         if pressed is None:
-                            logger.warning(f"key_change_callback: side bar released but no button press found, ignoring")
+                            logger.warning(f"side bar released but no button press found, ignoring")
                         else:
                             if pressed != released:
-                                logger.warning(f"key_change_callback: side bar pressed in {pressed} but released {released}, assuming release in {pressed}")
+                                logger.warning(f"side bar pressed in {pressed} but released {released}, assuming release in {pressed}")
                             event_dict["small_key"] = pressed
                             event = event + [pressed]
-                            logger.debug(f"key_change_callback: side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
+                            logger.debug(f"side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
                             # This transfer a (virtual) button release event
                             transfer(deck, pressed, state)
 
                     transfer(deck, kstart, event)
             else:
-                logger.error(f"key_change_callback: received touchend but no matching touchstart found")
+                logger.error(f"received touchend but no matching touchstart found")
         else:
             if action != "touchmove":
-                logger.debug(f"key_change_callback: unprocessed {msg}")
+                logger.debug(f"unprocessed {msg}")
 
     # #######################################
     # Deck Specific Functions : Representation
@@ -346,11 +346,11 @@ class Loupedeck(DeckWithIcons):
 
     def _set_key_image(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("_set_key_image: no device")
+            logger.warning("no device")
             return
         image = button.get_representation()
         if image is None and button.index not in ["left", "right"]:
-            logger.warning("_set_key_image: button returned no image, using default")
+            logger.warning("button returned no image, using default")
             image = self.icons[self.default_icon_name]
 
         if image is not None and button.index in ["left", "right"]:
@@ -368,20 +368,20 @@ class Loupedeck(DeckWithIcons):
                     if image.width > mw or image.height > mh:
                         image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=self.get_display_for_pil(button.index))
                 else:
-                    logger.warning("_set_key_image: cannot get device key image size")
+                    logger.warning("cannot get device key image size")
             else:
-                logger.warning("_set_key_image: cannot get device key image format")
+                logger.warning("cannot get device key image format")
             self._send_key_image_to_device(button.index, image)
         else:
-            logger.warning(f"_set_key_image: no image for {button.name}")
+            logger.warning(f"no image for {button.name}")
 
     def _set_button_color(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("_set_button_color: no device")
+            logger.warning("no device")
             return
         color = button.get_representation()
         if color is None:
-            logger.warning("_set_button_color: button returned no representation color, using default")
+            logger.warning("button returned no representation color, using default")
             color = DEFAULT_COLOR
         idx = button.index.lower().replace(BUTTON_PREFIX, "")
         if idx == "0":
@@ -407,14 +407,14 @@ class Loupedeck(DeckWithIcons):
         i = 0
 
         image = Image.new(mode="RGBA", size=(w, h))
-        logger.debug(f"print_page: page {self.name}: image {image.width}x{image.height}..")
+        logger.debug(f"page {self.name}: image {image.width}x{image.height}..")
         for button in page.buttons.values():
-            logger.debug(f"print_page: doing {button.name}..")
+            logger.debug(f"doing {button.name}..")
             if str(button.index).startswith(BUTTON_PREFIX):
-                logger.debug(f"print_page: ..color led has no image")
+                logger.debug(f"..color led has no image")
                 continue
             if str(button.index).startswith(ENCODER_PREFIX):
-                logger.debug(f"print_page: ..encoder has no image")
+                logger.debug(f"..encoder has no image")
                 continue
             if button.index in ["left", "right"]:
                 x = 0 if button.index == "left" else (sw + INTER_ICON + nw * (ICON_SIZE + INTER_ICON))
@@ -422,7 +422,7 @@ class Loupedeck(DeckWithIcons):
                 b = button.get_representation()
                 bs = b.resize((sw, sh))
                 image.paste(bs, (x, y))
-                logger.debug(f"print_page: added {button.name} at ({x}, {y})")
+                logger.debug(f"added {button.name} at ({x}, {y})")
                 continue
             i = int(button.index)
             mx = i % nw
@@ -432,18 +432,18 @@ class Loupedeck(DeckWithIcons):
             b = button.get_representation()
             bs = b.resize((ICON_SIZE, ICON_SIZE))
             image.paste(bs, (x, y))
-            logger.debug(f"print_page: added {button.name} (index={button.index}) at ({x}, {y})")
-        logger.debug(f"print_page: page {self.name}: ..saving..")
+            logger.debug(f"added {button.name} (index={button.index}) at ({x}, {y})")
+        logger.debug(f"page {self.name}: ..saving..")
         with open(page.name + ".png", "wb") as im:
             image.save(im, format="PNG")
-        logger.debug(f"print_page: page {self.name}: ..done")
+        logger.debug(f"page {self.name}: ..done")
 
     def render(self, button: Button): # idx: int, image: str, label: str = None):
         if self.device is None:
-            logger.warning("render: no device")
+            logger.warning("no device")
             return
         if str(button.index).startswith(ENCODER_PREFIX):
-            logger.debug(f"render: button type {button.index} has no representation")
+            logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation
         if isinstance(representation, Icon):
@@ -451,28 +451,28 @@ class Loupedeck(DeckWithIcons):
         elif isinstance(representation, ColoredLED):
             self._set_button_color(button)
         else:
-            logger.warning(f"render: button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device
     #
     def start(self):
         if self.device is None:
-            logger.warning(f"start: loupedeck {self.name}: no device")
+            logger.warning(f"loupedeck {self.name}: no device")
             return
         self.device.set_callback(self.key_change_callback)
         self.device.start()  # restart it if it was terminated
-        logger.info(f"start: loupedeck {self.name}: listening for key strokes")
+        logger.info(f"loupedeck {self.name}: listening for key strokes")
 
     def terminate(self):
         super().terminate()  # cleanly unload current page, if any
         Loupedeck.terminate_device(self.device, self.name)
         self.running = False
-        # logger.debug(f"terminate: closing {type(self.device).__name__}..")
+        # logger.debug(f"closing {type(self.device).__name__}..")
         # del self.device     # closes connection and stop serial _read thread
         # self.device = None
-        # logger.debug(f"terminate: closed")
-        logger.info(f"terminate: deck {self.name} terminated")
+        # logger.debug(f"closed")
+        logger.info(f"deck {self.name} terminated")
 
     @staticmethod
     def terminate_device(device, name: str = "unspecified"):
@@ -480,6 +480,6 @@ class Loupedeck(DeckWithIcons):
             device.set_callback(None)
             device.reset()
             device.stop()  # terminates the loop.
-        logger.info(f"terminate_device: {name} terminated")
+        logger.info(f"{name} terminated")
 
 

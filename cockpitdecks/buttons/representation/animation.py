@@ -18,7 +18,7 @@ from .representation import MultiIcons
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 #
 # ###############################
@@ -56,7 +56,7 @@ class IconAnimation(MultiIcons):
             self.counter = self.counter + 1
             self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
             self.exit.wait(self.speed)
-        logger.debug(f"loop: exited")
+        logger.debug(f"exited")
 
     def should_run(self) -> bool:
         """
@@ -75,7 +75,7 @@ class IconAnimation(MultiIcons):
             self.thread.name = f"ButtonAnimate::loop({self.button_name()})"
             self.thread.start()
         else:
-            logger.warning(f"anim_start: button {self.button_name()}: already started")
+            logger.warning(f"button {self.button_name()}: already started")
 
     def anim_stop(self, render: bool = True):
         """
@@ -86,19 +86,19 @@ class IconAnimation(MultiIcons):
             self.exit.set()
             self.thread.join(timeout=2*self.speed)
             if self.thread.is_alive():
-                logger.warning(f"anim_stop: ..thread may hang..")
+                logger.warning(f"..thread may hang..")
             if render:
                 self.render()
         else:
-            logger.debug(f"anim_stop: button {self.button_name()}: already stopped")
+            logger.debug(f"button {self.button_name()}: already stopped")
 
     def clean(self):
         """
         Stops animation and remove icon from deck
         """
-        logger.debug(f"clean: button {self.button_name()}: cleaning requested")
+        logger.debug(f"button {self.button_name()}: cleaning requested")
         self.anim_stop(render=False)
-        logger.debug(f"clean: button {self.button_name()}: stopped")
+        logger.debug(f"button {self.button_name()}: stopped")
         super().clean()
 
     def render(self):
@@ -159,7 +159,7 @@ class DrawAnimation(DrawBase):
             self.animate()
             self.button.render()
             self.exit.wait(self.speed)
-        logger.debug(f"loop: exited")
+        logger.debug(f"exited")
 
     def should_run(self) -> bool:
         """
@@ -175,7 +175,7 @@ class DrawAnimation(DrawBase):
         :rtype:     { return_type_description }
         """
         self.tween = self.tween + 1
-        # logger.debug(f"animate: tick")
+        # logger.debug(f"tick")
         return super().render()
 
     def anim_start(self):
@@ -187,9 +187,9 @@ class DrawAnimation(DrawBase):
             self.thread = threading.Thread(target=self.loop)
             self.thread.name = f"ButtonAnimate::loop({self.button.name})"
             self.thread.start()
-            logger.debug(f"anim_start: started")
+            logger.debug(f"started")
         else:
-            logger.warning(f"anim_start: button {self.button.name}: already started")
+            logger.warning(f"button {self.button.name}: already started")
 
     def anim_stop(self):
         """
@@ -200,27 +200,27 @@ class DrawAnimation(DrawBase):
             self.exit.set()
             self.thread.join(timeout=2*self.speed)
             if self.thread.is_alive():
-                logger.warning(f"anim_stop: button {self.button.name}: animation did not terminate")
-            logger.debug(f"anim_stop: stopped")
+                logger.warning(f"button {self.button.name}: animation did not terminate")
+            logger.debug(f"stopped")
         else:
-            logger.debug(f"anim_stop: button {self.button.name}: already stopped")
+            logger.debug(f"button {self.button.name}: already stopped")
 
     def clean(self):
         """
         Stops animation and remove icon from deck
         """
-        logger.debug(f"clean: button {self.button.name}: cleaning requested")
+        logger.debug(f"button {self.button.name}: cleaning requested")
         self.anim_stop()
-        logger.debug(f"clean: button {self.button.name}: stopped")
+        logger.debug(f"button {self.button.name}: stopped")
         super().clean()
 
     def render(self):
         """
         Renders icon_off or current icon in list
         """
-        logger.debug(f"render: button {self.button.name}: enter")
+        logger.debug(f"button {self.button.name}: enter")
         if self.is_valid():
-            logger.debug(f"render: button {self.button.name}: is valid {self.should_run()}, {self.running}")
+            logger.debug(f"button {self.button.name}: is valid {self.should_run()}, {self.running}")
             if self.should_run():
                 if not self.running:
                     self.anim_start()
@@ -306,7 +306,7 @@ class DrawAnimationFTG(DrawAnimation):
             framemax = ((cx - ICON_SIZE/2 + side_margin, cy - ICON_SIZE/4 + side_margin), (cx + ICON_SIZE/2 - side_margin, cy + ICON_SIZE/4 - side_margin))
             frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
             thick = int(ICON_SIZE / 32)
-            # logger.debug(f"render: button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
+            # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
             draw.rectangle(frame, outline="deepskyblue", width=thick)
         else:
             font = self.get_font(DEFAULT_LABEL_FONT, 60)

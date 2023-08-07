@@ -31,7 +31,7 @@ class DrawBase(Icon):
 		Icon.__init__(self, config=config, button=button)
 
 		self.texture = None
-		self.color   = None
+		self.bgcolor   = None
 		self.cockpit_texture = config.get("cockpit-texture", self.button.page.cockpit_texture)
 		self.cockpit_color = config.get("cockpit-color", self.button.page.cockpit_color)
 
@@ -50,7 +50,7 @@ class DrawBase(Icon):
 			image = self.button.deck.cockpit.icons[self.texture]
 			if image is not None:  # found a texture as requested
 				image = image.resize((width, height))
-				logger.debug(f"get_background: using texture {self.texture}")
+				logger.debug(f"using texture {self.texture}")
 				return image
 
 		# Try deck cockpit_texture
@@ -58,19 +58,19 @@ class DrawBase(Icon):
 			image = self.button.deck.cockpit.icons[self.cockpit_texture]
 			if image is not None:  # found cockpit texture
 				image = image.resize((width, height))
-				logger.debug(f"get_background: using cockpit texture {self.cockpit_texture}")
+				logger.debug(f"using cockpit texture {self.cockpit_texture}")
 				return image
 
 		if use_texture and self.texture is None:
-			logger.debug(f"get_background: should use texture but no texture found, using uniform color")
+			logger.debug(f"should use texture but no texture found, using uniform color")
 
-		if self.color is not None:
-			image = Image.new(mode="RGBA", size=(width, height), color=self.color)
-			logger.debug(f"get_background: using uniform color {self.color}")
+		if self.bgcolor is not None:
+			image = Image.new(mode="RGBA", size=(width, height), color=self.bgcolor)
+			logger.debug(f"using uniform color {self.bgcolor}")
 			return image
 
 		image = Image.new(mode="RGBA", size=(width, height), color=self.cockpit_color)
-		logger.debug(f"get_background: using uniform cockpit color {self.cockpit_color}")
+		logger.debug(f"using uniform cockpit color {self.cockpit_color}")
 		return image
 
 class DataIcon(DrawBase):
@@ -97,7 +97,7 @@ class DataIcon(DrawBase):
 		# Display Data
 		data = self._config.get("data")
 		if data is None:
-			logger.warning(f"get_image_for_icon: button {self.button.name}: no data")
+			logger.warning(f"button {self.button.name}: no data")
 			return image
 
 		topbar = data.get("top-line-color")
@@ -112,7 +112,7 @@ class DataIcon(DrawBase):
 		icon_str = "*"
 		icon_arr = icon.split(":")
 		if len(icon_arr) == 0 or icon_arr[0] not in ICON_FONTS.keys():
-			logger.warning(f"get_image_for_icon: button {self.button.name}: invalid icon {icon}")
+			logger.warning(f"button {self.button.name}: invalid icon {icon}")
 		else:
 			icon_name = ":".join(icon_arr[1:])
 			icon_str = ICON_FONTS[icon_arr[0]][1].get(icon_name, "*")
@@ -329,7 +329,7 @@ class SwitchBase(DrawBase):
 		# Reposition
 		self.draw_scale = float(self.switch.get("scale", 1))
 		if self.draw_scale < 0.5 or self.draw_scale > 2:
-			logger.warning(f"__init__: button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
+			logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
 			self.draw_scale = 1
 		self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
 		self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
@@ -371,16 +371,16 @@ class CircularSwitch(SwitchBase):
 		self.tick_to = self.switch.get("tick-to", 270)
 		if hasattr(self.button._activation, "stops"):
 			self.tick_steps = self.button._activation.stops
-			logger.debug(f"__init__: button {self.button.name}: button has {self.tick_steps} steps")
+			logger.debug(f"button {self.button.name}: button has {self.tick_steps} steps")
 		else:
 			self.tick_steps = self.switch.get("tick-steps", 2)
 		if self.tick_steps < 2:
-			logger.warning(f"__init__: button {self.button.name}: insuficient number of steps: {self.tick_steps}, forcing 2")
+			logger.warning(f"button {self.button.name}: insuficient number of steps: {self.tick_steps}, forcing 2")
 			self.tick_steps = 2
-		logger.debug(f"__init__: button {self.button.name}: {self.tick_steps} steps")
+		logger.debug(f"button {self.button.name}: {self.tick_steps} steps")
 		self.angular_step = (self.tick_to - self.tick_from) / (self.tick_steps - 1)
 		if len(self.tick_labels) < self.tick_steps:
-			logger.warning(f"__init__: button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})")
+			logger.warning(f"button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})")
 
 	def get_image_for_icon(self):
 		"""
@@ -458,7 +458,7 @@ class CircularSwitch(SwitchBase):
 		if value is None:
 			value = 0
 		if value >= self.tick_steps:
-			logger.warning(f"__init__: button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}")
+			logger.warning(f"button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}")
 			value = self.tick_steps - 1
 		angle = red(self.tick_from + value * self.angular_step)
 
@@ -564,7 +564,7 @@ class Switch(SwitchBase):
 		# Resizes default value switches to nice looking Airbus switches
 		self.draw_scale = float(self.switch.get("scale", 0.8))
 		if self.draw_scale < 0.5 or self.draw_scale > 2:
-			logger.warning(f"__init__: button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
+			logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
 			self.draw_scale = 1
 		if self.switch.get("left") is None and self.switch.get("right") is None:
 			if self.vertical:
@@ -1030,11 +1030,11 @@ class PushSwitch(SwitchBase):
 			tl = [center[0]-self.handle_size/2, center[1]-self.handle_size/2]
 			br = [center[0]+self.handle_size/2, center[1]+self.handle_size/2]
 			if hasattr(self.button._activation, "is_off") and self.button._activation.is_off():
-				logger.debug(f"get_image_for_icon: button {self.button.name}: has on/off state and IS OFF")
+				logger.debug(f"button {self.button.name}: has on/off state and IS OFF")
 				draw.ellipse(tl+br, fill=self.handle_off_fill_color, outline=self.handle_off_stroke_color, width=self.handle_off_stroke_width)
 			else:
 				if not hasattr(self.button._activation, "is_on"):
-					logger.debug(f"get_image_for_icon: button {self.button.name}: has no on/off state")
+					logger.debug(f"button {self.button.name}: has no on/off state")
 				draw.ellipse(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
 
 		return self.move_and_send(image)

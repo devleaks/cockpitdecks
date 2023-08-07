@@ -208,19 +208,19 @@ class Simulator(ABC):
             if currvalues is not None:
                 for d in currvalues.keys():
                     if d not in self.previous_values.keys() or currvalues[d] != self.previous_values[d]:
-                        # logger.debug(f"detect_changed: {d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
+                        # logger.debug(f"{d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
                         if d in self.datarefs_to_monitor.keys():
                             self.all_datarefs[d].update_value(currvalues[d], cascade=True)
                         else:
                             self.all_datarefs[d].update_value(currvalues[d], cascade=False)  # we just update the value but no notification
-                            logger.warning(f"detect_changed: updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
+                            logger.warning(f"updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
                             # This means we got a value from X-Plane we never asked for this run...
                             # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
-                        # logger.debug(f"detect_changed: ..done")
+                        # logger.debug(f"..done")
                     # else:
-                    #     logger.debug(f"detect_changed: {d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
+                    #     logger.debug(f"{d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
             else:
-                logger.warning(f"detect_changed: no current values") #  (was {self.datarefs_to_monitor.keys()})
+                logger.warning(f"no current values") #  (was {self.datarefs_to_monitor.keys()})
         except RuntimeError:
             logger.warning(f"detect_changed:", exc_info=True)
 
@@ -230,7 +230,7 @@ class Simulator(ABC):
                 dataref.set_round(rounding=self.roundings.get(dataref.path))
                 self.all_datarefs[dataref.path] = dataref
             else:
-                logger.warning(f"register: invalid dataref {dataref.path}")
+                logger.warning(f"invalid dataref {dataref.path}")
         return dataref
 
 
@@ -244,21 +244,21 @@ class Simulator(ABC):
         prnt = []
         for d in datarefs.values():
             if d.path.startswith(INTERNAL_DATAREF_PREFIX):
-                logger.debug(f"add_datarefs_to_monitor: local dataref {d.path} is not monitored")
+                logger.debug(f"local dataref {d.path} is not monitored")
                 continue
             if d.path not in self.datarefs_to_monitor.keys():
                 self.datarefs_to_monitor[d.path] = 1
                 prnt.append(d.path)
             else:
                 self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] + 1
-        logger.debug(f"add_datarefs_to_monitor: added {prnt}")
-        logger.debug(f"add_datarefs_to_monitor: currently monitoring {self.datarefs_to_monitor}")
+        logger.debug(f"added {prnt}")
+        logger.debug(f"currently monitoring {self.datarefs_to_monitor}")
 
     def remove_datarefs_to_monitor(self, datarefs):
         prnt = []
         for d in datarefs.values():
             if d.path.startswith(INTERNAL_DATAREF_PREFIX):
-                logger.debug(f"remove_datarefs_to_monitor: local dataref {d.path} is not monitored")
+                logger.debug(f"local dataref {d.path} is not monitored")
                 continue
             if d.path in self.datarefs_to_monitor.keys():
                 self.datarefs_to_monitor[d.path] = self.datarefs_to_monitor[d.path] - 1
@@ -266,18 +266,18 @@ class Simulator(ABC):
                     prnt.append(d.path)
                     del self.datarefs_to_monitor[d.path]
             else:
-                logger.warning(f"remove_datarefs_to_monitor: dataref {d.path} not monitored")
-        logger.debug(f"remove_datarefs_to_monitor: removed {prnt}")
-        logger.debug(f"remove_datarefs_to_monitor: currently monitoring {self.datarefs_to_monitor}")
+                logger.warning(f"dataref {d.path} not monitored")
+        logger.debug(f"removed {prnt}")
+        logger.debug(f"currently monitoring {self.datarefs_to_monitor}")
 
     def remove_all_datarefs(self):
-        logger.debug(f"remove_all_datarefs: removing..")
+        logger.debug(f"removing..")
         self.all_datarefs = {}
         self.datarefs_to_monitor = {}
         self.simlaneValues = {}
         self.previous_values = {}
         self.current_values = {}
-        logger.debug(f"remove_all_datarefs: ..removed")
+        logger.debug(f"..removed")
 
     @abstractmethod
     def start(self):
