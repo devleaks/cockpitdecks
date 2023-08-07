@@ -14,7 +14,7 @@ from ruamel.yaml import YAML
 
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
-from .simulator import Dataref, DATA_PREFIX
+from .simulator import Dataref, INTERNAL_DATAREF_PREFIX
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
@@ -531,17 +531,17 @@ class Button:
         return txtcpy
 
     def substitute_data_values(self, text, default: str = "0.0", formatting = None):
-        # !!!IMPORTANT!!! DATA_PREFIX "data:" is hardcoded in regexp
+        # !!!IMPORTANT!!! INTERNAL_DATAREF_PREFIX "data:" is hardcoded in regexp
         txtcpy = text
-        more = re.findall("\\${"+DATA_PREFIX+"([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${"+INTERNAL_DATAREF_PREFIX+"([^\\}]+?)}", txtcpy)
         for k, v in more.items():
-            s = f"${{{DATA_PREFIX}{k}}}"      # @todo: !!possible injection!!
+            s = f"${{{INTERNAL_DATAREF_PREFIX}{k}}}"      # @todo: !!possible injection!!
             value = self.sim.get_data(k)
             if value is not None:
                 txtcpy = txtcpy.replace(s, value)
             else:
                 txtcpy = txtcpy.replace(s, default)
-        more = re.findall("\\${"+DATA_PREFIX+"([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${"+INTERNAL_DATAREF_PREFIX+"([^\\}]+?)}", txtcpy)
         if len(more) > 0:
             logger.warning(f"substitute_data_value: button {self.name}: unsubstituted data values {more}")
         return txtcpy

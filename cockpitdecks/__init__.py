@@ -9,7 +9,7 @@ __DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-
 __LICENSE__      = "MIT"
 __LICENSEURL__   = "https://mit-license.org"
 __COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.4.0"
+__version__      = "7.4.2"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__    = "https://github.com/devleaks/cockpitdecks"
@@ -17,6 +17,8 @@ __authorurl__    = "https://github.com/devleaks/cockpitdecks"
 
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 ROOT_DEBUG = ""
+LOGFILE = "cockpitdecks.log"
+FORMAT="[%(asctime)s] p%(process)s %(levelname)s {%(filename)s:%(funcName)s:%(lineno)d}: %(message)s"
 
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 

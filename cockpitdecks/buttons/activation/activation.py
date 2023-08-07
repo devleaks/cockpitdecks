@@ -133,7 +133,7 @@ class Activation:
                          f"activation-count: {self.activation_count}"])
 
     def view(self):
-        if self._view is not None:
+        if self._view is not None and self._view.has_command():
             self.button.sim.commandOnce(self._view)
 
     def is_valid(self):

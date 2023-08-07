@@ -69,7 +69,7 @@ class Page:
         self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
         self.cockpit_color = convert_color(self.cockpit_color)
-        self.cockpit_texture = config.get("cockpit-texture")
+        self.cockpit_texture = config.get("cockpit-texture", base.cockpit_texture)
         self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
 
     def load_buttons(self, buttons):

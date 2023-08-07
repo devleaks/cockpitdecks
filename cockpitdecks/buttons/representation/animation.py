@@ -18,7 +18,7 @@ from .representation import MultiIcons
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 #
 # ###############################
@@ -253,6 +253,8 @@ class DrawAnimationFTG(DrawAnimation):
         """
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
 
+        bgrd = self.get_background(width=image.width, height=image.height)
+        image.paste(bgrd)
         # Button
         cs = 4  # light size, px
         lum = 5 # num flashing green center lines

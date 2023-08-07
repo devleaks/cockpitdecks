@@ -25,6 +25,16 @@ logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+from cockpitdecks import LOGFILE, FORMAT
+if LOGFILE is not None:
+    formatter = logging.Formatter(FORMAT)
+    handler = logging.FileHandler(
+        LOGFILE, mode="a"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+
 yaml = YAML()
 
 

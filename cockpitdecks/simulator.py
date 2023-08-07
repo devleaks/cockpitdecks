@@ -15,23 +15,24 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
-DATA_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
+INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
+NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
 
 class Command:
     """
     A Button activation will instruct the simulator software to perform an action.
     A Command is the message that the simulation sofware is expecting to perform that action.
-    """
-
+    """    
     def __init__(self, path: str, name: str = None):
 
         self.path = path            # some/command
         self.name = name
 
-
     def __str__(self) -> str:
-        return self.path if self.name is None else self.path
+        return self.name if self.name is not None else (self.path if self.path is not None else "no command")
 
+    def has_command(self) -> bool:
+    	return self.path is not None and not self.path.lower() in NOT_A_COMMAND
 
 class Dataref:
     """
@@ -92,14 +93,14 @@ class Dataref:
 
     @staticmethod
     def is_internal_dataref(path):
-        return path.startswith(DATA_PREFIX)
+        return path.startswith(INTERNAL_DATAREF_PREFIX)
 
     @staticmethod
     def mk_internal_dataref(path):
-        return DATA_PREFIX + path
+        return INTERNAL_DATAREF_PREFIX + path
 
     def is_internal(self):
-        return self.path.startswith(DATA_PREFIX)
+        return self.path.startswith(INTERNAL_DATAREF_PREFIX)
 
     def set_round(self, rounding):
         self.round = rounding
@@ -163,6 +164,7 @@ class Dataref:
                     loggerDataref.log(SPAM_LEVEL, f"notify: {self.path}: notified {v.name} (not on a page)")
         # else:
         #     loggerDataref.error(f"notify: dataref {self.path} not changed")
+
 
 class Simulator(ABC):
     """
@@ -241,7 +243,7 @@ class Simulator(ABC):
     def add_datarefs_to_monitor(self, datarefs: dict):
         prnt = []
         for d in datarefs.values():
-            if d.path.startswith(DATA_PREFIX):
+            if d.path.startswith(INTERNAL_DATAREF_PREFIX):
                 logger.debug(f"add_datarefs_to_monitor: local dataref {d.path} is not monitored")
                 continue
             if d.path not in self.datarefs_to_monitor.keys():
@@ -255,7 +257,7 @@ class Simulator(ABC):
     def remove_datarefs_to_monitor(self, datarefs):
         prnt = []
         for d in datarefs.values():
-            if d.path.startswith(DATA_PREFIX):
+            if d.path.startswith(INTERNAL_DATAREF_PREFIX):
                 logger.debug(f"remove_datarefs_to_monitor: local dataref {d.path} is not monitored")
                 continue
             if d.path in self.datarefs_to_monitor.keys():
