@@ -36,18 +36,13 @@ or whatever call your version of Python uses to locate the library.
 export DYLD_LIBRARY_PATH=/opt/homebrew/lib
 ```
 
-
-## Create python environment, LESS THAN 3.11.
-
-If you use xtouchmini, you must use python<3.11 beecause as today (20-MAR-2023) rtmidi does not compile on cython 3.11.
-
 ## Global packages required by Cockpitdecks
 
 ```
 $ pip install ruamel.yaml pillow
 ```
 
-If you want to use the Metar representation on a key, add:
+If you want to use the Metar/Weather representation on a key, please add:
 
 ```
 $ pip install timezonefinder suntime 'avwx-engine[scipy]'
@@ -71,7 +66,6 @@ $ pip install git+https://github.com/devleaks/python-loupedeck-live.git
 ### Beringher X Touch Mini
 
 ```
-$ pip install --upgrade --no-cache-dir --no-binary python-rtmidi python-rtmidi
 $ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
 ```
 
