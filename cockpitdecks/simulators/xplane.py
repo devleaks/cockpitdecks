@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 DATA_SENT	= 2	# times per second, X-Plane send that data on UDP every that often. Too often will slow down X-PLANE.
 DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
 					# must be << 1/DATA_SENT to consume faster than produce.
+					# UDP sends at most ~40 to ~50 dataref values per packet.
 LOOP_ALIVE   = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 
@@ -338,8 +339,8 @@ class XPlane(Simulator, XPlaneBeacon):
 		if dataref in self.datarefs.values():
 			idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(dataref)]
 			if freq == 0:
-				if dataref in self.simlaneValues.keys():
-					del self.simlaneValues[dataref]
+				if dataref in self.simdrefValues.keys():
+					del self.simdrefValues[dataref]
 				del self.datarefs[idx]
 		else:
 			idx = self.datarefidx
@@ -386,11 +387,13 @@ class XPlane(Simulator, XPlaneBeacon):
 							value = 0.0
 						retvalues[self.datarefs[idx]] = value
 						check.add(idx)
-			# print(check)  # to see which datref get sent
-			self.simlaneValues.update(retvalues)
+			self.simdrefValues.update(retvalues)
+			# logger.debug(f"{datetime.datetime.now()}, datarefs sent:{check}")
+			# logger.debug(f"{datetime.datetime.now()}, datarefs sent:{list(retvalues.keys())}")
+			# logger.debug(f"{datetime.datetime.now()}, updated {len(retvalues)} values.")
 		except:
 			raise XPlaneTimeout
-		return self.simlaneValues
+		return self.simdrefValues
 
 	def execute_command(self, command: Command):
 		if command is None:

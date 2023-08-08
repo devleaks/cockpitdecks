@@ -177,7 +177,7 @@ class Simulator(ABC):
         self.all_datarefs = {}
 
         self.datarefs_to_monitor = {}  # dataref path and number of objects monitoring
-        self.simlaneValues = {}         # key = dataref-path, value = value
+        self.simdrefValues = {}         # key = dataref-path, value = value
 
         # Values of datarefs
         self.previous_values = {}
@@ -274,7 +274,7 @@ class Simulator(ABC):
         logger.debug(f"removing..")
         self.all_datarefs = {}
         self.datarefs_to_monitor = {}
-        self.simlaneValues = {}
+        self.simdrefValues = {}
         self.previous_values = {}
         self.current_values = {}
         logger.debug(f"..removed")

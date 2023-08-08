@@ -1,10 +1,27 @@
-# A few constants and default values
-# Adjust with care...
+# ##########################################################################
 #
+# C O C K P I T D E C K S
+# 
+# Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit.
+# 
+#
+from datetime import datetime
+
+__NAME__         = "cockpitdecks"
+__DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit"
+__LICENSE__      = "MIT"
+__LICENSEURL__   = "https://mit-license.org"
+__COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
+__version__      = "7.5.2"
+__version_info__ = tuple(map(int, __version__.split(".")))
+__version_name__ = "development"
+__authorurl__    = "https://github.com/devleaks/cockpitdecks"
+#
+#
+# ##########################################################################
 import os
 import logging
 from collections.abc import MutableMapping
-from datetime import datetime
 from enum import Enum
 import ruamel
 from ruamel.yaml import YAML
@@ -14,25 +31,25 @@ from ruamel.yaml import YAML
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML()
 
-logger = logging.getLogger(__name__)
-# logger.setLevel(SPAM_LEVEL)
-
-__NAME__         = "cockpitdecks"
-__DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit"
-__LICENSE__      = "MIT"
-__LICENSEURL__   = "https://mit-license.org"
-__COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.5.0"
-__version_info__ = tuple(map(int, __version__.split(".")))
-__version_name__ = "development"
-__authorurl__    = "https://github.com/devleaks/cockpitdecks"
-
-
-# ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
-ROOT_DEBUG = ""
 LOGFILE = "cockpitdecks.log"
 FORMAT="[%(asctime)s] p%(process)s %(levelname)s {%(filename)s:%(funcName)s:%(lineno)d}: %(message)s"
+# logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
+# logger.setLevel(SPAM_LEVEL)
+# if LOGFILE is not None:
+#     formatter = logging.Formatter(FORMAT)
+#     handler = logging.FileHandler(
+#         LOGFILE, mode="a"
+#     )
+#     handler.setFormatter(formatter)
+#     logger.addHandler(handler)
 
+
+# A few constants and default values
+# Adjust with care...
+#
+# ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
+ROOT_DEBUG = ""
 EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
 
 # Files
