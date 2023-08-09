@@ -291,8 +291,8 @@ class RealWeatherIcon(DrawAnimation):
 		return random.choice(list(WEATHER_ICONS.keys()))
 
 
-AIRCRAFT_DATAREF_BASE = "sim/aircraft/view/acf_livery_path"
-AIRCRAFT_DATAREF_SIZE = 80   # < 1024
+AIRCRAFT_DATAREF_BASE = "sim/aircraft/view/acf_ICAO"
+AIRCRAFT_DATAREF_SIZE = 4   # < 1024
 
 class AircraftIcon(DrawBase):
 
@@ -310,14 +310,16 @@ class AircraftIcon(DrawBase):
 	def init(self):
 		if self._inited:
 			return
-		self.aircraft_updated()
+		self.notify_aircraft_updated()
 		self._inited = True
 		logger.debug(f"inited")
 
-	def aircraft_updated(self):
-		self._ac_count = self._ac_count + 1
-		self.button._activation.write_dataref(self._ac_count)
-		logger.info(f"notified of new aircraft {self._ac_count} ({self.aircraft})")
+	def notify_aircraft_updated(self):
+		if self.aircraft is not None:
+			self._ac_count = self._ac_count + 1
+			self.button._activation.write_dataref(self._ac_count)
+			self._last_updated = datetime.now()
+			logger.info(f"notified of new aircraft {self._ac_count} ({self.aircraft})")
 
 	def get_datarefs(self):
 		if self.datarefs is None:
@@ -328,14 +330,7 @@ class AircraftIcon(DrawBase):
 		return self.datarefs
 
 	def get_aircraft_name(self):
-		# We assume "Aircraft/Extrat Aircraft/Aircraft Name/liveries/Livery Name"
-		# Aircraft name is 3rd element in path.
-		PATH_ELEMENT = 3 # Third element
-		if self.acf_livery_path is not None:
-			arr = self.acf_livery_path.split(os.sep)  # @todo
-			if len(arr) > PATH_ELEMENT - 1:
-				return arr[PATH_ELEMENT - 1]
-		return None
+		return self.acf_livery_path if self.acf_livery_path != "" else None
 
 	def updated_recently(self):
 		if self._last_updated is not None:
@@ -344,7 +339,7 @@ class AircraftIcon(DrawBase):
 		return False
 
 	def updated(self):
-		# 1. Collect livery path string
+		# 1. Collect string character per character :-D
 		new_string = ""
 		updated = False
 		for i in range(AIRCRAFT_DATAREF_SIZE):
@@ -360,10 +355,11 @@ class AircraftIcon(DrawBase):
 			updated = self.aircraft != ac
 			if updated:
 				self.aircraft = ac
-				logger.debug(f"new aircraft {self.aircraft}")
 				if not self.updated_recently():
-					self.aircraft_updated()  # notifies writable dataref
-					self._last_updated = datetime.now()
+					self.notify_aircraft_updated()  # notifies writable dataref
+				else:
+					# self._last_updated should not be None as we reach here
+					logger.debug(f"new aircraft string {self.aircraft} but no notification, collection in progress, notified at {self._last_updated}")
 		return updated
 
 	def get_image_for_icon(self):
