@@ -214,8 +214,10 @@ class DataIcon(DrawBase):
 					  align="right",
 					  fill=mark_color)
 
-		return image.convert("RGB")
-
+		# Paste image on cockpit background and return it.
+		bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Data")
+		bg.alpha_composite(image)
+		return bg.convert("RGB")
 
 #
 # ###############################

@@ -420,7 +420,12 @@ class Deck(ABC):
 		logger.warning(f"deck {self.name}: no button index {index}")
 		return None
 
-	def valid_indices(self):
+	def valid_indices(self, with_icon: bool = False):
+		# If with_icon is True, only returns keys with image icon associted with it
+		if with_icon:
+			with_image = filter(lambda x: x[KW.VIEW.value] == "image", self._buttons.values())
+			return [a[KW.INDEX.value] for a in with_image]
+		# else, returns all of them
 		return list(self._buttons.keys())
 
 	def valid_activations(self, index = None):

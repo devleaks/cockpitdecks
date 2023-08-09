@@ -429,7 +429,7 @@ class Cockpit:
 			self.default_logo = self._config.get("default-logo", self.default_logo)
 			self.default_wallpaper = self._config.get("default-wallpaper", self.default_wallpaper)
 			self.default_label_font = self._config.get("default-label-font", self.default_label_font)
-			self.default_label_size = self._config.get("default-label-size", self.default_label_color)
+			self.default_label_size = self._config.get("default-label-size", self.default_label_size)
 			self.default_label_color = self._config.get("default-label-color", self.default_label_color)
 			self.default_label_color = convert_color(self.default_label_color)
 			self.default_label_position = self._config.get("default-label-position", self.default_label_position)

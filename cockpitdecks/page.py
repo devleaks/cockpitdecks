@@ -173,7 +173,7 @@ class Page:
 		if not self.fill_empty_keys:
 			return
 
-		for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices()):
+		for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices(with_icon=True)):
 			self.deck.fill_empty(key)
 
 	def print(self):

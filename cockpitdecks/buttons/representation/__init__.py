@@ -7,6 +7,7 @@ from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob
 from .animation import IconAnimation, DrawAnimationFTG
+from .xp import RealWeatherIcon
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -41,7 +42,8 @@ REPRESENTATIONS = {
     "circular-switch": CircularSwitch,
     "push-switch": PushSwitch,
     "data": DataIcon,
-    "ftg": DrawAnimationFTG
+    "ftg": DrawAnimationFTG,
+    "real-weather": RealWeatherIcon
 }
 
 DEFAULT_REPRESENTATIONS = ["none"]
@@ -72,7 +74,7 @@ except ImportError:
 #   repeat: 6
 #
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
-drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob"]
+drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob", "real-weather"]
 
 if "weather" in REPRESENTATIONS.keys():
     drawn_buttons.append("weather")
