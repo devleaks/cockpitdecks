@@ -31,7 +31,7 @@ MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect,
 
 # The command keywords are not executed, ignored with a warning
 NOT_A_DATAREF = ["DatarefPlaceholder"]
-AIRCRAFT_DATAREF = "sim/aircraft/view/acf_livery_path"
+AIRCRAFT_DATAREF = "data:aircraft"
 
 # XPlaneBeacon
 # Beacon-specific error classes

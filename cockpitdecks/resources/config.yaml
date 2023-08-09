@@ -11,7 +11,6 @@ roundings:
     sim/flightmodel/position/latitude: 8
     sim/flightmodel/position/longitude: 8
     sim/cockpit/misc/barometer_setting: 2
-    sim/weather/aircraft/qnh_pas: 0
     AirbusFBW/BatVolts[0]: 1
     AirbusFBW/BatVolts[1]: 1
     AirbusFBW/OHPLightsATA34[6]: 3
@@ -60,6 +59,39 @@ roundings:
     sim/weather/region/wind_altitude_msl_m: 1
     sim/weather/region/wind_direction_degt: 1
     sim/weather/region/wind_speed_msc: 1
+
+    sim/weather/aircraft/altimeter_temperature_error: 1
+    sim/weather/aircraft/barometer_current_pas: 1
+    sim/weather/aircraft/cloud_base_msl_m: 1
+    sim/weather/aircraft/cloud_coverage_percent: 1
+    sim/weather/aircraft/cloud_tops_msl_m: 1
+    sim/weather/aircraft/cloud_type: 1
+    sim/weather/aircraft/dewpoint_deg_c: 1
+    sim/weather/aircraft/gravity_mss: 1
+    sim/weather/aircraft/precipitation_on_aircraft_ratio: 1
+    sim/weather/aircraft/qnh_pas: 1
+    sim/weather/aircraft/relative_humidity_sealevel_percent: 1
+    sim/weather/aircraft/shear_direction_degt: 1
+    sim/weather/aircraft/shear_speed_kts: 1
+    sim/weather/aircraft/speed_sound_ms: 1
+    sim/weather/aircraft/temperature_ambient_deg_c: 1
+    sim/weather/aircraft/temperature_leadingedge_deg_c: 1
+    sim/weather/aircraft/temperatures_aloft_deg_c: 1
+    sim/weather/aircraft/thermal_rate_ms: 1
+    sim/weather/aircraft/turbulence: 1
+    sim/weather/aircraft/visibility_reported_sm: 1
+    sim/weather/aircraft/wave_amplitude: 1
+    sim/weather/aircraft/wave_dir: 1
+    sim/weather/aircraft/wave_length: 1
+    sim/weather/aircraft/wave_speed: 1
+    sim/weather/aircraft/wind_altitude_msl_m: 1
+    sim/weather/aircraft/wind_direction_degt: 1
+    sim/weather/aircraft/wind_now_x_msc: 1
+    sim/weather/aircraft/wind_now_y_msc: 1
+    sim/weather/aircraft/wind_now_z_msc: 1
+    sim/weather/aircraft/wind_speed_kts: 1
+    sim/weather/aircraft/wind_speed_msc: 1
+
 slow-datarefs:
     sim/flightmodel/position/latitude: 1
     sim/flightmodel/position/longitude: 1
