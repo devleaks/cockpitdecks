@@ -68,6 +68,10 @@ DEFAULT_LAYOUT = "default"
 HOME_PAGE = "index"
 DEFAULT_PAGE_NAME = "X-Plane"
 
+# Special "internal" dataref used to notify of aircraft changes in the simulator
+# Cockpit instance subscribed to this dataref and gets notified when new aircraft loaded
+AIRCRAFT_DATAREF_IPC  = "data:_aircraft_icao"
+
 # Fonts
 FONTS_FOLDER = "fonts"
 DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS, if above not found

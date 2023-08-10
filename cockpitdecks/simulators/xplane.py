@@ -9,8 +9,8 @@ import logging
 import time
 import datetime
 
-from cockpitdecks import SPAM_LEVEL
-from cockpitdecks.simulator import Simulator, Dataref, Command
+from cockpitdecks import SPAM_LEVEL, AIRCRAFT_DATAREF_IPC
+from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
 from cockpitdecks.button import Button
 
 logger = logging.getLogger(__name__)
@@ -28,10 +28,6 @@ RECONNECT_TIMEOUT = 10  # seconds
 
 SOCKET_TIMEOUT	= 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
-
-# The command keywords are not executed, ignored with a warning
-NOT_A_DATAREF = ["DatarefPlaceholder"]
-AIRCRAFT_DATAREF = "data:aircraft"
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -264,7 +260,7 @@ class XPlane(Simulator, XPlaneBeacon):
 		self.init()
 
 	def init(self):
-		dref = Dataref(AIRCRAFT_DATAREF)
+		dref = Dataref(AIRCRAFT_DATAREF_IPC)
 		dref.add_listener(self.cockpit)  # Wow wow wow
 		self.register(dref)
 
@@ -479,7 +475,7 @@ class XPlane(Simulator, XPlaneBeacon):
 			logger.debug(f"would add {self.remove_local_datarefs(datarefs.keys())}")
 			return
 		# Add aircraft path
-		datarefs[AIRCRAFT_DATAREF] = self.get_dataref(AIRCRAFT_DATAREF)
+		datarefs[AIRCRAFT_DATAREF_IPC] = self.get_dataref(AIRCRAFT_DATAREF_IPC)
 		# Add those to monitor
 		super().add_datarefs_to_monitor(datarefs)
 		prnt = []
@@ -497,7 +493,7 @@ class XPlane(Simulator, XPlaneBeacon):
 			logger.debug(f"would remove {datarefs.keys()}")
 			return
 		# Add aircraft path
-		datarefs[AIRCRAFT_DATAREF] = self.get_dataref(AIRCRAFT_DATAREF)
+		datarefs[AIRCRAFT_DATAREF_IPC] = self.get_dataref(AIRCRAFT_DATAREF_IPC)
 		# Add those to monitor
 		prnt = []
 		for d in datarefs.values():

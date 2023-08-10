@@ -16,8 +16,11 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
-INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
-NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]
+# ########################################
+# Command
+# 
+# The command keywords are not executed, ignored with a warning
+NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]  # all forced to lower cases
 
 class Command:
 	"""
@@ -34,6 +37,13 @@ class Command:
 
 	def has_command(self) -> bool:
 		return self.path is not None and not self.path.lower() in NOT_A_COMMAND
+
+
+# ########################################
+# Dataref
+# 
+INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
+NOT_A_DATAREF = ["DatarefPlaceholder"]
 
 class Dataref:
 	"""
@@ -178,6 +188,9 @@ class Dataref:
 		#	 loggerDataref.error(f"dataref {self.path} not changed")
 
 
+# ########################################
+# Simulator
+# 
 class Simulator(ABC):
 	"""
 	Abstract class for execution of operations and collection of data in the simulation software.

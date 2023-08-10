@@ -1,8 +1,7 @@
 # ###########################
 # Buttons that are drawn on render()
 #
-# Buttons were isolated here bevcause they use quite larger packages (avwx-engine),
-# call and rely on external services.
+# These buttons are highly XP specific.
 #
 import os
 import logging
@@ -12,7 +11,7 @@ import traceback
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import ICON_SIZE
+from cockpitdecks import ICON_SIZE, AIRCRAFT_DATAREF_IPC
 from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
 from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
@@ -30,24 +29,13 @@ DEFAULT_ICON = "wi-day-cloudy-high"
 
 REAL_WEATHER_REGION_DATAREFS = [
 	### ADD current altitude reference (ground, not in flight) for MSL/AGL convertions
-	"sim/weather/region/atmosphere_alt_levels_m",
 	"sim/weather/region/change_mode",
-	"sim/weather/region/cloud_base_msl_m",
-	"sim/weather/region/cloud_coverage_percent",
-	"sim/weather/region/cloud_tops_msl_m",
-	"sim/weather/region/cloud_type",
-	"sim/weather/region/dewpoint_deg_c",
 	"sim/weather/region/qnh_base_elevation",
 	"sim/weather/region/rain_percent",
 	"sim/weather/region/runway_friction",
 	"sim/weather/region/sealevel_pressure_pas",
 	"sim/weather/region/sealevel_temperature_c",
-	"sim/weather/region/shear_direction_degt",
-	"sim/weather/region/shear_speed_msc",
-	"sim/weather/region/temperature_altitude_msl_m",
-	"sim/weather/region/temperatures_aloft_deg_c",
 	"sim/weather/region/thermal_rate_ms",
-	"sim/weather/region/turbulence",
 	"sim/weather/region/update_immediately",
 	"sim/weather/region/variability_pct",
 	"sim/weather/region/visibility_reported_sm",
@@ -56,10 +44,31 @@ REAL_WEATHER_REGION_DATAREFS = [
 	"sim/weather/region/wave_length",
 	"sim/weather/region/wave_speed",
 	"sim/weather/region/weather_source",
-	"sim/weather/region/wind_altitude_msl_m",
-	"sim/weather/region/wind_direction_degt",
-	"sim/weather/region/wind_speed_msc"
 ]
+
+REAL_WEATHER_REGION_DATAREFS_ARRAYS = {
+	"sim/weather/region/cloud_base_msl_m": 3,
+	"sim/weather/region/cloud_coverage_percent": 3,
+	"sim/weather/region/cloud_tops_msl_m": 3,
+	"sim/weather/region/cloud_type": 3,
+	"sim/weather/region/atmosphere_alt_levels_m": 13,
+	"sim/weather/region/dewpoint_deg_c": 13,
+	"sim/weather/region/temperatures_aloft_deg_c": 13,
+	"sim/weather/region/temperature_altitude_msl_m": 13,
+	"sim/weather/region/wind_altitude_msl_m": 13,
+	"sim/weather/region/wind_direction_degt": 13,
+	"sim/weather/region/wind_speed_msc": 13,
+	"sim/weather/region/turbulence": 13,
+	"sim/weather/region/shear_direction_degt": 13,
+	"sim/weather/region/shear_speed_msc": 13,
+}
+
+def mkdrefarr_REGION():
+	base = REAL_WEATHER_REGION_DATAREFS
+	for k, v in REAL_WEATHER_REGION_DATAREFS_ARRAY.items():
+		for i in range(v):
+			base.append(f'{k}[{i}]')
+	return base
 
 DISPLAY_DATAREFS_REGION = {
 	"press": "sim/weather/region/sealevel_pressure_pas",
@@ -73,36 +82,46 @@ DISPLAY_DATAREFS_REGION = {
 REAL_WEATHER_AIRCRAFT_DATAREFS = [
 	"sim/weather/aircraft/altimeter_temperature_error",
 	"sim/weather/aircraft/barometer_current_pas",
-	"sim/weather/aircraft/cloud_base_msl_m",
-	"sim/weather/aircraft/cloud_coverage_percent",
-	"sim/weather/aircraft/cloud_tops_msl_m",
-	"sim/weather/aircraft/cloud_type",
-	"sim/weather/aircraft/dewpoint_deg_c",
 	"sim/weather/aircraft/gravity_mss",
 	"sim/weather/aircraft/precipitation_on_aircraft_ratio",
 	"sim/weather/aircraft/qnh_pas",
 	"sim/weather/aircraft/relative_humidity_sealevel_percent",
-	"sim/weather/aircraft/shear_direction_degt",
-	"sim/weather/aircraft/shear_speed_kts",
 	"sim/weather/aircraft/speed_sound_ms",
 	"sim/weather/aircraft/temperature_ambient_deg_c",
 	"sim/weather/aircraft/temperature_leadingedge_deg_c",
-	"sim/weather/aircraft/temperatures_aloft_deg_c",
 	"sim/weather/aircraft/thermal_rate_ms",
-	"sim/weather/aircraft/turbulence",
 	"sim/weather/aircraft/visibility_reported_sm",
 	"sim/weather/aircraft/wave_amplitude",
 	"sim/weather/aircraft/wave_dir",
 	"sim/weather/aircraft/wave_length",
 	"sim/weather/aircraft/wave_speed",
-	"sim/weather/aircraft/wind_altitude_msl_m",
-	"sim/weather/aircraft/wind_direction_degt",
 	"sim/weather/aircraft/wind_now_x_msc",
 	"sim/weather/aircraft/wind_now_y_msc",
 	"sim/weather/aircraft/wind_now_z_msc",
-	"sim/weather/aircraft/wind_speed_kts",
 	"sim/weather/aircraft/wind_speed_msc"
 ]
+
+REAL_WEATHER_AIRCRAFT_DATAREFS_ARRAY = {
+	"sim/weather/aircraft/cloud_base_msl_m": 3,
+	"sim/weather/aircraft/cloud_coverage_percent": 3,
+	"sim/weather/aircraft/cloud_tops_msl_m": 3,
+	"sim/weather/aircraft/cloud_type": 3,
+	"sim/weather/aircraft/dewpoint_deg_c": 13,
+	"sim/weather/aircraft/shear_direction_degt": 13,
+	"sim/weather/aircraft/shear_speed_kts": 13,
+	"sim/weather/aircraft/temperatures_aloft_deg_c": 13,
+	"sim/weather/aircraft/turbulence": 13,
+	"sim/weather/aircraft/wind_altitude_msl_m": 13,
+	"sim/weather/aircraft/wind_direction_degt": 13,
+	"sim/weather/aircraft/wind_speed_kts": 13,
+}
+
+def mkdrefarr_AIRCRAFT():
+	base = REAL_WEATHER_AIRCRAFT_DATAREFS
+	for k, v in REAL_WEATHER_AIRCRAFT_DATAREFS_ARRAY.items():
+		for i in range(v):
+			base.append(f'{k}[{i}]')
+	return base
 
 DISPLAY_DATAREFS_AIRCRAFT = {
 	"press": "sim/weather/aircraft/qnh_pas",
@@ -292,7 +311,7 @@ class RealWeatherIcon(DrawAnimation):
 
 
 AIRCRAFT_DATAREF_BASE = "sim/aircraft/view/acf_ICAO"
-AIRCRAFT_DATAREF_SIZE = 4   # < 1024
+AIRCRAFT_DATAREF_SIZE = 4   # sim/aircraft/view/acf_ICAO declared as byte[40], we only fetch 4...
 
 class AircraftIcon(DrawBase):
 
@@ -317,7 +336,7 @@ class AircraftIcon(DrawBase):
 	def notify_aircraft_updated(self):
 		if self.aircraft is not None:
 			self._ac_count = self._ac_count + 1
-			self.button._activation.write_dataref(self._ac_count)
+			self.button._activation._write_dataref(AIRCRAFT_DATAREF_IPC, float(self._ac_count))
 			self._last_updated = datetime.now()
 			logger.info(f"notified of new aircraft {self._ac_count} ({self.aircraft})")
 
