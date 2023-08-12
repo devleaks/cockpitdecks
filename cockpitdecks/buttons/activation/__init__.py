@@ -6,6 +6,7 @@ from .activation import LoadPage, Reload, Inspect, Stop
 from .activation import Push, Longpress, OnOff, UpDown
 from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue
 from .activation import Slider, Swipe
+from .dc import DrefCollector
 
 # ###############################
 # format is activation: Classname
@@ -36,7 +37,8 @@ ACTIVATIONS = {
     "knob": EncoderValue,
     "slider": Slider,
     "cursor": Slider,
-    "swipe": Swipe
+    "swipe": Swipe,
+    "dref-collector": DrefCollector
 }
 
 DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
@@ -54,7 +56,7 @@ DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
 #   view: none
 #   repeat: 6
 #
-push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown"]
+push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown", "dref-collector"]
 encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
 
 # ###############################
