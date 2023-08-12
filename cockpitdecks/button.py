@@ -85,7 +85,7 @@ class Button:
             self._activation = ACTIVATIONS[atype](config, self)
             logger.debug(f"button {self.name} activation {atype}")
         else:
-            logger.warning(f"button {self.name} has no activation")
+            logger.warning(f"button {self.name} has no activation defined, using default")
             self._activation = ACTIVATIONS["none"](config, self)
 
         self._representation = None
@@ -97,7 +97,7 @@ class Button:
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
-            logger.warning(f"button {self.name} has no representation")
+            logger.warning(f"button {self.name} has no representation defined, using default")
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
@@ -732,6 +732,9 @@ class Button:
             self.render()
         else:
             logger.debug(f"button {self.name}: no change")
+        # Added for dataref batch collector activation
+        if self._activation.is_valid():
+            self._activation.dataref_changed(dataref)
 
     def activate(self, state: bool):
         """
