@@ -819,8 +819,8 @@ class Switch(SwitchBase):
 		width = 5 * radius
 		height = 2 * radius
 		top = top0 - hh - height/2
-		tl = [ICON_SIZE-width/2, top-height/2]
-		br = [ICON_SIZE+width/2, top+height/2]
+		tl = [ICON_SIZE-width/2, top-height/2+2]
+		br = [ICON_SIZE+width/2, top+height/2-2]
 		# print(">3", tl, br)
 		draw.rounded_rectangle(tl+br, radius=height/2, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
 
@@ -832,8 +832,8 @@ class Switch(SwitchBase):
 		left = ICON_SIZE - (width/2) + start
 		for i in range(ndots):
 			x = left + i * sep
-			tl = [x-dotr/2, top-dotr/2]
-			br = [x+dotr/2, top+dotr/2]
+			tl = [x-dotr/2, top-dotr/2+2]
+			br = [x+dotr/2, top+dotr/2-2]
 			# print(">•", tl, br, "x", x, width, left, sep, start)
 			draw.ellipse(tl+br, fill=self.handle_tip_fill_color)
 
