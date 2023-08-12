@@ -238,7 +238,7 @@ class Simulator(ABC):
 							self.all_datarefs[d].update_value(currvalues[d], cascade=True)
 						else:
 							self.all_datarefs[d].update_value(currvalues[d], cascade=False)  # we just update the value but no notification
-							logger.warning(f"updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
+							# logger.warning(f"updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
 							# This means we got a value from X-Plane we never asked for this run...
 							# It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
 						# logger.debug(f"..done")
