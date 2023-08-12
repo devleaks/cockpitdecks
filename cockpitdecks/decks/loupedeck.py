@@ -14,7 +14,7 @@ from cockpitdecks.resources.color import convert_color, is_integer, DEFAULT_COLO
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
-from cockpitdecks.buttons.representation import Icon, ColoredLED  # valid representations for this type of deck
+from cockpitdecks.buttons.representation import Representation, Icon, ColoredLED  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -450,6 +450,8 @@ class Loupedeck(DeckWithIcons):
 			self._set_key_image(button)
 		elif isinstance(representation, ColoredLED):
 			self._set_button_color(button)
+		elif isinstance(representation, Representation):
+			logger.info(f"button: {button.name}: do nothing representation for {type(self).__name__}")
 		else:
 			logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
