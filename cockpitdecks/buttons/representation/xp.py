@@ -7,130 +7,20 @@ import os
 import logging
 import random
 from datetime import datetime
-import traceback
 
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE, AIRCRAFT_DATAREF_IPC
-from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
+from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, DEFAULT_WEATHER_ICON
 from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
-
 from .animation import DrawAnimation
 from .draw import DrawBase
-
+from .xpweatherdrefs import DISPLAY_DATAREFS_REGION, DISPLAY_DATAREFS_AIRCRAFT
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 logger.setLevel(logging.DEBUG)
-
-
-DEFAULT_ICON = "wi-day-cloudy-high"
-
-REAL_WEATHER_REGION_DATAREFS = [
-	### ADD current altitude reference (ground, not in flight) for MSL/AGL convertions
-	"sim/weather/region/change_mode",
-	"sim/weather/region/qnh_base_elevation",
-	"sim/weather/region/rain_percent",
-	"sim/weather/region/runway_friction",
-	"sim/weather/region/sealevel_pressure_pas",
-	"sim/weather/region/sealevel_temperature_c",
-	"sim/weather/region/thermal_rate_ms",
-	"sim/weather/region/update_immediately",
-	"sim/weather/region/variability_pct",
-	"sim/weather/region/visibility_reported_sm",
-	"sim/weather/region/wave_amplitude",
-	"sim/weather/region/wave_dir",
-	"sim/weather/region/wave_length",
-	"sim/weather/region/wave_speed",
-	"sim/weather/region/weather_source",
-]
-
-REAL_WEATHER_REGION_DATAREFS_ARRAYS = {
-	"sim/weather/region/cloud_base_msl_m": 3,
-	"sim/weather/region/cloud_coverage_percent": 3,
-	"sim/weather/region/cloud_tops_msl_m": 3,
-	"sim/weather/region/cloud_type": 3,
-	"sim/weather/region/atmosphere_alt_levels_m": 13,
-	"sim/weather/region/dewpoint_deg_c": 13,
-	"sim/weather/region/temperatures_aloft_deg_c": 13,
-	"sim/weather/region/temperature_altitude_msl_m": 13,
-	"sim/weather/region/wind_altitude_msl_m": 13,
-	"sim/weather/region/wind_direction_degt": 13,
-	"sim/weather/region/wind_speed_msc": 13,
-	"sim/weather/region/turbulence": 13,
-	"sim/weather/region/shear_direction_degt": 13,
-	"sim/weather/region/shear_speed_msc": 13,
-}
-
-def mkdrefarr_REGION():
-	base = REAL_WEATHER_REGION_DATAREFS
-	for k, v in REAL_WEATHER_REGION_DATAREFS_ARRAY.items():
-		for i in range(v):
-			base.append(f'{k}[{i}]')
-	return base
-
-DISPLAY_DATAREFS_REGION = {
-	"press": "sim/weather/region/sealevel_pressure_pas",
-	"temp": "sim/weather/region/sealevel_temperature_c",
-	"dewp": "sim/weather/region/dewpoint_deg_c",
-	"vis": "sim/weather/region/visibility_reported_sm",
-	"wind_dir": "sim/weather/region/wind_direction_degt",
-	"wind_speed": "sim/weather/region/wind_speed_msc"
-}
-
-REAL_WEATHER_AIRCRAFT_DATAREFS = [
-	"sim/weather/aircraft/altimeter_temperature_error",
-	"sim/weather/aircraft/barometer_current_pas",
-	"sim/weather/aircraft/gravity_mss",
-	"sim/weather/aircraft/precipitation_on_aircraft_ratio",
-	"sim/weather/aircraft/qnh_pas",
-	"sim/weather/aircraft/relative_humidity_sealevel_percent",
-	"sim/weather/aircraft/speed_sound_ms",
-	"sim/weather/aircraft/temperature_ambient_deg_c",
-	"sim/weather/aircraft/temperature_leadingedge_deg_c",
-	"sim/weather/aircraft/thermal_rate_ms",
-	"sim/weather/aircraft/visibility_reported_sm",
-	"sim/weather/aircraft/wave_amplitude",
-	"sim/weather/aircraft/wave_dir",
-	"sim/weather/aircraft/wave_length",
-	"sim/weather/aircraft/wave_speed",
-	"sim/weather/aircraft/wind_now_x_msc",
-	"sim/weather/aircraft/wind_now_y_msc",
-	"sim/weather/aircraft/wind_now_z_msc",
-	"sim/weather/aircraft/wind_speed_msc"
-]
-
-REAL_WEATHER_AIRCRAFT_DATAREFS_ARRAY = {
-	"sim/weather/aircraft/cloud_base_msl_m": 3,
-	"sim/weather/aircraft/cloud_coverage_percent": 3,
-	"sim/weather/aircraft/cloud_tops_msl_m": 3,
-	"sim/weather/aircraft/cloud_type": 3,
-	"sim/weather/aircraft/dewpoint_deg_c": 13,
-	"sim/weather/aircraft/shear_direction_degt": 13,
-	"sim/weather/aircraft/shear_speed_kts": 13,
-	"sim/weather/aircraft/temperatures_aloft_deg_c": 13,
-	"sim/weather/aircraft/turbulence": 13,
-	"sim/weather/aircraft/wind_altitude_msl_m": 13,
-	"sim/weather/aircraft/wind_direction_degt": 13,
-	"sim/weather/aircraft/wind_speed_kts": 13,
-}
-
-def mkdrefarr_AIRCRAFT():
-	base = REAL_WEATHER_AIRCRAFT_DATAREFS
-	for k, v in REAL_WEATHER_AIRCRAFT_DATAREFS_ARRAY.items():
-		for i in range(v):
-			base.append(f'{k}[{i}]')
-	return base
-
-DISPLAY_DATAREFS_AIRCRAFT = {
-	"press": "sim/weather/aircraft/qnh_pas",
-	"temp": "sim/weather/aircraft/temperature_ambient_deg_c",
-	"dewp": "sim/weather/aircraft/dewpoint_deg_c",
-	"vis": "sim/weather/aircraft/visibility_reported_sm",
-	"wind_dir": "sim/weather/aircraft/wind_direction_degt",
-	"wind_speed": "sim/weather/aircraft/wind_speed_msc"
-}
 
 
 class RealWeatherIcon(DrawAnimation):
@@ -145,12 +35,15 @@ class RealWeatherIcon(DrawAnimation):
 		self._upd_calls = 0
 		self._upd_count = 0
 
-		self.weather = config.get("weather")
+		self.weather = config.get("real-weather")
+
 		if self.weather is not None and isinstance(self.weather, dict):
-			config["animation"] = config.get("weather")
+			config["animation"] = config.get("real-weather")
 		else:
 			config["animation"] = {}
 			self.weather = {}
+
+		self.mode = self.weather.get("mode", "region")
 
 		DrawAnimation.__init__(self, config=config, button=button)
 
@@ -165,7 +58,7 @@ class RealWeatherIcon(DrawAnimation):
 		RealWeatherIcon.MIN_UPDATE = int(updated) * 60
 
 		# Working variables
-		self.display_datarefs = DISPLAY_DATAREFS_REGION  # or DISPLAY_DATAREFS_AIRCRAFT
+		self.display_datarefs = DISPLAY_DATAREFS_REGION if self.mode == "region" else DISPLAY_DATAREFS_AIRCRAFT
 		self.weather_datarefs = self.display_datarefs.values()
 		self.weather_icon = None
 
@@ -246,7 +139,7 @@ class RealWeatherIcon(DrawAnimation):
 		icon_text = WEATHER_ICONS.get(self.weather_icon)
 		if icon_text is None:
 			logger.warning(f"icon: {self.weather_icon} not found, using default")
-			icon_text = WEATHER_ICONS.get(DEFAULT_ICON)
+			icon_text = WEATHER_ICONS.get(DEFAULT_WEATHER_ICON)
 			if icon_text is None:
 				logger.warning(f"default icon not found, using default")
 				icon_text = "\uf00d"
@@ -288,6 +181,7 @@ class RealWeatherIcon(DrawAnimation):
 
 	def get_lines(self) -> list:
 		lines = list()
+		lines.append(f"Mode: {self.mode}")
 		press = self.button.get_dataref_value(self.display_datarefs["press"])
 		if press is not None:
 			press = int(press/100)

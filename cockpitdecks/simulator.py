@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from cockpitdecks import SPAM_LEVEL
+from cockpitdecks import SPAM_LEVEL, now
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
@@ -44,6 +44,7 @@ class Command:
 # 
 INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
 NOT_A_DATAREF = ["DatarefPlaceholder"]
+
 
 class Dataref:
 	"""
@@ -161,10 +162,10 @@ class Dataref:
 		else:
 			self.current_value = new_value
 		self._updated = self._updated + 1
-		self._last_updated = datetime.now().astimezone()
+		self._last_updated = now()
 		if self.has_changed():
 			self._changed = self._changed + 1
-			self._last_changed = datetime.now().astimezone()
+			self._last_changed = now()
 			loggerDataref.log(SPAM_LEVEL, f"dataref {self.path} updated {self.previous_value} -> {self.current_value}")
 			if cascade:
 				self.notify()

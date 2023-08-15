@@ -12,7 +12,7 @@ __DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-
 __LICENSE__      = "MIT"
 __LICENSEURL__   = "https://mit-license.org"
 __COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.5.4"
+__version__      = "7.5.5"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__    = "https://github.com/devleaks/cockpitdecks"
@@ -105,6 +105,10 @@ class ANNUNCIATOR_STYLES(Enum):
     VIVISUN = "v"         # v(ivisun): bright, sharp.
 
 DEFAULT_ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.KORRY
+
+# Utility function
+def now():
+    return datetime.now().astimezone()
 
 # deckconfig attribute keywords
 class KW(Enum):

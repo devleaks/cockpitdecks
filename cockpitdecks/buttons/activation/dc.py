@@ -1,8 +1,12 @@
 import logging
-from datetime import datetime, timedelta
+import time
+from datetime import timedelta
 
 from .activation import Activation
+from cockpitdecks import now
 from cockpitdecks.simulator import INTERNAL_DATAREF_PREFIX
+from cockpitdecks.buttons.representation.xpweatherdrefs import REAL_WEATHER_REGION_DATAREFS, REAL_WEATHER_REGION_CLOUDS_DATAREFS, REAL_WEATHER_REGION_WINDS_DATAREFS
+from cockpitdecks.buttons.representation.xpweatherdrefs import REAL_WEATHER_AIRCRAFT_DATAREFS, REAL_WEATHER_AIRCRAFT_CLOUDS_DATAREFS, REAL_WEATHER_AIRCRAFT_WINDS_DATAREFS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -11,10 +15,13 @@ logger.setLevel(logging.DEBUG)
 # used to force batch roll if batch was not updated for a few seconds
 #
 TIMEOUT_TICKER = "sim/cockpit2/clock_timer/zulu_time_minutes"
-TIMEOUT_TIME   = 10 #  seconds
+TIMEOUT_TIME   = 10  # seconds
 
-def now():
-    return datetime.now().astimezone()
+WEATHER_DATAREFS = REAL_WEATHER_REGION_DATAREFS
+CLOUDS_DATAREFS = REAL_WEATHER_REGION_CLOUDS_DATAREFS
+CLOUD_LAYERS = 3
+WINDS_DATAREFS = REAL_WEATHER_REGION_WINDS_DATAREFS
+WIND_LAYERS = 13
 
 class Batch:
     """
@@ -57,9 +64,13 @@ class Batch:
         self.last_completed = now()
         logger.debug(f"batch {self.name} collected")
 
-    def collect(self):
-        self.last_loaded = None
-        logger.debug(f"batch {self.name} ready to collect")
+    def collect(self, threshold = None, force: bool = True):
+        if force or self.last_completed is None:
+            self.last_loaded = None
+        if threshold is not None and self.last_completed < threshold:
+            self.last_loaded = None
+        if self.last_loaded is None:
+            logger.debug(f"batch {self.name} ready to collect")
 
     def too_old(self, how_old: int = TIMEOUT_TIME) -> bool:
         r = self.last_loaded < now() - timedelta(seconds=how_old)
@@ -70,11 +81,13 @@ class Batch:
     def load(self):
         self.last_loaded = now()
         self.loader.button.sim.add_datarefs_to_monitor(self.datarefs)
+        time.sleep(1)
         logger.debug(f"batch {self.name} loaded")
 
     def unload(self):
         self.loader.button.sim.remove_datarefs_to_monitor(self.datarefs)
         self.last_unloaded = now()
+        time.sleep(1)
         logger.debug(f"batch {self.name} unloaded")
 
 
@@ -99,7 +112,7 @@ class DrefCollector(Activation):
 
         self.collecting = False
         self.notification_count = 0
-        self.last_notified = now()
+        self.last_notified = None
 
     def init(self):
         # When button is created,starts collection of datarefs.
@@ -202,42 +215,13 @@ class DrefCollector(Activation):
         # Hardcoded here for now...
         # Later, can simply slice all datarefs into batches of limited size
         # 1. First batch is all weather datarefs
-        self.add_batch(Batch(datarefs=[
-                "sim/weather/aircraft/altimeter_temperature_error",
-                "sim/weather/aircraft/barometer_current_pas",
-                "sim/weather/aircraft/gravity_mss",
-                "sim/weather/aircraft/precipitation_on_aircraft_ratio",
-                "sim/weather/aircraft/qnh_pas",
-                "sim/weather/aircraft/relative_humidity_sealevel_percent",
-                "sim/weather/aircraft/speed_sound_ms",
-                "sim/weather/aircraft/temperature_ambient_deg_c",
-                "sim/weather/aircraft/temperature_leadingedge_deg_c",
-                "sim/weather/aircraft/thermal_rate_ms",
-                "sim/weather/aircraft/visibility_reported_sm",
-                "sim/weather/aircraft/wave_amplitude",
-                "sim/weather/aircraft/wave_dir",
-                "sim/weather/aircraft/wave_length",
-                "sim/weather/aircraft/wave_speed",
-                "sim/weather/aircraft/wind_now_x_msc",
-                "sim/weather/aircraft/wind_now_y_msc",
-                "sim/weather/aircraft/wind_now_z_msc",
-                "sim/weather/aircraft/wind_speed_msc"], name="weather", loader=self))
+        self.add_batch(Batch(datarefs=WEATHER_DATAREFS, name="weather", loader=self))
         # 2. Clouds
-        for i in range(3):
-            self.add_batch(Batch(datarefs=[
-                    f"sim/weather/aircraft/cloud_base_msl_m[{i}]",
-                    f"sim/weather/aircraft/cloud_coverage_percent[{i}]",
-                    f"sim/weather/aircraft/cloud_tops_msl_m[{i}]",
-                    f"sim/weather/aircraft/cloud_type[{i}]"], name=f"cloud {i}", loader=self))
+        for i in range(CLOUD_LAYERS):
+            drefs = [f"{d}[{i}]" for d in CLOUDS_DATAREFS]
+            self.add_batch(Batch(datarefs=drefs, name=f"cloud {i}", loader=self))
         # 3. Winds
-        for i in range(13):
-            self.add_batch(Batch(datarefs=[
-                    f"sim/weather/aircraft/dewpoint_deg_c[{i}]",
-                    f"sim/weather/aircraft/shear_direction_degt[{i}]",
-                    f"sim/weather/aircraft/shear_speed_kts[{i}]",
-                    f"sim/weather/aircraft/temperatures_aloft_deg_c[{i}]",
-                    f"sim/weather/aircraft/turbulence[{i}]",
-                    f"sim/weather/aircraft/wind_altitude_msl_m[{i}]",
-                    f"sim/weather/aircraft/wind_direction_degt[{i}]",
-                    f"sim/weather/aircraft/wind_speed_kts[{i}]"], name=f"wind {i}", loader=self))
+        for i in range(WIND_LAYERS):
+            drefs = [f"{d}[{i}]" for d in WINDS_DATAREFS]
+            self.add_batch(Batch(datarefs=drefs, name=f"wind {i}", loader=self))
         logger.debug(f"button {self.button.name}: loaded {len(self.batches)} batches, {len(self.dref_collection)} datarefs")

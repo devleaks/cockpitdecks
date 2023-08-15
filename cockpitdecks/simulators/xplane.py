@@ -23,11 +23,14 @@ DATA_SENT	= 2	# times per second, X-Plane send that data on UDP every that often
 DATA_REFRESH = 1 / (4 * DATA_SENT) # secs we poll for data every x seconds,
 					# must be << 1/DATA_SENT to consume faster than produce.
 					# UDP sends at most ~40 to ~50 dataref values per packet.
+DEFAULT_REQ_FREQUENCY = 1
 LOOP_ALIVE   = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 
 SOCKET_TIMEOUT	= 10  # seconds
 MAX_TIMEOUT_COUNT = 5   # after x timeouts, assumes connection lost, disconnect, and restart later
+
+MAX_DREF_COUNT = 80
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -252,7 +255,6 @@ class XPlane(Simulator, XPlaneBeacon):
 		XPlaneBeacon.__init__(self)
 
 		self.no_dref_listener = None
-		self.defaultFreq = 1
 
 		# list of requested datarefs with index number
 		self.datarefidx = 0
@@ -330,7 +332,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
 		idx = -9999
 		if freq is None:
-			freq = self.defaultFreq
+			freq = DEFAULT_REQ_FREQUENCY
 
 		if dataref in self.datarefs.values():
 			idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(dataref)]
@@ -339,6 +341,10 @@ class XPlane(Simulator, XPlaneBeacon):
 					del self.simdrefValues[dataref]
 				del self.datarefs[idx]
 		else:
+			if freq != 0 and len(self.datarefs) > MAX_DREF_COUNT:
+				logger.warning(f"requesting too many datarefs ({len(self.datarefs)})")
+				return False
+
 			idx = self.datarefidx
 			self.datarefs[self.datarefidx] = dataref
 			self.datarefidx += 1
@@ -486,6 +492,7 @@ class XPlane(Simulator, XPlaneBeacon):
 			if self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT)):
 				prnt.append(d.path)
 		logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
+		logger.debug(">>>>> monitoring++", len(self.datarefs))
 
 	def remove_datarefs_to_monitor(self, datarefs):
 		if not self.connected and len(self.datarefs_to_monitor) > 0:
@@ -510,6 +517,7 @@ class XPlane(Simulator, XPlaneBeacon):
 				logger.debug(f"no need to remove {d.path}")
 		logger.debug(f"removed {prnt}")
 		super().remove_datarefs_to_monitor(datarefs)
+		logger.debug(">>>>> monitoring--", len(self.datarefs))
 
 	def remove_all_datarefs(self):
 		if not self.connected and len(self.all_datarefs) > 0:

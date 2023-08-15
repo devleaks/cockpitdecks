@@ -7,7 +7,8 @@ from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob
 from .animation import IconAnimation, DrawAnimationFTG
-from .xp import RealWeatherIcon, AircraftIcon
+from .xp import AircraftIcon, RealWeatherIcon
+from .xp2 import XPWeatherIcon
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -44,6 +45,7 @@ REPRESENTATIONS = {
     "data": DataIcon,
     "ftg": DrawAnimationFTG,
     "real-weather": RealWeatherIcon,
+    "xp-weather": XPWeatherIcon,
     "aircraft": AircraftIcon
 }
 
@@ -55,11 +57,11 @@ DEFAULT_REPRESENTATIONS = ["none"]
 #
 # Will only load if AVWX is installed
 try:
-    from .external import WeatherIcon
-    REPRESENTATIONS["weather"] = WeatherIcon
-    logger.info(f"WeatherIcon installed")
+    from .external import LiveWeatherIcon
+    REPRESENTATIONS["live-weather"] = LiveWeatherIcon
+    logger.info(f"LiveWeatherIcon installed")
 except ImportError:
-    logger.warning(f"WeatherIcon not installed")
+    logger.warning(f"LiveWeatherIcon not installed")
 #
 # ###############################
 # DECK DISPLAY MAP
@@ -75,10 +77,10 @@ except ImportError:
 #   repeat: 6
 #
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
-drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob", "real-weather", "aircraft"]
+drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob", "aircraft", "real-weather", "xp-weather"]
 
-if "weather" in REPRESENTATIONS.keys():
-    drawn_buttons.append("weather")
+if "live-weather" in REPRESENTATIONS.keys():
+    drawn_buttons.append("live-weather")
 
 # ###############################
 # format is view: [ representation ]

@@ -18,7 +18,7 @@ from timezonefinder import TimezoneFinder
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT
+from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, DEFAULT_WEATHER_ICON
 from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
 
@@ -49,7 +49,6 @@ NIGHT_ALT = "night-alt-"
 KW_CAVOK  = "clear"		 # Special keyword for CAVOK day or night
 CAVOK_DAY = "wi-day-sunny"
 CAVOK_NIGHT  = "wi-night-clear"
-DEFAULT_ICON = "wi-day-cloudy-high"
 
 
 class WI:
@@ -254,7 +253,7 @@ class WI:
 		self.special = special  # 0=none, 1=fog, 2=sandstorm
 
 
-class WeatherIcon(DrawAnimation):
+class LiveWeatherIcon(DrawAnimation):
 	"""
 	Depends on avwx-engine
 	"""
@@ -270,9 +269,9 @@ class WeatherIcon(DrawAnimation):
 		self.use_simulation = False  # If False, use current weather METAR/TAF, else use simulator METAR and date/time; no TAF.
 									 # This should be decide by a dataref in XPlane, use real weather, use real date/time.
 
-		self.weather = config.get("weather")
+		self.weather = config.get("live-weather")
 		if self.weather is not None and isinstance(self.weather, dict):
-			config["animation"] = config.get("weather")
+			config["animation"] = config.get("live-weather")
 		else:
 			config["animation"] = {}
 			self.weather = {}
@@ -287,7 +286,7 @@ class WeatherIcon(DrawAnimation):
 		self.speed = int(speed) * 60				# minutes
 
 		updated = self.weather.get("refresh-location", 10) # minutes
-		WeatherIcon.MIN_UPDATE = int(updated) * 60
+		LiveWeatherIcon.MIN_UPDATE = int(updated) * 60
 
 		# Working variables
 		self.station = None
@@ -299,7 +298,7 @@ class WeatherIcon(DrawAnimation):
 	def init(self):
 		if self._inited:
 			return
-		icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+		icao = self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
 		self.station = Station.from_icao(icao)
 		self.metar = Metar(self.station.icao)
 		self.sun = Sun(self.station.latitude, self.station.longitude)
@@ -320,8 +319,8 @@ class WeatherIcon(DrawAnimation):
 
 	def at_default_station(self):
 		if self.weather is not None and self.station is not None:
-			logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', WeatherIcon.DEFAULT_STATION)}, {self._moved}")
-			return not self._moved and self.station.icao == self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+			logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', LiveWeatherIcon.DEFAULT_STATION)}, {self._moved}")
+			return not self._moved and self.station.icao == self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
 		logger.debug(f"True")
 		return True
 
@@ -351,8 +350,8 @@ class WeatherIcon(DrawAnimation):
 		if self._last_updated is not None and not self.at_default_station():
 			now = datetime.now()
 			diff = now.timestamp() - self._last_updated.timestamp()
-			if diff < WeatherIcon.MIN_UPDATE:
-				logger.debug(f"updated less than {WeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
+			if diff < LiveWeatherIcon.MIN_UPDATE:
+				logger.debug(f"updated less than {LiveWeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
 				return None
 			logger.debug(f"updated  {diff} secs. ago")
 
@@ -363,7 +362,7 @@ class WeatherIcon(DrawAnimation):
 		if lat is None or lon is None:
 			logger.warning(f"no coordinates")
 			if self.station is None:  # If no station, attempt to suggest the default one if we find it
-				icao = self.weather.get("station", WeatherIcon.DEFAULT_STATION)
+				icao = self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
 				logger.warning(f"no station, getting default {icao}")
 				return Station.from_icao(icao)
 			return None
@@ -443,7 +442,7 @@ class WeatherIcon(DrawAnimation):
 						logger.info(f"could not update station {self.station.icao}")
 				else:
 					diff = now.timestamp() - self._last_updated.timestamp()
-					if diff > WeatherIcon.MIN_UPDATE:
+					if diff > LiveWeatherIcon.MIN_UPDATE:
 						updated = self.metar.update()
 						if updated:
 							self._last_updated = datetime.now()
@@ -501,7 +500,7 @@ class WeatherIcon(DrawAnimation):
 		icon_text = WEATHER_ICONS.get(self.weather_icon)
 		if icon_text is None:
 			logger.warning(f"icon: {self.weather_icon} not found, using default")
-			icon_text = WEATHER_ICONS.get(DEFAULT_ICON)
+			icon_text = WEATHER_ICONS.get(DEFAULT_WEATHER_ICON)
 			if icon_text is None:
 				logger.warning(f"default icon not found, using default")
 				icon_text = "\uf00d"
@@ -625,7 +624,7 @@ class WeatherIcon(DrawAnimation):
 				try_icon = WEATHER_ICONS.get(dft_name)
 		if try_icon is None:
 			logger.debug(f"no such icon or variant {icon}")
-			return DEFAULT_ICON
+			return DEFAULT_WEATHER_ICON
 		else:
 			logger.debug(f"exists {dft_name}")
 
@@ -711,8 +710,8 @@ class WeatherIcon(DrawAnimation):
 		day = self.is_metar_day()
 		daynight_icon = self.day_night(icon, day)
 		if daynight_icon is None:
-			logger.warning(f"no icon, using default {DEFAULT_ICON}")
-			daynight_icon = DEFAULT_ICON
+			logger.warning(f"no icon, using default {DEFAULT_WEATHER_ICON}")
+			daynight_icon = DEFAULT_WEATHER_ICON
 		daynight_icon = daynight_icon.replace("-", "_")
 		logger.debug(f"day/night version: {day}: {daynight_icon}")
 		return daynight_icon

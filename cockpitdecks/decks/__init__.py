@@ -5,25 +5,16 @@
 DECK_TYPES = {}
 
 
-try:
-    from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
-    from .streamdeck import Streamdeck
-    DECK_TYPES["streamdeck"] = [Streamdeck, StreamDeckDeviceManager]
-except ImportError:
-    pass
+from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
+from .streamdeck import Streamdeck
+DECK_TYPES["streamdeck"] = [Streamdeck, StreamDeckDeviceManager]
 
 
-try:
-    from Loupedeck  import DeviceManager as LoupedeckDeviceManager
-    from .loupedeck  import Loupedeck
-    DECK_TYPES["loupedeck"] = [Loupedeck,  LoupedeckDeviceManager]
-except ImportError:
-    pass
+from Loupedeck  import DeviceManager as LoupedeckDeviceManager
+from .loupedeck  import Loupedeck
+DECK_TYPES["loupedeck"] = [Loupedeck,  LoupedeckDeviceManager]
 
 
-try:
-    from XTouchMini import DeviceManager as XTouchMiniDeviceManager
-    from .xtouchmini import XTouchMini
-    DECK_TYPES["xtouchmini"] = [XTouchMini, XTouchMiniDeviceManager]
-except ImportError:
-    pass
+from XTouchMini import DeviceManager as XTouchMiniDeviceManager
+from .xtouchmini import XTouchMini
+DECK_TYPES["xtouchmini"] = [XTouchMini, XTouchMiniDeviceManager]
