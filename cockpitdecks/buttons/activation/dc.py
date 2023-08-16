@@ -16,6 +16,7 @@ logger.setLevel(logging.DEBUG)
 #
 TIMEOUT_TICKER = "sim/cockpit2/clock_timer/zulu_time_minutes"
 TIMEOUT_TIME   = 10  # seconds
+TOO_OLD = 600        # seconds, batches that did not refresh with that time need refreshing.
 
 WEATHER_DATAREFS = REAL_WEATHER_REGION_DATAREFS
 CLOUDS_DATAREFS = REAL_WEATHER_REGION_CLOUDS_DATAREFS
@@ -72,10 +73,20 @@ class Batch:
         if self.last_loaded is None:
             logger.debug(f"batch {self.name} ready to collect")
 
-    def too_old(self, how_old: int = TIMEOUT_TIME) -> bool:
+    def did_not_progress(self, how_old: int = TIMEOUT_TIME) -> bool:
         r = self.last_loaded < now() - timedelta(seconds=how_old)
         if r:
-            logger.debug(f"batch {self.name} too old")
+            logger.debug(f"batch {self.name} did not progress for {how_old} seconds")
+        return r
+
+    def need_refresh(self, how_old: int = TOO_OLD) -> bool:
+        # Batch was last collected more than how_old seconds,
+        # it should be refreshed.
+        if self.last_completed is None:
+            return True
+        r = self.last_completed < now() - timedelta(seconds=how_old)
+        if r:
+            logger.debug(f"batch {self.name} too old, need refresh")
         return r
 
     def load(self):
@@ -145,7 +156,7 @@ class DrefCollector(Activation):
             return
         if dataref.path == TIMEOUT_TICKER:
             logger.debug(f"button {self.button.name}: timeout received")
-            if self.current_batch is not None and self.current_batch.too_old():
+            if self.current_batch is not None and self.current_batch.did_not_progress():
                 if self.collecting:
                     self.change_batch()
             if not self.collecting:
@@ -161,7 +172,7 @@ class DrefCollector(Activation):
             if self.current_batch.is_collected():
                 self.current_batch.collected()
                 self.change_batch()
-            elif self.current_batch.too_old():
+            elif self.current_batch.did_not_progress():
                 self.change_batch()
 
     def all_batch_collected(self):
@@ -214,14 +225,26 @@ class DrefCollector(Activation):
     def load_batches(self):
         # Hardcoded here for now...
         # Later, can simply slice all datarefs into batches of limited size
-        # 1. First batch is all weather datarefs
-        self.add_batch(Batch(datarefs=WEATHER_DATAREFS, name="weather", loader=self))
-        # 2. Clouds
-        for i in range(CLOUD_LAYERS):
-            drefs = [f"{d}[{i}]" for d in CLOUDS_DATAREFS]
-            self.add_batch(Batch(datarefs=drefs, name=f"cloud {i}", loader=self))
-        # 3. Winds
-        for i in range(WIND_LAYERS):
-            drefs = [f"{d}[{i}]" for d in WINDS_DATAREFS]
-            self.add_batch(Batch(datarefs=drefs, name=f"wind {i}", loader=self))
+        batches = self._config.get("batches")
+        if batches is None:
+            logger.warning("no batches")
+            return
+        for batch in batches:
+            name = batch.get("name", self.button.name+"-batch#"+str(len(self.batches)))
+            count = batch.get("array")
+            drefs = batch.get("datarefs")
+            if count is None:
+                self.add_batch(Batch(datarefs=drefs, name=name, loader=self))
+            else:
+                count = int(count)
+                # 2. Clouds
+                for i in range(count):
+                    drefsarr = [f"{d}[{i}]" for d in drefs]
+                    self.add_batch(Batch(datarefs=drefsarr, name=f"{name}#{i}", loader=self))
         logger.debug(f"button {self.button.name}: loaded {len(self.batches)} batches, {len(self.dref_collection)} datarefs")
+
+    def make_batch_for_array(self, dataref, size: int, name: str = None):
+        drefs = [f"{dataref}[{i}]" for i in range(size)]
+        if name is None:
+            name = f"{dataref}[{size}]"
+        self.add_batch(Batch(datarefs=drefsarr, name=name, loader=self))
