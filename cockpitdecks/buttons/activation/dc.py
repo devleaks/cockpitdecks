@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from .activation import Activation
 from cockpitdecks import now
-from cockpitdecks.simulator import INTERNAL_DATAREF_PREFIX
+from cockpitdecks.simulator import DatarefListener, INTERNAL_DATAREF_PREFIX
 from cockpitdecks.buttons.representation.xpweatherdrefs import REAL_WEATHER_REGION_DATAREFS, REAL_WEATHER_REGION_CLOUDS_DATAREFS, REAL_WEATHER_REGION_WINDS_DATAREFS
 from cockpitdecks.buttons.representation.xpweatherdrefs import REAL_WEATHER_AIRCRAFT_DATAREFS, REAL_WEATHER_AIRCRAFT_CLOUDS_DATAREFS, REAL_WEATHER_AIRCRAFT_WINDS_DATAREFS
 
@@ -24,8 +24,8 @@ CLOUD_LAYERS = 3
 WINDS_DATAREFS = REAL_WEATHER_REGION_WINDS_DATAREFS
 WIND_LAYERS = 13
 
-PACE_LOAD = 1   # secs
-PACE_UNLOAD = 1
+PACE_LOAD = 0.5   # secs
+PACE_UNLOAD = 0.5
 
 class Batch:
     """
@@ -33,11 +33,14 @@ class Batch:
     When all datarefs in batch have been updated, batch is considered updated
     and stops collecting dataref values.
     """
-    def __init__(self, datarefs, loader, name: str = None):
+    def __init__(self, datarefs, loader, name: str = None, expire: int = 300):
 
         self.batch = datarefs
         self.loader = loader
         self.name = name
+        self.expire = expire    # seconds
+
+        # Working variables
         self.datarefs = {}
         self.last_loaded = None
         self.last_unloaded = None
@@ -95,14 +98,14 @@ class Batch:
     def load(self):
         self.last_loaded = now()
         self.loader.button.sim.add_datarefs_to_monitor(self.datarefs)
+        # logger.debug(f"batch {self.name} loaded")
         time.sleep(PACE_LOAD)
-        logger.debug(f"batch {self.name} loaded")
 
     def unload(self):
         self.loader.button.sim.remove_datarefs_to_monitor(self.datarefs)
         self.last_unloaded = now()
+        # logger.debug(f"batch {self.name} unloaded")
         time.sleep(PACE_UNLOAD)
-        logger.debug(f"batch {self.name} unloaded")
 
 
 class DrefCollector(Activation):
@@ -213,7 +216,7 @@ class DrefCollector(Activation):
         self.cycle = self.cycle + 1
         self.current_batch = self.batches[self.cycle % len(self.batches)]
         self.current_batch.load()
-        logger.debug(f"button {self.button.name}: changed to batch {self.current_batch.name}")
+        logger.debug(f"button {self.button.name}: changed to batch {self.current_batch.name} at {now().strftime('%H:%M:%S')}")
         # logger.debug(f"button {self.button.name}: monitoring {self.batches[self.current_batch_id].keys()}")
         # logger.debug(f"monitoring {self.button.sim.datarefs.values()}")
 

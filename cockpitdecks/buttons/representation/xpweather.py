@@ -9,8 +9,7 @@ from cockpitdecks.simulator import Dataref
 # Mapping between python class instance attributes and datarefs:
 # weather.baro get dataref "sim/weather/aircraft/barometer_current_pas" current value.
 #
-DATAREF_AIRCRAFT = {
-	# WEATHER
+DATAREF_AIRCRAFT_WEATHER = {
 	"alt_error": "sim/weather/aircraft/altimeter_temperature_error",
 	"baro": "sim/weather/aircraft/barometer_current_pas",
 	"gravity": "sim/weather/aircraft/gravity_mss",
@@ -26,13 +25,17 @@ DATAREF_AIRCRAFT = {
 	"wave_dir": "sim/weather/aircraft/wave_dir",
 	"wave_length": "sim/weather/aircraft/wave_length",
 	"wave_speed": "sim/weather/aircraft/wave_speed",
-	"wind_speed": "sim/weather/aircraft/wind_speed_msc",
-	# CLOUDS
+	"wind_speed": "sim/weather/aircraft/wind_speed_msc"
+}
+
+DATAREF_AIRCRAFT_CLOUD = {
 	"base": "sim/weather/aircraft/cloud_base_msl_m",
 	"coverage": "sim/weather/aircraft/cloud_coverage_percent",
 	"tops": "sim/weather/aircraft/cloud_tops_msl_m",
 	"cloud_type": "sim/weather/aircraft/cloud_type",
-	# WINDS
+}
+
+DATAREF_AIRCRAFT_WIND = {
 	"alt_msl": "sim/weather/aircraft/wind_altitude_msl_m",
 	"direction": "sim/weather/aircraft/wind_direction_degt",
 	"speed_kts": "sim/weather/aircraft/wind_speed_kts",
@@ -81,7 +84,12 @@ DATAREF_REGION = {
 	"shear_speed": "sim/weather/region/shear_speed_msc"
 }
 
-DATAREF = DATAREF_AIRCRAFT  # DATAREF_REGION
+DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER
+DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD
+DATAREF_WIND = DATAREF_AIRCRAFT_WIND
+DATAREF = DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
+CLOUD_LAYERS = 3
+WIND_LAYERS = 13
 
 class DatarefCollection:
 
@@ -112,6 +120,18 @@ class Weather(DatarefCollection):
 		DatarefCollection.__init__(self, drefs=drefs)
 
 
+class Airport:
+	def __init__(self):
+		self.icao = None
+		self.iata = None
+		self.name = None
+		self.name_local = None
+		self.lat = None
+		self.lon = None
+		self.alt = None
+		self.tz = None
+
+
 class XPWeather:
 	# Data accessor shell class.
 	# Must be supplied with dict of {path: Dataref(path)}
@@ -122,21 +142,44 @@ class XPWeather:
 		self.wind_layers = []		#  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
 		self.cloud_layers = []		#  Defined cloud layers. Not all layers are always defined. up to 3 layers
 
-		for i in range(3):
+		for i in range(CLOUD_LAYERS):
 			self.cloud_layers.append(CloudLayer(drefs, i))
 
-		for i in range(13):
+		for i in range(WIND_LAYERS):
 			self.wind_layers.append(WindLayer(drefs, i))
 
-	def make_metar(self):
+	def sort_layers_by_alt(self):
+		self.cloud_layers = sorted(self.cloud_layers, key=lambda x: x.base)
+		self.wind_layers = sorted(self.wind_layers, key=lambda x: x.alt_msl)
+
+	def cloud_layer_at(self, alt = 0) -> CloudLayer:
+		# Returns cloud layer at altitude alt (MSL)
+		self.sort_layers_by_alt()
+		for l in self.cloud_layers:
+			if alt <= l.base:
+				return l
+		return None
+
+	def wind_layer_at(self, alt = 0) -> WindLayer:
+		# Returns wind layer at altitude alt (MSL)
+		# Collect level bases with index
+		self.sort_layers_by_alt()
+		for l in self.wind_layers:
+			if alt <= l.alt_msl:
+				return l
+		return last
+
+	def make_metar(self, alt = None):
 		metar = self.getStation()
 		metar = metar + " " +self.getTime()
 		metar = metar + " " +self.getAuto()
 		metar = metar + " " +self.getWind()
 		if self.is_cavok():
 			metar = metar + " CAVOK"
+			metar = metar + " " +self.getRVR()
 		else:
 			metar = metar + " " +self.getVisibility()
+			metar = metar + " " +self.getRVR()
 			metar = metar + " " +self.getPhenomenae()
 			metar = metar + " " +self.getClouds()
 		metar = metar + " " +self.getTemperatures()
@@ -144,6 +187,34 @@ class XPWeather:
 		metar = metar + " " +self.getForecast()
 		metar = metar + " " +self.getRemarks()
 		return metar
+
+	def print(self):
+		print("=" * 40)
+		for k, v in DATAREF_WEATHER.items():
+			print(v, getattr(self.weather, k))
+		i = 0
+		for l in self.cloud_layers:
+			for k, v in DATAREF_CLOUD.items():
+				print(f"{v}[{i}]", getattr(l, k))
+			i = i + 1
+		i = 0
+		for l in self.wind_layers:
+			for k, v in DATAREF_WIND.items():
+				print(f"{v}[{i}]", getattr(l, k))
+			i = i + 1
+		print("=" * 40)
+
+	def print_cloud_layers_alt(self):
+		i = 0
+		for l in self.cloud_layers:
+			print(f"[{i}]", getattr(l, "base"), getattr(l, "tops"))
+			i = i + 1
+
+	def print_wind_layers_alt(self):
+		i = 0
+		for l in self.wind_layers:
+			print(f"[{i}]", getattr(l, "alt_msl"))
+			i = i + 1
 
 	def getStation(self):
 		return "XXXX"
@@ -159,19 +230,55 @@ class XPWeather:
 		return "AUTO"
 
 	def getWind(self):
-		return "00000KT"
+		ret = "00000KT"
+		if len(self.wind_layers) > 0:
+			lb = sorted(self.wind_layers, key=lambda x: x.alt_msl, reverse=True)
+			lowest = lb[0]
+			print(lowest)
+			speed = round(lowest.speed_kts)
+			direct = lowest.direction
+			if direct is None:
+				ret = f"{speed:02d}VRBKT"
+			else:
+				direct = round(lowest.direction)
+				ret = f"{speed:02d}{direct:03d}KT"
+		return ret
 
 	def is_cavok(self):
-		return True
+		# needs refining according to METAR conventions
+		# 1. look at current overall visibility
+		dist = round(self.weather.visibility * 1609)  ## m
+		nocov = True
+		# 2. look at each cloud layer coverage
+		self.sort_layers_by_alt()
+		i = 0
+		while nocov and i < len(self.cloud_layers):
+			l = self.cloud_layers[i]
+			print(i, "cov", l.coverage)
+			nocov = l.coverage is None or l.coverage < 0.125  # 1/8
+			i = i + 1
+		return dist > 9999 and nocov
 
 	def getVisibility(self):
+		# We use SI, no statute miles
+		dist = round(self.weather.visibility * 1609)  ## m
+		if dist > 9999:
+			return "9999"
+		dist = 100 * round(dist / 100)
+
+	def getRVR(self):
 		return ""
 
 	def getPhenomenae(self):
 		return ""
 
 	def getClouds(self):
-		return ""
+		clouds = ""
+		self.sort_layers_by_alt()
+		for l in self.cloud_layers:
+			local = ""
+			clouds = clouds + local
+		return clouds
 
 	def getTemperatures(self):
 		return ""
@@ -188,13 +295,29 @@ class XPWeather:
 	def parse_metar(self, metar):
 		return metar
 
-# # Tests
-# w = XPWeather({
-# 	"sim/weather/aircraft/barometer_current_pas": Dataref("sim/weather/aircraft/barometer_current_pas"),
-# 	"sim/weather/aircraft/wind_altitude_msl_m[7]": Dataref("sim/weather/aircraft/wind_altitude_msl_m[7]"),
-# 	"sim/weather/region/cloud_type[2]": Dataref("sim/weather/region/cloud_type[2]")})
-# print(w.weather.baro)
-# print(w.wind_layers[7].alt_msl)
-# print(w.cloud_layers[2].cloud_type)
-# m = w.make_metar()
-# print(m)
+
+
+# Tests
+if __name__ == '__main__':
+	drefs = {}
+	with open("s.txt", "r") as fp:
+		line = fp.readline()
+		line = line.strip().rstrip("\n\r")
+		while line:
+			if len(line) > 2:
+				arr = line.split()
+				dref = Dataref(arr[0])
+				dref.current_value = float(arr[1])
+				drefs[arr[0]] = dref
+			line = fp.readline()
+
+	w = XPWeather(drefs)
+	# w.print()
+	# w.print_cloud_layers_alt()
+	# print("cl base", w.cloud_layer_at(0).base)
+	# w.print_wind_layers_alt()
+	# print("wl base", w.wind_layer_at(0).alt_msl)
+	# print(w.weather.baro)
+	# print(w.cloud_layers[2].cloud_type)
+	# print(w.wind_layers[7].alt_msl)
+	print(w.make_metar())

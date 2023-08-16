@@ -46,6 +46,16 @@ INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plan
 NOT_A_DATAREF = ["DatarefPlaceholder"]
 
 
+class DatarefListener(ABC):
+
+	def __init__(self):
+		self.path = None
+
+	@abstractmethod
+	def dataref_changed(self, dataref):
+		pass
+
+
 class Dataref:
 	"""
 	A Dataref is an internal value of the simulation software made accessible to outside modules,

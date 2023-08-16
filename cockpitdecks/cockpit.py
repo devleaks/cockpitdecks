@@ -17,6 +17,7 @@ from cockpitdecks import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_
 from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE, DEFAULT_LIGHT_OFF_INTENSITY, ICON_SIZE
 from cockpitdecks import Config
 from cockpitdecks.resources.color import convert_color, has_ext
+from cockpitdecks.simulator import DatarefListener
 
 from . import __version__
 from .decks import DECK_TYPES
@@ -35,12 +36,13 @@ if LOGFILE is not None:
 	logger.addHandler(handler)
 
 
-class Cockpit:
+class Cockpit(DatarefListener):
 	"""
 	Contains all deck configurations for a given aircraft.
 	Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
 	"""
 	def __init__(self, simulator):
+		DatarefListener.__init__(self)
 		self._debug = ROOT_DEBUG.split(",")   # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
 
 		self._config = None			 # content of aircraft/deckconfig/config.yaml

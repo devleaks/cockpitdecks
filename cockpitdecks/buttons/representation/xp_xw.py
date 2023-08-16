@@ -58,12 +58,13 @@ class XPWeatherIcon(DrawBase):
 	def update_weather(self):
 		if self.dref_collector.last_notified is not None:
 			self.xpweather = XPWeather(self.dref_collector.dref_collection)
-			logger.debug(f"XPWeather loaded")
+			self.xpweather.print()  # for debugging purpose
+			logger.debug(f"XPWeather reconstructed METAR: {self.xpweather.make_metar()}")
 
 			self.weather_icon = self.select_weather_icon()
 			self._upd_count = self._upd_count + 1
 			self._last_updated = now()
-			logger.info(f"UPDATED: XP weather")
+			logger.info(f"updated XP weather at {now().strftime('%H:%M:%S')}")
 			return True
 		# logger.debug(f"Dataref collector has not completed")
 		return False
