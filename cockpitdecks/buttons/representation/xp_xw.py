@@ -15,7 +15,6 @@ from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, D
 from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
 from .draw import DrawBase
-from .xpweatherdrefs import DISPLAY_DATAREFS_REGION, DISPLAY_DATAREFS_AIRCRAFT
 from .xpweather import XPWeather
 
 
@@ -44,12 +43,9 @@ class XPWeatherIcon(DrawBase):
 		self._last_updated = None
 		self._cache = None
 
-		# Working variables
-		self.display_datarefs = DISPLAY_DATAREFS_REGION if self.mode == "region" else DISPLAY_DATAREFS_AIRCRAFT
-		self.weather_datarefs = self.display_datarefs.values()
-
 		DrawBase.__init__(self, config=config, button=button)
 
+		# Working variables
 		self.dref_collector = self.button._activation
 
 	def init(self):
@@ -62,15 +58,14 @@ class XPWeatherIcon(DrawBase):
 	def update_weather(self):
 		if self.dref_collector.last_notified is not None:
 			self.xpweather = XPWeather(self.dref_collector.dref_collection)
-			logger.debug(f"Temperature is {self.xpweather.weather.temp}")
+			logger.debug(f"XPWeather loaded")
 
 			self.weather_icon = self.select_weather_icon()
 			self._upd_count = self._upd_count + 1
 			self._last_updated = now()
 			logger.info(f"UPDATED: XP weather")
 			return True
-		else:
-			logger.debug(f"Dataref collector has not completed")
+		# logger.debug(f"Dataref collector has not completed")
 		return False
 
 	def update(self, force: bool = False) -> bool:
@@ -95,11 +90,11 @@ class XPWeatherIcon(DrawBase):
 			newd = self.dref_collector.last_notified
 			if diff > XPWeatherIcon.MIN_UPDATE and (self.dref_collector.last_notified > self._last_updated):
 				updated = self.update_weather()
-				if not updated:
-					self.weather_icon = self.select_weather_icon()
-					updated = True # provoke redraw of new random icon
-			else:
-				logger.debug(f"XP weather does not need updating")
+				# if not updated:  # provoke icon changes when developing
+				# 	self.weather_icon = self.select_weather_icon()
+				# 	updated = True # provoke redraw of new random icon
+			# else:
+			# 	logger.debug(f"XP weather does not need updating")
 		return True
 
 	def get_image_for_icon(self):
@@ -109,7 +104,7 @@ class XPWeatherIcon(DrawBase):
 		Also add a little marker on placeholder/invalid buttons that will do nothing.
 		"""
 
-		logger.debug(f"updating ({self._upd_count}/{self._upd_calls})..")
+		# logger.debug(f"updating ({self._upd_count}/{self._upd_calls})..")
 		if not self.update() and self._cache is not None:
 			logger.debug(f"..not updated, using cache")
 			return self._cache
@@ -126,7 +121,7 @@ class XPWeatherIcon(DrawBase):
 		inside = round(0.04 * image.width + 0.5)
 		w = image.width / 2
 		h = image.height / 2
-		logger.debug(f"icon: {self.weather_icon}")
+		# logger.debug(f"icon: {self.weather_icon}")
 		icon_text = WEATHER_ICONS.get(self.weather_icon)
 		if icon_text is None:
 			logger.warning(f"icon: {self.weather_icon} not found, using default")
@@ -172,20 +167,32 @@ class XPWeatherIcon(DrawBase):
 
 	def get_lines(self) -> list:
 		lines = list()
-		lines.append(f"Mode: {self.mode}")
-		press = self.button.get_dataref_value(self.display_datarefs["press"])
-		if press is not None:
-			press = int(press/100)
+
+		if self.xpweather is None:
+			lines.append(f"Mode: {self.mode}")
+			lines.append(f"No weather")
+			return lines
+
+		dt = self.dref_collector.last_notified.strftime("%d %H:%M")
+		lines.append(f"{dt} /M:{self.mode}")
+
+		press = round(self.xpweather.weather.qnh / 100)
 		lines.append(f"Press: {press}")
-		temp = self.button.get_dataref_value(self.display_datarefs["temp"])
+
+		temp = round(self.xpweather.weather.temp, 1)
 		lines.append(f"Temp: {temp}")
-		dewp = self.button.get_dataref_value(self.display_datarefs["dewp"])
-		lines.append(f"DewP:{dewp}")  # "sim/weather/region/sealevel_temperature_c"
-		vis = self.button.get_dataref_value(self.display_datarefs["vis"])
+
+		idx = 0
+		dewp = round(self.xpweather.wind_layers[idx].dew_point, 1)
+		lines.append(f"DewP:{dewp} (L{idx})")
+
+		vis = round(self.xpweather.weather.visibility, 1)
 		lines.append(f"Vis: {vis} sm")
-		wind_dir = self.button.get_dataref_value(self.display_datarefs["wind_dir"])
-		wind_speed = self.button.get_dataref_value(self.display_datarefs["wind_speed"])
-		lines.append(f"Winds: {wind_speed} m/s {wind_dir}°")
+
+		wind_dir = round(self.xpweather.wind_layers[idx].direction)
+		wind_speed = round(self.xpweather.weather.wind_speed, 1)
+		lines.append(f"Winds: {wind_speed} m/s {wind_dir}° (L{idx})")
+
 		return lines
 
 	def select_weather_icon(self):

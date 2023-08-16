@@ -12,7 +12,7 @@ from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 AIRCRAFT_DATAREF_BASE = "sim/aircraft/view/acf_ICAO"
@@ -22,7 +22,7 @@ class AircraftIcon(DrawBase):
 
 	def __init__(self, config: dict, button: "Button"):
 		self._inited = False
-		self.acf_livery_path = None	# Aircraft/Extra Aircraft/ToLiss A321/liveries/Airbus Prototype - A321 Neo PW XLR/
+		self.fetched_string = None	# Aircraft/Extra Aircraft/ToLiss A321/liveries/Airbus Prototype - A321 Neo PW XLR/
 		self.aircraft = None
 		self._ac_count = 0
 		self._cached = None
@@ -54,7 +54,7 @@ class AircraftIcon(DrawBase):
 		return self.datarefs
 
 	def get_aircraft_name(self):
-		return self.acf_livery_path if self.acf_livery_path != "" else None
+		return self.fetched_string if self.fetched_string != "" else None
 
 	def updated_recently(self):
 		if self._last_updated is not None:
@@ -66,16 +66,23 @@ class AircraftIcon(DrawBase):
 		# 1. Collect string character per character :-D
 		new_string = ""
 		updated = False
+		cnt = 0
 		for i in range(AIRCRAFT_DATAREF_SIZE):
 			a = self.button.get_dataref_value(f"{AIRCRAFT_DATAREF_BASE}[{i}]")
 			if a is not None:
+				cnt = cnt + 1
 				c = chr(int(a))
 				new_string = new_string + c
-		self.acf_livery_path = new_string
+		self.fetched_string = new_string
 
-		# 2. Has the aircraft part changed?
+		if cnt < AIRCRAFT_DATAREF_SIZE:  # we did not fetch all chars yet
+			logger.debug(f"received {cnt}/{AIRCRAFT_DATAREF_SIZE}")
+			return False
+		logger.debug(f"received {cnt}/{AIRCRAFT_DATAREF_SIZE} (completed)")
+
+		# 2. Has the aircraft changed?
 		ac = self.get_aircraft_name()
-		if ac is not None:		
+		if ac is not None:
 			updated = self.aircraft != ac
 			if updated:
 				self.aircraft = ac
@@ -92,11 +99,11 @@ class AircraftIcon(DrawBase):
 		Label may be updated at each activation since it can contain datarefs.
 		Also add a little marker on placeholder/invalid buttons that will do nothing.
 		"""
-		image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
-		inside = round(0.04 * image.width + 0.5)
-
 		if not self.updated() and self._cached is not None:
 			return self._cached
+
+		image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+		inside = round(0.04 * image.width + 0.5)
 
 		text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._acconfig, "text")
 		text = self.aircraft

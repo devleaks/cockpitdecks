@@ -17,7 +17,7 @@ from .xpweatherdrefs import DISPLAY_DATAREFS_REGION, DISPLAY_DATAREFS_AIRCRAFT
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class RealWeatherIcon(DrawBase):

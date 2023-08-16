@@ -708,8 +708,11 @@ class Cockpit:
 		"""
 		This gets called when dataref AIRCRAFT_DATAREF is changed, hence a new aircraft has been loaded.
 		"""
-		logger.info(f"new aircraft loaded {dataref.path}={dataref.value()}")
-
+		v = dataref.value()
+		if v is not None and v == 1:
+			logger.info(f"current aircraft loaded {dataref.path}={dataref.value()}")
+		else:
+			logger.info(f"new aircraft loaded {dataref.path}={dataref.value()}")
 
 	def terminate_aircraft(self):
 		logger.info(f"terminating..")

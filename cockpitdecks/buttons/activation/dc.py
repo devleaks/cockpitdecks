@@ -24,6 +24,9 @@ CLOUD_LAYERS = 3
 WINDS_DATAREFS = REAL_WEATHER_REGION_WINDS_DATAREFS
 WIND_LAYERS = 13
 
+PACE_LOAD = 1   # secs
+PACE_UNLOAD = 1
+
 class Batch:
     """
     A collection of datarefs that gets monitored by Cockpitdecks as a batch.
@@ -92,13 +95,13 @@ class Batch:
     def load(self):
         self.last_loaded = now()
         self.loader.button.sim.add_datarefs_to_monitor(self.datarefs)
-        time.sleep(1)
+        time.sleep(PACE_LOAD)
         logger.debug(f"batch {self.name} loaded")
 
     def unload(self):
         self.loader.button.sim.remove_datarefs_to_monitor(self.datarefs)
         self.last_unloaded = now()
-        time.sleep(1)
+        time.sleep(PACE_UNLOAD)
         logger.debug(f"batch {self.name} unloaded")
 
 
