@@ -7,8 +7,9 @@ from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob
 from .animation import IconAnimation, DrawAnimationFTG
-from .xp import AircraftIcon, RealWeatherIcon
-from .xp2 import XPWeatherIcon
+from .xp_ac import AircraftIcon
+from .xp_rw import RealWeatherIcon
+from .xp_xw import XPWeatherIcon
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

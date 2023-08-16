@@ -196,8 +196,8 @@ class Simulator(ABC):
 	"""
 	Abstract class for execution of operations and collection of data in the simulation software.
 	"""
-	def __init__(self, decks):
-		self.cockpit = decks
+	def __init__(self, cockpit):
+		self.cockpit = cockpit
 		self.use_flight_loop = False
 		self.running = False
 		self.all_datarefs = {}

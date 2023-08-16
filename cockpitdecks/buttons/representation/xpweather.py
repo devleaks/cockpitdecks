@@ -43,14 +43,45 @@ DATAREF_AIRCRAFT = {
 	"shear_kts": "sim/weather/aircraft/shear_speed_kts"
 }
 
-DATAREF = DATAREF_AIRCRAFT
+# Mapping between python class instance attributes and datarefs:
+# weather.baro get dataref "sim/weather/aircraft/barometer_current_pas" current value.
+#
+DATAREF_REGION = {
+	# WEATHER
+	"change_mode": "sim/weather/region/change_mode",
+	"qnh_bqse": "sim/weather/region/qnh_base_elevation",
+	"rain_pct": "sim/weather/region/rain_percent",
+	"runway_friction": "sim/weather/region/runway_friction",
+	"pressure_msl": "sim/weather/region/sealevel_pressure_pas",
+	"temperature_msl": "sim/weather/region/sealevel_temperature_c",
+	"thermal_rate": "sim/weather/region/thermal_rate_ms",
+	"update": "sim/weather/region/update_immediately",
+	"variability": "sim/weather/region/variability_pct",
+	"visibility": "sim/weather/region/visibility_reported_sm",
+	"wave_amp": "sim/weather/region/wave_amplitude",
+	"wave_dir": "sim/weather/region/wave_dir",
+	"wave_length": "sim/weather/region/wave_length",
+	"wave_speed": "sim/weather/region/wave_speed",
+	"source": "sim/weather/region/weather_source",
+	# CLOUDS
+	"base_msl_m": "sim/weather/region/cloud_base_msl_m",
+	"coverage_pct": "sim/weather/region/cloud_coverage_percent",
+	"tops_msl_m": "sim/weather/region/cloud_tops_msl_m",
+	"type": "sim/weather/region/cloud_type",
+	# WINDS
+	"alt_levels_m": "sim/weather/region/atmosphere_alt_levels_m",
+	"dewpoint": "sim/weather/region/dewpoint_deg_c",
+	"temp_aloft": "sim/weather/region/temperatures_aloft_deg_c",
+	"temp_alt_msl": "sim/weather/region/temperature_altitude_msl_m",
+	"wind_alt_msl": "sim/weather/region/wind_altitude_msl_m",
+	"wind_dir": "sim/weather/region/wind_direction_degt",
+	"wind_speed": "sim/weather/region/wind_speed_msc",
+	"turbulence": "sim/weather/region/turbulence",
+	"shear_dir": "sim/weather/region/shear_direction_degt",
+	"shear_speed": "sim/weather/region/shear_speed_msc"
+}
 
-def to_100ft(m, r: int = 0):
-	ft = m / 30.48
-	if r > 0:
-		ft = r * int(ft / r)
-	return ft
-
+DATAREF = DATAREF_AIRCRAFT  # DATAREF_REGION
 
 class DatarefCollection:
 

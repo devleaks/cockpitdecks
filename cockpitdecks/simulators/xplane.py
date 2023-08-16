@@ -247,9 +247,9 @@ class XPlane(Simulator, XPlaneBeacon):
 	MCAST_PORT = 49707 # (MCAST_PORT was 49000 for XPlane10)
 	BEACON_TIMEOUT = 3.0  # seconds
 
-	def __init__(self, decks):
+	def __init__(self, cockpit):
 
-		Simulator.__init__(self, decks=decks)
+		Simulator.__init__(self, cockpit=cockpit)
 		self.cockpit.set_logging_level(__name__)
 
 		XPlaneBeacon.__init__(self)
