@@ -12,7 +12,7 @@ __DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-
 __LICENSE__      = "MIT"
 __LICENSEURL__   = "https://mit-license.org"
 __COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.5.6"
+__version__      = "7.6.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__    = "https://github.com/devleaks/cockpitdecks"
@@ -31,6 +31,8 @@ from ruamel.yaml import YAML
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML()
 
+SPAM_LEVEL = 15
+SPAM = "SPAM"
 LOGFILE = "cockpitdecks.log"
 FORMAT="[%(asctime)s] p%(process)s %(levelname)s {%(filename)s:%(funcName)s:%(lineno)d}: %(message)s"
 # logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -44,10 +46,25 @@ logger = logging.getLogger(__name__)
 #     handler.setFormatter(formatter)
 #     logger.addHandler(handler)
 
-# Utility function
+# ##############################################################
+# Utility functions
+# (mainly unit conversion functions)
+#
 def now():
     return datetime.now().astimezone()
 
+def to_fl(m, r: int = None):
+    # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided.
+    ft = m * 0.03048
+    if r is not None and r > 0:
+        ft = r * int(ft / r)
+    return ft
+
+def to_m(fl):
+    # Convert flight level to meters
+    return round(fl * 30,48)
+
+# ##############################################################
 # A few constants and default values
 # Adjust with care...
 #
@@ -98,9 +115,7 @@ COCKPIT_TEXTURE = None
 
 DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
 
-# Debug, internals
-SPAM_LEVEL = 15
-SPAM = "SPAM"
+# internals
 ID_SEP = "/"
 
 class ANNUNCIATOR_STYLES(Enum):

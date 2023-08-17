@@ -46,16 +46,6 @@ INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plan
 NOT_A_DATAREF = ["DatarefPlaceholder"]
 
 
-class DatarefListener(ABC):
-
-	def __init__(self):
-		self.path = None
-
-	@abstractmethod
-	def dataref_changed(self, dataref):
-		pass
-
-
 class Dataref:
 	"""
 	A Dataref is an internal value of the simulation software made accessible to outside modules,
@@ -82,7 +72,7 @@ class Dataref:
 		self.previous_value = None
 		self.current_value = None
 		self.current_array = []
-		self.listeners = {}		 # buttons using this dataref, will get notified if changes.
+		self.listeners = []	 # buttons using this dataref, will get notified if changes.
 		self.round = None
 
 		# dataref/path:t where t in d, i, f, s, b.
@@ -181,22 +171,34 @@ class Dataref:
 				self.notify()
 		# loggerDataref.error(f"dataref {self.path} updated")
 
-	def add_listener(self, button):
-		self.listeners[button.get_id()] = button
-		# if obj not in self.listeners:
-		#	 self.listeners.append(obj)
-		loggerDataref.debug(f"{self.dataref} added {button.get_id()} ({len(self.listeners)})")
+	def add_listener(self, obj):
+		# if not isinstance(obj, DatarefListener):
+		# 	loggerDataref.warning(f"{self.dataref} not a listener {obj}")
+		if obj not in self.listeners:
+			self.listeners.append(obj)
+		loggerDataref.debug(f"{self.dataref} added listener ({len(self.listeners)})")
 
 	def notify(self):
 		if self.has_changed():
-			for k, v in self.listeners.items():
-				v.dataref_changed(self)
-				if hasattr(v, "page") and v.page is not None:
-					loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {v.page.name}/{v.name}")
+			for dref in self.listeners:
+				dref.dataref_changed(self)
+				if hasattr(dref, "page") and dref.page is not None:
+					loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.page.name}/{dref.name}")
 				else:
-					loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {v.name} (not on a page)")
+					loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.name} (not on a page)")
 		# else:
 		#	 loggerDataref.error(f"dataref {self.path} not changed")
+
+
+class DatarefListener(ABC):
+	# To get notified when a dataref has changed.
+
+	def __init__(self):
+		self.name = "unnamed"
+
+	@abstractmethod
+	def dataref_changed(self, dataref):
+		pass
 
 
 # ########################################

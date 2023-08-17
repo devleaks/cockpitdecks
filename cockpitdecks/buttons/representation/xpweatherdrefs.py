@@ -1,20 +1,4 @@
 # ######################################################
-# DATAREF UNIT CONVERSION
-#
-def to_fl(m, r: int = None):
-	# Convert meters to flight level. Round flight level to r if provided.
-	ft = m / 30.48
-	if r is not None and r > 0:
-		ft = r * int(ft / r)
-	return ft
-
-def to_m(fl):
-	# Convert flight level to meters
-	return round(fl * 30,48)
-
-
-
-# ######################################################
 # REGION DATAREFS
 #
 REAL_WEATHER_REGION_DATAREFS = [

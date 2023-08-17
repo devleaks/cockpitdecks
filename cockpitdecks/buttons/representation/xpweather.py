@@ -1,9 +1,13 @@
 import sys
 import os
+import re
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..')) # we assume we're in subdir "bin/"
 
 from datetime import datetime, timezone
+from metar import Metar
+
 from cockpitdecks.simulator import Dataref
+from cockpitdecks import to_fl
 
 
 # Mapping between python class instance attributes and datarefs:
@@ -18,7 +22,7 @@ DATAREF_AIRCRAFT_WEATHER = {
 	"rel_humidity": "sim/weather/aircraft/relative_humidity_sealevel_percent",
 	"speed_of_sound": "sim/weather/aircraft/speed_sound_ms",
 	"temp": "sim/weather/aircraft/temperature_ambient_deg_c",
-	"temp-leading_edge": "sim/weather/aircraft/temperature_leadingedge_deg_c",
+	"temp_leading_edge": "sim/weather/aircraft/temperature_leadingedge_deg_c",
 	"thermal_rete": "sim/weather/aircraft/thermal_rate_ms",
 	"visibility": "sim/weather/aircraft/visibility_reported_sm",
 	"wave_ampl": "sim/weather/aircraft/wave_amplitude",
@@ -49,10 +53,11 @@ DATAREF_AIRCRAFT_WIND = {
 # Mapping between python class instance attributes and datarefs:
 # weather.baro get dataref "sim/weather/aircraft/barometer_current_pas" current value.
 #
-DATAREF_REGION = {
-	# WEATHER
+# PLEASE MAKE SURE YOU USE THE SAME ATTRIBUTE NAME IN AIRCRAFT AND REGION FOR SAME PURPOSE
+#
+DATAREF_REGION_WEATHER = {
 	"change_mode": "sim/weather/region/change_mode",
-	"qnh_bqse": "sim/weather/region/qnh_base_elevation",
+	"qnh_base": "sim/weather/region/qnh_base_elevation",
 	"rain_pct": "sim/weather/region/rain_percent",
 	"runway_friction": "sim/weather/region/runway_friction",
 	"pressure_msl": "sim/weather/region/sealevel_pressure_pas",
@@ -66,12 +71,16 @@ DATAREF_REGION = {
 	"wave_length": "sim/weather/region/wave_length",
 	"wave_speed": "sim/weather/region/wave_speed",
 	"source": "sim/weather/region/weather_source",
-	# CLOUDS
-	"base_msl_m": "sim/weather/region/cloud_base_msl_m",
+}
+
+DATAREF_REGION_CLOUD = {
+	"base": "sim/weather/region/cloud_base_msl_m",
 	"coverage_pct": "sim/weather/region/cloud_coverage_percent",
-	"tops_msl_m": "sim/weather/region/cloud_tops_msl_m",
+	"tops": "sim/weather/region/cloud_tops_msl_m",
 	"type": "sim/weather/region/cloud_type",
-	# WINDS
+}
+
+DATAREF_REGION_WIND = {
 	"alt_levels_m": "sim/weather/region/atmosphere_alt_levels_m",
 	"dewpoint": "sim/weather/region/dewpoint_deg_c",
 	"temp_aloft": "sim/weather/region/temperatures_aloft_deg_c",
@@ -86,10 +95,11 @@ DATAREF_REGION = {
 
 DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER
 DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD
-DATAREF_WIND = DATAREF_AIRCRAFT_WIND
-DATAREF = DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
 CLOUD_LAYERS = 3
+DATAREF_WIND = DATAREF_AIRCRAFT_WIND
 WIND_LAYERS = 13
+DATAREF = DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
+
 
 class DatarefCollection:
 
@@ -186,7 +196,7 @@ class XPWeather:
 		metar = metar + " " +self.getPressure()
 		metar = metar + " " +self.getForecast()
 		metar = metar + " " +self.getRemarks()
-		return metar
+		return re.sub(' +', ' ', metar)  # clean multiple spaces
 
 	def print(self):
 		print("=" * 40)
@@ -217,14 +227,14 @@ class XPWeather:
 			i = i + 1
 
 	def getStation(self):
-		return "XXXX"
+		return "ICAO"
 
 	def getTime(self):
 		t = datetime.now().astimezone(tz=timezone.utc)
 		m = "00"
 		if t.minute > 30:
 			m = "30"
-		return t.strftime(f"%D%H{m}Z")
+		return t.strftime(f"%d%H{m}Z")
 
 	def getAuto(self):
 		return "AUTO"
@@ -234,17 +244,17 @@ class XPWeather:
 		if len(self.wind_layers) > 0:
 			lb = sorted(self.wind_layers, key=lambda x: x.alt_msl, reverse=True)
 			lowest = lb[0]
-			print(lowest)
 			speed = round(lowest.speed_kts)
 			direct = lowest.direction
 			if direct is None:
 				ret = f"{speed:02d}VRBKT"
 			else:
 				direct = round(lowest.direction)
-				ret = f"{speed:02d}{direct:03d}KT"
+				ret = f"{direct:03d}{speed:02d}KT"
+			# @todo add gusting later
 		return ret
 
-	def is_cavok(self):
+	def is_cavok(self) -> bool:
 		# needs refining according to METAR conventions
 		# 1. look at current overall visibility
 		dist = round(self.weather.visibility * 1609)  ## m
@@ -254,7 +264,6 @@ class XPWeather:
 		i = 0
 		while nocov and i < len(self.cloud_layers):
 			l = self.cloud_layers[i]
-			print(i, "cov", l.coverage)
 			nocov = l.coverage is None or l.coverage < 0.125  # 1/8
 			i = i + 1
 		return dist > 9999 and nocov
@@ -275,16 +284,48 @@ class XPWeather:
 	def getClouds(self):
 		clouds = ""
 		self.sort_layers_by_alt()
+		last = -1
 		for l in self.cloud_layers:
 			local = ""
-			clouds = clouds + local
-		return clouds
+			cov = int(l.coverage / 0.125)  if l.coverage is not None else 0
+			# alt = to_fl(l.base, 5)
+			# print(l.base, l.base * 3.042, ":", cov)
+			if cov >= last:
+				s = ""
+				if cov > 0 and cov <= 2:
+					s = "FEW"
+				elif cov > 2 and cov <= 4:
+					s = "SCT"
+				elif cov > 4 and cov <= 7:
+					s = "BKN"
+				elif cov > 7:
+					s = "OVC"
+				if s != "":
+					alt = to_fl(l.base, 5)
+					local = f"{s}{alt}"
+				last = cov
+			clouds = clouds + " " + local
+		return clouds.strip()
 
 	def getTemperatures(self):
-		return ""
+		t1 = round(self.weather.temp)
+		temp = ""
+		if t1 < 0:
+			temp = f"M{abs(t1)}/"
+		else:
+			temp = f"{t1}"
+		self.sort_layers_by_alt()
+		l = self.wind_layers[0]
+		t1 = round(l.dew_point)
+		if t1 < 0:
+			temp = temp + "/" + f"M{abs(t1)}/"
+		else:
+			temp = temp + "/" + f"{t1}"
+		return temp
 
 	def getPressure(self):
-		return ""
+		press = f"{round(self.weather.qnh/100)}"
+		return press
 
 	def getForecast(self):
 		return ""
@@ -320,4 +361,7 @@ if __name__ == '__main__':
 	# print(w.weather.baro)
 	# print(w.cloud_layers[2].cloud_type)
 	# print(w.wind_layers[7].alt_msl)
-	print(w.make_metar())
+	m = w.make_metar()
+	# print(m)
+	obs = Metar.Metar(m)
+	print(obs.string())
