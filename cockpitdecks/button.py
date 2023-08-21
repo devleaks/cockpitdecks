@@ -13,7 +13,7 @@ from datetime import datetime
 
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
-from .simulator import Dataref, DatarefListener, INTERNAL_DATAREF_PREFIX
+from .simulator import Dataref, DatarefListener, DatarefCollectionListener, INTERNAL_DATAREF_PREFIX
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
@@ -28,11 +28,12 @@ PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly b
 VARIABLE_PREFIX = ["button", "state"]
 
 
-class Button(DatarefListener):
+class Button(DatarefListener, DatarefCollectionListener):
 
     def __init__(self, config: dict, page: "Page"):
 
         DatarefListener.__init__(self)
+        DatarefCollectionListener.__init__(self)
         # Definition and references
         self.logging_level = "INFO"
         self._config = config
@@ -122,6 +123,11 @@ class Button(DatarefListener):
         self.all_datarefs = self.get_datarefs() # cache them
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)   # when the button's page is loaded, we monitor these datarefs
+
+        self.dataref_collections = None
+        self.dataref_collections = self.get_dataref_collections()
+        if len(self.dataref_collections) > 0:
+            self.page.register_dataref_collections(self)
 
         self.init()
 
@@ -319,6 +325,40 @@ class Button(DatarefListener):
                     return True
         return default
 
+    def get_dataref_collections(self):
+        if self.dataref_collections is not None:
+            return self.dataref_collections
+
+        dc = self._config.get("dataref-collections")
+        if dc is None:
+            logger.debug("no collection")
+            self.dataref_collections = {}
+            return self.dataref_collections
+
+        collections = {}
+        for collection in dc:
+            name = collection.get("name", self.name+"-collection#"+str(len(collections)))
+            count = collection.get("array")
+            if count is None:
+                collections[name] = collection
+            else:
+                count = int(count)
+                if len(collection["datarefs"]) == 1: # we fetch an array of values for a single dataref
+                    new_collection = collection.copy()
+                    d = new_collection["datarefs"][0]
+                    new_collection["datarefs"] = [f"{d}[{i}]" for i in range(count)]
+                    collections[name] = new_collection
+                else:
+                    for i in range(count):
+                        new_collection = collection.copy()
+                        new_name = f"{name}#{i}"
+                        new_collection["datarefs"] = [f"{d}[{i}]" for d in collection["datarefs"]]
+                        new_collection["name"] = new_name
+                        collections[new_name] = new_collection
+        self.dataref_collections = collections
+        logger.debug(f"button {self.name}: loaded {len(collections)} collections")
+        return self.dataref_collections
+
     def get_datarefs(self, base:dict = None):
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
@@ -433,7 +473,7 @@ class Button(DatarefListener):
     def get_dataref_value(self, dataref, default = None):
         d = self.page.datarefs.get(dataref)
         # if d is not None:
-        #     print("***", type(d).__name__, d.path, d.xp_datatype, d.data_type)
+        #     print("***", type(d).__name__, d.path, d.data_type, "==", d.current_value)
         return d.current_value if d is not None else default
 
     def is_managed(self):
@@ -729,13 +769,14 @@ class Button(DatarefListener):
             return
         self.set_current_value(self.button_value())
         if self.has_changed() or dataref.has_changed():
-            logger.log(SPAM_LEVEL, f"dataref_changed: button {self.name}: {self.previous_value} -> {self.current_value}")
+            logger.log(SPAM_LEVEL, f"button {self.name}: {self.previous_value} -> {self.current_value}")
             self.render()
         else:
             logger.debug(f"button {self.name}: no change")
-        # Added for dataref batch collector activation
-        if self._activation.is_valid():
-            self._activation.dataref_changed(dataref)
+
+    def dataref_collection_changed(self, dataref_collection):
+        logger.log(SPAM_LEVEL, f"button {self.name}: dataref collection {dataref_collection.name} changed")
+        self.render()
 
     def activate(self, state: bool):
         """

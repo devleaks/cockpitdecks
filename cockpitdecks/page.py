@@ -4,6 +4,7 @@ import logging
 
 from cockpitdecks import ID_SEP, ANNUNCIATOR_STYLES
 from cockpitdecks.resources.color import convert_color
+from cockpitdecks.simulator import DatarefCollection, MAX_COLLECTION_SIZE
 from .button import Button
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ class Page:
 		self.buttons = {}
 		self.button_names = {}
 		self.datarefs = {}
+		self.dataref_collections = {}
 
 	def get_id(self):
 		return ID_SEP.join([self.deck.get_id(), self.name])
@@ -142,7 +144,31 @@ class Page:
 			else:  # dataref already exists in list, just add this button as a listener
 				self.datarefs[d].add_listener(button)
 				logger.debug(f"page {self.name}: button {button.name} registered for existing dataref {d}")
-		logger.debug(f"page {self.name}: button {button.name} registered")
+		logger.debug(f"page {self.name}: button {button.name} datarefs registered")
+
+	def register_dataref_collections(self, button: Button):
+		# Transform dataref paths into Dataref().
+		for name, colldesc in button.get_dataref_collections().items():
+			collection = {}
+			for d in colldesc.get("datarefs"):
+				if len(collection) >= MAX_COLLECTION_SIZE:
+					continue
+				ref = self.sim.get_dataref(d)  # creates or return already defined dataref
+				if ref is not None:
+					ref.add_listener(button.sim.collector)
+					collection[d] = ref  # ref DO NOT get added to page datarefs collection
+					logger.debug(f"page {self.name}: button {button.name} added dataref {d} to collection {name}")
+				else:
+					logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d} for collection {name}")
+			if len(collection) >= MAX_COLLECTION_SIZE:
+				logger.warning(f"page {self.name}: button {button.name}: collection: {name}: too many datarefs ({len(colldesc[0])}, maximum is {MAX_COLLECTION_SIZE})")
+			dc = DatarefCollection(datarefs=collection, sim=button.sim, name=name)
+			dc.add_listener(button)
+			dc.set_dataref = colldesc.get("set_dataref")
+			dc.expire = colldesc.get("expire")
+			self.dataref_collections[name] = dc
+			logger.debug(f"page {self.name}: button {button.name} collection {name} registered")
+		logger.debug(f"page {self.name}: button {button.name} collections registered")
 
 	def dataref_changed(self, dataref):
 		"""

@@ -1,13 +1,20 @@
 import sys
 import os
-import re
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..')) # we assume we're in subdir "bin/"
+
+import re
+import logging
 
 from datetime import datetime, timezone
 from metar import Metar
 
 from cockpitdecks.simulator import Dataref
 from cockpitdecks import to_fl
+
+
+logger = logging.getLogger(__name__)
+# logger.setLevel(SPAM_LEVEL)
+logger.setLevel(logging.DEBUG)
 
 
 # Mapping between python class instance attributes and datarefs:
@@ -101,7 +108,7 @@ WIND_LAYERS = 13
 DATAREF = DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
 
 
-class DatarefCollection:
+class DatarefAccessor:
 
 	def __init__(self, drefs, index: int = None):
 		self.__datarefs__ = drefs
@@ -117,20 +124,20 @@ class DatarefCollection:
 		dref = self.__datarefs__.get(name)
 		return dref.current_value if dref is not None else None
 
-class WindLayer(DatarefCollection):
+class WindLayer(DatarefAccessor):
 	def __init__(self, drefs, index):
-		DatarefCollection.__init__(self, drefs=drefs, index=index)
+		DatarefAccessor.__init__(self, drefs=drefs, index=index)
 
-class CloudLayer(DatarefCollection):
+class CloudLayer(DatarefAccessor):
 	def __init__(self, drefs, index):
-		DatarefCollection.__init__(self, drefs=drefs, index=index)
+		DatarefAccessor.__init__(self, drefs=drefs, index=index)
 
-class Weather(DatarefCollection):
+class Weather(DatarefAccessor):
 	def __init__(self, drefs):
-		DatarefCollection.__init__(self, drefs=drefs)
+		DatarefAccessor.__init__(self, drefs=drefs)
 
 
-class Airport:
+class Station:
 	def __init__(self):
 		self.icao = None
 		self.iata = None
@@ -140,6 +147,19 @@ class Airport:
 		self.lon = None
 		self.alt = None
 		self.tz = None
+
+class Runway:
+	def __init__(self):
+		self.name = None
+		self.orientation = None
+		self.length = None
+		self.pavement = None
+		self.slope = None
+
+class Airport(Station):
+	def __init__(self):
+		Station.__init__(self)
+		self.runways = []
 
 
 class XPWeather:
@@ -159,8 +179,15 @@ class XPWeather:
 			self.wind_layers.append(WindLayer(drefs, i))
 
 	def sort_layers_by_alt(self):
-		self.cloud_layers = sorted(self.cloud_layers, key=lambda x: x.base)
-		self.wind_layers = sorted(self.wind_layers, key=lambda x: x.alt_msl)
+		# only keeps layers with altitude
+		cloud_alts = filter(lambda x: x.base is not None, self.cloud_layers)
+		self.cloud_layers = sorted(cloud_alts, key=lambda x: x.base)
+		if not len(self.cloud_layers) > 0:
+			logger.warning("no cloud layer with altitude?")
+		wind_alts = filter(lambda x: x.alt_msl is not None, self.wind_layers)
+		self.wind_layers = sorted(wind_alts, key=lambda x: x.alt_msl)
+		if not len(self.wind_layers) > 0:
+			logger.warning("no wind layer with altitude?")
 
 	def cloud_layer_at(self, alt = 0) -> CloudLayer:
 		# Returns cloud layer at altitude alt (MSL)
@@ -181,21 +208,21 @@ class XPWeather:
 
 	def make_metar(self, alt = None):
 		metar = self.getStation()
-		metar = metar + " " +self.getTime()
-		metar = metar + " " +self.getAuto()
-		metar = metar + " " +self.getWind()
+		metar = metar + " " + self.getTime()
+		metar = metar + " " + self.getAuto()
+		metar = metar + " " + self.getWind()
 		if self.is_cavok():
 			metar = metar + " CAVOK"
-			metar = metar + " " +self.getRVR()
+			metar = metar + " " + self.getRVR()
 		else:
-			metar = metar + " " +self.getVisibility()
-			metar = metar + " " +self.getRVR()
-			metar = metar + " " +self.getPhenomenae()
-			metar = metar + " " +self.getClouds()
-		metar = metar + " " +self.getTemperatures()
-		metar = metar + " " +self.getPressure()
-		metar = metar + " " +self.getForecast()
-		metar = metar + " " +self.getRemarks()
+			metar = metar + " " + self.getVisibility()
+			metar = metar + " " + self.getRVR()
+			metar = metar + " " + self.getPhenomenae()
+			metar = metar + " " + self.getClouds()
+		metar = metar + " " + self.getTemperatures()
+		metar = metar + " " + self.getPressure()
+		metar = metar + " " + self.getForecast()
+		metar = metar + " " + self.getRemarks()
 		return re.sub(' +', ' ', metar)  # clean multiple spaces
 
 	def print(self):
@@ -242,23 +269,29 @@ class XPWeather:
 	def getWind(self):
 		ret = "00000KT"
 		if len(self.wind_layers) > 0:
-			lb = sorted(self.wind_layers, key=lambda x: x.alt_msl, reverse=True)
-			lowest = lb[0]
-			speed = round(lowest.speed_kts)
-			direct = lowest.direction
-			if direct is None:
-				ret = f"{speed:02d}VRBKT"
+			hasalt = list(filter(lambda x: x.alt_msl is not None, self.wind_layers))
+			if len(hasalt) > 0:
+				lb = sorted(hasalt, key=lambda x: x.alt_msl, reverse=True)
+				lowest = lb[0]
+				speed = round(lowest.speed_kts)
+				direct = lowest.direction
+				if direct is None:
+					ret = f"{speed:02d}VRBKT"
+				else:
+					direct = round(lowest.direction)
+					ret = f"{direct:03d}{speed:02d}KT"
+				# @todo add gusting later
 			else:
-				direct = round(lowest.direction)
-				ret = f"{direct:03d}{speed:02d}KT"
-			# @todo add gusting later
+				logger.warning("no wind layer with altitude")
 		return ret
 
 	def is_cavok(self) -> bool:
 		# needs refining according to METAR conventions
 		# 1. look at current overall visibility
-		dist = round(self.weather.visibility * 1609)  ## m
-		nocov = True
+		nocov = False
+		if self.weather.visibility is not None:
+			dist = round(self.weather.visibility * 1609)  ## m
+			nocov = True
 		# 2. look at each cloud layer coverage
 		self.sort_layers_by_alt()
 		i = 0
@@ -270,10 +303,14 @@ class XPWeather:
 
 	def getVisibility(self):
 		# We use SI, no statute miles
-		dist = round(self.weather.visibility * 1609)  ## m
-		if dist > 9999:
-			return "9999"
-		dist = 100 * round(dist / 100)
+		if self.weather.visibility is not None:
+			dist = round(self.weather.visibility * 1609)  ## m
+			if dist > 9999:
+				return "9999"
+			dist = 100 * round(dist / 100)
+			return f"{dist:04d}"
+		else:
+			return "NOVIS"
 
 	def getRVR(self):
 		return ""

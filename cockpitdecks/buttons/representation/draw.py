@@ -862,7 +862,8 @@ class Switch(SwitchBase):
 			if self.label_opposite:
 				align="left"
 				anchor="lm"
-			draw.text((ICON_SIZE, ICON_SIZE - self.switch_length),
+			hloc = ICON_SIZE + self.tick_label_space
+			draw.text((hloc, ICON_SIZE - self.switch_length),
 					  text=self.tick_labels[0],
 					  font=font,
 					  anchor=anchor,
@@ -870,14 +871,14 @@ class Switch(SwitchBase):
 					  fill=self.tick_label_color)
 			n = 1
 			if self.three_way:
-				draw.text((ICON_SIZE, ICON_SIZE),
+				draw.text((hloc, ICON_SIZE),
 						  text=self.tick_labels[1],
 						  font=font,
 						  anchor=anchor,
 						  align=align,
 						  fill=self.tick_label_color)
 				n = 2
-			draw.text((ICON_SIZE, ICON_SIZE + self.switch_length),
+			draw.text((hloc, ICON_SIZE + self.switch_length),
 					  text=self.tick_labels[n],
 					  font=font,
 					  anchor=anchor,
@@ -887,7 +888,8 @@ class Switch(SwitchBase):
 
 		# Horizontal
 		# Equally space labels (centers) inside button width - 2*inside (for borders)
-		draw.text((ICON_SIZE - ICON_SIZE/2 + inside, ICON_SIZE),
+		vloc = ICON_SIZE + self.tick_label_space
+		draw.text((ICON_SIZE - ICON_SIZE/2 + inside, vloc),
 				  text=self.tick_labels[0],
 				  font=font,
 				  anchor="lm",
@@ -895,14 +897,14 @@ class Switch(SwitchBase):
 				  fill=self.tick_label_color)
 		n = 1
 		if self.three_way:
-			draw.text((ICON_SIZE, ICON_SIZE),
+			draw.text((ICON_SIZE, vloc),
 					  text=self.tick_labels[1],
 					  font=font,
 					  anchor="mm",
 					  align="center",
 					  fill=self.tick_label_color)
 			n = 2
-		draw.text((ICON_SIZE + ICON_SIZE/2 - inside, ICON_SIZE),
+		draw.text((ICON_SIZE + ICON_SIZE/2 - inside, vloc),
 				  text=self.tick_labels[n],
 				  font=font,
 				  anchor="rm",

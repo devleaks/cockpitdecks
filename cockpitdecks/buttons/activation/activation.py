@@ -159,12 +159,6 @@ class Activation:
             return False
         return True
 
-    def dataref_changed(self, dataref: "Dataref"):
-        """
-        Hook added for dataref batch handling
-        """
-        pass
-
     def inspect(self, what: str = None):
         logger.info(f"{type(self).__name__}:")
         logger.info(f"{self.is_valid()}")

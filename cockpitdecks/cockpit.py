@@ -127,6 +127,8 @@ class Cockpit(DatarefListener):
 			logger.info(f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
 		elif what.startswith("datarefs"):
 			self.inspect_datarefs(what)
+		elif what == "monitored":
+			self.inspect_monitored(what)
 		else:
 			for v in self.cockpit.values():
 				v.inspect(what)
@@ -140,6 +142,10 @@ class Cockpit(DatarefListener):
 						logger.info(f"	{l.name}")
 		else:
 			logger.info(f"to do")
+
+	def inspect_monitored(self, what: str = None):
+		for dref in self.sim.datarefs.values():
+			logger.info(f"{dref}")
 
 	def scan_devices(self):
 		if len(DECK_TYPES) == 0:

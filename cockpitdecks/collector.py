@@ -10,7 +10,8 @@ from cockpitdecks.simulator import DatarefListener, INTERNAL_DATAREF_PREFIX
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
+MAX_COLLECTION_SIZE = 20
+DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
 TIMEOUT_TICKER = "sim/cockpit2/clock_timer/zulu_time_minutes"
 TIMEOUT_TIME   = 10 # seconds
 TOO_OLD = 600       # seconds, collections that did not refresh within that default time need refreshing.
@@ -19,35 +20,52 @@ PACE_LOAD   = 0.5   # secs
 PACE_UNLOAD = 0.5
 
 
+class DatarefCollectionListener(ABC):
+    # To get notified when a dataref has changed.
+
+    def __init__(self):
+        self.name = "unnamed"
+
+    @abstractmethod
+    def dataref_collection_changed(self, dataref_collection):
+        pass
+
+
 class DatarefCollection:
     """
     A collection of datarefs that gets monitored by the simulator as a collection.
     When all datarefs in collection have been updated, collection is considered updated
     and stops collecting dataref values.
     """
-    def __init__(self, datarefs, name: str, collector, expire: int = 300):
+    def __init__(self, datarefs, name: str, sim, expire: int = 300):
 
-        self.collector = collector
+        self.sim = sim
         self.name = name
-        self.datarefs = datarefs
-        self.expire = expire    # seconds
+        self.set_dataref = None
+
+        self.datarefs = datarefs    # { path: Dataref() }
+        if len(self.datarefs) > MAX_COLLECTION_SIZE:
+            logger.warning(f"collection larger than {MAX_COLLECTION_SIZE}, not all datarefs collected")
+            self.datarefs = dict(itertools.islice(self.datarefs.items(), 0, MAX_COLLECTION_SIZE))
+        self.expire = expire        # seconds
 
         # Working variables
         self.listeners = []
         self.last_loaded = None
         self.last_unloaded = None
         self.last_completed = None
-        self.nice = 0  # I <3 Unix.
+        self.nice = 1  # I <3 Unix.
 
-    def expired(self, how_old: int = TOO_OLD) -> bool:
-        # Collection was last collected more than how_old seconds,
+    def expired(self) -> bool:
+        # Collection was last collected more than expired seconds,
         # it should be refreshed.
         # If collection was never entirely collected, it is expired (~needs collecting)
         # Increases nice value each time found expired
         if self.last_completed is None:
             self.nice = self.nice + 1
             return True
-        r = self.last_completed < now() - timedelta(seconds=how_old)
+        expire = self.expire if self.expire is not None else DEFAULT_COLLECTION_EXPIRATION
+        r = self.last_completed < now() - timedelta(seconds=expire)
         if r:
             self.nice = self.nice + 1
             logger.debug(f"collection {self.name} expired ({self.nice})")
@@ -57,24 +75,25 @@ class DatarefCollection:
         # Collection update is stalled for more than how_old seconds
         r = self.is_loaded and (self.last_loaded < now() - timedelta(seconds=how_old))
         if r:
-            logger.debug(f"collection {self.name} did not progress for {how_old} seconds")
+            logger.debug(f"collection {self.name} did not progress for at least {how_old} seconds")
         return r
 
     def is_collected(self) -> bool:
         if self.last_loaded is None:
             return False
         for d in self.datarefs.values():
-            if d.path not in self.loader.dref_collection.keys():
-                continue
             if d._last_updated is None or d._last_updated < self.last_loaded:
+                # logger.debug(f"{self.name}: {d.path}: {d._last_updated} < {self.last_loaded}")
                 return False
+            # logger.debug(f"{self.name}: {d.path}: {d._last_updated}")
+        logger.debug(f"{self.name} collected")
         return True
 
     def mark_collected(self):
         # Mark collection as collected
         self.last_completed = now()
-        self.nice = 0
-        logger.debug(f"collection {self.name} collected")
+        self.nice = 1
+        logger.info(f"{self.name} collected")
         self.notify()
 
     def mark_needs_collecting(self, threshold = None, force: bool = True):
@@ -90,40 +109,29 @@ class DatarefCollection:
 
     def load(self):
         self.last_loaded = now()
-        self.collector.sim.add_datarefs_to_monitor(self.datarefs)
+        self.sim.add_datarefs_to_monitor(self.datarefs)
         self.is_loaded = True
-        # logger.debug(f"collection {self.name} loaded")
+        logger.debug(f"collection {self.name} loaded")  #  {self.datarefs.keys()}
         time.sleep(PACE_LOAD)
 
     def unload(self):
-        self.collector.sim.remove_datarefs_to_monitor(self.datarefs)
+        self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.is_loaded = False
         self.last_unloaded = now()
         # logger.debug(f"collection {self.name} unloaded")
         time.sleep(PACE_UNLOAD)
 
     def add_listener(self, obj: "DatarefCollectionListener"):
-        # if not isinstance(obj, DatarefCollectionListener):
-        #   logger.warning(f"{self.dataref} not a listener {obj}")
+        if not isinstance(obj, DatarefCollectionListener):
+            logger.warning(f"{self.name} not a listener {obj}")
         if obj not in self.listeners:
             self.listeners.append(obj)
-        logger.debug(f"{self.dataref} added listener ({len(self.listeners)})")
+        logger.debug(f"{self.name} added listener ({len(self.listeners)})")
 
     def notify(self):
         for obj in self.listeners:
             obj.dataref_collection_changed(self)
             logger.log(SPAM_LEVEL, f"{self.name}: notified {obj.name}")
-
-
-class DatarefCollectionListener(ABC):
-    # To get notified when a dataref has changed.
-
-    def __init__(self):
-        self.name = "unnamed"
-
-    @abstractmethod
-    def dataref_collection_changed(self, dataref_collection):
-        pass
 
 
 class DatarefCollectionCollector(DatarefListener):
@@ -136,23 +144,48 @@ class DatarefCollectionCollector(DatarefListener):
         self.collections = {}
         self.current_collection = None
         self.collecting = False
+        self.ticker_dataref = self.sim.get_dataref(TIMEOUT_TICKER)
+        self.ticker_dataref.add_listener(self)
 
         self.init()
 
     def init(self):
-        # this class' dataref_changed() will be called every minute
-        dref = self.sim.get_dataref(TIMEOUT_TICKER)
-        dref.add_listener(self)
+        self.add_ticker()
         logger.debug(f"inited")
 
+    def add_ticker(self):
+        # this class' dataref_changed() will be called every minute
+        self.sim.add_datarefs_to_monitor({self.ticker_dataref.path: self.ticker_dataref})
+        logger.debug(f"ticker started")
+
     def add_collection(self, collection: DatarefCollection):
-        for dref in collection:
-            dref.add_listener(self)  # the collector will be called each time the dataref changes
+        for dref in collection.datarefs.values():
+            dref.add_listener(self)  # the collector dataref_changed() will be called each time the dataref changes
         self.collections[collection.name] = collection
+        logger.debug(f"collection {collection.name} added")
+        if not self.collecting and collection.needs_collecting():
+            self.next_collection()
+            logger.debug(f"started")
 
     def remove_collection(self, collection: DatarefCollection):
+        need_next = False
         if collection.name in self.collections.keys():
+            if self.current_collection.name == collection.name:
+                logger.debug(f"unloading current collection {collection.name} before removal")
+                self.current_collection.unload()
+                self.current_collection = None
+                need_next = True
             del self.collections[collection.name]
+            logger.debug(f"collection {collection.name} removed")
+            if need_next:
+                self.next_collection()
+
+    def remove_all_collections(self):
+        self.terminate(False)  # keep ticker
+        cl = list(self.collections.keys())
+        for c in cl:
+            del self.collections[c]
+        self.collections = {}
 
     def dataref_changed(self, dataref: "Dataref"):
         # logger.debug(f"dataref changed {dataref.path}")
@@ -174,7 +207,7 @@ class DatarefCollectionCollector(DatarefListener):
                 self.next_collection()
 
     def needs_collecting(self):
-        return list(filter(self.collections.values(), lambda x: x.needs_collecting()))
+        return list(filter(lambda x: x.needs_collecting(), self.collections.values()))
 
     def next_collection(self):
         if self.current_collection is not None:
@@ -183,10 +216,18 @@ class DatarefCollectionCollector(DatarefListener):
         needs_collecting = self.needs_collecting()
         if len(needs_collecting) > 0:
             self.collecting = True
-            self.current_collection = random.choice(needs_collecting, weights=[x.nice for x in needs_collecting])
+            self.current_collection = random.choices(needs_collecting, weights=[x.nice for x in needs_collecting])[0] # choices returns a list()
             self.current_collection.load()
             logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")
         else:
             self.collecting = False
             logger.debug(f"no collection to update")
 
+    def terminate(self, notify = True):
+        if self.current_collection is not None:
+            self.current_collection.unload()
+            self.current_collection = None
+        self.collecting = False
+        if notify:
+            self.sim.remove_datarefs_to_monitor({self.ticker_dataref.path: self.ticker_dataref})
+            logger.debug(f"terminated")

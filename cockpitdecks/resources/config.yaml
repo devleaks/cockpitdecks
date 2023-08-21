@@ -30,24 +30,24 @@ roundings:
 
     # This is for Region Real Weather,
     # it does not need to be updated frequently...
-    sim/weather/region/atmosphere_alt_levels_m: 1
+    sim/weather/region/atmosphere_alt_levels_m[*]: 1
     sim/weather/region/change_mode: 1
-    sim/weather/region/cloud_base_msl_m: 1
-    sim/weather/region/cloud_coverage_percent: 1
-    sim/weather/region/cloud_tops_msl_m: 1
-    sim/weather/region/cloud_type: 1
-    sim/weather/region/dewpoint_deg_c: 1
+    sim/weather/region/cloud_base_msl_m[*]: 1
+    sim/weather/region/cloud_coverage_percent[*]: 1
+    sim/weather/region/cloud_tops_msl_m[*]: 1
+    sim/weather/region/cloud_type[*]: 1
+    sim/weather/region/dewpoint_deg_c[*]: 1
     sim/weather/region/qnh_base_elevation: 1
     sim/weather/region/rain_percent: 1
     sim/weather/region/runway_friction: 1
     sim/weather/region/sealevel_pressure_pas: 1
     sim/weather/region/sealevel_temperature_c: 1
-    sim/weather/region/shear_direction_degt: 1
-    sim/weather/region/shear_speed_msc: 1
-    sim/weather/region/temperature_altitude_msl_m: 1
-    sim/weather/region/temperatures_aloft_deg_c: 1
+    sim/weather/region/shear_direction_degt[*]: 1
+    sim/weather/region/shear_speed_msc[*]: 1
+    sim/weather/region/temperature_altitude_msl_m[*]: 1
+    sim/weather/region/temperatures_aloft_deg_c[*]: 1
     sim/weather/region/thermal_rate_ms: 1
-    sim/weather/region/turbulence: 1
+    sim/weather/region/turbulence[*]: 1
     sim/weather/region/update_immediately: 1
     sim/weather/region/variability_pct: 1
     sim/weather/region/visibility_reported_sm: 1
@@ -56,40 +56,40 @@ roundings:
     sim/weather/region/wave_length: 1
     sim/weather/region/wave_speed: 1
     sim/weather/region/weather_source: 1
-    sim/weather/region/wind_altitude_msl_m: 1
-    sim/weather/region/wind_direction_degt: 1
-    sim/weather/region/wind_speed_msc: 1
+    sim/weather/region/wind_altitude_msl_m[*]: 1
+    sim/weather/region/wind_direction_degt[*]: 1
+    sim/weather/region/wind_speed_msc[*]: 1
 
     sim/weather/aircraft/altimeter_temperature_error: 1
     sim/weather/aircraft/barometer_current_pas: 1
-    sim/weather/aircraft/cloud_base_msl_m: 1
-    sim/weather/aircraft/cloud_coverage_percent: 1
-    sim/weather/aircraft/cloud_tops_msl_m: 1
-    sim/weather/aircraft/cloud_type: 1
-    sim/weather/aircraft/dewpoint_deg_c: 1
+    sim/weather/aircraft/cloud_base_msl_m[*]: 1
+    sim/weather/aircraft/cloud_coverage_percent[*]: 1
+    sim/weather/aircraft/cloud_tops_msl_m[*]: 1
+    sim/weather/aircraft/cloud_type[*]: 1
+    sim/weather/aircraft/dewpoint_deg_c[*]: 1
     sim/weather/aircraft/gravity_mss: 1
     sim/weather/aircraft/precipitation_on_aircraft_ratio: 1
     sim/weather/aircraft/qnh_pas: 1
     sim/weather/aircraft/relative_humidity_sealevel_percent: 1
-    sim/weather/aircraft/shear_direction_degt: 1
-    sim/weather/aircraft/shear_speed_kts: 1
+    sim/weather/aircraft/shear_direction_degt[*]: 1
+    sim/weather/aircraft/shear_speed_kts[*]: 1
     sim/weather/aircraft/speed_sound_ms: 1
     sim/weather/aircraft/temperature_ambient_deg_c: 1
     sim/weather/aircraft/temperature_leadingedge_deg_c: 1
-    sim/weather/aircraft/temperatures_aloft_deg_c: 1
+    sim/weather/aircraft/temperatures_aloft_deg_c[*]: 1
     sim/weather/aircraft/thermal_rate_ms: 1
-    sim/weather/aircraft/turbulence: 1
+    sim/weather/aircraft/turbulence[*]: 1
     sim/weather/aircraft/visibility_reported_sm: 1
     sim/weather/aircraft/wave_amplitude: 1
     sim/weather/aircraft/wave_dir: 1
     sim/weather/aircraft/wave_length: 1
     sim/weather/aircraft/wave_speed: 1
-    sim/weather/aircraft/wind_altitude_msl_m: 1
-    sim/weather/aircraft/wind_direction_degt: 1
+    sim/weather/aircraft/wind_altitude_msl_m[*]: 1
+    sim/weather/aircraft/wind_direction_degt[*]: 1
     sim/weather/aircraft/wind_now_x_msc: 1
     sim/weather/aircraft/wind_now_y_msc: 1
     sim/weather/aircraft/wind_now_z_msc: 1
-    sim/weather/aircraft/wind_speed_kts: 1
+    sim/weather/aircraft/wind_speed_kts[*]: 1
     sim/weather/aircraft/wind_speed_msc: 1
 
 slow-datarefs:

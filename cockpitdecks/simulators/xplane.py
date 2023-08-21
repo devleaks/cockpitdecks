@@ -12,7 +12,7 @@ import datetime
 from cockpitdecks import SPAM_LEVEL, AIRCRAFT_DATAREF_IPC
 from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
 from cockpitdecks.button import Button
-from .dcc import DatarefCollectionCollector
+from cockpitdecks.simulator import DatarefCollectionCollector
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
@@ -261,6 +261,7 @@ class XPlane(Simulator, XPlaneBeacon):
 		# list of requested datarefs with index number
 		self.datarefidx = 0
 		self.datarefs = {} # key = idx, value = dataref
+		self._max_monitored = 0
 		self.init()
 
 	def init(self):
@@ -350,6 +351,8 @@ class XPlane(Simulator, XPlaneBeacon):
 			idx = self.datarefidx
 			self.datarefs[self.datarefidx] = dataref
 			self.datarefidx += 1
+
+		self._max_monitored = max(self._max_monitored, len(self.datarefs))
 
 		cmd = b"RREF\x00"
 		string = dataref.encode()
@@ -482,8 +485,6 @@ class XPlane(Simulator, XPlaneBeacon):
 			logger.warning(f"no connection")
 			logger.debug(f"would add {self.remove_local_datarefs(datarefs.keys())}")
 			return
-		# Add aircraft path
-		datarefs[AIRCRAFT_DATAREF_IPC] = self.get_dataref(AIRCRAFT_DATAREF_IPC)
 		# Add those to monitor
 		super().add_datarefs_to_monitor(datarefs)
 		prnt = []
@@ -493,16 +494,21 @@ class XPlane(Simulator, XPlaneBeacon):
 				continue
 			if self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT)):
 				prnt.append(d.path)
+
+		# Add aircraft
+		dref_ipc = self.get_dataref(AIRCRAFT_DATAREF_IPC)
+		if self.add_dataref_to_monitor(dref_ipc.path, freq=self.slow_datarefs.get(dref_ipc.path, DATA_SENT)):
+			prnt.append(dref_ipc.path)
+			super().add_datarefs_to_monitor({dref_ipc.path: dref_ipc})
+
 		logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
-		logger.debug(">>>>> monitoring++", len(self.datarefs))
+		logger.debug(f">>>>> monitoring++{len(self.datarefs)}/{self._max_monitored}")
 
 	def remove_datarefs_to_monitor(self, datarefs):
 		if not self.connected and len(self.datarefs_to_monitor) > 0:
 			logger.warning(f"no connection")
-			logger.debug(f"would remove {datarefs.keys()}")
+			logger.debug(f"would remove {datarefs.keys()}/{self._max_monitored}")
 			return
-		# Add aircraft path
-		datarefs[AIRCRAFT_DATAREF_IPC] = self.get_dataref(AIRCRAFT_DATAREF_IPC)
 		# Add those to monitor
 		prnt = []
 		for d in datarefs.values():
@@ -517,9 +523,16 @@ class XPlane(Simulator, XPlaneBeacon):
 					logger.debug(f"{d.path} monitored {self.datarefs_to_monitor[d.path]} times")
 			else:
 				logger.debug(f"no need to remove {d.path}")
+
+		# Add aircraft path
+		dref_ipc = self.get_dataref(AIRCRAFT_DATAREF_IPC)
+		if self.add_dataref_to_monitor(dref_ipc.path, freq=0):
+			prnt.append(dref_ipc.path)
+			super().remove_datarefs_to_monitor({dref_ipc.path: dref_ipc})
+
 		logger.debug(f"removed {prnt}")
 		super().remove_datarefs_to_monitor(datarefs)
-		logger.debug(">>>>> monitoring--", len(self.datarefs))
+		logger.debug(f">>>>> monitoring--{len(self.datarefs)}")
 
 	def remove_all_datarefs(self):
 		if not self.connected and len(self.all_datarefs) > 0:
@@ -530,6 +543,32 @@ class XPlane(Simulator, XPlaneBeacon):
 		# self.remove_datarefs_to_monitor(self.all_datarefs)
 		super().remove_all_datarefs()
 
+	def add_collections_to_monitor(self, collections):
+		# if not self.connected:
+		# 	logger.warning(f"no connection")
+		# 	logger.debug(f"would add collection {collections.keys()} to monitor")
+		# 	return
+		for k, v in collections.items():
+			self.collector.add_collection(v)
+			logger.debug(f"added collection {k}")
+
+	def remove_collections_to_monitor(self, collections):
+		# if not self.connected:
+		# 	logger.warning(f"no connection")
+		# 	logger.debug(f"would remove collection {collections.keys()} from monitor")
+		# 	return
+		for k, v in collections.items():
+			self.collector.remove_collection(v)
+			logger.debug(f"removed collection {k}")
+
+	def remove_all_collections(self):
+		# if not self.connected:
+		# 	logger.warning(f"no connection")
+		# 	logger.debug(f"would remove all collections from monitor")
+		# 	return
+		self.collector.remove_all_collections()
+		logger.debug(f"removed all collections from monitor")
+
 	def add_all_datarefs_to_monitor(self):
 		if not self.connected:
 			logger.warning(f"no connection")
@@ -539,7 +578,11 @@ class XPlane(Simulator, XPlaneBeacon):
 		for path in self.datarefs_to_monitor.keys():
 			if self.add_dataref_to_monitor(path, freq=DATA_SENT):
 				prnt.append(path)
-		logger.log(SPAM_LEVEL, f"add_all_datarefs_to_monitor: added {prnt}")
+		logger.log(SPAM_LEVEL, f"added {prnt}")
+
+		# Add collector ticker
+		self.collector.add_ticker()
+		logger.log(SPAM_LEVEL, f"added collector ticker")
 
 	def cleanup(self):
 		"""
@@ -585,6 +628,7 @@ class XPlane(Simulator, XPlaneBeacon):
 	#
 	def terminate(self):
 		logger.debug(f"currently {'not ' if self.no_dref_listener is None else ''}running. terminating..")
+		self.remove_all_collections()  # this does not destroy datarefs, only unload current collection
 		self.remove_all_datarefs()
 		logger.info(f"terminating..disconnecting..")
 		self.disconnect()

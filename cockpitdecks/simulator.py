@@ -172,8 +172,8 @@ class Dataref:
 		# loggerDataref.error(f"dataref {self.path} updated")
 
 	def add_listener(self, obj):
-		# if not isinstance(obj, DatarefListener):
-		# 	loggerDataref.warning(f"{self.dataref} not a listener {obj}")
+		if not isinstance(obj, DatarefListener):
+			loggerDataref.warning(f"{self.dataref} not a listener {obj}")
 		if obj not in self.listeners:
 			self.listeners.append(obj)
 		loggerDataref.debug(f"{self.dataref} added listener ({len(self.listeners)})")
@@ -262,10 +262,29 @@ class Simulator(ABC):
 		except RuntimeError:
 			logger.warning(f"detect_changed:", exc_info=True)
 
+
+	def set_rounding(self, dataref):
+		if dataref.path.find("[") > 0:
+			rnd = self.roundings.get(dataref.path)
+			if rnd is not None:
+				dataref.set_round(rounding=rnd)			# rounds this very priecise dataref
+			else:
+				idx = dataref.path.find("[")
+				base = dataref.path[:idx]
+				rnd = self.roundings.get(base+"[*]")  	# rounds all datarefs in array, explicit
+				if rnd is not None:
+					dataref.set_round(rounding=rnd)		# rounds this very priecise dataref
+				# rnd = self.roundings.get(base)  		# rounds all datarefs in array
+				# if rnd is not None:
+				# 	dataref.set_round(rounding=rnd)		# rounds this very priecise dataref
+		else:
+			dataref.set_round(rounding=self.roundings.get(dataref.path))
+
+
 	def register(self, dataref):
 		if dataref.path not in self.all_datarefs:
 			if dataref.exists():
-				dataref.set_round(rounding=self.roundings.get(dataref.path))
+				self.set_rounding(dataref)
 				self.all_datarefs[dataref.path] = dataref
 			else:
 				logger.warning(f"invalid dataref {dataref.path}")
@@ -339,3 +358,6 @@ class Simulator(ABC):
 	@abstractmethod
 	def commandEnd(self, command: Command):
 		pass
+
+from .collector import MAX_COLLECTION_SIZE, DatarefCollection, DatarefCollectionListener, DatarefCollectionCollector
+

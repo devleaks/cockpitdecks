@@ -352,6 +352,7 @@ class Deck(ABC):
 		if page in self.pages.keys():
 			if self.current_page is not None:
 				self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
+				self.cockpit.sim.remove_collections_to_monitor(self.current_page.dataref_collections)
 				self.current_page.clean()
 			logger.debug(f"deck {self.name} ..installing new page..")
 			self.previous_page = self.current_page
@@ -360,6 +361,7 @@ class Deck(ABC):
 			logger.debug(f"..reset device {self.name}..")
 			self.device.reset()
 			self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
+			self.cockpit.sim.add_collections_to_monitor(self.current_page.dataref_collections)
 			self.current_page.render()
 			logger.debug(f"deck {self.name} ..done")
 			logger.info(f"deck {self.name} changed page to {page}")

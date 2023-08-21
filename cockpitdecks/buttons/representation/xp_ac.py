@@ -28,12 +28,21 @@ class AircraftIcon(DrawBase):
 		self._cached = None
 		self._last_updated = None
 		self._acconfig = config.get("aircraft")
+		self._drefcoll = config.get("dataref-collections")
+		self._dataref = None
+		self._array = 0
 
 		DrawBase.__init__(self, config=config, button=button)
 
 	def init(self):
 		if self._inited:
 			return
+		if self._drefcoll is not None:
+			self._collname = self._drefcoll[0].get("name", "unnamed")  # aircraft_icao
+			self._dataref = self._drefcoll[0].get("datarefs", [AIRCRAFT_DATAREF_BASE])[0]
+			self._array = self._drefcoll[0].get("array", AIRCRAFT_DATAREF_SIZE)
+		else:
+			logger.info(f"no dataref")
 		self.notify_aircraft_updated()
 		self._inited = True
 		logger.debug(f"inited")
@@ -45,48 +54,41 @@ class AircraftIcon(DrawBase):
 			self._last_updated = now()
 			logger.info(f"notified of new aircraft {self._ac_count} ({self.aircraft})")
 
-	def get_datarefs(self):
-		if self.datarefs is None:
-			drefs = []
-			for i in range(AIRCRAFT_DATAREF_SIZE):
-				drefs.append(f"{AIRCRAFT_DATAREF_BASE}[{i}]")
-			self.datarefs = drefs
-		return self.datarefs
-
 	def get_aircraft_name(self):
 		return self.fetched_string if self.fetched_string != "" else None
 
-	def updated_recently(self):
-		if self._last_updated is not None:
-			delta = now().timestamp() - self._last_updated.timestamp()
-			return delta < 10  # seconds
-		return False
-
 	def updated(self):
+		def updated_recently(how_long_ago: int = 10):  # secs
+			# prevents multiple notification on startup or during string
+			if self._last_updated is not None:
+				delta = now().timestamp() - self._last_updated.timestamp()
+				return delta < how_long_ago  # seconds
+			return False
+
+		drefs = self.button.sim.collector.collections[self._collname].datarefs
 		# 1. Collect string character per character :-D
 		new_string = ""
 		updated = False
 		cnt = 0
-		for i in range(AIRCRAFT_DATAREF_SIZE):
-			a = self.button.get_dataref_value(f"{AIRCRAFT_DATAREF_BASE}[{i}]")
-			if a is not None:
+		for d in drefs.values():
+			if d.current_value is not None:
 				cnt = cnt + 1
-				c = chr(int(a))
+				c = chr(int(d.current_value))
 				new_string = new_string + c
 		self.fetched_string = new_string
 
-		if cnt < AIRCRAFT_DATAREF_SIZE:  # we did not fetch all chars yet
-			logger.debug(f"received {cnt}/{AIRCRAFT_DATAREF_SIZE}")
+		if cnt < self._array:  # we did not fetch all chars yet
+			logger.debug(f"received {cnt}/{self._array}")
 			return False
-		logger.debug(f"received {cnt}/{AIRCRAFT_DATAREF_SIZE} (completed)")
 
+		logger.debug(f"received {cnt}/{self._array} (completed)")
 		# 2. Has the aircraft changed?
 		ac = self.get_aircraft_name()
 		if ac is not None:
 			updated = self.aircraft != ac
 			if updated:
 				self.aircraft = ac
-				if not self.updated_recently():
+				if not updated_recently():
 					self.notify_aircraft_updated()  # notifies writable dataref
 				else:
 					# self._last_updated should not be None as we reach here

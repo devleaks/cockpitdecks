@@ -20,7 +20,7 @@ from .xpweather import XPWeather
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class XPWeatherIcon(DrawBase):
@@ -40,13 +40,18 @@ class XPWeatherIcon(DrawBase):
 		self.xpweather = None
 		self.weather_icon = None
 
-		self._last_updated = None
+		self._weather_last_updated = None
+		self._icon_last_updated = None
 		self._cache = None
 
 		DrawBase.__init__(self, config=config, button=button)
 
 		# Working variables
-		self.dref_collector = self.button._activation
+		self.collector = self.button.sim.collector
+
+		self.all_collections = ["weather"]
+		self.all_collections = self.all_collections + [f"cloud#{i}" for i in range(3)]
+		self.all_collections = self.all_collections + [f"wind#{i}" for i in range(13)]
 
 	def init(self):
 		if self._inited:
@@ -55,48 +60,59 @@ class XPWeatherIcon(DrawBase):
 		self._inited = True
 		logger.debug(f"inited")
 
+	def collect_all_datarefs(self):
+		drefs = {}
+		for cname in self.all_collections:
+			drefs = drefs | self.collector.collections[cname].datarefs
+		return drefs
+
+	def collect_last_updated(self):
+		last_updated = None
+		for name, collection in [(name, self.collector.collections.get(name)) for name in self.all_collections]:
+
+			if collection is None:
+				logger.debug(f"collection {name} missing")
+				return None
+
+			if collection.last_completed is None:
+				logger.debug(f"collection {name} not completed")
+				return None
+
+			if last_updated is not None:
+				if last_updated < collection.last_completed:
+					last_updated = collection.last_completed
+			else:
+				last_updated = collection.last_completed
+			# logger.debug(f"collection {collection.name} completed at {collection.last_completed}")
+
+		logger.debug(f"all collections completed at {last_updated}")
+		return last_updated
+
+	def dataref_collection_changed(self, dataref_collection):
+		logger.debug(f"{dataref_collection.name} completed")
+		self.update_weather()
+
 	def update_weather(self):
-		if self.dref_collector.last_notified is not None:
-			self.xpweather = XPWeather(self.dref_collector.dref_collection)
-			self.xpweather.print()  # for debugging purpose
+		last_updated = self.collect_last_updated()
+		if last_updated is not None:
+			self.xpweather = XPWeather(self.collect_all_datarefs())
+			# self.xpweather.print()  # for debugging purpose
 			logger.debug(f"XPWeather reconstructed METAR: {self.xpweather.make_metar()}")
 
 			self.weather_icon = self.select_weather_icon()
-			self._upd_count = self._upd_count + 1
-			self._last_updated = now()
+			self._weather_last_updated = now()
 			logger.info(f"updated XP weather at {now().strftime('%H:%M:%S')}")
 			return True
-		# logger.debug(f"Dataref collector has not completed")
+		logger.debug(f"Dataref collector has not completed")
 		return False
 
-	def update(self, force: bool = False) -> bool:
-		"""
-		Creates or updates Metar. Call to avwx may fail, so it is wrapped into try/except block
-
-		:param	  force:  The force
-		:type	   force:  bool
-
-		:returns:   { description_of_the_return_value }
-		:rtype:	 bool
-		"""
+	def is_updated(self) -> bool:
 		self._upd_calls = self._upd_calls + 1
-		updated = False
-		if self._last_updated is None:
-			updated = self.update_weather()
-			if not updated:
-				self.weather_icon = self.select_weather_icon()
-				updated = True # provoke redraw of new random icon
-		else:
-			diff = datetime.now().timestamp() - self._last_updated.timestamp()
-			newd = self.dref_collector.last_notified
-			if diff > XPWeatherIcon.MIN_UPDATE and (self.dref_collector.last_notified > self._last_updated):
-				updated = self.update_weather()
-				# if not updated:  # provoke icon changes when developing
-				# 	self.weather_icon = self.select_weather_icon()
-				# 	updated = True # provoke redraw of new random icon
-			# else:
-			# 	logger.debug(f"XP weather does not need updating")
-		return True
+		if self.update_weather():
+			if self._icon_last_updated is not None:
+				return self._weather_last_updated > self._icon_last_updated
+			return True
+		return False
 
 	def get_image_for_icon(self):
 		"""
@@ -106,9 +122,12 @@ class XPWeatherIcon(DrawBase):
 		"""
 
 		# logger.debug(f"updating ({self._upd_count}/{self._upd_calls})..")
-		if not self.update() and self._cache is not None:
+		if not self.is_updated() and self._cache is not None:
 			logger.debug(f"..not updated, using cache")
 			return self._cache
+
+		self._upd_count = self._upd_count + 1
+		self._icon_last_updated = now()
 
 		image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)					 # annunciator text and leds , color=(0, 0, 0, 0)
 		draw = ImageDraw.Draw(image)
@@ -174,7 +193,11 @@ class XPWeatherIcon(DrawBase):
 			lines.append(f"No weather")
 			return lines
 
-		dt = self.dref_collector.last_notified.strftime("%d %H:%M")
+		lu = self.collect_last_updated()
+		if lu is not None:
+			dt = lu.strftime("%d %H:%M")
+		else:
+			dt = "NO TIME"
 		lines.append(f"{dt} /M:{self.mode}")
 
 		press = round(self.xpweather.weather.qnh / 100)
