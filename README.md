@@ -1,6 +1,6 @@
 # Welcome to Cockpit Deck
 
-Cockpitdecks is a XPPython3 plugin to interface
+Cockpitdecks is a python software to interface
 
 - Elgato Stream Decks
 - Loupedeck LoupedeckLive
@@ -35,6 +35,7 @@ or whatever call your version of Python uses to locate the library.
 ```
 export DYLD_LIBRARY_PATH=/opt/homebrew/lib
 ```
+(Latest versions of Streamdeck tries to locate the library if installed through `brew`)
 
 ## Global packages required by Cockpitdecks
 
