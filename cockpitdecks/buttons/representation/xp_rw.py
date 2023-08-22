@@ -55,7 +55,7 @@ class RealWeatherIcon(DrawBase):
 	def get_datarefs(self):
 		return list(self.weather_datarefs)
 
-	def update(self, force: bool = False) -> bool:
+	def is_updated(self, force: bool = False) -> bool:
 		"""
 		Creates or updates Metar. Call to avwx may fail, so it is wrapped into try/except block
 
@@ -70,17 +70,15 @@ class RealWeatherIcon(DrawBase):
 		if self._last_updated is None:
 			self.weather_icon = self.select_weather_icon()
 			updated = True
-			self._upd_count = self._upd_count + 1
 			self._last_updated = now()
-			logger.info(f"UPDATED: Real weather")
+			logger.info(f"updated Real weather")
 		else:
 			diff = now().timestamp() - self._last_updated.timestamp()
 			if diff > RealWeatherIcon.MIN_UPDATE:
 				self.weather_icon = self.select_weather_icon()
 				updated = True
-				self._upd_count = self._upd_count + 1
 				self._last_updated = now()
-				logger.info(f"UPDATED: Real weather")
+				logger.info(f"updated Real weather")
 			else:
 				logger.debug(f"Real weather does not need updating")
 		return True
@@ -93,9 +91,11 @@ class RealWeatherIcon(DrawBase):
 		"""
 
 		logger.debug(f"updating ({self._upd_count}/{self._upd_calls})..")
-		if not self.update():
+		if not self.is_updated() and self._cache is not None:
 			logger.debug(f"..not updated, using cache")
 			return self._cache
+
+		self._upd_count = self._upd_count + 1
 
 		image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)					 # annunciator text and leds , color=(0, 0, 0, 0)
 		draw = ImageDraw.Draw(image)
@@ -145,7 +145,7 @@ class RealWeatherIcon(DrawBase):
 						  fill=self.label_color)
 				h = h + il
 		else:
-			logger.warning(f"no metar summary ({icao})")
+			logger.warning(f"no summary ({icao})")
 
 		# Paste image on cockpit background and return it.
 		bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather")

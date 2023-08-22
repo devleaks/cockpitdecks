@@ -226,6 +226,8 @@ class Simulator(ABC):
 		self.roundings = {}	# path: int
 		self.slow_datarefs = {}
 
+		self._startup = True
+
 		self.cockpit.set_logging_level(__name__)
 
 	def set_roundings(self, roundings):
@@ -323,7 +325,8 @@ class Simulator(ABC):
 					prnt.append(d.path)
 					del self.datarefs_to_monitor[d.path]
 			else:
-				logger.warning(f"dataref {d.path} not monitored")
+				if not self._startup:
+					logger.warning(f"dataref {d.path} not monitored")
 		logger.debug(f"removed {prnt}")
 		logger.debug(f"currently monitoring {self.datarefs_to_monitor}")
 
@@ -359,5 +362,5 @@ class Simulator(ABC):
 	def commandEnd(self, command: Command):
 		pass
 
-from .collector import MAX_COLLECTION_SIZE, DatarefCollection, DatarefCollectionListener, DatarefCollectionCollector
+from .collector import MAX_COLLECTION_SIZE, DatarefSet, DatarefSetListener, DatarefSetCollector
 

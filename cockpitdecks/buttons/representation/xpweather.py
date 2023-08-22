@@ -1,12 +1,15 @@
 import sys
 import os
+# When we are developing this class, we need this to run it standalone
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..')) # we assume we're in subdir "bin/"
 
+import io
 import re
 import logging
 
 from datetime import datetime, timezone
 from metar import Metar
+from tabulate import tabulate
 
 from cockpitdecks.simulator import Dataref
 from cockpitdecks import to_fl
@@ -16,6 +19,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 logger.setLevel(logging.DEBUG)
 
+WOFN = "wofn.txt"
 
 # Mapping between python class instance attributes and datarefs:
 # weather.baro get dataref "sim/weather/aircraft/barometer_current_pas" current value.
@@ -178,6 +182,11 @@ class XPWeather:
 		for i in range(WIND_LAYERS):
 			self.wind_layers.append(WindLayer(drefs, i))
 
+		self.init()
+
+	def init(self):
+		self.print(level=logging.INFO)  # writes to logger.debug
+
 	def sort_layers_by_alt(self):
 		# only keeps layers with altitude
 		cloud_alts = filter(lambda x: x.base is not None, self.cloud_layers)
@@ -225,21 +234,44 @@ class XPWeather:
 		metar = metar + " " + self.getRemarks()
 		return re.sub(' +', ' ', metar)  # clean multiple spaces
 
-	def print(self):
-		print("=" * 40)
+	def print(self, level = logging.INFO):
+		width = 70
+		output = io.StringIO()
+		print("\n", file=output)
+		print("=" * width, file=output)
+		MARK_LIST = ["DATAREF", "VALUE"]
+		table = []
+		csv = []
+
 		for k, v in DATAREF_WEATHER.items():
-			print(v, getattr(self.weather, k))
+			line = (v, getattr(self.weather, k))
+			table.append(line)  # print(v, getattr(self.weather, k))
+			csv.append(line)
 		i = 0
 		for l in self.cloud_layers:
 			for k, v in DATAREF_CLOUD.items():
-				print(f"{v}[{i}]", getattr(l, k))
+				line = (f"{v}[{i}]", getattr(l, k))  # print(f"{v}[{i}]", getattr(l, k))
+				table.append(line)
+				csv.append(line)
 			i = i + 1
 		i = 0
 		for l in self.wind_layers:
 			for k, v in DATAREF_WIND.items():
-				print(f"{v}[{i}]", getattr(l, k))
+				line = (f"{v}[{i}]", getattr(l, k))  # print(f"{v}[{i}]", getattr(l, k))
+				table.append(line)
+				csv.append(line)
 			i = i + 1
-		print("=" * 40)
+		# table = sorted(table, key=lambda x: x[0])  # absolute emission time
+		print(tabulate(table, headers=MARK_LIST), file=output)
+		print("=" * width, file=output)
+
+		with open(WOFN, "w") as fp:
+			for l in csv:
+				print(l[0], l[1], file=fp)
+
+		contents = output.getvalue()
+		output.close()
+		logger.log(level, f"{contents}")
 
 	def print_cloud_layers_alt(self):
 		i = 0
@@ -378,7 +410,7 @@ class XPWeather:
 # Tests
 if __name__ == '__main__':
 	drefs = {}
-	with open("s.txt", "r") as fp:
+	with open(os.path.join("..", "..", "..", WOFN), "r") as fp:
 		line = fp.readline()
 		line = line.strip().rstrip("\n\r")
 		while line:

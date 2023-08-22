@@ -12,7 +12,7 @@ import datetime
 from cockpitdecks import SPAM_LEVEL, AIRCRAFT_DATAREF_IPC
 from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
 from cockpitdecks.button import Button
-from cockpitdecks.simulator import DatarefCollectionCollector
+from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
@@ -254,7 +254,7 @@ class XPlane(Simulator, XPlaneBeacon):
 		self.cockpit.set_logging_level(__name__)
 
 		XPlaneBeacon.__init__(self)
-		self.collector = DatarefCollectionCollector(self)
+		self.collector = DatarefSetCollector(self)
 
 		self.no_dref_listener = None
 
@@ -582,7 +582,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
 		# Add collector ticker
 		self.collector.add_ticker()
-		logger.log(SPAM_LEVEL, f"added collector ticker")
+		logger.info(f"..dataref sets collector ticking..")
 
 	def cleanup(self):
 		"""

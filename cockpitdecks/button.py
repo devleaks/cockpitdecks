@@ -13,7 +13,7 @@ from datetime import datetime
 
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
-from .simulator import Dataref, DatarefListener, DatarefCollectionListener, INTERNAL_DATAREF_PREFIX
+from .simulator import Dataref, DatarefListener, DatarefSetListener, INTERNAL_DATAREF_PREFIX
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
@@ -28,12 +28,12 @@ PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly b
 VARIABLE_PREFIX = ["button", "state"]
 
 
-class Button(DatarefListener, DatarefCollectionListener):
+class Button(DatarefListener, DatarefSetListener):
 
     def __init__(self, config: dict, page: "Page"):
 
         DatarefListener.__init__(self)
-        DatarefCollectionListener.__init__(self)
+        DatarefSetListener.__init__(self)
         # Definition and references
         self.logging_level = "INFO"
         self._config = config

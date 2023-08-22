@@ -8,7 +8,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener, INTERNAL_DATAREF_PREFIX
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 20
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
@@ -20,7 +20,7 @@ PACE_LOAD   = 0.5   # secs
 PACE_UNLOAD = 0.5
 
 
-class DatarefCollectionListener(ABC):
+class DatarefSetListener(ABC):
     # To get notified when a dataref has changed.
 
     def __init__(self):
@@ -31,7 +31,7 @@ class DatarefCollectionListener(ABC):
         pass
 
 
-class DatarefCollection:
+class DatarefSet:
     """
     A collection of datarefs that gets monitored by the simulator as a collection.
     When all datarefs in collection have been updated, collection is considered updated
@@ -93,7 +93,7 @@ class DatarefCollection:
         # Mark collection as collected
         self.last_completed = now()
         self.nice = 1
-        logger.info(f"{self.name} collected")
+        logger.debug(f"{self.name} collected")
         self.notify()
 
     def mark_needs_collecting(self, threshold = None, force: bool = True):
@@ -121,8 +121,8 @@ class DatarefCollection:
         # logger.debug(f"collection {self.name} unloaded")
         time.sleep(PACE_UNLOAD)
 
-    def add_listener(self, obj: "DatarefCollectionListener"):
-        if not isinstance(obj, DatarefCollectionListener):
+    def add_listener(self, obj: "DatarefSetListener"):
+        if not isinstance(obj, DatarefSetListener):
             logger.warning(f"{self.name} not a listener {obj}")
         if obj not in self.listeners:
             self.listeners.append(obj)
@@ -134,7 +134,7 @@ class DatarefCollection:
             logger.log(SPAM_LEVEL, f"{self.name}: notified {obj.name}")
 
 
-class DatarefCollectionCollector(DatarefListener):
+class DatarefSetCollector(DatarefListener):
     # Class that collects collection of datarefs one at a time to limit the request pressure on the simulator.
     #
     def __init__(self, simulator):
@@ -158,7 +158,7 @@ class DatarefCollectionCollector(DatarefListener):
         self.sim.add_datarefs_to_monitor({self.ticker_dataref.path: self.ticker_dataref})
         logger.debug(f"ticker started")
 
-    def add_collection(self, collection: DatarefCollection):
+    def add_collection(self, collection: DatarefSet):
         for dref in collection.datarefs.values():
             dref.add_listener(self)  # the collector dataref_changed() will be called each time the dataref changes
         self.collections[collection.name] = collection
@@ -167,7 +167,7 @@ class DatarefCollectionCollector(DatarefListener):
             self.next_collection()
             logger.debug(f"started")
 
-    def remove_collection(self, collection: DatarefCollection):
+    def remove_collection(self, collection: DatarefSet):
         need_next = False
         if collection.name in self.collections.keys():
             if self.current_collection.name == collection.name:

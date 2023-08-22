@@ -4,7 +4,7 @@ import logging
 
 from cockpitdecks import ID_SEP, ANNUNCIATOR_STYLES
 from cockpitdecks.resources.color import convert_color
-from cockpitdecks.simulator import DatarefCollection, MAX_COLLECTION_SIZE
+from cockpitdecks.simulator import DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button
 
 logger = logging.getLogger(__name__)
@@ -162,7 +162,7 @@ class Page:
 					logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d} for collection {name}")
 			if len(collection) >= MAX_COLLECTION_SIZE:
 				logger.warning(f"page {self.name}: button {button.name}: collection: {name}: too many datarefs ({len(colldesc[0])}, maximum is {MAX_COLLECTION_SIZE})")
-			dc = DatarefCollection(datarefs=collection, sim=button.sim, name=name)
+			dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
 			dc.add_listener(button)
 			dc.set_dataref = colldesc.get("set_dataref")
 			dc.expire = colldesc.get("expire")

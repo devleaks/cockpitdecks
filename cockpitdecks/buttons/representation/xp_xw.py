@@ -96,7 +96,6 @@ class XPWeatherIcon(DrawBase):
 		last_updated = self.collect_last_updated()
 		if last_updated is not None:
 			self.xpweather = XPWeather(self.collect_all_datarefs())
-			# self.xpweather.print()  # for debugging purpose
 			logger.debug(f"XPWeather reconstructed METAR: {self.xpweather.make_metar()}")
 
 			self.weather_icon = self.select_weather_icon()
@@ -121,7 +120,7 @@ class XPWeatherIcon(DrawBase):
 		Also add a little marker on placeholder/invalid buttons that will do nothing.
 		"""
 
-		# logger.debug(f"updating ({self._upd_count}/{self._upd_calls})..")
+		logger.debug(f"updating ({self._upd_count}/{self._upd_calls})..")
 		if not self.is_updated() and self._cache is not None:
 			logger.debug(f"..not updated, using cache")
 			return self._cache
@@ -177,7 +176,7 @@ class XPWeatherIcon(DrawBase):
 						  fill=self.label_color)
 				h = h + il
 		else:
-			logger.warning(f"no metar summary ({icao})")
+			logger.warning(f"no summary ({icao})")
 
 		# Paste image on cockpit background and return it.
 		bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather")
@@ -198,7 +197,7 @@ class XPWeatherIcon(DrawBase):
 			dt = lu.strftime("%d %H:%M")
 		else:
 			dt = "NO TIME"
-		lines.append(f"{dt} /M:{self.mode}")
+		lines.append(f"{dt} /M:{self.mode[0:4]}")
 
 		press = round(self.xpweather.weather.qnh / 100)
 		lines.append(f"Press: {press}")
