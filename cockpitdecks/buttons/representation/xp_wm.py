@@ -1,3 +1,7 @@
+# ###########################
+# XP Weather METAR
+# Attempts to build a METAR from the weather datarefs
+#
 import sys
 import os
 # When we are developing this class, we need this to run it standalone
@@ -17,13 +21,23 @@ from cockpitdecks import to_fl
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 WOFN = "wofn.txt"
 
+# ######################################################################################
 # Mapping between python class instance attributes and datarefs:
 # weather.baro get dataref "sim/weather/aircraft/barometer_current_pas" current value.
 #
+DATAREF_TIME = {
+    "local_hours": "sim/cockpit2/clock_timer/local_time_hours",
+    "local_minutes": "sim/cockpit2/clock_timer/local_time_minutes",
+    "zulu_hours": "sim/cockpit2/clock_timer/zulu_time_hours",
+    "zulu_minutes": "sim/cockpit2/clock_timer/zulu_time_minutes",
+    "day_of_month": "sim/cockpit2/clock_timer/current_day",
+    "day_of_year": "sim/time/local_date_days"
+}
+
 DATAREF_AIRCRAFT_WEATHER = {
 	"alt_error": "sim/weather/aircraft/altimeter_temperature_error",
 	"baro": "sim/weather/aircraft/barometer_current_pas",
@@ -36,10 +50,10 @@ DATAREF_AIRCRAFT_WEATHER = {
 	"temp_leading_edge": "sim/weather/aircraft/temperature_leadingedge_deg_c",
 	"thermal_rete": "sim/weather/aircraft/thermal_rate_ms",
 	"visibility": "sim/weather/aircraft/visibility_reported_sm",
-	"wave_ampl": "sim/weather/aircraft/wave_amplitude",
-	"wave_dir": "sim/weather/aircraft/wave_dir",
-	"wave_length": "sim/weather/aircraft/wave_length",
-	"wave_speed": "sim/weather/aircraft/wave_speed",
+	# "wave_ampl": "sim/weather/aircraft/wave_amplitude",
+	# "wave_dir": "sim/weather/aircraft/wave_dir",
+	# "wave_length": "sim/weather/aircraft/wave_length",
+	# "wave_speed": "sim/weather/aircraft/wave_speed",
 	"wind_speed": "sim/weather/aircraft/wind_speed_msc"
 }
 
@@ -103,13 +117,15 @@ DATAREF_REGION_WIND = {
 	"shear_dir": "sim/weather/region/shear_direction_degt",
 	"shear_speed": "sim/weather/region/shear_speed_msc"
 }
+#
+# ######################################################################################
 
 DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER
 DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD
 CLOUD_LAYERS = 3
 DATAREF_WIND = DATAREF_AIRCRAFT_WIND
 WIND_LAYERS = 13
-DATAREF = DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
+DATAREF = DATAREF_TIME | DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
 
 
 class DatarefAccessor:
@@ -137,6 +153,10 @@ class CloudLayer(DatarefAccessor):
 		DatarefAccessor.__init__(self, drefs=drefs, index=index)
 
 class Weather(DatarefAccessor):
+	def __init__(self, drefs):
+		DatarefAccessor.__init__(self, drefs=drefs)
+
+class Time(DatarefAccessor):
 	def __init__(self, drefs):
 		DatarefAccessor.__init__(self, drefs=drefs)
 
@@ -185,7 +205,7 @@ class XPWeather:
 		self.init()
 
 	def init(self):
-		self.print(level=logging.INFO)  # writes to logger.debug
+		self.print(level=logging.DEBUG)  # writes to logger.debug
 
 	def sort_layers_by_alt(self):
 		# only keeps layers with altitude
@@ -263,6 +283,8 @@ class XPWeather:
 			i = i + 1
 		# table = sorted(table, key=lambda x: x[0])  # absolute emission time
 		print(tabulate(table, headers=MARK_LIST), file=output)
+		print("-" * width, file=output)
+		print(f"reconstructed METAR: {self.make_metar()}", file=output)
 		print("=" * width, file=output)
 
 		with open(WOFN, "w") as fp:
@@ -345,10 +367,69 @@ class XPWeather:
 			return "NOVIS"
 
 	def getRVR(self):
+		# if station is an airport and airport has runways
 		return ""
 
 	def getPhenomenae(self):
-		return ""
+		# hardest: From
+		# 1 Does it rain, snow? does water come down?
+		# 2 Surface wind
+		# 3 Cloud type, coverage and base of lowest layer
+		# 4 Visibility
+		# Determine:
+		# Heavy/Moderate/Light
+		# Weather::
+		# BC Patches
+		# BL Blowing
+		# DL Distant lightning
+		# DR Drifting
+		# FZ Freezing
+		# MI Shallow
+		# PR Partial
+		# SH Showers
+		# TS Thunderstorm
+		# VC in the Vicinty
+		# Phenomenae::
+		# BR Mist
+		# DU Dust
+		# DS Duststorm
+		# DZ Drizzle
+		# FC Funnel cloud
+		# FG Fog
+		# FU Smoke
+		# GR Hail
+		# GS Small hail/snow pellets
+		# HZ Haze
+		# PL Ice pellets
+		# PO Dust devil
+		# RA Rain
+		# SA Sand
+		# SG Snow grains
+		# SN Snow
+		# SQ Squall
+		# SS Sandstorm
+		# VA Volcanic ash
+		# UP Unidentified precipitation
+		#
+		phenomenon = ""
+		self.sort_layers_by_alt()
+		vis = 9999
+		if self.weather.visibility is not None:
+			vis = round(self.weather.precipitations)  ## m
+		water = 0
+		if self.weather.visibility is not None:
+			water = round(self.weather.precipitations)  ## m
+		lc = self.cloud_layers[0]
+
+		# Mist or fog
+		# Water saturation 100%, temp <= dew point temp
+
+		# Rain
+		# water > 0, friction decreased
+		# may be snow?
+		# if temp < 2, friction decreased "sa lot"
+
+		return phenomenon
 
 	def getClouds(self):
 		clouds = ""
@@ -402,8 +483,11 @@ class XPWeather:
 	def getRemarks(self):
 		return ""
 
-	def parse_metar(self, metar):
-		return metar
+	def get_metar_desc(self, metar = None):
+		if metar is None:
+			metar = self.make_metar()
+		obs = Metar.Metar(metar)
+		return obs.string()
 
 
 
@@ -422,6 +506,7 @@ if __name__ == '__main__':
 			line = fp.readline()
 
 	w = XPWeather(drefs)
+	print(w.get_metar_desc())
 	# w.print()
 	# w.print_cloud_layers_alt()
 	# print("cl base", w.cloud_layer_at(0).base)
@@ -430,7 +515,3 @@ if __name__ == '__main__':
 	# print(w.weather.baro)
 	# print(w.cloud_layers[2].cloud_type)
 	# print(w.wind_layers[7].alt_msl)
-	m = w.make_metar()
-	# print(m)
-	obs = Metar.Metar(m)
-	print(obs.string())

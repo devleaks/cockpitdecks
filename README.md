@@ -37,6 +37,7 @@ export DYLD_LIBRARY_PATH=/opt/homebrew/lib
 ```
 (Latest versions of Streamdeck tries to locate the library if installed through `brew`)
 
+
 ## Global packages required by Cockpitdecks
 
 ```

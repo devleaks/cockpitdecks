@@ -57,7 +57,7 @@ class AircraftIcon(DrawBase):
 	def get_aircraft_name(self):
 		return self.fetched_string if self.fetched_string != "" else None
 
-	def updated(self):
+	def is_updated(self):
 		def updated_recently(how_long_ago: int = 10):  # secs
 			# prevents multiple notification on startup or during string
 			if self._last_updated is not None:
@@ -101,7 +101,7 @@ class AircraftIcon(DrawBase):
 		Label may be updated at each activation since it can contain datarefs.
 		Also add a little marker on placeholder/invalid buttons that will do nothing.
 		"""
-		if not self.updated() and self._cached is not None:
+		if not self.is_updated() and self._cached is not None:
 			return self._cached
 
 		image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)

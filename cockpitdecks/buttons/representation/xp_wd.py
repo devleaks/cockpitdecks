@@ -1,6 +1,19 @@
+# ###########################
+# XP Weather datarefs grouped by categories, or layers.
+#
 # ######################################################
 # REGION DATAREFS
 #
+#
+TIME_DATAREFS = [
+	"sim/cockpit2/clock_timer/local_time_hours"
+	"sim/cockpit2/clock_timer/local_time_minutes"
+	"sim/cockpit2/clock_timer/zulu_time_hours"
+	"sim/cockpit2/clock_timer/zulu_time_minutes"
+	"sim/cockpit2/clock_timer/current_day"
+	"sim/time/local_date_days"
+]
+
 REAL_WEATHER_REGION_DATAREFS = [
 	### ADD current altitude reference (ground, not in flight) for MSL/AGL convertions
 	"sim/weather/region/change_mode",
@@ -13,10 +26,10 @@ REAL_WEATHER_REGION_DATAREFS = [
 	"sim/weather/region/update_immediately",
 	"sim/weather/region/variability_pct",
 	"sim/weather/region/visibility_reported_sm",
-	"sim/weather/region/wave_amplitude",
-	"sim/weather/region/wave_dir",
-	"sim/weather/region/wave_length",
-	"sim/weather/region/wave_speed",
+	# "sim/weather/region/wave_amplitude",
+	# "sim/weather/region/wave_dir",
+	# "sim/weather/region/wave_length",
+	# "sim/weather/region/wave_speed",
 	"sim/weather/region/weather_source",
 ]
 
@@ -82,10 +95,10 @@ REAL_WEATHER_AIRCRAFT_DATAREFS = [
 	"sim/weather/aircraft/temperature_leadingedge_deg_c",
 	"sim/weather/aircraft/thermal_rate_ms",
 	"sim/weather/aircraft/visibility_reported_sm",
-	"sim/weather/aircraft/wave_amplitude",
-	"sim/weather/aircraft/wave_dir",
-	"sim/weather/aircraft/wave_length",
-	"sim/weather/aircraft/wave_speed",
+	# "sim/weather/aircraft/wave_amplitude",
+	# "sim/weather/aircraft/wave_dir",
+	# "sim/weather/aircraft/wave_length",
+	# "sim/weather/aircraft/wave_speed",
 	"sim/weather/aircraft/wind_now_x_msc",
 	"sim/weather/aircraft/wind_now_y_msc",
 	"sim/weather/aircraft/wind_now_z_msc",
