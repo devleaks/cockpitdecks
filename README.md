@@ -45,8 +45,10 @@ $ pip install ruamel.yaml pillow
 If you want to use the Metar/Weather representation on a key, please add:
 
 ```
-$ pip install timezonefinder suntime 'avwx-engine[scipy]'
+$ pip install timezonefinder suntime 'avwx-engine[scipy]' tabulate
 ```
+
+Cockpitdecks will automagically discover the presence of those packages and make weather keys available to cockpit designers.
 
 
 ## Packages required depending on the deck(s) model(s) used
