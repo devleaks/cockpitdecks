@@ -5,7 +5,7 @@ import logging
 from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconSide
 from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
-from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob
+from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
 from .xp_ac import AircraftIcon
 from .xp_rw import RealWeatherIcon
@@ -45,6 +45,7 @@ REPRESENTATIONS = {
     "push-switch": PushSwitch,
     "data": DataIcon,
     "ftg": DrawAnimationFTG,
+    "decor": Decor,
     "real-weather": RealWeatherIcon,
     "xp-weather": XPWeatherIcon,
     "aircraft": AircraftIcon
@@ -78,7 +79,7 @@ except ImportError:
 #   repeat: 6
 #
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
-drawn_buttons = ["data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob", "aircraft", "real-weather", "xp-weather"]
+drawn_buttons = ["decor", "data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob", "aircraft", "real-weather", "xp-weather"]
 
 if "live-weather" in REPRESENTATIONS.keys():
     drawn_buttons.append("live-weather")

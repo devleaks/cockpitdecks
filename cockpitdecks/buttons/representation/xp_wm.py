@@ -486,10 +486,12 @@ class XPWeather:
 	def get_metar_desc(self, metar = None):
 		if metar is None:
 			metar = self.make_metar()
-		obs = Metar.Metar(metar)
-		return obs.string()
-
-
+		try:
+			obs = Metar.Metar(metar)
+			return obs.string()
+		except:
+			logger.warning(f"failed to parse METAR {metar}",  exc_info=True)
+			return f"METAR parsing failed ({metar})"
 
 # Tests
 if __name__ == '__main__':

@@ -101,6 +101,7 @@ class XPWeatherIcon(XPWeatherBaseIcon):
 			self._weather_last_updated = now()
 			# self.notify_weather_updated()
 			logger.info(f"XP weather updated: {self._cache_metar}")
+			logger.debug(self.xpweather.get_metar_desc(self._cache_metar))
 			return True
 		logger.debug(f"Dataref collector has not completed")
 		return False

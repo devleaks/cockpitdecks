@@ -35,6 +35,15 @@ class DrawBase(Icon):
 		self.cockpit_texture = config.get("cockpit-texture", self.button.page.cockpit_texture)
 		self.cockpit_color = config.get("cockpit-color", self.button.page.cockpit_color)
 
+		# Reposition for move_and_send()
+		self.draw_scale = float(config.get("scale", 1))
+		if self.draw_scale < 0.5 or self.draw_scale > 2:
+			logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
+			self.draw_scale = 1
+		self.draw_left = config.get("left", 0) - config.get("right", 0)
+		self.draw_up = config.get("up", 0) - config.get("down", 0)
+
+
 	def double_icon(self, width: int = ICON_SIZE*2, height: int = ICON_SIZE*2):
 		image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
 		draw = ImageDraw.Draw(image)
@@ -72,6 +81,31 @@ class DrawBase(Icon):
 		image = Image.new(mode="RGBA", size=(width, height), color=self.cockpit_color)
 		logger.debug(f"using uniform cockpit color {self.cockpit_color}")
 		return image
+
+	def move_and_send(self, image):
+		# 1. Scale whole drawing if requested
+		if self.draw_scale != 1:
+			l = int(image.width*self.draw_scale)
+			image = image.resize((l, l))
+		# 2. Move whole drawing around
+		a = 1
+		b = 0
+		c = self.draw_left
+		d = 0
+		e = 1
+		f = self.draw_up
+		if c != 0 or f != 0:
+			image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
+		# Crop center to ICON_SIZExICON_SIZE
+		cl = image.width/2 - ICON_SIZE/2
+		ct = image.height/2 - ICON_SIZE/2
+		image = image.crop((cl, ct, cl+ICON_SIZE, ct+ICON_SIZE))
+
+		# Paste image on cockpit background and return it.
+		bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
+		bg.alpha_composite(image)
+		return bg.convert("RGB")
+
 
 class DataIcon(DrawBase):
 
@@ -317,8 +351,11 @@ class SwitchBase(DrawBase):
 
 		# Handle needle
 		self.needle_width = self.switch.get("needle-width", 8)
-		self.needle_length = self.switch.get("needle-length", 50)  # % of radius
-		self.needle_length = int(self.needle_length * self.button_size / 200)
+		self.needle_start = self.switch.get("needle-start", 10)  	# from center of button
+		self.needle_length = self.switch.get("needle-length", 50)  	# end = start + length
+		self.needle_tip = self.switch.get("needle-tip")				# arro, arri, ball
+		self.needle_tip_size = self.switch.get("needle-tip-size", 5)
+		# self.needle_length = int(self.needle_length * self.button_size / 200)
 		self.needle_color = self.switch.get("needle-color", NEEDLE_COLOR)
 		self.needle_color = convert_color(self.needle_color)
 		# Options
@@ -327,38 +364,6 @@ class SwitchBase(DrawBase):
 		self.needle_underline_color = convert_color(self.needle_underline_color)
 
 		self.marker_color = self.switch.get("marker-color", MARKER_COLOR)
-
-		# Reposition
-		self.draw_scale = float(self.switch.get("scale", 1))
-		if self.draw_scale < 0.5 or self.draw_scale > 2:
-			logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
-			self.draw_scale = 1
-		self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
-		self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
-
-	def move_and_send(self, image):
-		# 1. Scale whole drawing if requested
-		if self.draw_scale != 1:
-			l = int(image.width*self.draw_scale)
-			image = image.resize((l, l))
-		# 2. Move whole drawing around
-		a = 1
-		b = 0
-		c = self.draw_left
-		d = 0
-		e = 1
-		f = self.draw_up
-		if c != 0 or f != 0:
-			image = image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f))
-		# Crop center to ICON_SIZExICON_SIZE
-		cl = image.width/2 - ICON_SIZE/2
-		ct = image.height/2 - ICON_SIZE/2
-		image = image.crop((cl, ct, cl+ICON_SIZE, ct+ICON_SIZE))
-
-		# Paste image on cockpit background and return it.
-		bg = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
-		bg.alpha_composite(image)
-		return bg.convert("RGB")
 
 
 class CircularSwitch(SwitchBase):
@@ -506,19 +511,36 @@ class CircularSwitch(SwitchBase):
 			overlay.alpha_composite(home)
 			overlay = overlay.rotate(red(-angle))  # ;-)
 			image.alpha_composite(overlay)
-			# Overlay tick mark on top of button
+			# Overlay tick/line/needle mark on top of button
+			start = self.needle_start
+			# end = handle_height + side / 2 - r / 2
+			length = self.needle_length
+			end = start + length
+			xr = center[0] - start * math.sin(math.radians(angle))
+			yr = center[1] + start * math.cos(math.radians(angle))
+			xc = center[0] - end * math.sin(math.radians(angle))
+			yc = center[1] + end * math.cos(math.radians(angle))
 			if self.needle_underline_width > 0:
-				start = r
-				end = handle_height + side / 2 - r / 2
-				xr = center[0] - start * math.sin(math.radians(angle))
-				yr = center[1] + start * math.cos(math.radians(angle))
-				length = self.button_size/2 - self.needle_length
-				xc = center[0] - end * math.sin(math.radians(angle))
-				yc = center[1] + end * math.cos(math.radians(angle))
 				draw.line([(xc, yc), (xr, yr)],
 						  width=self.needle_width+2*self.needle_underline_width,
 						  fill=self.needle_underline_color)
-				draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
+			draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
+			# needle tip
+			if self.needle_tip is not None:
+				# print("tip1", self.switch_style, self.button_size, self.needle_start, self.needle_length, self.needle_tip, self.needle_tip_size)
+				tip_image, tip_draw = self.double_icon()
+				if self.needle_tip.startswith("arr"):
+					orient = -1 if self.needle_tip == "arri" else 1
+					tip = ((3*self.needle_tip_size, 0), (0, 4*self.needle_tip_size*orient), (-3*self.needle_tip_size, 0), (3*self.needle_tip_size, 0))
+					tip = list(((center[0]+x[0], center[1]+x[1]) for x in tip))
+					tip_draw.polygon(tip, fill=self.needle_color)  # , outline="red", width=3
+				else:
+					tl = [center[0]-self.needle_tip_size/2, center[1]-self.needle_tip_size/2]
+					br = [center[0]+self.needle_tip_size/2, center[1]+self.needle_tip_size/2]
+					tip_draw.ellipse(tl+br, fill=self.needle_color, outline="red", width=3)
+			tip_image = tip_image.rotate(red(-angle), translate=(-end*math.sin(math.radians(angle)), end*math.cos(math.radians(angle))))  # ;-)
+			image.alpha_composite(tip_image)
+
 		else:  # Just a needle
 			xr = center[0] - self.button_size/2 * math.sin(math.radians(angle))
 			yr = center[1] + self.button_size/2 * math.cos(math.radians(angle))
@@ -531,6 +553,21 @@ class CircularSwitch(SwitchBase):
 						  width=self.needle_width+2*self.needle_underline_width,
 						  fill=self.needle_underline_color)
 			draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
+			# needle tip
+			if self.needle_tip is not None:
+				# print("tip2", self.switch_style, self.button_size, self.needle_start, self.needle_length, self.needle_tip, self.needle_tip_size)
+				tip_image, tip_draw = self.double_icon()
+				if self.needle_tip.startswith("arr"):
+					orient = -1 if self.needle_tip == "arri" else 1
+					tip = ((3*self.needle_tip_size, 0), (0, 4*self.needle_tip_size*orient), (-3*self.needle_tip_size, 0), (3*self.needle_tip_size, 0))
+					tip = list(((center[0]+x[0], center[1]+x[1]) for x in tip))
+					tip_draw.polygon(tip, fill=self.needle_color)  # , outline="red", width=3
+				else:
+					tl = [center[0]-self.needle_tip_size/2, center[1]-self.needle_tip_size/2]
+					br = [center[0]+self.needle_tip_size/2, center[1]+self.needle_tip_size/2]
+					tip_draw.ellipse(tl+br, fill=self.needle_color, outline="red", width=3)
+			tip_image = tip_image.rotate(red(-angle), translate=(-end*math.sin(math.radians(angle)), end*math.cos(math.radians(angle))))  # ;-)
+			image.alpha_composite(tip_image)
 
 		return self.move_and_send(image)
 
@@ -992,6 +1029,7 @@ class Switch(SwitchBase):
 
 		return self.move_and_send(image)
 
+
 class PushSwitch(SwitchBase):
 
 	def __init__(self, config: dict, button: "Button"):
@@ -1093,6 +1131,13 @@ class Knob(SwitchBase):
 		self.rotation = randint(0, 359)
 
 	def set_rotation(self, rotation):
+		"""Rotates a button's drawing
+
+		May be an animation later?
+
+		Args:
+			rotation (float): Rotation of button in degrees
+		"""
 		self.rotation = rotation
 
 	def get_image_for_icon(self):
@@ -1175,3 +1220,92 @@ class Knob(SwitchBase):
 
 
 		return self.move_and_send(base_image)
+
+
+
+DECOR = {
+	"A": "corner upper left",
+	"B": "straight horizontal",
+	"C": "corner upper right",
+	"D": "corner lower left",
+	"E": "corner lower right",
+	"F": "straight vertical",
+	"G": "cross",
+	"+": "cross",
+	"H": "cross over horizontal",
+	"I": "straight vertical",
+	"J": "cross over vertical",
+	"K": "T",
+	"T": "T",
+	"L": "T invert",
+	"M": "T left",
+	"N": "T right",
+}
+
+class Decor(DrawBase):
+
+	def __init__(self, config: dict, button: "Button"):
+
+		DrawBase.__init__(self, config=config, button=button)
+
+		self.decor = config.get("decor")
+
+		self.type = self.decor.get("type", "line")
+		self.code = self.decor.get("code")
+		self.decor_width = self.decor.get("width", 10)
+		self.decor_color = self.decor.get("color", "lime")
+		self.decor_color = convert_color(self.decor_color)
+
+	def get_image_for_icon(self):
+		image, draw = self.double_icon()
+		center = [ICON_SIZE, ICON_SIZE]
+		FULL_WIDTH = 2*ICON_SIZE
+
+		if self.type != "line" or self.code not in DECOR.keys():
+			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill="red", width=int(ICON_SIZE/2))
+			return self.move_and_send(image)
+
+		if self.code == "A":
+			draw.line([(center[0], center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+		if self.code in "BG+J":
+			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+		if self.code == "C":
+			draw.line([(0, center[1]), (ICON_SIZE, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+		if self.code == "D":
+			draw.line([(center[0], center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (center[0], 0)], fill=self.decor_color, width=self.decor_width)
+		if self.code == "E":
+			draw.line([(0, center[1]), (ICON_SIZE, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (center[0], 0)], fill=self.decor_color, width=self.decor_width)
+		if self.code in "FIG+H":
+			draw.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+		if self.code == "H":
+			r = ICON_SIZE/4
+			draw.line([(0, center[1]), (ICON_SIZE-r, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(ICON_SIZE+r, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+			tl = [center[0]-r, center[1]-r]
+			br = [center[0]+r, center[1]+r]
+			draw.arc(tl+br, start=180, end=0, fill=self.decor_color, width=self.decor_width)
+		if self.code == "J":
+			r = ICON_SIZE/4
+			draw.line([(center[0], 0), (center[0], ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], ICON_SIZE+r), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+			tl = [center[0]-r, center[1]-r]
+			br = [center[0]+r, center[1]+r]
+			draw.arc(tl+br, start=90, end=270, fill=self.decor_color, width=self.decor_width)
+		if self.code in "KT":
+			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+		if self.code in "L":
+			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (center[0], 0)], fill=self.decor_color, width=self.decor_width)
+		if self.code in "M":
+			draw.line([(0, center[1]), (ICON_SIZE, center[1])], fill=self.decor_color, width=self.decor_width)
+			draw.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+		if self.code in "N":
+			draw.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
+			draw.line([(center[0], center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+
+		return self.move_and_send(image)
