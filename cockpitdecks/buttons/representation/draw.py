@@ -1222,7 +1222,6 @@ class Knob(SwitchBase):
 		return self.move_and_send(base_image)
 
 
-
 DECOR = {
 	"A": "corner upper left",
 	"B": "straight horizontal",
@@ -1256,56 +1255,143 @@ class Decor(DrawBase):
 		self.decor_color = self.decor.get("color", "lime")
 		self.decor_color = convert_color(self.decor_color)
 
-	def get_image_for_icon(self):
-		image, draw = self.double_icon()
-		center = [ICON_SIZE, ICON_SIZE]
-		FULL_WIDTH = 2*ICON_SIZE
 
-		if self.type != "line" or self.code not in DECOR.keys():
-			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill="red", width=int(ICON_SIZE/2))
+	def get_image_for_icon(self):
+
+		def draw_segment(d, code):
+			# From corners 1
+			if "A" in code:
+				d.line([(0, 0), (ICON_SIZE-r, ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
+			if "C" in code:
+				d.line([(ICON_SIZE+r, ICON_SIZE-r), (FULL_WIDTH, 0)], fill=self.decor_color, width=self.decor_width)
+			if "R" in code:
+				d.line([(ICON_SIZE-r, ICON_SIZE+r), (0, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			if "T" in code:
+				d.line([(ICON_SIZE+r, ICON_SIZE+r), (FULL_WIDTH, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			# From corners 2
+			if "D" in code:
+				d.line([(ICON_SIZE-r, ICON_SIZE-r), (ICON_SIZE-s, ICON_SIZE-s)], fill=self.decor_color, width=self.decor_width)
+			if "E" in code:
+				d.line([(ICON_SIZE+s, ICON_SIZE-s), (ICON_SIZE+r, ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
+			if "P" in code:
+				d.line([(ICON_SIZE-r, ICON_SIZE+r), (ICON_SIZE-s, ICON_SIZE+s)], fill=self.decor_color, width=self.decor_width)
+			if "Q" in code:
+				d.line([(ICON_SIZE+s, ICON_SIZE+s), (ICON_SIZE+r, ICON_SIZE+r)], fill=self.decor_color, width=self.decor_width)
+			# From corners 3
+			if "A" in code:
+				d.line([(ICON_SIZE-r, ICON_SIZE-r), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			if "C" in code:
+				d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE+r, ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
+			if "R" in code:
+				d.line([(ICON_SIZE-r, ICON_SIZE+r), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			if "T" in code:
+				d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE+r, ICON_SIZE+r)], fill=self.decor_color, width=self.decor_width)
+			# Horizontal bars
+			if "I" in code:
+				d.line([(0, ICON_SIZE), (ICON_SIZE-r, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			if "J" in code:
+				d.line([(ICON_SIZE-r, ICON_SIZE), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			if "K" in code:
+				d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE+r, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			if "L" in code:
+				d.line([(ICON_SIZE+r, ICON_SIZE), (FULL_WIDTH, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			# Vertical bars
+			if "B" in code:
+				d.line([(ICON_SIZE, 0), (ICON_SIZE, ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
+			if "G" in code:
+				d.line([(ICON_SIZE, ICON_SIZE-r), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width)
+			if "N" in code:
+				d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE, ICON_SIZE+r)], fill=self.decor_color, width=self.decor_width)
+			if "S" in code:
+				d.line([(ICON_SIZE, ICON_SIZE+r), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			# Circle
+			if "0" in code:
+				d.arc(tl+br, start=180, end=225, fill=self.decor_color, width=self.decor_width)
+			if "1" in code:
+				d.arc(tl+br, start=225, end=270, fill=self.decor_color, width=self.decor_width)
+			if "2" in code:
+				d.arc(tl+br, start=270, end=315, fill=self.decor_color, width=self.decor_width)
+			if "3" in code:
+				d.arc(tl+br, start=315, end=0, fill=self.decor_color, width=self.decor_width)
+			if "4" in code:
+				d.arc(tl+br, start=0, end=45, fill=self.decor_color, width=self.decor_width)
+			if "6" in code:
+				d.arc(tl+br, start=45, end=90, fill=self.decor_color, width=self.decor_width)
+			if "6" in code:
+				d.arc(tl+br, start=90, end=135, fill=self.decor_color, width=self.decor_width)
+			if "7" in code:
+				d.arc(tl+br, start=135, end=180, fill=self.decor_color, width=self.decor_width)
+
+		def draw_line(d, code):
+			if code == "A":
+				d.line([(cw, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			if code in "BG+J":
+				d.line([(0, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+			if code == "C":
+				d.line([(0, ch), (ICON_SIZE, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			if code == "D":
+				d.line([(cw, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (cw, 0)], fill=self.decor_color, width=self.decor_width)
+			if code == "E":
+				d.line([(0, ch), (ICON_SIZE, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (cw, 0)], fill=self.decor_color, width=self.decor_width)
+			if code in "FIG+H":
+				d.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			if code == "H":
+				d.line([(0, ch), (ICON_SIZE-r, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(ICON_SIZE+r, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+				tl = [cw-r, ch-r]
+				br = [cw+r, ch+r]
+				d.arc(tl+br, start=180, end=0, fill=self.decor_color, width=self.decor_width)
+			if code == "J":
+				r = ICON_SIZE/4
+				d.line([(cw, 0), (cw, ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ICON_SIZE+r), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+				d.arc(tl+br, start=90, end=270, fill=self.decor_color, width=self.decor_width)
+			if code in "KT":
+				d.line([(0, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			if code in "L":
+				d.line([(0, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (cw, 0)], fill=self.decor_color, width=self.decor_width)
+			if code in "M":
+				d.line([(0, ch), (ICON_SIZE, ch)], fill=self.decor_color, width=self.decor_width)
+				d.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+			if code in "N":
+				d.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width)
+				d.line([(cw, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width)
+
+
+		image, draw = self.double_icon()
+
+		# Square icons so far...
+		FULL_WIDTH  = 2 * ICON_SIZE
+		FULL_HEIGHT = 2 * ICON_SIZE
+		center = [ICON_SIZE, ICON_SIZE]
+		cw = center[0]
+		ch = center[1]
+		d = int(ICON_SIZE/2)
+		r = int(ICON_SIZE/4)
+		s = int(r * math.sin(math.radians(45)))
+		tl = [cw-r, ch-r]
+		br = [cw+r, ch+r]
+
+		VALID_CODES = ["line", "segment"]
+
+		if self.type not in VALID_CODES:
+			draw.line([(0, ch), (FULL_WIDTH, ch)], fill="red", width=int(ICON_SIZE/2))
 			return self.move_and_send(image)
 
-		if self.code == "A":
-			draw.line([(center[0], center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-		if self.code in "BG+J":
-			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
-		if self.code == "C":
-			draw.line([(0, center[1]), (ICON_SIZE, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-		if self.code == "D":
-			draw.line([(center[0], center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (center[0], 0)], fill=self.decor_color, width=self.decor_width)
-		if self.code == "E":
-			draw.line([(0, center[1]), (ICON_SIZE, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (center[0], 0)], fill=self.decor_color, width=self.decor_width)
-		if self.code in "FIG+H":
-			draw.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-		if self.code == "H":
-			r = ICON_SIZE/4
-			draw.line([(0, center[1]), (ICON_SIZE-r, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(ICON_SIZE+r, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
-			tl = [center[0]-r, center[1]-r]
-			br = [center[0]+r, center[1]+r]
-			draw.arc(tl+br, start=180, end=0, fill=self.decor_color, width=self.decor_width)
-		if self.code == "J":
-			r = ICON_SIZE/4
-			draw.line([(center[0], 0), (center[0], ICON_SIZE-r)], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], ICON_SIZE+r), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-			tl = [center[0]-r, center[1]-r]
-			br = [center[0]+r, center[1]+r]
-			draw.arc(tl+br, start=90, end=270, fill=self.decor_color, width=self.decor_width)
-		if self.code in "KT":
-			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (center[0], FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-		if self.code in "L":
-			draw.line([(0, center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (center[0], 0)], fill=self.decor_color, width=self.decor_width)
-		if self.code in "M":
-			draw.line([(0, center[1]), (ICON_SIZE, center[1])], fill=self.decor_color, width=self.decor_width)
-			draw.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-		if self.code in "N":
-			draw.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_WIDTH)], fill=self.decor_color, width=self.decor_width)
-			draw.line([(center[0], center[1]), (FULL_WIDTH, center[1])], fill=self.decor_color, width=self.decor_width)
+		# SEGMENT
+		if self.type == "segment":
+			draw_segment(draw, self.code)
+			return self.move_and_send(image)
 
+		# LINE
+		if self.code not in DECOR.keys():
+			draw.line([(0, ch), (FULL_WIDTH, ch)], fill="red", width=int(ICON_SIZE/2))
+			return self.move_and_send(image)
+		draw_line(draw, self.code)
 		return self.move_and_send(image)
