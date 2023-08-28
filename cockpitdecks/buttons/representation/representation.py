@@ -384,7 +384,7 @@ class Icon(Representation):
         h = image.height / 2
         if text_position[1] == "t":
             h = inside + text_size / 2
-        elif text_position[1] == "r":
+        elif text_position[1] == "b":
             h = image.height - inside - text_size / 2
         # logger.debug(f"position {(w, h)}")
         draw.multiline_text((w, h),  # (image.width / 2, 15)
