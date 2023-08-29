@@ -18,7 +18,7 @@ __DESCRIPTION__  = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-
 __LICENSE__      = "MIT"
 __LICENSEURL__   = "https://mit-license.org"
 __COPYRIGHT__    = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__      = "7.7.1"
+__version__      = "7.7.2"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__    = "https://github.com/devleaks/cockpitdecks"
@@ -184,5 +184,5 @@ class Config(MutableMapping):
 	def is_valid(self):
 		return self.store is not None and len(self.store) > 1
 
-from .cockpit import Cockpit
+from .cockpit import Cockpit, CockpitBase
 from .simulators.xplane import XPlane
