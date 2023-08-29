@@ -7,9 +7,7 @@ Maintain a "value", and some internal attributes.
 """
 import re
 import logging
-import math
 import sys
-from datetime import datetime
 
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
@@ -24,7 +22,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
-
 VARIABLE_PREFIX = ["button", "state"]
 
 

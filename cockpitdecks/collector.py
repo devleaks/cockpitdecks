@@ -1,11 +1,12 @@
 import logging
 import time
+import itertools
 from abc import ABC, abstractmethod
 from datetime import timedelta
 import random
 
 from cockpitdecks import SPAM_LEVEL, now
-from cockpitdecks.simulator import DatarefListener, INTERNAL_DATAREF_PREFIX
+from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -13,10 +14,10 @@ logger = logging.getLogger(__name__)
 MAX_COLLECTION_SIZE = 20
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
 TIMEOUT_TICKER = "sim/cockpit2/clock_timer/zulu_time_minutes"
-TIMEOUT_TIME   = 10 # seconds
-TOO_OLD = 600       # seconds, collections that did not refresh within that default time need refreshing.
+TIMEOUT_TIME   = 10  # seconds
+TOO_OLD = 600        # seconds, collections that did not refresh within that default time need refreshing.
 
-PACE_LOAD   = 0.5   # secs
+PACE_LOAD   = 0.5    # secs
 PACE_UNLOAD = 0.5
 
 

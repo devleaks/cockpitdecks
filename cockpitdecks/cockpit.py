@@ -4,8 +4,8 @@ import os
 import threading
 import logging
 import pickle
-import pkg_resources
 from queue import Queue
+import pkg_resources
 
 from PIL import Image, ImageFont
 
@@ -14,7 +14,7 @@ from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS,
 from cockpitdecks import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
 from cockpitdecks import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEXTURE, DEFAULT_LOGO, DEFAULT_WALLPAPER
 from cockpitdecks import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
-from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE, DEFAULT_LIGHT_OFF_INTENSITY, ICON_SIZE
+from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE
 from cockpitdecks import Config
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener

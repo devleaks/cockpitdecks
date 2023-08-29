@@ -3,17 +3,14 @@
 import os
 import logging
 import pickle
-import inspect
 
-from time import sleep
-from enum import Enum
 from abc import ABC, abstractmethod
 from functools import reduce
 
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME, COCKPIT_COLOR
+from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, COCKPIT_COLOR
 from cockpitdecks import Config
 
 from cockpitdecks.resources.color import convert_color
@@ -26,6 +23,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 DECKS_FOLDER = "decks"
+
 
 class Deck(ABC):
 	"""

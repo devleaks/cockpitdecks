@@ -2,9 +2,7 @@
 #
 import threading
 import logging
-import time
 from abc import ABC, abstractmethod
-from datetime import datetime
 
 from cockpitdecks import SPAM_LEVEL, now
 
@@ -21,6 +19,7 @@ logger = logging.getLogger(__name__)
 # 
 # The command keywords are not executed, ignored with a warning
 NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]  # all forced to lower cases
+
 
 class Command:
 	"""
