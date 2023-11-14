@@ -10,13 +10,17 @@ loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
 # loggerDataref.setLevel(logging.DEBUG)
 
+loggerCommand = logging.getLogger("Command")
+# loggerCommand.setLevel(SPAM_LEVEL)
+# loggerCommand.setLevel(logging.DEBUG)
+
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
 # logger.setLevel(logging.DEBUG)
 
 # ########################################
 # Command
-# 
+#
 # The command keywords are not executed, ignored with a warning
 NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]  # all forced to lower cases
 
@@ -26,9 +30,9 @@ class Command:
     A Button activation will instruct the simulator software to perform an action.
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
-    def __init__(self, path: str, name: str = None):
 
-        self.path = path            # some/command
+    def __init__(self, path: str, name: str = None):
+        self.path = path  # some/command
         self.name = name
 
     def __str__(self) -> str:
@@ -51,15 +55,14 @@ class Dataref:
     plugins, or other software in general.
     """
 
-    def __init__(self, path: str, is_decimal:bool = False, is_string:bool = False, length:int = None):
-
-        self.path = path            # some/path/values[6]
-        self.dataref = path      # some/path/values
-        self.index = 0            # 6
-        self.length = length        # length of some/path/values array, if available.
+    def __init__(self, path: str, is_decimal: bool = False, is_string: bool = False, length: int = None):
+        self.path = path  # some/path/values[6]
+        self.dataref = path  # some/path/values
+        self.index = 0  # 6
+        self.length = length  # length of some/path/values array, if available.
         self.sim_datatype = None
-        self.data_type = "float"    # int, float, byte
-        self.is_array = False      # array of above
+        self.data_type = "float"  # int, float, byte
+        self.is_array = False  # array of above
         self.is_decimal = is_decimal
         self.is_string = is_string
         self._previous_value = None  # raw values
@@ -73,6 +76,7 @@ class Dataref:
         self.current_array = []
         self.listeners = []  # buttons using this dataref, will get notified if changes.
         self.round = None
+        self.update_frequency = 1  # sent by the simulator that many times per second.
 
         # dataref/path:t where t in d, i, f, s, b.
         if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
@@ -88,7 +92,6 @@ class Dataref:
             elif typ == "b":
                 self.is_string = "byte"
 
-
         if is_decimal and is_string:
             loggerDataref.error(f"__init__: index {path} cannot be both decimal and string")
 
@@ -97,8 +100,8 @@ class Dataref:
 
         # is dataref a path to an array element?
         if "[" in path:  # sim/some/values[4]
-            self.dataref = self.path[:self.path.find("[")]
-            self.index = int(self.path[self.path.find("[")+1:self.path.find("]")])
+            self.dataref = self.path[: self.path.find("[")]
+            self.index = int(self.path[self.path.find("[") + 1 : self.path.find("]")])
             self.is_array = True
             if self.length is None:
                 self.length = self.index + 1  # at least that many values
@@ -106,18 +109,24 @@ class Dataref:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
 
     @staticmethod
-    def is_internal_dataref(path):
+    def is_internal_dataref(path: str) -> bool:
         return path.startswith(INTERNAL_DATAREF_PREFIX)
 
     @staticmethod
-    def mk_internal_dataref(path):
+    def mk_internal_dataref(path: str) -> str:
         return INTERNAL_DATAREF_PREFIX + path
 
-    def is_internal(self):
-        return self.path.startswith(INTERNAL_DATAREF_PREFIX)
+    def is_internal(self) -> bool:
+        return Dataref.is_internal_dataref(self.path)
 
     def set_round(self, rounding):
         self.round = rounding
+
+    def set_update_frequency(self, frequency=1):
+        if frequency is not None and type(frequency) in [int, float]:
+            self.update_frequency = frequency
+        else:
+            self.update_frequency = 1
 
     def value(self):
         return self.current_value
@@ -193,7 +202,7 @@ class DatarefListener(ABC):
     # To get notified when a dataref has changed.
 
     def __init__(self):
-        self.name = "unnamed"
+        self.name = "abstract-dataref-listener"
 
     @abstractmethod
     def dataref_changed(self, dataref):
@@ -207,6 +216,7 @@ class Simulator(ABC):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
+
     def __init__(self, cockpit):
         self.cockpit = cockpit
         self.use_flight_loop = False
@@ -214,7 +224,7 @@ class Simulator(ABC):
         self.all_datarefs = {}
 
         self.datarefs_to_monitor = {}  # dataref path and number of objects monitoring
-        self.simdrefValues = {}      # key = dataref-path, value = value
+        self.simdrefValues = {}  # key = dataref-path, value = value
 
         # Values of datarefs
         self.previous_values = {}
@@ -222,8 +232,8 @@ class Simulator(ABC):
 
         self.dataref_db_lock = threading.RLock()
 
-        self.roundings = {} # path: int
-        self.slow_datarefs = {}
+        self.roundings = {}  # path: int
+        self.dataref_frequencies = {}
 
         self._startup = True
 
@@ -232,8 +242,8 @@ class Simulator(ABC):
     def set_roundings(self, roundings):
         self.roundings = roundings
 
-    def set_slow_datarefs(self, slow_datarefs):
-        self.slow_datarefs = slow_datarefs
+    def set_dataref_frequencies(self, dataref_frequencies):
+        self.dataref_frequencies = dataref_frequencies
 
     def detect_changed(self):
         """
@@ -259,38 +269,53 @@ class Simulator(ABC):
                     # else:
                     #    logger.debug(f"{d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
             else:
-                logger.warning(f"no current values") #  (was {self.datarefs_to_monitor.keys()})
+                logger.warning(f"no current values")  #  (was {self.datarefs_to_monitor.keys()})
         except RuntimeError:
             logger.warning(f"detect_changed:", exc_info=True)
-
 
     def set_rounding(self, dataref):
         if dataref.path.find("[") > 0:
             rnd = self.roundings.get(dataref.path)
             if rnd is not None:
-                dataref.set_round(rounding=rnd)         # rounds this very priecise dataref
+                dataref.set_round(rounding=rnd)  # rounds this very priecise dataref
             else:
                 idx = dataref.path.find("[")
                 base = dataref.path[:idx]
-                rnd = self.roundings.get(base+"[*]")    # rounds all datarefs in array, explicit
+                rnd = self.roundings.get(base + "[*]")  # rounds all datarefs in array, explicit
                 if rnd is not None:
-                    dataref.set_round(rounding=rnd)     # rounds this very priecise dataref
+                    dataref.set_round(rounding=rnd)  # rounds this very priecise dataref
                 # rnd = self.roundings.get(base)        # rounds all datarefs in array
                 # if rnd is not None:
                 #   dataref.set_round(rounding=rnd)     # rounds this very priecise dataref
         else:
             dataref.set_round(rounding=self.roundings.get(dataref.path))
 
+    def set_frequency(self, dataref):
+        if dataref.path.find("[") > 0:
+            freq = self.dataref_frequencies.get(dataref.path)
+            if freq is not None:
+                dataref.set_update_frequency(frequency=freq)  # rounds this very priecise dataref
+            else:
+                idx = dataref.path.find("[")
+                base = dataref.path[:idx]
+                freq = self.dataref_frequencies.get(base + "[*]")  # rounds all datarefs in array, explicit
+                if freq is not None:
+                    dataref.set_update_frequency(frequency=freq)  # rounds this very priecise dataref
+                # rnd = self.roundings.get(base)        # rounds all datarefs in array
+                # if rnd is not None:
+                #   dataref.set_round(rounding=rnd)     # rounds this very priecise dataref
+        else:
+            dataref.set_update_frequency(frequency=self.dataref_frequencies.get(dataref.path))
 
     def register(self, dataref):
         if dataref.path not in self.all_datarefs:
             if dataref.exists():
                 self.set_rounding(dataref)
+                self.set_frequency(dataref)
                 self.all_datarefs[dataref.path] = dataref
             else:
                 logger.warning(f"invalid dataref {dataref.path}")
         return dataref
-
 
     # ################################
     # Cockpit interface
@@ -361,5 +386,5 @@ class Simulator(ABC):
     def commandEnd(self, command: Command):
         pass
 
-from .collector import MAX_COLLECTION_SIZE, DatarefSet, DatarefSetListener, DatarefSetCollector
 
+from .collector import MAX_COLLECTION_SIZE, DatarefSet, DatarefSetListener, DatarefSetCollector

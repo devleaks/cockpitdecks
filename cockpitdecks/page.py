@@ -15,6 +15,7 @@ class Page:
     """
     A Page is a collection of buttons.
     """
+
     def __init__(self, name: str, config: dict, deck: "Deck"):
         self.logging_level = "INFO"
         self._config = config
@@ -43,7 +44,7 @@ class Page:
         a = name.split(ID_SEP)
         if len(a) > 0:
             if a[0] == self.name:
-                b = a[1].split(":")   # button-name:variable-name
+                b = a[1].split(":")  # button-name:variable-name
                 if b[0] in self.button_names.keys():
                     return self.button_names[b[0]].get_button_value(":".join(b[1:]) if len(b) > 1 else None)
                 else:
@@ -107,12 +108,11 @@ class Page:
                 self.add_button(idx, button)
                 logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
 
-
     def inspect(self, what: str = None):
         """
         This function is called on all buttons of this Page.
         """
-        logger.info(f"-"*60)
+        logger.info(f"-" * 60)
         logger.info(f"Page {self.name} -- {what}")
         if what == "print":
             self.print()
@@ -160,8 +160,10 @@ class Page:
                     logger.debug(f"page {self.name}: button {button.name} added dataref {d} to collection {name}")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d} for collection {name}")
-            if len(collection) >= MAX_COLLECTION_SIZE:
-                logger.warning(f"page {self.name}: button {button.name}: collection: {name}: too many datarefs ({len(colldesc[0])}, maximum is {MAX_COLLECTION_SIZE})")
+            if len(collection) > MAX_COLLECTION_SIZE:
+                logger.warning(
+                    f"page {self.name}: button {button.name}: collection: {name}: too many datarefs ({len(colldesc['datarefs'])}, maximum is {MAX_COLLECTION_SIZE})"
+                )
             dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
             dc.add_listener(button)
             dc.set_dataref = colldesc.get("set_dataref")

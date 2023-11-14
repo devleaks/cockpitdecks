@@ -26,9 +26,7 @@ VARIABLE_PREFIX = ["button", "state"]
 
 
 class Button(DatarefListener, DatarefSetListener):
-
     def __init__(self, config: dict, page: "Page"):
-
         DatarefListener.__init__(self)
         DatarefSetListener.__init__(self)
         # Definition and references
@@ -61,7 +59,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         # Working variables
         self._first_value_not_saved = True
-        self._first_value = None    # first value the button will get
+        self._first_value = None  # first value the button will get
         self._last_activation_state = None
         self.initial_value = config.get("initial-value")
         self.current_value = None
@@ -71,7 +69,7 @@ class Button(DatarefListener, DatarefSetListener):
         self.options = []
         new = config.get("options")
         if new is not None:  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
-            old = ""         # a, c, d are options, b, e are option values. c option value is boolean True.
+            old = ""  # a, c, d are options, b, e are option values. c option value is boolean True.
             while len(old) != len(new):
                 old = new
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
@@ -116,10 +114,10 @@ class Button(DatarefListener, DatarefSetListener):
             if self.guarded is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
 
-        self.all_datarefs = None                # all datarefs used by this button
-        self.all_datarefs = self.get_datarefs() # cache them
+        self.all_datarefs = None  # all datarefs used by this button
+        self.all_datarefs = self.get_datarefs()  # cache them
         if len(self.all_datarefs) > 0:
-            self.page.register_datarefs(self)   # when the button's page is loaded, we monitor these datarefs
+            self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
 
         self.dataref_collections = None
         self.dataref_collections = self.get_dataref_collections()
@@ -310,7 +308,7 @@ class Button(DatarefListener, DatarefSetListener):
                 return True
         return False
 
-    def option_value(self, option, default = None):
+    def option_value(self, option, default=None):
         # Return the value of an option or the supplied default value.
         for opt in self.options:
             opt = opt.split("=")
@@ -334,13 +332,13 @@ class Button(DatarefListener, DatarefSetListener):
 
         collections = {}
         for collection in dc:
-            name = collection.get("name", self.name+"-collection#"+str(len(collections)))
+            name = collection.get("name", self.name + "-collection#" + str(len(collections)))
             count = collection.get("array")
             if count is None:
                 collections[name] = collection
             else:
                 count = int(count)
-                if len(collection["datarefs"]) == 1: # we fetch an array of values for a single dataref
+                if len(collection["datarefs"]) == 1:  # we fetch an array of values for a single dataref
                     new_collection = collection.copy()
                     d = new_collection["datarefs"][0]
                     new_collection["datarefs"] = [f"{d}[{i}]" for i in range(count)]
@@ -356,7 +354,7 @@ class Button(DatarefListener, DatarefSetListener):
         logger.debug(f"button {self.name}: loaded {len(collections)} collections")
         return self.dataref_collections
 
-    def get_datarefs(self, base:dict = None):
+    def get_datarefs(self, base: dict = None):
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -382,17 +380,18 @@ class Button(DatarefListener, DatarefSetListener):
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
         return list(set(r))  # removes duplicates
 
-    def scan_datarefs(self, base:dict):
+    def scan_datarefs(self, base: dict):
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
+
         def is_dref(r):
             # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
             PREFIX = list(ICON_FONTS.keys()) + VARIABLE_PREFIX
             SEP = ":"
             for s in PREFIX:
-                if r.startswith(s+SEP):
+                if r.startswith(s + SEP):
                     return False
             return r != KW.FORMULA.value
 
@@ -467,7 +466,7 @@ class Button(DatarefListener, DatarefSetListener):
     # ##################################
     # Dataref processing
     #
-    def get_dataref_value(self, dataref, default = None):
+    def get_dataref_value(self, dataref, default=None):
         d = self.page.datarefs.get(dataref)
         # if d is not None:
         #     print("***", type(d).__name__, d.path, d.data_type, "==", d.current_value)
@@ -477,7 +476,7 @@ class Button(DatarefListener, DatarefSetListener):
         if self.managed is None:
             logger.debug(f"button {self.name}: is managed is none.")
             return False
-        d = self.get_dataref_value(self.managed, default= 0)
+        d = self.get_dataref_value(self.managed, default=0)
         if d != 0:
             logger.debug(f"button {self.name}: is managed ({d}).")
             return True
@@ -495,7 +494,7 @@ class Button(DatarefListener, DatarefSetListener):
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
 
-    def substitute_dataref_values(self, message: str, default: str = "0.0", formatting = None):
+    def substitute_dataref_values(self, message: str, default: str = "0.0", formatting=None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
@@ -519,7 +518,9 @@ class Button(DatarefListener, DatarefSetListener):
         if formatting is not None:
             if type(formatting) == list:
                 if len(dataref_names) != len(formatting):
-                    logger.warning(f"button {self.name}: number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed.")
+                    logger.warning(
+                        f"button {self.name}: number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed."
+                    )
                     return message
             elif type(formatting) != str:
                 logger.warning(f"button {self.name}: single format is not a string, cannot proceed.")
@@ -540,18 +541,18 @@ class Button(DatarefListener, DatarefSetListener):
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
             cnt = cnt + 1
 
-        more = re.findall(PATTERN_DOLCB, retmsg) # XXXHERE
+        more = re.findall(PATTERN_DOLCB, retmsg)  # XXXHERE
         if len(more) > 0:
             logger.warning(f"button {self.name}: unsubstituted dataref values {more}")
 
         return retmsg
 
-    def substitute_state_values(self, text, default: str = "0.0", formatting = None):
+    def substitute_state_values(self, text, default: str = "0.0", formatting=None):
         status = self.get_status()
         txtcpy = text
         # more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         for k, v in status.items():
-            s = f"${{state:{k}}}"      # @todo: !!possible injection!!
+            s = f"${{state:{k}}}"  # @todo: !!possible injection!!
             if s in txtcpy:
                 if v is None:
                     logger.warning(f"button {self.name}: {k} has no value")
@@ -565,18 +566,18 @@ class Button(DatarefListener, DatarefSetListener):
             logger.warning(f"button {self.name}: unsubstituted status values {more}")
         return txtcpy
 
-    def substitute_data_values(self, text, default: str = "0.0", formatting = None):
+    def substitute_data_values(self, text, default: str = "0.0", formatting=None):
         # !!!IMPORTANT!!! INTERNAL_DATAREF_PREFIX "data:" is hardcoded in regexp
         txtcpy = text
-        more = re.findall("\\${"+INTERNAL_DATAREF_PREFIX+"([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${" + INTERNAL_DATAREF_PREFIX + "([^\\}]+?)}", txtcpy)
         for k, v in more.items():
-            s = f"${{{INTERNAL_DATAREF_PREFIX}{k}}}"      # @todo: !!possible injection!!
+            s = f"${{{INTERNAL_DATAREF_PREFIX}{k}}}"  # @todo: !!possible injection!!
             value = self.sim.get_data(k)
             if value is not None:
                 txtcpy = txtcpy.replace(s, value)
             else:
                 txtcpy = txtcpy.replace(s, default)
-        more = re.findall("\\${"+INTERNAL_DATAREF_PREFIX+"([^\\}]+?)}", txtcpy)
+        more = re.findall("\\${" + INTERNAL_DATAREF_PREFIX + "([^\\}]+?)}", txtcpy)
         if len(more) > 0:
             logger.warning(f"button {self.name}: unsubstituted data values {more}")
         return txtcpy
@@ -600,7 +601,7 @@ class Button(DatarefListener, DatarefSetListener):
     #         logger.warning(f"button {self.name}: unsubstituted button values {more}")
     #     return txtcpy
 
-    def substitute_values(self, text, default: str = "0.0", formatting = None):
+    def substitute_values(self, text, default: str = "0.0", formatting=None):
         if type(text) != str or "$" not in text:  # no ${..} to stubstitute
             return text
         t1 = self.substitute_state_values(text, default=default, formatting=formatting)
@@ -639,7 +640,7 @@ class Button(DatarefListener, DatarefSetListener):
             return None
 
         # HACK 1: Special icon font substitution
-        text_font = base.get(root+"-font", self.page.default_label_font)
+        text_font = base.get(root + "-font", self.page.default_label_font)
         for k, v in ICON_FONTS.items():
             if text_font.lower().startswith(v[0]):
                 s = "\\${%s:([^\\}]+?)}" % (k)
@@ -651,7 +652,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         # Formula in text
         text_format = base.get(f"{root}-format")
-        KW_FORMULA_STR = f"${{{KW.FORMULA.value}}}"   # "${formula}"
+        KW_FORMULA_STR = f"${{{KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
             # If text contains ${formula}, it is replaced by the value of the formula calculation.
             dataref_rpn = base.get(KW.FORMULA.value)
@@ -671,15 +672,15 @@ class Button(DatarefListener, DatarefSetListener):
 
         # HACK 2: Change text if managed
         # Note: we have to go through the whole text substitution before, because sometimes the text gets displayed anyway
-        if self.is_managed():      # managed
+        if self.is_managed():  # managed
             # • does not exist in all charsets, * is ok. I made my own font with b'\\u2022' (dec. 8226) set to "•"
             DOT = "•"
 
             txtmod = self.manager.get(f"{root}-modifier", "dot").lower()
-            if txtmod == "dot": # label
+            if txtmod == "dot":  # label
                 return text + DOT  # ---•
-            elif txtmod in ["std", "standard"]:    # QNH Std
-                    return "Std"
+            elif txtmod in ["std", "standard"]:  # QNH Std
+                return "Std"
             elif txtmod == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
                 n = self.option_value("dash", self.option_value("dashes", True))
                 if type(n) == bool:
@@ -793,12 +794,8 @@ class Button(DatarefListener, DatarefSetListener):
             logger.debug(f"button {self.name}: no change")
 
     def get_status(self):
-        """
-        """
-        a = {
-            "managed": self.managed,
-            "guarded": self.guarded
-        }
+        """ """
+        a = {"managed": self.managed, "guarded": self.guarded}
         return self._activation.get_status() | a
         # if self._representation is not None:
         #     return self._representation.get_status()

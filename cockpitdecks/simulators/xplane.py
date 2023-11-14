@@ -9,7 +9,7 @@ import logging
 import time
 import datetime
 
-from cockpitdecks import SPAM_LEVEL, AIRCRAFT_DATAREF_IPC
+from cockpitdecks import SPAM_LEVEL
 from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
 from cockpitdecks.button import Button
 from cockpitdecks.simulator import DatarefSetCollector
@@ -20,18 +20,23 @@ logger = logging.getLogger(__name__)
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
-DATA_SENT = 2                       # times per second, X-Plane send that data on UDP every that often. Too often will slow down X-PLANE.
+DATA_SENT = 2  # times per second, X-Plane send that data on UDP every that often. Too often will slow down X-PLANE.
 DATA_REFRESH = 1 / (4 * DATA_SENT)  # secs we poll for data every x seconds,
-                                    # must be << 1/DATA_SENT to consume faster than produce.
-                                    # UDP sends at most ~40 to ~50 dataref values per packet.
+# must be << 1/DATA_SENT to consume faster than produce.
+# UDP sends at most ~40 to ~50 dataref values per packet.
 DEFAULT_REQ_FREQUENCY = 1
-LOOP_ALIVE = 100                    # report loop activity every 1000 executions on DEBUG, set to None to suppress output
-RECONNECT_TIMEOUT = 10              # seconds
+LOOP_ALIVE = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
+RECONNECT_TIMEOUT = 10  # seconds
 
-SOCKET_TIMEOUT = 10                 # seconds
-MAX_TIMEOUT_COUNT = 5               # after x timeouts, assumes connection lost, disconnect, and restart later
+SOCKET_TIMEOUT = 10  # seconds
+MAX_TIMEOUT_COUNT = 5  # after x timeouts, assumes connection lost, disconnect, and restart later
 
-MAX_DREF_COUNT = 80                 # Maximum number of dataref that can be requested to X-Plane, CTD around ~100 datarefs
+MAX_DREF_COUNT = 80  # Maximum number of dataref that can be requested to X-Plane, CTD around ~100 datarefs
+
+# When this (internal) dataref changes, the loaded aircraft has changed
+#
+AIRCRAFT_DATAREF_IPC = Dataref.mk_internal_dataref("_aircraft_icao")
+
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -48,10 +53,11 @@ class XPlaneVersionNotSupported(Exception):
 
 
 class XPlaneBeacon:
-    '''
+    """
     Get data from XPlane via network.
     Use a class to implement RAI Pattern for the UDP socket.
-    '''
+    """
+
     # constants
     MCAST_GRP = "239.255.1.1"
     MCAST_PORT = 49707  # (MCAST_PORT was 49000 for XPlane10)
@@ -64,17 +70,17 @@ class XPlaneBeacon:
         self.beacon_data = {}
 
         self.should_not_connect = None  # threading.Event()
-        self.connect_thread = None      # threading.Thread()
+        self.connect_thread = None  # threading.Thread()
 
     @property
     def connected(self):
         return "IP" in self.beacon_data.keys()
 
     def FindIp(self):
-        '''
+        """
         Find the IP of XPlane Host in Network.
         It takes the first one it can find.
-        '''
+        """
         if self.socket is not None:
             self.socket.close()
             self.socket = None
@@ -87,7 +93,7 @@ class XPlaneBeacon:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if platform.system() == "Windows":
-            sock.bind(('', self.MCAST_PORT))
+            sock.bind(("", self.MCAST_PORT))
         else:
             sock.bind((self.MCAST_GRP, self.MCAST_PORT))
         mreq = struct.pack("=4sl", socket.inet_aton(self.MCAST_GRP), socket.INADDR_ANY)
@@ -127,18 +133,16 @@ class XPlaneBeacon:
                 role = 0
                 port = 0
                 (
-                    beacon_major_version,   # 1 at the time of X-Plane 10.40
-                    beacon_minor_version,   # 1 at the time of X-Plane 10.40
-                    application_host_id,    # 1 for X-Plane, 2 for PlaneMaker
+                    beacon_major_version,  # 1 at the time of X-Plane 10.40
+                    beacon_minor_version,  # 1 at the time of X-Plane 10.40
+                    application_host_id,  # 1 for X-Plane, 2 for PlaneMaker
                     xplane_version_number,  # 104014 for X-Plane 10.40b14
-                    role,                   # 1 for master, 2 for extern visual, 3 for IOS
-                    port,                   # port number X-Plane is listening on
-                    ) = struct.unpack("<BBiiIH", data)
-                hostname = packet[21:-1] # the hostname of the computer
-                hostname = hostname[0:hostname.find(0)]
-                if beacon_major_version == 1 \
-                    and beacon_minor_version <= 2 \
-                    and application_host_id == 1:
+                    role,  # 1 for master, 2 for extern visual, 3 for IOS
+                    port,  # port number X-Plane is listening on
+                ) = struct.unpack("<BBiiIH", data)
+                hostname = packet[21:-1]  # the hostname of the computer
+                hostname = hostname[0 : hostname.find(0)]
+                if beacon_major_version == 1 and beacon_minor_version <= 2 and application_host_id == 1:
                     self.beacon_data["IP"] = sender[0]
                     self.beacon_data["Port"] = port
                     self.beacon_data["hostname"] = hostname.decode()
@@ -240,18 +244,17 @@ class XPlaneBeacon:
 
 
 class XPlane(Simulator, XPlaneBeacon):
-    '''
+    """
     Get data from XPlane via network.
     Use a class to implement RAI Pattern for the UDP socket.
-    '''
+    """
 
-    #constants
+    # constants
     MCAST_GRP = "239.255.1.1"
-    MCAST_PORT = 49707 # (MCAST_PORT was 49000 for XPlane10)
+    MCAST_PORT = 49707  # (MCAST_PORT was 49000 for XPlane10)
     BEACON_TIMEOUT = 3.0  # seconds
 
     def __init__(self, cockpit):
-
         Simulator.__init__(self, cockpit=cockpit)
         self.cockpit.set_logging_level(__name__)
 
@@ -262,11 +265,12 @@ class XPlane(Simulator, XPlaneBeacon):
 
         # list of requested datarefs with index number
         self.datarefidx = 0
-        self.datarefs = {} # key = idx, value = dataref
+        self.datarefs = {}  # key = idx, value = dataref path
         self._max_monitored = 0
         self.init()
 
     def init(self):
+        logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
         dref = Dataref(AIRCRAFT_DATAREF_IPC)
         dref.add_listener(self.cockpit)  # Wow wow wow
         self.register(dref)
@@ -281,29 +285,30 @@ class XPlane(Simulator, XPlaneBeacon):
             return self.all_datarefs[path]
         return self.register(Dataref(path))
 
-    def write_dataref(self, dataref, value, vtype='float'):
-        '''
+    def write_dataref(self, dataref, value, vtype="float"):
+        """
         Write Dataref to XPlane
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
-        '''
-        if Dataref.is_internal_dataref(dataref):
-            d = self.get_dataref(dataref)
+        """
+        path = dataref
+        if Dataref.is_internal_dataref(path):
+            d = self.get_dataref(path)
             d.update_value(new_value=value, cascade=True)
-            logger.debug(f"written local dataref ({dataref}={value})")
+            logger.debug(f"written local dataref ({path}={value})")
             return
 
         if not self.connected:
-            logger.warning(f"no connection ({dataref}={value})")
+            logger.warning(f"no connection ({path}={value})")
             return
 
-        if dataref in NOT_A_DATAREF:
-            logger.warning(f"not a dataref ({dataref})")
+        if path in NOT_A_DATAREF:
+            logger.warning(f"not a dataref ({path})")
             return
 
         cmd = b"DREF\x00"
-        dataref = dataref + '\x00'
-        string = dataref.ljust(500).encode()
+        path = path + "\x00"
+        string = path.ljust(500).encode()
         message = "".encode()
         if vtype == "float":
             message = struct.pack("<5sf500s", cmd, value, string)
@@ -313,37 +318,37 @@ class XPlane(Simulator, XPlaneBeacon):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert len(message) == 509
-        logger.debug(f"({self.beacon_data['IP']}, {self.beacon_data['Port']}): {dataref}={value} ..")
-        logger.log(SPAM_LEVEL, f"write_dataref: {dataref}={value}")
+        logger.debug(f"({self.beacon_data['IP']}, {self.beacon_data['Port']}): {path}={value} ..")
+        logger.log(SPAM_LEVEL, f"write_dataref: {path}={value}")
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.debug(".. sent")
 
-    def add_dataref_to_monitor(self, dataref, freq = None):
-        '''
+    def add_dataref_to_monitor(self, path, freq=None):
+        """
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
-        '''
-        if Dataref.is_internal_dataref(dataref):
-            logger.debug(f"{dataref} is local and does not need X-Plane monitoring")
+        """
+        if Dataref.is_internal_dataref(path):
+            logger.debug(f"{path} is local and does not need X-Plane monitoring")
             return False
 
         if not self.connected:
-            logger.warning(f"no connection ({dataref}, {freq})")
+            logger.warning(f"no connection ({path}, {freq})")
             return False
 
-        if dataref in NOT_A_DATAREF:
-            logger.warning(f"not a dataref ({dataref})")
+        if path in NOT_A_DATAREF:
+            logger.warning(f"not a path ({path})")
             return False
 
         idx = -9999
         if freq is None:
             freq = DEFAULT_REQ_FREQUENCY
 
-        if dataref in self.datarefs.values():
-            idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(dataref)]
+        if path in self.datarefs.values():
+            idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(path)]
             if freq == 0:
-                if dataref in self.simdrefValues.keys():
-                    del self.simdrefValues[dataref]
+                if path in self.simdrefValues.keys():
+                    del self.simdrefValues[path]
                 del self.datarefs[idx]
         else:
             if freq != 0 and len(self.datarefs) > MAX_DREF_COUNT:
@@ -351,13 +356,13 @@ class XPlane(Simulator, XPlaneBeacon):
                 return False
 
             idx = self.datarefidx
-            self.datarefs[self.datarefidx] = dataref
+            self.datarefs[self.datarefidx] = path
             self.datarefidx += 1
 
         self._max_monitored = max(self._max_monitored, len(self.datarefs))
 
         cmd = b"RREF\x00"
-        string = dataref.encode()
+        string = path.encode()
         message = struct.pack("<5sii400s", cmd, freq, idx, string)
         assert len(message) == 413
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
@@ -373,22 +378,22 @@ class XPlane(Simulator, XPlaneBeacon):
         try:
             # Receive packet
             self.socket.settimeout(SOCKET_TIMEOUT)
-            data, addr = self.socket.recvfrom(1472) # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
+            data, addr = self.socket.recvfrom(1472)  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
             # Decode Packet
             retvalues = {}
             check = set()
             # * Read the Header "RREFO".
-            header=data[0:5]
-            if header != b"RREF,": # (was b"RREFO" for XPlane10)
+            header = data[0:5]
+            if header != b"RREF,":  # (was b"RREFO" for XPlane10)
                 logger.warning(f"{binascii.hexlify(data)}")
             else:
                 # * We get 8 bytes for every dataref sent:
                 #    An integer for idx and the float value.
                 values = data[5:]
                 lenvalue = 8
-                numvalues = int(len(values)/lenvalue)
+                numvalues = int(len(values) / lenvalue)
                 for i in range(0, numvalues):
-                    singledata = data[(5+lenvalue*i):(5+lenvalue*(i+1))]
+                    singledata = data[(5 + lenvalue * i) : (5 + lenvalue * (i + 1))]
                     (idx, value) = struct.unpack("<if", singledata)
                     if idx in self.datarefs.keys():
                         # convert -0.0 values to positive 0.0
@@ -414,7 +419,7 @@ class XPlane(Simulator, XPlaneBeacon):
         if not self.connected:
             logger.warning(f"no connection ({command})")
             return
-        message = 'CMND0' + command.path
+        message = "CMND0" + command.path
         self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
 
@@ -465,10 +470,10 @@ class XPlane(Simulator, XPlaneBeacon):
         self.execute_command(command)
 
     def commandBegin(self, command: Command):
-        self.execute_command(Command(command.path+"/begin"))
+        self.execute_command(Command(command.path + "/begin"))
 
     def commandEnd(self, command: Command):
-        self.execute_command(Command(command.path+"/end"))
+        self.execute_command(Command(command.path + "/end"))
 
     def remove_local_datarefs(self, datarefs) -> list:
         return list(filter(lambda d: not Dataref.is_internal_dataref(d), datarefs))
@@ -494,12 +499,12 @@ class XPlane(Simulator, XPlaneBeacon):
             if d.is_internal():
                 logger.debug(f"local dataref {d.path} is not monitored")
                 continue
-            if self.add_dataref_to_monitor(d.path, freq=self.slow_datarefs.get(d.path, DATA_SENT)):
+            if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
                 prnt.append(d.path)
 
         # Add aircraft
         dref_ipc = self.get_dataref(AIRCRAFT_DATAREF_IPC)
-        if self.add_dataref_to_monitor(dref_ipc.path, freq=self.slow_datarefs.get(dref_ipc.path, DATA_SENT)):
+        if self.add_dataref_to_monitor(dref_ipc.path, freq=d.update_frequency):
             prnt.append(dref_ipc.path)
             super().add_datarefs_to_monitor({dref_ipc.path: dref_ipc})
 
@@ -609,6 +614,7 @@ class XPlane(Simulator, XPlaneBeacon):
         # then reload datarefs from current page of each deck
         self.clean_datarefs_to_monitor()
         self.add_all_datarefs_to_monitor()
+        logger.info("reloading pages")
         self.cockpit.reload_pages()  # to take into account updated values
 
     def stop(self):

@@ -348,8 +348,8 @@ class Cockpit(DatarefListener, CockpitBase):
         self._debug = self.default_config.get("debug", ",".join(self._debug)).split(",")
         self.set_logging_level(__name__)
 
-        self.sim.set_roundings(self.default_config.get("roundings", {}))
-        self.sim.set_slow_datarefs(self.default_config.get("slow-datarefs", {}))
+        self.sim.set_roundings(self.default_config.get("dataref-roundings", {}))
+        self.sim.set_dataref_frequencies(self.default_config.get("dataref-fetch-frequencies", {}))
 
         self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
         self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)

@@ -7,6 +7,7 @@ from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
+from .xp_str import StringIcon
 from .xp_ac import AircraftIcon
 from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
@@ -48,7 +49,8 @@ REPRESENTATIONS = {
     "decor": Decor,
     "real-weather": RealWeatherIcon,
     "xp-weather": XPWeatherIcon,
-    "aircraft": AircraftIcon
+    "dref-string": StringIcon,
+    "aircraft": AircraftIcon,
 }
 
 DEFAULT_REPRESENTATIONS = ["none"]
@@ -60,6 +62,7 @@ DEFAULT_REPRESENTATIONS = ["none"]
 # Will only load if AVWX is installed
 try:
     from .external import LiveWeatherIcon
+
     REPRESENTATIONS["live-weather"] = LiveWeatherIcon
     logger.info(f"LiveWeatherIcon installed")
 except ImportError:
@@ -79,7 +82,21 @@ except ImportError:
 #   repeat: 6
 #
 images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
-drawn_buttons = ["decor", "data", "annunciator", "annunciator-animate", "switch", "circular-switch", "push-switch", "ftg", "knob", "aircraft", "real-weather", "xp-weather"]
+drawn_buttons = [
+    "decor",
+    "data",
+    "annunciator",
+    "annunciator-animate",
+    "switch",
+    "circular-switch",
+    "push-switch",
+    "ftg",
+    "knob",
+    "dref-string",
+    "aircraft",
+    "real-weather",
+    "xp-weather",
+]
 
 if "live-weather" in REPRESENTATIONS.keys():
     drawn_buttons.append("live-weather")
@@ -93,5 +110,5 @@ DECK_REPRESENTATIONS = {
     "lcd": images + drawn_buttons,
     "led": ["led"],
     "colored-led": ["led", "colored-led"],
-    "encoder-leds": ["multi-leds"]
+    "encoder-leds": ["multi-leds"],
 }

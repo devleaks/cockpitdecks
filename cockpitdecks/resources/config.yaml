@@ -5,7 +5,7 @@ default-label-color: white
 default-label-font: DIN.ttf
 default-label-size: 14
 cache-icon: True
-roundings:
+dataref-roundings:
     sim/cockpit/autopilot/heading_mag: 2
     # used in Weather button 3 or 4 decimals sufficient...
     sim/flightmodel/position/latitude: 8
@@ -92,7 +92,7 @@ roundings:
     sim/weather/aircraft/wind_speed_kts[*]: 1
     sim/weather/aircraft/wind_speed_msc: 1
 
-slow-datarefs:
+dataref-fetch-frequencies:
     sim/flightmodel/position/latitude: 1
     sim/flightmodel/position/longitude: 1
 # debug: cockpitdecks.deck

@@ -11,13 +11,13 @@ from cockpitdecks.simulator import DatarefListener
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-MAX_COLLECTION_SIZE = 20
+MAX_COLLECTION_SIZE = 40
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
 TIMEOUT_TICKER = "sim/cockpit2/clock_timer/zulu_time_minutes"
-TIMEOUT_TIME   = 10  # seconds
-TOO_OLD = 600        # seconds, collections that did not refresh within that default time need refreshing.
+TIMEOUT_TIME = 10  # seconds
+TOO_OLD = 600  # seconds, collections that did not refresh within that default time need refreshing.
 
-PACE_LOAD   = 0.5    # secs
+PACE_LOAD = 0.5  # secs
 PACE_UNLOAD = 0.5
 
 
@@ -38,17 +38,18 @@ class DatarefSet:
     When all datarefs in collection have been updated, collection is considered updated
     and stops collecting dataref values.
     """
-    def __init__(self, datarefs, name: str, sim, expire: int = 300):
 
+    def __init__(self, datarefs, name: str, sim, expire: int = 300):
         self.sim = sim
         self.name = name
         self.set_dataref = None
+        self.is_loaded = False
 
-        self.datarefs = datarefs    # { path: Dataref() }
+        self.datarefs = datarefs  # { path: Dataref() }
         if len(self.datarefs) > MAX_COLLECTION_SIZE:
             logger.warning(f"collection larger than {MAX_COLLECTION_SIZE}, not all datarefs collected")
             self.datarefs = dict(itertools.islice(self.datarefs.items(), 0, MAX_COLLECTION_SIZE))
-        self.expire = expire        # seconds
+        self.expire = expire  # seconds
 
         # Working variables
         self.listeners = []
@@ -97,7 +98,7 @@ class DatarefSet:
         logger.debug(f"{self.name} collected")
         self.notify()
 
-    def mark_needs_collecting(self, threshold = None, force: bool = True):
+    def mark_needs_collecting(self, threshold=None, force: bool = True):
         if force or self.last_completed is None:
             self.last_loaded = None
         if threshold is not None and self.last_completed < threshold:
@@ -119,7 +120,7 @@ class DatarefSet:
         self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.is_loaded = False
         self.last_unloaded = now()
-        # logger.debug(f"collection {self.name} unloaded")
+        logger.debug(f"collection {self.name} unloaded")
         time.sleep(PACE_UNLOAD)
 
     def add_listener(self, obj: "DatarefSetListener"):
@@ -139,7 +140,6 @@ class DatarefSetCollector(DatarefListener):
     # Class that collects collection of datarefs one at a time to limit the request pressure on the simulator.
     #
     def __init__(self, simulator):
-
         self.sim = simulator
         self.name = type(self).__name__
         self.collections = {}
@@ -189,7 +189,7 @@ class DatarefSetCollector(DatarefListener):
         self.collections = {}
 
     def dataref_changed(self, dataref: "Dataref"):
-        # logger.debug(f"dataref changed {dataref.path}")
+        logger.debug(f"dataref changed {dataref.path}")
         if dataref.path == TIMEOUT_TICKER:
             logger.debug(f"timeout received")
             if self.current_collection is not None and self.current_collection.did_not_progress():
@@ -199,6 +199,7 @@ class DatarefSetCollector(DatarefListener):
                 self.next_collection()
             return
         if not self.collecting:
+            logger.debug(f"not collecting")
             return
         if self.current_collection is not None:
             if self.current_collection.is_collected():
@@ -211,20 +212,28 @@ class DatarefSetCollector(DatarefListener):
         return list(filter(lambda x: x.needs_collecting(), self.collections.values()))
 
     def next_collection(self):
-        if self.current_collection is not None:
-            self.current_collection.unload()
-            self.current_collection = None
         needs_collecting = self.needs_collecting()
+        busy = self.current_collection.name if self.current_collection is not None else "none"
         if len(needs_collecting) > 0:
+            if self.current_collection is not None:
+                self.current_collection.unload()
+                self.current_collection = None
+            else:
+                logger.debug(f"no collection busy collecting")
             self.collecting = True
-            self.current_collection = random.choices(needs_collecting, weights=[x.nice for x in needs_collecting])[0] # choices returns a list()
+            self.current_collection = random.choices(needs_collecting, weights=[x.nice for x in needs_collecting])[0]  # choices returns a list()
             self.current_collection.load()
             logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")
+            logger.debug(f"collecting..")
         else:
-            self.collecting = False
             logger.debug(f"no collection to update")
+            if self.current_collection is not None:
+                logger.debug(f"collection {self.current_collection.name} keep collecting")
+            else:
+                self.collecting = False
+                logger.debug(f"not collecting")
 
-    def terminate(self, notify = True):
+    def terminate(self, notify=True):
         if self.current_collection is not None:
             self.current_collection.unload()
             self.current_collection = None
