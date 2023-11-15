@@ -166,7 +166,7 @@ class Page:
                 )
             dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
             dc.add_listener(button)
-            dc.set_dataref = colldesc.get("set_dataref")
+            dc.set_dataref = colldesc.get("set-dataref")
             dc.expire = colldesc.get("expire")
             self.dataref_collections[name] = dc
             logger.debug(f"page {self.name}: button {button.name} collection {name} registered")

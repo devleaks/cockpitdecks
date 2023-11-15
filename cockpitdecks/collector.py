@@ -9,7 +9,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
@@ -144,7 +144,6 @@ class DatarefSetCollector(DatarefListener):
         self.name = type(self).__name__
         self.collections = {}
         self.current_collection = None
-        self.collecting = False
         self.ticker_dataref = self.sim.get_dataref(TIMEOUT_TICKER)
         self.ticker_dataref.add_listener(self)
 
@@ -159,12 +158,12 @@ class DatarefSetCollector(DatarefListener):
         self.sim.add_datarefs_to_monitor({self.ticker_dataref.path: self.ticker_dataref})
         logger.debug(f"ticker started")
 
-    def add_collection(self, collection: DatarefSet):
+    def add_collection(self, collection: DatarefSet, start: bool = True):
         for dref in collection.datarefs.values():
             dref.add_listener(self)  # the collector dataref_changed() will be called each time the dataref changes
         self.collections[collection.name] = collection
         logger.debug(f"collection {collection.name} added")
-        if not self.collecting and collection.needs_collecting():
+        if start and not self.is_collecting() and collection.needs_collecting():
             self.next_collection()
             logger.debug(f"started")
 
@@ -192,52 +191,58 @@ class DatarefSetCollector(DatarefListener):
         logger.debug(f"dataref changed {dataref.path}")
         if dataref.path == TIMEOUT_TICKER:
             logger.debug(f"timeout received")
-            if self.current_collection is not None and self.current_collection.did_not_progress():
+            if self.is_collecting() and self.current_collection.did_not_progress():
                 self.next_collection()
-            if not self.collecting:
+            if not self.is_collecting():
                 logger.debug(f"not collecting, checking..")
                 self.next_collection()
             return
-        if not self.collecting:
+        if not self.is_collecting():
             logger.debug(f"not collecting")
             return
-        if self.current_collection is not None:
+        if self.is_collecting():
             if self.current_collection.is_collected():
                 self.current_collection.mark_collected()
                 self.next_collection()
             elif self.current_collection.did_not_progress():
                 self.next_collection()
+        else:
+            logger.debug(f"not collecting")
+
+    def is_collecting(self) -> bool:
+        if self.current_collection is not None:
+            logger.debug(f"currently collecting {self.current_collection.name} since {self.current_collection.last_loaded.strftime('%H:%M:%S')})")
+            return True
+        return False
 
     def needs_collecting(self):
         return list(filter(lambda x: x.needs_collecting(), self.collections.values()))
 
     def next_collection(self):
         needs_collecting = self.needs_collecting()
-        busy = self.current_collection.name if self.current_collection is not None else "none"
+        logger.debug(f"needs_collecting: {needs_collecting}")
         if len(needs_collecting) > 0:
-            if self.current_collection is not None:
+            if self.is_collecting():
+                logger.debug(f"unloading {self.current_collection.name}")
                 self.current_collection.unload()
                 self.current_collection = None
             else:
-                logger.debug(f"no collection busy collecting")
-            self.collecting = True
+                logger.debug(f"was not collecting")
             self.current_collection = random.choices(needs_collecting, weights=[x.nice for x in needs_collecting])[0]  # choices returns a list()
             self.current_collection.load()
-            logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")
+            logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")  # causes issue
             logger.debug(f"collecting..")
         else:
             logger.debug(f"no collection to update")
-            if self.current_collection is not None:
+            if self.is_collecting():
                 logger.debug(f"collection {self.current_collection.name} keep collecting")
             else:
-                self.collecting = False
                 logger.debug(f"not collecting")
 
     def terminate(self, notify=True):
-        if self.current_collection is not None:
+        if self.is_collecting():
             self.current_collection.unload()
             self.current_collection = None
-        self.collecting = False
         if notify:
             self.sim.remove_datarefs_to_monitor({self.ticker_dataref.path: self.ticker_dataref})
             logger.debug(f"terminated")

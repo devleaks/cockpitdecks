@@ -10,39 +10,59 @@ from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class StringIcon(DrawBase):
     def __init__(self, config: dict, button: "Button"):
         self._inited = False
+        self.fetched_string = None
+        self.text = None
         self._update_count = 0
         self._cached = None
         self._last_updated = None
-        self._strconfig = config.get("strings")
-
-        self.fetched_string = {}
-        self.text = {}
-        self.text_default = config.get("no-text", "no text")
+        self._strconfig = config.get("dref-string")
+        self._drefcoll = config.get("dataref-collections")
+        self._dataref = None
+        self._array = 0
+        self._notify = None
 
         DrawBase.__init__(self, config=config, button=button)
 
     def init(self):
         if self._inited:
             return
+        if self._drefcoll is not None:
+            self._collname = self._drefcoll[0].get("name")  # string
+            self._dataref = self._drefcoll[0].get("datarefs")[0]
+            count = str(self._drefcoll[0].get("array"))
+            if count is not None:
+                if "," in count:
+                    arr = count.split(",")
+                    start = int(arr[0])
+                    end = int(arr[1])
+                else:
+                    start = 0
+                    end = int(count)
+            self._array = end - start - 1
+            if self._array < 1:
+                self._array = 1
+            self._notify = self._drefcoll[0].get("set-dataref")
+        else:
+            logger.info(f"no dataref")
         self.notify_string_updated()
         self._inited = True
         logger.debug(f"inited")
 
     def notify_string_updated(self):
-        if len(self.text) > 0:
+        if self.text is not None:
             self._update_count = self._update_count + 1
-            self.button._activation.write_dataref(float(self._update_count))
+            self.button._activation._write_dataref(self._notify, float(self._update_count))
             self._last_updated = now()
-            logger.info(f"button {self.button.name}: notified of new strings ({self._update_count}) ({self.text})")
+            logger.info(f"notified of new string {self._update_count} ({self.text})")
 
-    def get_strings(self):
-        return self.fetched_string.values() if len(self.fetched_string) > 0 else None
+    def get_string(self):
+        return self.fetched_string if self.fetched_string != "" else None
 
     def is_updated(self):
         def updated_recently(how_long_ago: int = 10):  # secs
@@ -52,46 +72,34 @@ class StringIcon(DrawBase):
                 return delta < how_long_ago  # seconds
             return False
 
+        drefs = self.button.sim.collector.collections[self._collname].datarefs
+        # 1. Collect string character per character :-D
+        new_string = ""
         updated = False
+        cnt = 0
+        for d in drefs.values():
+            if d.current_value is not None:
+                cnt = cnt + 1
+                c = chr(int(d.current_value))
+                new_string = new_string + c
+        self.fetched_string = new_string
 
-        for name, collection in self.button.dataref_collections.items():
-            if name not in self.button.sim.collector.collections.keys():  # not collecting now
-                continue
-            drefs = self.button.sim.collector.collections[name].datarefs
-            # 1. Collect string character per character :-D
-            new_string = ""
-            cnt = 0
-            for d in drefs.values():
-                if d.current_value is not None:
-                    cnt = cnt + 1
-                    c = chr(int(d.current_value))
-                    new_string = new_string + c
-            self.fetched_string[name] = new_string
+        if cnt < self._array:  # we did not fetch all chars yet
+            logger.debug(f"received {cnt}/{self._array}")
+            return False
 
-            cnt_to_get = len(collection.get("datarefs"))
-            if cnt < cnt_to_get:  # we did not fetch all chars yet
-                logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{cnt_to_get}")
-                return False
-
-            logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{cnt_to_get} (completed)")
-            # 2. Has the string changed?
-            text = self.fetched_string[name]
-            logger.debug(f"button {self.button.name}: collection {name}: text={text}")
-            if text is not None:
-                updated = (not updated) and self.text != text
-                if updated:
-                    self.text[name] = text
-                    if updated_recently():
-                        logger.debug(f"collection {name}: new string {self.text[name]}")
-
-        if updated:
-            if not updated_recently():
-                self.notify_string_updated()
-            else:
-                logger.debug(
-                    f"button {self.button.name}: new string(s) but no notification, collection in progress, notified at {self._last_updated} ({now().timestamp() - self._last_updated.timestamp()} s. ago)"
-                )
-
+        logger.debug(f"received {cnt}/{self._array} (completed)")
+        # 2. Has the string changed?
+        text = self.get_string()
+        if text is not None:
+            updated = self.text != text
+            if updated:
+                self.text = text
+                if not updated_recently():
+                    self.notify_string_updated()  # notifies writable dataref
+                else:
+                    # self._last_updated should not be None as we reach here
+                    logger.debug(f"new string {self.text} but no notification, collection in progress, notified at {self._last_updated}")
         return updated
 
     def get_image_for_icon(self):
@@ -107,8 +115,14 @@ class StringIcon(DrawBase):
         inside = round(0.04 * image.width + 0.5)
 
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._strconfig, "text")
-
-        text = "\n".join(self.text.values()) if len(self.text) > 0 else self.text_default
+        text = self.text
+        if text is None:
+            text = "no text"
+        else:
+            substr = self._strconfig.get("substring")
+            if substr is not None:
+                sa = [int(s) for s in substr.split(",")]
+                text = text[sa[0] : sa[1]]
 
         font = self.get_font(text_font, text_size)
         w = image.width / 2

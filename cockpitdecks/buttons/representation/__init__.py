@@ -49,7 +49,7 @@ REPRESENTATIONS = {
     "decor": Decor,
     "real-weather": RealWeatherIcon,
     "xp-weather": XPWeatherIcon,
-    "dref-string": StringIcon,
+    "strings": StringIcon,
     "aircraft": AircraftIcon,
 }
 
@@ -92,7 +92,7 @@ drawn_buttons = [
     "push-switch",
     "ftg",
     "knob",
-    "dref-string",
+    "strings",
     "aircraft",
     "real-weather",
     "xp-weather",

@@ -320,6 +320,25 @@ class Button(DatarefListener, DatarefSetListener):
                     return True
         return default
 
+    def parse_dataref_array(self, path):
+        """Transform path[4:6] in to path[4], path[5]"""
+        MAXRANGE = 20
+        if "[" in path and path[-1] == "]":
+            ret = []
+            slc = path[path.index("[") + 1 : -1]
+            pathroot = path[: path.index("[")]
+            if slc == "":  # "whole" array
+                return [f"{pathroot}[{i}]" for i in range(MAXRANGE)]
+            elif ":" in slc:
+                arr = slc.split(":")
+                start = 0 if arr[0] == "" else int(arr[0])
+                end = MAXRANGE if arr[1] == "" else int(arr[1])
+                cnt = end - start
+                if cnt > MAXRANGE:
+                    logger.warning(f"path {path} has {cnt} elements which is beyond {MAXRANGE} max.")
+                return [f"{pathroot}[{i}]" for i in range(start, end)]
+        return [path]
+
     def get_dataref_collections(self):
         if self.dataref_collections is not None:
             return self.dataref_collections
@@ -334,22 +353,22 @@ class Button(DatarefListener, DatarefSetListener):
         for collection in dc:
             name = collection.get("name", self.name + "-collection#" + str(len(collections)))
             count = collection.get("array")
-            if count is None:
+            if count is None:  # no repetition
                 collections[name] = collection
+                drefs = collection["datarefs"]
+                # Expand datarefs into a list of individual datarefs
+                these_drefs = []
+                for dref in drefs:
+                    these_drefs = these_drefs + self.parse_dataref_array(dref)
+                collection["datarefs"] = these_drefs
             else:
-                count = int(count)
-                if len(collection["datarefs"]) == 1:  # we fetch an array of values for a single dataref
+                for i in range(count):
                     new_collection = collection.copy()
-                    d = new_collection["datarefs"][0]
-                    new_collection["datarefs"] = [f"{d}[{i}]" for i in range(count)]
-                    collections[name] = new_collection
-                else:
-                    for i in range(count):
-                        new_collection = collection.copy()
-                        new_name = f"{name}#{i}"
-                        new_collection["datarefs"] = [f"{d}[{i}]" for d in collection["datarefs"]]
-                        new_collection["name"] = new_name
-                        collections[new_name] = new_collection
+                    new_name = f"{name}#{i}"
+                    new_collection["datarefs"] = [f"{d}[{i}]" for d in collection["datarefs"]]
+                    new_collection["name"] = new_name
+                    collections[new_name] = new_collection
+
         self.dataref_collections = collections
         logger.debug(f"button {self.name}: loaded {len(collections)} collections")
         return self.dataref_collections

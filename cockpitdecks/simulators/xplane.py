@@ -556,8 +556,9 @@ class XPlane(Simulator, XPlaneBeacon):
         #   logger.debug(f"would add collection {collections.keys()} to monitor")
         #   return
         for k, v in collections.items():
-            self.collector.add_collection(v)
+            self.collector.add_collection(v, start=False)
             logger.debug(f"added collection {k}")
+        self.collector.next_collection()
 
     def remove_collections_to_monitor(self, collections):
         # if not self.connected:
