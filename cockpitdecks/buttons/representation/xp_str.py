@@ -21,7 +21,6 @@ class StringIcon(DrawBase):
         self._last_updated = None
         self._strconfig = config.get("strings")
 
-        self.fetched_string = {}
         self.text = {}
         self.text_default = config.get("no-text", "no text")
 
@@ -41,9 +40,6 @@ class StringIcon(DrawBase):
             self._last_updated = now()
             logger.info(f"button {self.button.name}: notified of new strings ({self._update_count}) ({self.text})")
 
-    def get_strings(self):
-        return self.fetched_string.values() if len(self.fetched_string) > 0 else None
-
     def is_updated(self):
         def updated_recently(how_long_ago: int = 10):  # secs
             # prevents multiple notification on startup or during string
@@ -52,13 +48,13 @@ class StringIcon(DrawBase):
                 return delta < how_long_ago  # seconds
             return False
 
-        updated = False
+        upd_cnt = 0
 
         for name, collection in self.button.dataref_collections.items():
             if name not in self.button.sim.collector.collections.keys():  # not collecting now
                 continue
             drefs = self.button.sim.collector.collections[name].datarefs
-            # 1. Collect string character per character :-D
+            # 1. Collect string character per character
             new_string = ""
             cnt = 0
             for d in drefs.values():
@@ -66,33 +62,31 @@ class StringIcon(DrawBase):
                     cnt = cnt + 1
                     c = chr(int(d.current_value))
                     new_string = new_string + c
-            self.fetched_string[name] = new_string
+                # else:
+                #     new_string = new_string + "?"
 
-            cnt_to_get = len(collection.get("datarefs"))
-            if cnt < cnt_to_get:  # we did not fetch all chars yet
-                logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{cnt_to_get}")
+            if cnt < len(drefs):  # we did not fetch all chars yet
+                logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{len(drefs)}")
                 return False
 
-            logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{cnt_to_get} (completed)")
+            logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{len(drefs)} (completed)")
             # 2. Has the string changed?
-            text = self.fetched_string[name]
-            logger.debug(f"button {self.button.name}: collection {name}: text={text}")
-            if text is not None:
-                updated = (not updated) and self.text != text
-                if updated:
-                    self.text[name] = text
-                    if updated_recently():
-                        logger.debug(f"collection {name}: new string {self.text[name]}")
+            curr_text = self.text.get(name)
+            if curr_text is None or curr_text != new_string:
+                self.text[name] = new_string
+                upd_cnt = upd_cnt + 1
+                logger.debug(f"button {self.button.name}: collection {name}: new text={new_string}")
 
-        if updated:
+        if upd_cnt > 0:
             if not updated_recently():
                 self.notify_string_updated()
+                return True
             else:
                 logger.debug(
-                    f"button {self.button.name}: new string(s) but no notification, collection in progress, notified at {self._last_updated} ({now().timestamp() - self._last_updated.timestamp()} s. ago)"
+                    f"button {self.button.name}: updated but notified recently at {self._last_updated} ({now().timestamp() - self._last_updated.timestamp()} s. ago)"
                 )
 
-        return updated
+        return False
 
     def get_image_for_icon(self):
         """

@@ -134,6 +134,7 @@ class DatarefSet:
         for obj in self.listeners:
             obj.dataref_collection_changed(self)
             logger.log(SPAM_LEVEL, f"{self.name}: notified {obj.name}")
+        logger.debug(f"{self.name} notified {'<'*20}")
 
 
 class DatarefSetCollector(DatarefListener):
@@ -189,6 +190,7 @@ class DatarefSetCollector(DatarefListener):
 
     def dataref_changed(self, dataref: "Dataref"):
         logger.debug(f"dataref changed {dataref.path}")
+
         if dataref.path == TIMEOUT_TICKER:
             logger.debug(f"timeout received")
             if self.is_collecting() and self.current_collection.did_not_progress():
@@ -197,17 +199,21 @@ class DatarefSetCollector(DatarefListener):
                 logger.debug(f"not collecting, checking..")
                 self.next_collection()
             return
+
         if not self.is_collecting():
             logger.debug(f"not collecting")
             return
-        if self.is_collecting():
-            if self.current_collection.is_collected():
-                self.current_collection.mark_collected()
-                self.next_collection()
-            elif self.current_collection.did_not_progress():
-                self.next_collection()
+
+        # we are collecting...
+        if self.current_collection.is_collected():
+            logger.debug(f"current collection last_completed")
+            self.current_collection.mark_collected()
+            self.next_collection()
+        elif self.current_collection.did_not_progress():
+            logger.debug(f"current collection did not progress")
+            self.next_collection()
         else:
-            logger.debug(f"not collecting")
+            logger.debug(f"keep collecting..")
 
     def is_collecting(self) -> bool:
         if self.current_collection is not None:
