@@ -8,6 +8,7 @@ from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
 from .xp_str import StringIcon
+from .xp_fma import FMAIcon
 from .xp_ac import AircraftIcon
 from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
@@ -50,6 +51,7 @@ REPRESENTATIONS = {
     "real-weather": RealWeatherIcon,
     "xp-weather": XPWeatherIcon,
     "strings": StringIcon,
+    "fma": FMAIcon,
     "aircraft": AircraftIcon,
 }
 
@@ -93,6 +95,7 @@ drawn_buttons = [
     "ftg",
     "knob",
     "strings",
+    "fma",
     "aircraft",
     "real-weather",
     "xp-weather",

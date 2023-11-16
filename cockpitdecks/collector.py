@@ -9,7 +9,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
@@ -134,7 +134,7 @@ class DatarefSet:
         for obj in self.listeners:
             obj.dataref_collection_changed(self)
             logger.log(SPAM_LEVEL, f"{self.name}: notified {obj.name}")
-        logger.debug(f"{self.name} notified {'<'*20}")
+        logger.debug(f"{self.name} notified")
 
 
 class DatarefSetCollector(DatarefListener):
@@ -236,7 +236,8 @@ class DatarefSetCollector(DatarefListener):
                 logger.debug(f"was not collecting")
             self.current_collection = random.choices(needs_collecting, weights=[x.nice for x in needs_collecting])[0]  # choices returns a list()
             self.current_collection.load()
-            logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")  # causes issue
+            if self.current_collection is not None:  # race condition
+                logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")  # causes issue
             logger.debug(f"collecting..")
         else:
             logger.debug(f"no collection to update")

@@ -10,7 +10,7 @@ from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class StringIcon(DrawBase):
@@ -29,14 +29,14 @@ class StringIcon(DrawBase):
     def init(self):
         if self._inited:
             return
-        self.notify_string_updated()
+        self.notify_strings_updated()
         self._inited = True
         logger.debug(f"inited")
 
-    def notify_string_updated(self):
+    def notify_strings_updated(self):
         if len(self.text) > 0:
             self._update_count = self._update_count + 1
-            self.button._activation.write_dataref(float(self._update_count))
+            # self.button._activation.write_dataref(float(self._update_count)) # this cause infinite recursion
             self._last_updated = now()
             logger.info(f"button {self.button.name}: notified of new strings ({self._update_count}) ({self.text})")
 
@@ -76,10 +76,15 @@ class StringIcon(DrawBase):
                 self.text[name] = new_string
                 upd_cnt = upd_cnt + 1
                 logger.debug(f"button {self.button.name}: collection {name}: new text={new_string}")
+                # notify local handler of collcetion, if any
+                set_dref = collection.get("set-dataref")
+                if set_dref is not None:
+                    self.button._activation._write_dataref(set_dref, float(self._update_count))
+                    logger.debug(f"button {self.button.name}: collection {name}: notified {set_dref}")
 
         if upd_cnt > 0:
             if not updated_recently():
-                self.notify_string_updated()
+                self.notify_strings_updated()
                 return True
             else:
                 logger.debug(
@@ -119,7 +124,7 @@ class StringIcon(DrawBase):
         h = image.height / 2
         if text_position[1] == "t":
             h = inside + text_size / 2
-        elif text_position[1] == "r":
+        elif text_position[1] == "b":
             h = image.height - inside - text_size / 2
         # logger.debug(f"position {(w, h)}")
         draw.multiline_text((w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color)  # (image.width / 2, 15)
