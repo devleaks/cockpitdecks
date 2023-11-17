@@ -270,10 +270,10 @@ class XPlane(Simulator, XPlaneBeacon):
         self.init()
 
     def init(self):
-        logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
         dref = Dataref(AIRCRAFT_DATAREF_IPC)
         dref.add_listener(self.cockpit)  # Wow wow wow
         self.register(dref)
+        logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
 
     def __del__(self):
         for i in range(len(self.datarefs)):

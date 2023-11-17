@@ -9,7 +9,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes

@@ -3,14 +3,13 @@
 # These buttons are *highly* XP and Toliss Airbus specific.
 #
 import logging
-from re import template
 
 from cockpitdecks import ICON_SIZE, now
 from cockpitdecks.simulator import Dataref
 from .xp_str import StringIcon
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 FMA_COLORS = {"b": "deepskyblue", "w": "white", "g": "lime", "m": "magenta", "a": "orange"}
 FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
@@ -26,56 +25,43 @@ FMA_DATAREFS = {
     "3w": "AirbusFBW/FMA3w",
 }
 FMA_LINES = {  # sample set for debugging
-    "1b": " ",
+    "1b": "",
     "1g": "SPEED  ALT    HDG",
     "1w": "                   CAT3 AP1+2",
     "2b": "       G/S    LOC",
-    "2m": "            333333",
-    "2w": "                    DUAL1FD2",
-    "3a": " ",
-    "3b": " ",
-    "3w": "                   DH 20A/THR",
+    "2m": "            333333",  # wrong for testing
+    "2w": "                        1FD2",
+    "2a": "                    DUAL",  # does not exist, added for testing purpose
+    "3a": "",
+    "3b": "                      20",
+    "3w": "                  DH    A/THR",
 }
+FMA_COUNT = 5
+MAX_LENGTH = 40
 
 
 class FMAIcon(StringIcon):
     def __init__(self, config: dict, button: "Button"):
-        self.fma_collections = {}
         self.fmaconfig = config.get("fma")
-        # self.fmaloader = self.fmaconfig.get("load", False) in [True, "true", "True"]
-        fma = int(self.fmaconfig.get("index", 1))
-        if fma < 1:
+        # get mandatory index
+        fma = int(self.fmaconfig.get("index"))
+        if fma is None:
+            logger.warning(f"button {button.name}: no FMA index, forcing index=1")
             fma = 1
-        if fma > 5:
-            fma = 5
-        self.fma = fma - 1
+        if fma < 1:
+            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            fma = 1
+        if fma > FMA_COUNT:
+            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            fma = FMA_COUNT
+        self.fma_idx = fma - 1
         self.text_length = 6
-        self.boxed = []  # ["11", "22", "33", "41", "42"]
+        if self.text_length * FMA_COUNT > MAX_LENGTH:
+            logger.warning(f"button {button.name}: string too long")
+            self.text_length = int(MAX_LENGTH / 5)
+        self.boxed = ["11", "22", "33", "41", "42"]  # later
         StringIcon.__init__(self, config=config, button=button)
         self.icon_color = "black"
-
-    # def init(self):
-    #     # self.text = FMA_LINES
-    #     # self.boxed = ["11", "22", "33", "41", "42"]
-    #     # if self.fmaloader:
-    #     #     dummy = self.get_dataref_collections()
-    #     logger.debug(f"inited")
-
-    # def get_dataref_collections(self):
-    #     if len(self.fma_collections) > 0:
-    #         return self.fma_collections
-
-    #     collections = {}
-    #     for line in FMA_LINES.keys():
-    #         collection = {}
-    #         collection["name"] = line
-    #         collection["datarefs"] = [f"AirbusFBW/FMA{line}[{i}]" for i in range(30)]
-    #         collection["set-dataref"] = FMA_INTERNAL_DATAREF
-    #         print(f"AirbusFBW/FMA{line}[:37]")
-    #         collections[line] = collection
-    #     self.fma_collections = collections
-    #     logger.debug(f"{len(collections)} collections created")
-    #     return collections
 
     def is_master_fma(self) -> bool:
         ret = len(self.button.dataref_collections) > 0
@@ -87,7 +73,7 @@ class FMAIcon(StringIcon):
             return self
         candidates = list(filter(lambda m: isinstance(m._representation, FMAIcon) and m._representation.is_master_fma(), self.button.page.buttons.values()))
         if len(candidates) == 1:
-            logger.debug(f"button {self.button.name}: master FMA is {candidates[0].name}")
+            logger.debug(f"button {self.button.name}: master FMA is {candidates[0].name}, fma={candidates[0]._representation.fma_idx}")
             return candidates[0]._representation
         if len(candidates) == 0:
             logger.warning(f"button {self.button.name}: no master FMA found")
@@ -95,11 +81,14 @@ class FMAIcon(StringIcon):
             logger.warning(f"button {self.button.name}: too many master FMA")
         return None
 
-    def get_fma_lines(self):
+    def get_fma_lines(self, idx: int = -1):
+        self.text = FMA_LINES
         if self.is_master_fma():
-            s = self.fma * self.text_length
+            if idx == -1:
+                idx = self.fma_idx
+            s = idx * self.text_length
             e = s + self.text_length
-            c = "w"
+            c = "1w"
             empty = c + " " * self.text_length
             lines = []
             for li in range(1, 4):
@@ -107,19 +96,21 @@ class FMAIcon(StringIcon):
                 for k, v in self.text.items():
                     raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
                     for k, v in raws.items():
-                        if len(v) < 40:
-                            v = v + " " * (40 - len(v))
+                        if len(v) < MAX_LENGTH:
+                            v = v + " " * (MAX_LENGTH - len(v))
+                        if len(v) > MAX_LENGTH:
+                            v = v[:MAX_LENGTH]
                         m = v[s:e]
-                        # print(self.fma + 1, li, k, v[s:e], s, e, good == empty, (c + m) != empty, ">" + v + "<")
+                        # print(self.fma_idx + 1, li, k, v[s:e], s, e, good == empty, (c + m) != empty, ">" + v + "<")
                         if len(m) != self.text_length:
                             logger.warning(f"string '{m}' is shorter/longer than {self.text_length}")
-                        if good == empty and (c + m) != empty:
-                            good = k[1] + m
-                lines.append(good)
-            return lines
+                        if (c + m) != empty:  # if good == empty and
+                            good = str(li) + k[1] + m
+                            lines.append(good)
+            return set(lines)
         master_fma = self.get_master_fma()
         if master_fma is not None:
-            return master_fma.get_fma_lines()
+            return master_fma.get_fma_lines(idx=self.fma_idx)
         logger.warning(f"button {self.button.name}: no lines")
         return []
 
@@ -145,27 +136,28 @@ class FMAIcon(StringIcon):
         a = "center"
         idx = -1
         for text in lines:
-            idx = idx + 1
-            if text[1:] == (" " * (len(text) - 1)):
+            idx = int(text[0]) - 1  # idx + 1
+            if text[2:] == (" " * (len(text) - 1)):
                 continue
-            if text_position[0] == "l":
-                w = inside
-                p = "l"
-                a = "left"
-            elif text_position[0] == "r":
-                w = image.width - inside
-                p = "r"
-                a = "right"
+            # if text_position[0] == "l":
+            #     w = inside
+            #     p = "l"
+            #     a = "left"
+            # elif text_position[0] == "r":
+            #     w = image.width - inside
+            #     p = "r"
+            #     a = "right"
             h = image.height / 2
             if idx == 0:
                 h = inside + text_size
             elif idx == 2:
                 h = image.height - inside - text_size
             # logger.debug(f"position {(w, h)}")
-            draw.text((w, h), text=text[1:], font=font, anchor=p + "m", align=a, fill=FMA_COLORS[text[0]])  # (image.width / 2, 15)
-            ref = f"{self.fma+1}{idx+1}"
+            color = FMA_COLORS[text[1]]
+            draw.text((w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
+            ref = f"{self.fma_idx+1}{idx+1}"
             if ref in self.boxed:
-                draw.rectangle([2 * inside, h - text_size / 2] + [ICON_SIZE - 2 * inside, h + text_size / 2], outline=FMA_COLORS[text[0]], width=2)
+                draw.rectangle([2 * inside, h - text_size / 2] + [ICON_SIZE - 2 * inside, h + text_size / 2 + 4], outline=color, width=3)
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(

@@ -17,10 +17,14 @@ buttons:
       action: swipe
       view: image
       image: [60, 270, 420, 0]
-    - name: center
-      action: swipe
-      view: image
-      image: [360, 270, 60, 0]
+    # Commented out, means center "image" is not accessible as a whole
+    # only through its 12 constituing button...
+    # (otherwise warning is reported on clean/draw)
+    # 
+    # - name: center
+    #   action: swipe
+    #   view: image
+    #   image: [360, 270, 60, 0]
     - name: 0
       prefix: e
       action: encoder-push
