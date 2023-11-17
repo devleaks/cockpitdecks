@@ -9,7 +9,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
@@ -42,7 +42,6 @@ class DatarefSet:
     def __init__(self, datarefs, name: str, sim, expire: int = 300):
         self.sim = sim
         self.name = name
-        self.set_dataref = None
         self.is_loaded = False
 
         self.datarefs = datarefs  # { path: Dataref() }
@@ -168,17 +167,17 @@ class DatarefSetCollector(DatarefListener):
             self.next_collection()
             logger.debug(f"started")
 
-    def remove_collection(self, collection: DatarefSet):
+    def remove_collection(self, collection: DatarefSet, start: bool = True):
         need_next = False
         if collection.name in self.collections.keys():
-            if self.current_collection.name == collection.name:
+            if self.current_collection is not None and self.current_collection.name == collection.name:
                 logger.debug(f"unloading current collection {collection.name} before removal")
                 self.current_collection.unload()
                 self.current_collection = None
                 need_next = True
             del self.collections[collection.name]
             logger.debug(f"collection {collection.name} removed")
-            if need_next:
+            if start and need_next:
                 self.next_collection()
 
     def remove_all_collections(self):

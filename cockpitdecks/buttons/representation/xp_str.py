@@ -10,7 +10,7 @@ from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class StringIcon(DrawBase):
@@ -38,9 +38,9 @@ class StringIcon(DrawBase):
             self._update_count = self._update_count + 1
             # self.button._activation.write_dataref(float(self._update_count)) # this cause infinite recursion
             self._last_updated = now()
-            logger.info(f"button {self.button.name}: notified of new strings ({self._update_count}) ({self.text})")
+            # logger.info(f"button {self.button.name}: notified of new strings ({self._update_count}) ({self.text})")
 
-    def is_updated(self):
+    def is_updated(self) -> bool:
         def updated_recently(how_long_ago: int = 10):  # secs
             # prevents multiple notification on startup or during string
             if self._last_updated is not None:
