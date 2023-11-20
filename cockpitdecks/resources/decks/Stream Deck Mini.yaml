@@ -3,10 +3,10 @@
 ---
 name: streamdeck-xl
 brand: Streamdeck
-model: XL
+model: mini
 buttons:
     - name: 0
       action: push
       view: image
       image: [96, 96, 0, 0]
-      repeat: 32
+      repeat: 6

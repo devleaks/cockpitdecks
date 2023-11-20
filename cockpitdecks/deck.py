@@ -35,6 +35,7 @@ class Deck(ABC):
         self._config = config
         self.name = name
         self.cockpit = cockpit
+        self.deck_content = {}
         self.device = device
         self.model = config.get(KW.MODEL.value)
         self._buttons = {}
@@ -101,15 +102,8 @@ class Deck(ABC):
 
     def read_definition(self):
         dt = self.model if self.model is not None else type(self).__name__
-        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER, dt + ".yaml")
-        logger.debug(f"{type(self).__name__}, {self.model}: {fn}")
-        if not os.path.exists(fn):
-            logger.error(f"no deck definition {fn} for {type(self).__name__}")
-            return
-
-        self.deck_content = Config(fn)
-
-        if not self.deck_content.is_valid():
+        self.deck_content = self.cockpit.get_deck_profile(dt)
+        if self.deck_content is None or not self.deck_content.is_valid():
             logger.error(f"no deck definition for {dt}")
             return
 
@@ -129,7 +123,7 @@ class Deck(ABC):
                     logger.warning(f"deck {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
 
             view = button.get(KW.VIEW.value)
-            r = [KW.NONE.value]
+            representation = [KW.NONE.value]
             if view is None or view.lower() == KW.NONE.value:
                 view = KW.NONE.value
             else:

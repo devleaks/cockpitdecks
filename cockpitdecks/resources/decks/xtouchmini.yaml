@@ -2,6 +2,7 @@
 #
 ---
 name: xtouchmini
+brand: Berhinger
 model: mini
 buttons:
     - name: 0

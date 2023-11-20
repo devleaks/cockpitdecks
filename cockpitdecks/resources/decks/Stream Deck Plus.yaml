@@ -1,12 +1,16 @@
 # This is the description of a deck's capabilities for a Elgato Streamdeck MK.2 device
 #
 ---
-name: streamdeck-xl
+name: streamdeck-plus
 brand: Streamdeck
-model: XL
+model: Plus
 buttons:
     - name: 0
       action: push
       view: image
       image: [96, 96, 0, 0]
-      repeat: 32
+      repeat: 4
+    - name: d
+      action: swipe
+      view: image
+      image: [800, 100, 0, 0]

@@ -1,6 +1,7 @@
 # Main container for all decks
 #
 import os
+import glob
 import threading
 import logging
 import pickle
@@ -17,6 +18,7 @@ from cockpitdecks import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEX
 from cockpitdecks import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE
 from cockpitdecks import Config
+from cockpitdecks.deck import DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_TYPES
@@ -27,11 +29,21 @@ logger = logging.getLogger(__name__)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
-    handler = logging.FileHandler(
-        LOGFILE, mode="a"
-    )
+    handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+
+class DeckTemplate(Config):
+    """reads and parse deck template file"""
+
+    def __init__(self, filename: str) -> None:
+        Config.__init__(self, filename=filename)
+
+    def icon_size(self, name: str = None):
+        if name is not None:
+            pass
+        return (0, 0)
 
 
 class CockpitBase:
@@ -39,6 +51,7 @@ class CockpitBase:
 
     [description]
     """
+
     def __init__(self):
         pass
 
@@ -60,13 +73,14 @@ class Cockpit(DatarefListener, CockpitBase):
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
+
     def __init__(self, simulator):
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)
-        self._debug = ROOT_DEBUG.split(",")   # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
+        self._debug = ROOT_DEBUG.split(",")  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
 
-        self._config = None          # content of aircraft/deckconfig/config.yaml
-        self.default_config = None   # content of resources/config.yaml
+        self._config = None  # content of aircraft/deckconfig/config.yaml
+        self.default_config = None  # content of resources/config.yaml
 
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
@@ -74,7 +88,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.sim = simulator(self)
 
         self.disabled = False
-        self.default_pages = None      # for debugging
+        self.default_pages = None  # for debugging
 
         self.has_reload = False
         self.reload_loop_run = False
@@ -85,6 +99,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         self.acpath = None
         self.cockpit = {}  # all decks: { deckname: deck }
+        self.deck_profiles = {}
 
         self.default_logo = DEFAULT_LOGO
         self.default_wallpaper = DEFAULT_WALLPAPER
@@ -112,12 +127,15 @@ class Cockpit(DatarefListener, CockpitBase):
 
         self.default_home_page_name = HOME_PAGE
 
+        self.busy_reloading = False
+
         self.init()
 
     def init(self):
         """
         Loads all devices connected to this computer.
         """
+        self.load_deck_profiles()
         self.scan_devices()
 
     def get_id(self):
@@ -171,10 +189,12 @@ class Cockpit(DatarefListener, CockpitBase):
         if len(DECK_TYPES) == 0:
             logger.error(f"no driver")
             return
-        logger.info(f"drivers installed for {', '.join([f'{decktype} {pkg_resources.get_distribution(decktype).version}' for decktype in DECK_TYPES.keys()])}; scanning..")
+        logger.info(
+            f"drivers installed for {', '.join([f'{decktype} {pkg_resources.get_distribution(decktype).version}' for decktype in DECK_TYPES.keys()])}; scanning.."
+        )
         for decktype, builder in DECK_TYPES.items():
             decks = builder[1]().enumerate()
-            logger.info(f"found {len(decks)} {decktype}") # " ({decktype} {pkg_resources.get_distribution(decktype).version})")
+            logger.info(f"found {len(decks)} {decktype}")  # " ({decktype} {pkg_resources.get_distribution(decktype).version})")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
@@ -182,11 +202,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 if serial in EXCLUDE_DECKS:
                     logger.warning(f"deck {serial} excluded")
                     del decks[name]
-                self.devices.append({
-                    "type": decktype,
-                    "device": device,
-                    "serial_number": serial
-                })
+                self.devices.append({"type": decktype, "device": device, "serial_number": serial})
             logger.debug(f"using {len(decks)} {decktype}")
         logger.debug(f"..scanned")
 
@@ -212,7 +228,9 @@ class Cockpit(DatarefListener, CockpitBase):
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
-                    logger.debug(f"key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees")
+                    logger.debug(
+                        f"key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees"
+                    )
                 else:
                     logger.debug(f"no visual")
                 device.reset()
@@ -228,7 +246,9 @@ class Cockpit(DatarefListener, CockpitBase):
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
-                    logger.debug(f"key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees")
+                    logger.debug(
+                        f"key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees"
+                    )
                 else:
                     logger.debug(f"no visual")
                 device.reset()
@@ -304,6 +324,7 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         Loads default values for font, icon, etc. They will be used if no layout is found.
         """
+
         def locate_font(fontname: str) -> str:
             if fontname in self.fonts.keys():
                 logger.debug(f"font {fontname} already loaded")
@@ -551,14 +572,28 @@ class Cockpit(DatarefListener, CockpitBase):
                 "name": name,
                 "model": device.deck_type(),
                 "serial": device.get_serial_number(),
-                "layout": None,   # Streamdeck will detect None layout and present default deck
-                "brightness": 75  # Note: layout=None is not the same as no layout attribute (attribute missing)
+                "layout": None,  # Streamdeck will detect None layout and present default deck
+                "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
             self.cockpit[name] = DECK_TYPES[decktype][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches
     #
+    def load_deck_profiles(self):
+        folder = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER)
+        for profile in glob.glob(os.path.join(folder, "*.yaml")):
+            data = DeckTemplate(profile)
+            name = data.get("name")
+            if name is not None:
+                self.deck_profiles[name] = data
+            else:
+                logger.warning(f"ignoring unnamed deck {profile}")
+        logger.info(f"loaded {len(self.deck_profiles)} deck profiles ({list(self.deck_profiles.keys())})")
+
+    def get_deck_profile(self, name: str):
+        return self.deck_profiles.get(name)
+
     def load_icons(self):
         # Loading icons
         #
@@ -702,10 +737,12 @@ class Cockpit(DatarefListener, CockpitBase):
             self.start_reload_loop()
         if just_do_it:
             logger.info(f"reloading decks..")
+            self.busy_reloading = True
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
             for name, deck in self.cockpit.items():
                 self.default_pages[name] = deck.current_page.name
             self.load_aircraft(self.acpath)  # will terminate it before loading again
+            self.busy_reloading = False
             logger.info(f"..done")
         else:
             self.reload_queue.put("reload")
@@ -753,7 +790,7 @@ class Cockpit(DatarefListener, CockpitBase):
             device = deck["device"]
             DECK_TYPES[decktype][0].terminate_device(device, deck["serial_number"])
 
-    def terminate_all(self, threads:int = 1):
+    def terminate_all(self, threads: int = 1):
         logger.info(f"terminating..")
         # Terminate decks
         self.terminate_aircraft()
@@ -823,4 +860,3 @@ class Cockpit(DatarefListener, CockpitBase):
         self.terminate_aircraft()
         self.disabled = True
         logger.info(f"disabled")
-

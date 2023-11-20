@@ -1,7 +1,8 @@
 # This is the description of a deck's capabilities for a Loupedeck LoupedeckLive device
 #
 ---
-name: loupedeck
+name: loupedecklive
+brand: Loupedeck
 model: loupedecklive
 buttons:
     - name: 0
