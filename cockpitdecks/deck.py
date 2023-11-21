@@ -42,6 +42,8 @@ class Deck(ABC):
         self._activations = set()
         self._representations = set()
 
+        print(config)
+
         self.cockpit.set_logging_level(__name__)
 
         self.set_defaults(config, cockpit)
@@ -195,7 +197,12 @@ class Deck(ABC):
         self.default_label_color = config.get("default-label-color", base.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
         self.default_label_position = config.get("default-label-position", base.default_label_position)
-        self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
+        dftname = self.name + base.default_icon_name
+        if dftname not in self.cockpit.icons.keys():
+            dftname = base.default_icon_name
+            if dftname not in self.cockpit.icons.keys():
+                logger.warning(f"default icon name {dftname} not found")
+        self.default_icon_name = config.get("default-icon-name", dftname)
         self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
@@ -627,7 +634,7 @@ class DeckWithIcons(Deck):
             if texture in self.cockpit.icons.keys():
                 image = self.cockpit.icons[texture]
             else:
-                image = Image.open(texture)
+                image = Image.open(texture)  # @todo: what is texture file not found?
                 self.cockpit.icons[texture] = image
             logger.debug(f"{who}: texture {texture_in} in {texture}")
 

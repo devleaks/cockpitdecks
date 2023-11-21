@@ -114,7 +114,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.icon_folder = None
         self.icons = {}
         self.cache_icon = False
-        self.default_icon_name = DEFAULT_ICON_NAME
+        self.default_icon_name = None
         self.default_icon_color = convert_color(DEFAULT_ICON_COLOR)
         self.default_icon_texture = DEFAULT_ICON_TEXTURE
         self.default_annun_texture = None
@@ -379,7 +379,6 @@ class Cockpit(DatarefListener, CockpitBase):
         self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
         self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
         self.cache_icon = self.default_config.get("cache-icon", self.cache_icon)
-        self.default_icon_name = DEFAULT_ICON_NAME
         self.default_icon_texture = self.default_config.get("default-icon-texture", DEFAULT_ICON_TEXTURE)
         self.default_icon_color = self.default_config.get("default-icon-color", DEFAULT_ICON_COLOR)
         self.default_icon_color = convert_color(self.default_icon_color)
@@ -392,6 +391,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
         self.cockpit_color = convert_color(self.cockpit_color)
         self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
+
         #
         #
         # DO NOT FORGET SET DEFAULTS IN create_decks()
@@ -408,6 +408,14 @@ class Cockpit(DatarefListener, CockpitBase):
                     fn = os.path.join(rf, i)
                     image = Image.open(fn)
                     self.icons[i] = image
+
+        # 1.2 Do we have a default icon with proper name?
+        dftname = self.default_config.get("default-icon-name", DEFAULT_ICON_NAME)
+        if dftname in self.icons.keys():
+            self.default_icon_name = dftname
+            logger.debug(f"default icon name {dftname} found")
+        else:
+            logger.warning(f"default icon name {dftname} not found")
 
         # 2. Finding a default font for Pillow
         #   WE MUST find a default, system font at least

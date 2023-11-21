@@ -4,6 +4,7 @@
 default-label-color: white
 default-label-font: DIN.ttf
 default-label-size: 14
+default-icon-name: NONE.png
 cache-icon: True
 dataref-roundings:
     sim/cockpit/autopilot/heading_mag: 2

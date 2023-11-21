@@ -61,7 +61,12 @@ class Page:
         self.default_label_color = config.get("default-label-color", base.default_label_color)
         self.default_label_color = convert_color(self.default_label_color)
         self.default_label_position = config.get("default-label-position", base.default_label_position)
-        self.default_icon_name = config.get("default-icon-color", self.name + base.default_icon_name)
+        dftname = self.name + base.default_icon_name
+        if dftname not in self.deck.cockpit.icons.keys():
+            dftname = base.default_icon_name
+            if dftname not in self.deck.cockpit.icons.keys():
+                logger.warning(f"default icon name {dftname} not found")
+        self.default_icon_name = config.get("default-icon-name", dftname)
         self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
         self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
         self.default_icon_color = convert_color(self.default_icon_color)
