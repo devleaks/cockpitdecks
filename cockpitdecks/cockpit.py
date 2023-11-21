@@ -17,7 +17,7 @@ from cockpitdecks import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_
 from cockpitdecks import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEXTURE, DEFAULT_LOGO, DEFAULT_WALLPAPER
 from cockpitdecks import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE
-from cockpitdecks import Config
+from cockpitdecks import Config, KW
 from cockpitdecks.deck import DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
@@ -468,91 +468,98 @@ class Cockpit(DatarefListener, CockpitBase):
         serial_numbers = Config(sn)
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         self._config = Config(fn)
-        if self._config.is_valid():
-            #
-            #
-            # DO NOT FORGET SET DEFAULTS IN load_defaults()
-            #
-            #
-            self.default_logo = self._config.get("default-logo", self.default_logo)
-            self.default_wallpaper = self._config.get("default-wallpaper", self.default_wallpaper)
-            self.default_label_font = self._config.get("default-label-font", self.default_label_font)
-            self.default_label_size = self._config.get("default-label-size", self.default_label_size)
-            self.default_label_color = self._config.get("default-label-color", self.default_label_color)
-            self.default_label_color = convert_color(self.default_label_color)
-            self.default_label_position = self._config.get("default-label-position", self.default_label_position)
-            self.default_icon_texture = self._config.get("default-icon-texture", self.default_icon_texture)
-            self.default_icon_color = self._config.get("default-icon-color", self.default_icon_color)
-            self.default_icon_color = convert_color(self.default_icon_color)
-            self.default_annun_texture = self._config.get("default-annunciator-texture", self.default_annun_texture)
-            self.default_annun_color = self._config.get("default-annunciator-color", self.default_annun_color)
-            self.default_annun_color = convert_color(self.default_annun_color)
-            self.annunciator_style = self._config.get("annunciator-style", self.annunciator_style)
-            self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-            self.cockpit_texture = self._config.get("cockpit-texture", self.cockpit_texture)
-            self.cockpit_color = self._config.get("cockpit-color", self.cockpit_color)
-            self.cockpit_color = convert_color(self.cockpit_color)
-            self.default_home_page_name = self.default_config.get("default-homepage-name", self.default_home_page_name)
-
-            logger.debug(f"label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
-            decks = self._config.get("decks")
-            if decks is not None:
-                deck_type_count = {}
-                for deck_config in decks:
-                    ty = deck_config.get("type")
-                    if ty is not None:
-                        if ty not in deck_type_count:
-                            deck_type_count[ty] = 0
-                        deck_type_count[ty] = deck_type_count[ty] + 1
-
-                cnt = 0
-                for deck_config in decks:
-                    name = deck_config.get("name", f"Deck {cnt}")
-
-                    disabled = deck_config.get("disabled")
-                    if type(disabled) != bool:
-                        if type(disabled) == str:
-                            disabled = disabled.upper() in ["YES", "TRUE"]
-                        elif type(disabled) in [int, float]:
-                            disabled = int(disabled) != 0
-                    if disabled:
-                        logger.info(f"deck {name} disabled, ignoring")
-                        continue
-
-                    decktype = deck_config.get("type")
-                    if decktype not in DECK_TYPES.keys():
-                        logger.warning(f"invalid deck type {decktype}, ignoring")
-                        continue
-
-                    serial = deck_config.get("serial")
-                    if serial is None:  # get it from the secret file
-                        serial = serial_numbers[name] if name in serial_numbers.keys() else None
-
-                    # if serial is not None:
-                    device = self.get_device(req_serial=serial, req_type=decktype)
-                    if device is not None:
-                        #
-                        deck_config["model"] = device.deck_type()
-                        if serial is None:
-                            if deck_type_count[decktype] > 1:
-                                logger.warning(f"only one deck of that type but more than one configuration in config.yaml for decks of that type, ignoring")
-                                continue
-                            deck_config["serial"] = device.get_serial_number()
-                            logger.info(f"deck {decktype} {name} has serial {deck_config['serial']}")
-                        else:
-                            deck_config["serial"] = serial
-                        if name not in self.cockpit.keys():
-                            self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
-                            cnt = cnt + 1
-                            logger.info(f"deck {decktype} {name} added")
-                        else:
-                            logger.warning(f"deck {name} already exist, ignoring")
-                    # else:
-                    #    logger.error(f"deck {decktype} {name} has no serial number, ignoring")
-            else:
-                logger.warning(f"no deck in config file {fn}")
-        else:
+        if not self._config.is_valid():
             logger.warning(f"no config file {fn}")
+            return
+
+        decks = self._config.get("decks")
+        if decks is None:
+            logger.warning(f"no deck in config file {fn}")
+            return
+        #
+        #
+        # DO NOT FORGET SET DEFAULTS IN load_defaults()
+        #
+        #
+        self.default_logo = self._config.get("default-logo", self.default_logo)
+        self.default_wallpaper = self._config.get("default-wallpaper", self.default_wallpaper)
+        self.default_label_font = self._config.get("default-label-font", self.default_label_font)
+        self.default_label_size = self._config.get("default-label-size", self.default_label_size)
+        self.default_label_color = self._config.get("default-label-color", self.default_label_color)
+        self.default_label_color = convert_color(self.default_label_color)
+        self.default_label_position = self._config.get("default-label-position", self.default_label_position)
+        self.default_icon_texture = self._config.get("default-icon-texture", self.default_icon_texture)
+        self.default_icon_color = self._config.get("default-icon-color", self.default_icon_color)
+        self.default_icon_color = convert_color(self.default_icon_color)
+        self.default_annun_texture = self._config.get("default-annunciator-texture", self.default_annun_texture)
+        self.default_annun_color = self._config.get("default-annunciator-color", self.default_annun_color)
+        self.default_annun_color = convert_color(self.default_annun_color)
+        self.annunciator_style = self._config.get("annunciator-style", self.annunciator_style)
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
+        self.cockpit_texture = self._config.get("cockpit-texture", self.cockpit_texture)
+        self.cockpit_color = self._config.get("cockpit-color", self.cockpit_color)
+        self.cockpit_color = convert_color(self.cockpit_color)
+        self.default_home_page_name = self.default_config.get("default-homepage-name", self.default_home_page_name)
+
+        logger.debug(f"label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
+
+        deck_type_count = {}
+        for deck_config in decks:
+            ty = deck_config.get(KW.TYPE.value)
+            if ty is not None:
+                if ty not in deck_type_count:
+                    deck_type_count[ty] = 0
+                deck_type_count[ty] = deck_type_count[ty] + 1
+
+        cnt = 0
+        for deck_config in decks:
+            name = deck_config.get(KW.NAME.value, f"Deck {cnt}")
+
+            disabled = deck_config.get(KW.DISABLED.value)
+            if type(disabled) != bool:
+                if type(disabled) == str:
+                    disabled = disabled.upper() in ["YES", "TRUE"]
+                elif type(disabled) in [int, float]:
+                    disabled = int(disabled) != 0
+            if disabled:
+                logger.info(f"deck {name} disabled, ignoring")
+                continue
+
+            deckprofile = deck_config.get(KW.TYPE.value)
+            if deckprofile not in self.deck_profiles.keys():
+                logger.warning(f"invalid deck type {deckprofile}, ignoring")
+                continue
+
+            decktype = self.deck_profiles[deckprofile][KW.DRIVER.value]
+            if decktype not in DECK_TYPES.keys():
+                logger.warning(f"invalid deck type {decktype}, ignoring")
+                continue
+
+            serial = deck_config.get(KW.SERIAL.value)
+            if serial is None:  # get it from the secret file
+                serial = serial_numbers[name] if name in serial_numbers.keys() else None
+
+            # if serial is not None:
+            device = self.get_device(req_serial=serial, req_type=decktype)
+            if device is not None:
+                #
+                deck_config[KW.MODEL.value] = device.deck_type()
+                if serial is None:
+                    if deck_type_count[decktype] > 1:
+                        logger.warning(f"only one deck of that type but more than one configuration in config.yaml for decks of that type, ignoring")
+                        continue
+                    deck_config[KW.SERIAL.value] = device.get_serial_number()
+                    logger.info(f"deck {decktype} {name} has serial {deck_config[KW.SERIAL.value]}")
+                else:
+                    deck_config[KW.SERIAL.value] = serial
+                if name not in self.cockpit.keys():
+                    self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
+                    cnt = cnt + 1
+                    logger.info(f"deck {decktype} {name} added")
+                else:
+                    logger.warning(f"deck {name} already exist, ignoring")
+            # else:
+            #    logger.error(f"deck {decktype} {name} has no serial number, ignoring")
 
     def create_default_decks(self):
         """

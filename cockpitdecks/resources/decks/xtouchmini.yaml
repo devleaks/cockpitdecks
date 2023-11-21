@@ -4,6 +4,7 @@
 name: xtouchmini
 brand: Berhinger
 model: mini
+driver: xtouchmini
 buttons:
     - name: 0
       action: push

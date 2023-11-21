@@ -4,6 +4,7 @@
 name: streamdeck-mk2
 brand: Streamdeck
 model: MK.2
+driver: streamdeck
 buttons:
     - name: 0
       action: push

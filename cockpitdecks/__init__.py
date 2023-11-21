@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-T
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.9.7"
+__version__ = "7.9.8"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -136,6 +136,9 @@ class KW(Enum):
     BUTTONS = "buttons"
     COLORED_LED = "colored-led"
     DATAREF = "dataref"
+    DISABLED = "disabled"
+    DRIVER = "driver"
+    ENABLED = "enabled"
     FORMULA = "formula"
     FRAME = "frame"
     GUARD = "guard"
@@ -150,6 +153,8 @@ class KW(Enum):
     PREFIX = "prefix"
     REPEAT = "repeat"
     REPRESENTATIONS = "representations"
+    SERIAL = "serial"
+    TYPE = "type"
     VIEW = "view"
 
 

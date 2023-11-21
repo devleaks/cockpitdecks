@@ -37,12 +37,10 @@ class Deck(ABC):
         self.cockpit = cockpit
         self.deck_content = {}
         self.device = device
-        self.model = config.get(KW.MODEL.value)
+        self.model = config.get(KW.TYPE.value)
         self._buttons = {}
         self._activations = set()
         self._representations = set()
-
-        print(config)
 
         self.cockpit.set_logging_level(__name__)
 

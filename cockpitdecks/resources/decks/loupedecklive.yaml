@@ -4,6 +4,7 @@
 name: loupedecklive
 brand: Loupedeck
 model: loupedecklive
+driver: loupedeck
 buttons:
     - name: 0
       action: push
