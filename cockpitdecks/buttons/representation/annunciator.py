@@ -23,21 +23,22 @@ ANNUNCIATOR_DEFAULT_MODEL_PART = "A0"
 
 DEFAULT_INVERT_COLOR = "white"
 
+
 class GUARD_TYPES(Enum):
-    COVER = "cover"         # Full filled cover over the button
-    GRID = "grid"           # Plastic grid over the button
+    COVER = "cover"  # Full filled cover over the button
+    GRID = "grid"  # Plastic grid over the button
 
 
 class ANNUNCIATOR_LED(Enum):
-    BARS = "bars"           # Three (or more) horizontal bars
-    BLOCK = "block"         # Single rectangular led
-    DEFAULT = "block"       # Single rectangular led
-    DOT = "dot"             # Circular dot
-    LED = "led"             # Single rectangular led
-    LGEAR = "lgear"         # Triangular (hollow, downward pointing) shape used for landing gear representation
+    BARS = "bars"  # Three (or more) horizontal bars
+    BLOCK = "block"  # Single rectangular led
+    DEFAULT = "block"  # Single rectangular led
+    DOT = "dot"  # Circular dot
+    LED = "led"  # Single rectangular led
+    LGEAR = "lgear"  # Triangular (hollow, downward pointing) shape used for landing gear representation
+
 
 class AnnunciatorPart:
-
     ANNUNCIATOR_PARTS = {
         "A0": [0.50, 0.50],
         "B0": [0.50, 0.25],
@@ -53,11 +54,10 @@ class AnnunciatorPart:
         "F0": [0.25, 0.25],
         "F1": [0.75, 0.25],
         "F2": [0.25, 0.75],
-        "F3": [0.75, 0.75]
+        "F3": [0.75, 0.75],
     }
 
     def __init__(self, name: str, config: dict, annunciator: "Annunciator"):
-
         self.name = name
         self._config = config
         self.annunciator = annunciator
@@ -140,7 +140,7 @@ class AnnunciatorPart:
         logger.debug(f"button {self.annunciator.button.name}: no invert color, returning {DEFAULT_INVERT_COLOR}")
         return convert_color(DEFAULT_INVERT_COLOR)
 
-    def get_text(self, attr:str):  # = "text"
+    def get_text(self, attr: str):  # = "text"
         return self.annunciator.button.get_text(self._config, attr)
 
     def get_led(self):
@@ -163,7 +163,7 @@ class AnnunciatorPart:
 
         if not self.is_lit():
             try:
-                color = self._config.get("off-color", light_off(color, lightness=DEFAULT_LIGHT_OFF_INTENSITY/100))
+                color = self._config.get("off-color", light_off(color, lightness=DEFAULT_LIGHT_OFF_INTENSITY / 100))
             except ValueError:
                 logger.debug(f"button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using {DEFAULT_COLOR_NAME}")
                 color = DEFAULT_COLOR
@@ -214,33 +214,34 @@ class AnnunciatorPart:
             font = self.annunciator.get_font(fontname, fontsize)
 
             if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
-
                 if self.is_lit() and self.is_invert():
-                    frame = ((self.center_w() - self.width()/2, self.center_h() - self.height()/2), (self.center_w() + self.width()/2, self.center_h() + self.height()/2))
+                    frame = (
+                        (self.center_w() - self.width() / 2, self.center_h() - self.height() / 2),
+                        (self.center_w() + self.width() / 2, self.center_h() + self.height() / 2),
+                    )
                     bgrd_draw.rectangle(frame, fill=self.invert_color())
                     logger.debug(f"button {self.annunciator.button.name}: part {self.name}: lit reverse")
 
                 # logger.debug(f"button {self.button.name}: text '{text}' at ({self.center_w()}, {self.center_h()})")
                 if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
                     logger.debug(f"button {self.annunciator.button.name}: part {self.name}: not lit (Korry)")
-                draw.multiline_text((self.center_w(), self.center_h()),
-                          text=text,
-                          font=font,
-                          anchor="mm",
-                          align="center",
-                          fill=color)
+                draw.multiline_text((self.center_w(), self.center_h()), text=text, font=font, anchor="mm", align="center", fill=color)
 
                 if self.has_frame():
-                    txtbb = draw.multiline_textbbox((self.center_w(), self.center_h()),  # min frame, just around the text
-                              text=text,
-                              font=font,
-                              anchor="mm",
-                              align="center")
+                    txtbb = draw.multiline_textbbox(
+                        (self.center_w(), self.center_h()), text=text, font=font, anchor="mm", align="center"  # min frame, just around the text
+                    )
                     text_margin = 3 * inside  # margin "around" text, line will be that far from text
-                    framebb = ((txtbb[0]-text_margin, txtbb[1]-text_margin), (txtbb[2]+text_margin, txtbb[3]+text_margin))
+                    framebb = ((txtbb[0] - text_margin, txtbb[1] - text_margin), (txtbb[2] + text_margin, txtbb[3] + text_margin))
                     side_margin = 4 * inside  # margin from side of part of annunciator
-                    framemax = ((self.center_w() - self.width()/2 + side_margin, self.center_h() - self.height()/2 + side_margin), (self.center_w() + self.width()/2 - side_margin, self.center_h() + self.height()/2 - side_margin))
-                    frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
+                    framemax = (
+                        (self.center_w() - self.width() / 2 + side_margin, self.center_h() - self.height() / 2 + side_margin),
+                        (self.center_w() + self.width() / 2 - side_margin, self.center_h() + self.height() / 2 - side_margin),
+                    )
+                    frame = (
+                        (min(framebb[0][0], framemax[0][0]), min(framebb[0][1], framemax[0][1])),
+                        (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])),
+                    )
                     thick = int(self.height() / 16)
                     # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
                     draw.rectangle(frame, outline=color, width=thick)
@@ -260,7 +261,10 @@ class AnnunciatorPart:
                 LED_BLOC_HEIGHT = int(self.height() / 2)
                 if size == "large":
                     LED_BLOC_HEIGHT = int(LED_BLOC_HEIGHT * 1.25)
-                frame = ((self.center_w() - self.width()/2 + ninside * inside, self.center_h() - LED_BLOC_HEIGHT / 2), (self.center_w() + self.width()/2 - ninside * inside, self.center_h() + LED_BLOC_HEIGHT / 2))
+                frame = (
+                    (self.center_w() - self.width() / 2 + ninside * inside, self.center_h() - LED_BLOC_HEIGHT / 2),
+                    (self.center_w() + self.width() / 2 - ninside * inside, self.center_h() + LED_BLOC_HEIGHT / 2),
+                )
                 draw.rectangle(frame, fill=color)
             elif led in ["bar", ANNUNCIATOR_LED.BARS.value]:
                 LED_BAR_COUNT = int(self._config.get("bars", 3))
@@ -270,7 +274,10 @@ class AnnunciatorPart:
                 LED_BAR_SPACER = max(int(LED_BAR_HEIGHT / 3), 2)
                 hstart = self.center_h() - (LED_BAR_COUNT * LED_BAR_HEIGHT + (LED_BAR_COUNT - 1) * LED_BAR_SPACER) / 2
                 for i in range(LED_BAR_COUNT):
-                    frame = ((self.center_w() - self.width()/2 + ninside * inside, hstart), (self.center_w() + self.width()/2 - ninside * inside, hstart + LED_BAR_HEIGHT))
+                    frame = (
+                        (self.center_w() - self.width() / 2 + ninside * inside, hstart),
+                        (self.center_w() + self.width() / 2 - ninside * inside, hstart + LED_BAR_HEIGHT),
+                    )
                     draw.rectangle(frame, fill=color)
                     hstart = hstart + LED_BAR_HEIGHT + LED_BAR_SPACER
             elif led == ANNUNCIATOR_LED.DOT.value:
@@ -280,14 +287,14 @@ class AnnunciatorPart:
                 draw.ellipse(frame, fill=color)
             elif led == ANNUNCIATOR_LED.LGEAR.value:
                 STROKE_THICK = int(min(self.width(), self.height()) / 8) + 1
-                tr_hwidth  = int(self.width()  / 2.5 - ninside)  # triangle half length of width
+                tr_hwidth = int(self.width() / 2.5 - ninside)  # triangle half length of width
                 tr_hheight = int(self.height() / 2.5 - ninside)  # triangle half height
                 origin = (self.center_w() - tr_hwidth, self.center_h() - tr_hheight)
                 triangle = [
                     origin,
                     (self.center_w() + tr_hwidth, self.center_h() - tr_hheight),
                     (self.center_w(), self.center_h() + tr_hheight),  # lower center point
-                    origin
+                    origin,
                 ]
                 draw.polygon(triangle, outline=color, width=STROKE_THICK)
             else:
@@ -295,10 +302,8 @@ class AnnunciatorPart:
 
 
 class Annunciator(DrawBase):
-
     def __init__(self, config: dict, button: "Button"):
-
-        self.button = button        # we need the reference before we call Icon.__init__()...
+        self.button = button  # we need the reference before we call Icon.__init__()...
         self.icon = config.get("icon")
         self.annunciator = config.get("annunciator")  # keep raw
         self.annunciator_style = config.get("annunciator-style", button.page.annunciator_style)
@@ -361,7 +366,6 @@ class Annunciator(DrawBase):
 
         DrawBase.__init__(self, config=config, button=button)
 
-
     def is_valid(self):
         if self.button is None:
             logger.warning(f"button {self.button.name}: {type(self).__name__}: no button")
@@ -410,8 +414,8 @@ class Annunciator(DrawBase):
         """
         There is a get_current_value value per annunciator part.
         """
-        v = dict([(k, v.get_current_value()) for k,v in self.annunciator_parts.items()])
-        l = dict([(k, v.is_lit()) for k,v in self.annunciator_parts.items()])
+        v = dict([(k, v.get_current_value()) for k, v in self.annunciator_parts.items()])
+        l = dict([(k, v.is_lit()) for k, v in self.annunciator_parts.items()])
         logger.debug(f"button {self.button.name}: {type(self).__name__}: {v} => {l}")
         return v
 
@@ -442,7 +446,7 @@ class Annunciator(DrawBase):
         # CONSTANTS
         SEAL_WIDTH = 8  # px
         SQUARE = self.button.has_option("square")
-        inside = ICON_SIZE / 32 # ~8px for 256x256 image
+        inside = ICON_SIZE / 32  # ~8px for 256x256 image
         page = self.button.page
 
         # Button overall size: full, large, medium, small.
@@ -453,17 +457,17 @@ class Annunciator(DrawBase):
         if size == "small":  # 1/2, starts at 128
             annun_height = int(ICON_SIZE / 2)
             height_offset = (ICON_SIZE - annun_height) / 2
-            width_offset  = (ICON_SIZE - annun_width ) / 2
-            box = (0, int(ICON_SIZE/4))
+            width_offset = (ICON_SIZE - annun_width) / 2
+            box = (0, int(ICON_SIZE / 4))
         elif size == "medium":  # 5/8, starts at 96
             annun_height = int(10 * ICON_SIZE / 16)
             height_offset = (ICON_SIZE - annun_height) / 2
-            width_offset  = (ICON_SIZE - annun_width ) / 2
+            width_offset = (ICON_SIZE - annun_width) / 2
             box = (0, int(3 * ICON_SIZE / 16))
         elif size == "full":  # starts at 0
             annun_height = ICON_SIZE
             height_offset = 0
-            width_offset  = 0
+            width_offset = 0
             box = (0, 0)
             # box2 = (0, int(spare16 * ICON_SIZE / 16))
         else:  # "large", full size, leaves spare16*1/16 at the top
@@ -471,7 +475,7 @@ class Annunciator(DrawBase):
             if SQUARE:
                 annun_width = annun_height
             height_offset = ICON_SIZE - annun_height
-            width_offset  = (ICON_SIZE - annun_width ) / 2
+            width_offset = (ICON_SIZE - annun_width) / 2
             box = (0, int(spare16 * ICON_SIZE / 16))
 
         # PART 1:
@@ -483,9 +487,9 @@ class Annunciator(DrawBase):
         bgrd_draw = ImageDraw.Draw(bgrd)
         annun_color = (*self.annun_color, 0) if len(self.annun_color) == 3 else self.annun_color
 
-        glow = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_color) # annunciator text and leds , color=(0, 0, 0, 0)
+        glow = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_color)  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(glow)
-        guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=annun_color)     # annunuciator optional guard
+        guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=annun_color)  # annunuciator optional guard
         guard_draw = ImageDraw.Draw(guard)
 
         for part in self.annunciator_parts.values():
@@ -494,8 +498,8 @@ class Annunciator(DrawBase):
         # PART 1.2: Glowing texts, later because not nicely perfect.
         if self.annunciator_style == ANNUNCIATOR_STYLES.KORRY:
             # blurred_image = glow.filter(ImageFilter.UnsharpMask(radius=2, percent=200, threshold=10))
-            blurred_image1 = glow.filter(ImageFilter.GaussianBlur(10)) # self.annunciator.get("blurr", 10)
-            blurred_image2 = glow.filter(ImageFilter.GaussianBlur(4)) # self.annunciator.get("blurr", 10)
+            blurred_image1 = glow.filter(ImageFilter.GaussianBlur(10))  # self.annunciator.get("blurr", 10)
+            blurred_image2 = glow.filter(ImageFilter.GaussianBlur(4))  # self.annunciator.get("blurr", 10)
             # blurred_image = glow.filter(ImageFilter.BLUR)
             glow.alpha_composite(blurred_image1)
             glow.alpha_composite(blurred_image2)
@@ -507,21 +511,29 @@ class Annunciator(DrawBase):
             seal_width = int(self.button._config.get("seal-width", 16))
             seal_color = self.button._config.get("seal-color", "darkslategray")
             sw2 = seal_width / 2
-            bgrd_draw.line([(sw2,sw2),(annun_width-sw2,sw2)], fill=seal_color, width=seal_width)
-            bgrd_draw.line([(sw2,annun_height-sw2),(annun_width-sw2,annun_height-sw2)], fill=seal_color, width=seal_width)
-            bgrd_draw.line([(sw2,sw2),(sw2,annun_height-sw2)], fill=seal_color, width=seal_width)
-            bgrd_draw.line([(annun_width-sw2,sw2),(annun_width-sw2,annun_height-sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(sw2, sw2), (annun_width - sw2, sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(sw2, annun_height - sw2), (annun_width - sw2, annun_height - sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(sw2, sw2), (sw2, annun_height - sw2)], fill=seal_color, width=seal_width)
+            bgrd_draw.line([(annun_width - sw2, sw2), (annun_width - sw2, annun_height - sw2)], fill=seal_color, width=seal_width)
 
         # PART 2: Make annunciator
         # Paste the transparent text/glow into the annunciator background (and optional seal):
         annunciator = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_color)
-        annunciator.alpha_composite(bgrd)               # potential inverted colors
+        annunciator.alpha_composite(bgrd)  # potential inverted colors
         # annunciator.alpha_composite(glow)    # texts
-        annunciator.paste(glow, mask=glow)    # texts
+        annunciator.paste(glow, mask=glow)  # texts
 
         # PART 3: Background
         # Paste the annunciator into the button background:
-        image = self.button.deck.get_icon_background(name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Annunciator")
+        image = self.button.deck.get_icon_background(
+            name=self.button_name(),
+            width=ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=self.icon_texture,
+            color_in=self.icon_color,
+            use_texture=True,
+            who="Annunciator",
+        )
         draw = ImageDraw.Draw(image)
         image.paste(annunciator, box=(int(width_offset), int(height_offset)))
 
@@ -531,22 +543,22 @@ class Annunciator(DrawBase):
             guard_color = self.button.guard.get("color", "red")
             guard_color = convert_color(guard_color)
             sw = self.button.guard.get("grid-width", 16)
-            topp = self.button.guard.get("top", int(ICON_SIZE/8))
-            tl = (ICON_SIZE/8, 0)
-            br = (int(7*ICON_SIZE/8), topp)
-            guard_draw.rectangle(tl+br, fill=guard_color)
+            topp = self.button.guard.get("top", int(ICON_SIZE / 8))
+            tl = (ICON_SIZE / 8, 0)
+            br = (int(7 * ICON_SIZE / 8), topp)
+            guard_draw.rectangle(tl + br, fill=guard_color)
             if self.button.is_guarded():
                 if cover == GUARD_TYPES.GRID.value:
                     for i in range(3):
                         x = int((i * ICON_SIZE / 2) - (i - 1) * sw / 2)
                         guard_draw.line([(x, topp), (x, ICON_SIZE)], fill=guard_color, width=sw)
                     for i in range(3):
-                        y = int(topp + (i * (7*ICON_SIZE/8) / 2) - (i - 1) * sw / 2)
+                        y = int(topp + (i * (7 * ICON_SIZE / 8) / 2) - (i - 1) * sw / 2)
                         guard_draw.line([(0, y), (ICON_SIZE, y)], fill=guard_color, width=sw)
                 else:
                     tl = (0, topp)
                     br = (ICON_SIZE, ICON_SIZE)
-                    guard_draw.rectangle(tl+br, fill=guard_color)
+                    guard_draw.rectangle(tl + br, fill=guard_color)
             image.alpha_composite(guard)
 
         # PART 5: Label
@@ -562,9 +574,7 @@ class Annunciator(DrawBase):
         Describe what the button does in plain English
         """
         t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
-        a = [
-            f"The representation displays an annunciator of type {t}."
-        ]
+        a = [f"The representation displays an annunciator of type {t}."]
         return "\n\r".join(a)
 
 
@@ -573,10 +583,9 @@ class Annunciator(DrawBase):
 # (simple on/off blinking)
 #
 class AnnunciatorAnimate(Annunciator):
-    """
-    """
-    def __init__(self, config: dict, button: "Button"):
+    """ """
 
+    def __init__(self, config: dict, button: "Button"):
         config["annunciator"] = config.get("annunciator-animate")
 
         Annunciator.__init__(self, config=config, button=button)
@@ -626,7 +635,7 @@ class AnnunciatorAnimate(Annunciator):
         if self.running:
             self.running = False
             self.exit.set()
-            self.thread.join(timeout=2*self.speed)
+            self.thread.join(timeout=2 * self.speed)
             if self.thread.is_alive():
                 logger.warning(f"button {self.button.name}: did not get finished signal")
             self.all_lit(False)
@@ -665,9 +674,5 @@ class AnnunciatorAnimate(Annunciator):
         Describe what the button does in plain English
         """
         t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
-        a = [
-            f"The representation displays an annunciator of type {t}.",
-            f"This annunciator is blinking every {self.speed} seconds when it is ON."
-        ]
+        a = [f"The representation displays an annunciator of type {t}.", f"This annunciator is blinking every {self.speed} seconds when it is ON."]
         return "\n\r".join(a)
-

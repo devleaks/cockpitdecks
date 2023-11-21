@@ -21,7 +21,7 @@ from cockpitdecks import Config, KW
 from cockpitdecks.deck import DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
-from cockpitdecks.decks import DECK_TYPES
+from cockpitdecks.decks import DECK_DRIVERS
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -186,13 +186,13 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{dref}")
 
     def scan_devices(self):
-        if len(DECK_TYPES) == 0:
+        if len(DECK_DRIVERS) == 0:
             logger.error(f"no driver")
             return
         logger.info(
-            f"drivers installed for {', '.join([f'{decktype} {pkg_resources.get_distribution(decktype).version}' for decktype in DECK_TYPES.keys()])}; scanning.."
+            f"drivers installed for {', '.join([f'{decktype} {pkg_resources.get_distribution(decktype).version}' for decktype in DECK_DRIVERS.keys()])}; scanning.."
         )
-        for decktype, builder in DECK_TYPES.items():
+        for decktype, builder in DECK_DRIVERS.items():
             decks = builder[1]().enumerate()
             logger.info(f"found {len(decks)} {decktype}")  # " ({decktype} {pkg_resources.get_distribution(decktype).version})")
             for name, device in enumerate(decks):
@@ -531,7 +531,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 continue
 
             decktype = self.deck_profiles[deckprofile][KW.DRIVER.value]
-            if decktype not in DECK_TYPES.keys():
+            if decktype not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck type {decktype}, ignoring")
                 continue
 
@@ -553,7 +553,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 else:
                     deck_config[KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
-                    self.cockpit[name] = DECK_TYPES[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
+                    self.cockpit[name] = DECK_DRIVERS[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
                     cnt = cnt + 1
                     logger.info(f"deck {decktype} {name} added")
                 else:
@@ -576,7 +576,7 @@ class Cockpit(DatarefListener, CockpitBase):
         # }
         for deck in self.devices:
             decktype = deck.get("type")
-            if decktype not in DECK_TYPES.keys():
+            if decktype not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck type {decktype}, ignoring")
                 continue
             device = deck["device"]
@@ -590,7 +590,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 "layout": None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
-            self.cockpit[name] = DECK_TYPES[decktype][0](name, config, self, device)
+            self.cockpit[name] = DECK_DRIVERS[decktype][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches
@@ -799,11 +799,11 @@ class Cockpit(DatarefListener, CockpitBase):
     def terminate_devices(self):
         for deck in self.devices:
             decktype = deck.get("type")
-            if decktype not in DECK_TYPES.keys():
+            if decktype not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck type {decktype}, ignoring")
                 continue
             device = deck["device"]
-            DECK_TYPES[decktype][0].terminate_device(device, deck["serial_number"])
+            DECK_DRIVERS[decktype][0].terminate_device(device, deck["serial_number"])
 
     def terminate_all(self, threads: int = 1):
         logger.info(f"terminating..")
