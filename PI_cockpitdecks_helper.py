@@ -2,13 +2,17 @@
 # New commands for "command" are "command/begin" and "command/end".
 #
 import os
-import yaml
 import xp
+import ruamel
 from traceback import print_exc
+from ruamel.yaml import YAML
+
+ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
+yaml = YAML(typ="safe", pure=True)
 
 # from decks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
 # Copied here to make this script independent
-CONFIG_DIR  = "deckconfig"
+CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
@@ -25,16 +29,18 @@ FUN = "cmdfun"
 HDL = "cmdhdl"
 
 
-RELEASE = "1.0.1"  # local version number
+RELEASE = "1.0.3"  # local version number
 
 # Changelog:
 #
+# 21-NOV-2023: 1.0.3: Switched to ruamel.YAML.
+# 21-NOV-2023: 1.0.2: Added encoding to file open.
 # 28-FEB-2023: 1.0.1: Adjusted for new Yaml file format and attributes.
 # 25-OCT-2022: 1.0.0: Initial version
 #
 
-class PythonInterface:
 
+class PythonInterface:
     def __init__(self):
         self.Name = "Cockpitdecks Helper"
         self.Sig = "xppython3.cockpitdeckshelper"
@@ -64,9 +70,9 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            ac = xp.getNthAircraftModel(0)      # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
-                acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                 print(self.Info, "PI::XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
                 print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
@@ -96,9 +102,9 @@ class PythonInterface:
         if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                ac = xp.getNthAircraftModel(0)      # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
                 if len(ac) == 2:
-                    acpath = os.path.split(ac[1])   # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                    acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
                         print(self.Info, "PI::XPluginReceiveMessage: trying " + acpath[0] + "..")
                     self.load(acpath=acpath[0])
@@ -164,17 +170,17 @@ class PythonInterface:
                     # cmdref = xp.findCommand(command)
                     # if cmdref is not None:
                     # As such, we only check for command existence at execution time.
-                    cmd = command + '/begin'
+                    cmd = command + "/begin"
                     self.commands[cmd] = {}
-                    self.commands[cmd][REF] = xp.createCommand(cmd, 'Begin '+cmd)
+                    self.commands[cmd][REF] = xp.createCommand(cmd, "Begin " + cmd)
                     self.commands[cmd][FUN] = lambda *args: self.command(command, True)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
                     self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
-                    cmd = command + '/end'
+                    cmd = command + "/end"
                     self.commands[cmd] = {}
-                    self.commands[cmd][REF] = xp.createCommand(cmd, 'End '+cmd)
+                    self.commands[cmd][REF] = xp.createCommand(cmd, "End " + cmd)
                     self.commands[cmd][FUN] = lambda *args: self.command(command, False)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
                     self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
@@ -193,7 +199,6 @@ class PythonInterface:
         if self.trace:
             print(self.Info, f"PI::load: {len(self.commands)} commands installed.")
 
-
     def get_beginend_commands(self, acpath):
         # Scans an aircraft deckconfig and collects long press commands.
         #
@@ -210,7 +215,7 @@ class PythonInterface:
 
         config_fn = os.path.join(acpath, CONFIG_DIR, CONFIG_FILE)
         if os.path.exists(config_fn):
-            with open(config_fn, "r") as config_fp:
+            with open(config_fn, "r", encoding="utf-8") as config_fp:
                 config = yaml.safe_load(config_fp)
                 if DECKS in config:
                     for deck in config[DECKS]:
@@ -226,7 +231,7 @@ class PythonInterface:
                             if page.endswith("yaml") or page.endswith("yml"):
                                 page_fn = os.path.join(layout_dn, page)
                                 if os.path.exists(page_fn):
-                                    with open(page_fn, "r") as page_fp:
+                                    with open(page_fn, "r", encoding="utf-8") as page_fp:
                                         page_def = yaml.safe_load(page_fp)
                                         if DEBUG:
                                             print(self.Info, f"load: doing {page_fn}..")

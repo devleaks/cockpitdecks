@@ -25,7 +25,7 @@ from cockpitdecks.decks import DECK_DRIVERS
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
@@ -34,7 +34,7 @@ if LOGFILE is not None:
     logger.addHandler(handler)
 
 
-class DeckTemplate(Config):
+class DeckType(Config):
     """reads and parse deck template file"""
 
     def __init__(self, filename: str) -> None:
@@ -99,7 +99,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         self.acpath = None
         self.cockpit = {}  # all decks: { deckname: deck }
-        self.deck_profiles = {}
+        self.deck_types = {}
 
         self.default_logo = DEFAULT_LOGO
         self.default_wallpaper = DEFAULT_WALLPAPER
@@ -190,11 +190,11 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.error(f"no driver")
             return
         logger.info(
-            f"drivers installed for {', '.join([f'{decktype} {pkg_resources.get_distribution(decktype).version}' for decktype in DECK_DRIVERS.keys()])}; scanning.."
+            f"drivers installed for {', '.join([f'{deck_driver} {pkg_resources.get_distribution(deck_driver).version}' for deck_driver in DECK_DRIVERS.keys()])}; scanning.."
         )
-        for decktype, builder in DECK_DRIVERS.items():
+        for deck_driver, builder in DECK_DRIVERS.items():
             decks = builder[1]().enumerate()
-            logger.info(f"found {len(decks)} {decktype}")  # " ({decktype} {pkg_resources.get_distribution(decktype).version})")
+            logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
@@ -202,11 +202,11 @@ class Cockpit(DatarefListener, CockpitBase):
                 if serial in EXCLUDE_DECKS:
                     logger.warning(f"deck {serial} excluded")
                     del decks[name]
-                self.devices.append({"type": decktype, "device": device, "serial_number": serial})
-            logger.debug(f"using {len(decks)} {decktype}")
+                self.devices.append({KW.DRIVER.value: deck_driver, KW.DEVICE.value: device, KW.SERIAL.value: serial})
+            logger.debug(f"using {len(decks)} {deck_driver}")
         logger.debug(f"..scanned")
 
-    def get_device(self, req_serial: str, req_type: str):
+    def get_device(self, req_serial: str, req_driver: str):
         """
         Get a HIDAPI device for the supplied serial number.
         If found, the device is opened and reset and returned open.
@@ -219,12 +219,12 @@ class Cockpit(DatarefListener, CockpitBase):
             i = 0
             good = None
             for deck in self.devices:
-                if deck["type"] == req_type:
+                if deck[KW.DRIVER.value] == req_driver:
                     good = deck
                     i = i + 1
             if i == 1 and good is not None:
-                logger.debug(f"only one deck of type {req_type}, returning it")
-                device = good["device"]
+                logger.debug(f"only one deck of type {req_driver}, returning it")
+                device = good[KW.DEVICE.value]
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
@@ -237,12 +237,12 @@ class Cockpit(DatarefListener, CockpitBase):
                 return device
             else:
                 if i > 1:
-                    logger.warning(f"more than one deck of type {req_type}, no serial to disambiguate")
+                    logger.warning(f"more than one deck of type {req_driver}, no serial to disambiguate")
             return None
         ## Got serial, search for it
         for deck in self.devices:
-            if deck["serial_number"] == req_serial:
-                device = deck["device"]
+            if deck[KW.SERIAL.value] == req_serial:
+                device = deck[KW.DEVICE.value]
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
@@ -503,13 +503,13 @@ class Cockpit(DatarefListener, CockpitBase):
 
         logger.debug(f"label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
 
-        deck_type_count = {}
-        for deck_config in decks:
-            ty = deck_config.get(KW.TYPE.value)
+        deck_count_by_type = {}
+        for deck_type in self.deck_types.values():
+            ty = deck_type.get(KW.TYPE.value)
             if ty is not None:
-                if ty not in deck_type_count:
-                    deck_type_count[ty] = 0
-                deck_type_count[ty] = deck_type_count[ty] + 1
+                if ty not in deck_count_by_type:
+                    deck_count_by_type[ty] = 0
+                deck_count_by_type[ty] = deck_count_by_type[ty] + 1
 
         cnt = 0
         for deck_config in decks:
@@ -525,14 +525,14 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.info(f"deck {name} disabled, ignoring")
                 continue
 
-            deckprofile = deck_config.get(KW.TYPE.value)
-            if deckprofile not in self.deck_profiles.keys():
-                logger.warning(f"invalid deck type {deckprofile}, ignoring")
+            deck_type = deck_config.get(KW.TYPE.value)
+            if deck_type not in self.deck_types.keys():
+                logger.warning(f"invalid deck type {deck_type}, ignoring")
                 continue
 
-            decktype = self.deck_profiles[deckprofile][KW.DRIVER.value]
-            if decktype not in DECK_DRIVERS.keys():
-                logger.warning(f"invalid deck type {decktype}, ignoring")
+            deck_driver = self.deck_types[deck_type][KW.DRIVER.value]
+            if deck_driver not in DECK_DRIVERS.keys():
+                logger.warning(f"invalid deck driver {deck_driver}, ignoring")
                 continue
 
             serial = deck_config.get(KW.SERIAL.value)
@@ -540,26 +540,28 @@ class Cockpit(DatarefListener, CockpitBase):
                 serial = serial_numbers[name] if name in serial_numbers.keys() else None
 
             # if serial is not None:
-            device = self.get_device(req_serial=serial, req_type=decktype)
+            device = self.get_device(req_serial=serial, req_driver=deck_driver)
             if device is not None:
                 #
                 deck_config[KW.MODEL.value] = device.deck_type()
                 if serial is None:
-                    if deck_type_count[decktype] > 1:
-                        logger.warning(f"only one deck of that type but more than one configuration in config.yaml for decks of that type, ignoring")
+                    if deck_count_by_type[deck_type] > 1:
+                        logger.warning(
+                            f"only one deck of that type but more than one configuration in config.yaml for decks of that type and no serial number, ignoring"
+                        )
                         continue
                     deck_config[KW.SERIAL.value] = device.get_serial_number()
-                    logger.info(f"deck {decktype} {name} has serial {deck_config[KW.SERIAL.value]}")
+                    logger.info(f"deck {deck_type} {name} has serial {deck_config[KW.SERIAL.value]}")
                 else:
                     deck_config[KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
-                    self.cockpit[name] = DECK_DRIVERS[decktype][0](name=name, config=deck_config, cockpit=self, device=device)
+                    self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     cnt = cnt + 1
-                    logger.info(f"deck {decktype} {name} added")
+                    logger.info(f"deck {deck_type}({deck_driver}) {name} added")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:
-            #    logger.error(f"deck {decktype} {name} has no serial number, ignoring")
+            #    logger.error(f"deck {deck_type} {name} has no serial number, ignoring")
 
     def create_default_decks(self):
         """
@@ -598,16 +600,16 @@ class Cockpit(DatarefListener, CockpitBase):
     def load_deck_profiles(self):
         folder = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER)
         for profile in glob.glob(os.path.join(folder, "*.yaml")):
-            data = DeckTemplate(profile)
-            name = data.get("name")
+            data = DeckType(profile)
+            name = data.get(KW.TYPE.value)
             if name is not None:
-                self.deck_profiles[name] = data
+                self.deck_types[name] = data
             else:
                 logger.warning(f"ignoring unnamed deck {profile}")
-        logger.info(f"loaded {len(self.deck_profiles)} deck profiles ({list(self.deck_profiles.keys())})")
+        logger.info(f"loaded {len(self.deck_types)} deck profiles ({list(self.deck_types.keys())})")
 
     def get_deck_profile(self, name: str):
-        return self.deck_profiles.get(name)
+        return self.deck_types.get(name)
 
     def load_icons(self):
         # Loading icons

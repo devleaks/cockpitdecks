@@ -1,7 +1,7 @@
 # This is the description of a deck's capabilities for a Loupedeck LoupedeckLive device
 #
 ---
-name: loupedecklive
+type: loupedecklive
 brand: Loupedeck
 model: loupedecklive
 driver: loupedeck

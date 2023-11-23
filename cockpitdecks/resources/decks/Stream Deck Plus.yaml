@@ -1,7 +1,7 @@
 # This is the description of a deck's capabilities for a Elgato Streamdeck Plus device
 #
 ---
-name: streamdeck-plus
+type: streamdeck-plus
 brand: Streamdeck
 model: Plus
 driver: streamdeck

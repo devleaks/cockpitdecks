@@ -1,7 +1,7 @@
 # This is the description of a deck's capabilities for a Behringer XTouch Mini device
 #
 ---
-name: xtouchmini
+type: xtouchmini
 brand: Berhinger
 model: mini
 driver: xtouchmini
