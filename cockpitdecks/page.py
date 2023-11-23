@@ -219,6 +219,8 @@ class Page:
         logger.debug(f"page {self.name}: cleaning..")
         for button in self.buttons.values():
             button.clean()  # knows how to clean itself
+        for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices(with_icon=True)):
+            self.deck.clean_empty(key)
         logger.debug(f"page {self.name}: ..done")
 
     def terminate(self):

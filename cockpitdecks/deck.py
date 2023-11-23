@@ -35,9 +35,8 @@ class Deck(ABC):
         self._config = config
         self.name = name
         self.cockpit = cockpit
-        self.deck_content = {}
         self.device = device
-        self.model = config.get(KW.TYPE.value)
+        self.deck_content = {}
         self._buttons = {}
         self._activations = set()
         self._representations = set()
@@ -101,8 +100,8 @@ class Deck(ABC):
         return ID_SEP.join([self.cockpit.get_id(), self.name, self.layout])
 
     def read_definition(self):
-        dt = self.model if self.model is not None else type(self).__name__
-        self.deck_content = self.cockpit.get_deck_profile(dt)
+        deck_type = self._config.get(KW.TYPE.value, type(self).__name__)
+        self.deck_content = self.cockpit.get_deck_type_description(deck_type)
         if self.deck_content is None or not self.deck_content.is_valid():
             logger.error(f"no deck definition for {dt}")
             return
@@ -504,6 +503,9 @@ class Deck(ABC):
     def fill_empty(self, key):
         pass
 
+    def clean_empty(self, key):
+        pass
+
     @abstractmethod
     def render(self, button: Button):
         pass
@@ -660,12 +662,21 @@ class DeckWithIcons(Deck):
         # Abstact
         return (0, 0)
 
-    def fill_empty(self, key):
-        icon = self.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture, name=f"{self.name}:empty:{key}")
+    def fill_empty(self, key, clean: bool = False):
+        icon = None
+        if self.current_page is not None:
+            icon = self.create_icon_for_key(
+                key, colors=self.current_page.cockpit_color, texture=self.current_page.cockpit_texture, name=f"{self.name}:{self.current_page.name}:{key}"
+            )
+        else:
+            icon = self.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture, name=f"{self.name}:{key}")
         if icon is not None:
             self._send_key_image_to_device(key, icon)
         else:
-            logger.warning(f"deck {self.name}: {key}: no fill icon")
+            logger.warning(f"deck {self.name}: {key}: no fill icon{' cleaning' if clean else ''}")
+
+    def clean_empty(self, key):
+        self.fill_empty(key, clean=True)
 
     # #######################################
     # Deck Specific Functions : Rendering

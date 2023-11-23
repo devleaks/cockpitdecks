@@ -2,10 +2,11 @@
 #
 import os
 import logging
+
 from PIL import Image, ImageOps
 
 from Loupedeck.ImageHelpers import PILHelper
-from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CENTER, KW_CIRCLE, HAPTIC
+from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CENTER, HAPTIC
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
 from cockpitdecks.resources.color import DEFAULT_COLOR
@@ -143,7 +144,7 @@ class Loupedeck(DeckWithIcons):
             state = 1 if msg["state"] == "down" else 0
             num = -1
             if not key.startswith(ENCODER_PREFIX):
-                if key == KW_CIRCLE:
+                if key == "circle":
                     key = 0
                 try:
                     num = int(key)
@@ -304,9 +305,19 @@ class Loupedeck(DeckWithIcons):
 
         image = button.get_representation()
         if image is not None:
-            if button.index in self.deck_content.special_displays():
+            if button.index not in self.deck_content.special_displays():
                 self.device.set_key_image(button.index, image)
+                return
+            if button.index == KW_LEFT:
+                self.device.set_left_image(image)
+            elif button.index == KW_RIGHT:
+                self.device.set_right_image(image)
+            elif button.index == KW_CENTER:
+                self.device.set_center_image(image)
             else:
+                logger.warning(f"button {button.name}: invalid index {button.index}")
+        else:  # image is none, need to create one
+            if button.index not in self.deck_content.special_displays():
                 sizes = self.device.key_image_format()
                 if sizes is not None:
                     sizes = sizes.get("size")
@@ -316,13 +327,13 @@ class Loupedeck(DeckWithIcons):
                         mh = sizes[1]
                         if image.width > mw or image.height > mh:
                             image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=self.get_display_for_pil(button.index))
+                            self._send_key_image_to_device(button.index, image)
                     else:
                         logger.warning("cannot get device key image size")
                 else:
                     logger.warning("cannot get device key image format")
-                self._send_key_image_to_device(button.index, image)
-        else:
-            logger.warning(f"no image for {button.name}")
+            else:
+                logger.warning(f"no image for {button.index}")
 
     def _set_button_color(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
@@ -334,7 +345,7 @@ class Loupedeck(DeckWithIcons):
             color = DEFAULT_COLOR
         idx = button.index.lower().replace(BUTTON_PREFIX, "")
         if idx == "0":
-            idx = KW_CIRCLE
+            idx = "circle"
         self.device.set_button_color(idx, color)
 
     def print_page(self, page: Page):

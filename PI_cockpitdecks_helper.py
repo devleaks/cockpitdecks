@@ -2,6 +2,7 @@
 # New commands for "command" are "command/begin" and "command/end".
 #
 import os
+import glob
 import xp
 import ruamel
 from traceback import print_exc
@@ -202,62 +203,67 @@ class PythonInterface:
     def get_beginend_commands(self, acpath):
         # Scans an aircraft deckconfig and collects long press commands.
         #
-        # Constants (keywords in yaml file)
+        # Internal constants (keywords in yaml file)
+        #
+        BUTTONS = "buttons"  # keyword for button definitions on page
+        DECKS = "decks"  # keyword to list decks used for this aircraft
+        LAYOUT = "layout"  # keyword to detect layout for above deck
+        TYPE = "type"  # keyword to detect the action of the button (intend)
+        COMMAND = "command"  # keyword to detect (X-Plane) command in definition of the button
+        MULTI_COMMANDS = "commands"  # same as above for multiple commands
+
         DEBUG = False
-        BUTTONS = "buttons"
-        DECKS = "decks"
-        LAYOUT = "layout"
-        COMMAND = "command"
-        MULTI_COMMANDS = "commands"
-        TYPE = "type"
+
+        config_dn = os.path.join(acpath, CONFIG_DIR)
+        if not os.path.isdir(config_dn):
+            print(self.Info, f"PI::get_beginend_commands: Cockpitdecks config directory '{config_dn}' not found in aircraft path '{acpath}'")
+            return []
+
+        config_fn = os.path.join(config_dn, CONFIG_FILE)
+        if not os.path.exists(config_fn):
+            print(self.Info, f"PI::get_beginend_commands: Cockpitdecks config file '{config_fn}' not found in Cockpitdecks config dir '{config_dn}'")
+            return []
 
         commands = []
-
-        config_fn = os.path.join(acpath, CONFIG_DIR, CONFIG_FILE)
-        if os.path.exists(config_fn):
-            with open(config_fn, "r", encoding="utf-8") as config_fp:
-                config = yaml.safe_load(config_fp)
-                if DECKS in config:
-                    for deck in config[DECKS]:
-                        layout = DEFAULT_LAYOUT
-                        if LAYOUT in deck:
-                            layout = deck[LAYOUT]
-                        layout_dn = os.path.join(acpath, CONFIG_DIR, layout)
-                        if not os.path.exists(layout_dn):
-                            print(self.Info, f"PI::get_beginend_commands: deck has no layout folder '{layout}'")
-                            continue
-                        pages = os.listdir(layout_dn)
-                        for page in pages:
-                            if page.endswith("yaml") or page.endswith("yml"):
-                                page_fn = os.path.join(layout_dn, page)
-                                if os.path.exists(page_fn):
-                                    with open(page_fn, "r", encoding="utf-8") as page_fp:
-                                        page_def = yaml.safe_load(page_fp)
+        with open(config_fn, "r", encoding="utf-8") as config_fp:
+            config = yaml.load(config_fp)
+            if DECKS in config:
+                for deck in config[DECKS]:
+                    layout = DEFAULT_LAYOUT
+                    if LAYOUT in deck:
+                        layout = deck[LAYOUT]
+                    layout_dn = os.path.join(config_dn, layout)
+                    if not os.path.exists(layout_dn):
+                        print(self.Info, f"PI::get_beginend_commands: deck {deck}: layout folder '{layout}' not found in '{config_dn}'")
+                        continue
+                    pages = glob.glob(layout_dn + ".yaml") + glob.glob(layout_dn + ".yml")
+                    for page in pages:
+                        if DEBUG:
+                            print(self.Info, f"PI::get_beginend_commands: doing page {page}")
+                        page_fn = os.path.join(layout_dn, page)
+                        with open(page_fn, "r", encoding="utf-8") as page_fp:
+                            page_def = yaml.load(page_fp)
+                            if DEBUG:
+                                print(self.Info, f"PI::get_beginend_commands: doing {page_fn}..")
+                            if BUTTONS not in page_def:
+                                print(self.Info, f"PI::get_beginend_commands: {page_def} has no button")
+                                continue
+                            for button_def in page_def[BUTTONS]:
+                                bty = None
+                                if TYPE in button_def:
+                                    bty = button_def[TYPE]
+                                    print(self.Info, f"PI::get_beginend_commands: button {button_def} has no type")
+                                    continue
+                                if bty in NOTICABLE_BUTTON_TYPES:
+                                    if DEBUG:
+                                        print(self.Info, f"PI::get_beginend_commands: doing {button_def['index']}..")
+                                    if COMMAND in button_def:
+                                        commands.append(button_def[COMMAND])
                                         if DEBUG:
-                                            print(self.Info, f"load: doing {page_fn}..")
-                                        if not BUTTONS in page_def:
-                                            print(self.Info, f"load: {page_fn} has no action")
-                                            continue
-                                        for button_def in page_def[BUTTONS]:
-                                            bty = None
-                                            if TYPE in button_def:
-                                                bty = button_def[TYPE]
-                                            if bty in NOTICABLE_BUTTON_TYPES:
-                                                if DEBUG:
-                                                    print(self.Info, f"load: doing {button_def['index']}..")
-                                                if COMMAND in button_def:
-                                                    commands.append(button_def[COMMAND])
-                                                    if DEBUG:
-                                                        print(self.Info, f"load: added {button_def[COMMAND]}..")
-                                                if MULTI_COMMANDS in button_def:
-                                                    for c in button_def[MULTI_COMMANDS]:
-                                                        if DEBUG:
-                                                            print(self.Info, f"load: added mc {c}..")
-                                                        commands.append(c)
-                                else:
-                                    print(self.Info, f"PI::get_beginend_commands: file {page_fn} not found")
-                            else:  # not a yaml file
-                                print(self.Info, f"PI::get_beginend_commands: ignoring file {page}")
-        else:
-            print(self.Info, f"PI::get_beginend_commands: Looking in '{config_fn}' to scan for deck layout: directory not found.")
+                                            print(self.Info, f"PI::get_beginend_commands: added {button_def[COMMAND]}..")
+                                    if MULTI_COMMANDS in button_def:
+                                        for c in button_def[MULTI_COMMANDS]:
+                                            commands.append(c)
+                                            if DEBUG:
+                                                print(self.Info, f"PI::get_beginend_commands: added mc {c}..")
         return commands

@@ -16,7 +16,8 @@ buttons:
       action: encoder-push
       view: none
       repeat: 4
-    - name: d
+    # touchscreen in streamdeck package vocabulary
+    - name: touchscreen
       action: swipe
       view: image
       image: [800, 100, 0, 0]

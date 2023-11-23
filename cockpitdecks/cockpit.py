@@ -39,10 +39,20 @@ class DeckType(Config):
 
     def __init__(self, filename: str) -> None:
         Config.__init__(self, filename=filename)
+        self._special_displays = None
 
-    def icon_size(self, name: str = None):
-        if name is not None:
-            pass
+    def special_displays(self):
+        if self._special_displays is not None:
+            return self._special_displays
+        self._special_displays = []
+        for b in self.store.get("buttons", []):
+            if "repeat" not in b and b.get("view", "") == "image" and b.get("image") is not None:
+                n = b.get("name")
+                if n is not None:
+                    self._special_displays.append(n)
+        return self._special_displays
+
+    def display_size(self, name: str):
         return (0, 0)
 
 
@@ -135,7 +145,7 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         Loads all devices connected to this computer.
         """
-        self.load_deck_profiles()
+        self.load_deck_types()
         self.scan_devices()
 
     def get_id(self):
@@ -202,6 +212,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 if serial in EXCLUDE_DECKS:
                     logger.warning(f"deck {serial} excluded")
                     del decks[name]
+                logger.debug(f"added {type(device).__name__} (driver {deck_driver}, serial {serial[:3]}{'*'*max(1,len(serial))})")
                 self.devices.append({KW.DRIVER.value: deck_driver, KW.DEVICE.value: device, KW.SERIAL.value: serial})
             logger.debug(f"using {len(decks)} {deck_driver}")
         logger.debug(f"..scanned")
@@ -597,18 +608,18 @@ class Cockpit(DatarefListener, CockpitBase):
     # #########################################################
     # Cockpit data caches
     #
-    def load_deck_profiles(self):
+    def load_deck_types(self):
         folder = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, DECKS_FOLDER)
-        for profile in glob.glob(os.path.join(folder, "*.yaml")):
-            data = DeckType(profile)
+        for deck_type in glob.glob(os.path.join(folder, "*.yaml")):
+            data = DeckType(deck_type)
             name = data.get(KW.TYPE.value)
             if name is not None:
                 self.deck_types[name] = data
             else:
-                logger.warning(f"ignoring unnamed deck {profile}")
-        logger.info(f"loaded {len(self.deck_types)} deck profiles ({list(self.deck_types.keys())})")
+                logger.warning(f"ignoring unnamed deck {deck_type}")
+        logger.info(f"loaded {len(self.deck_types)} deck types ({list(self.deck_types.keys())})")
 
-    def get_deck_profile(self, name: str):
+    def get_deck_type_description(self, name: str):
         return self.deck_types.get(name)
 
     def load_icons(self):
