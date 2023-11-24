@@ -152,6 +152,9 @@ class Icon(Representation):
     def render(self):
         return self.get_image()
 
+    def icon_size(self) -> list:
+        return self.button.deck.deck_content.display_size(self.button.index)
+
     def get_text_detail(self, config, which_text):
         text = self.button.get_text(config, which_text)
         text_format = config.get(f"{which_text}-format")

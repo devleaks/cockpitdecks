@@ -25,6 +25,53 @@ logger = logging.getLogger(__name__)
 DECKS_FOLDER = "decks"
 
 
+class DeckType(Config):
+    """reads and parse deck template file"""
+
+    def __init__(self, filename: str) -> None:
+        Config.__init__(self, filename=filename)
+        self._special_displays = None
+
+    def special_displays(self):
+        """Returns name of all special displays (i.e. not "keys")"""
+
+        if self._special_displays is not None:
+            return self._special_displays
+        self._special_displays = []
+        for b in self.store.get("buttons", []):
+            if "repeat" not in b and b.get("view", "") == "image" and b.get("image") is not None:
+                n = b.get("name")
+                if n is not None:
+                    self._special_displays.append(n)
+        return self._special_displays
+
+    def display_size(self, name: str, return_offset: bool = False):
+        """Parses info from resources.decks.*.yaml"""
+
+        def isint(name):
+            try:
+                x = int(name)
+                return str(x) == str(name)
+            except:
+                pass
+            return False
+
+        for b in self.store.get("buttons", []):
+            if b.get("view", "") == "image":
+                if isint(name):
+                    s = b.get("image")  # [width, height, offset_x, offset_y]
+                    if s is not None:
+                        return s[0:2] if not return_offset else s[2:4]
+                else:
+                    n = b.get("name")
+                    p = b.get("prefix")
+                    if (n is not None and name == n) or (p is not None and name.startswith(str(p))):
+                        s = b.get("image")  # [width, height, offset_x, offset_y]
+                        if s is not None:
+                            return s[0:2] if not return_offset else s[2:4]
+        return None
+
+
 class Deck(ABC):
     """
     Loads the configuration of a Deck.
@@ -424,7 +471,7 @@ class Deck(ABC):
         # Useful to just get the int value of index
         b = self._buttons.get(index)
         if b is not None:
-            return b.get(KW.INDEX.value_NUMRIC)
+            return b.get(KW.INDEX_NUMERIC.value)
         logger.warning(f"deck {self.name}: no button index {index}")
         return None
 
@@ -454,15 +501,16 @@ class Deck(ABC):
         if index is not None:
             b = self._buttons.get(index)
             if b is not None:
-                logger.debug(f"deck {self.name}: button {index}: {DEFAULT_REPRESENTATIONS + b[KW.ACTIVATIONS.value]}")
-                return DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value]
+                all_representations = set(DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value])
+                logger.debug(f"deck {self.name}: button {index}: {all_representations}")
+                return all_representations
             else:
                 logger.warning(f"deck {self.name}: no button index {index}, returning default for deck")
         all_representations = set(DEFAULT_REPRESENTATIONS).union(
             set(reduce(lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))), self._buttons.values(), set()))
         )
         logger.debug(f"deck {self.name}: {all_representations}")
-        return list(all_representations)
+        return set(all_representations)
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -471,7 +519,7 @@ class Deck(ABC):
         """
         This is the function that is called when a key is pressed.
         """
-        # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
             self.cockpit.sim.events.put([self.name, key, state])
             logger.debug(f"{key} {state} enqueued")
@@ -636,7 +684,7 @@ class DeckWithIcons(Deck):
             else:
                 image = Image.open(texture)  # @todo: what is texture file not found?
                 self.cockpit.icons[texture] = image
-            logger.debug(f"{who}: texture {texture_in} in {texture}")
+            # logger.debug(f"{who}: texture {texture_in} in {texture}")
 
         if image is not None:  # found a texture as requested
             image = image.resize((width, height))

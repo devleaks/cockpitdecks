@@ -18,9 +18,9 @@ from cockpitdecks import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEX
 from cockpitdecks import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
 from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE
 from cockpitdecks import Config, KW
-from cockpitdecks.deck import DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
+from cockpitdecks.deck import DECKS_FOLDER, DeckType
 from cockpitdecks.decks import DECK_DRIVERS
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
@@ -32,28 +32,6 @@ if LOGFILE is not None:
     handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-
-class DeckType(Config):
-    """reads and parse deck template file"""
-
-    def __init__(self, filename: str) -> None:
-        Config.__init__(self, filename=filename)
-        self._special_displays = None
-
-    def special_displays(self):
-        if self._special_displays is not None:
-            return self._special_displays
-        self._special_displays = []
-        for b in self.store.get("buttons", []):
-            if "repeat" not in b and b.get("view", "") == "image" and b.get("image") is not None:
-                n = b.get("name")
-                if n is not None:
-                    self._special_displays.append(n)
-        return self._special_displays
-
-    def display_size(self, name: str):
-        return (0, 0)
 
 
 class CockpitBase:
@@ -568,7 +546,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     cnt = cnt + 1
-                    logger.info(f"deck {deck_type}({deck_driver}) {name} added")
+                    logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:

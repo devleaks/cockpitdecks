@@ -38,60 +38,52 @@ class StringIcon(DrawBase):
             self._update_count = self._update_count + 1
             # self.button._activation.write_dataref(float(self._update_count)) # this cause infinite recursion
             self._last_updated = now()
-            # logger.info(f"button {self.button.name}: notified of new strings ({self._update_count}) ({self.text})")
+            logger.info(f"button {self.button.name}: notified of new strings ({self._update_count})")
+            # logger.debug("\n".join(["", "0a:1234567890123456789012345678901234567890"] + [f"{k}:{v}" for k, v in self.text.items()]))
 
     def is_updated(self) -> bool:
-        def updated_recently(how_long_ago: int = 10):  # secs
-            # prevents multiple notification on startup or during string
-            if self._last_updated is not None:
-                delta = now().timestamp() - self._last_updated.timestamp()
-                return delta < how_long_ago  # seconds
-            return False
+        # def updated_recently(how_long_ago: int = 10):  # secs
+        #     # prevents multiple notification on startup or during string
+        #     if self._last_updated is not None:
+        #         delta = now().timestamp() - self._last_updated.timestamp()
+        #         logger.debug(f"button {self.button.name}: updated recently: {delta < how_long_ago} ({delta}<{how_long_ago})")
+        #         return delta < how_long_ago  # seconds
+        #     logger.debug(f"button {self.button.name}: not updated yet")
+        #     return False
 
         upd_cnt = 0
-
         for name, collection in self.button.dataref_collections.items():
             if name not in self.button.sim.collector.collections.keys():  # not collecting now
                 continue
-            drefs = self.button.sim.collector.collections[name].datarefs
-            # 1. Collect string character per character
-            new_string = ""
-            cnt = 0
-            for d in drefs.values():
-                if d.current_value is not None:
-                    cnt = cnt + 1
-                    c = chr(int(d.current_value))
-                    new_string = new_string + c
-                # else:
-                #     new_string = new_string + "?"
+            if name == "boxes":  # no string
+                continue
 
-            if cnt < len(drefs):  # we did not fetch all chars yet
-                logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{len(drefs)}")
-                return False
+            this_coll = self.button.sim.collector.collections[name]
+            this_string = this_coll.as_string()
 
-            logger.debug(f"button {self.button.name}: collection {name}: received {cnt}/{len(drefs)} (completed)")
+            if len(this_string) < len(this_coll.datarefs):  # we did not fetch all chars yet
+                logger.debug(f"button {self.button.name}: collection {name}: received {len(this_string)} out of {len(this_coll.datarefs)}")
+                continue
+
+            logger.debug(f"button {self.button.name}: collection {name}: completed ({len(this_coll.datarefs)})")
             # 2. Has the string changed?
             curr_text = self.text.get(name)
-            if curr_text is None or curr_text != new_string:
-                self.text[name] = new_string
+            if curr_text is None or curr_text != this_string:
+                self.text[name] = this_string
                 upd_cnt = upd_cnt + 1
-                logger.debug(f"button {self.button.name}: collection {name}: new text={new_string}")
+                logger.debug(f"button {self.button.name}: collection {name}: old text='{curr_text}', new text='{this_string}'")
                 # notify local handler of collcetion, if any
-                set_dref = collection.get("set-dataref")
-                if set_dref is not None:
-                    self.button._activation._write_dataref(set_dref, float(self._update_count))
-                    logger.debug(f"button {self.button.name}: collection {name}: notified {set_dref}")
+                # set_dref = collection.get("set-dataref")
+                # if set_dref is not None:
+                #     self.button._activation._write_dataref(set_dref, float(self._update_count))
+                #     logger.debug(f"button {self.button.name}: collection {name}: notified {set_dref}")
+            else:
+                logger.debug(f"button {self.button.name}: collection {name}: text unchanged '{this_string}'")
 
         if upd_cnt > 0:
-            if not updated_recently():
-                self.notify_strings_updated()
-                return True
-            else:
-                logger.debug(
-                    f"button {self.button.name}: updated but notified recently at {self._last_updated} ({now().timestamp() - self._last_updated.timestamp()} s. ago)"
-                )
+            self.notify_strings_updated()
 
-        return False
+        return upd_cnt > 0
 
     def get_image_for_icon(self):
         """

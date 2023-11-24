@@ -2,18 +2,20 @@
 #
 import os
 import logging
+from math import floor
 from PIL import Image, ImageOps
 
 from StreamDeck.ImageHelpers import PILHelper
+from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
-from cockpitdecks.buttons.representation import Icon  # valid representations for this type of deck
+from cockpitdecks.buttons.representation import Representation, Icon  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # Device specific data
 POLL_FREQ = 5  # default is 20
@@ -24,6 +26,7 @@ FLIP_DESCRIPTION = {
     (True, True): "mirrored horizontally/vertically",
 }
 
+ENCODER_PREFIX = "e"  # need to be found in _buttons definition from deck.yaml
 KW_TOUCHSCREEN = "touchscreen"  # must match resources.decks.streamdeck*plus*.buttons[].name
 
 
@@ -268,7 +271,19 @@ class Streamdeck(DeckWithIcons):
         logger.debug(f"page {self.name}: ..done")
 
     def render(self, button: Button):  # idx: int, image: str, label: str = None):
-        self._set_key_image(button)
+        if self.device is None:
+            logger.warning("no device")
+            return
+        if str(button.index).startswith(ENCODER_PREFIX):
+            logger.debug(f"button type {button.index} has no representation")
+            return
+        representation = button._representation
+        if isinstance(representation, Icon):
+            self._set_key_image(button)
+        elif isinstance(representation, Representation):
+            logger.info(f"button: {button.name}: do nothing representation for {type(self).__name__}")
+        else:
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device
@@ -279,12 +294,65 @@ class Streamdeck(DeckWithIcons):
         """
         return self.device
 
+    def set_dial_callback(self, deck, key, action, value):
+        """
+        This is the function that is called when a dial is rotated.
+        """
+        logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
+        idx = f"{ENCODER_PREFIX}{key}"
+        if action == DialEventType.PUSH:
+            self.key_change_processing(deck, idx, 1 if value else 0)
+        elif action == DialEventType.TURN:
+            direction = 2 if value < 0 else 3
+            for i in range(abs(value)):
+                self.key_change_processing(deck, idx, direction)
+        else:
+            logger.warning(f"deck {self.name}: invalid dial action {action}")
+
+    def set_touchscreen_callback(self, deck, action, value):
+        """
+        This is the function that is called when the touchscreen is touched swiped.
+        """
+        NUMVIRTUALKEYS = 4  # number of "virtual" keys across touchscreen
+        KEY_SIZE = 800 / NUMVIRTUALKEYS
+
+        idx = KW_TOUCHSCREEN
+        logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
+        kstart = floor(int(value["x"]) / KEY_SIZE)
+        x2 = int(value["x_out"] if action == TouchscreenEventType.DRAG else value["x"])
+        kend = floor(x2 / KEY_SIZE)
+        event_dict = {
+            "begin_key": kstart,
+            "begin_x": int(value["x"]),
+            "begin_y": int(value["y"]),
+            "end_key": kend,
+            "end_x": x2,
+            "end_y": int(value["y_out"] if action == TouchscreenEventType.DRAG else value["y"]),
+            "diff_x": value["x_out"] - value["x"] if action == TouchscreenEventType.DRAG else 0,
+            "diff_y": value["y_out"] - value["y"] if action == TouchscreenEventType.DRAG else 0,
+            "same_key": kstart == kend,
+        }
+        logger.debug(f"Deck {deck.id()} Key {idx} = {event_dict}")
+        if action == TouchscreenEventType.SHORT:
+            self.key_change_processing(deck, idx, event_dict)
+        elif action == TouchscreenEventType.LONG:
+            self.key_change_processing(deck, idx, event_dict)
+        elif action == TouchscreenEventType.DRAG:
+            self.key_change_processing(deck, idx, event_dict)
+        else:
+            logger.warning(f"deck {self.name}: invalid touchscreen action {action}")
+
     def start(self):
         if self.device is None:
             logger.warning(f"deck {self.name}: no device")
             return
         self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
         self.device.set_key_callback(self.key_change_callback)
+        if hasattr(self.device, "set_dial_callback"):
+            self.device.set_dial_callback(self.set_dial_callback)
+        if hasattr(self.device, "set_touchscreen_callback"):
+            self.device.set_touchscreen_callback(self.set_touchscreen_callback)
+
         logger.info(f"deck {self.name}: device started")
 
     def terminate(self):

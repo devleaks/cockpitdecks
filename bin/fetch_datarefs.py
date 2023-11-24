@@ -23,6 +23,7 @@ class DatarefFetcher(DatarefListener, CockpitBase):
     """
     def __init__(self, simulator):
         self.sim = simulator(self)
+        self._list = None
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)
 
@@ -32,18 +33,29 @@ class DatarefFetcher(DatarefListener, CockpitBase):
     def reload_pages(self):
         logger.debug(f"reloading pages..")
         self.sim.clean_datarefs_to_monitor()
-        self.fetch_datarefs()
+        self.fetch_datarefs(self._list)
         self.sim.add_all_datarefs_to_monitor()
 
     def dataref_changed(self, dataref):
+        """Core function
+
+        Should register dataref changes and store them in some structure.
+        Dataframe? simpler array? dict? should be passivated to disk on regular basis
+        in a kind of circular logging.
+        """
         if dataref.previous_value is None and dataref.current_value is not None:
             print(f"{dataref.path} get initial value: {dataref.current_value}")
             return  # got initial value, do not report it...
         print(f"{datetime.now().strftime('%H:%M:%S.%f')} {dataref.path} changed: {dataref.previous_value} -> {dataref.current_value}")
 
-    def fetch_datarefs(self):
+    def fetch_datarefs(self, dataref_paths = None):
+        if dataref_paths is not None:
+            self._list = dataref_paths
+        if self._list is None:
+            print("no collection")
+            return
         coll = {}
-        for d in ["sim/cockpit2/clock_timer/zulu_time_seconds", "sim/cockpit2/clock_timer/zulu_time_minutes"]:
+        for d in self._list:
             dref = self.sim.get_dataref(d)
             dref.add_listener(self)
             coll[d] = dref
@@ -82,12 +94,16 @@ if LOGFILE is not None:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+SAMPLE_SET = [
+    "sim/cockpit2/clock_timer/zulu_time_seconds",
+    "sim/cockpit2/clock_timer/zulu_time_minutes"
+]
 xp = None
 try:
     logger.info(f"{'Dataref Fetcher'.title()} {__version__} {__COPYRIGHT__}")
     logger.info("Fetching datarefs until interrupt..")
     df = DatarefFetcher(XPlane)
-    df.fetch_datarefs()
+    df.fetch_datarefs(SAMPLE_SET)
     df.run()
     logger.info("..interrupted.")
 except KeyboardInterrupt:

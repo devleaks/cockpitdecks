@@ -12,7 +12,7 @@ from cockpitdecks.simulator import Dataref
 from .xp_str import StringIcon
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 FMA_COLORS = {"b": "deepskyblue", "w": "white", "g": "lime", "m": "magenta", "a": "orange"}
 FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
@@ -42,6 +42,7 @@ FMA_LINES = {  # sample set for debugging
 }
 FMA_COUNT = 5
 MAX_LENGTH = 40
+FMA_COLUMNS = [[0, 7], [7, 14], [14, 21], [21, 28], [28, 36]]
 
 
 class FMAIcon(StringIcon):
@@ -68,6 +69,8 @@ class FMAIcon(StringIcon):
         StringIcon.__init__(self, config=config, button=button)
         self.icon_color = "black"
 
+        self.text = {k: " " * 37 for k in FMA_LINES.keys()}
+
     def is_master_fma(self) -> bool:
         ret = len(self.button.dataref_collections) > 0
         # logger.debug(f"button {self.button.name}: master {ret}")
@@ -86,15 +89,35 @@ class FMAIcon(StringIcon):
             logger.warning(f"button {self.button.name}: too many master FMA")
         return None
 
+    def check_boxed(self):
+        self.boxed = []
+        if self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing") == 1:
+            self.boxed.append("52")
+        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
+            self.boxed.append("42")
+        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftModeBox") == 1:
+            self.boxed.append("41")
+        if self.button.get_dataref_value("AirbusFBW/FMAAPRightArmedBox") == 1:
+            self.boxed.append("52")
+        if self.button.get_dataref_value("AirbusFBW/FMAAPRightModeBox") == 1:
+            self.boxed.append("51")
+        if self.button.get_dataref_value("AirbusFBW/FMAATHRModeBox") == 1:
+            self.boxed.append("11")
+        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 1:
+            self.boxed.append("12")
+        if self.button.get_dataref_value("AirbusFBW/FMATHRWarning") == 1:
+            self.boxed.append("13")
+        logger.debug(f"{self.boxed}")
+
     def get_fma_lines(self, idx: int = -1):
-        self.text = FMA_LINES
         if self.is_master_fma():
             if idx == -1:
                 idx = self.fma_idx
-            s = idx * self.text_length
-            e = s + self.text_length
+            s = FMA_COLUMNS[idx][0]  # idx * self.text_length
+            e = FMA_COLUMNS[idx][1]  # s + self.text_length
             c = "1w"
             empty = c + " " * self.text_length
+            self.check_boxed()
             lines = []
             for li in range(1, 4):
                 good = empty
@@ -107,8 +130,8 @@ class FMAIcon(StringIcon):
                             v = v[:MAX_LENGTH]
                         m = v[s:e]
                         # print(self.fma_idx + 1, li, k, v[s:e], s, e, good == empty, (c + m) != empty, ">" + v + "<")
-                        if len(m) != self.text_length:
-                            logger.warning(f"string '{m}' is shorter/longer than {self.text_length}")
+                        # if len(m) != self.text_length:
+                        #     logger.warning(f"string '{m}' is shorter/longer than {self.text_length}")
                         if (c + m) != empty:  # if good == empty and
                             good = str(li) + k[1] + m
                             lines.append(good)
@@ -116,6 +139,8 @@ class FMAIcon(StringIcon):
         master_fma = self.get_master_fma()
         if master_fma is not None:
             return master_fma.get_fma_lines(idx=self.fma_idx)
+        else:
+            logger.warning(f"button {self.button.name}: fma has no master")
         logger.warning(f"button {self.button.name}: no lines")
         return []
 
@@ -187,6 +212,7 @@ class FMAIcon(StringIcon):
         if not self.is_master_fma():
             logger.debug(f"button {self.button.name}: only draw FMA master")
             return None
+
         image = Image.new(mode="RGBA", size=(8 * ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
 

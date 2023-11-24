@@ -9,6 +9,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
+logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
@@ -112,14 +113,14 @@ class DatarefSet:
         self.last_loaded = now()
         self.sim.add_datarefs_to_monitor(self.datarefs)
         self.is_loaded = True
-        logger.debug(f"collection {self.name} loaded")  #  {self.datarefs.keys()}
+        logger.log(SPAM_LEVEL, f"collection {self.name} loaded")  #  {self.datarefs.keys()}
         time.sleep(PACE_LOAD)
 
     def unload(self):
         self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.is_loaded = False
         self.last_unloaded = now()
-        logger.debug(f"collection {self.name} unloaded")
+        logger.log(SPAM_LEVEL, f"collection {self.name} unloaded")
         time.sleep(PACE_UNLOAD)
 
     def add_listener(self, obj: "DatarefSetListener"):
@@ -134,6 +135,20 @@ class DatarefSet:
             obj.dataref_collection_changed(self)
             logger.log(SPAM_LEVEL, f"{self.name}: notified {obj.name}")
         logger.debug(f"{self.name} notified")
+
+    def as_string(self) -> str:
+        ret = ""
+        for d in self.datarefs.values():
+            if d.current_value is not None:
+                value = int(d.current_value)
+                if value >= 0 and value < 256:
+                    ret = ret + chr(value)
+                else:
+                    logger.debug(f"collection {self.name}: invalid char value {value}")
+        return ret
+
+    def as_list(self) -> list:
+        return [d.current_value for d in self.datarefs.values()]
 
 
 class DatarefSetCollector(DatarefListener):

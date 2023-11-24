@@ -5,7 +5,7 @@ import logging
 from PIL import Image, ImageOps
 
 from Loupedeck.ImageHelpers import PILHelper
-from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CENTER, KW_CIRCLE, HAPTIC
+from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
 from cockpitdecks.resources.color import DEFAULT_COLOR
