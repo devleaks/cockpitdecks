@@ -6,43 +6,53 @@ import logging
 
 from PIL import Image, ImageDraw
 
+from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
-from cockpitdecks import ICON_SIZE, now
 from cockpitdecks.simulator import Dataref
 from .xp_str import StringIcon
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
-FMA_COLORS = {"b": "deepskyblue", "w": "white", "g": "lime", "m": "magenta", "a": "orange"}
-FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
 FMA_DATAREFS = {
-    "1b": "AirbusFBW/FMA1b",
-    "1g": "AirbusFBW/FMA1g",
-    "1w": "AirbusFBW/FMA1w",
-    "2b": "AirbusFBW/FMA2b",
-    "2m": "AirbusFBW/FMA2m",
-    "2w": "AirbusFBW/FMA2w",
-    "3a": "AirbusFBW/FMA3a",
-    "3b": "AirbusFBW/FMA3b",
-    "3w": "AirbusFBW/FMA3w",
+    "1b": "AirbusFBW/FMA1b[:24]",
+    "1g": "AirbusFBW/FMA1g[:24]",
+    "1w": "AirbusFBW/FMA1w[:36]",
+    "2b": "AirbusFBW/FMA2b[:24]",
+    "2m": "AirbusFBW/FMA2m[:24]",
+    "2w": "AirbusFBW/FMA2w[:36]",
+    "3a": "AirbusFBW/FMA3a[:24]",
+    "3b": "AirbusFBW/FMA3b[:24]",
+    "3w": "AirbusFBW/FMA3w[:24]",
 }
+FMA_BOXES = [
+    "AirbusFBW/FMAAPFDboxing",
+    "AirbusFBW/FMAAPLeftArmedBox",
+    "AirbusFBW/FMAAPLeftModeBox",
+    "AirbusFBW/FMAAPRightArmedBox",
+    "AirbusFBW/FMAAPRightModeBox",
+    "AirbusFBW/FMAATHRModeBox",
+    "AirbusFBW/FMAATHRboxing",
+    "AirbusFBW/FMATHRWarning",
+]
+FMA_COLORS = {"b": "#0080FF", "w": "white", "g": "#00FF00", "m": "#FF00FF", "a": "#A04000"}
+FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
+FMA_COUNT = 5
+FMA_LINE_LENGTH = 36
+FMA_COLUMNS = [[0, 7], [7, 14], [14, 21], [21, 28], [28, 36]]
 FMA_LINES = {  # sample set for debugging
     "0b": "1234567890123456789012345678901234567890",
     "1b": "",
-    "1g": "SPEED  ALT    HDG",
-    "1w": "                   CAT3 AP1+2",
-    "2b": "       G/S    LOC",
-    "2m": "            333333",  # wrong for testing
-    "2w": "                        1FD2",
-    "2a": "                    DUAL",  # does not exist, added for testing purpose
-    "3a": "",
-    "3b": "                      20",
-    "3w": "                  DH    A/THR",
+    "1g": "         SRS    RWY",
+    "1w": "  MAN",
+    "2b": "     53SEL:210  NAV",
+    "1m": "                              AP1",  # wrong for testing
+    "2w": " FLX                          1FD2",
+    "2a": "",  # does not exist, added for testing purpose
+    "3a": "        MASTER AMBER",
+    "3b": "                              A/THR",
+    "3w": "",
 }
-FMA_COUNT = 5
-MAX_LENGTH = 40
-FMA_COLUMNS = [[0, 7], [7, 14], [14, 21], [21, 28], [28, 36]]
 
 
 class FMAIcon(StringIcon):
@@ -61,20 +71,25 @@ class FMAIcon(StringIcon):
             logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = FMA_COUNT
         self.fma_idx = fma - 1
-        self.text_length = 6
-        if self.text_length * FMA_COUNT > MAX_LENGTH:
-            logger.warning(f"button {button.name}: string too long")
-            self.text_length = int(MAX_LENGTH / 5)
-        self.boxed = ["11", "22", "33", "41", "42"]  # later
         StringIcon.__init__(self, config=config, button=button)
         self.icon_color = "black"
 
-        self.text = {k: " " * 37 for k in FMA_LINES.keys()}
+        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_LINES.keys()}  # use FMA_LINES for testing
+        self.boxed = []
 
     def is_master_fma(self) -> bool:
         ret = len(self.button.dataref_collections) > 0
         # logger.debug(f"button {self.button.name}: master {ret}")
         return ret
+
+    def get_fma_dataref_collections(self):
+        collections = []
+        # add box datarefs
+        collections.append({"name": "fma_boxes", "datarefs": FMA_BOXES, "expire": 10, "set-dataref": "data:_fmap"})
+        # add lines
+        for line, dref in FMA_DATAREFS.items():
+            collections.append({"name": "line", "datarefs": self.button.parse_dataref_array(dref), "expire": 10, "set-dataref": "data:_fmap"})
+        return collections
 
     def get_master_fma(self):
         if self.is_master_fma():
@@ -90,24 +105,43 @@ class FMAIcon(StringIcon):
         return None
 
     def check_boxed(self):
-        self.boxed = []
-        if self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing") == 1:
-            self.boxed.append("52")
+        # self.boxed = ["11", "22", "33", "41", "42"]  # later
+        # logger.debug(f"DEBUG: FORCED TO {self.boxed}")
+        # return
+        # box items are "FMA#,line#"
+        #
+        logger.debug(",".join([f"{d}={self.button.get_dataref_value(d)}" for d in FMA_BOXES]))
+        boxed = []
         if self.button.get_dataref_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
-            self.boxed.append("42")
+            boxed.append("22")
         if self.button.get_dataref_value("AirbusFBW/FMAAPLeftModeBox") == 1:
-            self.boxed.append("41")
+            boxed.append("21")
         if self.button.get_dataref_value("AirbusFBW/FMAAPRightArmedBox") == 1:
-            self.boxed.append("52")
+            boxed.append("32")
         if self.button.get_dataref_value("AirbusFBW/FMAAPRightModeBox") == 1:
-            self.boxed.append("51")
+            boxed.append("31")
         if self.button.get_dataref_value("AirbusFBW/FMAATHRModeBox") == 1:
-            self.boxed.append("11")
+            boxed.append("11")
         if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 1:
-            self.boxed.append("12")
+            boxed.append("12")
+        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 2:
+            boxed.append("11")
+            boxed.append("12")
         if self.button.get_dataref_value("AirbusFBW/FMATHRWarning") == 1:
-            self.boxed.append("13")
-        logger.debug(f"{self.boxed}")
+            boxed.append("warn")
+        # big mess:
+        boxcode = self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing")
+        if boxcode is not None:  # can be 0-7, is it a set of binary flags?
+            if boxcode == 1:  # boxcode & 1
+                boxed.append("51")
+            if boxcode == 2:  # boxcode & 2
+                boxed.append("52")
+            if boxcode == 3:
+                boxed.append("51")
+                boxed.append("52")
+            # etc.
+        logger.debug(f"{boxed}")
+        self.boxed = set(boxed)
 
     def get_fma_lines(self, idx: int = -1):
         if self.is_master_fma():
@@ -116,7 +150,7 @@ class FMAIcon(StringIcon):
             s = FMA_COLUMNS[idx][0]  # idx * self.text_length
             e = FMA_COLUMNS[idx][1]  # s + self.text_length
             c = "1w"
-            empty = c + " " * self.text_length
+            empty = c + " " * (e - s)
             self.check_boxed()
             lines = []
             for li in range(1, 4):
@@ -124,14 +158,13 @@ class FMAIcon(StringIcon):
                 for k, v in self.text.items():
                     raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
                     for k, v in raws.items():
-                        if len(v) < MAX_LENGTH:
-                            v = v + " " * (MAX_LENGTH - len(v))
-                        if len(v) > MAX_LENGTH:
-                            v = v[:MAX_LENGTH]
+                        if len(v) < FMA_LINE_LENGTH:
+                            v = v + " " * (FMA_LINE_LENGTH - len(v))
+                        if len(v) > FMA_LINE_LENGTH:
+                            v = v[:FMA_LINE_LENGTH]
                         m = v[s:e]
-                        # print(self.fma_idx + 1, li, k, v[s:e], s, e, good == empty, (c + m) != empty, ">" + v + "<")
-                        # if len(m) != self.text_length:
-                        #     logger.warning(f"string '{m}' is shorter/longer than {self.text_length}")
+                        if len(m) != (e - s):
+                            logger.warning(f"string '{m}' len {len(m)} has wrong size (should be {(e - s)})")
                         if (c + m) != empty:  # if good == empty and
                             good = str(li) + k[1] + m
                             lines.append(good)
@@ -146,9 +179,7 @@ class FMAIcon(StringIcon):
 
     def get_image_for_icon_alt(self):
         """
-        Helper function to get button image and overlay label on top of it.
-        Label may be updated at each activation since it can contain datarefs.
-        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        Displays one FMA on one key icon, 5 keys are required for 5 FMA... (or one touchscreen, see below.)
         """
         if not self.is_updated() and self._cached is not None:
             return self._cached
@@ -169,14 +200,6 @@ class FMAIcon(StringIcon):
             idx = int(text[0]) - 1  # idx + 1
             if text[2:] == (" " * (len(text) - 1)):
                 continue
-            # if text_position[0] == "l":
-            #     w = inside
-            #     p = "l"
-            #     a = "left"
-            # elif text_position[0] == "r":
-            #     w = image.width - inside
-            #     p = "r"
-            #     a = "right"
             h = image.height / 2
             if idx == 0:
                 h = inside + text_size
@@ -187,7 +210,7 @@ class FMAIcon(StringIcon):
             draw.text((w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
             ref = f"{self.fma_idx+1}{idx+1}"
             if ref in self.boxed:
-                draw.rectangle([2 * inside, h - text_size / 2] + [ICON_SIZE - 2 * inside, h + text_size / 2 + 4], outline=color, width=3)
+                draw.rectangle((2 * inside, h - text_size / 2, ICON_SIZE - 2 * inside, h + text_size / 2 + 4), outline=color, width=3)
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
@@ -202,6 +225,7 @@ class FMAIcon(StringIcon):
         Helper function to get button image and overlay label on top of it.
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
+        (This is currently more or less hardcoded for Elgato Streamdeck Plus touchscreen.)
         """
         if not self.all_in_one:
             return self.get_image_for_icon_alt()
@@ -225,7 +249,7 @@ class FMAIcon(StringIcon):
         icon_width = int(8 * ICON_SIZE / 5)
         for i in range(FMA_COUNT):
             lines = self.get_fma_lines(idx=i)
-            logger.debug(f"button {self.button.name}: FMA {i}: {lines}")
+            logger.debug(f"button {self.button.name}: FMA {i+1}: {lines}")
             font = self.get_font(text_font, text_size)
             w = int(4 * ICON_SIZE / 5)
             p = "m"
@@ -233,29 +257,27 @@ class FMAIcon(StringIcon):
             idx = -1
             for text in lines:
                 idx = int(text[0]) - 1  # idx + 1
-                if text[2:] == (" " * (len(text) - 1)):
+                if text[2:] == (" " * (len(text) - 2)):
                     continue
-                # if text_position[0] == "l":
-                #     w = inside
-                #     p = "l"
-                #     a = "left"
-                # elif text_position[0] == "r":
-                #     w = image.width - inside
-                #     p = "r"
-                #     a = "right"
                 h = image.height / 2
                 if idx == 0:
                     h = inside + text_size / 2
                 elif idx == 2:
                     h = image.height - inside - text_size / 2
+                    if text[:2] == "3a":  # special treatment of warning amber messages, displayed across FMA 2-3, 3rd line, amber
+                        wmsg = self.text["3a"].strip()
+                        logger.debug(f"warning message '{wmsg}'")
+                        draw.text((2 * icon_width, h), text=wmsg, font=font, anchor=p + "m", align=a, fill=FMA_COLORS["a"])
+                        continue
                 color = FMA_COLORS[text[1]]
                 # logger.debug(f"added {text[2:]} @ {loffset + w}, {h}, {color}")
                 draw.text((loffset + w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
-                ref = f"{self.fma_idx+1}{idx+1}"
+                ref = f"{i+1}{idx+1}"
+                # logger.debug(ref, text)
                 if ref in self.boxed:
-                    draw.rectangle(
-                        [loffset + 2 * inside, h - text_size / 2] + [loffset + icon_width - 2 * inside, h + text_size / 2 + 4], outline=color, width=3
-                    )
+                    if "warn" in self.boxed:
+                        color = "orange"
+                    draw.rectangle((loffset + 2 * inside, h - text_size / 2, loffset + icon_width - 2 * inside, h + text_size / 2 + 4), outline=color, width=3)
             loffset = loffset + icon_width
 
         # Paste image on cockpit background and return it.
