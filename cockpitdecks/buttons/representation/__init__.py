@@ -8,10 +8,11 @@ from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
 from .xp_str import StringIcon
-from .xp_fma import FMAIcon
 from .xp_ac import AircraftIcon
 from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
+from .xp_fma import FMAIcon
+from .xp_fcu import FCUIcon
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -52,6 +53,7 @@ REPRESENTATIONS = {
     "xp-weather": XPWeatherIcon,
     "strings": StringIcon,
     "fma": FMAIcon,
+    "fcu": FCUIcon,
     "aircraft": AircraftIcon,
 }
 
@@ -96,9 +98,10 @@ drawn_buttons = [
     "knob",
     "strings",
     "fma",
-    "aircraft",
+    "fcu",
     "real-weather",
     "xp-weather",
+    "aircraft",
 ]
 
 if "live-weather" in REPRESENTATIONS.keys():
