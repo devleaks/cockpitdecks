@@ -166,7 +166,7 @@ class Dataref:
         self.previous_value = self.current_value
         if self.round is not None and type(new_value) in [int, float]:
             self.current_value = round(new_value, self.round)
-            loggerDataref.debug(f"dataref {self.path} value {new_value} rounded to {self.current_value}")
+            # loggerDataref.debug(f"dataref {self.path} value {new_value} rounded to {self.current_value}")
         else:
             self.current_value = new_value
         self._updated = self._updated + 1
@@ -193,7 +193,7 @@ class Dataref:
                 if hasattr(dref, "page") and dref.page is not None:
                     loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.page.name}/{dref.name}")
                 else:
-                    loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.name} (not on a page)")
+                    loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.name} (not on an page)")
         # else:
         #    loggerDataref.error(f"dataref {self.path} not changed")
 

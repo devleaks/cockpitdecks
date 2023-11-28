@@ -486,10 +486,10 @@ class Button(DatarefListener, DatarefSetListener):
     # Dataref processing
     #
     def get_dataref_value(self, dataref, default=None):
-        d = self.page.datarefs.get(dataref)
-        # if d is not None:
-        #     print("***", type(d).__name__, d.path, d.data_type, "==", d.current_value)
-        return d.current_value if d is not None else default
+        return self.page.get_dataref_value(dataref=dataref, default=default)
+
+    def get_dataref_value_from_collection(self, dataref, collection, default=None):
+        return self.sim.collector.get_dataref_value_from_collection(dataref=dataref, collection=collection, default=default)
 
     def is_managed(self):
         if self.managed is None:

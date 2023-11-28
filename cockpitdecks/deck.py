@@ -118,8 +118,8 @@ class Deck(ABC):
                 self.device.set_brightness(self.brightness)
 
         self.layout = None
-        if "layout" in config:
-            self.layout = config["layout"]  # config["layout"] may be None to choose no layout
+        if KW.LAYOUT.value in config:
+            self.layout = config[KW.LAYOUT.value]  # config[KW.LAYOUT.value] may be None to choose no layout
         else:
             self.layout = DEFAULT_LAYOUT
             logger.warning(f"deck has no layout, using default")

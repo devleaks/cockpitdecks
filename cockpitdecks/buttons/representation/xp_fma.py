@@ -11,7 +11,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
 from .xp_str import StringIcon
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 FMA_DATAREFS = {
     "1b": "AirbusFBW/FMA1b[:24]",
@@ -81,7 +81,7 @@ class FMAIcon(StringIcon):
         StringIcon.__init__(self, config=config, button=button)
         self.icon_color = "black"
 
-        self.text = FMA_LINES  # {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS.keys()}  # use FMA_LINES for testing
+        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS.keys()}  # use FMA_LINES for testing
         self.boxed = []
 
     def is_master_fma(self) -> bool:
@@ -118,30 +118,31 @@ class FMAIcon(StringIcon):
         return None
 
     def check_boxed(self):
+        BOX_COLLECTION = "boxes"
         """Check "boxed" datarefs to determine which texts are boxed/framed.
         They are listed as FMA#-LINE# pairs of digit. Special keyword "warn" if warning enabled.
         """
-        logger.debug(",".join([f"{d}={self.button.get_dataref_value(d)}" for d in FMA_BOXES]))
+        logger.debug(",".join([f"{d}={self.button.get_dataref_value_from_collection(d, BOX_COLLECTION)}" for d in FMA_BOXES]))
         boxed = FMA_BOXES
-        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPLeftArmedBox", BOX_COLLECTION) == 1:
             boxed.append("22")
-        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftModeBox") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPLeftModeBox", BOX_COLLECTION) == 1:
             boxed.append("21")
-        if self.button.get_dataref_value("AirbusFBW/FMAAPRightArmedBox") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPRightArmedBox", BOX_COLLECTION) == 1:
             boxed.append("32")
-        if self.button.get_dataref_value("AirbusFBW/FMAAPRightModeBox") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPRightModeBox", BOX_COLLECTION) == 1:
             boxed.append("31")
-        if self.button.get_dataref_value("AirbusFBW/FMAATHRModeBox") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAATHRModeBox", BOX_COLLECTION) == 1:
             boxed.append("11")
-        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAATHRboxing", BOX_COLLECTION) == 1:
             boxed.append("12")
-        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 2:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAATHRboxing", BOX_COLLECTION) == 2:
             boxed.append("11")
             boxed.append("12")
-        if self.button.get_dataref_value("AirbusFBW/FMATHRWarning") == 1:
+        if self.button.get_dataref_value_from_collection("AirbusFBW/FMATHRWarning", BOX_COLLECTION) == 1:
             boxed.append("warn")
         # big mess:
-        boxcode = self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing")
+        boxcode = self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPFDboxing", BOX_COLLECTION)
         if boxcode is not None:  # can be 0-7, is it a set of binary flags?
             if boxcode == 1:  # boxcode & 1
                 boxed.append("51")

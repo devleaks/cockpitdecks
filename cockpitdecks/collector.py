@@ -9,7 +9,7 @@ from cockpitdecks import SPAM_LEVEL, now
 from cockpitdecks.simulator import DatarefListener
 
 logger = logging.getLogger(__name__)
-logger.setLevel(SPAM_LEVEL)
+# logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
@@ -136,6 +136,13 @@ class DatarefSet:
             logger.log(SPAM_LEVEL, f"{self.name}: notified {obj.name}")
         logger.debug(f"{self.name} notified")
 
+    def get_dataref_value(self, dataref, default=None):
+        d = self.datarefs.get(dataref)
+        if d is None:
+            logger.warning(f"collection {self.name}: dataref {dataref} not found")
+            return None
+        return d.current_value if d.current_value is not None else default
+
     def as_string(self) -> str:
         ret = ""
         for d in self.datarefs.values():
@@ -201,6 +208,13 @@ class DatarefSetCollector(DatarefListener):
         for c in cl:
             del self.collections[c]
         self.collections = {}
+
+    def get_dataref_value_from_collection(self, dataref, collection, default=None):
+        c = self.collections.get(collection)
+        if c is None:
+            logger.warning(f"collection {collection} not found")
+            return None
+        return c.get_dataref_value(dataref=dataref, default=default)
 
     def dataref_changed(self, dataref: "Dataref"):
         logger.debug(f"dataref changed {dataref.path}")

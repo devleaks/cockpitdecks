@@ -561,24 +561,24 @@ class Cockpit(DatarefListener, CockpitBase):
         self.acpath = None
 
         # {
-        #    "type": decktype,
-        #    "device": device,
-        #    "serial_number": serial
+        #    KW.TYPE.value: decktype,
+        #    KW.DEVICE.value: device,
+        #    KW.SERIAL.value: serial
         # }
         for deck in self.devices:
-            decktype = deck.get("type")
+            decktype = deck.get(KW.TYPE.value)
             if decktype not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck type {decktype}, ignoring")
                 continue
-            device = deck["device"]
+            device = deck[KW.DEVICE.value]
             device.open()
             device.reset()
             name = device.id()
             config = {
-                "name": name,
-                "model": device.deck_type(),
-                "serial": device.get_serial_number(),
-                "layout": None,  # Streamdeck will detect None layout and present default deck
+                KW.NAME.value: name,
+                KW.MODEL.value: device.deck_type(),
+                KW.SERIAL.value: device.get_serial_number(),
+                KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
             self.cockpit[name] = DECK_DRIVERS[decktype][0](name, config, self, device)
@@ -789,12 +789,12 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def terminate_devices(self):
         for deck in self.devices:
-            decktype = deck.get("type")
-            if decktype not in DECK_DRIVERS.keys():
-                logger.warning(f"invalid deck type {decktype}, ignoring")
+            deck_driver = deck.get(KW.DRIVER.value)
+            if deck_driver not in DECK_DRIVERS.keys():
+                logger.warning(f"invalid deck type {deck_driver}, ignoring")
                 continue
-            device = deck["device"]
-            DECK_DRIVERS[decktype][0].terminate_device(device, deck["serial_number"])
+            device = deck[KW.DEVICE.value]
+            DECK_DRIVERS[deck_driver][0].terminate_device(device, deck[KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
         logger.info(f"terminating..")
