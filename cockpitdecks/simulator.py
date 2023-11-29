@@ -171,6 +171,7 @@ class Dataref:
             self.current_value = new_value
         self._updated = self._updated + 1
         self._last_updated = now()
+        self.notify_updated()
         if self.has_changed():
             self._changed = self._changed + 1
             self._last_changed = now()
@@ -197,6 +198,16 @@ class Dataref:
         # else:
         #    loggerDataref.error(f"dataref {self.path} not changed")
 
+    def notify_updated(self):
+        for dref in self.listeners:
+            dref.dataref_updated(self)
+            if hasattr(dref, "page") and dref.page is not None:
+                loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.page.name}/{dref.name} or update")
+            else:
+                loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.name} of update (not on an page)")
+        # else:
+        #    loggerDataref.error(f"dataref {self.path} not changed")
+
 
 class DatarefListener(ABC):
     # To get notified when a dataref has changed.
@@ -206,6 +217,9 @@ class DatarefListener(ABC):
 
     @abstractmethod
     def dataref_changed(self, dataref):
+        pass
+
+    def dataref_updated(self, dataref):
         pass
 
 

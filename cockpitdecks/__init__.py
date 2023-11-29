@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-T
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.12.1"
+__version__ = "7.13.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "development"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -34,7 +34,7 @@ yaml = YAML(typ="safe", pure=True)
 SPAM_LEVEL = 15
 SPAM = "SPAM"
 LOGFILE = "cockpitdecks.log"
-FORMAT = "[%(asctime)s] p%(process)s %(levelname)s {%(filename)s:%(funcName)s:%(lineno)d}: %(message)s"
+FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 # logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)

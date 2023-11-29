@@ -14,15 +14,15 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 FMA_DATAREFS = {
-    "1b": "AirbusFBW/FMA1b[:24]",
-    "1g": "AirbusFBW/FMA1g[:24]",
+    "1b": "AirbusFBW/FMA1b[:36]",
+    "1g": "AirbusFBW/FMA1g[:36]",
     "1w": "AirbusFBW/FMA1w[:36]",
-    "2b": "AirbusFBW/FMA2b[:24]",
-    "2m": "AirbusFBW/FMA2m[:24]",
+    "2b": "AirbusFBW/FMA2b[:36]",
+    "2m": "AirbusFBW/FMA2m[:36]",
     "2w": "AirbusFBW/FMA2w[:36]",
-    "3a": "AirbusFBW/FMA3a[:24]",
-    "3b": "AirbusFBW/FMA3b[:24]",
-    "3w": "AirbusFBW/FMA3w[:24]",
+    "3a": "AirbusFBW/FMA3a[:36]",
+    "3b": "AirbusFBW/FMA3b[:36]",
+    "3w": "AirbusFBW/FMA3w[:36]",
 }
 FMA_BOXES = [
     "AirbusFBW/FMAAPFDboxing",
@@ -37,9 +37,10 @@ FMA_BOXES = [
 # Reproduction on Streamdeck touchscreen colors is difficult.
 FMA_COLORS = {"b": "#0080FF", "w": "white", "g": "#00FF00", "m": "#FF00FF", "a": "#A04000"}
 FMA_COUNT = 5
-FMA_LINE_LENGTH = 36
-FMA_COLUMNS = [[0, 7], [7, 14], [14, 21], [21, 28], [28, 36]]
+FMA_COLUMNS = [[0, 7], [7, 15], [15, 21], [21, 28], [28, 37]]
+FMA_LINE_LENGTH = FMA_COLUMNS[-1][-1]
 # FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
+BOX_COLLECTION = "boxes"
 
 # sample set for debugging
 FMA_LINES = {
@@ -55,7 +56,7 @@ FMA_LINES = {
     "3b": "                              A/THR",
     "3w": "",
 }
-FMA_BOXES = ["11", "22", "33", "41", "42"]
+FMA_BOXED = []  # for debugging use ["11", "22", "33", "41", "42"]
 
 
 class FMAIcon(StringIcon):
@@ -64,6 +65,7 @@ class FMAIcon(StringIcon):
     """
 
     def __init__(self, config: dict, button: "Button"):
+        self.name = "FMA"
         self.fmaconfig = config.get("fma")
         # get mandatory index
         self.all_in_one = self.fmaconfig.get("all-in-one", False)
@@ -83,6 +85,25 @@ class FMAIcon(StringIcon):
 
         self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS.keys()}  # use FMA_LINES for testing
         self.boxed = []
+        self.box_raw = []
+
+    def dataref_collection_completed(self, dataref_collection):
+        logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
+        if dataref_collection.name == BOX_COLLECTION:
+            box_raw = [self.button.get_dataref_value_from_collection(d, BOX_COLLECTION) for d in FMA_BOXES]
+            logger.debug(f"button {self.button.name}: boxes {box_raw}")
+            if self.box_raw != box_raw:
+                self.box_raw = box_raw
+                self.check_boxed()
+                self._updated = True
+                logger.debug(f"button {self.button.name}: boxes updated")
+            return
+        currstr = dataref_collection.as_string()
+        logger.debug(f"button {self.button.name}: new string >{currstr}<")
+        if currstr != self.text[dataref_collection.name] and dataref_collection.name in self.text.keys():
+            logger.debug(f"button {self.button.name}: text {dataref_collection.name} updated")
+            self.text[dataref_collection.name] = currstr
+            self._updated = True
 
     def is_master_fma(self) -> bool:
         """Determine if thsi FMA icon is the master or not,
@@ -118,12 +139,19 @@ class FMAIcon(StringIcon):
         return None
 
     def check_boxed(self):
-        BOX_COLLECTION = "boxes"
         """Check "boxed" datarefs to determine which texts are boxed/framed.
         They are listed as FMA#-LINE# pairs of digit. Special keyword "warn" if warning enabled.
         """
-        logger.debug(",".join([f"{d}={self.button.get_dataref_value_from_collection(d, BOX_COLLECTION)}" for d in FMA_BOXES]))
-        boxed = FMA_BOXES
+        do_print = []
+        for d in FMA_BOXES:
+            v = self.button.get_dataref_value_from_collection(d, BOX_COLLECTION)
+            if v is not None:
+                do_print.append(f"{d}={v}")
+        if len(do_print) > 0:
+            logger.debug("\n" + "\n".join(do_print))
+        else:
+            logger.debug("nothing boxed")
+        boxed = []
         if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPLeftArmedBox", BOX_COLLECTION) == 1:
             boxed.append("22")
         if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPLeftModeBox", BOX_COLLECTION) == 1:
@@ -152,7 +180,8 @@ class FMAIcon(StringIcon):
                 boxed.append("51")
                 boxed.append("52")
             # etc.
-        logger.debug(f"{boxed}")
+        if len(do_print) > 0:
+            logger.debug(f"{boxed}")
         self.boxed = set(boxed)
 
     def get_fma_lines(self, idx: int = -1):
@@ -161,22 +190,24 @@ class FMAIcon(StringIcon):
                 idx = self.fma_idx
             s = FMA_COLUMNS[idx][0]  # idx * self.text_length
             e = FMA_COLUMNS[idx][1]  # s + self.text_length
+            l = e - s
             c = "1w"
-            empty = c + " " * (e - s)
-            self.check_boxed()
+            empty = c + " " * l
             lines = []
             for li in range(1, 4):
                 good = empty
                 for k, v in self.text.items():
                     raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
                     for k, v in raws.items():
+                        # normalize
                         if len(v) < FMA_LINE_LENGTH:
                             v = v + " " * (FMA_LINE_LENGTH - len(v))
                         if len(v) > FMA_LINE_LENGTH:
                             v = v[:FMA_LINE_LENGTH]
+                        # extract
                         m = v[s:e]
-                        if len(m) != (e - s):
-                            logger.warning(f"string '{m}' len {len(m)} has wrong size (should be {(e - s)})")
+                        if len(m) != l:
+                            logger.warning(f"string '{m}' len {len(m)} has wrong size (should be {l})")
                         if (c + m) != empty:  # if good == empty and
                             good = str(li) + k[1] + m
                             lines.append(good)
@@ -199,6 +230,7 @@ class FMAIcon(StringIcon):
 
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
 
+        self.check_boxed()
         lines = self.get_fma_lines()
         logger.debug(f"button {self.button.name}: {lines}")
         font = self.get_font(text_font, text_size)
@@ -220,7 +252,7 @@ class FMAIcon(StringIcon):
             draw.text((w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
             ref = f"{self.fma_idx+1}{idx+1}"
             if ref in self.boxed:
-                draw.rectangle((2 * inside, h - text_size / 2, ICON_SIZE - 2 * inside, h + text_size / 2 + 4), outline=color, width=3)
+                draw.rectangle((2 * inside, h - text_size / 2, ICON_SIZE - 2 * inside, h + text_size / 2 + 4), outline="white", width=3)
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
@@ -241,7 +273,13 @@ class FMAIcon(StringIcon):
             return self.get_image_for_icon_alt()
 
         if not self.is_updated() and self._cached is not None:
+            logger.debug(f"button {self.button.name}: returning cached")
             return self._cached
+
+        # print(">>>" + "0" * 10 + "1" * 10 + "2" * 10 + "3" * 10)
+        # print(">>>" + "0123456789" * 4)
+        # print("\n".join([f"{k}:{v}:{len(v)}" for k, v in self.text.items()]))
+        # print(">>>" + "0123456789" * 4)
 
         if not self.is_master_fma():
             logger.debug(f"button {self.button.name}: only draw FMA master")
@@ -286,11 +324,12 @@ class FMAIcon(StringIcon):
                     # special treatment of warning amber messages, centered across FMA 2-3, 3rd line, amber
                     # (yes, I know, they blink 5 times then stay fixed. may be one day.)
                     #
-                    if text[:2] == "3a":
-                        wmsg = self.text["3a"].strip()
+                    currline = text[:2]
+                    if (i == 1 or i == 2) and currline in ["3a", "3w"]:
+                        wmsg = self.text[currline][FMA_COLUMNS[1][0] : FMA_COLUMNS[2][1]].strip()
                         logger.debug(f"warning message '{wmsg}'")
                         draw.line(((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))), fill="white", width=1)
-                        draw.text((2 * icon_width, h), text=wmsg, font=font, anchor=p + "m", align=a, fill=FMA_COLORS["a"])
+                        draw.text((2 * icon_width, h), text=wmsg, font=font, anchor=p + "m", align=a, fill=FMA_COLORS[text[1]])
                         has_line = True
                         continue
                     #
@@ -303,6 +342,8 @@ class FMAIcon(StringIcon):
                 if ref in self.boxed:
                     if "warn" in self.boxed:
                         color = "orange"
+                    else:
+                        color = "white"
                     draw.rectangle((loffset + 2 * inside, h - text_size / 2, loffset + icon_width - 2 * inside, h + text_size / 2 + 4), outline=color, width=3)
             loffset = loffset + icon_width
 
@@ -315,6 +356,7 @@ class FMAIcon(StringIcon):
         )
         bg.alpha_composite(image)
         self._cached = bg.convert("RGB")
+        self._updated = False
 
         # with open("fma_lines.png", "wb") as im:
         #     image.save(im, format="PNG")

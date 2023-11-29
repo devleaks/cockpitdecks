@@ -792,6 +792,11 @@ class Button(DatarefListener, DatarefSetListener):
             logger.debug(f"button {self.name}: no change")
 
     def dataref_collection_changed(self, dataref_collection):
+        # logger.log(SPAM_LEVEL, f"button {self.name}: dataref collection {dataref_collection.name} changed")
+        # self.render()
+        pass
+
+    def dataref_collection_completed(self, dataref_collection):
         logger.log(SPAM_LEVEL, f"button {self.name}: dataref collection {dataref_collection.name} changed")
         self.render()
 

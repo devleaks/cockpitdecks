@@ -184,18 +184,6 @@ class Page:
             logger.debug(f"page {self.name}: button {button.name} collection {name} registered")
         logger.debug(f"page {self.name}: button {button.name} collections registered")
 
-    def dataref_changed(self, dataref):
-        """
-        For each button on this page, notifies the button if a dataref used by that button has changed.
-        """
-        if dataref is None:
-            logger.error(f"page {self.name}: no dataref")
-            return
-        if dataref.path not in self.datarefs.keys():
-            logger.warning(f"page {self.name}: dataref {dataref.path} not found")
-            return
-        self.datarefs[dataref].notify()
-
     def activate(self, idx: int):
         if idx in self.buttons.keys():
             self.buttons[idx].activate()
