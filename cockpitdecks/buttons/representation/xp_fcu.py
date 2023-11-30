@@ -68,7 +68,6 @@ class FCUIcon(DrawBase):
         # print(
         #     ">>>>>>>",
         #     self.count,
-        #     metric_alt,
         #     mach_mode,
         #     heading_mode,
         #     speed_managed,
@@ -112,6 +111,15 @@ class FCUIcon(DrawBase):
         draw.line([(1410, h), (1410, h + text_size / 3)], fill=text_color, width=3, joint="curve")
         draw.line([(1700, h), (1800, h)], fill=text_color, width=3, joint="curve")
         draw.line([(1800, h), (1800, h + text_size / 3)], fill=text_color, width=3, joint="curve")
+
+        if not self.button.sim.connected:
+            logger.debug("not connected")
+            bg = self.button.deck.get_icon_background(
+                name=self.button_name(), width=8 * ICON_SIZE, height=ICON_SIZE, texture_in=None, color_in="black", use_texture=False, who="FMA"
+            )
+            bg.alpha_composite(image)
+            self._cached = bg.convert("RGB")
+            return self._cached
 
         # values
         # pylint: disable=W0612

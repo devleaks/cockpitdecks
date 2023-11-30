@@ -228,6 +228,7 @@ class FMAIcon(StringIcon):
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
+        # pylint: disable=W0612
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
 
         self.check_boxed()
@@ -281,10 +282,6 @@ class FMAIcon(StringIcon):
         # print("\n".join([f"{k}:{v}:{len(v)}" for k, v in self.text.items()]))
         # print(">>>" + "0123456789" * 4)
 
-        if not self.is_master_fma():
-            logger.debug(f"button {self.button.name}: only draw FMA master")
-            return None
-
         image = Image.new(mode="RGBA", size=(8 * ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
 
@@ -299,9 +296,21 @@ class FMAIcon(StringIcon):
         has_line = False
         for i in range(FMA_COUNT - 1):
             loffset = loffset + icon_width
-            if i == 1:
+            if i == 1:  # second line skipped
                 continue
             draw.line(((loffset, 0), (loffset, ICON_SIZE)), fill="white", width=1)
+
+        if not self.button.sim.connected:
+            logger.debug("not connected")
+            draw.line(((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))), fill="white", width=1)
+            bg = self.button.deck.get_icon_background(
+                name=self.button_name(), width=8 * ICON_SIZE, height=ICON_SIZE, texture_in=None, color_in="black", use_texture=False, who="FMA"
+            )
+            bg.alpha_composite(image)
+            self._cached = bg.convert("RGB")
+            self._updated = False
+            return self._cached
+
         loffset = 0
         for i in range(FMA_COUNT):
             lines = self.get_fma_lines(idx=i)

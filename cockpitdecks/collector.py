@@ -138,7 +138,7 @@ class DatarefSet(DatarefListener):
             if d.current_value is None:
                 loggerDatarefSet.debug(f"collection {self.name} has {d.path} with no value, not fully collected")
                 return False
-            if d._last_updated is None or d._last_updated < self.last_loaded:
+            if d._last_updated is None or self.last_loaded is None or (self.last_loaded is not None and d._last_updated < self.last_loaded):
                 # loggerDatarefSet.debug(f"{self.name}: {d.path}: {d._last_updated} < {self.last_loaded}")
                 loggerDatarefSet.debug(f"collection {self.name} has {d.path} expired, not fully collected")
                 return False

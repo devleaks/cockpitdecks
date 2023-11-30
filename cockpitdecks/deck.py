@@ -19,6 +19,9 @@ from .button import Button
 from cockpitdecks.buttons.activation import DECK_ACTIVATIONS, DEFAULT_ACTIVATIONS
 from cockpitdecks.buttons.representation import DECK_REPRESENTATIONS, DEFAULT_REPRESENTATIONS
 
+loggerDeckType = logging.getLogger("DeckType")
+# loggerDeckType.setLevel(logging.DEBUG)
+
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
@@ -30,7 +33,75 @@ class DeckType(Config):
 
     def __init__(self, filename: str) -> None:
         Config.__init__(self, filename=filename)
+        self.name = self[KW.TYPE.value]
         self._special_displays = None
+        self._buttons = {}
+        self.init()
+
+    def init(self):
+        cnt = 0
+        for button in self[KW.BUTTONS.value]:
+            name = button.get(KW.NAME.value)
+            repeat = button.get(KW.REPEAT.value)
+            prefix = button.get(KW.PREFIX.value, "")
+
+            action = button.get(KW.ACTION.value)
+            activation = [KW.NONE.value]
+            if action is None or action.lower() == KW.NONE.value:
+                action = KW.NONE.value
+            else:
+                activation = DECK_ACTIVATIONS.get(action)
+                if activation is None:
+                    loggerDeckType.warning(f"deck type {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
+
+            view = button.get(KW.VIEW.value)
+            representation = [KW.NONE.value]
+            if view is None or view.lower() == KW.NONE.value:
+                view = KW.NONE.value
+            else:
+                representation = DECK_REPRESENTATIONS.get(view)
+                if representation is None:
+                    loggerDeckType.warning(f"deck type {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS")
+
+            if activation is not None and representation is not None:
+                if repeat is None:
+                    if name is None:
+                        name = "NO_NAME_" + str(cnt)
+                        cnt = cnt + 1
+                        loggerDeckType.warning(f"deck {self.name}: button has no name, using default {name}")
+
+                    self._buttons[prefix + name] = {
+                        KW.INDEX.value: prefix + name,
+                        KW.INDEX_NUMERIC.value: 0,
+                        KW.ACTION.value: button.get(KW.ACTION.value),
+                        KW.VIEW.value: button.get(KW.VIEW.value),
+                        KW.ACTIVATIONS.value: activation,
+                        KW.REPRESENTATIONS.value: representation,
+                    }
+                    if KW.IMAGE.value in button:
+                        self._buttons[prefix + name][KW.IMAGE.value] = button.get(KW.IMAGE.value)
+                else:  # name is ignored
+                    for i in range(repeat):
+                        idx = str(i) if prefix is None else prefix + str(i)
+                        self._buttons[idx] = {
+                            KW.INDEX.value: idx,
+                            KW.INDEX_NUMERIC.value: i,
+                            KW.ACTION.value: button.get(KW.ACTION.value),
+                            KW.VIEW.value: button.get(KW.VIEW.value),
+                            KW.ACTIVATIONS.value: activation,
+                            KW.REPRESENTATIONS.value: representation,
+                        }
+                        if KW.IMAGE.value in button:
+                            self._buttons[idx][KW.IMAGE.value] = button.get(KW.IMAGE.value)
+                        # else: don't set it, a sign that there is no image
+            else:
+                loggerDeckType.warning(f"deck type {self.name}: cannot proceed with {button} definition")
+        loggerDeckType.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
+        # with open(f"{dt}.out", "w") as fp:
+        #    yaml.dump(self._buttons, fp)
+        self.valid_activations()  # will print debug
+        self.valid_representations()  # will print debug
+        loggerDeckType.debug(f"..deck type {self.name} done")
 
     def special_displays(self):
         """Returns name of all special displays (i.e. not "keys")"""
@@ -71,6 +142,61 @@ class DeckType(Config):
                             return s[0:2] if not return_offset else s[2:4]
         return None
 
+    def get_button_definition(self, index):
+        return self._buttons.get(index)
+
+    def get_index_prefix(self, index):
+        b = self.get_button_definition(index)
+        if b is not None:
+            return b.get(KW.PREFIX.value)
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
+        return None
+
+    def get_index_numeric(self, index):
+        # Useful to just get the int value of index
+        b = self.get_button_definition(index)
+        if b is not None:
+            return b.get(KW.INDEX_NUMERIC.value)
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
+        return None
+
+    def valid_indices(self, with_icon: bool = False):
+        # If with_icon is True, only returns keys with image icon associted with it
+        if with_icon:
+            with_image = filter(lambda x: x[KW.VIEW.value] == "image", self._buttons.values())
+            return [a[KW.INDEX.value] for a in with_image]
+        # else, returns all of them
+        return list(self._buttons.keys())
+
+    def valid_activations(self, index=None):
+        if index is not None:
+            b = self.get_button_definition(index)
+            if b is not None:
+                loggerDeckType.debug(f"deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}")
+                return DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]
+            else:
+                loggerDeckType.warning(f"deck {self.name}: no button index {index}, returning default for deck")
+        all_activations = set(DEFAULT_ACTIVATIONS).union(
+            set(reduce(lambda l, b: l.union(set(b.get(KW.ACTIVATIONS.value, set()))), self._buttons.values(), set()))
+        )
+        loggerDeckType.debug(f"deck {self.name}: {all_activations}")
+        return list(all_activations)
+
+    def valid_representations(self, index=None):
+        if index is not None:
+            b = self.get_button_definition(index)
+            if b is not None:
+                all_representations = set(DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value])
+                loggerDeckType.debug(f"deck {self.name}: button {index}: {all_representations}")
+                return all_representations
+            else:
+                loggerDeckType.warning(f"deck {self.name}: no button index {index}, returning default for deck")
+        all_representations = set(DEFAULT_REPRESENTATIONS).union(
+            set(reduce(lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))), self._buttons.values(), set()))
+        )
+        loggerDeckType.debug(f"deck {self.name}: {all_representations}")
+        return set(all_representations)
+
 
 class Deck(ABC):
     """
@@ -83,10 +209,7 @@ class Deck(ABC):
         self.name = name
         self.cockpit = cockpit
         self.device = device
-        self.deck_content = {}
-        self._buttons = {}
-        self._activations = set()
-        self._representations = set()
+        self.deck_type = {}
 
         self.cockpit.set_logging_level(__name__)
 
@@ -139,83 +262,21 @@ class Deck(ABC):
         if not self.valid:
             logger.warning(f"deck {self.name}: is invalid")
             return
-        self.read_definition()
+        self.set_deck_type()
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
 
     def get_id(self):
         return ID_SEP.join([self.cockpit.get_id(), self.name, self.layout])
 
-    def read_definition(self):
+    def set_deck_type(self):
         deck_type = self._config.get(KW.TYPE.value, type(self).__name__)
-        self.deck_content = self.cockpit.get_deck_type_description(deck_type)
-        if self.deck_content is None or not self.deck_content.is_valid():
-            logger.error(f"no deck definition for {dt}")
-            return
+        self.deck_type = self.cockpit.get_deck_type_description(deck_type)
+        if self.deck_type is None:
+            logger.error(f"no deck definition for {deck_type}")
 
-        cnt = 0
-        for button in self.deck_content[KW.BUTTONS.value]:
-            name = button.get(KW.NAME.value)
-            repeat = button.get(KW.REPEAT.value)
-            prefix = button.get(KW.PREFIX.value, "")
-
-            action = button.get(KW.ACTION.value)
-            activation = [KW.NONE.value]
-            if action is None or action.lower() == KW.NONE.value:
-                action = KW.NONE.value
-            else:
-                activation = DECK_ACTIVATIONS.get(action)
-                if activation is None:
-                    logger.warning(f"deck {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
-
-            view = button.get(KW.VIEW.value)
-            representation = [KW.NONE.value]
-            if view is None or view.lower() == KW.NONE.value:
-                view = KW.NONE.value
-            else:
-                representation = DECK_REPRESENTATIONS.get(view)
-                if representation is None:
-                    logger.warning(f"deck {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS")
-
-            if activation is not None and representation is not None:
-                if repeat is None:
-                    if name is None:
-                        name = "NO_NAME_" + str(cnt)
-                        cnt = cnt + 1
-                        logger.warning(f"deck {self.name}: button has no name, using default {name}")
-
-                    self._buttons[prefix + name] = {
-                        KW.INDEX.value: prefix + name,
-                        KW.INDEX_NUMERIC.value: 0,
-                        KW.ACTION.value: button.get(KW.ACTION.value),
-                        KW.VIEW.value: button.get(KW.VIEW.value),
-                        KW.ACTIVATIONS.value: activation,
-                        KW.REPRESENTATIONS.value: representation,
-                    }
-                    if KW.IMAGE.value in button:
-                        self._buttons[prefix + str(i)][KW.IMAGE.value] = button.get(KW.IMAGE.value)
-                else:  # name is ignored
-                    for i in range(repeat):
-                        idx = str(i) if prefix is None else prefix + str(i)
-                        self._buttons[idx] = {
-                            KW.INDEX.value: idx,
-                            KW.INDEX_NUMERIC.value: i,
-                            KW.ACTION.value: button.get(KW.ACTION.value),
-                            KW.VIEW.value: button.get(KW.VIEW.value),
-                            KW.ACTIVATIONS.value: activation,
-                            KW.REPRESENTATIONS.value: representation,
-                        }
-                        if KW.IMAGE.value in button:
-                            self._buttons[idx][KW.IMAGE.value] = button.get(KW.IMAGE.value)
-                        # else: don't set it, a sign that there is no image
-            else:
-                logger.warning(f"deck {self.name}: cannot proceed with {button} definition")
-        logger.debug(f"deck {self.name}: buttons: {self._buttons.keys()}..")
-        # with open(f"{dt}.out", "w") as fp:
-        #    yaml.dump(self._buttons, fp)
-        self.valid_activations()  # will print debug
-        self.valid_representations()  # will print debug
-        logger.debug(f"..deck {self.name} done")
+    def get_deck_type_description(self):
+        return self.deck_type
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -458,59 +519,23 @@ class Deck(ABC):
         pass
 
     # #######################################
-    # Deck Specific Functions : Activation
+    # Deck Specific Functions : Description (capabilities)
     #
     def get_index_prefix(self, index):
-        b = self._buttons.get(index)
-        if b is not None:
-            return b.get(KW.PREFIX.value)
-        logger.warning(f"deck {self.name}: no button index {index}")
-        return None
+        return self.deck_type.get_index_prefix(index=index)
 
     def get_index_numeric(self, index):
         # Useful to just get the int value of index
-        b = self._buttons.get(index)
-        if b is not None:
-            return b.get(KW.INDEX_NUMERIC.value)
-        logger.warning(f"deck {self.name}: no button index {index}")
-        return None
+        return self.deck_type.get_index_numeric(index=index)
 
     def valid_indices(self, with_icon: bool = False):
-        # If with_icon is True, only returns keys with image icon associted with it
-        if with_icon:
-            with_image = filter(lambda x: x[KW.VIEW.value] == "image", self._buttons.values())
-            return [a[KW.INDEX.value] for a in with_image]
-        # else, returns all of them
-        return list(self._buttons.keys())
+        return self.deck_type.valid_indices(with_icon=with_icon)
 
     def valid_activations(self, index=None):
-        if index is not None:
-            b = self._buttons.get(index)
-            if b is not None:
-                logger.debug(f"deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}")
-                return DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]
-            else:
-                logger.warning(f"deck {self.name}: no button index {index}, returning default for deck")
-        all_activations = set(DEFAULT_ACTIVATIONS).union(
-            set(reduce(lambda l, b: l.union(set(b.get(KW.ACTIVATIONS.value, set()))), self._buttons.values(), set()))
-        )
-        logger.debug(f"deck {self.name}: {all_activations}")
-        return list(all_activations)
+        return self.deck_type.valid_activations(index=index)
 
     def valid_representations(self, index=None):
-        if index is not None:
-            b = self._buttons.get(index)
-            if b is not None:
-                all_representations = set(DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value])
-                logger.debug(f"deck {self.name}: button {index}: {all_representations}")
-                return all_representations
-            else:
-                logger.warning(f"deck {self.name}: no button index {index}, returning default for deck")
-        all_representations = set(DEFAULT_REPRESENTATIONS).union(
-            set(reduce(lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))), self._buttons.values(), set()))
-        )
-        logger.debug(f"deck {self.name}: {all_representations}")
-        return set(all_representations)
+        return self.deck_type.valid_representations(index=index)
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -593,7 +618,7 @@ class DeckWithIcons(Deck):
         if not self.valid:
             logger.warning(f"deck {self.name}: is invalid")
             return
-        self.read_definition()
+        self.set_deck_type()
         self.load_icons()
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page

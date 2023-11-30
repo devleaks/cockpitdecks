@@ -255,7 +255,7 @@ class Loupedeck(DeckWithIcons):
         """
         Return device or device element to use for PIL.
         """
-        return "button" if index not in self.deck_content.special_displays() else index
+        return "button" if index not in self.get_deck_type_description().special_displays() else index
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
         if name is not None and name in self.icons.keys():
@@ -304,7 +304,7 @@ class Loupedeck(DeckWithIcons):
 
         image = button.get_representation()
         if image is not None:
-            if button.index in self.deck_content.special_displays():
+            if button.index in self.get_deck_type_description().special_displays():
                 self.device.set_key_image(button.index, image)
             else:
                 sizes = self.device.key_image_format()

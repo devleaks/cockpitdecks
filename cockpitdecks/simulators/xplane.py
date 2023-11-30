@@ -504,7 +504,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         # Add aircraft
         dref_ipc = self.get_dataref(AIRCRAFT_DATAREF_IPC)
-        if self.add_dataref_to_monitor(dref_ipc.path, freq=d.update_frequency):
+        if self.add_dataref_to_monitor(dref_ipc.path, freq=dref_ipc.update_frequency):
             prnt.append(dref_ipc.path)
             super().add_datarefs_to_monitor({dref_ipc.path: dref_ipc})
 
