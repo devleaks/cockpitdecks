@@ -2,6 +2,7 @@
 #
 import os
 import logging
+import time
 from math import floor
 from PIL import Image, ImageOps
 
@@ -26,7 +27,6 @@ FLIP_DESCRIPTION = {
     (True, True): "mirrored horizontally/vertically",
 }
 
-ENCODER_PREFIX = "e"  # need to be found in _buttons definition from deck.yaml
 KW_TOUCHSCREEN = "touchscreen"  # must match resources.decks.streamdeck*plus*.buttons[].name
 
 
@@ -274,7 +274,7 @@ class Streamdeck(DeckWithIcons):
         if self.device is None:
             logger.warning("no device")
             return
-        if str(button.index).startswith(ENCODER_PREFIX):
+        if self.deck_type.is_encoder(button):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation
@@ -299,7 +299,7 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a dial is rotated.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
-        idx = f"{ENCODER_PREFIX}{key}"
+        idx = self.deck_type.get_encoder_index(key)
         if action == DialEventType.PUSH:
             self.key_change_processing(deck, idx, 1 if value else 0)
         elif action == DialEventType.TURN:

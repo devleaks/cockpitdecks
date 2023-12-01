@@ -139,6 +139,7 @@ class Loupedeck(DeckWithIcons):
         if key in ENCODER_MAP.keys():
             key = ENCODER_MAP[key]
 
+        # Map between Loupedeck indices and Cockpitdecks'
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
@@ -147,7 +148,7 @@ class Loupedeck(DeckWithIcons):
                     key = 0
                 try:
                     num = int(key)
-                    key = f"{BUTTON_PREFIX}{key}"
+                    key = self.deck_type.get_button_index(key)
                 except ValueError:
                     logger.warning(f"invalid button key {key}")
             transfer(deck, key, state)
@@ -332,10 +333,10 @@ class Loupedeck(DeckWithIcons):
         if color is None:
             logger.warning("button returned no representation color, using default")
             color = DEFAULT_COLOR
-        idx = button.index.lower().replace(BUTTON_PREFIX, "")
-        if idx == "0":
-            idx = KW_CIRCLE
-        self.device.set_button_color(idx, color)
+        key = self.deck_type.get_button_key(button.index)
+        if key == "0":
+            key = KW_CIRCLE
+        self.device.set_button_color(key, color)
 
     def print_page(self, page: Page):
         """
@@ -359,10 +360,10 @@ class Loupedeck(DeckWithIcons):
         logger.debug(f"page {self.name}: image {image.width}x{image.height}..")
         for button in page.buttons.values():
             logger.debug(f"doing {button.name}..")
-            if str(button.index).startswith(BUTTON_PREFIX):
+            if self.deck_type.is_button(button):
                 logger.debug(f"..color led has no image")
                 continue
-            if str(button.index).startswith(ENCODER_PREFIX):
+            if self.deck_type.is_encoder(button):
                 logger.debug(f"..encoder has no image")
                 continue
             if button.index in [KW_LEFT, KW_RIGHT]:
@@ -391,7 +392,7 @@ class Loupedeck(DeckWithIcons):
         if self.device is None:
             logger.warning("no device")
             return
-        if str(button.index).startswith(ENCODER_PREFIX):
+        if self.deck_type.is_encoder(button):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation

@@ -4,10 +4,7 @@
 #
 import logging
 
-from PIL import Image, ImageDraw
-
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
 from .xp_str import StringIcon
 
 logger = logging.getLogger(__name__)
@@ -67,12 +64,14 @@ class FMAIcon(StringIcon):
     def __init__(self, config: dict, button: "Button"):
         self.name = "FMA"
         self.fmaconfig = config.get("fma")
+        self.all_in_one = False
         # get mandatory index
-        self.all_in_one = self.fmaconfig.get("all-in-one", False)
-        fma = int(self.fmaconfig.get("index"))
+        fma = self.fmaconfig.get("index")
         if fma is None:
-            logger.warning(f"button {button.name}: no FMA index, forcing index=1")
+            logger.warning(f"button {button.name}: no FMA index, assuming all-in-one")
+            self.all_in_one = True
             fma = 1
+        fma = int(fma)
         if fma < 1:
             logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = 1
@@ -282,8 +281,7 @@ class FMAIcon(StringIcon):
         # print("\n".join([f"{k}:{v}:{len(v)}" for k, v in self.text.items()]))
         # print(">>>" + "0123456789" * 4)
 
-        image = Image.new(mode="RGBA", size=(8 * ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=8 * ICON_SIZE, height=ICON_SIZE)
 
         inside = round(0.04 * image.height + 0.5)
 

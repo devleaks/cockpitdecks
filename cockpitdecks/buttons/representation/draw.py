@@ -43,6 +43,7 @@ class DrawBase(Icon):
         self.draw_up = config.get("up", 0) - config.get("down", 0)
 
     def double_icon(self, width: int = ICON_SIZE * 2, height: int = ICON_SIZE * 2):
+        """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
         image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         return image, draw
@@ -175,7 +176,7 @@ class DataIcon(DrawBase):
 
         data_unit = data.get("data-unit")
         # if data_unit is not None:
-        # 	 data_str = data_str + DATA_UNIT_SEP + data_unit
+        #    data_str = data_str + DATA_UNIT_SEP + data_unit
 
         data_progress = data.get("data-progress")
 
@@ -185,7 +186,7 @@ class DataIcon(DrawBase):
         w = image.width - inside
         h = image.height / 2 + data_size / 2 - inside
         # if dataprogress is not None:
-        # 	 h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
+        #    h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
         if data_unit is not None:
             w = w - draw.textlength(DATA_UNIT_SEP + data_unit, font=font_unit)
         draw.text((w, h), text=data_str, font=font, anchor="rs", align="right", fill=data_color)  # (image.width / 2, 15)

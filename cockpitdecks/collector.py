@@ -275,7 +275,7 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
                 self.next_collection()
 
     def remove_all_collections(self):
-        self.terminate(False)  # keep ticker
+        self.stop_collecting()
         cl = list(self.collections.keys())
         for c in cl:
             del self.collections[c]
@@ -284,8 +284,8 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
     def get_dataref_value_from_collection(self, dataref, collection, default=None):
         c = self.collections.get(collection)
         if c is None:
-            logger.warning(f"collection {collection} not found")
-            return None
+            logger.warning(f"collection {collection} not found for dataref {dataref}")
+            return default  # changed, we do never return None
         return c.get_dataref_value(dataref=dataref, default=default)
 
     def dataref_collection_changed(self, collection):
@@ -328,6 +328,11 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
             return True
         return False
 
+    def stop_collecting(self):
+        if self.is_collecting():
+            self.current_collection.unload()
+            self.current_collection = None
+
     def needs_collecting(self):
         nc = list(filter(lambda x: x.needs_collecting(), self.collections.values()))
         nc = sorted(nc, key=lambda x: x.nice(), reverse=True)
@@ -341,19 +346,20 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
     def next_collection(self):
         needs_collecting = self.needs_collecting()
         if len(needs_collecting) > 0:
-            if self.is_collecting():
-                logger.debug(f"unloading {self.current_collection.name}")
-                self.current_collection.unload()
-                self.current_collection = None
+            if self.current_collection != needs_collecting[0]:
+                if self.is_collecting():
+                    self.current_collection.unload()
+                    self.current_collection = None
+                else:
+                    logger.debug(f"was not collecting")
+                self.current_collection = needs_collecting[0]
+                # alternative: use random among all collections with nice as weight, may lead to collection starving
+                # self.current_collection = random.choices(needs_collecting, weights=[x.nice() for x in needs_collecting])[0]  # choices returns a list()
+                self.current_collection.load()
             else:
-                logger.debug(f"was not collecting")
-            self.current_collection = needs_collecting[0]
+                logger.debug(f"no other collection to update, keep collecting {self.current_collection.name}..")
             if len(needs_collecting) > 1:
                 self.nice_all(needs_collecting[1:])
-            # self.current_collection = random.choices(needs_collecting, weights=[x.nice() for x in needs_collecting])[0]  # choices returns a list()
-            self.current_collection.load()
-            if self.current_collection is not None:  # race condition
-                logger.debug(f"changed to collection {self.current_collection.name} at {now().strftime('%H:%M:%S')}")  # causes issue
             logger.debug(f"collecting..")
         else:
             logger.debug(f"no collection to update")
@@ -363,9 +369,7 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
                 logger.debug(f"not collecting")
 
     def terminate(self, notify=True):
-        if self.is_collecting():
-            self.current_collection.unload()
-            self.current_collection = None
+        self.stop_collecting()
         if notify:
             self.sim.remove_datarefs_to_monitor({self.ticker_dataref.path: self.ticker_dataref})
             logger.debug(f"terminated")

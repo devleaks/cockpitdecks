@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 
 DECKS_FOLDER = "decks"
 
+# Conventions, need to be found in _buttons definition from resources.decks.decktype.yaml
+BUTTON_PREFIX = "b"
+ENCODER_PREFIX = "e"
+
 
 class DeckType(Config):
     """reads and parse deck template file"""
@@ -159,6 +163,21 @@ class DeckType(Config):
             return b.get(KW.INDEX_NUMERIC.value)
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
+
+    def get_encoder_index(self, key):
+        return f"{ENCODER_PREFIX}{key}"
+
+    def is_encoder(self, button):
+        return str(button.index).startswith(ENCODER_PREFIX)
+
+    def get_button_index(self, key):
+        return f"{BUTTON_PREFIX}{key}"
+
+    def get_button_key(self, index):
+        return index.lower().replace(BUTTON_PREFIX, "")
+
+    def is_button(self, button):
+        return str(button.index).startswith(BUTTON_PREFIX)
 
     def valid_indices(self, with_icon: bool = False):
         # If with_icon is True, only returns keys with image icon associted with it
