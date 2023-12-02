@@ -179,7 +179,12 @@ class Page:
             dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
             dc.add_listener(button)
             dc.set_dataref = colldesc.get("set-dataref")
-            dc.expire = colldesc.get("expire")
+            value = colldesc.get("expire")
+            if value is not None:
+                dc.expire = value
+            value = colldesc.get("collection-duration")
+            if value is not None:
+                dc.collect_time = value
             self.dataref_collections[name] = dc
             logger.debug(f"page {self.name}: button {button.name} collection {name} registered")
         logger.debug(f"page {self.name}: button {button.name} collections registered")
@@ -223,6 +228,7 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
+            self.sim.remove_collections_to_monitor(self.dataref_collections)
             self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.clean()
         self.buttons = {}

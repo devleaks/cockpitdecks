@@ -558,7 +558,6 @@ class XPlane(Simulator, XPlaneBeacon):
         for k, v in collections.items():
             self.collector.add_collection(v, start=False)
             logger.debug(f"added collection {k}")
-        self.collector.next_collection()
 
     def remove_collections_to_monitor(self, collections):
         # if not self.connected:
@@ -568,7 +567,6 @@ class XPlane(Simulator, XPlaneBeacon):
         for k, v in collections.items():
             self.collector.remove_collection(v, start=False)
             logger.debug(f"removed collection {k}")
-        self.collector.next_collection()
 
     def remove_all_collections(self):
         # if not self.connected:
@@ -590,8 +588,8 @@ class XPlane(Simulator, XPlaneBeacon):
         logger.log(SPAM_LEVEL, f"added {prnt}")
 
         # Add collector ticker
-        self.collector.add_ticker()
-        logger.info("..dataref sets collector ticking..")
+        # self.collector.add_ticker()
+        # logger.info("..dataref sets collector ticking..")
 
     def cleanup(self):
         """
@@ -644,4 +642,9 @@ class XPlane(Simulator, XPlaneBeacon):
         self.disconnect()
         logger.info("..stopping..")
         self.stop()
+        if self.collector is not None:
+            logger.info("..terminating Collector..")
+            self.collector.terminate()
+        else:
+            logger.info("..no Collector..")
         logger.info("..terminated")
