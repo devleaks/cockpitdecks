@@ -336,6 +336,13 @@ class Simulator(ABC):
         """Returns the simulator date and time"""
         return datetime.now().astimezone()
 
+    def get_dataref_value(self, dataref, default=None):
+        d = self.all_datarefs.get(dataref)
+        if d is None:
+            logger.warning(f"{dataref} not found")
+            return None
+        return d.current_value if d.current_value is not None else default
+
     # ################################
     # Cockpit interface
     #

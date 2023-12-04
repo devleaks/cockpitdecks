@@ -277,17 +277,27 @@ class XPlane(Simulator, XPlaneBeacon):
         dref.add_listener(self.cockpit)  # Wow wow wow
         self.register(dref)
         logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
+        self.add_datetime_datarefs()
 
     def __del__(self):
         for i in range(len(self.datarefs)):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
 
+    def add_datetime_datarefs(self):
+        dtdrefs = {}
+        for d in DATETIME_DATAREFS:
+            dtdrefs[d] = self.get_dataref(d)
+        self.add_datarefs_to_monitor(dtdrefs)
+        logger.info("monitoring simulator date/time datarefs")
+
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the simulator date and time"""
+        if not DATETIME_DATAREFS[0] in self.all_datarefs.keys():  # hack, means dref not created yet
+            return super().datetime(zulu=zulu, system=system)
         now = datetime.now().astimezone()
-        days = self.all_datarefs.get("sim/time/local_date_days")
-        secs = self.all_datarefs.get("sim/time/local_date_sec")
+        days = self.get_dataref_value("sim/time/local_date_days")
+        secs = self.get_dataref_value("sim/time/local_date_sec")
         if not system and days is not None and secs is not None:
             simnow = datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0).astimezone()
             simnow = simnow + timedelta(days=days) + timedelta(days=secs)
