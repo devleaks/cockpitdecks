@@ -1,5 +1,6 @@
 import logging
 from queue import Empty
+import psutil
 import time
 import itertools
 import threading
@@ -19,13 +20,12 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-MAX_COLLECTION_SIZE = 40
+MAX_COLLECTION_SIZE = 40  # absolute mark, no more datarefs than that per collection
+QUEUE_TIMEOUT = 5  # seconds, we check on loop running every that time
+
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
 DEFAULT_COLLECTION_COLLECT_TIME = 10
-DID_NOT_PROGRESS_TIMEOUT = 20  # seconds
-QUEUE_TIMEOUT = 10  # seconds, we check on loop running every that time
-CHECK_ENQUEUES = 10  # seconds
-PACE_LOAD = 0.5  # secs
+PACE_LOAD = 0.5  # secs, little pacing delay after enqueueing numerous drefs
 PACE_UNLOAD = 0.5
 
 
@@ -182,13 +182,6 @@ class DatarefSet(DatarefListener):
     def nice(self):
         return self._nice
 
-    def did_not_progress(self, how_old: int = DID_NOT_PROGRESS_TIMEOUT) -> bool:
-        # Collection update is stalled for more than how_old seconds
-        r = self.is_loaded and (self.last_loaded < self.sim.datetime() - timedelta(seconds=how_old))
-        if r:
-            loggerDatarefSet.debug(f"collection {self.name} did not progress for at least {how_old} seconds")
-        return r
-
     def is_completed(self) -> bool:
         if self.last_loaded is None:
             loggerDatarefSet.debug(f"collection {self.name} never loaded")
@@ -251,14 +244,11 @@ class DatarefSet(DatarefListener):
         # else:
         #     loggerDatarefSet.debug(f"collection {self.name}: already enqueued")
 
-    def dequeued(self, start_event: bool = True):
+    def dequeued(self):
         if not self._enqueued:
             loggerDatarefSet.warning(f"collection {self.name}: was not enqueued")
         self._enqueued = False
         loggerDatarefSet.debug(f"collection {self.name}: dequeued")
-        if start_event:
-            self._collected.clear()
-            loggerDatarefSet.debug(f"collection {self.name}: event cleared")
 
     def collect(self):
         loggerDatarefSet.debug(f"collection {self.name}: collecting {self.collect_time} secs.")
@@ -306,14 +296,10 @@ class DatarefSetCollector:
         if collection.name not in self.collections.keys():
             return
         need_next = False
-        if self.current_collection is not None and self.current_collection.name == collection.name:
-            logger.debug(f"unloading current collection {collection.name} before removal")
-            self.current_collection.unload()
-            self.current_collection = None
-            need_next = True
-        collection.dequeued(start_event=False)  # do not reset flag
-        logger.debug(f"collection {collection.name} count ({collection.instances})")
+        if self.is_collecting(specific_collection=collection):
+            self.stop_collecting()
         if collection.instances <= 0:
+            collection._enqueued = False  # silently prevent it from enqueuing again
             del self.collections[collection.name]
             logger.debug(f"collection {collection.name} removed")
         else:
@@ -350,15 +336,16 @@ class DatarefSetCollector:
         if self.current_collection is None:
             self.current_collection = collection
             self.current_collection.load()
-        elif self.current_collection != collection:
-            if self.current_collection.did_not_progress():  # not completed, enqueue it for later completion
+            return True
+        if self.current_collection != collection:
+            if not self.current_collection.is_completed():  # enqueue it for later completion
                 self.current_collection.enqueue()
             self.current_collection.unload()
             self.current_collection = collection
             self.current_collection.load()
-        else:
-            logger.debug(f"..collecting..")
-        # else, keep collecting (self.current_collection = collection)
+            return True
+        logger.debug(f"..collecting..")
+        return False  # no new collection loaded
 
     def stop_collecting(self, release: bool = True):
         if self.is_collecting():
@@ -382,65 +369,69 @@ class DatarefSetCollector:
                 self.candidates.get(block=False)
             except Empty:
                 continue
-        self.candidates.task_done()
 
     def loop(self):
-        logger.debug("Collector started..")
+        loop_count = 0
+        change_count = 0
+        logger.debug("Collector loop started..")
         while not self.collector_running.is_set():
+            loop_count = loop_count + 1
             self.enqueue_collections()
             try:
                 next_collection = self.candidates.get(timeout=QUEUE_TIMEOUT)
                 next_collection.dequeued()
                 if next_collection.name in self.collections.keys():
-                    self.collect(next_collection)
+                    if self.collect(next_collection):
+                        change_count = change_count + 1
                     if not next_collection.collect():
                         if not next_collection.is_completed():
                             if next_collection.name in self.collections.keys():
                                 logger.debug(f"collection {next_collection.name} did not complete, rescheduling")
                                 next_collection.enqueue(self.candidates)
                             else:
-                                logger.warning(f"collection {next_collection.name} did not complete, no longer need collecting")
+                                logger.debug(f"collection {next_collection.name} did not complete, no longer need collecting")
                         else:
-                            logger.warning(f"collection {next_collection.name} is complete, no longer need collecting")
                             self.stop_collecting(release=False)
+                            logger.debug(f"collection {next_collection.name} is complete, no longer collecting")
                     else:
                         logger.debug(f"collection {next_collection.name} completed")
                         self.stop_collecting(release=False)
                 else:
-                    logger.warning(f"collection {next_collection.name} no longer collectable")
+                    logger.debug(f"collection {next_collection.name} no longer collectable")
             except Empty:
                 pass
+            logger.info(f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])}")
         self.collector_running = None
-        logger.debug(f"..Collector loop terminated {'<'*30}")
+        logger.debug(f"..Collector loop terminated")
 
     def start(self):
-        if self.collector_running is None:
-            self.collector_running = threading.Event()
-            # self.stop_collecting()
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = "Collector::loop"
-            self.thread.start()
-            logger.info("Collector started")
-        else:
+        if self.collector_running is not None:
             logger.debug("Collector already running.")
+            return
+        self.collector_running = threading.Event()
+        self.thread = threading.Thread(target=self.loop)
+        self.thread.name = "Collector::loop"
+        self.thread.start()
+        logger.info("Collector started")
 
     def stop(self, clear_queue: bool = False):
-        if self.collector_running is not None:
-            logger.debug("stopping..")
-            self.collector_running.set()
-            self.stop_collecting()
-            logger.debug(f"..asked Collector to stop (this may take {QUEUE_TIMEOUT} secs.)..")
-            self.thread.join(timeout=QUEUE_TIMEOUT)
-            if self.thread.is_alive():
-                logger.warning("..thread may hang..")
-            self.thread = None
-            if clear_queue:
-                logger.debug("..clearing queue..")
-                self.clear_queue()
-            logger.debug("..stopped")
-            logger.info("Collector stopped")
-        else:
+        if self.collector_running is None:
             logger.debug("Collector not running")
+            return
+        logger.debug("stopping..")
+        self.collector_running.set()
+        self.stop_collecting()
+        logger.debug(f"..asked Collector to stop (this may take {QUEUE_TIMEOUT} secs.)..")
+        self.thread.join(timeout=QUEUE_TIMEOUT)
+        if self.thread.is_alive():
+            logger.warning("..thread may hang..")
+        self.thread = None
+        self.collector_running = None
+        if clear_queue:
+            logger.debug("..clearing queue..")
+            self.clear_queue()
+        logger.debug("..stopped")
+        logger.info("Collector stopped")
 
     def terminate(self):
         logger.debug("terminating Collector..")

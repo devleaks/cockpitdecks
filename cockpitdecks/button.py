@@ -476,6 +476,11 @@ class Button(DatarefListener, DatarefSetListener):
                 r = r + datarefs
                 logger.debug(f"button {self.name}: added text datarefs {datarefs}")
 
+        # 4.1 Multiple datarefs
+        datarefs = base.get("multi-datarefs", [])
+        if len(datarefs) > 0:
+            r = r + datarefs
+
         # Clean up
         if KW.FORMULA.value in r:  # label or text may contain like ${{KW.FORMULA.value}}, but {KW.FORMULA.value} is not a dataref.
             r.remove(KW.FORMULA.value)
@@ -750,7 +755,7 @@ class Button(DatarefListener, DatarefSetListener):
             # if self.dataref is not None:
             #     logger.debug(f"button {self.name}: more than one datarefs, but returning dataref attribute {self.dataref} value")
             #     return self.get_dataref_value(self.dataref)
-            # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-dateref
+            # 4.2 Mutiple Dataref but no formula, returns an array of values of datarefs in multi-datarefs
             # !! May be we should return them all?
             r = {}
             for d in self.all_datarefs:
