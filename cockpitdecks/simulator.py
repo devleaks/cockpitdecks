@@ -2,6 +2,7 @@
 #
 import threading
 import logging
+from datetime import date, datetime, timedelta
 from abc import ABC, abstractmethod
 
 from cockpitdecks import SPAM_LEVEL, now
@@ -259,34 +260,6 @@ class Simulator(ABC):
     def set_dataref_frequencies(self, dataref_frequencies):
         self.dataref_frequencies = dataref_frequencies
 
-    def detect_changed(self):
-        """
-        Update dataref values that have changed between 2 fetches.
-        """
-        try:
-            currvalues = None
-            with self.dataref_db_lock:
-                currvalues = self.current_values.copy()  # we take a copy first so that it does not change...
-
-            if currvalues is not None:
-                for d in currvalues.keys():
-                    if d not in self.previous_values.keys() or currvalues[d] != self.previous_values[d]:
-                        # logger.debug(f"{d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
-                        if d in self.datarefs_to_monitor.keys():
-                            self.all_datarefs[d].update_value(currvalues[d], cascade=True)
-                        else:
-                            self.all_datarefs[d].update_value(currvalues[d], cascade=False)  # we just update the value but no notification
-                            # logger.warning(f"updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
-                            # This means we got a value from X-Plane we never asked for this run...
-                            # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
-                        # logger.debug(f"..done")
-                    # else:
-                    #    logger.debug(f"{d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
-            else:
-                logger.warning(f"no current values")  #  (was {self.datarefs_to_monitor.keys()})
-        except RuntimeError:
-            logger.warning(f"detect_changed:", exc_info=True)
-
     def set_rounding(self, dataref):
         if dataref.path.find("[") > 0:
             rnd = self.roundings.get(dataref.path)
@@ -330,6 +303,38 @@ class Simulator(ABC):
             else:
                 logger.warning(f"invalid dataref {dataref.path}")
         return dataref
+
+    def detect_changed(self):
+        """
+        Update dataref values that have changed between 2 fetches.
+        """
+        try:
+            currvalues = None
+            with self.dataref_db_lock:
+                currvalues = self.current_values.copy()  # we take a copy first so that it does not change...
+
+            if currvalues is not None:
+                for d in currvalues.keys():
+                    if d not in self.previous_values.keys() or currvalues[d] != self.previous_values[d]:
+                        # logger.debug(f"{d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
+                        if d in self.datarefs_to_monitor.keys():
+                            self.all_datarefs[d].update_value(currvalues[d], cascade=True)
+                        else:
+                            self.all_datarefs[d].update_value(currvalues[d], cascade=False)  # we just update the value but no notification
+                            # logger.warning(f"updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
+                            # This means we got a value from X-Plane we never asked for this run...
+                            # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
+                        # logger.debug(f"..done")
+                    # else:
+                    #    logger.debug(f"{d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
+            else:
+                logger.warning(f"no current values")  #  (was {self.datarefs_to_monitor.keys()})
+        except RuntimeError:
+            logger.warning(f"detect_changed:", exc_info=True)
+
+    def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
+        """Returns the simulator date and time"""
+        return datetime.now().astimezone()
 
     # ################################
     # Cockpit interface

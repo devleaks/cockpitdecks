@@ -167,7 +167,6 @@ class Page:
                     continue
                 ref = self.sim.get_dataref(d)  # creates or return already defined dataref
                 if ref is not None:
-                    ref.add_listener(button.sim.collector)
                     collection[d] = ref  # ref DO NOT get added to page datarefs collection
                     logger.debug(f"page {self.name}: button {button.name} added dataref {d} to collection {name}")
                 else:
@@ -178,13 +177,9 @@ class Page:
                 )
             dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
             dc.add_listener(button)
-            dc.set_dataref = colldesc.get("set-dataref")
-            value = colldesc.get("expire")
-            if value is not None:
-                dc.expire = value
-            value = colldesc.get("collection-duration")
-            if value is not None:
-                dc.collect_time = value
+            dc.set_set_dataref(colldesc.get("set-dataref"))
+            dc.set_expiration(colldesc.get("expire"))
+            dc.set_collect_time(colldesc.get("collection-duration"))
             self.dataref_collections[name] = dc
             logger.debug(f"page {self.name}: button {button.name} collection {name} registered")
         logger.debug(f"page {self.name}: button {button.name} collections registered")

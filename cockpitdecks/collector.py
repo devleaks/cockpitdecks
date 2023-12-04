@@ -17,7 +17,7 @@ loggerDatarefSet = logging.getLogger("DatarefSet")
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 MAX_COLLECTION_SIZE = 40
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
@@ -76,6 +76,19 @@ class DatarefSet(DatarefListener):
         self.last_completed = None
         self._nice = 1  # I <3 Unix.
         self._enqueued = False
+        self.instances = 1
+
+    def set_expiration(self, expire):
+        if expire is not None:
+            self.expire = expire
+
+    def set_collect_time(self, collect_time):
+        if collect_time is not None:
+            self.collect_time = collect_time
+
+    def set_set_dataref(self, dref):
+        if dref is not None:
+            self.set_dataref = dref
 
     # Getting set values
     #
@@ -111,7 +124,7 @@ class DatarefSet(DatarefListener):
         """Called when dataref VALUE has changed"""
         # loggerDatarefSet.debug(f"dataref changed {dataref.path}")
         self.notify_changed()
-        if self.is_collected():  #  and not self.expired():
+        if self.is_completed():
             loggerDatarefSet.debug(f"collection {self.name} completed")
             self.last_completed = now()
             self.notify_completed()
@@ -121,7 +134,7 @@ class DatarefSet(DatarefListener):
 
     def dataref_updated(self, dataref: "Dataref"):
         """Called when dataref has been updated but may be with no change"""
-        if self.is_collected():  #  and not self.expired():
+        if self.is_completed():
             loggerDatarefSet.debug(f"collection {self.name} completed")
             self.last_completed = now()
             self.release()
@@ -165,33 +178,6 @@ class DatarefSet(DatarefListener):
     def nice(self):
         return self._nice
 
-    def renice(self, nice: int = 0):
-        self._nice = nice
-
-    def upnice(self):
-        self._nice = self._nice + 1
-
-    def expired(self) -> bool:
-        # Collection was last collected more than expired seconds,
-        # it should be refreshed.
-        # If collection was never entirely collected, it is expired (~needs collecting)
-        # Increases nice value each time found expired
-        oldest = self.oldest()
-        if oldest is None:
-            return True
-        expire = self.expire if self.expire is not None else DEFAULT_COLLECTION_EXPIRATION
-        r = oldest < now() - timedelta(seconds=expire)
-        if r:
-            loggerDatarefSet.debug(f"collection {self.name} expired ({self.nice()})")
-        return r
-
-    def changed(self) -> bool:
-        """Has it changed since the last completion"""
-        newest = self.last_updated()
-        if newest is None:
-            return False
-        return newest > self.last_completed
-
     def did_not_progress(self, how_old: int = DID_NOT_PROGRESS_TIMEOUT) -> bool:
         # Collection update is stalled for more than how_old seconds
         r = self.is_loaded and (self.last_loaded < now() - timedelta(seconds=how_old))
@@ -199,12 +185,15 @@ class DatarefSet(DatarefListener):
             loggerDatarefSet.debug(f"collection {self.name} did not progress for at least {how_old} seconds")
         return r
 
-    def is_collected(self) -> bool:
+    def is_completed(self) -> bool:
+        if self.last_loaded is None:
+            loggerDatarefSet.debug(f"collection {self.name} not fully collected")
+            return False
         for d in self.datarefs.values():
-            if d.current_value is None:
+            if d.current_value is None or d._last_updated is None:
                 loggerDatarefSet.debug(f"collection {self.name} has {d.path} with no value, not fully collected")
                 return False
-            if d._last_updated is None or self.last_loaded is None or (self.last_loaded is not None and d._last_updated < self.last_loaded):
+            if d._last_updated < self.last_loaded:
                 # loggerDatarefSet.debug(f"{self.name}: {d.path}: {d._last_updated} < {self.last_loaded}")
                 loggerDatarefSet.debug(f"collection {self.name} has {d.path} expired, not fully collected")
                 return False
@@ -212,7 +201,8 @@ class DatarefSet(DatarefListener):
         loggerDatarefSet.debug(f"{self.name} fully collected")
         return True
 
-    def acquired(self):
+    def show_acquired_status(self):
+        """Reports how many datarefs and their statuses"""
         e = 0
         n = 0
         f = 0
@@ -226,17 +216,16 @@ class DatarefSet(DatarefListener):
         loggerDatarefSet.debug(f"collection {self.name}: count={len(self.datarefs)}, filled={f}, None={n}, Expired={e}")
 
     def needs_collecting(self):
-        return (self.last_loaded is None or self.expired()) and not self._enqueued
+        return not self.is_completed() and not self._enqueued
 
     # Collectting...
     #
     def load(self):
-        self.last_loaded = now()
         self.sim.add_datarefs_to_monitor(self.datarefs)
         self.is_loaded = True
-        self.renice()
+        self.last_loaded = now()
         loggerDatarefSet.info(f"collection {self.name} loaded")  #  {self.datarefs.keys()}
-        self.acquired()
+        self.show_acquired_status()
         time.sleep(PACE_LOAD)
 
     def unload(self):
@@ -244,7 +233,7 @@ class DatarefSet(DatarefListener):
         self.is_loaded = False
         self.last_unloaded = now()
         loggerDatarefSet.log(SPAM_LEVEL, f"collection {self.name} unloaded")
-        self.acquired()
+        self.show_acquired_status()
         time.sleep(PACE_UNLOAD)
 
     def enqueue(self, queue):
@@ -264,7 +253,7 @@ class DatarefSet(DatarefListener):
             self._collected.clear()
             loggerDatarefSet.debug(f"collection {self.name}: event cleared")
 
-    def wait(self):
+    def collect(self):
         loggerDatarefSet.debug(f"collection {self.name}: collecting {self.collect_time} secs.")
         return self._collected.wait(self.collect_time)
 
@@ -274,12 +263,10 @@ class DatarefSet(DatarefListener):
             self._collected.set()
 
 
-class DatarefSetCollector(DatarefListener, DatarefSetListener):
+class DatarefSetCollector:
     # Class that collects collection of datarefs one at a time to limit the request pressure on the simulator.
     #
     def __init__(self, simulator):
-        DatarefListener.__init__(self)
-        DatarefSetListener.__init__(self)
         self.sim = simulator
         self.name = type(self).__name__
         self.collections = {}
@@ -295,13 +282,14 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
         self.start()
 
     def add_collection(self, collection: DatarefSet, start: bool = True):
-        for dref in collection.datarefs.values():
-            dref.add_listener(self)  # the collector dataref_changed() will be called each time the dataref changes
-        self.collections[collection.name] = collection
-        self.collections[collection.name].add_listener(self)
-        logger.debug(f"collection {collection.name} added")
+        if collection.name in self.collections.keys():
+            collection.instances = collection.instances + 1
+            logger.debug(f"collection {collection.name} additional registered")
+        else:
+            self.collections[collection.name] = collection
+            logger.debug(f"collection {collection.name} added")
         if start and collection.needs_collecting():
-            collection.enqueue()
+            collection.enqueue(self.candidates)
 
     def remove_collection(self, collection: DatarefSet, start: bool = True):
         if collection.name not in self.collections.keys():
@@ -312,9 +300,14 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
             self.current_collection.unload()
             self.current_collection = None
             need_next = True
-        collection.dequeued()
-        del self.collections[collection.name]
-        logger.debug(f"collection {collection.name} removed")
+        collection.dequeued(start_event=False)  # do not reset flag
+        collection.instances = collection.instances - 1
+        if collection.instances == 1:
+            del self.collections[collection.name]
+            logger.debug(f"collection {collection.name} removed")
+            print(">" * 20, f"collection {collection.name} removed")
+        else:
+            logger.debug(f"collection {collection.name} still used")
         if start and need_next:
             self.enqueue_collections()
 
@@ -331,25 +324,6 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
             logger.warning(f"collection {collection} not found for dataref {dataref}")
             return default  # changed, we do never return None
         return c.get_dataref_value(dataref=dataref, default=default)
-
-    # Receiving events
-    #
-    def dataref_collection_changed(self, collection):
-        # logger.debug(f"collection {collection.name} changed")
-        pass
-
-    def dataref_collection_completed(self, collection):
-        # logger.debug(f"collection {collection.name} completed")
-        pass
-        # diff = now() - self.last_changed
-        # if diff.total_seconds() > CHECK_ENQUEUES:
-        #     self.enqueue_collections()
-
-    def dataref_changed(self, dataref: "Dataref"):
-        pass
-        # diff = now() - self.last_changed
-        # if diff.total_seconds() > CHECK_ENQUEUES:
-        #     self.enqueue_collections()
 
     # Utilities
     #
@@ -372,12 +346,16 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
             self.current_collection.unload()
             self.current_collection = collection
             self.current_collection.load()
+        else:
+            logger.debug(f"..collecting..")
         # else, keep collecting (self.current_collection = collection)
 
     def stop_collecting(self):
         if self.is_collecting():
+            currcoll = self.current_collection
             self.current_collection.unload()
             self.current_collection = None
+            currcoll.release()
 
     def enqueue_collections(self):
         nc = list(filter(lambda x: x.needs_collecting(), self.collections.values()))
@@ -398,41 +376,44 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
     def loop(self):
         logger.debug("Collector started..")
         while not self.collector_running.is_set():
+            self.enqueue_collections()
             try:
                 next_collection = self.candidates.get(timeout=QUEUE_TIMEOUT)
                 next_collection.dequeued()
                 if next_collection.name in self.collections.keys():
                     self.collect(next_collection)
-                    if not next_collection.wait():
-                        if next_collection.name in self.collections.keys():
-                            logger.debug(f"collection {next_collection.name} did not complete, rescheduling")
-                            next_collection.enqueue(self.candidates)
-                        else:
-                            logger.warning(f"collection {next_collection.name} no longer need collecting")
+                    if not next_collection.collect():
+                        if not next_collection.is_completed():
+                            if next_collection.name in self.collections.keys():
+                                logger.debug(f"collection {next_collection.name} did not complete, rescheduling")
+                                next_collection.enqueue(self.candidates)
+                            else:
+                                logger.warning(f"collection {next_collection.name} did not complete, no longer need collecting")
                     else:
                         logger.debug(f"collection {next_collection.name} completed")
                 else:
                     logger.warning(f"collection {next_collection.name} no longer collectable")
             except Empty:
                 pass
-            self.enqueue_collections()
         self.collector_running = None
         logger.debug(f"..Collector loop terminated {'<'*30}")
 
     def start(self):
         if self.collector_running is None:
             self.collector_running = threading.Event()
+            # self.stop_collecting()
             self.thread = threading.Thread(target=self.loop)
             self.thread.name = "Collector::loop"
             self.thread.start()
             logger.info("Collector started")
         else:
-            logger.info("Collector already running.")
+            logger.debug("Collector already running.")
 
     def stop(self, clear_queue: bool = False):
         if self.collector_running is not None:
-            self.collector_running.set()
             logger.debug("stopping..")
+            self.collector_running.set()
+            self.stop_collecting()
             logger.debug(f"..asked Collector to stop (this may take {QUEUE_TIMEOUT} secs.)..")
             self.thread.join(timeout=QUEUE_TIMEOUT)
             if self.thread.is_alive():
@@ -444,7 +425,7 @@ class DatarefSetCollector(DatarefListener, DatarefSetListener):
             logger.debug("..stopped")
             logger.info("Collector stopped")
         else:
-            logger.debug("not running")
+            logger.debug("Collector not running")
 
     def terminate(self):
         logger.debug("terminating Collector..")

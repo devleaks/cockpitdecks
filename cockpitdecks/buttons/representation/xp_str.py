@@ -5,13 +5,13 @@
 #
 import logging
 
-from cockpitdecks import ICON_SIZE, now
+from cockpitdecks import ICON_SIZE
 from cockpitdecks.simulator import DatarefSetListener
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class StringIcon(DrawBase, DatarefSetListener):
@@ -29,14 +29,20 @@ class StringIcon(DrawBase, DatarefSetListener):
         DrawBase.__init__(self, config=config, button=button)
 
     def dataref_collection_changed(self, dataref_collection):
-        logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} changed")
+        # logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} changed")
+        if dataref_collection.is_completed():
+            logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
+            currstr = dataref_collection.as_string()
+            if currstr != self.text.get(dataref_collection.name):
+                self.text[dataref_collection.name] = currstr
+                self._updated = True
 
     def dataref_collection_completed(self, dataref_collection):
         logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
-        currstr = dataref_collection.as_string()
-        if currstr != self.text[dataref_collection.name]:
-            self.text[dataref_collection.name] = currstr
-            self._updated = True
+        # currstr = dataref_collection.as_string()
+        # if currstr != self.text[dataref_collection.name]:
+        #     self.text[dataref_collection.name] = currstr
+        #     self._updated = True
 
     def is_updated(self):
         if self._inited:

@@ -10,24 +10,6 @@ from .draw import DrawBase
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-FCU_DATAREFS = {
-    "speed": "sim/cockpit2/autopilot/airspeed_dial_kts_mach",
-    "altitude": "sim/cockpit2/autopilot/altitude_dial_ft",
-    "heading": "sim/cockpit/autopilot/heading_mag",
-    "vertspeed": "sim/cockpit/autopilot/vertical_velocity",
-    "speed_managed": "AirbusFBW/SPDmanaged",
-    "lnav_managed": "AirbusFBW/HDGmanaged",
-    "vnav_managed": "AirbusFBW/ALTmanaged",
-    "mach": "sim/cockpit/autopilot/airspeed_is_mach",
-    "track": "AirbusFBW/HDGTRKmode",
-    "vsdashed": "AirbusFBW/VSdashed",
-    "spddashed": "AirbusFBW/SPDdashed",
-    "hdgdashed": "AirbusFBW/HDGdashed",
-    "barostd": "AirbusFBW/BaroStdCapt",
-    "barounit": "AirbusFBW/BaroUnitCapt",
-    "barohg": "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot",
-}
-
 
 class FCUIcon(DrawBase):
     """Highly customized class to display FCU on Streamdeck Plus touchscreen (whole screen)."""
@@ -41,7 +23,23 @@ class FCUIcon(DrawBase):
         self.count = 0
 
     def get_fcu_datarefs(self):
-        return FCU_DATAREFS.values()
+        return {
+            "speed": "sim/cockpit2/autopilot/airspeed_dial_kts_mach",
+            "altitude": "sim/cockpit2/autopilot/altitude_dial_ft",
+            "heading": "sim/cockpit/autopilot/heading_mag",
+            "vertspeed": "sim/cockpit/autopilot/vertical_velocity",
+            "speed_managed": "AirbusFBW/SPDmanaged",
+            "lnav_managed": "AirbusFBW/HDGmanaged",
+            "vnav_managed": "AirbusFBW/ALTmanaged",
+            "mach": "sim/cockpit/autopilot/airspeed_is_mach",
+            "track": "AirbusFBW/HDGTRKmode",
+            "vsdashed": "AirbusFBW/VSdashed",
+            "spddashed": "AirbusFBW/SPDdashed",
+            "hdgdashed": "AirbusFBW/HDGdashed",
+            "barostd": "AirbusFBW/BaroStdCapt",
+            "barounit": "AirbusFBW/BaroUnitCapt",
+            "barohg": "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot",
+        }
 
     def get_image_for_icon(self):
         if self.mode == "vertical-left":
@@ -79,9 +77,6 @@ class FCUIcon(DrawBase):
         #     self.count,
         #     mach_mode,
         #     heading_mode,
-        #     speed_managed,
-        #     heading_managed,
-        #     alt_managed,
         #     self.button.get_dataref_value_from_collection("sim/cockpit2/autopilot/airspeed_dial_kts_mach", FCU_COLLECTION),
         #     self.button.get_dataref_value_from_collection("sim/cockpit/autopilot/heading_mag", FCU_COLLECTION),
         #     self.button.get_dataref_value_from_collection("sim/cockpit2/autopilot/altitude_dial_ft", FCU_COLLECTION),

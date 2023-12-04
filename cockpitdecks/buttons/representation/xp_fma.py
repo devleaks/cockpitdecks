@@ -196,7 +196,7 @@ class FMAIcon(StringIcon):
             for li in range(1, 4):
                 good = empty
                 for k, v in self.text.items():
-                    raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
+                    raws = {k: v for k, v in self.text.items() if k != BOX_COLLECTION and int(k[0]) == li}
                     for k, v in raws.items():
                         # normalize
                         if len(v) < FMA_LINE_LENGTH:

@@ -7,7 +7,7 @@ import platform
 import threading
 import logging
 import time
-import datetime
+from datetime import datetime, timedelta
 
 from cockpitdecks import SPAM_LEVEL
 from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
@@ -36,6 +36,9 @@ MAX_DREF_COUNT = 80  # Maximum number of dataref that can be requested to X-Plan
 # When this (internal) dataref changes, the loaded aircraft has changed
 #
 AIRCRAFT_DATAREF_IPC = Dataref.mk_internal_dataref("_aircraft_icao")
+
+DATETIME_DATAREFS = ["sim/time/local_date_days", "sim/time/local_date_sec", "sim/time/zulu_time_sec", "sim/time/use_system_time"]
+REPLAY_DATAREFS = ["sim/time/is_in_replay", "sim/time/sim_speed", "sim/time/sim_speed_actual"]
 
 
 # XPlaneBeacon
@@ -193,7 +196,7 @@ class XPlaneBeacon:
                 except XPlaneIpNotFound:
                     self.beacon_data = {}
                     if cnt % WARN_FREQ == 0:
-                        logger.error(f"..X-Plane instance not found on local network.. ({datetime.datetime.now().strftime('%H:%M:%S')})")
+                        logger.error(f"..X-Plane instance not found on local network.. ({datetime.now().strftime('%H:%M:%S')})")
                     cnt = cnt + 1
                 if not self.connected:
                     self.should_not_connect.wait(RECONNECT_TIMEOUT)
@@ -279,6 +282,17 @@ class XPlane(Simulator, XPlaneBeacon):
         for i in range(len(self.datarefs)):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
+
+    def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
+        """Returns the simulator date and time"""
+        now = datetime.now().astimezone()
+        days = self.all_datarefs.get("sim/time/local_date_days")
+        secs = self.all_datarefs.get("sim/time/local_date_sec")
+        if not system and days is not None and secs is not None:
+            simnow = datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0).astimezone()
+            simnow = simnow + timedelta(days=days) + timedelta(days=secs)
+            return simnow
+        return now
 
     def get_dataref(self, path):
         if path in self.all_datarefs.keys():
@@ -402,9 +416,9 @@ class XPlane(Simulator, XPlaneBeacon):
                         retvalues[self.datarefs[idx]] = value
                         check.add(idx)
             self.simdrefValues.update(retvalues)
-            # logger.debug(f"{datetime.datetime.now()}, datarefs sent:{check}")
-            # logger.debug(f"{datetime.datetime.now()}, datarefs sent:{list(retvalues.keys())}")
-            # logger.debug(f"{datetime.datetime.now()}, updated {len(retvalues)} values.")
+            # logger.debug(f"{datetime.now()}, datarefs sent:{check}")
+            # logger.debug(f"{datetime.now()}, datarefs sent:{list(retvalues.keys())}")
+            # logger.debug(f"{datetime.now()}, updated {len(retvalues)} values.")
         except:
             raise XPlaneTimeout
         return self.simdrefValues
@@ -433,7 +447,7 @@ class XPlane(Simulator, XPlaneBeacon):
             nexttime = DATA_REFRESH
             i = i + 1
             if LOOP_ALIVE is not None and i % LOOP_ALIVE == 0 and j1 > 0:
-                logger.debug(f"{i}: {datetime.datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
+                logger.debug(f"{i}: {datetime.now()}, avg_get={round(tot2/j2, 6)}, avg_not={round(tot1/j1, 6)}")
             if len(self.datarefs) > 0:
                 try:
                     now = time.time()
@@ -558,6 +572,7 @@ class XPlane(Simulator, XPlaneBeacon):
         for k, v in collections.items():
             self.collector.add_collection(v, start=False)
             logger.debug(f"added collection {k}")
+        self.collector.enqueue_collections()
 
     def remove_collections_to_monitor(self, collections):
         # if not self.connected:
@@ -567,6 +582,7 @@ class XPlane(Simulator, XPlaneBeacon):
         for k, v in collections.items():
             self.collector.remove_collection(v, start=False)
             logger.debug(f"removed collection {k}")
+        self.collector.enqueue_collections()
 
     def remove_all_collections(self):
         # if not self.connected:
