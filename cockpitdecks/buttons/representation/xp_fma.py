@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 FMA_DATAREFS = {
-    "1b": "AirbusFBW/FMA1b[:36]",
-    "1g": "AirbusFBW/FMA1g[:36]",
     "1w": "AirbusFBW/FMA1w[:36]",
+    "1g": "AirbusFBW/FMA1g[:36]",
+    "1b": "AirbusFBW/FMA1b[:36]",
+    "2w": "AirbusFBW/FMA2w[:36]",
     "2b": "AirbusFBW/FMA2b[:36]",
     "2m": "AirbusFBW/FMA2m[:36]",
-    "2w": "AirbusFBW/FMA2w[:36]",
-    "3a": "AirbusFBW/FMA3a[:36]",
-    "3b": "AirbusFBW/FMA3b[:36]",
     "3w": "AirbusFBW/FMA3w[:36]",
+    "3b": "AirbusFBW/FMA3b[:36]",
+    "3a": "AirbusFBW/FMA3a[:36]",
 }
 FMA_BOXES = [
     "AirbusFBW/FMAAPFDboxing",
@@ -33,7 +33,12 @@ FMA_BOXES = [
 ]
 # Reproduction on Streamdeck touchscreen colors is difficult.
 FMA_COLORS = {"b": "#0080FF", "w": "white", "g": "#00FF00", "m": "#FF00FF", "a": "#A04000"}
-FMA_COUNT = 5
+
+FMA_LABELS = {"ATHR": "Auto Thrust", "VNAV": "Vertical Navigation", "LNAV": "Horizontal Navigation", "APPR": "Approach", "AP": "Auto Pilot"}
+FMA_LABELS_ALT = {"ATHR": "Autothrust Mode", "VNAV": "Vertical Mode", "LNAV": "Horizontal Mode", "APPR": "Approach", "AP": "Autopilot Mode"}
+FMA_LABEL_MODE = 3  # 0 (None), 1 (keys), or 2 (values), or 3 alternates
+
+FMA_COUNT = len(FMA_LABELS.keys())
 FMA_COLUMNS = [[0, 7], [7, 15], [15, 21], [21, 28], [28, 37]]
 FMA_LINE_LENGTH = FMA_COLUMNS[-1][-1]
 # FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
@@ -297,6 +302,19 @@ class FMAIcon(StringIcon):
             if i == 1:  # second line skipped
                 continue
             draw.line(((loffset, 0), (loffset, ICON_SIZE)), fill="white", width=1)
+        if FMA_LABEL_MODE > 0:
+            ls = 20
+            font = self.get_font(text_font, ls)
+            offs = icon_width / 2
+            h = inside + ls / 2
+            lbl = list(FMA_LABELS.keys())
+            if FMA_LABEL_MODE == 2:
+                lbl = list(FMA_LABELS.values())
+            if FMA_LABEL_MODE == 3:
+                lbl = list(FMA_LABELS_ALT.values())
+            for i in range(FMA_COUNT):
+                draw.text((offs, h), text=lbl[i], font=font, anchor="ms", align="center", fill="white")
+                offs = offs + icon_width
 
         if not self.button.sim.connected:
             logger.debug("not connected")

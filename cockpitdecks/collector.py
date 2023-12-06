@@ -333,13 +333,16 @@ class DatarefSetCollector:
     # Action
     #
     def collect(self, collection):
+        if not self.sim.connected:
+            logger.debug(f"not connected")
+            return
         if self.current_collection is None:
             self.current_collection = collection
             self.current_collection.load()
             return True
         if self.current_collection != collection:
             if not self.current_collection.is_completed():  # enqueue it for later completion
-                self.current_collection.enqueue()
+                self.current_collection.enqueue(self.candidates)
             self.current_collection.unload()
             self.current_collection = collection
             self.current_collection.load()
@@ -348,6 +351,9 @@ class DatarefSetCollector:
         return False  # no new collection loaded
 
     def stop_collecting(self, release: bool = True):
+        if not self.sim.connected:
+            logger.debug(f"not connected")
+            return
         if self.is_collecting():
             currcoll = self.current_collection
             self.current_collection.unload()
@@ -356,6 +362,9 @@ class DatarefSetCollector:
                 currcoll.release()
 
     def enqueue_collections(self):
+        if not self.sim.connected:
+            logger.debug(f"not connected")
+            return
         nc = list(filter(lambda x: x.needs_collecting(), self.collections.values()))
         nc = sorted(nc, key=lambda x: x.nice(), reverse=True)
         logger.debug(f"needs_collecting: {[(c.name, c.nice()) for c in nc]}")
@@ -399,8 +408,10 @@ class DatarefSetCollector:
                 else:
                     logger.debug(f"collection {next_collection.name} no longer collectable")
             except Empty:
-                pass
-            logger.info(f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])}")
+                logger.debug(f"queue is empty")
+            logger.info(
+                f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_running.is_set()}"
+            )
         self.collector_running = None
         logger.debug(f"..Collector loop terminated")
 
@@ -420,9 +431,11 @@ class DatarefSetCollector:
             return
         logger.debug("stopping..")
         self.collector_running.set()
-        self.stop_collecting()
         logger.debug(f"..asked Collector to stop (this may take {QUEUE_TIMEOUT} secs.)..")
-        self.thread.join(timeout=QUEUE_TIMEOUT)
+        self.stop_collecting()
+        logger.debug("..joining..")
+        self.thread.join(timeout=QUEUE_TIMEOUT)  # this never blocks... why?
+        logger.debug("..joined..")
         if self.thread.is_alive():
             logger.warning("..thread may hang..")
         self.thread = None

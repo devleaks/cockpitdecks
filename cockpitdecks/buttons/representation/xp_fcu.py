@@ -217,7 +217,6 @@ class FCUIcon(DrawBase):
 
     def get_image_for_icon_vertical_left(self):
         """Speed, heading, QNH"""
-        FCU_COLLECTION = list(self.button.dataref_collections.keys())[0]
         self.count = self.count + 1
         THIS_WIDTH = int(2 * ICON_SIZE / 3)
         THIS_HEIGHT = 3 * ICON_SIZE
@@ -327,7 +326,6 @@ class FCUIcon(DrawBase):
 
     def get_image_for_icon_vertical_right(self):
         """Altitude, vs"""
-        FCU_COLLECTION = list(self.button.dataref_collections.keys())[0]
         self.count = self.count + 1
         THIS_WIDTH = int(2 * ICON_SIZE / 3)
         THIS_HEIGHT = 3 * ICON_SIZE
