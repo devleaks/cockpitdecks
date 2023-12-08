@@ -68,8 +68,9 @@ class FMAIcon(StringIcon):
 
     def __init__(self, config: dict, button: "Button"):
         self.name = "FMA"
-        self.fmaconfig = config.get("fma")
+        self.fmaconfig = config.get("fma")  # should not be none, empty at most...
         self.all_in_one = False
+        self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
         # get mandatory index
         fma = self.fmaconfig.get("index")
         if fma is None:
@@ -302,15 +303,15 @@ class FMAIcon(StringIcon):
             if i == 1:  # second line skipped
                 continue
             draw.line(((loffset, 0), (loffset, ICON_SIZE)), fill="white", width=1)
-        if FMA_LABEL_MODE > 0:
+        if self.fma_label_mode > 0:
             ls = 20
             font = self.get_font(text_font, ls)
             offs = icon_width / 2
             h = inside + ls / 2
             lbl = list(FMA_LABELS.keys())
-            if FMA_LABEL_MODE == 2:
+            if self.fma_label_mode == 2:
                 lbl = list(FMA_LABELS.values())
-            if FMA_LABEL_MODE == 3:
+            if self.fma_label_mode == 3:
                 lbl = list(FMA_LABELS_ALT.values())
             for i in range(FMA_COUNT):
                 draw.text((offs, h), text=lbl[i], font=font, anchor="ms", align="center", fill="white")

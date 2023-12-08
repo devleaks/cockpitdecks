@@ -20,9 +20,10 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-MAX_COLLECTION_SIZE = 40  # absolute mark, no more datarefs than that per collection
 QUEUE_TIMEOUT = 5  # seconds, we check on loop running every that time
+LOOP_DELAY = 5.0
 
+MAX_COLLECTION_SIZE = 40  # absolute mark, no more datarefs than that per collection
 DEFAULT_COLLECTION_EXPIRATION = 300  # secs, five minutes
 DEFAULT_COLLECTION_COLLECT_TIME = 10
 PACE_LOAD = 0.5  # secs, little pacing delay after enqueueing numerous drefs
@@ -410,8 +411,9 @@ class DatarefSetCollector:
             except Empty:
                 logger.debug(f"queue is empty")
             logger.info(
-                f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_running.is_set()}"
+                f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_running.is_set() if self.collector_running is not None else '** no more collector set **'}"
             )
+            time.sleep(LOOP_DELAY)  # this is to give a chance to other thread to run...
         self.collector_running = None
         logger.debug(f"..Collector loop terminated")
 
