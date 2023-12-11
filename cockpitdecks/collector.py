@@ -331,6 +331,16 @@ class DatarefSetCollector:
             return False
         return self.current_collection.name == specific_collection.name
 
+    def run(self):
+        if len(self.collections) == 0:
+            if self.collector_running is not None:
+                logger.debug(f"no collection, stopping")
+                self.stop()
+        else:
+            if self.collector_running is None:
+                logger.debug(f"collections to collect, starting")
+                self.start()
+
     # Action
     #
     def collect(self, collection):
@@ -372,6 +382,8 @@ class DatarefSetCollector:
         for collection in nc:
             collection.enqueue(self.candidates)
             self.last_changed = self.sim.datetime()
+        # important note: enqueue_collection is called after adding or removing dataref sets
+        self.run()  # just check it has to run, or stop
 
     def clear_queue(self):
         while not self.candidates.empty():
@@ -384,7 +396,7 @@ class DatarefSetCollector:
         loop_count = 0
         change_count = 0
         logger.debug("Collector loop started..")
-        while not self.collector_running.is_set():
+        while self.collector_running is not None and not self.collector_running.is_set():
             loop_count = loop_count + 1
             self.enqueue_collections()
             try:
