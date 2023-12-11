@@ -18,7 +18,7 @@ loggerDatarefSet = logging.getLogger("DatarefSet")
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 QUEUE_TIMEOUT = 5  # seconds, we check on loop running every that time
 LOOP_DELAY = 5.0
@@ -275,7 +275,7 @@ class DatarefSetCollector:
         self.current_collection = None
         self.last_changed = self.sim.datetime()
         self.candidates = Queue()
-        self.collector_running = None
+        self.collector_must_stop = None
         self.thread = None
 
         self.init()
@@ -333,11 +333,11 @@ class DatarefSetCollector:
 
     def run(self):
         if len(self.collections) == 0:
-            if self.collector_running is not None:
+            if self.collector_must_stop is not None:
                 logger.debug(f"no collection, stopping")
                 self.stop()
         else:
-            if self.collector_running is None:
+            if self.collector_must_stop is None:
                 logger.debug(f"collections to collect, starting")
                 self.start()
 
@@ -396,7 +396,7 @@ class DatarefSetCollector:
         loop_count = 0
         change_count = 0
         logger.debug("Collector loop started..")
-        while self.collector_running is not None and not self.collector_running.is_set():
+        while not self.collector_must_stop.is_set():
             loop_count = loop_count + 1
             self.enqueue_collections()
             try:
@@ -423,37 +423,39 @@ class DatarefSetCollector:
             except Empty:
                 logger.debug(f"queue is empty")
             logger.info(
-                f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_running.is_set() if self.collector_running is not None else '** no more collector set **'}"
+                f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_must_stop.is_set()}"
             )
             time.sleep(LOOP_DELAY)  # this is to give a chance to other thread to run...
-        self.collector_running = None
+        self.collector_must_stop = None
         logger.debug(f"..Collector loop terminated")
 
     def start(self):
-        if self.collector_running is not None:
+        if self.thread is not None:
             logger.debug("Collector already running.")
             return
-        self.collector_running = threading.Event()
+        logger.debug("starting..")
+        self.collector_must_stop = threading.Event()
         self.thread = threading.Thread(target=self.loop)
         self.thread.name = "Collector::loop"
         self.thread.start()
         logger.info("Collector started")
 
     def stop(self, clear_queue: bool = False):
-        if self.collector_running is None:
+        if self.thread is None:
             logger.debug("Collector not running")
             return
         logger.debug("stopping..")
-        self.collector_running.set()
+        self.collector_must_stop.set()
         logger.debug(f"..asked Collector to stop (this may take {QUEUE_TIMEOUT} secs.)..")
         self.stop_collecting()
         logger.debug("..joining..")
         self.thread.join(timeout=QUEUE_TIMEOUT)  # this never blocks... why?
+        time.sleep(QUEUE_TIMEOUT * 2)
         logger.debug("..joined..")
         if self.thread.is_alive():
             logger.warning("..thread may hang..")
         self.thread = None
-        self.collector_running = None
+        logger.debug("..no more thread..")
         if clear_queue:
             logger.debug("..clearing queue..")
             self.clear_queue()
@@ -462,7 +464,10 @@ class DatarefSetCollector:
 
     def terminate(self):
         logger.debug("terminating Collector..")
+        logger.debug("..clearing queue..")
         self.clear_queue()
+        logger.debug("..removing all collections..")
         self.remove_all_collections()
+        logger.debug("..stopping..")
         self.stop()
         logger.debug("..terminated")
