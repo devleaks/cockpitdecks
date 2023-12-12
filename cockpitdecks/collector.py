@@ -4,6 +4,7 @@ import psutil
 import time
 import itertools
 import threading
+import traceback
 
 from abc import ABC, abstractmethod
 from datetime import timedelta
@@ -18,7 +19,7 @@ loggerDatarefSet = logging.getLogger("DatarefSet")
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 QUEUE_TIMEOUT = 5  # seconds, we check on loop running every that time
 LOOP_DELAY = 5.0
@@ -430,6 +431,9 @@ class DatarefSetCollector:
         logger.debug(f"..Collector loop terminated")
 
     def start(self):
+        if not self.sim.connected:
+            logger.warning(f"not connected, not starting")
+            return
         if self.thread is not None:
             logger.debug("Collector already running.")
             return
@@ -449,11 +453,11 @@ class DatarefSetCollector:
         logger.debug(f"..asked Collector to stop (this may take {QUEUE_TIMEOUT} secs.)..")
         self.stop_collecting()
         logger.debug("..joining..")
-        self.thread.join(timeout=QUEUE_TIMEOUT)  # this never blocks... why?
-        time.sleep(QUEUE_TIMEOUT * 2)
+        self.thread.join(timeout=QUEUE_TIMEOUT)  # this never blocks... why? may be it is called from itself ("sucide")??
         logger.debug("..joined..")
         if self.thread.is_alive():
             logger.warning("..thread may hang..")
+        time.sleep(QUEUE_TIMEOUT * 2)  # this allow for the thread to terminate safely.
         self.thread = None
         logger.debug("..no more thread..")
         if clear_queue:
@@ -463,6 +467,7 @@ class DatarefSetCollector:
         logger.info("Collector stopped")
 
     def terminate(self):
+        traceback.print_stack()
         logger.debug("terminating Collector..")
         logger.debug("..clearing queue..")
         self.clear_queue()

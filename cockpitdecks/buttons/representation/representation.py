@@ -165,8 +165,12 @@ class Icon(Representation):
         text_color = config.get(f"{which_text}-color", page.default_label_color)
         text_color = convert_color(text_color)
         text_position = config.get(f"{which_text}-position", page.default_label_position if which_text == "label" else DEFAULT_TEXT_POSITION)
-        if text_position[0] not in "lcr" or text_position[1] not in "tmb":
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid label position code {text_position}, using default")
+        if text_position[0] not in "lcr":
+            text_position = DEFAULT_TEXT_POSITION
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
+        if text_position[1] not in "tmb":
+            text_position = DEFAULT_TEXT_POSITION
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
 
         if text is not None and type(text) != str:
             logger.warning(f"button {self.button_name()}: converted text {text} (type {type(text)})")
