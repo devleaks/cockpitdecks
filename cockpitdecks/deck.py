@@ -410,8 +410,8 @@ class Deck(ABC):
                     if not KW.BUTTONS.value in page_config:
                         logger.error(f"{name} has no button definition '{KW.BUTTONS.value}', ignoring")
                         continue
-
-                    logger.debug(f"loading page {name} (from file {fn.replace(self.cockpit.acpath, '... ')})..")
+                    display_fn = fn.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
+                    logger.debug(f"loading page {name} (from file {display_fn})..")
                     this_page = Page(name, page_config, self)
                     this_page.load_defaults(page_config, self)
                     self.pages[name] = this_page
@@ -436,14 +436,11 @@ class Deck(ABC):
                                     ipb = len(this_page.buttons) - before
                             else:
                                 logger.warning(f"includes: {inc}: file {fni} not found")
-                        logger.info(
-                            f"deck {self.name}: page {name} includes {inc} (from file {fni.replace(self.cockpit.acpath, '... ')}), include contains {ipb} buttons"
-                        )
+                        display_fni = fni.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
+                        logger.info(f"deck {self.name}: page {name} includes {inc} (from file {display_fni}), include contains {ipb} buttons")
                         logger.debug(f"includes: ..included")
 
-                    logger.info(
-                        f"deck {self.name}: page {name} loaded (from file {fn.replace(self.cockpit.acpath, '... ')}), contains {len(this_page.buttons)} buttons"
-                    )
+                    logger.info(f"deck {self.name}: page {name} loaded (from file {display_fn}), contains {len(this_page.buttons)} buttons")
                 # else:
                 #    logger.warning(f"file {p} not found")
 
