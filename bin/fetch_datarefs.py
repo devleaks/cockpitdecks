@@ -6,21 +6,21 @@ import itertools
 import threading
 from datetime import datetime
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # we assume we're in subdir "bin/"
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
 from cockpitdecks.simulator import DatarefListener, Dataref
 from cockpitdecks import CockpitBase, XPlane
 
 # logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode='a')
-LOGFILE = "dataref_fetcher.txt"
+LOGFILE = "dataref_fetcher.log"
 __version__ = "0.0.1"
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
 class DatarefFetcher(DatarefListener, CockpitBase):
-    """Dummy
-    """
+    """Dummy"""
+
     def __init__(self, simulator):
         self.sim = simulator(self)
         self._list = None
@@ -48,7 +48,7 @@ class DatarefFetcher(DatarefListener, CockpitBase):
             return  # got initial value, do not report it...
         print(f"{datetime.now().strftime('%H:%M:%S.%f')} {dataref.path} changed: {dataref.previous_value} -> {dataref.current_value}")
 
-    def fetch_datarefs(self, dataref_paths = None):
+    def fetch_datarefs(self, dataref_paths=None):
         if dataref_paths is not None:
             self._list = dataref_paths
         if self._list is None:
@@ -88,16 +88,11 @@ class DatarefFetcher(DatarefListener, CockpitBase):
 logger = logging.getLogger(__name__)
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
-    handler = logging.FileHandler(
-        LOGFILE, mode="a"
-    )
+    handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-SAMPLE_SET = [
-    "sim/cockpit2/clock_timer/zulu_time_seconds",
-    "sim/cockpit2/clock_timer/zulu_time_minutes"
-]
+SAMPLE_SET = ["sim/cockpit2/clock_timer/zulu_time_seconds", "sim/cockpit2/clock_timer/zulu_time_minutes"]
 xp = None
 try:
     logger.info(f"{'Dataref Fetcher'.title()} {__version__} {__COPYRIGHT__}")
@@ -107,11 +102,13 @@ try:
     df.run()
     logger.info("..interrupted.")
 except KeyboardInterrupt:
+
     def spin():
         spinners = ["|", "/", "-", "\\"]
         for c in itertools.cycle(spinners):
             print(f"\r{c}", end="")
             time.sleep(0.1)
+
     logger.warning("terminating (please wait)..")
     thread = threading.Thread(target=spin)
     thread.daemon = True

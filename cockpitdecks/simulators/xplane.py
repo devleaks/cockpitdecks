@@ -258,6 +258,11 @@ class XPlane(Simulator, XPlaneBeacon):
     BEACON_TIMEOUT = 3.0  # seconds
 
     def __init__(self, cockpit):
+        # list of requested datarefs with index number
+        self.datarefidx = 0
+        self.datarefs = {}  # key = idx, value = dataref path
+        self._max_monitored = 0
+
         Simulator.__init__(self, cockpit=cockpit)
         self.cockpit.set_logging_level(__name__)
 
@@ -266,20 +271,21 @@ class XPlane(Simulator, XPlaneBeacon):
 
         self.no_dref_listener = None
 
-        # list of requested datarefs with index number
-        self.datarefidx = 0
-        self.datarefs = {}  # key = idx, value = dataref path
-        self._max_monitored = 0
         self.init()
 
     def init(self):
+        if self._inited:
+            return
         dref = Dataref(AIRCRAFT_DATAREF_IPC)
         dref.add_listener(self.cockpit)  # Wow wow wow
         self.register(dref)
         logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
         self.add_datetime_datarefs()
+        self._inited = True
 
     def __del__(self):
+        if not self._inited:
+            return
         for i in range(len(self.datarefs)):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
@@ -563,7 +569,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         logger.debug(f"removed {prnt}")
         super().remove_datarefs_to_monitor(datarefs)
-        logger.debug(f">>>>> monitoring--{len(self.datarefs)}")
+        logger.debug(f">>>>> monitoring--{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_all_datarefs(self):
         if not self.connected and len(self.all_datarefs) > 0:

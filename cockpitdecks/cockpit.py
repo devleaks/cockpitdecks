@@ -603,7 +603,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def load_icons(self):
         # Loading icons
         #
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, ICONS_FOLDER)
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
         if os.path.exists(dn):
             self.icon_folder = dn
             cache = os.path.join(dn, "_icon_cache.pickle")
@@ -665,7 +665,7 @@ class Cockpit(DatarefListener, CockpitBase):
                         logger.debug(f"font {i} already loaded")
 
         # 2. Load fonts supplied by the user in the configuration
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, FONTS_FOLDER)
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, FONTS_FOLDER)
         if os.path.exists(dn):
             fonts = os.listdir(dn)
             for i in fonts:
