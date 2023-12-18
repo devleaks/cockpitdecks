@@ -2,7 +2,7 @@
 #
 # C O C K P I T D E C K S
 #
-# Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit.
+# Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit.
 #
 #
 import os
@@ -14,13 +14,13 @@ import ruamel
 from ruamel.yaml import YAML
 
 __NAME__ = "cockpitdecks"
-__DESCRIPTION__ = "Elgato Streamdeck, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit"
+__DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit"
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.13.6"
+__version__ = "7.14.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
-__version_name__ = "development"
+__version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
 #
 #
@@ -55,17 +55,17 @@ def now():
     return datetime.now().astimezone()
 
 
-def to_fl(m, r: int = None):
-    # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided.
-    ft = m * 0.03048
+def to_fl(m, r: int = 10):
+    # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar
+    fl = m / 30.48
     if r is not None and r > 0:
-        ft = r * int(ft / r)
-    return ft
+        fl = r * int(fl / r)
+    return fl
 
 
 def to_m(fl):
-    # Convert flight level to meters
-    return round(fl * 30, 48)
+    # Convert flight level to meters, at Patm = 1013 mbar
+    return round(fl * 30.48)
 
 
 # ##############################################################
@@ -81,16 +81,7 @@ CONFIG_FOLDER = "deckconfig"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 
-DEFAULT_AIRCRAFT = "AIRCRAFT"
-
 RESOURCES_FOLDER = "resources"
-
-DEFAULT_WALLPAPER = "wallpaper.png"
-DEFAULT_LOGO = "logo.png"
-
-DEFAULT_LAYOUT = "default"
-HOME_PAGE = "index"
-DEFAULT_PAGE_NAME = "X-Plane"
 
 # Fonts
 FONTS_FOLDER = "fonts"
@@ -108,6 +99,14 @@ DEFAULT_ICON_NAME = "_default_icon.png"
 DEFAULT_ICON_COLOR = (0, 0, 100)
 DEFAULT_ICON_TEXTURE = None
 DEFAULT_ANNUNCIATOR_COLOR = (0, 0, 0)
+
+# More defaults
+DEFAULT_WALLPAPER = "wallpaper.png"
+DEFAULT_LOGO = "logo.png"
+
+DEFAULT_LAYOUT = "default"
+HOME_PAGE = "index"
+DEFAULT_PAGE_NAME = "X-Plane"
 
 # Decor, colors
 COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name

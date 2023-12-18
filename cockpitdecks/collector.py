@@ -19,7 +19,7 @@ loggerDatarefSet = logging.getLogger("DatarefSet")
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 QUEUE_TIMEOUT = 5  # seconds, we check on loop running every that time
 LOOP_DELAY = 5.0
@@ -454,9 +454,10 @@ class DatarefSetCollector:
         self.stop_collecting()
         logger.debug("..joining..")
         self.thread.join(timeout=QUEUE_TIMEOUT)  # this never blocks... why? may be it is called from itself ("sucide")??
-        logger.debug("..joined..")
         if self.thread.is_alive():
             logger.warning("..thread may hang..")
+        else:
+            logger.debug("..joined..")
         time.sleep(QUEUE_TIMEOUT * 2)  # this allow for the thread to terminate safely.
         self.thread = None
         logger.debug("..no more thread..")

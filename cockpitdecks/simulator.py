@@ -62,7 +62,7 @@ class Dataref:
         self.index = 0  # 6
         self.length = length  # length of some/path/values array, if available.
         self.sim_datatype = None
-        self.data_type = "float"  # int, float, byte
+        self.data_type = "float"  # int, float, byte, UDP always returns a float...
         self.is_array = False  # array of above
         self.is_decimal = is_decimal
         self.is_string = is_string
@@ -93,10 +93,10 @@ class Dataref:
             elif typ == "b":
                 self.is_string = "byte"
 
-        if is_decimal and is_string:
+        if self.is_decimal and self.is_string:
             loggerDataref.error(f"__init__: index {path} cannot be both decimal and string")
 
-        if length is not None and length > 1:
+        if self.length is not None and self.length > 1:
             self.is_array = True
 
         # is dataref a path to an array element?
@@ -213,8 +213,8 @@ class Dataref:
 class DatarefListener(ABC):
     # To get notified when a dataref has changed.
 
-    def __init__(self):
-        self.name = "abstract-dataref-listener"
+    def __init__(self, name: str = "abstract-dataref-listener"):
+        self.name = name
 
     @abstractmethod
     def dataref_changed(self, dataref):
