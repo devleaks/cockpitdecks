@@ -160,6 +160,8 @@ class Activation:
         return True
 
     def inspect(self, what: str = None):
+        if "activation" not in what:
+            return
         logger.info(f"{type(self).__name__}:")
         logger.info(f"{self.is_valid()}")
         logger.info(f"{self._view}")
@@ -480,6 +482,12 @@ class Longpress(Push):
         else:
             self.button.sim.commandEnd(self._command)
             self.view()  # on release only
+
+    def inspect(self, what: str = None):
+        if "longpress" in what:
+            logger.info(f"{self.button.get_id()} has long press command")
+        elif "activation" in what:
+            super().inspect(what=what)
 
     def describe(self):
         """

@@ -205,7 +205,7 @@ class Button(DatarefListener, DatarefSetListener):
             for d in self.get_datarefs():
                 v = self.get_dataref_value(d)
                 logger.info(f"    {d} = {v}")
-        if "activation" in what:
+        if "activation" in what or "longpress" in what:
             logger.info("")
             self._activation.inspect(what)
         if "representation" in what:
