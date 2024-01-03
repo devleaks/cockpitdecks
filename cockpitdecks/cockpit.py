@@ -118,7 +118,7 @@ class Cockpit(DatarefListener, CockpitBase):
             ld[dflt] = value
         logger.debug(f"set default {dflt} to {value}")
 
-    def get_attribute(self, attribute: str):
+    def get_attribute(self, attribute: str, silence: bool = False):
         self._reqdfts.add(attribute)
         if attribute in self._config.keys():
             return self._config.get(attribute)
@@ -130,7 +130,7 @@ class Cockpit(DatarefListener, CockpitBase):
             if isinstance(ld, dict):
                 if attribute in ld.keys():
                     return ld.get(attribute)
-        if "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position"]:
+        if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position"]:
             logger.warning(f"no attribute {attribute}")
         return None
 

@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.15.2"
+__version__ = "7.15.3"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -98,6 +98,7 @@ class ANNUNCIATOR_STYLES(Enum):
 
 GLOBAL_DEFAULTS = {
     "cache-icon": True,
+    "cockpit": "light",
     "cockpit-color": (94, 111, 130),
     "cockpit-texture": None,
     "default-annunciator-color": (0, 0, 0),

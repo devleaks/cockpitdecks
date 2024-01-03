@@ -292,7 +292,7 @@ class Deck(ABC):
     def get_deck_type_description(self):
         return self.deck_type
 
-    def get_attribute(self, attribute: str):
+    def get_attribute(self, attribute: str, silence: bool = False):
         val = self._config.get(attribute)
         if val is not None:
             return val
@@ -305,7 +305,7 @@ class Deck(ABC):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 val = ld.get(attribute)
-        return val if val is not None else self.cockpit.get_attribute(attribute)
+        return val if val is not None else self.cockpit.get_attribute(attribute, silence=silence)
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)

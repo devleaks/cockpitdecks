@@ -115,9 +115,9 @@ class DrawBase(Icon):
 
     def graphic_default(self, attribute, default=None):
         attrname = f"default-{attribute}"
-        value = self.button.get_attribute(attrname)
+        value = self.button.get_attribute(attrname, silence=True)
         if value is None:
-            logger.warning(f"no default value {attrname}, using hardcoded default")
+            logger.debug(f"no default value {attrname}, using hardcoded default")
         return value if value is not None else default
 
 

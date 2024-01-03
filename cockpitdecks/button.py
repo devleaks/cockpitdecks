@@ -228,14 +228,14 @@ class Button(DatarefListener, DatarefSetListener):
     def describe(self):
         return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
-    def get_attribute(self, attribute: str):
+    def get_attribute(self, attribute: str, silence: bool = False):
         ATTRNAME = "_defaults"
         val = None
         if hasattr(self, ATTRNAME):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 val = ld.get(attribute)
-        return val if val is not None else self.page.get_attribute(attribute)
+        return val if val is not None else self.page.get_attribute(attribute, silence=silence)
 
     def on_current_page(self):
         """

@@ -40,7 +40,7 @@ class Page:
         """
         return self.deck.current_page == self
 
-    def get_attribute(self, attribute: str):
+    def get_attribute(self, attribute: str, silence: bool = False):
         val = self._config.get(attribute)
         if val is not None:
             return val
@@ -50,7 +50,7 @@ class Page:
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 val = ld.get(attribute)
-        return val if val is not None else self.deck.get_attribute(attribute)
+        return val if val is not None else self.deck.get_attribute(attribute, silence=silence)
 
     def merge_attributes(self, attributes):
         # mainly aimed at merging includes' attributes to page's
