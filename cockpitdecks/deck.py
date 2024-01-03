@@ -680,8 +680,8 @@ class DeckWithIcons(Deck):
         image = None
 
         texture = get_texture()
-        texture = os.path.normpath(texture)
         if use_texture and texture is not None:
+            texture = os.path.normpath(texture)
             if texture in self.cockpit.icons.keys():
                 image = self.cockpit.icons[texture]
             else:
