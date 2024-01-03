@@ -6,8 +6,7 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, DEFAULT_LAYOUT, DEFAULT_PAGE_NAME
-from cockpitdecks.resources.color import is_integer
+from cockpitdecks import DEFAULT_PAGE_NAME
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
@@ -25,8 +24,8 @@ class XTouchMini(Deck):
     """
     Loads the configuration of a X-Touch Mini.
     """
-    def __init__(self, name: str, config: dict, cockpit: "Cockpit", device = None):
 
+    def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.cockpit.set_logging_level(__name__)
@@ -41,19 +40,13 @@ class XTouchMini(Deck):
     def make_default_page(self):
         logger.debug(f"loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         # Add index 0 only button:
-        page_config = {
-            "name": DEFAULT_PAGE_NAME
-        }
+        page_config = {"name": DEFAULT_PAGE_NAME}
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
-        button0 = Button(config={
-                                    "index": 0,
-                                    "name": "X-Plane Map (default page)",
-                                    "type": "push",
-                                    "command": "sim/map/show_current",
-                                    "led": "single"
-                                }, page=page0)
+        button0 = Button(
+            config={"index": 0, "name": "X-Plane Map (default page)", "type": "push", "command": "sim/map/show_current", "led": "single"}, page=page0
+        )
         page0.add_button(button0.index, button0)
-        self.pages = { DEFAULT_PAGE_NAME: page0 }
+        self.pages = {DEFAULT_PAGE_NAME: page0}
         self.home_page = page0
         self.current_page = page0
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
@@ -73,15 +66,15 @@ class XTouchMini(Deck):
         """
         # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
-        KEY_MAP = dict((v,k) for k, v in MAKIE_MAPPING.items())
+        KEY_MAP = dict((v, k) for k, v in MAKIE_MAPPING.items())
         key1 = None
-        if key >= 16 and key <= 23:     # turn encode
+        if key >= 16 and key <= 23:  # turn encode
             key1 = f"{ENCODE_PREFIX}{key - 16}"
-        elif key >= 32 and key <= 39:   # push on encoder
+        elif key >= 32 and key <= 39:  # push on encoder
             key1 = f"{ENCODE_PREFIX}{key - 32}"
-        elif key == 8:                  # slider
+        elif key == 8:  # slider
             key1 = SLIDER
-        else:                           # push a button
+        else:  # push a button
             key1 = KEY_MAP[key]
         logger.debug(f"{key} => {key1} {state}")
         if self.current_page is not None and key1 in self.current_page.buttons.keys():
@@ -115,15 +108,15 @@ class XTouchMini(Deck):
 
     # Low-level wrapper around device API (direct forward)
     #
-    def _set_key(self, key: int, on:bool=False, blink:bool=False):
+    def _set_key(self, key: int, on: bool = False, blink: bool = False):
         if self.device is not None:
             self.device.set_key(key=key, on=on, blink=blink)
 
-    def _set_control(self, key: int, value:int, mode: LED_MODE = LED_MODE.SINGLE):
+    def _set_control(self, key: int, value: int, mode: LED_MODE = LED_MODE.SINGLE):
         if self.device is not None:
             self.device.set_control(key=key, value=value, mode=mode)
 
-    def render(self, button: Button): # idx: int, image: str, label: str = None):
+    def render(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return

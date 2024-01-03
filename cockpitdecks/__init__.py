@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.14.0"
+__version__ = "7.15.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -81,41 +81,14 @@ CONFIG_FOLDER = "deckconfig"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 
-RESOURCES_FOLDER = "resources"
-
-# Fonts
-FONTS_FOLDER = "fonts"
-DEFAULT_SYSTEM_FONT = "Monaco.ttf"  # on MacOS, if above not found
-
-DEFAULT_LABEL_FONT = "DIN.ttf"
-DEFAULT_LABEL_SIZE = 10
-DEFAULT_LABEL_COLOR = "white"
-DEFAULT_LABEL_POSITION = "ct"
-
-# Icons
-ICONS_FOLDER = "icons"
-ICON_SIZE = 256  # px
-DEFAULT_ICON_NAME = "_default_icon.png"
-DEFAULT_ICON_COLOR = (0, 0, 100)
-DEFAULT_ICON_TEXTURE = None
-DEFAULT_ANNUNCIATOR_COLOR = (0, 0, 0)
-
-# More defaults
-DEFAULT_WALLPAPER = "wallpaper.png"
-DEFAULT_LOGO = "logo.png"
-
 DEFAULT_LAYOUT = "default"
-HOME_PAGE = "index"
 DEFAULT_PAGE_NAME = "X-Plane"
 
-# Decor, colors
-COCKPIT_COLOR = (94, 111, 130)  # tuple (r, g, b) or string of PILLOW color name
-COCKPIT_TEXTURE = None
+RESOURCES_FOLDER = "resources"
+FONTS_FOLDER = "fonts"
+ICONS_FOLDER = "icons"
 
-DEFAULT_LIGHT_OFF_INTENSITY = 10  # %
-
-# internals
-ID_SEP = "/"
+ICON_SIZE = 256  # px
 
 
 class ANNUNCIATOR_STYLES(Enum):
@@ -123,7 +96,31 @@ class ANNUNCIATOR_STYLES(Enum):
     VIVISUN = "v"  # v(ivisun): bright, sharp.
 
 
-DEFAULT_ANNUNCIATOR_STYLE = ANNUNCIATOR_STYLES.KORRY
+GLOBAL_DEFAULTS = {
+    "default-logo": "logo.png",
+    "default-wallpaper": "wallpaper.png",
+    "default-label-font": "DIN.ttf",
+    "default-label-size": 10,
+    "default-label-color": "white",
+    "default-label-position": "ct",
+    "default-text-position": "cm",
+    "default-system-font": "Monaco.ttf",
+    "cache-icon": True,
+    "default-icon-texture": None,
+    "default-icon-color": (0, 0, 100),
+    "default-icon-name": "_default_icon.png",
+    "default-annunciator-texture": None,
+    "default-annunciator-color": (0, 0, 0),
+    "default-annunciator-color-fg": (128, 128, 128),
+    "default-annunciator-style": ANNUNCIATOR_STYLES.KORRY,
+    "cockpit-texture": None,
+    "cockpit-color": (94, 111, 130),
+    "default-home-page-name": "index",
+    "default-light-off-intensity": 10,
+}
+
+# internals
+ID_SEP = "/"
 
 
 # deckconfig attribute keywords
@@ -170,7 +167,7 @@ class Config(MutableMapping):
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
-                logger.debug(f"loaded config from {filename}")
+                logger.info(f"loaded config from {filename}")
         else:
             logger.debug(f"no file {filename}")
 

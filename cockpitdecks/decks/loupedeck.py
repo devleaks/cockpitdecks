@@ -8,7 +8,6 @@ from Loupedeck.ImageHelpers import PILHelper
 from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
-from cockpitdecks.resources.color import DEFAULT_COLOR
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
@@ -71,7 +70,7 @@ class Loupedeck(DeckWithIcons):
                 image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
             else:
                 logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
-                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
+                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.get_attribute("default-icon-color"))
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
                     inside = 20
@@ -332,7 +331,7 @@ class Loupedeck(DeckWithIcons):
         color = button.get_representation()
         if color is None:
             logger.warning("button returned no representation color, using default")
-            color = DEFAULT_COLOR
+            color = self.get_attribute("default-color")
         key = self.deck_type.get_button_key(button.index)
         if key == "0":
             key = KW_CIRCLE

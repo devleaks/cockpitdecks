@@ -3,22 +3,13 @@
 #
 import logging
 import threading
-import time
-import math
-from random import randint
-from enum import Enum
 
-from PIL import Image, ImageDraw
-
-from cockpitdecks import ICON_SIZE, DEFAULT_LABEL_FONT
-from cockpitdecks.resources.iconfonts import ICON_FONTS
-
-from cockpitdecks.resources.color import convert_color, light_off
 from .representation import MultiIcons
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
+
 
 #
 # ###############################
@@ -34,6 +25,7 @@ class IconAnimation(MultiIcons):
     To stop the anination, set the button's current_value to 0.
     When not running, an optional icon_off can be supplied, otherwise first icon in multi-icons list will be used.
     """
+
     def __init__(self, config: dict, button: "Button"):
         MultiIcons.__init__(self, config=config, button=button)
 
@@ -84,7 +76,7 @@ class IconAnimation(MultiIcons):
         if self.running:
             self.running = False
             self.exit.set()
-            self.thread.join(timeout=2*self.speed)
+            self.thread.join(timeout=2 * self.speed)
             if self.thread.is_alive():
                 logger.warning(f"..thread may hang..")
             if render:
@@ -127,6 +119,7 @@ class IconAnimation(MultiIcons):
             a.append(f"When the animation is not running, it displays an OFF icon {self.icon_off}.")
         return "\n\r".join(a)
 
+
 #
 # ###############################
 # ANIMATED DRAW REPRESENTATION
@@ -138,7 +131,6 @@ class DrawAnimation(DrawBase):
     """
 
     def __init__(self, config: dict, button: "Button"):
-
         DrawBase.__init__(self, config=config, button=button)
 
         self._animation = config.get("animation", {})
@@ -198,7 +190,7 @@ class DrawAnimation(DrawBase):
         if self.running:
             self.running = False
             self.exit.set()
-            self.thread.join(timeout=2*self.speed)
+            self.thread.join(timeout=2 * self.speed)
             if self.thread.is_alive():
                 logger.warning(f"button {self.button.name}: animation did not terminate")
             logger.debug(f"stopped")
@@ -233,11 +225,8 @@ class DrawAnimation(DrawBase):
 
 
 class DrawAnimationFTG(DrawAnimation):
-
     def __init__(self, config: dict, button: "Button"):
-
         DrawAnimation.__init__(self, config=config, button=button)
-
 
     def should_run(self):
         """
@@ -257,18 +246,18 @@ class DrawAnimationFTG(DrawAnimation):
         image.paste(bgrd)
         # Button
         cs = 4  # light size, px
-        lum = 5 # num flashing green center lines
+        lum = 5  # num flashing green center lines
         nb = 2 * lum  # num side bleu lights, i.e. twice more blue lights than green ones
-        h0 = ICON_SIZE/16  # space from left/right sides
+        h0 = ICON_SIZE / 16  # space from left/right sides
         h1 = ICON_SIZE / 2 - h0  # space from bottom of upper middle part
-        s = (ICON_SIZE - (2*h0)) / (nb - 1) # spece between blue lights
+        s = (ICON_SIZE - (2 * h0)) / (nb - 1)  # spece between blue lights
         # Taxiway borders, blue lights
         for i in range(nb):
             for h in [h0, h1]:
                 w = h0 + i * s
-                tl = [w-cs, h-cs]
-                br = [w+cs, h+cs]
-                draw.ellipse(tl+br, fill="blue")
+                tl = [w - cs, h - cs]
+                br = [w + cs, h + cs]
+                draw.ellipse(tl + br, fill="blue")
         # Taxiway center yellow line
         h = ICON_SIZE / 4
         draw.line([(h0, h), (ICON_SIZE - h0, h)], fill="yellow", width=4)
@@ -278,43 +267,35 @@ class DrawAnimationFTG(DrawAnimation):
         for i in range(lum):
             w = h + i * s * 2 - s / 2
             w = ICON_SIZE - w
-            tl = [w-cs, h-cs]
-            br = [w+cs, h+cs]
-            color = "lime" if self.running and (self.tween+i) % lum == 0 else "chocolate"
-            draw.ellipse(tl+br, fill=color)
+            tl = [w - cs, h - cs]
+            br = [w + cs, h + cs]
+            color = "lime" if self.running and (self.tween + i) % lum == 0 else "chocolate"
+            draw.ellipse(tl + br, fill=color)
 
         # Text AVAIL (=off) or framed ON (=on)
-        font = self.get_font(DEFAULT_LABEL_FONT, 80)
+        font = self.get_font(self.button.get_attribute("default-label-font"), 80)
         inside = ICON_SIZE / 16
         cx = ICON_SIZE / 2
-        cy = int( 3 * ICON_SIZE / 4 )
+        cy = int(3 * ICON_SIZE / 4)
         if self.running:
-            draw.multiline_text((cx, cy),
-                      text="ON",
-                      font=font,
-                      anchor="mm",
-                      align="center",
-                      fill="deepskyblue")
-            txtbb = draw.multiline_textbbox((cx, cy),  # min frame, just around the text
-                      text="ON",
-                      font=font,
-                      anchor="mm",
-                      align="center")
+            draw.multiline_text((cx, cy), text="ON", font=font, anchor="mm", align="center", fill="deepskyblue")
+            txtbb = draw.multiline_textbbox((cx, cy), text="ON", font=font, anchor="mm", align="center")  # min frame, just around the text
             text_margin = 2 * inside  # margin "around" text, line will be that far from text
-            framebb = ((txtbb[0]-text_margin, txtbb[1]-text_margin/2), (txtbb[2]+text_margin, txtbb[3]+text_margin/2))
+            framebb = ((txtbb[0] - text_margin, txtbb[1] - text_margin / 2), (txtbb[2] + text_margin, txtbb[3] + text_margin / 2))
             side_margin = 4 * inside  # margin from side of part of annunciator
-            framemax = ((cx - ICON_SIZE/2 + side_margin, cy - ICON_SIZE/4 + side_margin), (cx + ICON_SIZE/2 - side_margin, cy + ICON_SIZE/4 - side_margin))
-            frame = ((min(framebb[0][0], framemax[0][0]),min(framebb[0][1], framemax[0][1])), (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])))
+            framemax = (
+                (cx - ICON_SIZE / 2 + side_margin, cy - ICON_SIZE / 4 + side_margin),
+                (cx + ICON_SIZE / 2 - side_margin, cy + ICON_SIZE / 4 - side_margin),
+            )
+            frame = (
+                (min(framebb[0][0], framemax[0][0]), min(framebb[0][1], framemax[0][1])),
+                (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])),
+            )
             thick = int(ICON_SIZE / 32)
             # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
             draw.rectangle(frame, outline="deepskyblue", width=thick)
         else:
-            font = self.get_font(DEFAULT_LABEL_FONT, 60)
-            draw.multiline_text((cx, cy),
-                      text="AVAIL",
-                      font=font,
-                      anchor="mm",
-                      align="center",
-                      fill="lime")
+            font = self.get_font(self.button.get_attribute("default-label-font"), 60)
+            draw.multiline_text((cx, cy), text="AVAIL", font=font, anchor="mm", align="center", fill="lime")
 
         return image.convert("RGB")

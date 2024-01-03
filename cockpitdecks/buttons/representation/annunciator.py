@@ -3,14 +3,11 @@
 #
 import logging
 import threading
-import time
 from enum import Enum
-from math import sqrt
-
 from PIL import Image, ImageDraw, ImageFilter, ImageColor
 
-from cockpitdecks import KW, DEFAULT_LIGHT_OFF_INTENSITY, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, ICON_SIZE
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, TRANSPARENT_PNG_COLOR_BLACK, DEFAULT_COLOR, DEFAULT_COLOR_NAME, convert_color, light_off
+from cockpitdecks import KW, ANNUNCIATOR_STYLES, ICON_SIZE
+from cockpitdecks.resources.color import convert_color, light_off
 from cockpitdecks.resources.rpc import RPC
 from .draw import DrawBase
 
@@ -156,25 +153,26 @@ class AnnunciatorPart:
             logger.warning(f"button {self.annunciator.button.name}: has both color and text-color set, using color {color}")
 
         if color is None:
-            logger.warning(f"button {self.annunciator.button.name}: no color found, using {DEFAULT_COLOR_NAME}")
-            color = DEFAULT_COLOR
+            color = self.annunciator.button.get_attribute("default-annunciator-color-fg")
+            logger.warning(f"button {self.annunciator.button.name}: no color found, using default")
         if type(color) == tuple or type(color) == list:  # we transfort it back to a string, read on...
             color = "(" + ",".join([str(i) for i in color]) + ")"
 
         if not self.is_lit():
             try:
-                color = self._config.get("off-color", light_off(color, lightness=DEFAULT_LIGHT_OFF_INTENSITY / 100))
+                lux = self.annunciator.button.get_attribute("default-light-off-intensity")
+                color = self._config.get("off-color", light_off(color, lightness=lux / 100))
             except ValueError:
-                logger.debug(f"button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using {DEFAULT_COLOR_NAME}")
-                color = DEFAULT_COLOR
+                logger.debug(f"button {self.annunciator.button.name}: color {color} ({type(color)}) not found, using default")
+                color = self.annunciator.button.get_attribute("default-annunciator-color-fg")
         elif color.startswith("("):
             color = convert_color(color)
         else:
             try:
                 color = ImageColor.getrgb(color)
             except ValueError:
-                logger.debug(f"color {color} not found, using {DEFAULT_COLOR_NAME}")
-                color = DEFAULT_COLOR
+                logger.warning(f"color {color} not found, using default")
+                color = self.annunciator.button.get_attribute("default-annunciator-color-fg")
         return color
 
     def has_frame(self):
@@ -306,12 +304,12 @@ class Annunciator(DrawBase):
         self.button = button  # we need the reference before we call Icon.__init__()...
         self.icon = config.get("icon")
         self.annunciator = config.get("annunciator")  # keep raw
-        self.annunciator_style = config.get("annunciator-style", button.page.annunciator_style)
+        self.annunciator_style = config.get("annunciator-style", button.get_attribute("default-annunciator-style"))
         self.model = None
 
-        self.annun_color = config.get("annunciator-color", button.page.default_annun_color)
+        self.annun_color = config.get("annunciator-color", button.get_attribute("default-annunciator-color"))
         self.annun_color = convert_color(self.annun_color)
-        self.annun_texture = config.get("annunciator-texture", button.page.default_annun_texture)
+        self.annun_texture = config.get("annunciator-texture", button.get_attribute("default-annunciator-texture"))
 
         # Normalize annunciator parts in parts attribute if not present
         if self.annunciator is None:

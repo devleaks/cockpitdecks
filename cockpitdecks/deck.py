@@ -10,7 +10,7 @@ from functools import reduce
 from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT, COCKPIT_COLOR
+from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT
 from cockpitdecks import Config
 
 from cockpitdecks.resources.color import convert_color
@@ -23,7 +23,7 @@ loggerDeckType = logging.getLogger("DeckType")
 # loggerDeckType.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 DECKS_FOLDER = "decks"
 
@@ -232,8 +232,6 @@ class Deck(ABC):
 
         self.cockpit.set_logging_level(__name__)
 
-        self.set_defaults(config, cockpit)
-
         self.layout_config = {}
         self.pages = {}
         self.home_page = None  # this is a Page, not a str.
@@ -266,11 +264,9 @@ class Deck(ABC):
             self.layout = DEFAULT_LAYOUT
             logger.warning(f"deck has no layout, using default")
 
-        # Local non default values are initialized from defaults
-        # May be overwritten by configuration parameters.
-        self.logo = config.get("logo", cockpit.default_logo)
-        self.wallpaper = config.get("wallpaper", cockpit.default_wallpaper)
-        self.home_page_name = config.get("homepage-name", cockpit.default_home_page_name)
+        self.home_page_name = config.get("home-page-name", self.get_attribute("default-home-page-name"))
+        self.logo = config.get("logo", self.get_attribute("default-logo"))
+        self.wallpaper = config.get("wallpaper", self.get_attribute("default-wallpaper"))
 
         self.valid = True
 
@@ -297,6 +293,18 @@ class Deck(ABC):
     def get_deck_type_description(self):
         return self.deck_type
 
+    def get_attribute(self, attribute: str):
+        val = self._config.get(attribute)
+        if val is not None:
+            return val
+        ATTRNAME = "_defaults"
+        val = None
+        if hasattr(self, ATTRNAME):
+            ld = getattr(self, ATTRNAME)
+            if isinstance(ld, dict):
+                val = ld.get(attribute)
+        return val if val is not None else self.cockpit.get_attribute(attribute)
+
     def get_button_value(self, name):
         a = name.split(ID_SEP)
         if len(a) > 0:
@@ -309,49 +317,6 @@ class Deck(ABC):
                 logger.warning(f"not my deck {a[0]} ({self.name})")
         return None
 
-    def set_defaults(self, config: dict, base):
-        """
-        Loads a layout global configuration parameters.
-
-        :param    fn:   The function
-        :type      fn:   Function
-        """
-        self.default_label_font = config.get("default-label-font", base.default_label_font)
-        self.default_label_size = config.get("default-label-size", base.default_label_size)
-        self.default_label_color = config.get("default-label-color", base.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_label_position = config.get("default-label-position", base.default_label_position)
-        dftname = self.name + base.default_icon_name
-        if dftname not in self.cockpit.icons.keys():
-            dftname = base.default_icon_name
-            if dftname not in self.cockpit.icons.keys():
-                logger.warning(f"default icon name {dftname} not found")
-        self.default_icon_name = config.get("default-icon-name", dftname)
-        self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
-        self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.default_annun_texture = config.get("default-annunciator-texture", base.default_annun_texture)
-        self.default_annun_color = config.get("default-annunciator-color", base.default_annun_color)
-        self.default_annun_color = convert_color(self.default_annun_color)
-        self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
-        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-        self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
-        self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
-        self.cockpit_color = convert_color(self.cockpit_color)
-        self.cockpit_texture = config.get("cockpit-texture", base.cockpit_texture)
-        self.default_logo = config.get("default-logo", base.default_logo)
-        self.default_wallpaper = config.get("default-wallpaper", base.default_wallpaper)
-        self.default_home_page_name = config.get("default-homepage-name", base.default_home_page_name)
-
-        if base == self:  # non default instances
-            self.logo = config.get("logo", base.logo)
-            self.wallpaper = config.get("wallpaper", base.wallpaper)
-            self.home_page_name = config.get("homepage-name", base.home_page_name)
-        else:
-            self.logo = config.get("logo", base.default_logo)
-            self.wallpaper = config.get("wallpaper", base.default_wallpaper)
-            self.home_page_name = config.get("homepage-name", base.default_home_page_name)
-
     def load_layout_config(self, fn):
         """
         Loads a layout global configuration parameters.
@@ -360,9 +325,7 @@ class Deck(ABC):
         :type      fn:   Function
         """
         self.layout_config = Config(fn)
-        if self.layout_config.is_valid():
-            self.set_defaults(self.layout_config, self)
-        else:
+        if not self.layout_config.is_valid():
             logger.debug(f"no layout config file")
 
     def inspect(self, what: str = None):
@@ -412,8 +375,7 @@ class Deck(ABC):
                         continue
                     display_fn = fn.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
                     logger.debug(f"loading page {name} (from file {display_fn})..")
-                    this_page = Page(name, page_config, self)
-                    this_page.load_defaults(page_config, self)
+                    this_page = Page(name, page_config.store, self)
                     self.pages[name] = this_page
 
                     # Page buttons
@@ -657,11 +619,12 @@ class DeckWithIcons(Deck):
         Each device model requires a different icon format (size).
         We could build a set per deck model rather than deck instance...
         """
-        logger.info(f"deck {self.name}: use cache {self.cockpit.cache_icon}")
+        cache_icon = self.get_attribute("cache-icon")
+        logger.info(f"deck {self.name}: use cache {cache_icon}")
         dn = self.cockpit.icon_folder
         if dn is not None:
             cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-            if os.path.exists(cache) and self.cockpit.cache_icon:
+            if os.path.exists(cache) and cache_icon:
                 with open(cache, "rb") as fp:
                     icons_temp = pickle.load(fp)
                     self.icons.update(icons_temp)
@@ -673,7 +636,7 @@ class DeckWithIcons(Deck):
                 self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
             if dn is not None:
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-                if self.cockpit.cache_icon:
+                if cache_icon:
                     with open(cache, "wb") as fp:
                         pickle.dump(self.icons, fp)
                     logger.info(f"deck {self.name}: {len(self.icons)} icons cached")
@@ -682,7 +645,7 @@ class DeckWithIcons(Deck):
         else:
             logger.warning(f"deck {self.name} has no device")
 
-    def get_icon_background(self, name: str, width: int, height: int, texture_in, color_in, use_texture=True, who: str = "Cockpit"):
+    def get_icon_background(self, name: str, width: int, height: int, texture_in, color_in, use_texture=True, who: str = "Deck"):
         """
         Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
         """
@@ -691,10 +654,12 @@ class DeckWithIcons(Deck):
             tarr = []
             if texture_in is not None:
                 tarr.append(texture_in)
-            if self.default_icon_texture is not None:
-                tarr.append(self.default_icon_texture)
-            if self.cockpit_texture is not None:
-                tarr.append(self.cockpit_texture)
+            default_icon_texture = self.get_attribute("default-icon-texture")
+            if default_icon_texture is not None:
+                tarr.append(default_icon_texture)
+            cockpit_texture = self.get_attribute("cockpit-texture")
+            if cockpit_texture is not None:
+                tarr.append(cockpit_texture)
 
             dirs = []
             dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
@@ -711,10 +676,10 @@ class DeckWithIcons(Deck):
             return None
 
         def get_color():
-            for t in [color_in, self.default_icon_color, self.cockpit_color]:
+            for t in [color_in, self.get_attribute("default-icon-color"), self.get_attribute("cockpit-color")]:
                 if t is not None:
                     return t
-            return COCKPIT_COLOR
+            return self.get_attribute("cockpit-color")
 
         image = None
 
@@ -729,6 +694,7 @@ class DeckWithIcons(Deck):
             # logger.debug(f"{who}: texture {texture_in} in {texture}")
 
         if image is not None:  # found a texture as requested
+            logger.debug(f"{who}: use texture {texture}")
             image = image.resize((width, height))
             return image
 
@@ -756,10 +722,15 @@ class DeckWithIcons(Deck):
         icon = None
         if self.current_page is not None:
             icon = self.create_icon_for_key(
-                key, colors=self.current_page.cockpit_color, texture=self.current_page.cockpit_texture, name=f"{self.name}:{self.current_page.name}:{key}"
+                key,
+                colors=self.current_page.get_attribute("cockpit-color"),
+                texture=self.current_page.get_attribute("cockpit-texture"),
+                name=f"{self.name}:{self.current_page.name}:{key}",
             )
         else:
-            icon = self.create_icon_for_key(key, colors=self.cockpit_color, texture=self.cockpit_texture, name=f"{self.name}:{key}")
+            icon = self.create_icon_for_key(
+                key, colors=self.get_attribute("cockpit-color"), texture=self.get_attribute("cockpit-texture"), name=f"{self.name}:{key}"
+            )
         if icon is not None:
             self._send_key_image_to_device(key, icon)
         else:

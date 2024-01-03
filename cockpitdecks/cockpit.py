@@ -5,19 +5,15 @@ import glob
 import threading
 import logging
 import pickle
-from queue import Queue
 import pkg_resources
+from queue import Queue
 
 from PIL import Image, ImageFont
 
 from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
-from cockpitdecks import DEFAULT_SYSTEM_FONT, DEFAULT_LABEL_FONT, DEFAULT_LABEL_SIZE, DEFAULT_LABEL_COLOR, DEFAULT_LABEL_POSITION
-from cockpitdecks import DEFAULT_ICON_NAME, DEFAULT_ICON_COLOR, DEFAULT_ICON_TEXTURE, DEFAULT_LOGO, DEFAULT_WALLPAPER
-from cockpitdecks import DEFAULT_ANNUNCIATOR_COLOR, ANNUNCIATOR_STYLES, DEFAULT_ANNUNCIATOR_STYLE, HOME_PAGE
-from cockpitdecks import COCKPIT_COLOR, COCKPIT_TEXTURE
-from cockpitdecks import Config, KW
+from cockpitdecks import Config, KW, GLOBAL_DEFAULTS
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.deck import DECKS_FOLDER, DeckType
@@ -41,6 +37,7 @@ class CockpitBase:
     """
 
     def __init__(self):
+        self._debug = ROOT_DEBUG.split(",")  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
         pass
 
     def set_logging_level(self, name):
@@ -65,12 +62,12 @@ class Cockpit(DatarefListener, CockpitBase):
     def __init__(self, simulator):
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)
-        self._debug = ROOT_DEBUG.split(",")  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
 
-        self._config = None  # content of aircraft/deckconfig/config.yaml
-        self.default_config = None  # content of resources/config.yaml
+        self._defaults = GLOBAL_DEFAULTS
+        self._config = {}  # content of aircraft/deckconfig/config.yaml
+        self.default_config = {}  # content of resources/config.yaml
 
-        self.name = "Cockpitdecks"
+        self.name = "Cockpitdecks"  # "Aircraft" name or model...
         self.icao = "ZZZZ"
 
         self.sim = simulator(self)
@@ -89,31 +86,13 @@ class Cockpit(DatarefListener, CockpitBase):
         self.cockpit = {}  # all decks: { deckname: deck }
         self.deck_types = {}
 
-        self.default_logo = DEFAULT_LOGO
-        self.default_wallpaper = DEFAULT_WALLPAPER
-
         self.fonts = {}
-        self.default_font = None
-        self.default_label_font = DEFAULT_LABEL_FONT
-        self.default_label_size = DEFAULT_LABEL_SIZE
-        self.default_label_color = convert_color(DEFAULT_LABEL_COLOR)
-        self.default_label_position = DEFAULT_LABEL_POSITION
 
         self.icon_folder = None
         self.icons = {}
-        self.cache_icon = False
         self.default_icon_name = None
-        self.default_icon_color = convert_color(DEFAULT_ICON_COLOR)
-        self.default_icon_texture = DEFAULT_ICON_TEXTURE
-        self.default_annun_texture = None
-        self.default_annun_color = convert_color(DEFAULT_ANNUNCIATOR_COLOR)
 
         self.fill_empty_keys = True
-        self.annunciator_style = DEFAULT_ANNUNCIATOR_STYLE
-        self.cockpit_color = convert_color(COCKPIT_COLOR)
-        self.cockpit_texture = COCKPIT_TEXTURE
-
-        self.default_home_page_name = HOME_PAGE
 
         self.busy_reloading = False
 
@@ -128,6 +107,29 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def get_id(self):
         return self.name
+
+    def set_default(self, dflt, value):
+        ATTRNAME = "_defaults"
+        if not hasattr(self, ATTRNAME):
+            setattr(self, ATTRNAME, dict())
+        ld = getattr(self, ATTRNAME)
+        if isinstance(ld, dict):
+            ld[dflt] = value
+        logger.debug(f"set default {dflt} to {value}")
+
+    def get_attribute(self, attribute: str):
+        if attribute in self._config.keys():
+            return self._config.get(attribute)
+        if attribute in self.default_config.keys():
+            return self.default_config.get(attribute)
+        ATTRNAME = "_defaults"
+        if hasattr(self, ATTRNAME):
+            ld = getattr(self, ATTRNAME)
+            if isinstance(ld, dict):
+                if attribute in ld.keys():
+                    return ld.get(attribute)
+        logger.warning(f"no attribute {attribute}")
+        return None
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -321,7 +323,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
             # 1. Try "system" font
             try:
-                test = ImageFont.truetype(fontname, self.default_label_size)
+                test = ImageFont.truetype(fontname, self.get_attribute("default-label-size"))
                 logger.debug(f"font {fontname} found in computer system fonts")
                 return fontname
             except:
@@ -331,7 +333,7 @@ class Cockpit(DatarefListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.default_label_size)
+                test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                 logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
@@ -341,7 +343,7 @@ class Cockpit(DatarefListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.default_label_size)
+                test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                 logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
@@ -361,32 +363,6 @@ class Cockpit(DatarefListener, CockpitBase):
         self.sim.set_roundings(self.default_config.get("dataref-roundings", {}))
         self.sim.set_dataref_frequencies(self.default_config.get("dataref-fetch-frequencies", {}))
 
-        self.default_logo = self.default_config.get("default-logo", DEFAULT_LOGO)
-        self.default_wallpaper = self.default_config.get("default-wallpaper", DEFAULT_WALLPAPER)
-        self.default_label_font = self.default_config.get("default-label-font", DEFAULT_LABEL_FONT)
-        self.default_label_size = self.default_config.get("default-label-size", DEFAULT_LABEL_SIZE)
-        self.default_label_color = self.default_config.get("default-label-color", convert_color(DEFAULT_LABEL_COLOR))
-        self.default_label_position = self.default_config.get("default-label-position", DEFAULT_LABEL_POSITION)
-        self.cache_icon = self.default_config.get("cache-icon", self.cache_icon)
-        self.default_icon_texture = self.default_config.get("default-icon-texture", DEFAULT_ICON_TEXTURE)
-        self.default_icon_color = self.default_config.get("default-icon-color", DEFAULT_ICON_COLOR)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.default_annun_texture = self.default_config.get("default-annunciator-texture")
-        self.default_annun_color = self.default_config.get("default-annunciator-color", DEFAULT_ANNUNCIATOR_COLOR)
-        self.default_annun_color = convert_color(self.default_annun_color)
-        self.annunciator_style = self.default_config.get("annunciator-style", DEFAULT_ANNUNCIATOR_STYLE.value)
-        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-        self.cockpit_texture = self.default_config.get("cockpit-texture", COCKPIT_TEXTURE)
-        self.cockpit_color = self.default_config.get("cockpit-color", COCKPIT_COLOR)
-        self.cockpit_color = convert_color(self.cockpit_color)
-        self.default_home_page_name = self.default_config.get("default-homepage-name", HOME_PAGE)
-
-        #
-        #
-        # DO NOT FORGET SET DEFAULTS IN create_decks()
-        #
-        #
-
         # 1. Load global icons
         #   (They are never cached when loaded without aircraft.)
         rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
@@ -399,9 +375,8 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.icons[i] = image
 
         # 1.2 Do we have a default icon with proper name?
-        dftname = self.default_config.get("default-icon-name", DEFAULT_ICON_NAME)
+        dftname = self.get_attribute("default-icon-name")
         if dftname in self.icons.keys():
-            self.default_icon_name = dftname
             logger.debug(f"default icon name {dftname} found")
         else:
             logger.warning(f"default icon name {dftname} not found")
@@ -410,47 +385,40 @@ class Cockpit(DatarefListener, CockpitBase):
         #   WE MUST find a default, system font at least
 
         # 2.1 We try the requested "default label font"
-        tryed_our_default = self.default_label_font == DEFAULT_LABEL_FONT
-        if self.default_label_font not in self.fonts.keys():
-            f = locate_font(self.default_label_font)
+        default_label_font = self.get_attribute("default-label-font")
+        if default_label_font is not None and default_label_font not in self.fonts.keys():
+            f = locate_font(default_label_font)
             if f is not None:  # found one, perfect
-                self.fonts[self.default_label_font] = f
-                self.default_font = f
-                logger.debug(f"default label font set to {self.default_label_font}")
-            else:  # if we are here, self.default_label_font is not found, we must find another one
-                self.default_label_font = None
-
-        # 2.2 We try our "default provided label font"
-        if self.default_label_font is None and not tryed_our_default:
-            f = locate_font(DEFAULT_LABEL_FONT)
-            if f is not None:  # found it, perfect
-                self.default_label_font = DEFAULT_LABEL_FONT
-                self.fonts[DEFAULT_LABEL_FONT] = f
-                self.default_font = f
-                logger.debug(f"default label font set to {DEFAULT_LABEL_FONT}")
-            # if we are here, self.default_label_font is not found, we must find another one
+                self.fonts[default_label_font] = f
+                self.set_default("default-font", default_label_font)
+                logger.debug(f"default font set to {default_label_font}")
+                logger.debug(f"default label font set to {default_label_font}")
 
         # 2.3 We try the "default system font"
-        f = locate_font(DEFAULT_SYSTEM_FONT)
-        if f is not None:  # found it, perfect, keep it as default font for all purposes
-            self.fonts[DEFAULT_SYSTEM_FONT] = f
-            self.default_font = f
-            logger.debug(f"default font set to {DEFAULT_SYSTEM_FONT}")
-            if self.default_label_font is None:  # additionnally, if we don't have a default label font, use it
-                self.default_label_font = DEFAULT_SYSTEM_FONT
-                logger.debug(f"default label font set to {DEFAULT_SYSTEM_FONT}")
+        default_system_font = self.get_attribute("default-system-font")
+        if default_system_font is not None:
+            f = locate_font(default_system_font)
+            if f is not None:  # found it, perfect, keep it as default font for all purposes
+                self.fonts[default_system_font] = f
+                self.set_default("default-font", default_system_font)
+                logger.debug(f"default font set to {default_system_font}")
+                if default_label_font is None:  # additionnally, if we don't have a default label font, use it
+                    self.set_default("default-label-font", default_system_font)
+                    logger.debug(f"default label font set to {default_system_font}")
 
-        if self.default_label_font is None and len(self.fonts) > 0:
+        if default_label_font is None and len(self.fonts) > 0:
             first_one = list(self.fonts.keys())[0]
-            self.default_label_font = first_one
-            self.default_font = first_one
-            logger.debug(f"no default font found, using first available font")
+            self.set_default("default-label-font", first_one)
+            self.set_default("default-font", first_one)
+            logger.debug(f"no default font found, using first available font ({first_one})")
 
-        if self.default_label_font is None:
+        if default_label_font is None:
             logger.error(f"no default font")
 
         # 4. report summary if debugging
-        logger.debug(f"default fonts {self.fonts.keys()}, default={self.default_font}, default label={self.default_label_font}")
+        logger.debug(
+            f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
+        )
 
     def create_decks(self):
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
@@ -465,32 +433,6 @@ class Cockpit(DatarefListener, CockpitBase):
         if decks is None:
             logger.warning(f"no deck in config file {fn}")
             return
-        #
-        #
-        # DO NOT FORGET SET DEFAULTS IN load_defaults()
-        #
-        #
-        self.default_logo = self._config.get("default-logo", self.default_logo)
-        self.default_wallpaper = self._config.get("default-wallpaper", self.default_wallpaper)
-        self.default_label_font = self._config.get("default-label-font", self.default_label_font)
-        self.default_label_size = self._config.get("default-label-size", self.default_label_size)
-        self.default_label_color = self._config.get("default-label-color", self.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_label_position = self._config.get("default-label-position", self.default_label_position)
-        self.default_icon_texture = self._config.get("default-icon-texture", self.default_icon_texture)
-        self.default_icon_color = self._config.get("default-icon-color", self.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.default_annun_texture = self._config.get("default-annunciator-texture", self.default_annun_texture)
-        self.default_annun_color = self._config.get("default-annunciator-color", self.default_annun_color)
-        self.default_annun_color = convert_color(self.default_annun_color)
-        self.annunciator_style = self._config.get("annunciator-style", self.annunciator_style)
-        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-        self.cockpit_texture = self._config.get("cockpit-texture", self.cockpit_texture)
-        self.cockpit_color = self._config.get("cockpit-color", self.cockpit_color)
-        self.cockpit_color = convert_color(self.cockpit_color)
-        self.default_home_page_name = self.default_config.get("default-homepage-name", self.default_home_page_name)
-
-        logger.debug(f"label font={self.default_label_font}, logo={self.default_logo}, wallpaper={self.default_wallpaper}, texture={self.cockpit_texture}")
 
         deck_count_by_type = {}
         for deck_type in self.deck_types.values():
@@ -603,11 +545,12 @@ class Cockpit(DatarefListener, CockpitBase):
     def load_icons(self):
         # Loading icons
         #
+        cache_icon = self.get_attribute("cache-icon")
         dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
         if os.path.exists(dn):
             self.icon_folder = dn
             cache = os.path.join(dn, "_icon_cache.pickle")
-            if os.path.exists(cache) and self.cache_icon:
+            if os.path.exists(cache) and cache_icon:
                 with open(cache, "rb") as fp:
                     self.icons = pickle.load(fp)
                 logger.info(f"{len(self.icons)} icons loaded from cache")
@@ -633,7 +576,7 @@ class Cockpit(DatarefListener, CockpitBase):
                         image = Image.open(fn)
                         self.icons[i] = image
 
-                if self.cache_icon:  # we cache both folders of icons
+                if cache_icon:  # we cache both folders of icons
                     with open(cache, "wb") as fp:
                         pickle.dump(self.icons, fp)
                     logger.info(f"{len(self.icons)} icons cached")
@@ -657,7 +600,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.default_label_size)
+                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"default font file {fn} not loaded")
@@ -673,7 +616,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.default_label_size)
+                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"custom font file {fn} not loaded")
@@ -682,7 +625,9 @@ class Cockpit(DatarefListener, CockpitBase):
 
         # 3. DEFAULT_LABEL_FONT and DEFAULT_SYSTEM_FONT loaded in load_defaults()
 
-        logger.info(f"{len(self.fonts)} fonts loaded, default label font={self.default_label_font}")
+        logger.info(
+            f"{len(self.fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
+        )
 
     # #########################################################
     # Cockpit start/stop/reload procedures

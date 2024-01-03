@@ -229,6 +229,15 @@ class Button(DatarefListener, DatarefSetListener):
     def describe(self):
         return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
+    def get_attribute(self, attribute: str):
+        ATTRNAME = "_defaults"
+        val = None
+        if hasattr(self, ATTRNAME):
+            ld = getattr(self, ATTRNAME)
+            if isinstance(ld, dict):
+                val = ld.get(attribute)
+        return val if val is not None else self.page.get_attribute(attribute)
+
     def on_current_page(self):
         """
         Returns whether button is on current page
@@ -664,7 +673,7 @@ class Button(DatarefListener, DatarefSetListener):
             return None
 
         # HACK 1: Special icon font substitution
-        text_font = base.get(root + "-font", self.page.default_label_font)
+        text_font = base.get(root + "-font", self.get_attribute("default-label-font"))
         for k, v in ICON_FONTS.items():
             if text_font.lower().startswith(v[0]):
                 s = "\\${%s:([^\\}]+?)}" % (k)

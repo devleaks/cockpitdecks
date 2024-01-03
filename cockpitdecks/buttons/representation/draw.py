@@ -10,14 +10,14 @@ from enum import Enum
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import ICON_SIZE, DEFAULT_LABEL_FONT
+from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
 from .representation import Icon  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 #
@@ -31,8 +31,8 @@ class DrawBase(Icon):
 
         self.texture = None
         self.bgcolor = None
-        self.cockpit_texture = config.get("cockpit-texture", self.button.page.cockpit_texture)
-        self.cockpit_color = config.get("cockpit-color", self.button.page.cockpit_color)
+        self.cockpit_texture = config.get("cockpit-texture", self.button.get_attribute("cockpit-texture"))
+        self.cockpit_color = config.get("cockpit-color", self.button.get_attribute("cockpit-color"))
 
         # Reposition for move_and_send()
         self.draw_scale = float(config.get("scale", 1))

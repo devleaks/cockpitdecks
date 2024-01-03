@@ -24,12 +24,13 @@ class Page:
         self.sim = self.deck.cockpit.sim  # shortcut alias
 
         self.deck.cockpit.set_logging_level(__name__)
-        self.load_defaults(config, deck)
 
         self.buttons = {}
         self.button_names = {}
         self.datarefs = {}
         self.dataref_collections = {}
+
+        self.fill_empty_keys = config.get("fill-empty-keys", True)
 
     def get_id(self):
         return ID_SEP.join([self.deck.get_id(), self.name])
@@ -39,6 +40,18 @@ class Page:
         Returns whether button is on current page
         """
         return self.deck.current_page == self
+
+    def get_attribute(self, attribute: str):
+        val = self._config.get(attribute)
+        if val is not None:
+            return val
+        ATTRNAME = "_defaults"
+        val = None
+        if hasattr(self, ATTRNAME):
+            ld = getattr(self, ATTRNAME)
+            if isinstance(ld, dict):
+                val = ld.get(attribute)
+        return val if val is not None else self.deck.get_attribute(attribute)
 
     def get_dataref_value(self, dataref, default=None):
         d = self.datarefs.get(dataref)
@@ -61,31 +74,6 @@ class Page:
         else:
             logger.warning(f"invalid name {name}")
         return None
-
-    def load_defaults(self, config: dict, base):
-        self.default_label_font = config.get("default-label-font", base.default_label_font)
-        self.default_label_size = config.get("default-label-size", base.default_label_size)
-        self.default_label_color = config.get("default-label-color", base.default_label_color)
-        self.default_label_color = convert_color(self.default_label_color)
-        self.default_label_position = config.get("default-label-position", base.default_label_position)
-        dftname = self.name + base.default_icon_name
-        if dftname not in self.deck.cockpit.icons.keys():
-            dftname = base.default_icon_name
-            if dftname not in self.deck.cockpit.icons.keys():
-                logger.warning(f"default icon name {dftname} not found")
-        self.default_icon_name = config.get("default-icon-name", dftname)
-        self.default_icon_texture = config.get("default-icon-texture", base.default_icon_texture)
-        self.default_icon_color = config.get("default-icon-color", base.default_icon_color)
-        self.default_icon_color = convert_color(self.default_icon_color)
-        self.default_annun_texture = config.get("default-annunciator-texture", base.default_annun_texture)
-        self.default_annun_color = config.get("default-annunciator-color", base.default_annun_color)
-        self.default_annun_color = convert_color(self.default_annun_color)
-        self.annunciator_style = config.get("annunciator-style", base.annunciator_style)
-        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
-        self.cockpit_color = config.get("cockpit-color", base.cockpit_color)
-        self.cockpit_color = convert_color(self.cockpit_color)
-        self.cockpit_texture = config.get("cockpit-texture", base.cockpit_texture)
-        self.fill_empty_keys = config.get("fill-empty-keys", base.fill_empty_keys)
 
     def load_buttons(self, buttons):
         for a in buttons:

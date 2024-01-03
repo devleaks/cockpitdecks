@@ -97,21 +97,23 @@ class Icon(Representation):
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
-        page = self.button.page
+        # This is leaf node in hierarchy, so we have to be careful.
+        # Button addresses "feature" and if it does not exist we return "default-feature"
+        # from hierarchy.
         self.label = config.get("label")
         self.label_format = config.get("label-format")
-        self.label_font = config.get("label-font", page.default_label_font)
-        self.label_size = int(config.get("label-size", page.default_label_size))
-        self.label_color = config.get("label-color", page.default_label_color)
+        self.label_font = config.get("label-font", button.get_attribute("default-label-font"))
+        self.label_size = int(config.get("label-size", button.get_attribute("default-label-size")))
+        self.label_color = config.get("label-color", button.get_attribute("default-label-color"))
         self.label_color = convert_color(self.label_color)
-        self.label_position = config.get("label-position", page.default_label_position)
+        self.label_position = config.get("label-position", button.get_attribute("default-label-position"))
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default")
-            self.label_position = page.default_label_position
+            self.label_position = button.get_attribute("default-label-position")
 
-        self.icon_color = config.get("icon-color", page.default_icon_color)
+        self.icon_color = config.get("icon-color", button.get_attribute("default-icon-color"))
         self.icon_color = convert_color(self.icon_color)
-        self.icon_texture = config.get("icon-texture", page.default_icon_texture)
+        self.icon_texture = config.get("icon-texture", button.get_attribute("default-icon-texture"))
 
         self.text_config = config  # where to get text from
 
@@ -160,11 +162,14 @@ class Icon(Representation):
         text_format = config.get(f"{which_text}-format")
 
         page = self.button.page
-        text_font = config.get(f"{which_text}-font", page.default_label_font)
-        text_size = config.get(f"{which_text}-size", page.default_label_size)
-        text_color = config.get(f"{which_text}-color", page.default_label_color)
+        text_font = config.get(f"{which_text}-font", self.button.get_attribute("default-label-font"))
+        text_size = config.get(f"{which_text}-size", self.button.get_attribute("default-label-size"))
+        text_color = config.get(f"{which_text}-color", self.button.get_attribute("default-label-color"))
         text_color = convert_color(text_color)
-        text_position = config.get(f"{which_text}-position", page.default_label_position if which_text == "label" else DEFAULT_TEXT_POSITION)
+        text_position = config.get(
+            f"{which_text}-position",
+            self.button.get_attribute("default-label-position") if which_text == "label" else self.button.get_attribute("default-text-position"),
+        )
         if text_position[0] not in "lcr":
             text_position = DEFAULT_TEXT_POSITION
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
@@ -172,8 +177,8 @@ class Icon(Representation):
             text_position = DEFAULT_TEXT_POSITION
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
 
-        if text is not None and type(text) != str:
-            logger.warning(f"button {self.button_name()}: converted text {text} (type {type(text)})")
+        if text is not None and not isinstance(text, str):
+            logger.warning(f"button {self.button_name()}: converting text {text} to string (type {type(text)})")
             text = str(text)
 
         return text, text_format, text_font, text_color, text_size, text_position
@@ -209,25 +214,13 @@ class Icon(Representation):
             return ImageFont.truetype(f, fontsize)
 
         # 2. Tries default fonts
-        #    Tries page default font
-        default_font = page.default_label_font
-        f = try_ext(default_font)
-        if f is not None:
-            return ImageFont.truetype(f, fontsize)
+        default_font = self.button.get_attribute("default-label-font")
+        if default_font is not None:
+            f = try_ext(default_font)
+            if f is not None:
+                return ImageFont.truetype(f, fontsize)
 
-        # 2. Tries deck default font
-        default_font = deck.default_label_font
-        f = try_ext(default_font)
-        if f is not None:
-            return ImageFont.truetype(f, fontsize)
-
-        # 3. Tries cockpit default label font
-        default_font = cockpit.default_label_font
-        f = try_ext(default_font)
-        if f is not None:
-            return ImageFont.truetype(f, fontsize)
-
-        # 4. Returns first font, if any
+        # 3. Returns first font, if any
         if len(fonts_available) > 0:
             f = all_fonts[fonts_available[0]]
             logger.warning(
@@ -410,7 +403,12 @@ class Icon(Representation):
         icon = None
         deck = self.button.deck
         page = self.button.page
-        icon = deck.create_icon_for_key(self.button.index, colors=page.cockpit_color, texture=page.cockpit_texture, name=f"{self.button_name()}:clean")
+        icon = deck.create_icon_for_key(
+            self.button.index,
+            colors=self.button.get_attribute("cockpit-color"),
+            texture=self.button.get_attribute("cockpit-texture"),
+            name=f"{self.button_name()}:clean",
+        )
         if icon is not None:
             deck._send_key_image_to_device(self.button._key, icon)
         else:
@@ -679,7 +677,7 @@ class LED(Representation):
 
 class ColoredLED(Representation):
     def __init__(self, config: dict, button: "Button"):
-        self._color = config.get(KW.COLORED_LED.value, button.page.deck.cockpit.cockpit_color)
+        self._color = config.get(KW.COLORED_LED.value, button.get_attribute("cockpit-color"))
         self.color = (128, 128, 256)
         Representation.__init__(self, config=config, button=button)
 
