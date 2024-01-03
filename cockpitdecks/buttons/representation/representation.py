@@ -14,13 +14,13 @@ from enum import Enum
 
 from PIL import ImageDraw, ImageFont
 
-from cockpitdecks.resources.color import convert_color, is_integer, has_ext, add_ext
+from cockpitdecks.resources.color import convert_color, is_integer, has_ext, add_ext, DEFAULT_COLOR
 from cockpitdecks import KW, ICON_SIZE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-DEFAULT_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
+DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
 
 # ##########################################
@@ -160,22 +160,53 @@ class Icon(Representation):
     def get_text_detail(self, config, which_text):
         text = self.button.get_text(config, which_text)
         text_format = config.get(f"{which_text}-format")
-
         page = self.button.page
-        text_font = config.get(f"{which_text}-font", self.button.get_attribute("default-label-font"))
-        text_size = config.get(f"{which_text}-size", self.button.get_attribute("default-label-size"))
-        text_color = config.get(f"{which_text}-color", self.button.get_attribute("default-label-color"))
+
+        dflt_system_font = self.button.get_attribute(f"default-system-font")
+        if dflt_system_font is None:
+            logger.error(f"button {self.button_name()}: no system font")
+
+        dflt_text_font = self.button.get_attribute(f"default-{which_text}-font")
+        if dflt_text_font is None:
+            dflt_text_font = self.button.get_attribute("default-label-font")
+            if dflt_text_font is None:
+                logger.warning(f"button {self.button_name()}: no default label font, using system font")
+                dflt_text_font = dflt_system_font
+
+        text_font = config.get(f"{which_text}-font", dflt_text_font)
+
+        dflt_text_size = self.button.get_attribute(f"default-{which_text}-size")
+        if dflt_text_size is None:
+            dflt_text_size = self.button.get_attribute("default-label-size")
+            if dflt_text_size is None:
+                logger.warning(f"button {self.button_name()}: no default label size, using 10")
+                dflt_text_size = 16
+        text_size = config.get(f"{which_text}-size", dflt_text_size)
+
+        dflt_text_color = self.button.get_attribute(f"default-{which_text}-color")
+        if dflt_text_color is None:
+            dflt_text_color = self.button.get_attribute("default-label-color")
+            if dflt_text_color is None:
+                logger.warning(f"button {self.button_name()}: no default label color, using {DEFAULT_COLOR}")
+                dflt_text_color = DEFAULT_COLOR
+        text_color = config.get(f"{which_text}-color", dflt_text_color)
         text_color = convert_color(text_color)
-        text_position = config.get(
-            f"{which_text}-position",
-            self.button.get_attribute("default-label-position") if which_text == "label" else self.button.get_attribute("default-text-position"),
-        )
+
+        dflt_text_position = self.button.get_attribute(f"default-{which_text}-position")
+        if dflt_text_position is None:
+            dflt_text_position = self.button.get_attribute("default-label-position")
+            if dflt_text_position is None:
+                logger.warning(f"button {self.button_name()}: no default label position, using cm")
+                dflt_text_position = "cm"  # middle of icon
+        text_position = config.get(f"{which_text}-position", dflt_text_position)
         if text_position[0] not in "lcr":
-            text_position = DEFAULT_TEXT_POSITION
+            text_position = DEFAULT_VALID_TEXT_POSITION
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
         if text_position[1] not in "tmb":
-            text_position = DEFAULT_TEXT_POSITION
+            text_position = DEFAULT_VALID_TEXT_POSITION
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
+
+        # print(f">>>> {self.button.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
 
         if text is not None and not isinstance(text, str):
             logger.warning(f"button {self.button_name()}: converting text {text} to string (type {type(text)})")

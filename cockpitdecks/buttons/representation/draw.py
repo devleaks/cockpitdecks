@@ -113,6 +113,13 @@ class DrawBase(Icon):
         bg.alpha_composite(image)
         return bg.convert("RGB")
 
+    def graphic_default(self, attribute, default=None):
+        attrname = f"default-{attribute}"
+        value = self.button.get_attribute(attrname)
+        if value is None:
+            logger.warning(f"no default value {attrname}, using hardcoded default")
+        return value if value is not None else default
+
 
 class DataIcon(DrawBase):
     def __init__(self, config: dict, button: "Button"):
@@ -289,66 +296,66 @@ class SwitchBase(DrawBase):
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.switch.get("button-fill-color", SWITCH_BASE_FILL_COLOR)
+        self.button_fill_color = self.get_attribute("button-fill-color", SWITCH_BASE_FILL_COLOR)
         self.button_fill_color = convert_color(self.button_fill_color)
-        self.button_stroke_color = self.switch.get("button-stroke-color", SWITCH_BASE_STROKE_COLOR)
+        self.button_stroke_color = self.get_attribute("button-stroke-color", SWITCH_BASE_STROKE_COLOR)
         self.button_stroke_color = convert_color(self.button_stroke_color)
-        self.button_stroke_width = self.switch.get("button-stroke-width", 2)
-        self.button_underline_color = self.switch.get("button-underline-color", SWITCH_BASE_UNDERLINE_COLOR)
+        self.button_stroke_width = self.get_attribute("button-stroke-width", 2)
+        self.button_underline_color = self.get_attribute("button-underline-color", SWITCH_BASE_UNDERLINE_COLOR)
         self.button_underline_color = convert_color(self.button_underline_color)
-        self.button_underline_width = self.switch.get("button-underline-width", 0)
+        self.button_underline_width = self.get_attribute("button-underline-width", 0)
 
-        self.handle_base_fill_color = self.switch.get("handle-fill-color", SWITCH_HANDLE_BASE_COLOR)
+        self.handle_base_fill_color = self.get_attribute("handle-fill-color", SWITCH_HANDLE_BASE_COLOR)
         self.handle_base_fill_color = convert_color(self.handle_base_fill_color)
 
-        self.handle_fill_color = self.switch.get("handle-fill-color", SWITCH_HANDLE_FILL_COLOR)
+        self.handle_fill_color = self.get_attribute("handle-fill-color", SWITCH_HANDLE_FILL_COLOR)
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.switch.get("handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR)
+        self.handle_stroke_color = self.get_attribute("handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR)
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
-        self.handle_stroke_width = self.switch.get("handle-stroke-width", 0)
+        self.handle_stroke_width = self.get_attribute("handle-stroke-width", 0)
 
-        self.top_fill_color = self.switch.get("top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR)
+        self.top_fill_color = self.get_attribute("top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR)
         self.top_fill_color = convert_color(self.top_fill_color)
-        self.top_stroke_color = self.switch.get("top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR)
+        self.top_stroke_color = self.get_attribute("top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR)
         self.top_stroke_color = convert_color(self.top_stroke_color)
-        self.top_stroke_width = self.switch.get("top-stroke-width", 2)
+        self.top_stroke_width = self.get_attribute("top-stroke-width", 2)
 
-        self.handle_tip_fill_color = self.switch.get("handle-fill-color", HANDLE_TIP_COLOR)
+        self.handle_tip_fill_color = self.get_attribute("handle-fill-color", HANDLE_TIP_COLOR)
         self.handle_tip_fill_color = convert_color(self.handle_tip_fill_color)
 
         # Ticks
-        self.tick_space = self.switch.get("tick-space", 10)
-        self.tick_length = self.switch.get("tick-length", 16)
-        self.tick_width = self.switch.get("tick-width", 4)
-        self.tick_color = self.switch.get("tick-color", TICK_COLOR)
+        self.tick_space = self.get_attribute("tick-space", 10)
+        self.tick_length = self.get_attribute("tick-length", 16)
+        self.tick_width = self.get_attribute("tick-width", 4)
+        self.tick_color = self.get_attribute("tick-color", TICK_COLOR)
         self.tick_color = convert_color(self.tick_color)
-        self.tick_underline_color = self.switch.get("tick-underline-color", TICK_COLOR)
+        self.tick_underline_color = self.get_attribute("tick-underline-color", TICK_COLOR)
         self.tick_underline_color = convert_color(self.tick_underline_color)
-        self.tick_underline_width = self.switch.get("tick-underline-width", 4)
+        self.tick_underline_width = self.get_attribute("tick-underline-width", 4)
 
         # Labels
         self.tick_labels = self.switch.get("tick-labels")
-        self.tick_label_space = self.switch.get("tick-label-space", 10)
-        self.tick_label_font = self.switch.get("tick-label-font", "DIN")
-        self.tick_label_size = self.switch.get("tick-label-size", 50)
-        self.tick_label_color = self.switch.get("tick-label-color", LABEL_COLOR)
+        self.tick_label_space = self.get_attribute("tick-label-space", 10)
+        self.tick_label_font = self.get_attribute("tick-label-font", "DIN")
+        self.tick_label_size = self.get_attribute("tick-label-size", 50)
+        self.tick_label_color = self.get_attribute("tick-label-color", LABEL_COLOR)
         self.tick_label_color = convert_color(self.tick_label_color)
 
         # Handle needle
-        self.needle_width = self.switch.get("needle-width", 8)
-        self.needle_start = self.switch.get("needle-start", 10)  # from center of button
-        self.needle_length = self.switch.get("needle-length", 50)  # end = start + length
+        self.needle_width = self.get_attribute("needle-width", 8)
+        self.needle_start = self.get_attribute("needle-start", 10)  # from center of button
+        self.needle_length = self.get_attribute("needle-length", 50)  # end = start + length
         self.needle_tip = self.switch.get("needle-tip")  # arro, arri, ball
-        self.needle_tip_size = self.switch.get("needle-tip-size", 5)
+        self.needle_tip_size = self.get_attribute("needle-tip-size", 5)
         # self.needle_length = int(self.needle_length * self.button_size / 200)
-        self.needle_color = self.switch.get("needle-color", NEEDLE_COLOR)
+        self.needle_color = self.get_attribute("needle-color", NEEDLE_COLOR)
         self.needle_color = convert_color(self.needle_color)
         # Options
-        self.needle_underline_width = self.switch.get("needle-underline-width", 4)
-        self.needle_underline_color = self.switch.get("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
+        self.needle_underline_width = self.get_attribute("needle-underline-width", 4)
+        self.needle_underline_color = self.get_attribute("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
         self.needle_underline_color = convert_color(self.needle_underline_color)
 
-        self.marker_color = self.switch.get("marker-color", MARKER_COLOR)
+        self.marker_color = self.get_attribute("marker-color", MARKER_COLOR)
 
         # Reposition for move_and_send(), found locally in switch config
         self.draw_scale = float(self.switch.get("scale", 1))
@@ -357,6 +364,10 @@ class SwitchBase(DrawBase):
             self.draw_scale = 1
         self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
         self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
+
+    def get_attribute(self, attribute, default):
+        # should only be used when global defaults are acceptable
+        return self.switch.get(attribute, self.graphic_default(attribute, default))
 
 
 class CircularSwitch(SwitchBase):
@@ -559,17 +570,17 @@ class Switch(SwitchBase):
         SwitchBase.__init__(self, config=config, button=button, switch_type="switch")
 
         # Alternate defaults
-        self.switch_style = self.switch.get("switch-style", "round")
+        self.switch_style = self.get_attribute("switch-style", "round")
         self.button_size = self.switch.get("button-size", int(ICON_SIZE / 5))
 
         # Handle
-        self.handle_dot_color = self.switch.get("switch-length", "white")
+        self.handle_dot_color = self.get_attribute("switch-handle-dot-color", "white")
 
         # Switch
-        self.switch_length = self.switch.get("switch-length", ICON_SIZE / 2.75)
-        self.switch_width = self.switch.get("switch-width", 32)
+        self.switch_length = self.get_attribute("switch-length", ICON_SIZE / 2.75)
+        self.switch_width = self.get_attribute("switch-width", 32)
 
-        self.tick_label_size = self.switch.get("tick-label-size", 40)
+        self.tick_label_size = self.get_attribute("tick-label-size", 40)
 
         # Options
         self.three_way = self.button.has_option("3way")
@@ -983,21 +994,21 @@ class PushSwitch(SwitchBase):
         SwitchBase.__init__(self, config=config, button=button, switch_type="push-switch")
 
         # Alternate defaults
-        self.button_size = self.switch.get("button-size", 80)
+        self.button_size = self.get_attribute("button-size", 80)
 
-        self.handle_size = self.switch.get("witness-size", min(self.button_size / 2, 40))
+        self.handle_size = self.get_attribute("witness-size", min(self.button_size / 2, 40))
 
-        self.handle_fill_color = self.switch.get("witness-fill-color", (0, 0, 0, 0))
+        self.handle_fill_color = self.get_attribute("witness-fill-color", (0, 0, 0, 0))
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.switch.get("witness-stroke-color", (255, 255, 255))
+        self.handle_stroke_color = self.get_attribute("witness-stroke-color", (255, 255, 255))
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
-        self.handle_stroke_width = self.switch.get("witness-stroke-width", 4)
+        self.handle_stroke_width = self.get_attribute("witness-stroke-width", 4)
 
-        self.handle_off_fill_color = self.switch.get("witness-fill-off-color", (0, 0, 0, 0))
+        self.handle_off_fill_color = self.get_attribute("witness-fill-off-color", (0, 0, 0, 0))
         self.handle_off_fill_color = convert_color(self.handle_off_fill_color)
-        self.handle_off_stroke_color = self.switch.get("witness-stroke-off-color", (255, 255, 255, 0))
+        self.handle_off_stroke_color = self.get_attribute("witness-stroke-off-color", (255, 255, 255, 0))
         self.handle_off_stroke_color = convert_color(self.handle_off_stroke_color)
-        self.handle_off_stroke_width = self.switch.get("witness-stroke-off-width", 4)
+        self.handle_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
     def get_image_for_icon(self):
         """
@@ -1031,45 +1042,45 @@ class Knob(SwitchBase):
     def __init__(self, config: dict, button: "Button"):
         SwitchBase.__init__(self, config=config, button=button, switch_type="knob")
 
-        self.knob_type = self.switch.get("knob-type", "dent")
-        self.knob_mark = self.switch.get("knob-mark", "triangle")  # needle, triangle, bar (diameter)
+        self.knob_type = self.get_attribute("knob-type", "dent")
+        self.knob_mark = self.get_attribute("knob-mark", "triangle")  # needle, triangle, bar (diameter)
 
         # Alternate defaults
         # self.button_size = self.switch.get("button-size", 80)
         self.base_size = self.switch.get("base-size", int(ICON_SIZE / 1.25))
-        self.base_fill_color = self.switch.get("base-fill-color", grey(128))
-        self.base_stroke_color = self.switch.get("base-stroke-color", grey(20))
-        self.base_stroke_width = self.switch.get("base-stroke-width", 16)
+        self.base_fill_color = self.get_attribute("base-fill-color", grey(128))
+        self.base_stroke_color = self.get_attribute("base-stroke-color", grey(20))
+        self.base_stroke_width = self.get_attribute("base-stroke-width", 16)
 
-        self.base_underline_color = self.switch.get("base-underline-color", grey(240))
-        self.base_underline_width = self.switch.get("base-underline-width", int(self.base_stroke_width / 2))
+        self.base_underline_color = self.get_attribute("base-underline-color", grey(240))
+        self.base_underline_width = self.get_attribute("base-underline-width", int(self.base_stroke_width / 2))
 
-        self.button_fill_color = self.switch.get("button-fill-color", grey(220))
-        self.button_stroke_color = self.switch.get("button-stroke-color", grey(0))
-        self.button_stroke_width = self.switch.get("button-stroke-width", 2)
-        self.button_dents = self.switch.get("button-dents", 36)
-        self.button_dent_size = self.switch.get("button-dent-size", 4)
-        self.button_dent_extension = self.switch.get("button-dent-extension", 4)
-        self.button_dent = self.switch.get("button-dent-negative", False)
+        self.button_fill_color = self.get_attribute("button-fill-color", grey(220))
+        self.button_stroke_color = self.get_attribute("button-stroke-color", grey(0))
+        self.button_stroke_width = self.get_attribute("button-stroke-width", 2)
+        self.button_dents = self.get_attribute("button-dents", 36)
+        self.button_dent_size = self.get_attribute("button-dent-size", 4)
+        self.button_dent_extension = self.get_attribute("button-dent-extension", 4)
+        self.button_dent = self.get_attribute("button-dent-negative", False)
 
         if self.button_dent_size < self.button_dent_extension:
             self.button_dent_size = self.button_dent_extension
 
-        self.mark_underline_outer = self.switch.get("mark-underline-outer", 12)
-        self.mark_underline_color = self.switch.get("mark-underline-color", "coral")
-        self.mark_underline_width = self.switch.get("mark-underline-width", 4)
-        self.mark_size = self.switch.get("witness-size", min(self.button_size / 2, 40))
-        self.mark_fill_color = self.switch.get("witness-fill-color", None)
+        self.mark_underline_outer = self.get_attribute("mark-underline-outer", 12)
+        self.mark_underline_color = self.get_attribute("mark-underline-color", "coral")
+        self.mark_underline_width = self.get_attribute("mark-underline-width", 4)
+        self.mark_size = self.get_attribute("witness-size", min(self.button_size / 2, 40))
+        self.mark_fill_color = self.get_attribute("witness-fill-color", None)
         self.mark_fill_color = convert_color(self.mark_fill_color)
-        self.mark_stroke_color = self.switch.get("witness-stroke-color", "blue")
+        self.mark_stroke_color = self.get_attribute("witness-stroke-color", "blue")
         self.mark_stroke_color = convert_color(self.mark_stroke_color)
-        self.mark_stroke_width = self.switch.get("witness-stroke-width", 8)
+        self.mark_stroke_width = self.get_attribute("witness-stroke-width", 8)
 
-        self.mark_off_fill_color = self.switch.get("witness-fill-off-color", (0, 0, 0, 0))
+        self.mark_off_fill_color = self.get_attribute("witness-fill-off-color", (0, 0, 0, 0))
         self.mark_off_fill_color = convert_color(self.mark_off_fill_color)
-        self.mark_off_stroke_color = self.switch.get("witness-stroke-off-color", (255, 255, 255, 0))
+        self.mark_off_stroke_color = self.get_attribute("witness-stroke-off-color", (255, 255, 255, 0))
         self.mark_off_stroke_color = convert_color(self.mark_off_stroke_color)
-        self.mark_off_stroke_width = self.switch.get("witness-stroke-off-width", 4)
+        self.mark_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
         self.rotation = randint(0, 359)
 

@@ -14,7 +14,7 @@ from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from cockpitdecks import Config, KW, GLOBAL_DEFAULTS
-from cockpitdecks.resources.color import convert_color, has_ext
+from cockpitdecks.resources.color import has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.deck import DECKS_FOLDER, DeckType
 from cockpitdecks.decks import DECK_DRIVERS
@@ -64,8 +64,9 @@ class Cockpit(DatarefListener, CockpitBase):
         DatarefListener.__init__(self)
 
         self._defaults = GLOBAL_DEFAULTS
+        self._reqdfts = set()
         self._config = {}  # content of aircraft/deckconfig/config.yaml
-        self.default_config = {}  # content of resources/config.yaml
+        self._resources_config = {}  # content of resources/config.yaml
 
         self.name = "Cockpitdecks"  # "Aircraft" name or model...
         self.icao = "ZZZZ"
@@ -118,17 +119,19 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.debug(f"set default {dflt} to {value}")
 
     def get_attribute(self, attribute: str):
+        self._reqdfts.add(attribute)
         if attribute in self._config.keys():
             return self._config.get(attribute)
-        if attribute in self.default_config.keys():
-            return self.default_config.get(attribute)
+        if attribute in self._resources_config.keys():
+            return self._resources_config.get(attribute)
         ATTRNAME = "_defaults"
         if hasattr(self, ATTRNAME):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 if attribute in ld.keys():
                     return ld.get(attribute)
-        logger.warning(f"no attribute {attribute}")
+        if "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position"]:
+            logger.warning(f"no attribute {attribute}")
         return None
 
     def get_button_value(self, name):
@@ -354,14 +357,14 @@ class Cockpit(DatarefListener, CockpitBase):
 
         # 0. Some variables defaults
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
-        self.default_config = Config(fn)
+        self._resources_config = Config(fn)
 
         # Load global defaults from resources/config.yaml file or use application default
-        self._debug = self.default_config.get("debug", ",".join(self._debug)).split(",")
+        self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
         self.set_logging_level(__name__)
 
-        self.sim.set_roundings(self.default_config.get("dataref-roundings", {}))
-        self.sim.set_dataref_frequencies(self.default_config.get("dataref-fetch-frequencies", {}))
+        self.sim.set_roundings(self._resources_config.get("dataref-roundings", {}))
+        self.sim.set_dataref_frequencies(self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # 1. Load global icons
         #   (They are never cached when loaded without aircraft.)
@@ -421,13 +424,13 @@ class Cockpit(DatarefListener, CockpitBase):
         )
 
     def create_decks(self):
-        sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
-        serial_numbers = Config(sn)
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         self._config = Config(fn)
         if not self._config.is_valid():
             logger.warning(f"no config file {fn}")
             return
+        sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
+        serial_numbers = Config(sn)
 
         decks = self._config.get("decks")
         if decks is None:
@@ -763,6 +766,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if left > threads:  # [MainThread and spinner]
             logger.error(f"{left} threads remaining")
             logger.error(f"{[t.name for t in threading.enumerate()]}")
+        logger.info(self._reqdfts)
 
     def run(self):
         if len(self.cockpit) > 0:
@@ -788,26 +792,3 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"no deck")
             if self.acpath is not None:
                 self.terminate_all()
-
-    # #########################################################
-    # XPPython Plugin Hooks
-    #
-    def start(self):
-        logger.info(f"starting..")
-        # do nothing, started in when enabled
-        logger.info(f"done")
-
-    def stop(self):
-        logger.info(f"stopping..")
-        self.terminate_all()
-        logger.info(f"done")
-
-    def enable(self):
-        self.load(self.acpath)
-        self.disabled = False
-        logger.info(f"enabled")
-
-    def disable(self):
-        self.terminate_aircraft()
-        self.disabled = True
-        logger.info(f"disabled")

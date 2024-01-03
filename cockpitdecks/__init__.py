@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.15.1"
+__version__ = "7.15.2"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -97,26 +97,28 @@ class ANNUNCIATOR_STYLES(Enum):
 
 
 GLOBAL_DEFAULTS = {
-    "default-logo": "logo.png",
-    "default-wallpaper": "wallpaper.png",
-    "default-label-font": "DIN.ttf",
-    "default-label-size": 10,
-    "default-label-color": "white",
-    "default-label-position": "ct",
-    "default-text-position": "cm",
-    "default-system-font": "Monaco.ttf",
     "cache-icon": True,
-    "default-icon-texture": None,
-    "default-icon-color": (0, 0, 100),
-    "default-icon-name": "_default_icon.png",
-    "default-annunciator-texture": None,
+    "cockpit-color": (94, 111, 130),
+    "cockpit-texture": None,
     "default-annunciator-color": (0, 0, 0),
     "default-annunciator-color-fg": (128, 128, 128),
     "default-annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
-    "cockpit-texture": None,
-    "cockpit-color": (94, 111, 130),
+    "default-annunciator-texture": None,
     "default-home-page-name": "index",
+    "default-icon-color": (0, 0, 100),
+    "default-icon-name": "_default_icon.png",
+    "default-icon-texture": None,
+    "default-interface-bg-color": "black",
+    "default-interface-fg-color": "white",
+    "default-label-color": "white",
+    "default-label-font": "DIN.ttf",
+    "default-label-position": "ct",
+    "default-label-size": 10,
     "default-light-off-intensity": 10,
+    "default-logo": "logo.png",
+    "default-system-font": "Monaco.ttf",
+    "system-font": "Monaco.ttf",  # alias
+    "default-wallpaper": "wallpaper.png",
 }
 
 # internals
@@ -167,7 +169,7 @@ class Config(MutableMapping):
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
-                init_logger.debug(f"loaded config from {filename}")
+                init_logger.info(f"loaded config from {filename}")
         else:
             init_logger.debug(f"no file {filename}")
 

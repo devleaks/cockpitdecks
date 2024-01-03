@@ -54,6 +54,7 @@ class Page:
 
     def merge_attributes(self, attributes):
         # mainly aimed at merging includes' attributes to page's
+        # merging order of includes is random
         ATTRNAME = "_defaults"
         if not hasattr(self, ATTRNAME):
             setattr(self, ATTRNAME, dict())

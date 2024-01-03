@@ -231,7 +231,7 @@ class Deck(ABC):
 
         self.cockpit.set_logging_level(__name__)
 
-        self.layout_config = {}
+        self._layout_config = {}
         self.pages = {}
         self.home_page = None  # this is a Page, not a str.
         self.current_page = None  # this is a Page, not a str.
@@ -296,6 +296,9 @@ class Deck(ABC):
         val = self._config.get(attribute)
         if val is not None:
             return val
+        val = self._layout_config.get(attribute)
+        if val is not None:
+            return val
         ATTRNAME = "_defaults"
         val = None
         if hasattr(self, ATTRNAME):
@@ -325,17 +328,6 @@ class Deck(ABC):
         for v in self.pages.values():
             v.inspect(what)
 
-    def load_layout_config(self, fn):
-        """
-        Loads a layout global configuration parameters.
-
-        :param    fn:   The function
-        :type      fn:   Function
-        """
-        self.layout_config = Config(fn)
-        if not self.layout_config.is_valid():
-            logger.debug(f"no layout config file")
-
     def load(self):
         """
         Loads Streamdeck pages during configuration
@@ -352,7 +344,10 @@ class Deck(ABC):
 
         pages = os.listdir(dn)
         if CONFIG_FILE in pages:  # first load config
-            self.load_layout_config(os.path.join(dn, CONFIG_FILE))
+            self._layout_config = Config(os.path.join(dn, CONFIG_FILE))
+            if not self._layout_config.is_valid():
+                logger.debug(f"no layout config file")
+
         for p in pages:
             if p == CONFIG_FILE:
                 continue
