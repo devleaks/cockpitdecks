@@ -17,7 +17,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, l
 from .representation import Icon  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 #
