@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.15.0"
+__version__ = "7.15.1"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -36,8 +36,8 @@ SPAM = "SPAM"
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 # logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
-# logger.setLevel(SPAM_LEVEL)
+init_logger = logging.getLogger(__name__)
+# init_logger.setLevel(logging.DEBUG)
 # if LOGFILE is not None:
 #     formatter = logging.Formatter(FORMAT)
 #     handler = logging.FileHandler(
@@ -112,7 +112,7 @@ GLOBAL_DEFAULTS = {
     "default-annunciator-texture": None,
     "default-annunciator-color": (0, 0, 0),
     "default-annunciator-color-fg": (128, 128, 128),
-    "default-annunciator-style": ANNUNCIATOR_STYLES.KORRY,
+    "default-annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
     "cockpit-texture": None,
     "cockpit-color": (94, 111, 130),
     "default-home-page-name": "index",
@@ -167,9 +167,9 @@ class Config(MutableMapping):
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
-                logger.info(f"loaded config from {filename}")
+                init_logger.debug(f"loaded config from {filename}")
         else:
-            logger.debug(f"no file {filename}")
+            init_logger.debug(f"no file {filename}")
 
     def __getitem__(self, key):
         return self.store[self._keytransform(key)]

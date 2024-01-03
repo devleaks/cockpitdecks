@@ -17,7 +17,6 @@ class Page:
     """
 
     def __init__(self, name: str, config: dict, deck: "Deck"):
-        self.logging_level = "INFO"
         self._config = config
         self.name = name
         self.deck = deck
@@ -52,6 +51,15 @@ class Page:
             if isinstance(ld, dict):
                 val = ld.get(attribute)
         return val if val is not None else self.deck.get_attribute(attribute)
+
+    def merge_attributes(self, attributes):
+        # mainly aimed at merging includes' attributes to page's
+        ATTRNAME = "_defaults"
+        if not hasattr(self, ATTRNAME):
+            setattr(self, ATTRNAME, dict())
+        ld = getattr(self, ATTRNAME)
+        if isinstance(ld, dict) and isinstance(attributes, dict):
+            setattr(self, ATTRNAME, ld | attributes)
 
     def get_dataref_value(self, dataref, default=None):
         d = self.datarefs.get(dataref)

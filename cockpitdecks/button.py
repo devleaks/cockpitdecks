@@ -30,7 +30,6 @@ class Button(DatarefListener, DatarefSetListener):
         DatarefListener.__init__(self)
         DatarefSetListener.__init__(self)
         # Definition and references
-        self.logging_level = "INFO"
         self._config = config
         self.page = page
         self.deck = page.deck

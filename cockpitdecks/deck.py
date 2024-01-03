@@ -10,10 +10,9 @@ from functools import reduce
 from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import ID_SEP, KW, ANNUNCIATOR_STYLES, DEFAULT_LAYOUT
+from cockpitdecks import ID_SEP, KW, DEFAULT_LAYOUT
 from cockpitdecks import Config
 
-from cockpitdecks.resources.color import convert_color
 from .page import Page
 from .button import Button
 from cockpitdecks.buttons.activation import DECK_ACTIVATIONS, DEFAULT_ACTIVATIONS
@@ -23,7 +22,7 @@ loggerDeckType = logging.getLogger("DeckType")
 # loggerDeckType.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 DECKS_FOLDER = "decks"
 
@@ -317,6 +316,15 @@ class Deck(ABC):
                 logger.warning(f"not my deck {a[0]} ({self.name})")
         return None
 
+    def inspect(self, what: str = None):
+        """
+        This function is called on all pages of this Deck.
+        """
+        logger.info(f"*" * 60)
+        logger.info(f"Deck {self.name} -- {what}")
+        for v in self.pages.values():
+            v.inspect(what)
+
     def load_layout_config(self, fn):
         """
         Loads a layout global configuration parameters.
@@ -327,15 +335,6 @@ class Deck(ABC):
         self.layout_config = Config(fn)
         if not self.layout_config.is_valid():
             logger.debug(f"no layout config file")
-
-    def inspect(self, what: str = None):
-        """
-        This function is called on all pages of this Deck.
-        """
-        logger.info(f"*" * 60)
-        logger.info(f"Deck {self.name} -- {what}")
-        for v in self.pages.values():
-            v.inspect(what)
 
     def load(self):
         """
@@ -392,10 +391,12 @@ class Deck(ABC):
                             fni = os.path.join(dn, inc + ".yaml")
                             inc_config = Config(fni)
                             if inc_config.is_valid():
+                                this_page.merge_attributes(inc_config.store)  # merges attributes first since can have things for buttons....
                                 if KW.BUTTONS.value in inc_config:
                                     before = len(this_page.buttons)
                                     this_page.load_buttons(inc_config[KW.BUTTONS.value])
                                     ipb = len(this_page.buttons) - before
+                                del inc_config.store[KW.BUTTONS.value]
                             else:
                                 logger.warning(f"includes: {inc}: file {fni} not found")
                         display_fni = fni.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")

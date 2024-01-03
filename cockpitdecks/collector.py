@@ -19,7 +19,7 @@ loggerDatarefSet = logging.getLogger("DatarefSet")
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 QUEUE_TIMEOUT = 5  # seconds, we check on loop running every that time
 LOOP_DELAY = 5.0
