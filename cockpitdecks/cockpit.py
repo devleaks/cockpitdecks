@@ -130,16 +130,18 @@ class Cockpit(DatarefListener, CockpitBase):
         return value
 
     def get_attribute(self, attribute: str, silence: bool = False):
-        self._reqdfts.add(attribute)  # internal stats
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
-        if self._dark and (attribute.startswith("default-") or attribute.startswith("cockpit-")):
-            prefix = "dark-"  # prefix = self.get_attribute("cockpit-theme")
-            if prefix is None:
-                prefix = ""
-            val = self.get_attribute(attribute=prefix + attribute, silence=silence)
-            if val is not None:
-                return self.is_color_attribute(attribute=attribute, value=val)
+        if attribute.startswith("default-") or attribute.startswith("cockpit-"):
+            prefix = self._config.get("cockpit-theme")  # prefix = "dark-"  #
+            if prefix is not None and prefix not in ["default", "cockpit"] and not attribute.startswith(prefix):
+                newattr = "-".join([prefix, attribute])
+                val = self.get_attribute(attribute=newattr, silence=silence)
+                if val is not None:
+                    print(attribute, newattr, val)
+                    return self.is_color_attribute(attribute=attribute, value=val)
+                # else, no attribute named by newattr, just try plain attr name
         # Normal ops
+        self._reqdfts.add(attribute)  # internal stats
         if attribute in self._config.keys():
             return self.is_color_attribute(attribute=attribute, value=self._config.get(attribute))
         if attribute in self._resources_config.keys():
@@ -474,7 +476,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"no deck in config file {fn}")
             return
 
-        logger.warning(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")
+        logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
 
         deck_count_by_type = {}
         for deck_type in self.deck_types.values():
@@ -805,7 +807,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if left > threads:  # [MainThread and spinner]
             logger.error(f"{left} threads remaining")
             logger.error(f"{[t.name for t in threading.enumerate()]}")
-        # logger.debug(self._reqdfts)
+        logger.info(self._reqdfts)
 
     def run(self):
         if len(self.cockpit) > 0:

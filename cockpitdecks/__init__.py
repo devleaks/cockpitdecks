@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.16.0"
+__version__ = "7.16.1"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -104,7 +104,7 @@ GLOBAL_DEFAULTS = {
     "default-annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
     "default-annunciator-texture": None,
     "default-home-page-name": "index",
-    "default-icon-color": (0, 0, 100),
+    "default-icon-color": "cornflowerblue",
     "default-icon-name": "1.png",
     "default-icon-texture": None,
     "default-interface-bg-color": "black",
@@ -119,7 +119,7 @@ GLOBAL_DEFAULTS = {
     "default-text-color": "white",
     "default-text-font": "DIN.ttf",
     "default-text-position": "cm",
-    "default-text-size": 16,
+    "default-text-size": 32,
     "cockpit-theme": "light",
     "default-wallpaper": "wallpaper.png",
     "system-font": "Monaco.ttf",  # alias
@@ -200,4 +200,3 @@ class Config(MutableMapping):
 
 
 from .cockpit import Cockpit, CockpitBase
-from .simulators.xplane import XPlane

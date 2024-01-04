@@ -135,9 +135,9 @@ class Icon(Representation):
             self.make_icon()
 
     def make_icon(self):
-        self.icon = self.button_name()
+        self.icon = self.button.get_id()
         image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture, name=self.icon)
-        logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon")
+        logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}")
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
