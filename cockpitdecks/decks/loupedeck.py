@@ -25,8 +25,6 @@ VIBRATION_MODES = set(HAPTIC.keys())
 # Keys are large icon-backed portions of the LCD screen.
 # Buttons are smaller, colored push buttons labeled 0 (dotted circle) to 7.
 # Knobs are rotating knobs on either side.
-BUTTON_PREFIX = "b"
-ENCODER_PREFIX = "e"  # need to be found in _buttons definition from deck.yaml
 ENCODER_MAP = {"knobTL": "e0", "knobCL": "e1", "knobBL": "e2", "knobTR": "e3", "knobCR": "e4", "knobBR": "e5"}
 
 
@@ -142,7 +140,7 @@ class Loupedeck(DeckWithIcons):
         if action == "push":
             state = 1 if msg["state"] == "down" else 0
             num = -1
-            if not key.startswith(ENCODER_PREFIX):
+            if not self.deck_type.is_encoder(key):
                 if key == KW_CIRCLE:
                     key = 0
                 try:

@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.15.3"
+__version__ = "7.16.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -98,19 +98,14 @@ class ANNUNCIATOR_STYLES(Enum):
 
 GLOBAL_DEFAULTS = {
     "cache-icon": True,
-    "cockpit": "light",
-    "cockpit-color": (94, 111, 130),
+    "cockpit-color": "cornflowerblue",
     "cockpit-texture": None,
-    "default-annunciator-color": (0, 0, 0),
-    "default-annunciator-color-bg": (0, 0, 0),
-    "default-annunciator-color-fg": (255, 255, 255),
-    "default-annunciator-color-fill": (255, 255, 255),
-    "default-annunciator-color-stroke": (255, 255, 255),
+    "default-annunciator-color": "black",
     "default-annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
     "default-annunciator-texture": None,
     "default-home-page-name": "index",
     "default-icon-color": (0, 0, 100),
-    "default-icon-name": "_default_icon.png",
+    "default-icon-name": "1.png",
     "default-icon-texture": None,
     "default-interface-bg-color": "black",
     "default-interface-fg-color": "white",
@@ -121,8 +116,13 @@ GLOBAL_DEFAULTS = {
     "default-light-off-intensity": 10,
     "default-logo": "logo.png",
     "default-system-font": "Monaco.ttf",
-    "system-font": "Monaco.ttf",  # alias
+    "default-text-color": "white",
+    "default-text-font": "DIN.ttf",
+    "default-text-position": "cm",
+    "default-text-size": 16,
+    "cockpit-theme": "light",
     "default-wallpaper": "wallpaper.png",
+    "system-font": "Monaco.ttf",  # alias
 }
 
 # internals

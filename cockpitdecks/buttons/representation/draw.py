@@ -114,7 +114,8 @@ class DrawBase(Icon):
         return bg.convert("RGB")
 
     def graphic_default(self, attribute, default=None):
-        attrname = f"default-{attribute}"
+        dflt = self.button.deck.cockpit.defaults_prefix()
+        attrname = f"{dflt}{attribute}"
         value = self.button.get_attribute(attrname, silence=True)
         if value is None:
             logger.debug(f"no default value {attrname}, using hardcoded default")

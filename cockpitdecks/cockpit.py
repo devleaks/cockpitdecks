@@ -14,7 +14,7 @@ from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER
 from cockpitdecks import Config, KW, GLOBAL_DEFAULTS
-from cockpitdecks.resources.color import has_ext
+from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.deck import DECKS_FOLDER, DeckType
 from cockpitdecks.decks import DECK_DRIVERS
@@ -67,6 +67,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self._reqdfts = set()
         self._config = {}  # content of aircraft/deckconfig/config.yaml
         self._resources_config = {}  # content of resources/config.yaml
+        self._dark = False
 
         self.name = "Cockpitdecks"  # "Aircraft" name or model...
         self.icao = "ZZZZ"
@@ -118,21 +119,57 @@ class Cockpit(DatarefListener, CockpitBase):
             ld[dflt] = value
         logger.debug(f"set default {dflt} to {value}")
 
+    def defaults_prefix(self):
+        return "dark-default-" if self._dark else "default-"
+
+    def is_color_attribute(self, attribute, value):
+        # will need refinements
+        if "color" in attribute:
+            # logger.debug(f"converted color attribute {attribute}")
+            return convert_color(value)
+        return value
+
     def get_attribute(self, attribute: str, silence: bool = False):
-        self._reqdfts.add(attribute)
+        self._reqdfts.add(attribute)  # internal stats
+        # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
+        if self._dark and (attribute.startswith("default-") or attribute.startswith("cockpit-")):
+            prefix = "dark-"  # prefix = self.get_attribute("cockpit-theme")
+            if prefix is None:
+                prefix = ""
+            val = self.get_attribute(attribute=prefix + attribute, silence=silence)
+            if val is not None:
+                return self.is_color_attribute(attribute=attribute, value=val)
+        # Normal ops
         if attribute in self._config.keys():
-            return self._config.get(attribute)
+            return self.is_color_attribute(attribute=attribute, value=self._config.get(attribute))
         if attribute in self._resources_config.keys():
-            return self._resources_config.get(attribute)
+            return self.is_color_attribute(attribute=attribute, value=self._resources_config.get(attribute))
         ATTRNAME = "_defaults"
         if hasattr(self, ATTRNAME):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 if attribute in ld.keys():
-                    return ld.get(attribute)
-        if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position"]:
+                    return self.is_color_attribute(attribute=attribute, value=ld.get(attribute))
+        if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position", "texture"]:
             logger.warning(f"no attribute {attribute}")
         return None
+
+    def is_dark(self):
+        # Could also determine this from simulator time...
+        # Always evaluates cockpit attribute since its value can be updated
+        # by page changes
+        #
+        # Note: Theming could be extended to any "string" like:
+        #
+        # cockpit-theme: barbie
+        #
+        # and defaults as
+        #
+        # barbie-default-label-color: pink
+        #
+        val = self.get_attribute("cockpit-theme")
+        self._dark = val is not None and val in ["dark", "night"]
+        return self._dark
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -436,6 +473,8 @@ class Cockpit(DatarefListener, CockpitBase):
         if decks is None:
             logger.warning(f"no deck in config file {fn}")
             return
+
+        logger.warning(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")
 
         deck_count_by_type = {}
         for deck_type in self.deck_types.values():
@@ -766,7 +805,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if left > threads:  # [MainThread and spinner]
             logger.error(f"{left} threads remaining")
             logger.error(f"{[t.name for t in threading.enumerate()]}")
-        logger.info(self._reqdfts)
+        # logger.debug(self._reqdfts)
 
     def run(self):
         if len(self.cockpit) > 0:

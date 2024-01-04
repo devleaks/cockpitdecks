@@ -672,7 +672,10 @@ class Button(DatarefListener, DatarefSetListener):
             return None
 
         # HACK 1: Special icon font substitution
-        text_font = base.get(root + "-font", self.get_attribute("default-label-font"))
+        default_font = self.get_attribute("default-label-font")
+        if default_font is None:
+            logger.warning("no default font")
+        text_font = base.get(root + "-font", default_font)
         for k, v in ICON_FONTS.items():
             if text_font.lower().startswith(v[0]):
                 s = "\\${%s:([^\\}]+?)}" % (k)

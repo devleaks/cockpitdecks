@@ -153,9 +153,9 @@ class AnnunciatorPart:
             color = text_color
             logger.debug(f"button {self.annunciator.button.name}: color not set but text-color set, using color {color}")
         elif color is None:
-            color = self.annunciator.button.get_attribute("default-annunciator-color-fg")
+            color = self.annunciator.button.get_attribute("default-text-color")
             if color is not None:
-                logger.debug(f"button {self.annunciator.button.name}: no color found, using default annunciator color")
+                logger.debug(f"button {self.annunciator.button.name}: no color found, using default text color")
             else:
                 color = DEFAULT_COLOR
                 logger.warning(f"button {self.annunciator.button.name}: no color found, using default")
@@ -177,7 +177,7 @@ class AnnunciatorPart:
         #     f">>>> {self.annunciator.button.get_id()}",
         #     self._config.get("color"),
         #     text_color,
-        #     self.annunciator.button.get_attribute("default-annunciator-color-fg"),
+        #     self.annunciator.button.get_attribute("default-text-color"),
         #     color,
         # )
 
