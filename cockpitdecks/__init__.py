@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.16.1"
+__version__ = "7.16.2"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -35,16 +35,7 @@ SPAM_LEVEL = 15
 SPAM = "SPAM"
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
-# logging.basicConfig(level=logging.INFO, format=FORMAT)
-init_logger = logging.getLogger(__name__)
-# init_logger.setLevel(logging.DEBUG)
-# if LOGFILE is not None:
-#     formatter = logging.Formatter(FORMAT)
-#     handler = logging.FileHandler(
-#         LOGFILE, mode="a"
-#     )
-#     handler.setFormatter(formatter)
-#     logger.addHandler(handler)
+init_logger = logging.getLogger("init/common")
 
 
 # ##############################################################

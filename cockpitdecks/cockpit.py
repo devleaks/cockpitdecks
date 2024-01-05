@@ -807,7 +807,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if left > threads:  # [MainThread and spinner]
             logger.error(f"{left} threads remaining")
             logger.error(f"{[t.name for t in threading.enumerate()]}")
-        logger.info(self._reqdfts)
+        # logger.info(self._reqdfts)
 
     def run(self):
         if len(self.cockpit) > 0:
