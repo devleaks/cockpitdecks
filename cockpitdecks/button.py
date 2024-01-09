@@ -34,6 +34,11 @@ class Button(DatarefListener, DatarefSetListener):
         self.page = page
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
+        # stats
+        self._render = 0
+        self._clean = 0
+        self._activs = 0
+        self._repres = 0
 
         self.deck.cockpit.set_logging_level(__name__)
 
@@ -823,6 +828,7 @@ class Button(DatarefListener, DatarefSetListener):
         if not self._activation.is_valid():
             logger.warning(f"button {self.name}: activation is not valid, nothing executed")
             return
+        self._activs = self._activs + 1
         self._activation.activate(state)
         if self.use_internal_state():
             logger.debug(f"button {self.name}: uses internal state, setting value")
@@ -835,7 +841,7 @@ class Button(DatarefListener, DatarefSetListener):
 
     def get_status(self):
         """ """
-        a = {"managed": self.managed, "guarded": self.guarded}
+        a = {"render": self._render, "clean": self._clean, "repres": self._repres, "active": self._activs, "managed": self.managed, "guarded": self.guarded}
         return self._activation.get_status() | a
         # if self._representation is not None:
         #     return self._representation.get_status()
@@ -848,6 +854,7 @@ class Button(DatarefListener, DatarefSetListener):
         if not self._representation.is_valid():
             logger.warning(f"button {self.name}: representation is not valid")
             return None
+        self._repres = self._repres + 1
         return self._representation.render()
 
     def render(self):
@@ -857,6 +864,7 @@ class Button(DatarefListener, DatarefSetListener):
         """
         if self.deck is not None:
             if self.on_current_page():
+                self._render = self._render + 1
                 self.deck.render(self)
                 # logger.debug(f"button {self.name} rendered")
             else:
@@ -868,5 +876,6 @@ class Button(DatarefListener, DatarefSetListener):
         """
         Button removes itself from device
         """
+        self._clean = self._clean + 1
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()

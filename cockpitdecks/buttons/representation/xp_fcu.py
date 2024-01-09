@@ -1,5 +1,7 @@
 # ###########################
-# Representation that displays the content of sim/aircraft/view/acf_ICAO on an icon.
+# Representation that displays FCU data.
+# Horizontal: present the entire FCU.
+# Vertical: present half FCU left or right.
 # These buttons are *highly* X-Plane and Toliss Airbus specific.
 #
 import logging

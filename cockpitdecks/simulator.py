@@ -76,7 +76,7 @@ class Dataref:
         self.current_value = None
         self.current_array = []
         self.listeners = []  # buttons using this dataref, will get notified if changes.
-        self.round = None
+        self._round = None
         self.update_frequency = 1  # sent by the simulator that many times per second.
 
         # dataref/path:t where t in d, i, f, s, b.
@@ -121,7 +121,7 @@ class Dataref:
         return Dataref.is_internal_dataref(self.path)
 
     def set_round(self, rounding):
-        self.round = rounding
+        self._round = rounding
 
     def set_update_frequency(self, frequency=1):
         if frequency is not None and type(frequency) in [int, float]:
@@ -161,15 +161,14 @@ class Dataref:
         # Returns True if updated at least once
         return self._updated > 0
 
-    def update_value(self, new_value, cascade: bool = False):
+    def round(self, new_value):
+        return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
+
+    def update_value(self, new_value, cascade: bool = False) -> bool:
         self._previous_value = self._current_value  # raw
         self._current_value = new_value  # raw
         self.previous_value = self.current_value  # exposed
-        if self.round is not None and type(new_value) in [int, float]:
-            self.current_value = round(new_value, self.round)  # exposed
-            # loggerDataref.debug(f"dataref {self.path} value {new_value} rounded to {self.current_value}")
-        else:
-            self.current_value = new_value
+        self.current_value = self.round(new_value)
         self._updated = self._updated + 1
         self._last_updated = now()
         self.notify_updated()
@@ -179,7 +178,9 @@ class Dataref:
             loggerDataref.log(SPAM_LEVEL, f"dataref {self.path} updated {self.previous_value} -> {self.current_value}")
             if cascade:
                 self.notify()
+            return True
         # loggerDataref.error(f"dataref {self.path} updated")
+        return False
 
     def add_listener(self, obj):
         if not isinstance(obj, DatarefListener):
@@ -240,11 +241,6 @@ class Simulator(ABC):
         self.all_datarefs = {}
 
         self.datarefs_to_monitor = {}  # dataref path and number of objects monitoring
-        self.simdrefValues = {}  # key = dataref-path, value = value
-
-        # Values of datarefs
-        self.previous_values = {}
-        self.current_values = {}
 
         self.dataref_db_lock = threading.RLock()
 
@@ -305,34 +301,6 @@ class Simulator(ABC):
                 logger.warning(f"invalid dataref {dataref.path}")
         return dataref
 
-    def detect_changed(self):
-        """
-        Update dataref values that have changed between 2 fetches.
-        """
-        try:
-            currvalues = None
-            with self.dataref_db_lock:
-                currvalues = self.current_values.copy()  # we take a copy first so that it does not change...
-
-            if currvalues is not None:
-                for d in currvalues.keys():
-                    if d not in self.previous_values.keys() or currvalues[d] != self.previous_values[d]:
-                        # logger.debug(f"{d}={self.current_values[d]} changed (was {self.previous_values[d] if d in self.previous_values else 'None'}), notifying..")
-                        if d in self.datarefs_to_monitor.keys():
-                            self.all_datarefs[d].update_value(currvalues[d], cascade=True)
-                        else:
-                            self.all_datarefs[d].update_value(currvalues[d], cascade=False)  # we just update the value but no notification
-                            # logger.warning(f"updated dataref '{d}' not in datarefs to monitor. No propagation") #  (was {self.datarefs_to_monitor.keys()})
-                            # This means we got a value from X-Plane we never asked for this run...
-                            # It could be a dataref-request leak (!) or someone else is requesting datarefs over UDP.
-                        # logger.debug(f"..done")
-                    # else:
-                    #    logger.debug(f"{d}={self.current_values[d]} not changed (was {self.previous_values[d]})")
-            else:
-                logger.warning(f"no current values")  #  (was {self.datarefs_to_monitor.keys()})
-        except RuntimeError:
-            logger.warning(f"detect_changed:", exc_info=True)
-
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the simulator date and time"""
         return datetime.now().astimezone()
@@ -385,9 +353,6 @@ class Simulator(ABC):
         logger.debug(f"removing..")
         self.all_datarefs = {}
         self.datarefs_to_monitor = {}
-        self.simdrefValues = {}
-        self.previous_values = {}
-        self.current_values = {}
         logger.debug(f"..removed")
 
     @abstractmethod

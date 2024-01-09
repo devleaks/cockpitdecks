@@ -1,5 +1,7 @@
 # ###########################
-# Representation that displays the content of sim/aircraft/view/acf_ICAO on an icon.
+# Representation that displays the primary flight display (PFD) fight mode annunciators (FMA).
+# FAM are either presented all together on la larger horizontal display or individually.
+# There are 5 annunciators (throttle, vertical, horizontal, approach, auto-pilot(s).
 # These buttons are *highly* X-Plane and Toliss Airbus specific.
 #
 import logging

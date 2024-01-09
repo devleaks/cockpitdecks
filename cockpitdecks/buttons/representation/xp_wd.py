@@ -1,4 +1,6 @@
 # ###########################
+# Button that displays the weather in X-Plane from wind and cloud layers.
+#
 # XP Weather datarefs grouped by categories, or layers.
 #
 # ######################################################
