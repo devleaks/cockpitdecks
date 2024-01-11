@@ -31,18 +31,11 @@ class StringIcon(DrawBase, DatarefSetListener):
     def dataref_collection_changed(self, dataref_collection):
         # logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} changed")
         if dataref_collection.is_completed():
-            logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
+            logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} changed")
             currstr = dataref_collection.as_string()
             if currstr != self.text.get(dataref_collection.name):
                 self.text[dataref_collection.name] = currstr
                 self._updated = True
-
-    def dataref_collection_completed(self, dataref_collection):
-        logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
-        # currstr = dataref_collection.as_string()
-        # if currstr != self.text[dataref_collection.name]:
-        #     self.text[dataref_collection.name] = currstr
-        #     self._updated = True
 
     def is_updated(self):
         if self._inited:

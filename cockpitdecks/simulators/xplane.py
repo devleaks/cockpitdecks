@@ -17,7 +17,7 @@ from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
@@ -397,13 +397,15 @@ class XPlane(Simulator, XPlaneBeacon):
         if path in self.datarefs.values():
             idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(path)]
             if freq == 0 and idx in self.datarefs.keys():
+                # logger.debug(f">>>>>>>>>>>>>> {path} DELETING INDEX {idx}")
                 del self.datarefs[idx]
         else:
             if freq != 0 and len(self.datarefs) > MAX_DREF_COUNT:
-                logger.warning(f"requesting too many datarefs ({len(self.datarefs)})")
+                # logger.warning(f"requesting too many datarefs ({len(self.datarefs)})")
                 return False
 
             idx = self.datarefidx
+            logger.debug(f">>>>>>>>>>>>>> {path} CREATING AT INDEX {idx}")
             self.datarefs[self.datarefidx] = path
             self.datarefidx += 1
 
@@ -437,6 +439,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     data, addr = self.socket.recvfrom(1472)  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
                     # Decode Packet
                     # Read the Header "RREF,".
+                    total_to = 0
                     total_reads = total_reads + 1
                     now = datetime.now()
                     delta = now - last_read_ts
@@ -460,13 +463,14 @@ class XPlane(Simulator, XPlaneBeacon):
                         logger.debug(
                             f"average socket time between reads {round(total_read_time / total_reads, 3)} ({total_reads} reads; {total_values} values sent)"
                         )  # ignore
-                except:  # timeout
+                except:  # socket timeout
                     total_to = total_to + 1
                     logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, upd_enqueue terminated")  # ignore
                         self.beacon_data = {}
-                        self.no_upd_enqueue.set()
+                        if self.no_upd_enqueue is not None and not self.no_upd_enqueue.is_set():
+                            self.no_upd_enqueue.set()
         self.no_upd_enqueue = None
         logger.debug("..terminated")
 
@@ -499,7 +503,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         duration = datetime.now() - before
                         total_update_duration = total_update_duration + duration.microseconds / 1000000
                 else:
-                    logger.warning(f"no dataref")
+                    logger.debug(f"no dataref ({values}), probably no longer monitored")
                 duration = datetime.now() - before
                 total_duration = total_duration + duration.microseconds / 1000000
                 if total_values % LOOP_ALIVE == 0 and total_updates > 0:

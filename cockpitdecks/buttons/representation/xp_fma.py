@@ -94,7 +94,7 @@ class FMAIcon(StringIcon):
         self.boxed = []
         self.box_raw = []
 
-    def dataref_collection_completed(self, dataref_collection):
+    def dataref_collection_changed(self, dataref_collection):
         logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
         if dataref_collection.name == BOX_COLLECTION:
             box_raw = [self.button.get_dataref_value_from_collection(d, BOX_COLLECTION) for d in FMA_BOXES]
