@@ -77,7 +77,7 @@ class Representation:
         return None
 
     def vibrate(self):
-        if self._sound is not None:
+        if self._sound is not None and hasattr(self.button.deck, "_vibrate"):
             self.button.deck._vibrate(self._sound)
 
     def clean(self):

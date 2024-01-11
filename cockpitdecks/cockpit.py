@@ -750,7 +750,7 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         if just_do_it:
             logger.info(f"stopping decks..")
-            self.stop()
+            self.terminate_all()
         else:
             self.reload_queue.put("stop")
             logger.debug(f"enqueued")
@@ -821,6 +821,7 @@ class Cockpit(DatarefListener, CockpitBase):
             if not self.sim.use_flight_loop:
                 logger.info(f"{len(threading.enumerate())} threads")
                 logger.info(f"{[t.name for t in threading.enumerate()]}")
+                logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
                 logger.info(f"..started")
                 logger.info(f"serving {self.name}")
                 for t in threading.enumerate():

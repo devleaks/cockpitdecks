@@ -78,6 +78,7 @@ class Dataref:
         self.listeners = []  # buttons using this dataref, will get notified if changes.
         self._round = None
         self.update_frequency = 1  # sent by the simulator that many times per second.
+        self.expire = None
 
         # dataref/path:t where t in d, i, f, s, b.
         if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
@@ -181,6 +182,16 @@ class Dataref:
             return True
         # loggerDataref.error(f"dataref {self.path} updated")
         return False
+
+    def set_expired(self, expire):
+        self.expire = expire
+
+    def is_expired(self, when) -> bool:
+        if self.expire is None:
+            return False
+        if self._last_updated is None:
+            return True
+        return (self._last_updated + timedelta(seconds=self.expire)) < when
 
     def add_listener(self, obj):
         if not isinstance(obj, DatarefListener):
