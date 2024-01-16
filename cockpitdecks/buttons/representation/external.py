@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, DEFAULT_WEATHER_ICON
-from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
+from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
 
 from .animation import DrawAnimation
@@ -168,12 +168,12 @@ class LiveWeatherIcon(DrawAnimation):
         self._last_updated = datetime.now()
 
         # if self.metar is not None and self.metar.data is not None:
-        # 	 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
-        # 	 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
-        # 	 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
-        # 	 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
+        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
+        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
+        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
+        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
         # else:
-        # 	 logger.debug(f"no metar for {self.station.icao}")
+        #    logger.debug(f"no metar for {self.station.icao}")
         self.weather_icon = self.select_weather_icon()
         # logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
         self._inited = True
@@ -205,8 +205,8 @@ class LiveWeatherIcon(DrawAnimation):
         return True
 
     # def animate(self):
-    # 	 # self.update() # not necessary, will run in get_image_for_icon
-    # 	 return super().animate()
+    #    # self.update() # not necessary, will run in get_image_for_icon
+    #    return super().animate()
 
     def get_station(self):
         if self._last_updated is not None and not self.at_default_station():
@@ -239,11 +239,11 @@ class LiveWeatherIcon(DrawAnimation):
         """
         Creates or updates Metar. Call to avwx may fail, so it is wrapped into try/except block
 
-        :param	  force:  The force
-        :type	   force:  bool
+        :param    force:  The force
+        :type      force:  bool
 
         :returns:   { description_of_the_return_value }
-        :rtype:	 bool
+        :rtype:  bool
         """
         self._upd_calls = self._upd_calls + 1
 
@@ -541,11 +541,11 @@ class LiveWeatherIcon(DrawAnimation):
             logger.debug(f"STEP 1 {findIcon}")
 
             # findIcon = list(filter(lambda item: reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])
-            # 							 and ((len(item[KW_PRECIP]) == 0) or rawtext.find(item[KW_PRECIP]))
-            # 							 and ((len(item[KW_CLOUD]) == 0) or (len(item[KW_CLOUD]) == 1 and item[KW_CLOUD][0] == "") or (reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item[KW_CLOUD]], 0) > 0))
-            # 							 and (wind > item[KW_WIND][0] and wind < item[KW_WIND][1])
-            # 							 and ((len(item[KW_VIS]) == 0) or (reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item[KW_VIS]], 0) > 0)),
-            # 				   WI.DB))
+            #                            and ((len(item[KW_PRECIP]) == 0) or rawtext.find(item[KW_PRECIP]))
+            #                            and ((len(item[KW_CLOUD]) == 0) or (len(item[KW_CLOUD]) == 1 and item[KW_CLOUD][0] == "") or (reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item[KW_CLOUD]], 0) > 0))
+            #                            and (wind > item[KW_WIND][0] and wind < item[KW_WIND][1])
+            #                            and ((len(item[KW_VIS]) == 0) or (reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item[KW_VIS]], 0) > 0)),
+            #                  WI.DB))
             # logger.debug(f"STEP 1 {findIcon}")
 
             l = len(findIcon)

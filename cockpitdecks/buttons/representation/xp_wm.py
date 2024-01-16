@@ -4,17 +4,17 @@
 #
 import sys
 import os
-
-# When we are developing this class, we need this to run it standalone
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", ".."))  # we assume we're in subdir "bin/"
-
 import io
 import re
 import logging
 
 from datetime import datetime, timezone
+
 from metar import Metar
 from tabulate import tabulate
+
+# When we are developing this class, we need this to run it standalone
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", ".."))  # we assume we're in subdir "bin/"
 
 from cockpitdecks.simulator import Dataref
 from cockpitdecks import to_fl
@@ -135,12 +135,12 @@ class DatarefAccessor:
         self.__drefidx__ = index
 
     def __getattr__(self, name: str):
-        # 		print("converting", name)
+        #       print("converting", name)
         if self.__drefidx__ is None:
             name = DATAREF[name]
         else:
             name = f"{DATAREF[name]}[{self.__drefidx__}]"
-        # 		print("getting", name)
+        #       print("getting", name)
         dref = self.__datarefs__.get(name)
         return dref.current_value if dref is not None else None
 

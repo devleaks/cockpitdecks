@@ -3,11 +3,6 @@ Button display and rendering abstraction.
 All representations are listed at the end of this file.
 """
 import logging
-import re
-import logging
-import threading
-import time
-import inspect
 import colorsys
 
 from enum import Enum
@@ -15,7 +10,7 @@ from enum import Enum
 from PIL import ImageDraw, ImageFont
 
 from cockpitdecks.resources.color import convert_color, is_integer, has_ext, add_ext, DEFAULT_COLOR
-from cockpitdecks import KW, ICON_SIZE
+from cockpitdecks import KW
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

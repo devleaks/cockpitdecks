@@ -4,17 +4,9 @@
 # It gets updated when real wheather changes.
 # These buttons are highly XP specific.
 #
-import os
 import logging
-import random
-from datetime import datetime
 
-from PIL import Image, ImageDraw
-
-from cockpitdecks import ICON_SIZE, now
-from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, DEFAULT_WEATHER_ICON
-from cockpitdecks.resources.color import convert_color, light_off, TRANSPARENT_PNG_COLOR
-from cockpitdecks.simulator import Dataref
+from cockpitdecks import now
 from .xp_wb import XPWeatherBaseIcon
 from .xp_wm import XPWeather
 
@@ -115,11 +107,11 @@ class XPWeatherIcon(XPWeatherBaseIcon):
         return False
 
     def get_lines(self) -> list:
-        lines = list()
+        lines = []
 
         if self.xpweather is None:
             lines.append(f"Mode: {self.mode}")
-            lines.append(f"No weather")
+            lines.append("No weather")
             return lines
 
         lu = self.collect_last_updated()
@@ -129,7 +121,7 @@ class XPWeatherIcon(XPWeatherBaseIcon):
             dt = "NO TIME"
         lines.append(f"{dt} /M:{self.mode[0:4]}")
 
-        press = round(self.xpweather.weather.qnh / 100)
+        press = round(self.xpweather.weather.qnh / 100, 0)
         lines.append(f"Press: {press}")
 
         temp = round(self.xpweather.weather.temp, 1)

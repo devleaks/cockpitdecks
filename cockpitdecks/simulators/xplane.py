@@ -12,7 +12,6 @@ from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL
 from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
-from cockpitdecks.button import Button
 from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
@@ -22,17 +21,11 @@ logger = logging.getLogger(__name__)
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
 # UDP sends at most ~40 to ~50 dataref values per packet.
-
-DATA_SENT = 2  # times per second, X-Plane send that data on UDP every that often. Too often will slow down X-PLANE.
-
-DEFAULT_REQ_FREQUENCY = 1  # if no frequency is supplied (or forced to None), this is used.
-
+DEFAULT_REQ_FREQUENCY = 1  # if no frequency is supplied (or forced to None), this is used
 LOOP_ALIVE = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
-
 SOCKET_TIMEOUT = 5  # seconds
 MAX_TIMEOUT_COUNT = 5  # after x timeouts, assumes connection lost, disconnect, and restart later
-
 MAX_DREF_COUNT = 80  # Maximum number of dataref that can be requested to X-Plane, CTD around ~100 datarefs
 
 # When this (internal) dataref changes, the loaded aircraft has changed
@@ -41,17 +34,11 @@ AIRCRAFT_DATAREF_IPC = Dataref.mk_internal_dataref("_aircraft_icao")
 DATETIME_DATAREFS = ["sim/time/local_date_days", "sim/time/local_date_sec", "sim/time/zulu_time_sec", "sim/time/use_system_time"]
 REPLAY_DATAREFS = ["sim/time/is_in_replay", "sim/time/sim_speed", "sim/time/sim_speed_actual"]
 
-TERMINATE_QUEUE = "quit"
-
 
 # XPlaneBeacon
 # Beacon-specific error classes
 class XPlaneIpNotFound(Exception):
     args = "Could not find any running XPlane instance in network."
-
-
-class XPlaneTimeout(Exception):
-    args = "XPlane timeout."
 
 
 class XPlaneVersionNotSupported(Exception):
@@ -259,6 +246,7 @@ class XPlane(Simulator, XPlaneBeacon):
     MCAST_GRP = "239.255.1.1"
     MCAST_PORT = 49707  # (MCAST_PORT was 49000 for XPlane10)
     BEACON_TIMEOUT = 3.0  # seconds
+    TERMINATE_QUEUE = "quit"
 
     def __init__(self, cockpit):
         # list of requested datarefs with index number
@@ -487,7 +475,7 @@ class XPlane(Simulator, XPlaneBeacon):
             values = self.udp_queue.get()
             bl = self.udp_queue.qsize()
             maxbl = max(bl, maxbl)
-            if type(values) is str and values == TERMINATE_QUEUE:
+            if type(values) is str and values == XPlane.TERMINATE_QUEUE:
                 dequeue_run = False
                 continue
             try:
@@ -638,8 +626,12 @@ class XPlane(Simulator, XPlaneBeacon):
         # Add those to monitor
         prnt = []
         for path in self.datarefs_to_monitor.keys():
-            if self.add_dataref_to_monitor(path, freq=DATA_SENT):
-                prnt.append(path)
+            d = self.all_datarefs.get(path)
+            if d is not None:
+                if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
+                    prnt.append(d.path)
+                else:
+                    logger.warning(f"no dataref {path}")
         logger.log(SPAM_LEVEL, f"added {prnt}")
 
         # Add collector ticker
@@ -681,7 +673,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
     def stop(self):
         if self.udp_queue is not None and self.dref_thread is not None:
-            self.udp_queue.put(TERMINATE_QUEUE)
+            self.udp_queue.put(XPlane.TERMINATE_QUEUE)
             self.dref_thread.join()
             self.dref_thread = None
             logger.debug("dataref listener stopped")

@@ -67,6 +67,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self._reqdfts = set()
         self._config = {}  # content of aircraft/deckconfig/config.yaml
         self._resources_config = {}  # content of resources/config.yaml
+        self.theme = None
         self._dark = False
 
         self.name = "Cockpitdecks"  # "Aircraft" name or model...
@@ -137,7 +138,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 newattr = "-".join([prefix, attribute])
                 val = self.get_attribute(attribute=newattr, silence=silence)
                 if val is not None:
-                    print(attribute, newattr, val)
+                    logger.debug(f"{attribute}, {newattr}, {val}")
                     return self.is_color_attribute(attribute=attribute, value=val)
                 # else, no attribute named by newattr, just try plain attr name
         # Normal ops

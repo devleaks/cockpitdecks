@@ -2,8 +2,6 @@
 # Buttons that are drawn on render()
 #
 import logging
-import threading
-import time
 import math
 from random import randint
 from enum import Enum

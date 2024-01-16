@@ -1,5 +1,4 @@
 import logging
-from queue import Empty
 import psutil
 import time
 import itertools
@@ -8,7 +7,7 @@ import traceback
 
 from abc import ABC, abstractmethod
 from datetime import timedelta
-from queue import Queue
+from queue import Queue, Empty
 
 from cockpitdecks import SPAM_LEVEL
 from cockpitdecks.simulator import Dataref, DatarefListener

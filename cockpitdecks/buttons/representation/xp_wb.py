@@ -2,7 +2,6 @@
 # Abstract base class for XP Weather icons.
 # These buttons are highly XP specific.
 #
-import os
 import logging
 import random
 

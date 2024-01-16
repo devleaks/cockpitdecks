@@ -4,7 +4,7 @@
 import logging
 import threading
 from enum import Enum
-from PIL import Image, ImageDraw, ImageFilter, ImageColor
+from PIL import Image, ImageDraw, ImageFilter
 
 from cockpitdecks import KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off

@@ -2,7 +2,7 @@
 #
 import threading
 import logging
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 
 from cockpitdecks import SPAM_LEVEL, now

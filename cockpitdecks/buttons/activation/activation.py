@@ -266,6 +266,29 @@ class Reload(Activation):
         return "\n\r".join([f"The button reloads all decks and tries to reload the page that was displayed."])
 
 
+class ChangeTheme(Activation):
+    """
+    Reloads all decks.
+    """
+
+    def __init__(self, config: dict, button: "Button"):
+        Activation.__init__(self, config=config, button=button)
+        self.theme = config.get("theme")
+        self.button.deck.cockpit.has_reload = True  # this will ensure reload loop get started. Otherwise it is not started.
+
+    def activate(self, state):
+        COCKPIT_THEME = "cockpit-theme"
+        cockpit = self.button.deck.cockpit
+        cockpit._config[COCKPIT_THEME] = self.theme
+        cockpit.reload_decks()
+
+    def describe(self):
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([f"The button switches between dark and light (night and day) themes and reload pages."])
+
+
 class Inspect(Activation):
     """
     Inspect all decks.
