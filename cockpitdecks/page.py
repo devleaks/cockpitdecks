@@ -209,12 +209,8 @@ class Page:
         Ask each button to stop rendering and clean its mess.
         """
         logger.debug(f"page {self.name}: cleaning..")
-        last = datetime.datetime.now()
         for button in self.buttons.values():
             button.clean()  # knows how to clean itself
-            now = datetime.datetime.now()
-            print(f">>>>>>> page {self.name} ({type(button._representation).__name__}): {button.name} {now} (delta={(now- last).microseconds})")
-            last = now
         for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices(with_icon=True)):
             self.deck.clean_empty(key)
         logger.debug(f"page {self.name}: ..done")
