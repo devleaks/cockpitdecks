@@ -1,17 +1,16 @@
-# ###########################
-# Representation that displays the primary flight display (PFD) fight mode annunciators (FMA).
-# FAM are either presented all together on la larger horizontal display or individually.
-# There are 5 annunciators (throttle, vertical, horizontal, approach, auto-pilot(s).
-# These buttons are *highly* X-Plane and Toliss Airbus specific.
-#
+import socket
+import threading
 import logging
+import time
+import json
 
+from datetime import datetime
+
+from cockpitdecks.buttons.representation.animation import DrawAnimation
 from cockpitdecks import ICON_SIZE
-from .xp_str import StringIcon
 
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-
+# ##############################
+# Toliss Airbus FMA display
 FMA_DATAREFS = {
     "1w": "AirbusFBW/FMA1w[:36]",
     "1g": "AirbusFBW/FMA1g[:36]",
@@ -43,37 +42,39 @@ FMA_LABEL_MODE = 3  # 0 (None), 1 (keys), or 2 (values), or 3 alternates
 FMA_COUNT = len(FMA_LABELS.keys())
 FMA_COLUMNS = [[0, 7], [7, 15], [15, 21], [21, 28], [28, 37]]
 FMA_LINE_LENGTH = FMA_COLUMNS[-1][-1]
-# FMA_INTERNAL_DATAREF = Dataref.mk_internal_dataref("FMA")
-BOX_COLLECTION = "boxes"
+FMA_LINES = 3
 
-# sample set for debugging
-FMA_LINES = {
-    "0b": "1234567890123456789012345678901234567890",
-    "1b": "",
-    "1g": "         SRS    RWY",
-    "1w": "  MAN",
-    "2b": "     53SEL:210  NAV",
-    "1m": "                              AP1",  # wrong, does not exist, added for testing purpose
-    "2w": " FLX                          1FD2",
-    "2a": "",  # does not exist, added for testing purpose
-    "3a": "        MASTER AMBER",
-    "3b": "                              A/THR",
-    "3w": "",
-}
-FMA_BOXED = []  # for debugging use ["11", "22", "33", "41", "42"]
+ANY = "0.0.0.0"
+FMA_MCAST_PORT = 49505
+FMA_MCAST_GRP = "239.255.1.1"
+FMA_UPDATE_FREQ = 5.0
+FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0
+
+logger = logging.getLogger(__file__)
+logger.setLevel(logging.DEBUG)
+# logger.setLevel(15)
 
 
-class FMAIcon(StringIcon):
-    """Highly customized class to display FMA on button keys
-    or on Streamdeck Plus touchscreen (whole screen).
-    """
+class FMAIcon(DrawAnimation):
+    """ """
 
     def __init__(self, config: dict, button: "Button"):
-        self.name = "FMA"
-        self.fmaconfig = config.get("fma")  # should not be none, empty at most...
+        DrawAnimation.__init__(self, config=config, button=button)
+
+        self.fmaconfig = config.get("fma", {})  # should not be none, empty at most...
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
+        self.icon_color = "black"
+        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS}  # use FMA_LINES for testing
+        self.boxed = []
+        self.box_raw = []
+        self._cached = None  # cached icon
+
+        self.text = {}
+        self.previous_text = {}
+
         # get mandatory index
+        self.all_in_one = False
         fma = self.fmaconfig.get("index")
         if fma is None:
             logger.warning(f"button {button.name}: no FMA index, assuming all-in-one")
@@ -87,47 +88,28 @@ class FMAIcon(StringIcon):
             logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = FMA_COUNT
         self.fma_idx = fma - 1
-        StringIcon.__init__(self, config=config, button=button)
-        self.icon_color = "black"
 
-        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS.keys()}  # use FMA_LINES for testing
-        self.boxed = []
-        self.box_raw = []
+        self.collect_fma = None
+        self.update_fma = None
+        self.fma_thread = None
+        self.fma_thread2 = None
 
-    def dataref_collection_changed(self, dataref_collection):
-        logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} completed")
-        if dataref_collection.name == BOX_COLLECTION:
-            box_raw = [self.button.get_dataref_value_from_collection(d, BOX_COLLECTION) for d in FMA_BOXES]
-            logger.debug(f"button {self.button.name}: boxes {box_raw}")
-            if self.box_raw != box_raw:
-                self.box_raw = box_raw
-                self.check_boxed()
-                self._updated = True
-                logger.debug(f"button {self.button.name}: boxes updated")
-            return
-        currstr = dataref_collection.as_string()
-        logger.debug(f"button {self.button.name}: new string >{currstr}<")
-        if currstr != self.text[dataref_collection.name] and dataref_collection.name in self.text.keys():
-            logger.debug(f"button {self.button.name}: text {dataref_collection.name} updated")
-            self.text[dataref_collection.name] = currstr
-            self._updated = True
+        self.fma_text = {}
+        self.fma_text_lock = threading.RLock()
+
+        self.socket = None
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        # Allow multiple sockets to use the same PORT number
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Bind to the port that we know will receive multicast data
+        self.socket.bind((ANY, FMA_MCAST_PORT))
+        status = self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY))
+
+    def should_run(self) -> bool:
+        return True
 
     def is_master_fma(self) -> bool:
-        """Determine if thsi FMA icon is the master or not,
-        i;e. if it holds the datarefs.
-        """
-        ret = len(self.button.dataref_collections) > 0
-        # logger.debug(f"button {self.button.name}: master {ret}")
-        return ret
-
-    def get_fma_dataref_collections(self):
-        collections = []
-        # add box datarefs
-        collections.append({"name": "fma_boxes", "datarefs": FMA_BOXES, "expire": 10, "set-dataref": "data:_fmap"})
-        # add lines
-        for line, dref in FMA_DATAREFS.items():
-            collections.append({"name": "line", "datarefs": self.button.parse_dataref_array(dref), "expire": 10, "set-dataref": "data:_fmap"})
-        return collections
+        return self.all_in_one or self.fma_idx == 1
 
     def get_master_fma(self):
         """Among all FMA icon buttons on the same page, tries to find the master one,
@@ -145,39 +127,125 @@ class FMAIcon(StringIcon):
             logger.warning(f"button {self.button.name}: too many master FMA")
         return None
 
+    def collector(self):
+        logger.debug("starting FMA collector..")
+        total_to = 0
+        total_reads = 0
+        last_read_ts = datetime.now()
+        total_read_time = 0.0
+        while self.collect_fma is not None and not self.collect_fma.is_set():
+            try:
+                self.socket.settimeout(max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ))
+                data, addr = self.socket.recvfrom(1472)
+                total_to = 0
+                total_reads = total_reads + 1
+                now = datetime.now()
+                delta = now - last_read_ts
+                total_read_time = total_read_time + delta.microseconds / 1000000
+                last_read_ts = now
+
+            except:
+                logger.info(f"FMA collector: socket timeout received ({total_to})", exc_info=True)
+            else:
+                with self.fma_text_lock:
+                    data = json.loads(data.decode("utf-8"))
+                    ts = 0
+                    if "ts" in data:
+                        ts = data["ts"]
+                        del data["ts"]
+                    self.fma_text = {k[-2:]: v for k, v in data.items()}
+                # logger.debug(f"from {addr} at {ts}: data: {self.text}")
+        self.collect_fma = None
+        logger.debug("..FMA collector terminated")
+
+    def updator(self):
+        logger.debug("starting FMA updater..")
+        # total_to = 0
+        # total_reads = 0
+        # total_values = 0
+        # last_read_ts = datetime.now()
+        # total_read_time = 0.0
+        while not self.update_fma.is_set():
+            with self.fma_text_lock:
+                self.text = self.fma_text.copy()
+            self.button.render()
+            time.sleep(FMA_UPDATE_FREQ)
+        self.update_fma = None
+        logger.debug("..FMA updater terminated")
+
+    def is_updated(self) -> bool:
+        for f in self.text:
+            if self.text.get(f) != self.previous_text.get(f):
+                print(">>> differ", f, self.text.get(f), self.previous_text.get(f))
+                return True
+        return False
+        return self.text != self.previous_text
+
+    def anim_start(self) -> None:
+        if self.collect_fma is None:
+            self.collect_fma = threading.Event()
+            self.fma_thread = threading.Thread(target=self.collector)
+            self.fma_thread.name = "FMA::collector"
+            self.fma_thread.start()
+            logger.info("FMA collector started")
+        else:
+            logger.info("FMA collector already running.")
+        if self.update_fma is None:
+            self.update_fma = threading.Event()
+            self.fma_thread2 = threading.Thread(target=self.updator)
+            self.fma_thread2.name = "FMA::updater"
+            self.fma_thread2.start()
+            logger.info("FMA updater started")
+        else:
+            logger.info("FMA updater already running.")
+        self.running = True
+
+    def anim_stop(self) -> None:
+        if self.update_fma is not None:
+            self.update_fma.set()
+            logger.debug("stopping FMA updater..")
+            self.fma_thread2.join(FMA_UPDATE_FREQ)
+            self.collect_fma = None
+            logger.debug("..FMA updater stopped")
+        else:
+            logger.debug("FMA updater not running")
+        if self.collect_fma is not None:
+            self.collect_fma.set()
+            logger.debug("stopping FMA collector..")
+            logger.debug(f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
+            self.fma_thread.join(FMA_SOCKET_TIMEOUT)
+            if self.fma_thread.is_alive():
+                logger.warning("..thread may hang in socket.recvfrom()..")
+            self.collect_fma = None
+            logger.debug("..FMA collector stopped")
+        else:
+            logger.debug("FMA collector not running")
+        self.running = False
+
     def check_boxed(self):
         """Check "boxed" datarefs to determine which texts are boxed/framed.
         They are listed as FMA#-LINE# pairs of digit. Special keyword "warn" if warning enabled.
         """
-        do_print = []
-        for d in FMA_BOXES:
-            v = self.button.get_dataref_value_from_collection(d, BOX_COLLECTION)
-            if v is not None:
-                do_print.append(f"{d}={v}")
-        if len(do_print) > 0:
-            logger.debug("\n" + "\n".join(do_print))
-        else:
-            logger.debug("nothing boxed")
         boxed = []
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPLeftArmedBox", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
             boxed.append("22")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPLeftModeBox", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftModeBox") == 1:
             boxed.append("21")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPRightArmedBox", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMAAPRightArmedBox") == 1:
             boxed.append("32")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPRightModeBox", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMAAPRightModeBox") == 1:
             boxed.append("31")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAATHRModeBox", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMAATHRModeBox") == 1:
             boxed.append("11")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAATHRboxing", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 1:
             boxed.append("12")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMAATHRboxing", BOX_COLLECTION) == 2:
+        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 2:
             boxed.append("11")
             boxed.append("12")
-        if self.button.get_dataref_value_from_collection("AirbusFBW/FMATHRWarning", BOX_COLLECTION) == 1:
+        if self.button.get_dataref_value("AirbusFBW/FMATHRWarning") == 1:
             boxed.append("warn")
         # big mess:
-        boxcode = self.button.get_dataref_value_from_collection("AirbusFBW/FMAAPFDboxing", BOX_COLLECTION)
+        boxcode = self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing")
         if boxcode is not None:  # can be 0-7, is it a set of binary flags?
             if boxcode == 1:  # boxcode & 1
                 boxed.append("51")
@@ -187,8 +255,6 @@ class FMAIcon(StringIcon):
                 boxed.append("51")
                 boxed.append("52")
             # etc.
-        if len(do_print) > 0:
-            logger.debug(f"{boxed}")
         self.boxed = set(boxed)
 
     def get_fma_lines(self, idx: int = -1):
@@ -204,7 +270,7 @@ class FMAIcon(StringIcon):
             for li in range(1, 4):
                 good = empty
                 for k, v in self.text.items():
-                    raws = {k: v for k, v in self.text.items() if k != BOX_COLLECTION and int(k[0]) == li}
+                    raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
                     for k, v in raws.items():
                         # normalize
                         if len(v) < FMA_LINE_LENGTH:
@@ -327,7 +393,8 @@ class FMAIcon(StringIcon):
             )
             bg.alpha_composite(image)
             self._cached = bg.convert("RGB")
-            self._updated = False
+            self.previous_text = self.text
+            logger.debug("texts updated")
             return self._cached
 
         loffset = 0
@@ -384,7 +451,8 @@ class FMAIcon(StringIcon):
         )
         bg.alpha_composite(image)
         self._cached = bg.convert("RGB")
-        self._updated = False
+        self.previous_text = self.text
+        logger.debug("texts updated")
 
         # with open("fma_lines.png", "wb") as im:
         #     image.save(im, format="PNG")
