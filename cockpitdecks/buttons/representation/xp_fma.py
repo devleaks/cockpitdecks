@@ -47,7 +47,7 @@ FMA_LINES = 3
 ANY = "0.0.0.0"
 FMA_MCAST_PORT = 49505
 FMA_MCAST_GRP = "239.255.1.1"
-FMA_UPDATE_FREQ = 5.0
+FMA_UPDATE_FREQ = 4.0
 FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0
 
 logger = logging.getLogger(__file__)
@@ -100,10 +100,11 @@ class FMAIcon(DrawAnimation):
         self.socket = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         # Allow multiple sockets to use the same PORT number
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         # Bind to the port that we know will receive multicast data
         self.socket.bind((ANY, FMA_MCAST_PORT))
         status = self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY))
+        self.collector_avgtime = 0
 
     def should_run(self) -> bool:
         return True
@@ -133,6 +134,9 @@ class FMAIcon(DrawAnimation):
         total_reads = 0
         last_read_ts = datetime.now()
         total_read_time = 0.0
+        src_last_ts = 0
+        src_cnt = 0
+        src_tot = 0
         while self.collect_fma is not None and not self.collect_fma.is_set():
             try:
                 self.socket.settimeout(max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ))
@@ -153,7 +157,14 @@ class FMAIcon(DrawAnimation):
                     if "ts" in data:
                         ts = data["ts"]
                         del data["ts"]
-                    self.fma_text = {k[-2:]: v for k, v in data.items()}
+                        if src_last_ts > 0:
+                            src_tot = src_tot + (ts - src_last_ts)
+                            src_cnt = src_cnt + 1
+                            self.collector_avgtime = src_tot / src_cnt
+                            if src_cnt % 100 == 0:
+                                logger.info(f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}")
+                        src_last_ts = ts
+                    self.fma_text = {k[-2:]: v for k, v in data.items()}  # this is to adjust to older algorithm...
                 # logger.debug(f"from {addr} at {ts}: data: {self.text}")
         self.collect_fma = None
         logger.debug("..FMA collector terminated")
@@ -169,16 +180,16 @@ class FMAIcon(DrawAnimation):
             with self.fma_text_lock:
                 self.text = self.fma_text.copy()
             self.button.render()
-            time.sleep(FMA_UPDATE_FREQ)
+            time.sleep(max(FMA_UPDATE_FREQ, self.collector_avgtime))  # autotune update frequency
         self.update_fma = None
         logger.debug("..FMA updater terminated")
 
     def is_updated(self) -> bool:
-        for f in self.text:
-            if self.text.get(f) != self.previous_text.get(f):
-                print(">>> differ", f, self.text.get(f), self.previous_text.get(f))
-                return True
-        return False
+        oldboxed = self.boxed
+        self.check_boxed()
+        if self.boxed != oldboxed:
+            logger.debug(f"boxed changed {self.boxed}/{oldboxed}")
+            return True
         return self.text != self.previous_text
 
     def anim_start(self) -> None:
@@ -247,15 +258,16 @@ class FMAIcon(DrawAnimation):
         # big mess:
         boxcode = self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing")
         if boxcode is not None:  # can be 0-7, is it a set of binary flags?
-            if boxcode == 1:  # boxcode & 1
+            boxcode = int(boxcode)
+            if boxcode & 1 == 1:
                 boxed.append("51")
-            if boxcode == 2:  # boxcode & 2
+            if boxcode & 2 == 2:
                 boxed.append("52")
-            if boxcode == 3:
-                boxed.append("51")
-                boxed.append("52")
+            if boxcode & 4 == 4:
+                boxed.append("53")
             # etc.
         self.boxed = set(boxed)
+        logger.debug(f"boxed: {boxcode}, {self.boxed}")
 
     def get_fma_lines(self, idx: int = -1):
         if self.is_master_fma():

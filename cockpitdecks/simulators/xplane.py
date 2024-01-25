@@ -84,7 +84,7 @@ class XPlaneBeacon:
         # open socket for multicast group.
         # this socker is for getting the beacon, it can be closed when beacon is found.
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # SO_REUSEPORT?
         if platform.system() == "Windows":
             sock.bind(("", self.MCAST_PORT))
         else:
