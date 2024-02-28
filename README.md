@@ -8,7 +8,7 @@ Cockpitdecks is a python software to interface
 
 with X-Plane flight simulator.
 
-The project is in active development.
+The project is in active development, perpetual beta software.
 
 Please head to the [wiki](https://github.com/devleaks/cockpitdecks/wiki) for more information.
 
