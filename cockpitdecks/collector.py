@@ -1,3 +1,15 @@
+"""Set of classes to collect datarefs by batches.
+A batch of datatef is a DatarefSet. It notifies its listener when it has changed.
+I.e. when at least one dataref in the batch has changed.
+
+Note:
+The dataref collector does not work that well. It will be replaced by more
+reliable alternatives.
+
+It is used, for example, to collect all weather layers information (a dozen of dataref per layer, 3 + 13 layers).
+Each layer is collected in a DatarefSet.
+
+"""
 import logging
 import psutil
 import time
@@ -5,6 +17,7 @@ import itertools
 import threading
 import traceback
 
+from typing import List
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from queue import Queue, Empty
@@ -62,7 +75,7 @@ class DatarefSet(DatarefListener):
         self.collect_time = collect_time  # time a collection will remain on collector before it is declared not progressing
 
         # Working variables
-        self.listeners = []
+        self.listeners: List[DatarefSetListener] = []
         self.last_loaded = None
         self.last_unloaded = None
 
@@ -473,7 +486,7 @@ class DatarefSetCollector:
         logger.info("Collector stopped")
 
     def terminate(self):
-        traceback.print_stack()
+        # traceback.print_stack()
         logger.debug("terminating Collector..")
         logger.debug("..clearing queue..")
         self.clear_queue()
