@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 #
 # - index: b2
 #   name: Popup ND1
-#   type: push
+#   mytype: push
 #   colored-led: (255, 128, 0)         <--------
 #   label: ND1
 #   command: AirbusFBW/PopUpND1

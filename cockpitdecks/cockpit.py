@@ -188,15 +188,15 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"invalid name {name}")
         return None
 
-    def inspect(self, what: str = None):
+    def inspect(self, what: str | None = None):
         """
         This function is called on all instances of Deck.
         """
         logger.info(f"Cockpitdecks Rel. {__version__} -- {what}")
 
-        if "thread" in what:
+        if what is not None and "thread" in what:
             logger.info(f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
-        elif what.startswith("datarefs"):
+        elif what is not None and what.startswith("datarefs"):
             self.inspect_datarefs(what)
         elif what == "monitored":
             self.inspect_monitored(what)
@@ -204,8 +204,8 @@ class Cockpit(DatarefListener, CockpitBase):
             for v in self.cockpit.values():
                 v.inspect(what)
 
-    def inspect_datarefs(self, what: str = None):
-        if what.startswith("datarefs"):
+    def inspect_datarefs(self, what: str | None = None):
+        if what is not None and what.startswith("datarefs"):
             for dref in self.sim.all_datarefs.values():
                 logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)})")
                 if what.endswith("listener"):
@@ -214,7 +214,7 @@ class Cockpit(DatarefListener, CockpitBase):
         else:
             logger.info(f"to do")
 
-    def inspect_monitored(self, what: str = None):
+    def inspect_monitored(self, what: str | None = None):
         for dref in self.sim.datarefs.values():
             logger.info(f"{dref}")
 
@@ -359,7 +359,7 @@ class Cockpit(DatarefListener, CockpitBase):
         Loads default values for font, icon, etc. They will be used if no layout is found.
         """
 
-        def locate_font(fontname: str) -> str:
+        def locate_font(fontname: str) -> str | None:
             if fontname in self.fonts.keys():
                 logger.debug(f"font {fontname} already loaded")
                 return fontname

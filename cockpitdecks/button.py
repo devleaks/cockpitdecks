@@ -31,7 +31,7 @@ class Button(DatarefListener, DatarefSetListener):
         DatarefSetListener.__init__(self)
         # Definition and references
         self._config = config
-        self.page = page
+        self.page: "Page" = page
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
         # stats
@@ -42,7 +42,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         self.deck.cockpit.set_logging_level(__name__)
 
-        self.index = config.get("index")  # type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
+        self.index = config.get("index")  # button_type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
         self._definition = self.deck.get_deck_type_description().get_button_definition(self.index)  # kind of meta data capabilties of button
@@ -195,40 +195,41 @@ class Button(DatarefListener, DatarefSetListener):
     def id(self):
         return self.get_id()
 
-    def inspect(self, what: str = None):
+    def inspect(self, what: str | None = None):
         """
         Return information aout button status
         """
-        if "invalid" in what:
-            if not self.is_valid():
-                logger.info(f"Button {self.name} IS INVALID")
-                return
-        logger.info(f"Button {self.name} -- {what}")
-        if "dataref" in what:
-            # logger.info("")
-            for d in self.get_datarefs():
-                v = self.get_dataref_value(d)
-                logger.info(f"    {d} = {v}")
-        if "activation" in what or "longpress" in what:
-            logger.info("")
-            self._activation.inspect(what)
-        if "representation" in what:
-            logger.info("")
-            self._representation.inspect(what)
-        if "status" in what:
-            logger.info("")
-            logger.info(yaml.dump(self.get_status(), sys.stdout))
-        if "valid" in what:
-            logger.info(f"-- {'is valid' if self.is_valid() else 'IS INVALID'}")
-        if "desc" in what:
-            logger.info("")
-            if self.is_valid():
-                logger.info(self.describe())
-            else:
-                logger.info(f"button {self.name}: is invalid")
-        if "config" in what:
-            logger.info("")
-            logger.info(f"\n{yaml.dump(self._config, sys.stdout)}")
+        if what is not None:
+            if "invalid" in what:
+                if not self.is_valid():
+                    logger.info(f"Button {self.name} IS INVALID")
+                    return
+            logger.info(f"Button {self.name} -- {what}")
+            if "dataref" in what:
+                # logger.info("")
+                for d in self.get_datarefs():
+                    v = self.get_dataref_value(d)
+                    logger.info(f"    {d} = {v}")
+            if "activation" in what or "longpress" in what:
+                logger.info("")
+                self._activation.inspect(what)
+            if "representation" in what:
+                logger.info("")
+                self._representation.inspect(what)
+            if "status" in what:
+                logger.info("")
+                logger.info(yaml.dump(self.get_status(), sys.stdout))
+            if "valid" in what:
+                logger.info(f"-- {'is valid' if self.is_valid() else 'IS INVALID'}")
+            if "desc" in what:
+                logger.info("")
+                if self.is_valid():
+                    logger.info(self.describe())
+                else:
+                    logger.info(f"button {self.name}: is invalid")
+            if "config" in what:
+                logger.info("")
+                logger.info(f"\n{yaml.dump(self._config, sys.stdout)}")
 
     def describe(self):
         return "\n\r".join([self._activation.describe(), self._representation.describe()])
@@ -386,7 +387,7 @@ class Button(DatarefListener, DatarefSetListener):
         logger.debug(f"button {self.name}: loaded {len(collections)} collections")
         return self.dataref_collections
 
-    def get_datarefs(self, base: dict = None):
+    def get_datarefs(self, base: dict | None = None):
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -607,7 +608,7 @@ class Button(DatarefListener, DatarefSetListener):
         # !!!IMPORTANT!!! INTERNAL_DATAREF_PREFIX "data:" is hardcoded in regexp
         txtcpy = text
         more = re.findall("\\${" + INTERNAL_DATAREF_PREFIX + "([^\\}]+?)}", txtcpy)
-        for k, v in more.items():
+        for k in more:
             s = f"${{{INTERNAL_DATAREF_PREFIX}{k}}}"  # @todo: !!possible injection!!
             value = self.sim.get_data(k)
             if value is not None:
@@ -661,6 +662,7 @@ class Button(DatarefListener, DatarefSetListener):
         # logger.debug(f"button {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
+        # print("FORMULA", formula, "=>", expr, "=", value)
         logger.log(SPAM_LEVEL, f"execute_formula: button {self.name}: {formula} => {expr}:  => {value}")
         return value
 
@@ -716,7 +718,7 @@ class Button(DatarefListener, DatarefSetListener):
             # • does not exist in all charsets, * is ok. I made my own font with b'\\u2022' (dec. 8226) set to "•"
             DOT = "•"
 
-            txtmod = self.manager.get(f"{root}-modifier", "dot").lower()
+            txtmod = self.manager.get(f"{root}-modifier", "dot").lower()  # type: ignore
             if txtmod == "dot":  # label
                 return text + DOT  # ---•
             elif txtmod in ["std", "standard"]:  # QNH Std
@@ -796,7 +798,7 @@ class Button(DatarefListener, DatarefSetListener):
     # External API
     #
     def use_internal_state(self) -> bool:
-        return len(self.all_datarefs) == 0 or self._activation._has_no_value
+        return len(self.all_datarefs if self.all_datarefs is not None else []) == 0 or (self._activation is not None and self._activation._has_no_value)
 
     def dataref_changed(self, dataref: "Dataref"):
         """
@@ -820,11 +822,14 @@ class Button(DatarefListener, DatarefSetListener):
         """
         @todo: Return a status from activate()
         """
-        if not self._activation.is_valid():
-            logger.warning(f"button {self.name}: activation is not valid, nothing executed")
-            return
-        self._activs = self._activs + 1
-        self._activation.activate(state)
+        if self._activation is not None:
+            if not self._activation.is_valid():
+                logger.warning(f"button {self.name}: activation is not valid, nothing executed")
+                return
+            self._activs = self._activs + 1
+            self._activation.activate(state)
+        else:
+            logger.debug(f"button {self.name}: no activation")
         if self.use_internal_state():
             logger.debug(f"button {self.name}: uses internal state, setting value")
             self.set_current_value(self.button_value())

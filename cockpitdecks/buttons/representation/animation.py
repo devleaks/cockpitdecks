@@ -38,9 +38,9 @@ class IconAnimation(MultiIcons):
 
         # Internal variables
         self.counter = 0
-        self.exit = None
-        self.thread = None
         self.running = False
+        self.exit: threading.Event | None = None
+        self.thread: threading.Thread | None = None
 
     def loop(self):
         self.exit = threading.Event()
@@ -74,7 +74,7 @@ class IconAnimation(MultiIcons):
         """
         Stops animation
         """
-        if self.running:
+        if self.running and self.exit is not None and self.thread is not None:
             self.running = False
             self.exit.set()
             self.thread.join(timeout=2 * self.speed)
@@ -142,7 +142,7 @@ class DrawAnimation(DrawBase):
         # Working attributes
         self.tween = 0
 
-        self.running = None  # state unknown
+        self.running: bool | None = None  # state unknown
         self.exit = None
         self.thread = None
 

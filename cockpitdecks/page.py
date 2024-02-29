@@ -2,13 +2,14 @@
 #
 import datetime
 import logging
+from typing import Dict
 
 from cockpitdecks import ID_SEP
-from cockpitdecks.simulator import DatarefSet, MAX_COLLECTION_SIZE
+from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Page:
@@ -24,10 +25,10 @@ class Page:
 
         self.deck.cockpit.set_logging_level(__name__)
 
-        self.buttons = {}
+        self.buttons: Dict[str, Button] = {}
         self.button_names = {}
-        self.datarefs = {}
-        self.dataref_collections = {}
+        self.datarefs: Dict[str, Dataref] = {}
+        self.dataref_collections: Dict[str, DatarefSet] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
 
@@ -117,7 +118,7 @@ class Page:
                 self.add_button(idx, button)
                 logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
 
-    def inspect(self, what: str = None):
+    def inspect(self, what: str | None = None):
         """
         This function is called on all buttons of this Page.
         """
@@ -158,7 +159,7 @@ class Page:
     def register_dataref_collections(self, button: Button):
         # Transform dataref paths into Dataref().
         for name, colldesc in button.get_dataref_collections().items():
-            collection = {}
+            collection: Dict[str, Dataref] = {}
             for d in colldesc.get("datarefs"):
                 if len(collection) >= MAX_COLLECTION_SIZE:
                     continue
@@ -181,9 +182,9 @@ class Page:
             logger.debug(f"page {self.name}: button {button.name} collection {name} registered")
         logger.debug(f"page {self.name}: button {button.name} collections registered")
 
-    def activate(self, idx: int):
+    def activate(self, idx: str):
         if idx in self.buttons.keys():
-            self.buttons[idx].activate()
+            self.buttons[idx].activate(state=False)
         else:
             logger.error(f"page {self.name}: invalid button index {idx}")
 

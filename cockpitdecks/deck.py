@@ -4,6 +4,7 @@ import os
 import logging
 import pickle
 
+from typing import Dict, List, Any
 from abc import ABC, abstractmethod
 from functools import reduce
 
@@ -227,22 +228,22 @@ class Deck(ABC):
         self.name = name
         self.cockpit = cockpit
         self.device = device
-        self.deck_type = {}
+        self.deck_type: DeckType = {}
 
         self.cockpit.set_logging_level(__name__)
 
-        self._layout_config = {}
-        self.pages = {}
-        self.home_page = None  # this is a Page, not a str.
-        self.current_page = None  # this is a Page, not a str.
-        self.previous_page = None  # this is a Page, not a str.
-        self.page_history = []
+        self._layout_config: Dict[str, str | int | float | bool | Dict] = {}
+        self.pages: Dict[str, Page] = {}
+        self.home_page: Page | None = None
+        self.current_page: Page | None = None
+        self.previous_page: Page | None = None
+        self.page_history: List[str] = []
 
         self.valid = False
         self.running = False
 
-        self.previous_key_values = {}
-        self.current_key_values = {}
+        self.previous_key_values: Dict[str, Any] = {}
+        self.current_key_values: Dict[str, Any] = {}
 
         if "serial" in config:
             self.serial = config["serial"]
@@ -319,7 +320,7 @@ class Deck(ABC):
                 logger.warning(f"not my deck {a[0]} ({self.name})")
         return None
 
-    def inspect(self, what: str = None):
+    def inspect(self, what: str | None = None):
         """
         This function is called on all pages of this Deck.
         """
@@ -413,7 +414,7 @@ class Deck(ABC):
             self.set_home_page()
             logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
 
-    def change_page(self, page: str = None):
+    def change_page(self, page: str | None = None):
         """
         Returns the currently loaded page name
 
@@ -429,7 +430,8 @@ class Deck(ABC):
                 page = self.page_history.pop()  # this page
                 page = self.page_history.pop()  # previous one
             else:
-                page = self.home_page.name
+                if self.home_page is not None:
+                    page = self.home_page.name
             logger.debug(f"deck {self.name} back page to {page}..")
         logger.debug(f"deck {self.name} changing page to {page}..")
         if page in self.pages.keys():
@@ -486,7 +488,7 @@ class Deck(ABC):
             logger.debug(f"deck {self.name} has no home page")
 
     @abstractmethod
-    def make_default_page(self, b: str = None):
+    def make_default_page(self, b: str | None = None):
         """
         Connects to device and send initial keys.
         """
@@ -580,7 +582,7 @@ class DeckWithIcons(Deck):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.pil_helper = None
-        self.icons = {}  # icons ready for this deck
+        self.icons: Dict[str, "PIL.Image"] = {}  # icons ready for this deck
 
     # #######################################
     # Deck Specific Functions
@@ -597,7 +599,7 @@ class DeckWithIcons(Deck):
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
 
-    def get_display_for_pil(self, b: str = None):
+    def get_display_for_pil(self, b: str | None = None):
         """
         Return device or device element to use for PIL.
         """
@@ -702,11 +704,11 @@ class DeckWithIcons(Deck):
         logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
         return image
 
-    def create_icon_for_key(self, index, colors, texture, name: str = None):
+    def create_icon_for_key(self, index, colors, texture, name: str | None = None):
         # Abstact
         return None
 
-    def scale_icon_for_key(self, index, image, name: str = None):
+    def scale_icon_for_key(self, index, image, name: str | None = None):
         # Abstact
         return None
 

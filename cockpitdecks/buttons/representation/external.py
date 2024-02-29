@@ -140,7 +140,7 @@ class LiveWeatherIcon(DrawAnimation):
 
         DrawAnimation.__init__(self, config=config, button=button)
 
-        self._last_updated = None
+        self._last_updated: datetime | None = None
         self._cache = None
 
         # "Animation" (refresh)
@@ -151,9 +151,9 @@ class LiveWeatherIcon(DrawAnimation):
         LiveWeatherIcon.MIN_UPDATE = int(updated) * 60
 
         # Working variables
-        self.station = None
-        self.metar = None
-        self.weather_icon = None
+        self.station: Station | None = None
+        self.metar: Metar | None = None
+        self.weather_icon: str | None = None
 
         self.anim_start()
 
@@ -318,7 +318,7 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.warning(f"station {self.station.icao}: Metar not updated", exc_info=True)
 
         # if new is None, we leave it as it is
-        if updated:
+        if updated and self.station is not None:
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
             if self.has_metar("data"):
                 self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype="float")
@@ -451,7 +451,7 @@ class LiveWeatherIcon(DrawAnimation):
             return ZoneInfo(tzname)
         return timezone.utc
 
-    def get_sun(self, moment: datetime = None):
+    def get_sun(self, moment: datetime | None = None):
         # Returns sunrise and sunset rounded hours (24h)
         if moment is None:
             today_sr = self.sun.get_sunrise_time()
@@ -486,19 +486,19 @@ class LiveWeatherIcon(DrawAnimation):
         # From now on, we are sure we can find an icon
         # day
         if not day:
-            icon_name = WI + NIGHT + icon
+            icon_name = WI_PREFIX + NIGHT + icon
             try_icon = WEATHER_ICONS.get(icon_name)
             if try_icon is not None:
                 logger.debug(f"exists night {icon_name}")
                 return icon_name
 
-            icon_name = WI + NIGHT_ALT + icon
+            icon_name = WI_PREFIX + NIGHT_ALT + icon
             try_icon = WEATHER_ICONS.get(icon_name)
             if try_icon is not None:
                 logger.debug(f"exists night-alt {try_icon}")
                 return icon_name
 
-        icon_name = WI + DAY + icon
+        icon_name = WI_PREFIX + DAY + icon
         try_icon = WEATHER_ICONS.get(icon_name)
         if try_icon is not None:
             logger.debug(f"exists day {icon_name}")

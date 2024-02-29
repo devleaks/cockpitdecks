@@ -42,7 +42,7 @@ class Representation:
     def button_name(self):
         return self.button.name if self.button is not None else "no button"
 
-    def inspect(self, what: str = None):
+    def inspect(self, what: str | None = None):
         logger.info(f"{type(self).__name__}:")
         logger.info(f"{self.is_valid()}")
 
@@ -129,8 +129,10 @@ class Icon(Representation):
         if self.icon is None:
             self.make_icon()
 
-    def make_icon(self):
+    def make_icon(self, force: bool = False):
         self.icon = self.button.get_id()
+        if force and self.icon in self.button.deck.icons:
+            del self.button.deck.icons[self.icon]
         image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture, name=self.icon)
         logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}")
 
@@ -457,6 +459,13 @@ class IconText(Icon):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
+        bgcolor = self.text_config.get("text-bg-color")
+        if bgcolor is not None:
+            self.icon_color = convert_color(bgcolor)
+        bgtexture = self.text_config.get("text-bg-texture")
+        if bgtexture is not None:
+            self.icon_texture = bgtexture
+        self.make_icon(force=True)
         image = super().get_image()
         return self.overlay_text(image, "text")
 
@@ -525,9 +534,11 @@ class IconSide(Icon):
 
         page = self.button.page
         self.side = config.get("side")  # multi-labels
-        self.icon_color = self.side.get("icon-color", page.default_icon_color)
-        self.centers = self.side.get("centers", [43, 150, 227])
-        self.labels = self.side.get("labels")
+        self.icon_color = self.side.get("icon-color", page.default_icon_color)  # type: ignore
+        if self.icon_color is not None:
+            self.icon_color = convert_color(self.icon_color)
+        self.centers = self.side.get("centers", [43, 150, 227])  # type: ignore
+        self.labels: str | None = self.side.get("labels")  # type: ignore
         self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
 
     def get_datarefs(self):
@@ -624,8 +635,8 @@ class MultiIcons(Icon):
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
-        self.multi_icons = config.get("icon-animate")
-        if self.multi_icons is None:
+        self.multi_icons = config.get("icon-animate", [])  # type: ignore
+        if len(self.multi_icons) == 0:
             self.multi_icons = config.get("multi-icons", [])
         else:
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
@@ -715,7 +726,7 @@ class ColoredLED(Representation):
         else:
             self.color = convert_color(self._color)
 
-    def get_color(self, base: dict = None):
+    def get_color(self, base: dict | None = None):
         """
         Compute color from formula/datarefs if any
         the color can be a formula but no formula in it.
@@ -737,7 +748,7 @@ class ColoredLED(Representation):
             logger.warning(f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
 
         color_rgb = colorsys.hsv_to_rgb((int(hue) % 360) / 360, 1, 1)
-        self.color = [int(255 * i) for i in color_rgb]
+        self.color = [int(255 * i) for i in color_rgb]  # type: ignore
         logger.debug(f"{color_str}, {hue}, {[(int(hue) % 360)/360,1,1]}, {color_rgb}, {self.color}")
         return self.color
 

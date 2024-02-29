@@ -8,6 +8,7 @@ import io
 import re
 import logging
 
+from typing import List
 from datetime import datetime, timezone
 
 from metar import Metar
@@ -130,7 +131,7 @@ DATAREF = DATAREF_TIME | DATAREF_WEATHER | DATAREF_CLOUD | DATAREF_WIND
 
 
 class DatarefAccessor:
-    def __init__(self, drefs, index: int = None):
+    def __init__(self, drefs, index: int | None = None):
         self.__datarefs__ = drefs
         self.__drefidx__ = index
 
@@ -199,8 +200,8 @@ class XPWeather:
     #
     def __init__(self, drefs):
         self.weather = Weather(drefs)
-        self.wind_layers = []  #  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
-        self.cloud_layers = []  #  Defined cloud layers. Not all layers are always defined. up to 3 layers
+        self.wind_layers: List[WindLayer] = []  #  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
+        self.cloud_layers: List[CloudLayer] = []  #  Defined cloud layers. Not all layers are always defined. up to 3 layers
 
         for i in range(CLOUD_LAYERS):
             self.cloud_layers.append(CloudLayer(drefs, i))
@@ -224,7 +225,7 @@ class XPWeather:
         if not len(self.wind_layers) > 0:
             logger.warning("no wind layer with altitude?")
 
-    def cloud_layer_at(self, alt=0) -> CloudLayer:
+    def cloud_layer_at(self, alt=0) -> CloudLayer | None:
         # Returns cloud layer at altitude alt (MSL)
         self.sort_layers_by_alt()
         for l in self.cloud_layers:
@@ -232,14 +233,14 @@ class XPWeather:
                 return l
         return None
 
-    def wind_layer_at(self, alt=0) -> WindLayer:
+    def wind_layer_at(self, alt=0) -> WindLayer | None:
         # Returns wind layer at altitude alt (MSL)
         # Collect level bases with index
         self.sort_layers_by_alt()
         for l in self.wind_layers:
             if alt <= l.alt_msl:
                 return l
-        return last
+        return None
 
     def make_metar(self, alt=None):
         metar = self.getStation()

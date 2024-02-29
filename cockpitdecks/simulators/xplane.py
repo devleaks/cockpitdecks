@@ -319,9 +319,12 @@ class XPlane(Simulator, XPlaneBeacon):
         if not self.connected:
             logger.warning(f"no connection ({command})")
             return
-        message = "CMND0" + command.path
-        self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
-        logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
+        if command.path is not None:
+            message = "CMND0" + command.path
+            self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
+            logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
+        else:
+            logger.warning("execute_command: no command")
 
     def write_dataref(self, dataref, value, vtype="float"):
         """
@@ -511,10 +514,16 @@ class XPlane(Simulator, XPlaneBeacon):
         self.execute_command(command)
 
     def commandBegin(self, command: Command):
-        self.execute_command(Command(command.path + "/begin"))
+        if command.path is not None:
+            self.execute_command(Command(command.path + "/begin"))
+        else:
+            logger.warning(f"no command")
 
     def commandEnd(self, command: Command):
-        self.execute_command(Command(command.path + "/end"))
+        if command.path is not None:
+            self.execute_command(Command(command.path + "/end"))
+        else:
+            logger.warning(f"no command")
 
     def remove_local_datarefs(self, datarefs) -> list:
         return list(filter(lambda d: not Dataref.is_internal_dataref(d), datarefs))

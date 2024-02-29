@@ -12,7 +12,7 @@ from .activation import Slider, Swipe
 #
 #   - index: e2
 #     name: FCU Baro
-#     type: encoder-onoff         <--------
+#     mytype: encoder-onoff         <--------
 #     commands:
 #       - toliss_airbus/capt_baro_push
 #       - toliss_airbus/capt_baro_pull
@@ -36,7 +36,7 @@ ACTIVATIONS = {
     "knob": EncoderValue,
     "slider": Slider,
     "cursor": Slider,
-    "swipe": Swipe
+    "swipe": Swipe,
 }
 
 DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
@@ -61,10 +61,4 @@ encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
 # format is action: [ activation ]
 # action is used in deck definitions
 #
-DECK_ACTIVATIONS = {
-    "push": push,
-    "encoder": encoder,
-    "encoder-push": encoder + push,
-    "cursor": ["cursor", "slider"],
-    "swipe": ["swipe"] + push
-}
+DECK_ACTIVATIONS = {"push": push, "encoder": encoder, "encoder-push": encoder + push, "cursor": ["cursor", "slider"], "swipe": ["swipe"] + push}

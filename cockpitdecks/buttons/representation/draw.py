@@ -289,9 +289,12 @@ class SwitchBase(DrawBase):
         DrawBase.__init__(self, config=config, button=button)
 
         self.switch = config.get(switch_type)
+        if self.switch is None:
+            logger.warning("no switch configuration")
+            return
 
-        self.switch_type = self.switch.get("type")
-        self.switch_style = self.switch.get("switch-style")
+        self.switch_type: str | None = self.switch.get("type")
+        self.switch_style: str | None = self.switch.get("switch-style")
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
@@ -372,6 +375,10 @@ class SwitchBase(DrawBase):
 class CircularSwitch(SwitchBase):
     def __init__(self, config: dict, button: "Button"):
         SwitchBase.__init__(self, config=config, button=button, switch_type="circular-switch")
+
+        if self.switch is None:
+            logger.warning("no switch configuration")
+            return
 
         self.button_fill_color = grey(190)
 
@@ -568,6 +575,10 @@ class Switch(SwitchBase):
     def __init__(self, config: dict, button: "Button"):
         SwitchBase.__init__(self, config=config, button=button, switch_type="switch")
 
+        if self.switch is None:
+            logger.warning("no switch configuration")
+            return
+
         # Alternate defaults
         self.switch_style = self.get_attribute("switch-style", "round")
         self.button_size = self.switch.get("button-size", int(ICON_SIZE / 5))
@@ -608,7 +619,7 @@ class Switch(SwitchBase):
                 self.draw_up = -40
 
     # The following functions draw switches centered on 0, 0 on a a canvas of ICON_SIZE x ICON_SIZE
-    def draw_base(self, draw, radius: int = ICON_SIZE / 4):
+    def draw_base(self, draw, radius: int = int(ICON_SIZE / 4)):
         # Base is either hexagonal or round
         if self.hexabase:
             draw.regular_polygon(
@@ -651,7 +662,7 @@ class Switch(SwitchBase):
             # print("U>", tl1, br1)
             draw.ellipse(tl1 + br1, outline=self.button_underline_color, width=self.button_underline_width)
 
-    def draw_round_switch_from_top(self, draw, radius: int = ICON_SIZE / 16):
+    def draw_round_switch_from_top(self, draw, radius: int = int(ICON_SIZE / 16)):
         #### TOP
         tl = [ICON_SIZE - 2 * radius, ICON_SIZE - 2 * radius]
         br = [ICON_SIZE + 2 * radius, ICON_SIZE + 2 * radius]
@@ -664,7 +675,7 @@ class Switch(SwitchBase):
         # print(">tip", tl, br)
         draw.ellipse(tl + br, fill=self.handle_tip_fill_color)
 
-    def draw_round_switch(self, draw, radius: int = ICON_SIZE / 16):
+    def draw_round_switch(self, draw, radius: int = int(ICON_SIZE / 16)):
         # A Handle is visible if not in "middle" position,
         # in which case the button, as seen from top, has not handle.
         # Base
@@ -704,7 +715,7 @@ class Switch(SwitchBase):
         # print("|tip", tl, br)
         draw.ellipse(tl + br, fill=self.handle_tip_fill_color)
 
-    def draw_flat_switch_from_top(self, draw, radius: int = ICON_SIZE / 16):
+    def draw_flat_switch_from_top(self, draw, radius: int = int(ICON_SIZE / 16)):
         # Then the flat part
         w = 2 * radius
         h = radius
@@ -721,13 +732,13 @@ class Switch(SwitchBase):
         separ = int(avail / (nlines + 1))
         start = separ / 4
         w = int((2 * radius - 2 * start))
-        h = (radius - 2 * start) / 2
+        h = int((radius - 2 * start) / 2)
         tl = [ICON_SIZE - w, ICON_SIZE - h]
         br = [ICON_SIZE + w, ICON_SIZE + h]
         # print(">tip", tl, br, "wxh", w, h, "separ", separ, "start", start)
         draw.rounded_rectangle(tl + br, radius=w / 2, fill=self.handle_tip_fill_color)
 
-    def draw_flat_switch(self, draw, radius: int = ICON_SIZE / 16):
+    def draw_flat_switch(self, draw, radius: int = int(ICON_SIZE / 16)):
         # Little ellipsis at base
         lr = radius - 4
         tl = [ICON_SIZE - lr, ICON_SIZE - lr / 2]
@@ -783,13 +794,13 @@ class Switch(SwitchBase):
         # draw.rounded_rectangle(tl+br, radius=topw/4, fill=self.handle_tip_fill_color)
 
         w = int((2 * radius - 2 * start))
-        h = (radius - 2 * start) / 2
+        h = int((radius - 2 * start) / 2)
         tl = [ICON_SIZE - w, mid - h]
         br = [ICON_SIZE + w, mid + h]
         # print(">tip", tl, br, "wxh", w, h, "separ", separ, "start", start)
         draw.rounded_rectangle(tl + br, radius=w / 2, fill=self.handle_tip_fill_color)
 
-    def draw_3dot_switch_from_top(self, draw, radius: int = ICON_SIZE / 16):
+    def draw_3dot_switch_from_top(self, draw, radius: int = int(ICON_SIZE / 16)):
         # Big rounded rect
         width = 10 * radius
         height = 4 * radius
@@ -811,7 +822,7 @@ class Switch(SwitchBase):
             # print(">•", tl, br, "x", x, width, left, sep, start)
             draw.ellipse(tl + br, fill=self.handle_tip_fill_color)
 
-    def draw_3dot_switch(self, draw, radius: int = ICON_SIZE / 16):
+    def draw_3dot_switch(self, draw, radius: int = int(ICON_SIZE / 16)):
         # Little ellipsis at base
         lr = radius - 4
         tl = [ICON_SIZE - lr, ICON_SIZE - lr / 2]
@@ -1041,6 +1052,10 @@ class Knob(SwitchBase):
     def __init__(self, config: dict, button: "Button"):
         SwitchBase.__init__(self, config=config, button=button, switch_type="knob")
 
+        if self.switch is None:
+            logger.warning("no switch configuration")
+            return
+
         self.knob_type = self.get_attribute("knob-type", "dent")
         self.knob_mark = self.get_attribute("knob-mark", "triangle")  # needle, triangle, bar (diameter)
 
@@ -1201,6 +1216,10 @@ class Decor(DrawBase):
         DrawBase.__init__(self, config=config, button=button)
 
         self.decor = config.get("decor")
+
+        if self.decor is None:
+            logger.warning("no decor configuration")
+            return
 
         self.type = self.decor.get("type", "line")
         self.code = self.decor.get("code", "")

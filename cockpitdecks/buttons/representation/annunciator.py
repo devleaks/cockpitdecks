@@ -3,12 +3,15 @@
 #
 import logging
 import threading
+from typing import Dict, List
 from enum import Enum
 from PIL import Image, ImageDraw, ImageFilter
 
 from cockpitdecks import KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off
 from cockpitdecks.resources.rpc import RPC
+from cockpitdecks.simulator import Dataref
+
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
@@ -325,7 +328,7 @@ class Annunciator(DrawBase):
             return
 
         self._part_iterator = None  # cache
-        self.annunciator_parts = None
+        self.annunciator_parts: Dict[str, AnnunciatorPart] | None = None
         parts = self.annunciator.get("parts")
         if parts is None:  # if only one annunciator
             arr = {}
@@ -363,11 +366,7 @@ class Annunciator(DrawBase):
         if self.model is None:
             logger.error(f"button {self.button.name}: annunciator has no model")
 
-        # Working variables
-        self.lit = {}  # parts of annunciator that are lit
-        self.part_controls = {}
-
-        self.annunciator_datarefs = None  # cache
+        self.annunciator_datarefs: List[Dataref] | None = None
         self.annunciator_datarefs = self.get_datarefs()
 
         DrawBase.__init__(self, config=config, button=button)
@@ -400,19 +399,22 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_datarefs(self) -> list:
+    def get_datarefs(self) -> List[Dataref]:
         """
         Complement button datarefs with annunciator special lit datarefs
         """
         if self.annunciator_datarefs is not None:
             # logger.debug(f"button {self.button.name}: returned from cache")
             return self.annunciator_datarefs
-        r = []
-        for k, v in self.annunciator_parts.items():
-            datarefs = v.get_datarefs()
-            if len(datarefs) > 0:
-                r = r + datarefs
-                logger.debug(f"button {self.button.name}: added {k} datarefs {datarefs}")
+        r: List[Dataref] = []
+        if self.annunciator_parts is not None:
+            for k, v in self.annunciator_parts.items():
+                datarefs = v.get_datarefs()
+                if len(datarefs) > 0:
+                    r = r + datarefs
+                    logger.debug(f"button {self.button.name}: added {k} datarefs {datarefs}")
+        else:
+            logger.warning("no annunciator parts to get datarefs from")
         self.annunciator_datarefs = list(set(r))
         return self.annunciator_datarefs
 
@@ -572,8 +574,11 @@ class Annunciator(DrawBase):
         return image.convert("RGB")
 
     def all_lit(self, on: bool):
-        for v in self.annunciator_parts.values():
-            v.lit = on
+        if self.annunciator_parts is not None:
+            for v in self.annunciator_parts.values():
+                v.lit = on
+        else:
+            logger.warning("no annunciator parts to light")
 
     def describe(self):
         """
@@ -596,7 +601,7 @@ class AnnunciatorAnimate(Annunciator):
 
         Annunciator.__init__(self, config=config, button=button)
 
-        self.speed = float(self.annunciator.get("animation-speed", 0.5))
+        self.speed = float(self.annunciator.get("animation-speed", 0.5))  # type: ignore
 
         # Working attributes
         self.running = None  # state unknown

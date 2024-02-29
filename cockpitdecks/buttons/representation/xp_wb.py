@@ -56,7 +56,7 @@ class XPWeatherBaseIcon(DrawBase):
             updated = self.update_weather()
         else:
             diff = now().timestamp() - self._weather_last_updated.timestamp()
-            if diff > RealWeatherIcon.MIN_UPDATE:
+            if diff > XPWeatherBaseIcon.MIN_UPDATE:
                 updated = self.update_weather()
         return updated
 

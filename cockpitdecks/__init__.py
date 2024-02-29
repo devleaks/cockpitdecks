@@ -7,6 +7,7 @@
 #
 import os
 import logging
+from typing import List
 from collections.abc import MutableMapping
 from enum import Enum
 from datetime import datetime
@@ -18,7 +19,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "7.18.1"
+__version__ = "7.19.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -65,7 +66,7 @@ def to_m(fl):
 #
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 ROOT_DEBUG = ""
-EXCLUDE_DECKS = []  # list serial numbers of deck not usable by Streadecks
+EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Streadecks
 
 # Files
 CONFIG_FOLDER = "deckconfig"
@@ -160,11 +161,12 @@ class Config(MutableMapping):
 
     def __init__(self, filename: str):
         self.store = dict()
+        dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
         if os.path.exists(filename):
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
-                init_logger.info(f"loaded config from {filename}")
+                init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
         else:
             init_logger.debug(f"no file {filename}")
 

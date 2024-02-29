@@ -3,6 +3,7 @@ Button action and activation abstraction
 """
 import logging
 import threading
+from typing import Dict
 
 from datetime import datetime
 
@@ -35,9 +36,9 @@ class Activation:
         # Options
 
         # Commands
-        self._view = Command(config.get("view"))  # Optional additional command, usually to set a view
+        self._view = Command(path=config.get("view"))  # Optional additional command, usually to set a view
         # but could be anything.
-        self._long_press = Command(config.get("long-press"))  # Optional additional command
+        self._long_press = Command(path=config.get("long-press"))  # Optional additional command
         # Datarefs
         self.writable_dataref = config.get("set-dataref")
 
@@ -45,7 +46,7 @@ class Activation:
         self._last_state = None
 
         self.activation_count = 0
-        self.activations_count = {}
+        self.activations_count: Dict[str, int] = {}
         self.last_activated = 0
         self.duration = 0
         self.pressed = False
@@ -159,8 +160,8 @@ class Activation:
             return False
         return True
 
-    def inspect(self, what: str = None):
-        if "activation" not in what:
+    def inspect(self, what: str | None = None):
+        if what is not None and "activation" not in what:
             return
         logger.info(f"{type(self).__name__}:")
         logger.info(f"{self.is_valid()}")
@@ -506,10 +507,10 @@ class Longpress(Push):
             self.button.sim.commandEnd(self._command)
             self.view()  # on release only
 
-    def inspect(self, what: str = None):
-        if "longpress" in what:
+    def inspect(self, what: str | None = None):
+        if what is not None and "longpress" in what:
             logger.info(f"{self.button.get_id()} has long press command")
-        elif "activation" in what:
+        elif what is not None and "activation" in what:
             super().inspect(what=what)
 
     def describe(self):
@@ -658,12 +659,12 @@ class UpDown(Activation):
         self._commands = [Command(path) for path in config.get("commands", [])]
 
         # Internal status
-        self.stops = None
+        self.stops = 0
         stops = config.get("stops", 2)
         if stops is not None:
             self.stops = int(stops)
         self.go_up = True
-        self.stop_current_value = None
+        self.stop_current_value: int | None = None
 
         Activation.__init__(self, config=config, button=button)
 

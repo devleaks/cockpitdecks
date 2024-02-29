@@ -29,6 +29,7 @@ class XPWeatherIcon(XPWeatherBaseIcon):
 
         self.xpweather = None
         self._wu_count = 0
+        self._upd_calls = 0
         self._weather_last_updated = None
         self._icon_last_updated = None
         self._cache_metar = None
@@ -98,7 +99,7 @@ class XPWeatherIcon(XPWeatherBaseIcon):
         logger.debug(f"Dataref collector has not completed")
         return False
 
-    def is_updated(self) -> bool:
+    def is_updated(self, force: bool = False) -> bool:
         self._upd_calls = self._upd_calls + 1
         if self.update_weather():
             if self._icon_last_updated is not None:

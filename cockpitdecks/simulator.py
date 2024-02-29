@@ -2,6 +2,7 @@
 #
 import threading
 import logging
+from typing import List, Any
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 
@@ -32,7 +33,7 @@ class Command:
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
-    def __init__(self, path: str, name: str = None):
+    def __init__(self, path: str | None, name: str | None = None):
         self.path = path  # some/command
         self.name = name
 
@@ -56,7 +57,7 @@ class Dataref:
     plugins, or other software in general.
     """
 
-    def __init__(self, path: str, is_decimal: bool = False, is_string: bool = False, length: int = None):
+    def __init__(self, path: str, is_decimal: bool = False, is_string: bool = False, length: int | None = None):
         self.path = path  # some/path/values[6]
         self.dataref = path  # some/path/values
         self.index = 0  # 6
@@ -73,9 +74,9 @@ class Dataref:
         self._updated = 0  # number of time value updated
         self._changed = 0  # number of time value changed
         self.previous_value = None
-        self.current_value = None
-        self.current_array = []
-        self.listeners = []  # buttons using this dataref, will get notified if changes.
+        self.current_value: Any | None = None
+        self.current_array: List[float] = []
+        self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
         self._round = None
         self.update_frequency = 1  # sent by the simulator that many times per second.
         self.expire = None
@@ -92,7 +93,7 @@ class Dataref:
                 self.data_type = "str"
                 self.is_array = True
             elif typ == "b":
-                self.is_string = "byte"
+                self.data_type = "byte"
 
         if self.is_decimal and self.is_string:
             loggerDataref.error(f"__init__: index {path} cannot be both decimal and string")

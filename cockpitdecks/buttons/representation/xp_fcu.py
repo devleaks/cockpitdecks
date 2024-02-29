@@ -19,7 +19,7 @@ class FCUIcon(DrawBase):
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
         self.fcuconfig = config.get("fcu")
-        self.mode = self.fcuconfig.get("mode", "horizontal")  # horizontal, vertical-left, vertical-right
+        self.mode: str = self.fcuconfig.get("mode", "horizontal")  # type: ignore # horizontal, vertical-left, vertical-right
         self._cached = None
         self.icon_color = "#101010"
         self.count = 0

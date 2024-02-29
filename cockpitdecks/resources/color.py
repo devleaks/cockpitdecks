@@ -3,6 +3,8 @@ Helper class for color management
 """
 import logging
 import colorsys
+from typing import Tuple
+
 # import numpy as np
 
 from PIL import Image, ImageDraw
@@ -16,14 +18,16 @@ TRANSPARENT_PNG_COLOR_BLACK = (0, 0, 0, 0)  # black-based
 DEFAULT_COLOR = (128, 128, 128)
 DEFAULT_COLOR_NAME = "grey"
 
-def is_integer(s):
+
+def is_integer(s) -> bool:
     if type(s) == int:
         return True
     if type(s) == str:
-        return s.isdigit() or (s.startswith('-') and s[1:].isdigit())
+        return s.isdigit() or (s.startswith("-") and s[1:].isdigit())
     return False
 
-def convert_color(instr):
+
+def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     # process either a color name or a color tuple as a string "(1, 2, 3)"
     # and returns a tuple of 3 or 4 intergers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
@@ -53,7 +57,7 @@ def convert_color(instr):
     return DEFAULT_COLOR
 
 
-def light_off(color, lightness: float = 0.10):
+def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tuple[int, int, int]:
     # Darkens (or lighten) a color
     if type(color) not in [tuple, list]:
         color = convert_color(color)
@@ -62,13 +66,13 @@ def light_off(color, lightness: float = 0.10):
     return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
 
 
-def has_ext(name: str, ext: str):
+def has_ext(name: str, ext: str) -> bool:
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")
     return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
 
 
-def add_ext(name: str, ext: str):
+def add_ext(name: str, ext: str) -> str:
     rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")
     if len(narr) < 2:  # has no extension
@@ -78,6 +82,7 @@ def add_ext(name: str, ext: str):
         return ".".join(narr[:-1]) + "." + rext  # force extension to what is should
     else:  # did not finish with extention, so add it
         return name + "." + rext  # force extension to what is should
+
 
 # # https://stackoverflow.com/questions/66837477/pillow-how-to-gradient-fill-drawn-shapes
 # # Draw polygon with linear gradient from point 1 to point 2 and ranging
