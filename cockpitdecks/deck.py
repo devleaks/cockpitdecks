@@ -13,6 +13,7 @@ from PIL import Image
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import ID_SEP, KW, DEFAULT_LAYOUT
 from cockpitdecks import Config
+from cockpitdecks.resources.color import convert_color
 
 from .page import Page
 from .button import Button
@@ -676,8 +677,8 @@ class DeckWithIcons(Deck):
         def get_color():
             for t in [color_in, self.get_attribute("default-icon-color"), self.get_attribute("cockpit-color")]:
                 if t is not None:
-                    return t
-            return self.get_attribute("cockpit-color")
+                    return convert_color(t)
+            return convert_color(self.get_attribute("cockpit-color"))
 
         image = None
 
@@ -721,7 +722,7 @@ class DeckWithIcons(Deck):
         if self.current_page is not None:
             icon = self.create_icon_for_key(
                 key,
-                colors=self.current_page.get_attribute("cockpit-color"),
+                colors=convert_color(self.current_page.get_attribute("cockpit-color")),
                 texture=self.current_page.get_attribute("cockpit-texture"),
                 name=f"{self.name}:{self.current_page.name}:{key}",
             )

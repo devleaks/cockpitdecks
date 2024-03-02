@@ -11,7 +11,8 @@ from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
-from cockpitdecks.buttons.representation import Representation, Icon, ColoredLED  # valid representations for this type of deck
+from cockpitdecks.buttons.representation import Representation, Icon, ColoredLED
+from cockpitdecks.resources.color import convert_color  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -262,7 +263,7 @@ class Loupedeck(DeckWithIcons):
         image = None
         if self.device is not None and self.pil_helper is not None:
             display = self.get_display_for_pil(index)
-            bg = self.pil_helper.create_image(deck=self.device, background=colors, display=display)
+            bg = self.pil_helper.create_image(deck=self.device, background=convert_color(colors), display=display)
             image = self.get_icon_background(
                 name=str(index), width=bg.width, height=bg.height, texture_in=texture, color_in=colors, use_texture=True, who="Deck"
             )

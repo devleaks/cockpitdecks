@@ -52,7 +52,7 @@ def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
         except ValueError:
             logger.debug(f"fail to convert color {instr} ({type(instr)}), using {DEFAULT_COLOR}")
             color = DEFAULT_COLOR
-        return color
+        return tuple(color)
     logger.debug(f"not a string {instr} ({type(instr)}), using {DEFAULT_COLOR}")
     return DEFAULT_COLOR
 
