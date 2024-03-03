@@ -52,6 +52,9 @@ class Activation:
         self.pressed = False
         self.initial_value = config.get("initial-value")
 
+        # Vibrate on press
+        self.vibrate = config.get("vibrate", button.get_attribute("default-vibrate"))
+
         self.init()
 
     def init(self):  # ~ABC
@@ -82,6 +85,9 @@ class Activation:
             self.last_activated = now
             logger.debug(f"button {self.button_name()}: {type(self).__name__} activated")
             self.pressed = True
+
+            if self.vibrate is not None and hasattr(self.button.deck, "_vibrate"):
+                self.button.deck._vibrate(self.vibrate)
 
             # Guard handling
             if self.button.is_guarded():
