@@ -25,13 +25,11 @@ class IconSide(Icon):  # modified Representation IconSide class
         self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
 
     def get_datarefs(self):
-        print('get le datarefs')
         datarefs = []
         for label in self.labels:
             drefs = self.button.scan_datarefs(label)
             if len(drefs) > 0:
                 datarefs = datarefs + drefs
-        print(datarefs)
         return datarefs
 
     # def get_datarefs(self):
