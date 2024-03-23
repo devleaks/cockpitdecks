@@ -13,6 +13,7 @@ from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
 from .xp_fma import FMAIcon
 from .xp_fcu import FCUIcon
+from .xp_iconside import IconSide
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
