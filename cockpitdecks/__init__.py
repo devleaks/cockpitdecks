@@ -154,6 +154,25 @@ class KW(Enum):
     VIEW = "view"
 
 
+# deck type action capabilities
+class DECK_ACTIONS(Enum):
+    ENCODER = "encoder"
+    ENCODER_PUSH = "encoder-push"
+    NONE = "none"
+    PUSH = "push"
+    SLIDE = "slide"
+    SWIPE = "swipe"
+
+
+# deck type feedback capabilities
+class DECK_FEEDBACK(Enum):
+    COLORED_LED = "colored-led"
+    IMAGE = "image"
+    LED = "led"
+    MULTI_LEDS = "multi-leds"
+    NONE = "none"
+
+
 class Config(MutableMapping):
     """
     A dictionary that loads from a yaml config file.
@@ -161,12 +180,16 @@ class Config(MutableMapping):
 
     def __init__(self, filename: str):
         self.store = dict()
-        dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
+        dirname = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ""
+        )
         if os.path.exists(filename):
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
-                init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
+                init_logger.info(
+                    f"loaded config from {os.path.abspath(filename).replace(dirname, '')}"
+                )
         else:
             init_logger.debug(f"no file {filename}")
 

@@ -10,7 +10,7 @@ from enum import Enum
 from PIL import ImageDraw, ImageFont
 
 from cockpitdecks.resources.color import convert_color, is_integer, has_ext, add_ext, DEFAULT_COLOR
-from cockpitdecks import KW
+from cockpitdecks import DECK_FEEDBACK, KW
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -25,6 +25,7 @@ class Representation:
     """
     Base class for all representations
     """
+    _required_deck_capability = DECK_FEEDBACK.NONE
 
     def __init__(self, config: dict, button: "Button"):
         self._config = config
@@ -89,6 +90,9 @@ class Representation:
 #
 #
 class Icon(Representation):
+
+    _required_deck_capability = DECK_FEEDBACK.IMAGE
+
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
@@ -690,6 +694,9 @@ class MultiIcons(Icon):
 #
 #
 class LED(Representation):
+
+    _required_deck_capability = DECK_FEEDBACK.LED
+
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
@@ -713,6 +720,9 @@ class LED(Representation):
 
 
 class ColoredLED(Representation):
+
+    _required_deck_capability = DECK_FEEDBACK.COLORED_LED
+
     def __init__(self, config: dict, button: "Button"):
         self._color = config.get(KW.COLORED_LED.value, button.get_attribute("cockpit-color"))
         self.color = (128, 128, 256)
@@ -784,6 +794,9 @@ class MultiLEDs(Representation):
     """
     Ring of 13 LEDs surrounding X-Touch Mini encoders
     """
+
+    _required_deck_capability = DECK_FEEDBACK.MULTI_LEDS
+
 
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)

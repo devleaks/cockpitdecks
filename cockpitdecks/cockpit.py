@@ -31,10 +31,7 @@ if LOGFILE is not None:
 
 
 class CockpitBase:
-    """As used in Simulator
-
-    [description]
-    """
+    """As used in Simulator"""
 
     def __init__(self):
         self._debug = ROOT_DEBUG.split(",")  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext

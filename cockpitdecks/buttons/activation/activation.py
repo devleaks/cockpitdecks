@@ -10,6 +10,7 @@ from datetime import datetime
 # from cockpitdecks import SPAM
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
+from cockpitdecks import DECK_ACTIONS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -24,6 +25,7 @@ class Activation:
     Base class for all activation mechanism.
     Can be used for no-operation activation on display-only button.
     """
+    _required_deck_capability = DECK_ACTIONS.NONE
 
     def __init__(self, config: dict, button: "Button"):
         self._config = config
@@ -211,6 +213,8 @@ class LoadPage(Activation):
     Defines a Page change activation.
     """
 
+    _required_deck_capability = DECK_ACTIONS.PUSH
+
     KW_BACKPAGE = "back"
 
     def __init__(self, config: dict, button: "Button"):
@@ -257,6 +261,8 @@ class Reload(Activation):
     Reloads all decks.
     """
 
+    _required_deck_capability = DECK_ACTIONS.PUSH
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
@@ -277,6 +283,8 @@ class ChangeTheme(Activation):
     """
     Reloads all decks.
     """
+
+    _required_deck_capability = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -300,6 +308,8 @@ class Inspect(Activation):
     """
     Inspect all decks.
     """
+
+    _required_deck_capability = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -330,6 +340,8 @@ class Stop(Activation):
     Stops all decks.
     """
 
+    _required_deck_capability = DECK_ACTIONS.PUSH
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
@@ -356,6 +368,8 @@ class Push(Activation):
     Defines a Push activation.
     The supplied command is executed each time a button is pressed.
     """
+
+    _required_deck_capability = DECK_ACTIONS.PUSH
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
@@ -502,6 +516,8 @@ class Longpress(Push):
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
 
+    _required_deck_capability = DECK_ACTIONS.PUSH
+
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
 
@@ -537,6 +553,8 @@ class OnOff(Activation):
     Defines a On / Off push activation: Two commands are executed alternatively.
     On or Off status is determined by the number of time a button is pressed.
     """
+
+    _required_deck_capability = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -659,6 +677,8 @@ class UpDown(Activation):
     Two commands are executed, one when the value increases,
     another one when the value decreases.
     """
+
+    _required_deck_capability = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -787,6 +807,8 @@ class Encoder(Activation):
     another command is executed the encoder is turned counter-clockwise one step (state = 3).
     """
 
+    _required_deck_capability = DECK_ACTIONS.ENCODER
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
@@ -853,6 +875,8 @@ class EncoderPush(Push):
     Command 2: Executed when turned clockwise and pushed simultaneously
     Command 3: Executed when turned counter-clockwise and pushed simultaneously
     """
+
+    _required_deck_capability = DECK_ACTIONS.ENCODER_PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -961,6 +985,8 @@ class EncoderOnOff(OnOff):
     Sixth command: Executed when turned counter-clockwise and OFF
     """
 
+    _required_deck_capability = DECK_ACTIONS.ENCODER_PUSH
+
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
 
@@ -1059,6 +1085,8 @@ class EncoderValue(OnOff):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
+
+    _required_deck_capability = DECK_ACTIONS.SLIDE
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
@@ -1298,6 +1326,8 @@ class Slider(Activation):  # Cursor?
     A Encoder that can turn left/right.
     """
 
+    _required_deck_capability = DECK_ACTIONS.SLIDE
+
     SLIDER_MAX = 8064
     SLIDER_MIN = -8192
 
@@ -1350,6 +1380,8 @@ class Swipe(Activation):
     """
     A Encoder that can turn left/right.
     """
+
+    _required_deck_capability = DECK_ACTIONS.SWIPE
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
