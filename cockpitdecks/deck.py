@@ -18,7 +18,10 @@ from cockpitdecks.resources.color import convert_color
 from .page import Page
 from .button import Button
 from cockpitdecks.buttons.activation import DECK_ACTIVATIONS, DEFAULT_ACTIVATIONS
-from cockpitdecks.buttons.representation import DECK_REPRESENTATIONS, DEFAULT_REPRESENTATIONS
+from cockpitdecks.buttons.representation import (
+    DECK_REPRESENTATIONS,
+    DEFAULT_REPRESENTATIONS,
+)
 
 loggerDeckType = logging.getLogger("DeckType")
 # loggerDeckType.setLevel(logging.DEBUG)
@@ -57,7 +60,9 @@ class DeckType(Config):
             else:
                 activation = DECK_ACTIVATIONS.get(action)
                 if activation is None:
-                    loggerDeckType.warning(f"deck type {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS")
+                    loggerDeckType.warning(
+                        f"deck type {self.name}: action {button.get(KW.ACTION.value)} not found in DECK_ACTIVATIONS"
+                    )
 
             view = button.get(KW.VIEW.value)
             representation = [KW.NONE.value]
@@ -66,14 +71,18 @@ class DeckType(Config):
             else:
                 representation = DECK_REPRESENTATIONS.get(view)
                 if representation is None:
-                    loggerDeckType.warning(f"deck type {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS")
+                    loggerDeckType.warning(
+                        f"deck type {self.name}: view {button.get(KW.VIEW.value)} not found in DECK_REPRESENTATIONS"
+                    )
 
             if activation is not None and representation is not None:
                 if repeat is None:
                     if name is None:
                         name = "NO_NAME_" + str(cnt)
                         cnt = cnt + 1
-                        loggerDeckType.warning(f"deck {self.name}: button has no name, using default {name}")
+                        loggerDeckType.warning(
+                            f"deck {self.name}: button has no name, using default {name}"
+                        )
 
                     self._buttons[prefix + name] = {
                         KW.INDEX.value: prefix + name,
@@ -84,7 +93,9 @@ class DeckType(Config):
                         KW.REPRESENTATIONS.value: representation,
                     }
                     if KW.IMAGE.value in button:
-                        self._buttons[prefix + name][KW.IMAGE.value] = button.get(KW.IMAGE.value)
+                        self._buttons[prefix + name][KW.IMAGE.value] = button.get(
+                            KW.IMAGE.value
+                        )
                 else:  # name is ignored
                     for i in range(repeat):
                         idx = str(i) if prefix is None else prefix + str(i)
@@ -97,11 +108,17 @@ class DeckType(Config):
                             KW.REPRESENTATIONS.value: representation,
                         }
                         if KW.IMAGE.value in button:
-                            self._buttons[idx][KW.IMAGE.value] = button.get(KW.IMAGE.value)
+                            self._buttons[idx][KW.IMAGE.value] = button.get(
+                                KW.IMAGE.value
+                            )
                         # else: don't set it, a sign that there is no image
             else:
-                loggerDeckType.warning(f"deck type {self.name}: cannot proceed with {button} definition")
-        loggerDeckType.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
+                loggerDeckType.warning(
+                    f"deck type {self.name}: cannot proceed with {button} definition"
+                )
+        loggerDeckType.debug(
+            f"deck type {self.name}: buttons: {self._buttons.keys()}.."
+        )
         # with open(f"{dt}.out", "w") as fp:
         #    yaml.dump(self._buttons, fp)
         self.valid_activations()  # will print debug
@@ -115,7 +132,11 @@ class DeckType(Config):
             return self._special_displays
         self._special_displays = []
         for b in self.store.get("buttons", []):
-            if "repeat" not in b and b.get("view", "") == "image" and b.get("image") is not None:
+            if (
+                "repeat" not in b
+                and b.get("view", "") == "image"
+                and b.get("image") is not None
+            ):
                 n = b.get("name")
                 if n is not None:
                     self._special_displays.append(n)
@@ -141,7 +162,9 @@ class DeckType(Config):
                 else:
                     n = b.get("name")
                     p = b.get("prefix")
-                    if (n is not None and name == n) or (p is not None and name.startswith(str(p))):
+                    if (n is not None and name == n) or (
+                        p is not None and name.startswith(str(p))
+                    ):
                         s = b.get("image")  # [width, height, offset_x, offset_y]
                         if s is not None:
                             return s[0:2] if not return_offset else s[2:4]
@@ -166,24 +189,26 @@ class DeckType(Config):
         return None
 
     def get_encoder_index(self, key):
-        return f"{ENCODER_PREFIX}{key}"
+        return f"{ENCODER_PREFIX}{key}"  # KW.PREFIX.value
 
     def is_encoder(self, button):
-        return str(button.index).startswith(ENCODER_PREFIX)
+        return str(button.index).startswith(ENCODER_PREFIX)  # KW.PREFIX.value
 
     def get_button_index(self, key):
-        return f"{BUTTON_PREFIX}{key}"
+        return f"{BUTTON_PREFIX}{key}"  # KW.PREFIX.value
 
     def get_button_key(self, index):
-        return index.lower().replace(BUTTON_PREFIX, "")
+        return index.lower().replace(BUTTON_PREFIX, "")  # KW.PREFIX.value
 
     def is_button(self, button):
-        return str(button.index).startswith(BUTTON_PREFIX)
+        return str(button.index).startswith(BUTTON_PREFIX)  # KW.PREFIX.value
 
     def valid_indices(self, with_icon: bool = False):
         # If with_icon is True, only returns keys with image icon associted with it
         if with_icon:
-            with_image = filter(lambda x: x[KW.VIEW.value] == "image", self._buttons.values())
+            with_image = filter(
+                lambda x: x[KW.VIEW.value] == "image", self._buttons.values()
+            )
             return [a[KW.INDEX.value] for a in with_image]
         # else, returns all of them
         return list(self._buttons.keys())
@@ -192,12 +217,22 @@ class DeckType(Config):
         if index is not None:
             b = self.get_button_definition(index)
             if b is not None:
-                loggerDeckType.debug(f"deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}")
+                loggerDeckType.debug(
+                    f"deck {self.name}: button {index}: {DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]}"
+                )
                 return DEFAULT_ACTIVATIONS + b[KW.ACTIVATIONS.value]
             else:
-                loggerDeckType.warning(f"deck {self.name}: no button index {index}, returning default for deck")
+                loggerDeckType.warning(
+                    f"deck {self.name}: no button index {index}, returning default for deck"
+                )
         all_activations = set(DEFAULT_ACTIVATIONS).union(
-            set(reduce(lambda l, b: l.union(set(b.get(KW.ACTIVATIONS.value, set()))), self._buttons.values(), set()))
+            set(
+                reduce(
+                    lambda l, b: l.union(set(b.get(KW.ACTIVATIONS.value, set()))),
+                    self._buttons.values(),
+                    set(),
+                )
+            )
         )
         loggerDeckType.debug(f"deck {self.name}: {all_activations}")
         return list(all_activations)
@@ -206,13 +241,25 @@ class DeckType(Config):
         if index is not None:
             b = self.get_button_definition(index)
             if b is not None:
-                all_representations = set(DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value])
-                loggerDeckType.debug(f"deck {self.name}: button {index}: {all_representations}")
+                all_representations = set(
+                    DEFAULT_REPRESENTATIONS + b[KW.REPRESENTATIONS.value]
+                )
+                loggerDeckType.debug(
+                    f"deck {self.name}: button {index}: {all_representations}"
+                )
                 return all_representations
             else:
-                loggerDeckType.warning(f"deck {self.name}: no button index {index}, returning default for deck")
+                loggerDeckType.warning(
+                    f"deck {self.name}: no button index {index}, returning default for deck"
+                )
         all_representations = set(DEFAULT_REPRESENTATIONS).union(
-            set(reduce(lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))), self._buttons.values(), set()))
+            set(
+                reduce(
+                    lambda l, b: l.union(set(b.get(KW.REPRESENTATIONS.value, set()))),
+                    self._buttons.values(),
+                    set(),
+                )
+            )
         )
         loggerDeckType.debug(f"deck {self.name}: {all_representations}")
         return set(all_representations)
@@ -260,14 +307,20 @@ class Deck(ABC):
 
         self.layout = None
         if KW.LAYOUT.value in config:
-            self.layout = config[KW.LAYOUT.value]  # config[KW.LAYOUT.value] may be None to choose no layout
+            self.layout = config[
+                KW.LAYOUT.value
+            ]  # config[KW.LAYOUT.value] may be None to choose no layout
         else:
             self.layout = DEFAULT_LAYOUT
             logger.warning(f"deck has no layout, using default")
 
-        self.home_page_name = config.get("home-page-name", self.get_attribute("default-home-page-name"))
+        self.home_page_name = config.get(
+            "home-page-name", self.get_attribute("default-home-page-name")
+        )
         self.logo = config.get("logo", self.get_attribute("default-logo"))
-        self.wallpaper = config.get("wallpaper", self.get_attribute("default-wallpaper"))
+        self.wallpaper = config.get(
+            "wallpaper", self.get_attribute("default-wallpaper")
+        )
 
         self.valid = True
 
@@ -307,7 +360,11 @@ class Deck(ABC):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 val = ld.get(attribute)
-        return val if val is not None else self.cockpit.get_attribute(attribute, silence=silence)
+        return (
+            val
+            if val is not None
+            else self.cockpit.get_attribute(attribute, silence=silence)
+        )
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -340,7 +397,9 @@ class Deck(ABC):
 
         dn = os.path.join(self.cockpit.acpath, CONFIG_FOLDER, self.layout)
         if not os.path.exists(dn):
-            logger.warning(f"deck has no layout folder '{self.layout}', loading default page")
+            logger.warning(
+                f"deck has no layout folder '{self.layout}', loading default page"
+            )
             self.make_default_page()
             return
 
@@ -353,12 +412,16 @@ class Deck(ABC):
         for p in pages:
             if p == CONFIG_FILE:
                 continue
-            elif p.endswith(".yaml") or p.endswith(".yml"):  # does not work if case sensitive, no YAML or Yaml or YML...
+            elif p.endswith(".yaml") or p.endswith(
+                ".yml"
+            ):  # does not work if case sensitive, no YAML or Yaml or YML...
                 fn = os.path.join(dn, p)
                 # if os.path.exists(fn):  # we know the file should exists...
                 page_config = Config(fn)
                 if page_config.is_valid():
-                    name = ".".join(p.split(".")[:-1])  # build default page name, remove extension ".yaml" or ".yml" from filename
+                    name = ".".join(
+                        p.split(".")[:-1]
+                    )  # build default page name, remove extension ".yaml" or ".yml" from filename
                     if "name" in page_config:
                         name = page_config["name"]
 
@@ -367,9 +430,13 @@ class Deck(ABC):
                         continue
 
                     if not KW.BUTTONS.value in page_config:
-                        logger.error(f"{name} has no button definition '{KW.BUTTONS.value}', ignoring")
+                        logger.error(
+                            f"{name} has no button definition '{KW.BUTTONS.value}', ignoring"
+                        )
                         continue
-                    display_fn = fn.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
+                    display_fn = fn.replace(
+                        os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), ".."
+                    )
                     logger.debug(f"loading page {name} (from file {display_fn})..")
                     this_page = Page(name, page_config.store, self)
                     self.pages[name] = this_page
@@ -382,13 +449,17 @@ class Deck(ABC):
                         includes = page_config[KW.INCLUDES.value]
                         if type(page_config[KW.INCLUDES.value]) == str:  # just one file
                             includes = includes.split(",")
-                        logger.debug(f"deck {self.name}: page {name} includes {includes}..")
+                        logger.debug(
+                            f"deck {self.name}: page {name} includes {includes}.."
+                        )
                         ipb = 0
                         for inc in includes:
                             fni = os.path.join(dn, inc + ".yaml")
                             inc_config = Config(fni)
                             if inc_config.is_valid():
-                                this_page.merge_attributes(inc_config.store)  # merges attributes first since can have things for buttons....
+                                this_page.merge_attributes(
+                                    inc_config.store
+                                )  # merges attributes first since can have things for buttons....
                                 if KW.BUTTONS.value in inc_config:
                                     before = len(this_page.buttons)
                                     this_page.load_buttons(inc_config[KW.BUTTONS.value])
@@ -396,11 +467,18 @@ class Deck(ABC):
                                 del inc_config.store[KW.BUTTONS.value]
                             else:
                                 logger.warning(f"includes: {inc}: file {fni} not found")
-                        display_fni = fni.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
-                        logger.info(f"deck {self.name}: page {name} includes {inc} (from file {display_fni}), include contains {ipb} buttons")
+                        display_fni = fni.replace(
+                            os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep),
+                            "..",
+                        )
+                        logger.info(
+                            f"deck {self.name}: page {name} includes {inc} (from file {display_fni}), include contains {ipb} buttons"
+                        )
                         logger.debug(f"includes: ..included")
 
-                    logger.info(f"deck {self.name}: page {name} loaded (from file {display_fn}), contains {len(this_page.buttons)} buttons")
+                    logger.info(
+                        f"deck {self.name}: page {name} loaded (from file {display_fn}), contains {len(this_page.buttons)} buttons"
+                    )
                 # else:
                 #    logger.warning(f"file {p} not found")
 
@@ -413,7 +491,9 @@ class Deck(ABC):
             # self.load_default_page()
         else:
             self.set_home_page()
-            logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
+            logger.info(
+                f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}"
+            )
 
     def change_page(self, page: str | None = None):
         """
@@ -437,10 +517,14 @@ class Deck(ABC):
         logger.debug(f"deck {self.name} changing page to {page}..")
         if page in self.pages.keys():
             if self.current_page is not None:
-                logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
+                logger.debug(
+                    f"deck {self.name} unloading page {self.current_page.name}.."
+                )
                 logger.debug(f"..unloading datarefs..")
                 self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
-                self.cockpit.sim.remove_collections_to_monitor(self.current_page.dataref_collections)
+                self.cockpit.sim.remove_collections_to_monitor(
+                    self.current_page.dataref_collections
+                )
                 logger.debug(f"..cleaning page..")
                 self.current_page.clean()
             logger.debug(f"deck {self.name} ..installing new page {page}..")
@@ -450,8 +534,12 @@ class Deck(ABC):
             logger.debug(f"..reset device {self.name}..")
             self.device.reset()
             logger.debug(f"..loading datarefs..")
-            self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
-            self.cockpit.sim.add_collections_to_monitor(self.current_page.dataref_collections)
+            self.cockpit.sim.add_datarefs_to_monitor(
+                self.current_page.datarefs
+            )  # set which datarefs to monitor
+            self.cockpit.sim.add_collections_to_monitor(
+                self.current_page.dataref_collections
+            )
             logger.debug(f"..rendering page..")
             self.current_page.render()
             logger.debug(f"deck {self.name} ..done")
@@ -474,7 +562,9 @@ class Deck(ABC):
             if self.home_page_name in self.pages.keys():
                 self.home_page = self.pages[self.home_page_name]
             else:
-                logger.debug(f"deck {self.name}: no home page named {self.home_page_name}")
+                logger.debug(
+                    f"deck {self.name}: no home page named {self.home_page_name}"
+                )
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
             logger.debug(f"deck {self.name}: home page {self.home_page.name}")
 
@@ -522,7 +612,9 @@ class Deck(ABC):
         This is the function that is called when a key is pressed.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
+        if (
+            self.cockpit.sim.use_flight_loop
+        ):  # if we use a flight loop, key_change_processing will be called from there
             self.cockpit.sim.events.put([self.name, key, state])
             logger.debug(f"{key} {state} enqueued")
         else:
@@ -627,12 +719,16 @@ class DeckWithIcons(Deck):
                 with open(cache, "rb") as fp:
                     icons_temp = pickle.load(fp)
                     self.icons.update(icons_temp)
-                logger.info(f"deck {self.name}: {len(self.icons)} icons loaded from cache")
+                logger.info(
+                    f"deck {self.name}: {len(self.icons)} icons loaded from cache"
+                )
                 return
 
         if self.device is not None:
             for k, v in self.cockpit.icons.items():
-                self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
+                self.icons[k] = self.pil_helper.create_scaled_image(
+                    self.device, v, margins=[0, 0, 0, 0]
+                )
             if dn is not None:
                 cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
                 if cache_icon:
@@ -644,7 +740,16 @@ class DeckWithIcons(Deck):
         else:
             logger.warning(f"deck {self.name} has no device")
 
-    def get_icon_background(self, name: str, width: int, height: int, texture_in, color_in, use_texture=True, who: str = "Deck"):
+    def get_icon_background(
+        self,
+        name: str,
+        width: int,
+        height: int,
+        texture_in,
+        color_in,
+        use_texture=True,
+        who: str = "Deck",
+    ):
         """
         Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
         """
@@ -662,10 +767,16 @@ class DeckWithIcons(Deck):
 
             dirs = []
             dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
-            dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
+            dirs.append(
+                os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
+            )
             if self.cockpit.acpath is not None:  # add to search path
-                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
-                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, ICONS_FOLDER))
+                dirs.append(
+                    os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER)
+                )
+                dirs.append(
+                    os.path.join(self.cockpit.acpath, CONFIG_FOLDER, ICONS_FOLDER)
+                )
 
             for dn in dirs:
                 for texture in tarr:
@@ -675,7 +786,11 @@ class DeckWithIcons(Deck):
             return None
 
         def get_color():
-            for t in [color_in, self.get_attribute("default-icon-color"), self.get_attribute("cockpit-color")]:
+            for t in [
+                color_in,
+                self.get_attribute("default-icon-color"),
+                self.get_attribute("cockpit-color"),
+            ]:
                 if t is not None:
                     return convert_color(t)
             return convert_color(self.get_attribute("cockpit-color"))
@@ -698,7 +813,9 @@ class DeckWithIcons(Deck):
             return image
 
         if use_texture and texture is None:
-            logger.debug(f"{who}: should use texture but no texture found, using uniform color")
+            logger.debug(
+                f"{who}: should use texture but no texture found, using uniform color"
+            )
 
         color = get_color()
         image = Image.new(mode="RGBA", size=(width, height), color=color)
@@ -728,12 +845,17 @@ class DeckWithIcons(Deck):
             )
         else:
             icon = self.create_icon_for_key(
-                key, colors=self.get_attribute("cockpit-color"), texture=self.get_attribute("cockpit-texture"), name=f"{self.name}:{key}"
+                key,
+                colors=self.get_attribute("cockpit-color"),
+                texture=self.get_attribute("cockpit-texture"),
+                name=f"{self.name}:{key}",
             )
         if icon is not None:
             self._send_key_image_to_device(key, icon)
         else:
-            logger.warning(f"deck {self.name}: {key}: no fill icon{' cleaning' if clean else ''}")
+            logger.warning(
+                f"deck {self.name}: {key}: no fill icon{' cleaning' if clean else ''}"
+            )
 
     def clean_empty(self, key):
         self.fill_empty(key, clean=True)
