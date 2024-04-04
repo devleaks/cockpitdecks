@@ -10,7 +10,7 @@ with X-Plane flight simulator.
 
 The project is in active development, perpetual beta software.
 
-Please head to the [wiki](https://github.com/devleaks/cockpitdecks/wiki) for more information.
+Please head to the [documentation](https://devleaks.github.io/cockpitdecks-docs/) for more information.
 
 
 ![Cockpitdecks Icon](cockpitdecks/resources/icon.png)
