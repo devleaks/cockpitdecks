@@ -93,13 +93,18 @@ class Activation:
 
             # Guard handling
             if self.button.is_guarded():
-                self._write_dataref(self.button.guarded, 1)  # just open it
-                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
                 return
+
         else:
             self.pressed = False
             self.duration = datetime.now().timestamp() - self.last_activated
             # Guard handling
+            if self.button.is_guarded():
+                if self.long_pressed():
+                    self._write_dataref(self.button.guarded, 1)  # just open it
+                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
+                return
+
             if self.button.guard is not None and not self.button.is_guarded() and self.long_pressed():
                 self._write_dataref(self.button.guarded, 0)  # close it
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
@@ -463,6 +468,9 @@ class Push(Activation):
             else:
                 self.view()
         else:
+            if self.button.is_guarded():
+                return
+
             if self.has_long_press() and not self.long_pressed():
                 self.command()
             if self.auto_repeat:
@@ -1269,7 +1277,6 @@ class EncoderValueExtended(OnOff):
             self._cw = self._cw + 1
         elif self.has_long_press() and self.long_pressed():
             self.long_press(state)
-            print('why hello again!')
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
             return
 
@@ -1280,9 +1287,6 @@ class EncoderValueExtended(OnOff):
             # write to local dataref if configured
             if self._local_dataref:
                 self._write_dataref(self._local_dataref, x)
-                print(f'self._local_dataref: {self._local_dataref}')
-
-            print(f'x: {x}')
 
     def get_status(self):
         a = super().get_status()
@@ -1449,18 +1453,14 @@ class EncoderToggle(Activation):
         elif state == 2 and not self.is_pressed():  # rotate anti clockwise
             if self._on:
                 self.command(self._commands[0])
-                print(self._commands[0])
             else:
                 self.command(self._commands[2])
-                print(self._commands[2])
 
         elif state == 3 and not self.is_pressed():  # rotate clockwise
             if self._on:
                 self.command(self._commands[1])
-                print(self._commands[1])
             else:
                 self.command(self._commands[3])
-                print(self._commands[3])
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid state {state}")
 
