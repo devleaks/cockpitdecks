@@ -4,7 +4,8 @@ Button action and activation abstraction
 from .activation import Activation
 from .activation import LoadPage, Reload, Inspect, Stop
 from .activation import Push, Longpress, OnOff, UpDown
-from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue
+from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue, EncoderToggle
+from .activation import EncoderValueExtended
 from .activation import Slider, Swipe
 
 # ###############################
@@ -33,10 +34,12 @@ ACTIVATIONS = {
     "encoder-push": EncoderPush,
     "encoder-onoff": EncoderOnOff,
     "encoder-value": EncoderValue,
+    "encoder-value-extended": EncoderValueExtended,
     "knob": EncoderValue,
     "slider": Slider,
     "cursor": Slider,
     "swipe": Swipe,
+    "encoder-toggle": EncoderToggle
 }
 
 DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
@@ -55,7 +58,7 @@ DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
 #   repeat: 6
 #
 push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown", "dref-collector"]
-encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "knob"]
+encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "encoder-value-extended", "knob", "encoder-toggle"]
 
 # ###############################
 # format is action: [ activation ]

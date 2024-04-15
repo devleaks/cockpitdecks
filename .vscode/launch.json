@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch cockpitdecks_upd_start.py",
+      "type": "python",
+      "request": "launch",
+      "program": "~/Documents/GitHub/cockpitdecks/bin/cockpitdecks_upd_start.py",
+      "args": [
+        "~/Documents/Github/cockpitdecks-configs/decks/cessna-172-sp/"
+      ],
+      "console": "integratedTerminal",
+      "pythonPath": "python3.10"
+    }
+  ]
+}
