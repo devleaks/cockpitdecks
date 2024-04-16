@@ -1,39 +1,39 @@
 # This is the description of a deck's capabilities for a Loupedeck LoupedeckLive device
 #
 ---
-type: loupedecklive
+type: LoupedeckLive
 brand: Loupedeck
 model: loupedecklive
 driver: loupedeck
 buttons:
-    - name: 0
-      action: push
-      view: image
-      image: [90, 90, 0, 0]
-      repeat: 12
-    - name: left
-      action: swipe
-      view: image
-      image: [60, 270, 0, 0]
-    - name: right
-      action: swipe
-      view: image
-      image: [60, 270, 420, 0]
-    # Commented out, means center "image" is not accessible as a whole
-    # only through its 12 constituing button...
-    # (otherwise warning is reported on clean/draw)
-    # 
-    # - name: center
-    #   action: swipe
-    #   view: image
-    #   image: [360, 270, 60, 0]
-    - name: 0
-      prefix: e
-      action: encoder-push
-      view: none
-      repeat: 6
-    - name: 0
-      prefix: b
-      action: push
-      view: colored-led
-      repeat: 8
+  - name: 0
+    action: push
+    view: image
+    image: [90, 90, 0, 0]
+    repeat: 12
+  - name: left
+    action: swipe
+    view: image
+    image: [60, 270, 0, 0]
+  - name: right
+    action: swipe
+    view: image
+    image: [60, 270, 420, 0]
+  # Commented out, means center "image" is not accessible as a whole
+  # only through its 12 constituing button...
+  # (otherwise warning is reported on clean/draw)
+  #
+  # - name: center
+  #   action: swipe
+  #   view: image
+  #   image: [360, 270, 60, 0]
+  - name: 0
+    prefix: e
+    action: encoder-push
+    view: none
+    repeat: 6
+  - name: 0
+    prefix: b
+    action: push
+    view: colored-led
+    repeat: 8

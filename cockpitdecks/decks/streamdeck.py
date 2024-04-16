@@ -90,7 +90,8 @@ class Streamdeck(DeckWithIcons):
                 image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             else:
                 logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
-                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.default_icon_color)
+                dic = self.get_attribute("default-icon-color")
+                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=dic)
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
                     inside = 20

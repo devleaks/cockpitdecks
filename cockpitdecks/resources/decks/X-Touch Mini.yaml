@@ -1,26 +1,26 @@
 # This is the description of a deck's capabilities for a Behringer XTouch Mini device
 #
 ---
-type: xtouchmini
+type: X-Touch Mini
 brand: Berhinger
 model: mini
 driver: xtouchmini
 buttons:
-    - name: 0
-      action: push
-      view: led
-      repeat: 16
-    - name: 0
-      prefix: e
-      action: encoder-push
-      view: encoder-leds
-      repeat: 8
-    - name: A
-      action: push
-      view: led
-    - name: B
-      action: push
-      view: led
-    - name: slider
-      action: cursor
-      view: none
+  - name: 0
+    action: push
+    view: led
+    repeat: 16
+  - name: 0
+    prefix: e
+    action: encoder-push
+    view: encoder-leds
+    repeat: 8
+  - name: A
+    action: push
+    view: led
+  - name: B
+    action: push
+    view: led
+  - name: slider
+    action: cursor
+    view: none

@@ -516,7 +516,6 @@ class Cockpit(DatarefListener, CockpitBase):
             device = self.get_device(req_serial=serial, req_driver=deck_driver)
             if device is not None:
                 #
-                deck_config[KW.MODEL.value] = device.deck_type()
                 if serial is None:
                     if deck_count_by_type[deck_type] > 1:
                         logger.warning(
@@ -550,9 +549,9 @@ class Cockpit(DatarefListener, CockpitBase):
         #    KW.SERIAL.value: serial
         # }
         for deck in self.devices:
-            decktype = deck.get(KW.TYPE.value)
-            if decktype not in DECK_DRIVERS.keys():
-                logger.warning(f"invalid deck type {decktype}, ignoring")
+            deckdriver = deck.get(KW.DRIVER.value)
+            if deckdriver not in DECK_DRIVERS.keys():
+                logger.warning(f"invalid deck driver {deckdriver}, ignoring")
                 continue
             device = deck[KW.DEVICE.value]
             device.open()
@@ -560,12 +559,12 @@ class Cockpit(DatarefListener, CockpitBase):
             name = device.id()
             config = {
                 KW.NAME.value: name,
-                KW.MODEL.value: device.deck_type(),
+                KW.TYPE.value: device.deck_type(),
                 KW.SERIAL.value: device.get_serial_number(),
                 KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
-            self.cockpit[name] = DECK_DRIVERS[decktype][0](name, config, self, device)
+            self.cockpit[name] = DECK_DRIVERS[deckdriver][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches

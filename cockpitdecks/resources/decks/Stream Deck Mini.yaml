@@ -1,13 +1,13 @@
 # This is the description of a deck's capabilities for a Elgato Streamdeck Mini device
 #
 ---
-type: streamdeck-mini
+type: Stream Deck Mini
 brand: Streamdeck
 model: mini
 driver: streamdeck
 buttons:
-    - name: 0
-      action: push
-      view: image
-      image: [96, 96, 0, 0]
-      repeat: 6
+  - name: 0
+    action: push
+    view: image
+    image: [96, 96, 0, 0]
+    repeat: 6

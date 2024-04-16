@@ -305,14 +305,10 @@ class Deck(ABC):
             if self.device is not None:
                 self.device.set_brightness(self.brightness)
 
-        self.layout = None
-        if KW.LAYOUT.value in config:
-            self.layout = config[
-                KW.LAYOUT.value
-            ]  # config[KW.LAYOUT.value] may be None to choose no layout
-        else:
-            self.layout = DEFAULT_LAYOUT
-            logger.warning(f"deck has no layout, using default")
+        self.layout = config.get(KW.LAYOUT.value)
+        # if self.layout is None:
+        #     self.layout = DEFAULT_LAYOUT
+        #     logger.warning(f"deck has no layout, using default")
 
         self.home_page_name = config.get(
             "home-page-name", self.get_attribute("default-home-page-name")
@@ -336,10 +332,11 @@ class Deck(ABC):
         self.start()  # Some system may need to start before we can load a page
 
     def get_id(self):
-        return ID_SEP.join([self.cockpit.get_id(), self.name, self.layout])
+        l = self.layout if self.layout is not None else "-nolayout-"
+        return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
     def set_deck_type(self):
-        deck_type = self._config.get(KW.TYPE.value, type(self).__name__)
+        deck_type = self._config.get(KW.TYPE.value)
         self.deck_type = self.cockpit.get_deck_type_description(deck_type)
         if self.deck_type is None:
             logger.error(f"no deck definition for {deck_type}")

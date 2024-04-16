@@ -68,7 +68,7 @@ class Loupedeck(DeckWithIcons):
                 image = Image.open(image_filename).convert("RGBA")
                 image = ImageOps.fit(image, (deck_width, deck_height), Image.LANCZOS)
             else:
-                logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
+                logger.warning(f"deck {self.name}: no wallpaper image {os.path.abspath(image_filename)} found, using default")
                 image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=self.get_attribute("default-icon-color"))
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):

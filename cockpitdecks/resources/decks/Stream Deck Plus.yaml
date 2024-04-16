@@ -1,23 +1,23 @@
 # This is the description of a deck's capabilities for a Elgato Streamdeck Plus device
 #
 ---
-type: streamdeck-plus
+type: Stream Deck +
 brand: Streamdeck
 model: Plus
 driver: streamdeck
 buttons:
-    - name: 0
-      action: push
-      view: image
-      image: [96, 96, 0, 0]
-      repeat: 8
-    - name: 0
-      prefix: e
-      action: encoder-push
-      view: none
-      repeat: 4
-    # touchscreen in streamdeck package vocabulary
-    - name: touchscreen
-      action: swipe
-      view: image
-      image: [800, 100, 0, 0]
+  - name: 0
+    action: push
+    view: image
+    image: [96, 96, 0, 0]
+    repeat: 8
+  - name: 0
+    prefix: e
+    action: encoder-push
+    view: none
+    repeat: 4
+  # touchscreen in streamdeck package vocabulary
+  - name: touchscreen
+    action: swipe
+    view: image
+    image: [800, 100, 0, 0]
