@@ -10,7 +10,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we'r
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
 from cockpitdecks.simulator import DatarefListener, Dataref
-from cockpitdecks import CockpitBase, XPlane
+from cockpitdecks import CockpitBase
+from cockpitdecks.simulators import XPlane
 
 # logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode='a')
 LOGFILE = "dataref_fetcher.log"
