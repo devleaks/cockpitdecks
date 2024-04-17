@@ -2,8 +2,6 @@
 #
 ---
 type: Stream Deck +
-brand: Streamdeck
-model: Plus
 driver: streamdeck
 buttons:
   - name: 0

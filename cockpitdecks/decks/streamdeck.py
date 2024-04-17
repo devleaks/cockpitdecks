@@ -9,8 +9,9 @@ from PIL import Image, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
-from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
+from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, KW
 from cockpitdecks.deck import DeckWithIcons
+from cockpitdecks.event import PushEvent, EncoderEvent, TouchEvent, SwipeEvent
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
 from cockpitdecks.buttons.representation import Representation, Icon  # valid representations for this type of deck
@@ -275,7 +276,7 @@ class Streamdeck(DeckWithIcons):
         if self.device is None:
             logger.warning("no device")
             return
-        if self.deck_type.is_encoder(button):
+        if self.deck_type.is_of_type(idx=button.index, query={"action":"encoder-push"}):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation
@@ -300,13 +301,15 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a dial is rotated.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
-        idx = self.deck_type.get_encoder_index(key)
+        bdef = self.deck_type.filter({"action": "encoder-push"})
+        prefix = bdef[0].get(KW.PREFIX.value)
+        idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:
-            self.key_change_processing(deck, idx, 1 if value else 0)
+            self.key_change_processing(PushEvent(deck=deck, button=idx, pressed=value))
         elif action == DialEventType.TURN:
             direction = 2 if value < 0 else 3
             for i in range(abs(value)):
-                self.key_change_processing(deck, idx, direction)
+                self.key_change_processing(EncoderEvent(deck=deck, button=idx, clockwise=direction==2))
         else:
             logger.warning(f"deck {self.name}: invalid dial action {action}")
 

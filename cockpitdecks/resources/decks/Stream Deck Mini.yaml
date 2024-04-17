@@ -2,8 +2,6 @@
 #
 ---
 type: Stream Deck Mini
-brand: Streamdeck
-model: mini
 driver: streamdeck
 buttons:
   - name: 0

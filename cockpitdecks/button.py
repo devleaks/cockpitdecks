@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 VARIABLE_PREFIX = ["button", "state"]
+DECK_DEF = "_deck_def"
 
 
 class Button(DatarefListener, DatarefSetListener):
@@ -31,6 +32,7 @@ class Button(DatarefListener, DatarefSetListener):
         DatarefSetListener.__init__(self)
         # Definition and references
         self._config = config
+        self._def = config.get(DECK_DEF)
         self.page: "Page" = page
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
@@ -818,7 +820,7 @@ class Button(DatarefListener, DatarefSetListener):
         logger.log(SPAM_LEVEL, f"button {self.name}: dataref collection {dataref_collection.name} changed")
         self.render()
 
-    def activate(self, state: bool):
+    def activate(self, event):
         """
         @todo: Return a status from activate()
         """
@@ -827,7 +829,7 @@ class Button(DatarefListener, DatarefSetListener):
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return
             self._activs = self._activs + 1
-            self._activation.activate(state)
+            self._activation.activate(event)
         else:
             logger.debug(f"button {self.name}: no activation")
         if self.use_internal_state():

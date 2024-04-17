@@ -5,17 +5,18 @@ import logging
 from PIL import Image, ImageOps
 
 from Loupedeck.ImageHelpers import PILHelper
-from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC
+from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD
 
-from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME
+from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, KW
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
+from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
 from cockpitdecks.buttons.representation import Representation, Icon, ColoredLED
 from cockpitdecks.resources.color import convert_color  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # Warning, the logger in package Loupedeck is also called "Loupedeck".
 
 SIDE_INDIVIDUAL_KEYS = False
@@ -111,104 +112,104 @@ class Loupedeck(DeckWithIcons):
         """
         This is the function that is called when a key is pressed.
         """
-
-        def transfer(this_deck, this_key, this_state):
-            """
-            Either execute function direactly or enqueue it for later dequeue.
-            """
-            logger.debug(f"Deck {this_deck.id()} Key {this_key} = {this_state}")
-            if self.cockpit.sim.use_flight_loop:  # if we use a flight loop, key_change_processing will be called from there
-                self.cockpit.sim.events.put([self.name, this_key, this_state])
-                # logger.debug(f"{this_key} {this_state} enqueued")
-            else:
-                # logger.debug(f"{key} {state}")
-                self.key_change_processing(this_deck, this_key, this_state)
-
         # logger.debug(f"{msg}")
-        if "action" not in msg or "id" not in msg:
-            logger.debug(f"invalid message {msg}")
+        if CALLBACK_KEYWORD.ACTION.value not in msg or CALLBACK_KEYWORD.IDENTIFIER.value not in msg:
+            logger.debug(f"invalid message {msg}, no action and/or no id")
             return
 
+        print(msg)
+
         L = 270
-        key = msg["id"]
-        action = msg["action"]
+        key = msg[CALLBACK_KEYWORD.IDENTIFIER.value]
+        action = msg[CALLBACK_KEYWORD.ACTION.value]
 
         # Map between our convenient "e3" and Loupedeck naming knobTR
         if key in ENCODER_MAP.keys():
             key = ENCODER_MAP[key]
 
         # Map between Loupedeck indices and Cockpitdecks'
-        if action == "push":
-            state = 1 if msg["state"] == "down" else 0
+        if action == CALLBACK_KEYWORD.PUSH.value:
             num = -1
-            if not self.deck_type.is_encoder(key):
+            if not self.deck_type.is_of_type(idx=key, query={"action":"encoder-push"}): # is_encoder(key):
                 if key == KW_CIRCLE:
                     key = 0
                 try:
                     num = int(key)
-                    key = self.deck_type.get_button_index(key)
+                    bdef = self.deck_type.filter({"view": "colored-led"})
+                    prefix = bdef[0].get(KW.PREFIX.value)
+                    key = f"{prefix}{key}"
                 except ValueError:
                     logger.warning(f"invalid button key {key}")
-            transfer(deck, key, state)
+            state = msg[CALLBACK_KEYWORD.STATE.value] == "down"
+            logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+            self.key_change_processing(PushEvent(deck=deck, button=key, pressed=state))
 
-        elif action == "rotate":
-            state = 2 if msg["state"] == "left" else 3
-            transfer(deck, key, state)
+        elif action == CALLBACK_KEYWORD.ROTATE.value:
+            state = msg[CALLBACK_KEYWORD.STATE.value] != "left"
+            logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+            self.key_change_processing(EncoderEvent(deck=deck, button=key, clockwise=state))
 
-        elif action == "touchstart":  # we don't deal with slides now, just push on key
-            state = 1
-            if "key" in msg and msg["key"] is not None:  # we touched a key, not a side bar
-                key = msg["key"]
+        elif action == CALLBACK_KEYWORD.TOUCH_START.value:  # we don't deal with slides now, just push on key
+            state = True
+            if CALLBACK_KEYWORD.KEY.value in msg and msg[CALLBACK_KEYWORD.KEY.value] is not None:  # we touched a key, not a side bar
+                key = msg[CALLBACK_KEYWORD.KEY.value]
                 try:
                     key = int(key)
                 except ValueError:
                     logger.warning(f"invalid button key {key} {msg}")
-                self.touches[msg["id"]] = msg
-                transfer(deck, key, state)
+                self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg
+                logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+                self.key_change_processing(PushEvent(deck=deck, button=key, pressed=state))
+
             else:
-                self.touches[msg["id"]] = msg
+                self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg
                 if SIDE_INDIVIDUAL_KEYS:
                     k = None
                     i = 0
                     while k is None and i < 3:
-                        if msg["y"] >= int(i * L / 3) and msg["y"] < int((i + 1) * L / 3):
+                        if msg[CALLBACK_KEYWORD.Y.value] >= int(i * L / 3) and msg[CALLBACK_KEYWORD.Y.value] < int((i + 1) * L / 3):
                             k = f"{msg['screen'][0].upper()}{i}"
                         i = i + 1
                     logger.debug(f"side bar pressed, SIDE_INDIVIDUAL_KEYS event {k} = {state}")
                     # This transfer a (virtual) button push event
-                    transfer(deck, k, state)
+                    self.key_change_processing(PushEvent(deck=deck, button=k, pressed=state))
                     # WATCH OUT! If the release occurs in another key (virtual or not),
                     # the corresponding release event will be not be sent to the same, original key
                 else:
                     logger.warning(f"side bar touched, no processing")
                     logger.debug(f"side bar touched, no processing msg={msg}")
 
-        elif action == "touchend":  # since user can "release" touch in another key, we send the touchstart one.
-            state = 0
-            if msg["id"] in self.touches:
-                if "key" in self.touches[msg["id"]] and self.touches[msg["id"]]["key"] is not None:
-                    key = self.touches[msg["id"]]["key"]
-                    del self.touches[msg["id"]]
-                    transfer(deck, key, state)
+        elif action == CALLBACK_KEYWORD.TOUCH_END.value:  # since user can "release" touch in another key, we send the touchstart one.
+            state = False
+            if msg[CALLBACK_KEYWORD.IDENTIFIER.value] in self.touches:
+                if CALLBACK_KEYWORD.KEY.value in self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] and self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value] is not None:
+                    key = self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value]
+                    del self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]]
+                    print("tchac", key, state)
+                    self.key_change_processing(PushEvent(deck=deck, button=key, pressed=state))
                 else:
-                    dx = msg["x"] - self.touches[msg["id"]]["x"]
-                    dy = msg["y"] - self.touches[msg["id"]]["y"]
-                    kstart = self.touches[msg["id"]]["key"] if self.touches[msg["id"]]["key"] is not None else self.touches[msg["id"]]["screen"]
-                    kend = msg["key"] if msg["key"] is not None else msg["screen"]
+                    dx = msg[CALLBACK_KEYWORD.X.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.X.value]
+                    dy = msg[CALLBACK_KEYWORD.Y.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.Y.value]
+                    dts = msg[CALLBACK_KEYWORD.TIMESTAMP.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.TIMESTAMP.value]
+                    kstart = self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value] if self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value] is not None else self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.SCREEN.value]
+                    kend = msg[CALLBACK_KEYWORD.KEY.value] if msg[CALLBACK_KEYWORD.KEY.value] is not None else msg[CALLBACK_KEYWORD.SCREEN.value]
                     same_key = kstart == kend
-                    event_dict = {
+                    event_dict = {  # should normalise defs in Enum
                         "begin_key": kstart,
-                        "begin_x": self.touches[msg["id"]]["x"],
-                        "begin_y": self.touches[msg["id"]]["y"],
+                        "begin_x": self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.X.value],
+                        "begin_y": self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.Y.value],
+                        "begin_ts": self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.TIMESTAMP.value],
                         "end_key": kend,
-                        "end_x": msg["x"],
-                        "end_y": msg["y"],
+                        "end_x": msg[CALLBACK_KEYWORD.X.value],
+                        "end_y": msg[CALLBACK_KEYWORD.Y.value],
+                        "end_y": msg[CALLBACK_KEYWORD.TIMESTAMP.value],
                         "diff_x": dx,
                         "diff_y": dy,
+                        "diff_ts": dts,
                         "same_key": same_key,
                     }
-                    event = [self.touches[msg["id"]]["x"], self.touches[msg["id"]]["y"], kstart]
-                    event = event + [msg["x"], msg["y"], kend]
+                    event = [self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.X.value], self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.Y.value], kstart]
+                    event = event + [msg[CALLBACK_KEYWORD.X.value], msg[CALLBACK_KEYWORD.Y.value], kend]
                     event = event + [dx, dy, same_key]
                     if same_key and SIDE_INDIVIDUAL_KEYS:
                         # if the press and the release occurs in the same key, we send an individual release of virtual button.
@@ -238,9 +239,10 @@ class Loupedeck(DeckWithIcons):
                             event = event + [pressed]
                             logger.debug(f"side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
                             # This transfer a (virtual) button release event
-                            transfer(deck, pressed, state)
+                            self.key_change_processing(PushEvent(deck=deck, button=key, pressed=state))
 
-                    transfer(deck, kstart, event)
+                    self.key_change_processing(SwipeEvent(deck=deck, button=pressed, start_pos_x=event["begin_x"], start_pos_y=event["begin_y"], start_ts=self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.TIMESTAMP.value], end_pos_x=event["end_x"], end_pos_y=event["end_y"], end_ts= msg[CALLBACK_KEYWORD.TIMESTAMP.value]))
+
             else:
                 logger.error(f"received touchend but no matching touchstart found")
         else:
@@ -331,7 +333,9 @@ class Loupedeck(DeckWithIcons):
         if color is None:
             logger.warning("button returned no representation color, using default")
             color = self.get_attribute("default-color")
-        key = self.deck_type.get_button_key(button.index)
+        bdef = self.deck_type.filter({"view": "colored-led"})
+        prefix = bdef[0].get(KW.PREFIX.value)
+        key = button.index.lower().replace(prefix, "")
         if key == "0":
             key = KW_CIRCLE
         self.device.set_button_color(key, color)
@@ -358,10 +362,10 @@ class Loupedeck(DeckWithIcons):
         logger.debug(f"page {self.name}: image {image.width}x{image.height}..")
         for button in page.buttons.values():
             logger.debug(f"doing {button.name}..")
-            if self.deck_type.is_button(button):
+            if self.deck_type.is_of_type(idx=button.index, query={"view":"colored-led"}):  # .is_button(button):
                 logger.debug(f"..color led has no image")
                 continue
-            if self.deck_type.is_encoder(button):
+            if self.deck_type.is_of_type(idx=button.index, query={"action":"encoder-push"}): # .is_encoder(button):
                 logger.debug(f"..encoder has no image")
                 continue
             if button.index in [KW_LEFT, KW_RIGHT]:
@@ -390,7 +394,7 @@ class Loupedeck(DeckWithIcons):
         if self.device is None:
             logger.warning("no device")
             return
-        if self.deck_type.is_encoder(button):
+        if self.deck_type.is_of_type(idx=button.index, query={"action":"encoder-push"}):  # .is_encoder(button):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation

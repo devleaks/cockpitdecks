@@ -2,8 +2,6 @@
 #
 ---
 type: Stream Deck Original
-brand: Streamdeck
-model: MK.2
 driver: streamdeck
 buttons:
   - name: 0

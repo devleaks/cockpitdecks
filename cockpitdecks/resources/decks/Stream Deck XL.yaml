@@ -2,8 +2,6 @@
 #
 ---
 type: Stream Deck XL
-brand: Streamdeck
-model: XL
 driver: streamdeck
 buttons:
   - name: 0

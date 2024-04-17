@@ -768,7 +768,7 @@ class Cockpit(DatarefListener, CockpitBase):
             deck.terminate()
         self.cockpit = {}
         nt = len(threading.enumerate())
-        if not self.sim.use_flight_loop and nt > 1:
+        if nt > 1:
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info(f"..done")
@@ -815,18 +815,17 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"..connect to simulator loop started..")
             self.start_reload_loop()
             logger.info(f"..reload loop started..")
-            if not self.sim.use_flight_loop:
-                logger.info(f"{len(threading.enumerate())} threads")
-                logger.info(f"{[t.name for t in threading.enumerate()]}")
-                logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
-                logger.info(f"..started")
-                logger.info(f"serving {self.name}")
-                for t in threading.enumerate():
-                    try:
-                        t.join()
-                    except RuntimeError:
-                        pass
-                logger.info(f"terminated")
+            logger.info(f"{len(threading.enumerate())} threads")
+            logger.info(f"{[t.name for t in threading.enumerate()]}")
+            logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
+            logger.info(f"..started")
+            logger.info(f"serving {self.name}")
+            for t in threading.enumerate():
+                try:
+                    t.join()
+                except RuntimeError:
+                    pass
+            logger.info(f"terminated")
         else:
             logger.warning(f"no deck")
             if self.acpath is not None:

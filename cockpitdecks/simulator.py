@@ -248,7 +248,6 @@ class Simulator(ABC):
     def __init__(self, cockpit):
         self._inited = False
         self.cockpit = cockpit
-        self.use_flight_loop = False
         self.running = False
         self.all_datarefs = {}
 

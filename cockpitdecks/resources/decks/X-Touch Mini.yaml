@@ -2,8 +2,6 @@
 #
 ---
 type: X-Touch Mini
-brand: Berhinger
-model: mini
 driver: xtouchmini
 buttons:
   - name: 0

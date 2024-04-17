@@ -2,8 +2,6 @@
 #
 ---
 type: LoupedeckLive
-brand: Loupedeck
-model: loupedecklive
 driver: loupedeck
 buttons:
   - name: 0

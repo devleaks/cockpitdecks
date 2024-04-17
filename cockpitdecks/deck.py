@@ -22,16 +22,17 @@ from cockpitdecks.buttons.representation import (
     DECK_REPRESENTATIONS,
     DEFAULT_REPRESENTATIONS,
 )
+from cockpitdecks.event import DeckEvent, PushEvent
 
 loggerDeckType = logging.getLogger("DeckType")
-# loggerDeckType.setLevel(logging.DEBUG)
+loggerDeckType.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 DECKS_FOLDER = "decks"
 
-# Conventions, need to be found in _buttons definition from resources.decks.decktype.yaml
+# Conventions, need to be found in Button()._deck_def from resources.decks.decktype.yaml
 BUTTON_PREFIX = "b"
 ENCODER_PREFIX = "e"
 
@@ -87,6 +88,7 @@ class DeckType(Config):
                     self._buttons[prefix + name] = {
                         KW.INDEX.value: prefix + name,
                         KW.INDEX_NUMERIC.value: 0,
+                        KW.PREFIX.value: prefix,
                         KW.ACTION.value: button.get(KW.ACTION.value),
                         KW.VIEW.value: button.get(KW.VIEW.value),
                         KW.ACTIVATIONS.value: activation,
@@ -102,6 +104,7 @@ class DeckType(Config):
                         self._buttons[idx] = {
                             KW.INDEX.value: idx,
                             KW.INDEX_NUMERIC.value: i,
+                            KW.PREFIX.value: prefix,
                             KW.ACTION.value: button.get(KW.ACTION.value),
                             KW.VIEW.value: button.get(KW.VIEW.value),
                             KW.ACTIVATIONS.value: activation,
@@ -188,21 +191,6 @@ class DeckType(Config):
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
-    def get_encoder_index(self, key):
-        return f"{ENCODER_PREFIX}{key}"  # KW.PREFIX.value
-
-    def is_encoder(self, button):
-        return str(button.index).startswith(ENCODER_PREFIX)  # KW.PREFIX.value
-
-    def get_button_index(self, key):
-        return f"{BUTTON_PREFIX}{key}"  # KW.PREFIX.value
-
-    def get_button_key(self, index):
-        return index.lower().replace(BUTTON_PREFIX, "")  # KW.PREFIX.value
-
-    def is_button(self, button):
-        return str(button.index).startswith(BUTTON_PREFIX)  # KW.PREFIX.value
-
     def valid_indices(self, with_icon: bool = False):
         # If with_icon is True, only returns keys with image icon associted with it
         if with_icon:
@@ -264,6 +252,20 @@ class DeckType(Config):
         loggerDeckType.debug(f"deck {self.name}: {all_representations}")
         return set(all_representations)
 
+    def filter(self, query: dict) -> dict:
+        res = []
+        for button in self[KW.BUTTONS.value]:
+            for k, v in query.items():
+                if k in button:
+                    if v == button.get(k):
+                        res.append(button)
+        return res
+
+    def is_of_type(self, idx, query) -> bool:
+        bdef = self.filter(query=query)
+        bdef0 = bdef[0]
+        prefix = bdef0.get(KW.PREFIX.value)
+        return str(idx).startswith(prefix)
 
 class Deck(ABC):
     """
@@ -334,6 +336,9 @@ class Deck(ABC):
     def get_id(self):
         l = self.layout if self.layout is not None else "-nolayout-"
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
+
+    def get_deck_button_definition(self, idx):
+        return self.deck_type.get_button_definition(idx)
 
     def set_deck_type(self):
         deck_type = self._config.get(KW.TYPE.value)
@@ -609,27 +614,20 @@ class Deck(ABC):
         This is the function that is called when a key is pressed.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        if (
-            self.cockpit.sim.use_flight_loop
-        ):  # if we use a flight loop, key_change_processing will be called from there
-            self.cockpit.sim.events.put([self.name, key, state])
-            logger.debug(f"{key} {state} enqueued")
-        else:
-            # logger.debug(f"{key} {state}")
-            self.key_change_processing(deck, key, state)
+        self.key_change_processing(PushEvent(deck=deck, button=key, pressed=state))
 
-    def key_change_processing(self, deck, key, state):
+    def key_change_processing(self, event: DeckEvent):
         """
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         if self.current_page is not None:
-            idx = str(key)
+            idx = str(event.button)
             if idx in self.current_page.buttons.keys():
-                self.current_page.buttons[idx].activate(state)
+                self.current_page.buttons[idx].activate(event)
             else:
-                logger.debug(f"{idx} not found on page {self.current_page.name}")
+                logger.warning(f"{idx} not found on page {self.current_page.name} ({self.current_page.buttons.keys()})")
         else:
             logger.warning(f"no current page")
 

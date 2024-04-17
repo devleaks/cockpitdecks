@@ -2,12 +2,10 @@
 #
 ---
 type: streamdeck
-brand: Streamdeck
-model: default
 driver: streamdeck
 buttons:
-    - name: 0
-      action: push
-      view: image
-      image: [96, 96, 0, 0]
-      repeat: 15
+  - name: 0
+    action: push
+    view: image
+    image: [96, 96, 0, 0]
+    repeat: 15
