@@ -160,3 +160,6 @@ secret.yaml
 *.taz
 tests/
 aircrafts/
+
+# Visual Studio Code
+.vscode/*
