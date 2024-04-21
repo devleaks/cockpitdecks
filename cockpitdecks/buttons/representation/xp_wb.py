@@ -8,7 +8,11 @@ import random
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE, now
-from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, DEFAULT_WEATHER_ICON
+from cockpitdecks.resources.iconfonts import (
+    WEATHER_ICONS,
+    WEATHER_ICON_FONT,
+    DEFAULT_WEATHER_ICON,
+)
 from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
 from .draw import DrawBase
 
@@ -69,7 +73,9 @@ class XPWeatherBaseIcon(DrawBase):
         self._upd_count = self._upd_count + 1
         self._icon_last_updated = now()
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(
+            mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR
+        )  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
         inside = round(0.04 * image.width + 0.5)
 
@@ -89,7 +95,14 @@ class XPWeatherBaseIcon(DrawBase):
             if icon_text is None:
                 logger.warning(f"default icon not found, using default")
                 icon_text = "\uf00d"
-        draw.text((w, h), text=icon_text, font=font, anchor="mm", align="center", fill=light_off(icon_color, 0.6))  # (image.width / 2, 15)
+        draw.text(
+            (w, h),
+            text=icon_text,
+            font=font,
+            anchor="mm",
+            align="center",
+            fill=light_off(icon_color, 0.6),
+        )  # (image.width / 2, 15)
 
         # Weather Data
         lines = self.get_lines()
@@ -104,14 +117,27 @@ class XPWeatherBaseIcon(DrawBase):
             h = image.height / 3
             il = text_size
             for line in lines:
-                draw.text((w, h), text=line.strip(), font=font, anchor=p + "m", align=a, fill=self.label_color)  # (image.width / 2, 15)
+                draw.text(
+                    (w, h),
+                    text=line.strip(),
+                    font=font,
+                    anchor=p + "m",
+                    align=a,
+                    fill=self.label_color,
+                )  # (image.width / 2, 15)
                 h = h + il
         else:
             logger.warning(f"no summary ({icao})")
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather"
+            name=self.button_name(),
+            width=ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=self.icon_texture,
+            color_in=self.icon_color,
+            use_texture=True,
+            who="Weather",
         )
         bg.alpha_composite(image)
         self._cache = bg.convert("RGB")

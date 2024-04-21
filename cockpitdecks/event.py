@@ -3,6 +3,7 @@ from abc import ABC
 from datetime import datetime
 from math import sqrt
 from cockpitdecks import DECK_ACTIONS
+
 # from cockpitdecks.deck import Deck
 
 
@@ -14,8 +15,8 @@ class DeckEvent(ABC):
 
     [description]
     """
-    _required_deck_capability = DECK_ACTIONS.NONE
 
+    _required_deck_capability = DECK_ACTIONS.NONE
 
     def __init__(self, deck: "Deck", button: str):
         """Deck event
@@ -28,13 +29,16 @@ class DeckEvent(ABC):
         self.button = button
         self._ts = datetime.now().timestamp()
 
+    def __str__(self):
+        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}"
+
     @property
-    def action(self) -> float:
+    def action(self) -> DECK_ACTIONS:
         """Event deck action type"""
         return self._required_deck_capability
 
     @property
-    def event(self) -> float:
+    def event(self) -> str:
         """Event type"""
         return type(self).__name__
 
@@ -58,13 +62,18 @@ class DeckEvent(ABC):
     @property
     def duration(self) -> float:
         """Returns event handling duration in seconds"""
-        if hasattr(self, "started") and self.started is not None and self.is_processed():
+        if (
+            hasattr(self, "started")
+            and self.started is not None
+            and self.is_processed()
+        ):
             return self.completed - self.started
         return -1.0
 
 
 class PushEvent(DeckEvent):
     """Event for key press"""
+
     _required_deck_capability = DECK_ACTIONS.PUSH
 
     def __init__(self, deck: "Deck", button: str, pressed: bool):
@@ -76,10 +85,12 @@ class PushEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button)
         self.pressed = pressed
 
+    def __str__(self):
+        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.is_pressed}"
+
     @property
     def is_pressed(self) -> bool:
         return self.pressed
-
 
     @property
     def is_released(self) -> bool:
@@ -97,6 +108,9 @@ class EncoderEvent(DeckEvent):
         """
         DeckEvent.__init__(self, deck=deck, button=button)
         self.clockwise = clockwise
+
+    def __str__(self):
+        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.turned_clockwise}"
 
     @property
     def turned_clockwise(self) -> bool:
@@ -141,11 +155,24 @@ class SlideEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button)
         self.value = value
 
+    def __str__(self):
+        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.value}"
+
 
 class SwipeEvent(DeckEvent):
     _required_deck_capability = DECK_ACTIONS.SWIPE
 
-    def __init__(self, deck: "Deck", button: str, start_pos_x: int, start_pos_y: int, start_ts: float, end_pos_x: int, end_pos_y: int, end_ts: float):
+    def __init__(
+        self,
+        deck: "Deck",
+        button: str,
+        start_pos_x: int,
+        start_pos_y: int,
+        start_ts: float,
+        end_pos_x: int,
+        end_pos_y: int,
+        end_ts: float,
+    ):
         """Event when a touch screen has been touched or swiped.
 
         For swipe events, only start and end positions are returned.
@@ -167,6 +194,9 @@ class SwipeEvent(DeckEvent):
         self.end_pos_y = end_pos_y
         self.end_ts = end_ts
 
+    def __str__(self):
+        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:swipe"
+
     @property
     def swipe_distance(self) -> float:
         """Distance covered by finger.
@@ -174,7 +204,10 @@ class SwipeEvent(DeckEvent):
         Returns:
             float: Distance covered by finger in pixels
         """
-        return sqrt((self.end_pos_x - self.start_pos_x)*(self.end_pos_x - self.start_pos_x) + (self.end_pos_y - self.start_pos_y)*(self.end_pos_y - self.start_pos_y))
+        return sqrt(
+            (self.end_pos_x - self.start_pos_x) * (self.end_pos_x - self.start_pos_x)
+            + (self.end_pos_y - self.start_pos_y) * (self.end_pos_y - self.start_pos_y)
+        )
 
     @property
     def swipe_duration(self) -> float:
@@ -196,7 +229,9 @@ class SwipeEvent(DeckEvent):
         """
         return self.swipe_distance < tolerance
 
-    def long_press(self, minimum_duration: float = 3.0, tolerance: float = 10.0) -> bool:
+    def long_press(
+        self, minimum_duration: float = 3.0, tolerance: float = 10.0
+    ) -> bool:
         """Returns whether the swipe was just a touch but for a long time
 
         Args:
@@ -206,16 +241,30 @@ class SwipeEvent(DeckEvent):
         Returns:
             bool: Whether the touch screen was touched (not swiped) for a longer time than `minimum_duration`.
         """
-        return self.touched_only(tolerance=tolerance) and self.swipe_duration > minimum_duration
+        return (
+            self.touched_only(tolerance=tolerance)
+            and self.swipe_duration > minimum_duration
+        )
+
 
 class TouchEvent(DeckEvent):
     _required_deck_capability = DECK_ACTIONS.SWIPE
 
-    def __init__(self, deck: "Deck", button: str, pos_x: int, pos_y: int, start: TouchEvent|None = None):
+    def __init__(
+        self,
+        deck: "Deck",
+        button: str,
+        pos_x: int,
+        pos_y: int,
+        start: TouchEvent | None = None,
+    ):
         DeckEvent.__init__(self, deck=deck, button=button)
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.start = start
+
+    def __str__(self):
+        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:touch"
 
     def swipe(self) -> SwipeEvent | None:
         if self.start is not None:
@@ -227,5 +276,6 @@ class TouchEvent(DeckEvent):
                 start_ts=self.start.timestamp,
                 end_pos_x=self.pos_x,
                 end_pos_y=self.pos_y,
-                end_ts=self.timestamp)
+                end_ts=self.timestamp,
+            )
         return None

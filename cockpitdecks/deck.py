@@ -25,16 +25,12 @@ from cockpitdecks.buttons.representation import (
 from cockpitdecks.event import DeckEvent, PushEvent
 
 loggerDeckType = logging.getLogger("DeckType")
-loggerDeckType.setLevel(logging.DEBUG)
+# loggerDeckType.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 DECKS_FOLDER = "decks"
-
-# Conventions, need to be found in Button()._deck_def from resources.decks.decktype.yaml
-BUTTON_PREFIX = "b"
-ENCODER_PREFIX = "e"
 
 
 class DeckType(Config):
@@ -266,6 +262,7 @@ class DeckType(Config):
         bdef0 = bdef[0]
         prefix = bdef0.get(KW.PREFIX.value)
         return str(idx).startswith(prefix)
+
 
 class Deck(ABC):
     """
@@ -622,14 +619,17 @@ class Deck(ABC):
         """
         # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
-        if self.current_page is not None:
-            idx = str(event.button)
-            if idx in self.current_page.buttons.keys():
-                self.current_page.buttons[idx].activate(event)
-            else:
-                logger.warning(f"{idx} not found on page {self.current_page.name} ({self.current_page.buttons.keys()})")
-        else:
-            logger.warning(f"no current page")
+        self.cockpit.event_queue.put(event)
+        # if self.current_page is not None:
+        #     idx = str(event.button)
+        #     if idx in self.current_page.buttons.keys():
+        #         self.current_page.buttons[idx].activate(event)
+        #     else:
+        #         logger.warning(
+        #             f"{idx} not found on page {self.current_page.name} ({self.current_page.buttons.keys()})"
+        #         )
+        # else:
+        #     logger.warning(f"no current page")
 
     # #######################################
     # Deck Specific Functions : Representation
@@ -770,7 +770,12 @@ class DeckWithIcons(Deck):
                     os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER)
                 )
                 dirs.append(
-                    os.path.join(self.cockpit.acpath, CONFIG_FOLDER, ICONS_FOLDER)
+                    os.path.join(
+                        self.cockpit.acpath,
+                        CONFIG_FOLDER,
+                        RESOURCES_FOLDER,
+                        ICONS_FOLDER,
+                    )
                 )
 
             for dn in dirs:

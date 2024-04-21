@@ -39,7 +39,11 @@ class XPWeatherIcon(XPWeatherBaseIcon):
 
         # Working variables
         self.collector = self.button.sim.collector  # shortcut
-        self.all_collections = ["weather"] + [f"cloud#{i}" for i in range(3)] + [f"wind#{i}" for i in range(13)]
+        self.all_collections = (
+            ["weather"]
+            + [f"cloud#{i}" for i in range(3)]
+            + [f"wind#{i}" for i in range(13)]
+        )
 
     def init(self):
         if self._inited:
@@ -49,10 +53,17 @@ class XPWeatherIcon(XPWeatherBaseIcon):
         logger.debug(f"inited")
 
     def notify_weather_updated(self):
-        if self.xpweather is not None and self.button._activation.writable_dataref is not None:
+        if (
+            self.xpweather is not None
+            and self.button._activation.writable_dataref is not None
+        ):
             self._wu_count = self._wu_count + 1
-            self.button._activation._write_dataref(self.button._activation.writable_dataref, float(self._wu_count))
-            logger.info(f"updated XP weather at {self._weather_last_updated.strftime('%H:%M:%S')} ({self._wu_count})")
+            self.button._activation._write_dataref(
+                self.button._activation.writable_dataref, float(self._wu_count)
+            )
+            logger.info(
+                f"updated XP weather at {self._weather_last_updated.strftime('%H:%M:%S')} ({self._wu_count})"
+            )
 
     def collect_all_datarefs(self):
         drefs = {}
@@ -62,7 +73,10 @@ class XPWeatherIcon(XPWeatherBaseIcon):
 
     def collect_last_updated(self):
         last_updated = None
-        for name, collection in [(name, self.collector.collections.get(name)) for name in self.all_collections]:
+        for name, collection in [
+            (name, self.collector.collections.get(name))
+            for name in self.all_collections
+        ]:
             if collection is None:
                 logger.debug(f"collection {name} missing")
                 return None

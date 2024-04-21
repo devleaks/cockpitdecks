@@ -18,7 +18,11 @@ from timezonefinder import TimezoneFinder
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.iconfonts import WEATHER_ICONS, WEATHER_ICON_FONT, DEFAULT_WEATHER_ICON
+from cockpitdecks.resources.iconfonts import (
+    WEATHER_ICONS,
+    WEATHER_ICON_FONT,
+    DEFAULT_WEATHER_ICON,
+)
 from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.simulator import Dataref
 
@@ -84,26 +88,166 @@ class WI:
     ]
 
     DB = [
-        {KW_NAME: KW_CAVOK, KW_TAGS: [], KW_PRECIP: "", KW_VIS: ["CAVOK", "NCD"], KW_CLOUD: [""], KW_WIND: [0, 21]},
-        {KW_NAME: "cloud", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["BKN"], KW_WIND: [0, 21]},
-        {KW_NAME: "cloudy", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["OVC"], KW_WIND: [0, 21]},
-        {KW_NAME: "cloudy-gusts", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["SCT", "BKN", "OVC"], KW_WIND: [22, 63]},
-        {KW_NAME: "rain", KW_TAGS: [], KW_PRECIP: "RA", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [0, 21]},
-        {KW_NAME: "rain-wind", KW_TAGS: [], KW_PRECIP: "RA", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [22, 63]},
-        {KW_NAME: "showers", KW_TAGS: ["SH"], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [0, 63]},
-        {KW_NAME: "fog", KW_TAGS: [], KW_PRECIP: "", KW_VIS: ["BR", "FG"], KW_CLOUD: [""], KW_WIND: [0, 63]},
-        {KW_NAME: "storm-showers", KW_TAGS: ["TS", "SH"], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [0, 63]},
-        {KW_NAME: "thunderstorm", KW_TAGS: ["TS"], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [0, 63]},
-        {KW_NAME: "windy", KW_TAGS: [], KW_PRECIP: "", KW_VIS: ["CAVOK", "NCD"], KW_CLOUD: [""], KW_WIND: [22, 33]},
-        {KW_NAME: "strong-wind", KW_TAGS: [], KW_PRECIP: "", KW_VIS: ["CAVOK", "NCD"], KW_CLOUD: [""], KW_WIND: [34, 63]},
-        {KW_NAME: "cloudy", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["FEW", "SCT"], KW_WIND: [0, 21]},
-        {KW_NAME: "cloudy", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["FEW", "SCT"], KW_WIND: [0, 21]},
-        {KW_NAME: "cloudy-gusts", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["SCT", "BKN", "OVC"], KW_WIND: [22, 63]},
-        {KW_NAME: "cloudy-gusts", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["SCT", "BKN", "OVC"], KW_WIND: [22, 63]},
-        {KW_NAME: "cloudy-windy", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["FEW", "SCT"], KW_WIND: [22, 63]},
-        {KW_NAME: "cloudy-windy", KW_TAGS: [], KW_PRECIP: "", KW_VIS: [""], KW_CLOUD: ["FEW", "SCT"], KW_WIND: [22, 63]},
-        {KW_NAME: "snow", KW_TAGS: [], KW_PRECIP: "SN", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [0, 21]},
-        {KW_NAME: "snow-wind", KW_TAGS: [], KW_PRECIP: "SN", KW_VIS: [""], KW_CLOUD: [""], KW_WIND: [22, 63]},
+        {
+            KW_NAME: KW_CAVOK,
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["CAVOK", "NCD"],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "cloud",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["BKN"],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "cloudy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["OVC"],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "cloudy-gusts",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["SCT", "BKN", "OVC"],
+            KW_WIND: [22, 63],
+        },
+        {
+            KW_NAME: "rain",
+            KW_TAGS: [],
+            KW_PRECIP: "RA",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "rain-wind",
+            KW_TAGS: [],
+            KW_PRECIP: "RA",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [22, 63],
+        },
+        {
+            KW_NAME: "showers",
+            KW_TAGS: ["SH"],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63],
+        },
+        {
+            KW_NAME: "fog",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["BR", "FG"],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63],
+        },
+        {
+            KW_NAME: "storm-showers",
+            KW_TAGS: ["TS", "SH"],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63],
+        },
+        {
+            KW_NAME: "thunderstorm",
+            KW_TAGS: ["TS"],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 63],
+        },
+        {
+            KW_NAME: "windy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["CAVOK", "NCD"],
+            KW_CLOUD: [""],
+            KW_WIND: [22, 33],
+        },
+        {
+            KW_NAME: "strong-wind",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: ["CAVOK", "NCD"],
+            KW_CLOUD: [""],
+            KW_WIND: [34, 63],
+        },
+        {
+            KW_NAME: "cloudy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "cloudy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "cloudy-gusts",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["SCT", "BKN", "OVC"],
+            KW_WIND: [22, 63],
+        },
+        {
+            KW_NAME: "cloudy-gusts",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["SCT", "BKN", "OVC"],
+            KW_WIND: [22, 63],
+        },
+        {
+            KW_NAME: "cloudy-windy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [22, 63],
+        },
+        {
+            KW_NAME: "cloudy-windy",
+            KW_TAGS: [],
+            KW_PRECIP: "",
+            KW_VIS: [""],
+            KW_CLOUD: ["FEW", "SCT"],
+            KW_WIND: [22, 63],
+        },
+        {
+            KW_NAME: "snow",
+            KW_TAGS: [],
+            KW_PRECIP: "SN",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [0, 21],
+        },
+        {
+            KW_NAME: "snow-wind",
+            KW_TAGS: [],
+            KW_PRECIP: "SN",
+            KW_VIS: [""],
+            KW_CLOUD: [""],
+            KW_WIND: [22, 63],
+        },
     ]
 
     def __init__(self, day: bool, cover=float, wind=float, precip=float, special=float):
@@ -181,8 +325,12 @@ class LiveWeatherIcon(DrawAnimation):
 
     def at_default_station(self):
         if self.weather is not None and self.station is not None:
-            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', LiveWeatherIcon.DEFAULT_STATION)}, {self._moved}")
-            return not self._moved and self.station.icao == self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
+            logger.debug(
+                f"default station installed {self.station.icao}, {self.weather.get('station', LiveWeatherIcon.DEFAULT_STATION)}, {self._moved}"
+            )
+            return not self._moved and self.station.icao == self.weather.get(
+                "station", LiveWeatherIcon.DEFAULT_STATION
+            )
         logger.debug(f"True")
         return True
 
@@ -213,7 +361,9 @@ class LiveWeatherIcon(DrawAnimation):
             now = datetime.now()
             diff = now.timestamp() - self._last_updated.timestamp()
             if diff < LiveWeatherIcon.MIN_UPDATE:
-                logger.debug(f"updated less than {LiveWeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
+                logger.debug(
+                    f"updated less than {LiveWeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping.."
+                )
                 return None
             logger.debug(f"updated  {diff} secs. ago")
 
@@ -223,7 +373,9 @@ class LiveWeatherIcon(DrawAnimation):
 
         if lat is None or lon is None:
             logger.warning(f"no coordinates")
-            if self.station is None:  # If no station, attempt to suggest the default one if we find it
+            if (
+                self.station is None
+            ):  # If no station, attempt to suggest the default one if we find it
                 icao = self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
                 logger.warning(f"no station, getting default {icao}")
                 return Station.from_icao(icao)
@@ -254,7 +406,9 @@ class LiveWeatherIcon(DrawAnimation):
 
         if new is None:
             if self.station is None:
-                return updated  # no new station, no existing station, we leave it as it is
+                return (
+                    updated  # no new station, no existing station, we leave it as it is
+                )
 
         if self.station is None:
             try:
@@ -268,7 +422,9 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.info(f"UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(f"new station {new.icao}: Metar not created", exc_info=True)
+                logger.warning(
+                    f"new station {new.icao}: Metar not created", exc_info=True
+                )
         elif new is not None and new.icao != self.station.icao:
             try:
                 self.station = new
@@ -281,7 +437,9 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.info(f"UPDATED: station changed to {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(f"change station to {new.icao}: Metar not created", exc_info=True)
+                logger.warning(
+                    f"change station to {new.icao}: Metar not created", exc_info=True
+                )
         elif self.metar is None:
             try:
                 self.metar = Metar(self.station.icao)
@@ -291,7 +449,10 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.info(f"UPDATED: station {self.station.icao}, first Metar")
             except:
                 self.metar = None
-                logger.warning(f"station {self.station.icao}, first Metar not created", exc_info=True)
+                logger.warning(
+                    f"station {self.station.icao}, first Metar not created",
+                    exc_info=True,
+                )
         else:
             try:
                 now = datetime.now()
@@ -299,7 +460,9 @@ class LiveWeatherIcon(DrawAnimation):
                     updated = self.metar.update()
                     if updated:
                         self._last_updated = datetime.now()
-                        logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
+                        logger.info(
+                            f"UPDATED: station {self.station.icao}, Metar updated"
+                        )
                     else:
                         logger.info(f"could not update station {self.station.icao}")
                 else:
@@ -308,29 +471,51 @@ class LiveWeatherIcon(DrawAnimation):
                         updated = self.metar.update()
                         if updated:
                             self._last_updated = datetime.now()
-                            logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
+                            logger.info(
+                                f"UPDATED: station {self.station.icao}, Metar updated"
+                            )
                         else:
                             logger.info(f"could not update station {self.station.icao}")
                     else:
-                        logger.debug(f"station {self.station.icao}, Metar does not need updating")
+                        logger.debug(
+                            f"station {self.station.icao}, Metar does not need updating"
+                        )
             except:
                 self.metar = None
-                logger.warning(f"station {self.station.icao}: Metar not updated", exc_info=True)
+                logger.warning(
+                    f"station {self.station.icao}: Metar not updated", exc_info=True
+                )
 
         # if new is None, we leave it as it is
         if updated and self.station is not None:
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
             if self.has_metar("data"):
-                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype="float")
-                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype="float")
                 self.button.sim.write_dataref(
-                    dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype="float"
+                    dataref=Dataref.mk_internal_dataref("weather:pressure"),
+                    value=self.metar.data.altimeter.value,
+                    vtype="float",
                 )
-                self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype="float")
+                self.button.sim.write_dataref(
+                    dataref=Dataref.mk_internal_dataref("weather:wind_speed"),
+                    value=self.metar.data.wind_speed.value,
+                    vtype="float",
+                )
+                self.button.sim.write_dataref(
+                    dataref=Dataref.mk_internal_dataref("weather:temperature"),
+                    value=self.metar.data.temperature.value,
+                    vtype="float",
+                )
+                self.button.sim.write_dataref(
+                    dataref=Dataref.mk_internal_dataref("weather:dew_point"),
+                    value=self.metar.data.dewpoint.value,
+                    vtype="float",
+                )
             else:
                 logger.debug(f"no metar for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()
-            logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
+            logger.debug(
+                f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}"
+            )
             self._upd_count = self._upd_count + 1
 
         return updated
@@ -348,7 +533,9 @@ class LiveWeatherIcon(DrawAnimation):
             logger.debug(f"..not updated, using cache..")
         logger.debug(f"..updated ({self._upd_count}/{self._upd_calls})")
 
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(
+            mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR
+        )  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
         inside = round(0.04 * image.width + 0.5)
 
@@ -368,7 +555,14 @@ class LiveWeatherIcon(DrawAnimation):
             if icon_text is None:
                 logger.warning(f"default icon not found, using default")
                 icon_text = "\uf00d"
-        draw.text((w, h), text=icon_text, font=font, anchor="mm", align="center", fill=light_off(icon_color, 0.6))  # (image.width / 2, 15)
+        draw.text(
+            (w, h),
+            text=icon_text,
+            font=font,
+            anchor="mm",
+            align="center",
+            fill=light_off(icon_color, 0.6),
+        )  # (image.width / 2, 15)
 
         # Weather Data
         lines = None
@@ -390,7 +584,14 @@ class LiveWeatherIcon(DrawAnimation):
             h = image.height / 3
             il = text_size
             for line in lines:
-                draw.text((w, h), text=line.strip(), font=font, anchor=p + "m", align=a, fill=self.label_color)  # (image.width / 2, 15)
+                draw.text(
+                    (w, h),
+                    text=line.strip(),
+                    font=font,
+                    anchor=p + "m",
+                    align=a,
+                    fill=self.label_color,
+                )  # (image.width / 2, 15)
                 h = h + il
         else:
             icao = self.station.icao if self.station is not None else "no station"
@@ -398,7 +599,13 @@ class LiveWeatherIcon(DrawAnimation):
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Weather"
+            name=self.button_name(),
+            width=ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=self.icon_texture,
+            color_in=self.icon_color,
+            use_texture=True,
+            who="Weather",
         )
         bg.alpha_composite(image)
         self._cache = bg.convert("RGB")
@@ -431,7 +638,9 @@ class LiveWeatherIcon(DrawAnimation):
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
         # Uses the simulator local time
-        hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
+        hours = self.button.get_dataref_value(
+            "sim/cockpit2/clock_timer/local_time_hours", default=12
+        )
         if self.sun is not None:
             sr = self.sun.get_sunrise_time()
             ss = self.sun.get_sunset_time()
@@ -473,7 +682,12 @@ class LiveWeatherIcon(DrawAnimation):
         # Do we have a variant?
         try_icon = None
         dft_name = None
-        for prefix in [WI_PREFIX, WI_PREFIX + DAY, WI_PREFIX + NIGHT, WI_PREFIX + NIGHT_ALT]:
+        for prefix in [
+            WI_PREFIX,
+            WI_PREFIX + DAY,
+            WI_PREFIX + NIGHT,
+            WI_PREFIX + NIGHT_ALT,
+        ]:
             if try_icon is None:
                 dft_name = prefix + icon
                 try_icon = WEATHER_ICONS.get(dft_name)
@@ -520,24 +734,48 @@ class LiveWeatherIcon(DrawAnimation):
                 precip = []
             logger.debug(f"PRECIP {precip}")
             # Wind
-            wind = self.metar.data.wind_speed.value if hasattr(self.metar.data, "wind_speed") else 0
+            wind = (
+                self.metar.data.wind_speed.value
+                if hasattr(self.metar.data, "wind_speed")
+                else 0
+            )
             logger.debug(f"WIND {wind}")
 
             findIcon = []
             for item in WI.DB:
-                t1 = reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])
+                t1 = reduce(
+                    lambda x, y: x + y,
+                    [rawtext.find(desc) for desc in item[KW_TAGS]],
+                    0,
+                ) == len(item[KW_TAGS])
                 t_precip = (len(item[KW_PRECIP]) == 0) or rawtext.find(item[KW_PRECIP])
                 t_clouds = (
                     (len(item[KW_CLOUD]) == 0)
                     or (len(item[KW_CLOUD]) == 1 and item[KW_CLOUD][0] == "")
-                    or (reduce(lambda x, y: x + y, [rawtext.find(cld) for cld in item[KW_CLOUD]], 0) > 0)
+                    or (
+                        reduce(
+                            lambda x, y: x + y,
+                            [rawtext.find(cld) for cld in item[KW_CLOUD]],
+                            0,
+                        )
+                        > 0
+                    )
                 )
                 t_wind = wind > item[KW_WIND][0] and wind < item[KW_WIND][1]
-                t_vis = (len(item[KW_VIS]) == 0) or (reduce(lambda x, y: x + y, [rawtext.find(vis) for vis in item[KW_VIS]], 0) > 0)
+                t_vis = (len(item[KW_VIS]) == 0) or (
+                    reduce(
+                        lambda x, y: x + y,
+                        [rawtext.find(vis) for vis in item[KW_VIS]],
+                        0,
+                    )
+                    > 0
+                )
                 ok = t1 and t_precip and t_clouds and t_wind and t_vis
                 if ok:
                     findIcon.append(item)
-                logger.debug(f"findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}")
+                logger.debug(
+                    f"findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}"
+                )
             logger.debug(f"STEP 1 {findIcon}")
 
             # findIcon = list(filter(lambda item: reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])
@@ -555,7 +793,12 @@ class LiveWeatherIcon(DrawAnimation):
                 if l > 1:
                     findIcon2 = []
                     if len(precip) > 0:
-                        findIcon2 = list(filter(lambda x: re("RA|SN|DZ|SG|PE|GR|GS").match(x["precip"]), findIcon))
+                        findIcon2 = list(
+                            filter(
+                                lambda x: re("RA|SN|DZ|SG|PE|GR|GS").match(x["precip"]),
+                                findIcon,
+                            )
+                        )
                     else:
                         findIcon2 = list(filter(lambda x: x["day"] == day, findIcon))
                     logger.debug(f"STEP 2 {findIcon2}")

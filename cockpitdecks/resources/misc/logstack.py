@@ -1,9 +1,9 @@
-
 HEADER_FMT = "Call stack at %s, line %d in function %s, frames %d to %d of %d:"
 """The log header message formatter."""
 
 STACK_FMT = "%s, line %d in function %s."
 """The log stack message formatter."""
+
 
 def log_stack(logger=None, limit=None, start=0):
     """

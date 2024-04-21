@@ -1,4 +1,3 @@
-
 # ###########################
 # Representation that displays side icons.
 # Vertical: present left or right vertical screens on Loupedeck Live.
@@ -8,21 +7,26 @@ import logging
 from PIL import ImageDraw
 from cockpitdecks.resources.color import convert_color
 from .representation import Icon
+
 # from cockpitdecks.button import Button
 
 
 logger = logging.getLogger(__name__)
 
 
-class IconSide(Icon):  # modified Representation IconSide class 
+class IconSide(Icon):  # modified Representation IconSide class
     def __init__(self, config: dict, button: "Button"):
-        config['icon-color'] = config['side'].get("icon-color", button.get_attribute("default-icon-color"))
+        config["icon-color"] = config["side"].get(
+            "icon-color", button.get_attribute("default-icon-color")
+        )
         Icon.__init__(self, config=config, button=button)
 
         self.side = config.get("side")  # multi-labels
         self.centers = self.side.get("centers", [43, 150, 227])  # type: ignore
         self.labels: str | None = self.side.get("labels")  # type: ignore
-        self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
+        self.label_position = config.get(
+            "label-position", "cm"
+        )  # "centered" on middle of side image
 
     def get_datarefs(self):
         datarefs = []
@@ -45,7 +49,9 @@ class IconSide(Icon):  # modified Representation IconSide class
 
     def is_valid(self):
         if self.button.index not in ["left", "right"]:
-            logger.debug(f"button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}")
+            logger.debug(
+                f"button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}"
+            )
             return False
         return super().is_valid()
 
@@ -68,7 +74,11 @@ class IconSide(Icon):  # modified Representation IconSide class
             inside = round(0.04 * image.width + 0.5)
             vheight = 38 - inside
 
-            vcenter = [35, 124, 213]  # this determines the number of acceptable labels, organized vertically
+            vcenter = [
+                35,
+                124,
+                213,
+            ]  # this determines the number of acceptable labels, organized vertically
             cnt = self.side.get("centers")
 
             if cnt is not None:
@@ -110,7 +120,14 @@ class IconSide(Icon):  # modified Representation IconSide class
                     h = vcenter[li] + vheight - lsize
 
                 draw.multiline_text(
-                    (w, h), text=txt, font=font, anchor=p + "m", align=a, fill=label.get("label-color", self.label_color)  # (image.width / 2, 15)
+                    (w, h),
+                    text=txt,
+                    font=font,
+                    anchor=p + "m",
+                    align=a,
+                    fill=label.get(
+                        "label-color", self.label_color
+                    ),  # (image.width / 2, 15)
                 )
 
                 # Text below LABEL
@@ -118,9 +135,16 @@ class IconSide(Icon):  # modified Representation IconSide class
                 tsize = label.get("text-size")
                 tfont = self.get_font(tfont, tsize)
 
-                text_position = h + lsize + 5  # Adjust based on your needs, adding lsize for simplicity
+                text_position = (
+                    h + lsize + 5
+                )  # Adjust based on your needs, adding lsize for simplicity
                 draw.text(
-                    (w, text_position), text=txto, font=tfont, anchor=p + "m", align=a, fill=label.get("text-color")
+                    (w, text_position),
+                    text=txto,
+                    font=tfont,
+                    anchor=p + "m",
+                    align=a,
+                    fill=label.get("text-color"),
                 )
 
                 li = li + 1

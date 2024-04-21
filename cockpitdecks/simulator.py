@@ -24,7 +24,13 @@ logger = logging.getLogger(__name__)
 # Command
 #
 # The command keywords are not executed, ignored with a warning
-NOT_A_COMMAND = ["none", "noop", "no-operation", "no-command", "do-nothing"]  # all forced to lower cases
+NOT_A_COMMAND = [
+    "none",
+    "noop",
+    "no-operation",
+    "no-command",
+    "do-nothing",
+]  # all forced to lower cases
 
 
 class Command:
@@ -38,7 +44,11 @@ class Command:
         self.name = name
 
     def __str__(self) -> str:
-        return self.name if self.name is not None else (self.path if self.path is not None else "no command")
+        return (
+            self.name
+            if self.name is not None
+            else (self.path if self.path is not None else "no command")
+        )
 
     def has_command(self) -> bool:
         return self.path is not None and not self.path.lower() in NOT_A_COMMAND
@@ -47,7 +57,9 @@ class Command:
 # ########################################
 # Dataref
 #
-INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
+INTERNAL_DATAREF_PREFIX = (
+    "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
+)
 NOT_A_DATAREF = ["DatarefPlaceholder"]
 
 
@@ -57,7 +69,13 @@ class Dataref:
     plugins, or other software in general.
     """
 
-    def __init__(self, path: str, is_decimal: bool = False, is_string: bool = False, length: int | None = None):
+    def __init__(
+        self,
+        path: str,
+        is_decimal: bool = False,
+        is_string: bool = False,
+        length: int | None = None,
+    ):
         self.path = path  # some/path/values[6]
         self.dataref = path  # some/path/values
         self.index = 0  # 6
@@ -76,13 +94,17 @@ class Dataref:
         self.previous_value = None
         self.current_value: Any | None = None
         self.current_array: List[float] = []
-        self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
+        self.listeners: List[DatarefListener] = (
+            []
+        )  # buttons using this dataref, will get notified if changes.
         self._round = None
         self.update_frequency = 1  # sent by the simulator that many times per second.
         self.expire = None
 
         # dataref/path:t where t in d, i, f, s, b.
-        if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
+        if (
+            len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb"
+        ):  # decimal, integer, float, string, byte(s)
             path = path[:-2]
             typ = path[-1]
             if typ == "d":
@@ -96,7 +118,9 @@ class Dataref:
                 self.data_type = "byte"
 
         if self.is_decimal and self.is_string:
-            loggerDataref.error(f"__init__: index {path} cannot be both decimal and string")
+            loggerDataref.error(
+                f"__init__: index {path} cannot be both decimal and string"
+            )
 
         if self.length is not None and self.length > 1:
             self.is_array = True
@@ -109,7 +133,9 @@ class Dataref:
             if self.length is None:
                 self.length = self.index + 1  # at least that many values
             if self.index >= self.length:
-                loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
+                loggerDataref.error(
+                    f"__init__: index {self.index} out of range [0,{self.length-1}]"
+                )
 
     @staticmethod
     def is_internal_dataref(path: str) -> bool:
@@ -164,7 +190,11 @@ class Dataref:
         return self._updated > 0
 
     def round(self, new_value):
-        return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
+        return (
+            round(new_value, self._round)
+            if self._round is not None and type(new_value) in [int, float]
+            else new_value
+        )
 
     def update_value(self, new_value, cascade: bool = False) -> bool:
         self._previous_value = self._current_value  # raw
@@ -177,7 +207,10 @@ class Dataref:
         if self.has_changed():
             self._changed = self._changed + 1
             self._last_changed = now()
-            loggerDataref.log(SPAM_LEVEL, f"dataref {self.path} updated {self.previous_value} -> {self.current_value}")
+            loggerDataref.log(
+                SPAM_LEVEL,
+                f"dataref {self.path} updated {self.previous_value} -> {self.current_value}",
+            )
             if cascade:
                 self.notify()
             return True
@@ -206,9 +239,15 @@ class Dataref:
             for dref in self.listeners:
                 dref.dataref_changed(self)
                 if hasattr(dref, "page") and dref.page is not None:
-                    loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.page.name}/{dref.name}")
+                    loggerDataref.log(
+                        SPAM_LEVEL,
+                        f"{self.path}: notified {dref.page.name}/{dref.name}",
+                    )
                 else:
-                    loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.name} (not on an page)")
+                    loggerDataref.log(
+                        SPAM_LEVEL,
+                        f"{self.path}: notified {dref.name} (not on an page)",
+                    )
         # else:
         #    loggerDataref.error(f"dataref {self.path} not changed")
 
@@ -216,9 +255,15 @@ class Dataref:
         for dref in self.listeners:
             dref.dataref_updated(self)
             if hasattr(dref, "page") and dref.page is not None:
-                loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.page.name}/{dref.name} or update")
+                loggerDataref.log(
+                    SPAM_LEVEL,
+                    f"{self.path}: notified {dref.page.name}/{dref.name} or update",
+                )
             else:
-                loggerDataref.log(SPAM_LEVEL, f"{self.path}: notified {dref.name} of update (not on an page)")
+                loggerDataref.log(
+                    SPAM_LEVEL,
+                    f"{self.path}: notified {dref.name} of update (not on an page)",
+                )
         # else:
         #    loggerDataref.error(f"dataref {self.path} not changed")
 
@@ -276,7 +321,9 @@ class Simulator(ABC):
             else:
                 idx = dataref.path.find("[")
                 base = dataref.path[:idx]
-                rnd = self.roundings.get(base + "[*]")  # rounds all datarefs in array, explicit
+                rnd = self.roundings.get(
+                    base + "[*]"
+                )  # rounds all datarefs in array, explicit
                 if rnd is not None:
                     dataref.set_round(rounding=rnd)  # rounds this very priecise dataref
                 # rnd = self.roundings.get(base)        # rounds all datarefs in array
@@ -289,18 +336,26 @@ class Simulator(ABC):
         if dataref.path.find("[") > 0:
             freq = self.dataref_frequencies.get(dataref.path)
             if freq is not None:
-                dataref.set_update_frequency(frequency=freq)  # rounds this very priecise dataref
+                dataref.set_update_frequency(
+                    frequency=freq
+                )  # rounds this very priecise dataref
             else:
                 idx = dataref.path.find("[")
                 base = dataref.path[:idx]
-                freq = self.dataref_frequencies.get(base + "[*]")  # rounds all datarefs in array, explicit
+                freq = self.dataref_frequencies.get(
+                    base + "[*]"
+                )  # rounds all datarefs in array, explicit
                 if freq is not None:
-                    dataref.set_update_frequency(frequency=freq)  # rounds this very priecise dataref
+                    dataref.set_update_frequency(
+                        frequency=freq
+                    )  # rounds this very priecise dataref
                 # rnd = self.roundings.get(base)        # rounds all datarefs in array
                 # if rnd is not None:
                 #   dataref.set_round(rounding=rnd)     # rounds this very priecise dataref
         else:
-            dataref.set_update_frequency(frequency=self.dataref_frequencies.get(dataref.path))
+            dataref.set_update_frequency(
+                frequency=self.dataref_frequencies.get(dataref.path)
+            )
 
     def register(self, dataref):
         if dataref.path not in self.all_datarefs:
@@ -390,4 +445,9 @@ class Simulator(ABC):
         pass
 
 
-from .collector import MAX_COLLECTION_SIZE, DatarefSet, DatarefSetListener, DatarefSetCollector
+from .collector import (
+    MAX_COLLECTION_SIZE,
+    DatarefSet,
+    DatarefSetListener,
+    DatarefSetCollector,
+)

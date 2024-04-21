@@ -6,18 +6,16 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks import DEFAULT_PAGE_NAME
+from cockpitdecks import DEFAULT_PAGE_NAME, KW
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
+from cockpitdecks.event import PushEvent, EncoderEvent, SlideEvent
 from cockpitdecks.button import Button
 from cockpitdecks.buttons.representation import LED, MultiLEDs
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # Warning, the logger in package XTouchMini is called "XTouchMini".
-
-ENCODE_PREFIX = "e"
-SLIDER = "slider"
 
 
 class XTouchMini(Deck):
@@ -43,13 +41,22 @@ class XTouchMini(Deck):
         page_config = {"name": DEFAULT_PAGE_NAME}
         page0 = Page(name=DEFAULT_PAGE_NAME, config=page_config, deck=self)
         button0 = Button(
-            config={"index": 0, "name": "X-Plane Map (default page)", "type": "push", "command": "sim/map/show_current", "led": "single"}, page=page0
+            config={
+                "index": 0,
+                "name": "X-Plane Map (default page)",
+                "type": "push",
+                "command": "sim/map/show_current",
+                "led": "single",
+            },
+            page=page0,
         )
         page0.add_button(button0.index, button0)
         self.pages = {DEFAULT_PAGE_NAME: page0}
         self.home_page = page0
         self.current_page = page0
-        logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
+        logger.debug(
+            f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page"
+        )
 
     def load_icons(self):
         pass
@@ -60,25 +67,55 @@ class XTouchMini(Deck):
     # #######################################
     # Deck Specific Functions : Activation
     #
-    def key_change_processing(self, deck, key, state):
+    def key_change_callback(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
-        KEY_MAP = dict((v, k) for k, v in MAKIE_MAPPING.items())
+        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+
+        bdef = self.deck_type.filter({"action": "encoder-push"})
+        prefix = bdef[0].get(KW.PREFIX.value)
+
+        bdef = self.deck_type.filter({"action": "cursor"})
+        SLIDER = bdef[0].get(KW.NAME.value)
+
+        KEY_MAP = {v: k for k, v in MAKIE_MAPPING.items()}
+
         key1 = None
-        if key >= 16 and key <= 23:  # turn encode
-            key1 = f"{ENCODE_PREFIX}{key - 16}"
+        event = None
+        state1 = state
+        if key >= 16 and key <= 23:  # turn encoder
+            key1 = f"{prefix}{key - 16}"
+            state1 = state == 3
+            event = EncoderEvent(deck=self, button=key1, clockwise=state1)
         elif key >= 32 and key <= 39:  # push on encoder
-            key1 = f"{ENCODE_PREFIX}{key - 32}"
+            key1 = f"{prefix}{key - 32}"
+            state1 = state == 1
+            event = PushEvent(deck=self, button=key1, pressed=state == state1)
         elif key == 8:  # slider
             key1 = SLIDER
+            state1 = int(state)
+            event = SlideEvent(deck=self, button=key1, value=state1)
         else:  # push a button
             key1 = KEY_MAP[key]
-        logger.debug(f"{key} => {key1} {state}")
-        if self.current_page is not None and key1 in self.current_page.buttons.keys():
-            self.current_page.buttons[key1].activate(state)
+            state1 = state == 1
+            event = PushEvent(deck=self, button=key1, pressed=state1)
+
+        logger.debug(f"{key} => {type(event).__name__} {key1} {state1}")
+
+        self.cockpit.event_queue.put(event)
+        # if self.current_page is not None:
+        #     if key1 in self.current_page.buttons.keys():
+        #         if event is not None:
+        #             self.current_page.buttons[key1].activate(event)
+        #         else:
+        #             logger.warning(f"no event")
+        #     else:
+        #         logger.warning(f"no definition for key {key1}")
+        # else:
+        #     logger.warning(f"no page loaded for deck {self.name}")
 
     # #######################################
     # Deck Specific Functions : Representation
@@ -98,12 +135,16 @@ class XTouchMini(Deck):
         value, mode = button.get_representation()
         # find index in string
         i = int(button.index[1:])
-        logger.debug(f"button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
+        logger.debug(
+            f"button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}"
+        )
         self._set_control(key=i, value=value, mode=mode)
 
     def _set_button_led(self, button):
         is_on = button.get_current_value()
-        logger.debug(f"button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
+        logger.debug(
+            f"button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})"
+        )
         self._set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
 
     # Low-level wrapper around device API (direct forward)
@@ -120,6 +161,8 @@ class XTouchMini(Deck):
         if self.device is None:
             logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return
+        bdef = self.deck_type.filter({"action": "cursor"})
+        SLIDER = bdef[0].get(KW.NAME.value)
         if str(button.index) == SLIDER:
             logger.debug(f"button type {button.index} has no representation")
             return
@@ -130,7 +173,9 @@ class XTouchMini(Deck):
         elif isinstance(representation, MultiLEDs):
             self._set_encoder_led(button)
         else:
-            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
+            logger.warning(
+                f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}"
+            )
 
     # #######################################
     # Deck Specific Functions : Device

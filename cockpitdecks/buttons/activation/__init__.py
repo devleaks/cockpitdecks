@@ -1,6 +1,7 @@
 """
 Button action and activation abstraction
 """
+
 from .activation import Activation
 from .activation import LoadPage, Reload, Inspect, Stop
 from .activation import Push, Longpress, OnOff, UpDown
@@ -39,7 +40,7 @@ ACTIVATIONS = {
     "slider": Slider,
     "cursor": Slider,
     "swipe": Swipe,
-    "encoder-toggle": EncoderToggle
+    "encoder-toggle": EncoderToggle,
 }
 
 DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
@@ -57,11 +58,35 @@ DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
 #   view: none
 #   repeat: 6
 #
-push = ["page", "reload", "inspect", "stop", "push", "longpress", "onoff", "updown", "dref-collector"]
-encoder = ["encoder", "encoder-push", "encoder-onoff", "encoder-value", "encoder-value-extended", "knob", "encoder-toggle"]
+push = [
+    "page",
+    "reload",
+    "inspect",
+    "stop",
+    "push",
+    "longpress",
+    "onoff",
+    "updown",
+    "dref-collector",
+]
+encoder = [
+    "encoder",
+    "encoder-push",
+    "encoder-onoff",
+    "encoder-value",
+    "encoder-value-extended",
+    "knob",
+    "encoder-toggle",
+]
 
 # ###############################
 # format is action: [ activation ]
 # action is used in deck definitions
 #
-DECK_ACTIVATIONS = {"push": push, "encoder": encoder, "encoder-push": encoder + push, "cursor": ["cursor", "slider"], "swipe": ["swipe"] + push}
+DECK_ACTIVATIONS = {
+    "push": push,
+    "encoder": encoder,
+    "encoder-push": encoder + push,
+    "cursor": ["cursor", "slider"],
+    "swipe": ["swipe"] + push,
+}

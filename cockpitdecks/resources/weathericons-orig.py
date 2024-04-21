@@ -594,5 +594,5 @@ WEATHER_ICONS = {
     "wi_wu_snow": "\uf01b",
     "wi_wu_sunny": "\uf00d",
     "wi_wu_tstorms": "\uf01e",
-    "wi_wu_unknown": "\uf00d"
+    "wi_wu_unknown": "\uf00d",
 }
