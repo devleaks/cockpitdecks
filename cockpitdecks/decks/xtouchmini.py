@@ -105,17 +105,7 @@ class XTouchMini(Deck):
 
         logger.debug(f"{key} => {type(event).__name__} {key1} {state1}")
 
-        self.cockpit.event_queue.put(event)
-        # if self.current_page is not None:
-        #     if key1 in self.current_page.buttons.keys():
-        #         if event is not None:
-        #             self.current_page.buttons[key1].activate(event)
-        #         else:
-        #             logger.warning(f"no event")
-        #     else:
-        #         logger.warning(f"no definition for key {key1}")
-        # else:
-        #     logger.warning(f"no page loaded for deck {self.name}")
+        event.run()
 
     # #######################################
     # Deck Specific Functions : Representation

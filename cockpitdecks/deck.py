@@ -619,7 +619,7 @@ class Deck(ABC):
         """
         # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
-        self.cockpit.event_queue.put(event)
+        event.run()
         # if self.current_page is not None:
         #     idx = str(event.button)
         #     if idx in self.current_page.buttons.keys():

@@ -29,7 +29,7 @@ from cockpitdecks.decks import DECK_DRIVERS
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
@@ -791,38 +791,21 @@ class Cockpit(DatarefListener, CockpitBase):
 
             e = self.event_queue.get()  # blocks infinitely here
 
-            if type(e) is str and e == "terminate":
-                self.end_event_loop()
-                continue
-            elif e == "reload":
-                self.reload_decks(just_do_it=True)
-                continue
-            elif e == "stop":
-                self.stop_decks(just_do_it=True)
-                continue
-
-            deck = e.deck
-            if deck is None:
-                logger.warning(f"no deck")
-                continue
-
-            page = deck.current_page
-            if page is None:
-                logger.warning(f"no current page on deck {deck.name}")
-                continue
-
-            idx = str(e.button)
-            if idx not in deck.current_page.buttons.keys():
-                logger.warning(f"no button {idx} on page {page.name} on deck {deck.name}")
+            if type(e) is str:
+                if e == "terminate":
+                    self.end_event_loop()
+                elif e == "reload":
+                    self.reload_decks(just_do_it=True)
+                elif e == "stop":
+                    self.stop_decks(just_do_it=True)
                 continue
 
             try:
-                logger.debug(f"doing {idx} on page {page.name} on deck {deck.name}..")
-                deck.current_page.buttons[idx].activate(e)
+                logger.debug(f"doing {e}..")
+                e.run(just_do_it=True)
                 logger.debug(f"..done without error")
             except:
-                logger.debug(f"..done with error")
-                logger.warning(f"deck {deck.name},  page {page.name}, button {idx}", exc_info=True)
+                logger.warning(f"..done with error", exc_info=True)
 
         logger.debug(f".. event loop ended")
 

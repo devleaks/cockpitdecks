@@ -2,10 +2,14 @@ from __future__ import annotations
 from abc import ABC
 from datetime import datetime
 from math import sqrt
+import logging
+
 from cockpitdecks import DECK_ACTIONS
 
 # from cockpitdecks.deck import Deck
 
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 class DeckEvent(ABC):
     """Deck event base class.
@@ -18,7 +22,7 @@ class DeckEvent(ABC):
 
     _required_deck_capability = DECK_ACTIONS.NONE
 
-    def __init__(self, deck: "Deck", button: str):
+    def __init__(self, deck: "Deck", button: str, autorun: bool = False):
         """Deck event
 
         Args:
@@ -28,6 +32,8 @@ class DeckEvent(ABC):
         self.deck = deck
         self.button = button
         self._ts = datetime.now().timestamp()
+        if autorun:
+            self.run()
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}"
@@ -70,19 +76,46 @@ class DeckEvent(ABC):
             return self.completed - self.started
         return -1.0
 
+    def run(self, just_do_it: bool = False) -> bool:
+        if self.deck is None:
+            logger.warning(f"no deck")
+            return False
+
+        if just_do_it:
+            page = self.deck.current_page
+            if page is None:
+                logger.warning(f"no current page on deck {self.deck.name}")
+                return False
+
+            idx = str(self.button)
+            if idx not in self.deck.current_page.buttons.keys():
+                logger.warning(f"no button {idx} on page {page.name} on deck {self.deck.name}")
+                return False
+
+            try:
+                logger.debug(f"doing {idx} on page {page.name} on deck {self.deck.name}..")
+                self.deck.current_page.buttons[idx].activate(self)
+                logger.debug(f"..done")
+            except:
+                logger.warning(f"..done with error: deck {self.deck.name},  page {page.name}, button {idx}", exc_info=True)
+                return False
+        else:
+            self.deck.cockpit.event_queue.put(self)
+            logger.debug(f"enqueued")
+        return True
 
 class PushEvent(DeckEvent):
     """Event for key press"""
 
     _required_deck_capability = DECK_ACTIONS.PUSH
 
-    def __init__(self, deck: "Deck", button: str, pressed: bool):
+    def __init__(self, deck: "Deck", button: str, pressed: bool, autorun: bool = False):
         """Event for key press.
 
         Args:
             pressed (bool): Whether the key was pressed (true) or released (false)
         """
-        DeckEvent.__init__(self, deck=deck, button=button)
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.pressed = pressed
 
     def __str__(self):
@@ -100,13 +133,13 @@ class PushEvent(DeckEvent):
 class EncoderEvent(DeckEvent):
     _required_deck_capability = DECK_ACTIONS.ENCODER
 
-    def __init__(self, deck: "Deck", button: str, clockwise: bool):
+    def __init__(self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False):
         """Event for encoder stepped click.
 
         Args:
             clockwise (bool): Whether the encoder was turned clockwise (true) or counter-clockwise (false)
         """
-        DeckEvent.__init__(self, deck=deck, button=button)
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.clockwise = clockwise
 
     def __str__(self):
@@ -146,13 +179,13 @@ class EncoderEvent(DeckEvent):
 class SlideEvent(DeckEvent):
     _required_deck_capability = DECK_ACTIONS.SLIDE
 
-    def __init__(self, deck: "Deck", button: str, value: int):
+    def __init__(self, deck: "Deck", button: str, value: int, autorun: bool = False):
         """Event when sliding or rotation cursor value has changed..
 
         Args:
             value (int): new slider value
         """
-        DeckEvent.__init__(self, deck=deck, button=button)
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.value = value
 
     def __str__(self):
@@ -172,6 +205,7 @@ class SwipeEvent(DeckEvent):
         end_pos_x: int,
         end_pos_y: int,
         end_ts: float,
+        autorun: bool = False
     ):
         """Event when a touch screen has been touched or swiped.
 
@@ -186,7 +220,7 @@ class SwipeEvent(DeckEvent):
             end_pos_y (int): End y position of swipe
             end_ts (int): Timestamp of end of swipe
         """
-        DeckEvent.__init__(self, deck=deck, button=button)
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.start_pos_x = start_pos_x
         self.start_pos_y = start_pos_y
         self.start_ts = start_ts
@@ -257,8 +291,9 @@ class TouchEvent(DeckEvent):
         pos_x: int,
         pos_y: int,
         start: TouchEvent | None = None,
+        autorun: bool = False
     ):
-        DeckEvent.__init__(self, deck=deck, button=button)
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.start = start
@@ -277,5 +312,6 @@ class TouchEvent(DeckEvent):
                 end_pos_x=self.pos_x,
                 end_pos_y=self.pos_y,
                 end_ts=self.timestamp,
+                autorun=autorun
             )
         return None
