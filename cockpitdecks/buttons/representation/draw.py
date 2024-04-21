@@ -29,20 +29,28 @@ class DrawBase(Icon):
 
         self.texture = None
         self.bgcolor = None
-        self.cockpit_texture = config.get("cockpit-texture", self.button.get_attribute("cockpit-texture"))
-        self.cockpit_color = config.get("cockpit-color", self.button.get_attribute("cockpit-color"))
+        self.cockpit_texture = config.get(
+            "cockpit-texture", self.button.get_attribute("cockpit-texture")
+        )
+        self.cockpit_color = config.get(
+            "cockpit-color", self.button.get_attribute("cockpit-color")
+        )
 
         # Reposition for move_and_send()
         self.draw_scale = float(config.get("scale", 1))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
-            logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
+            logger.warning(
+                f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]"
+            )
             self.draw_scale = 1
         self.draw_left = config.get("left", 0) - config.get("right", 0)
         self.draw_up = config.get("up", 0) - config.get("down", 0)
 
     def double_icon(self, width: int = ICON_SIZE * 2, height: int = ICON_SIZE * 2):
         """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
-        image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
+        image = Image.new(
+            mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR
+        )
         draw = ImageDraw.Draw(image)
         return image, draw
 
@@ -52,7 +60,11 @@ class DrawBase(Icon):
         """
         image = None
         # Try local texture
-        if use_texture and self.texture is not None and self.texture in self.button.deck.cockpit.icons.keys():
+        if (
+            use_texture
+            and self.texture is not None
+            and self.texture in self.button.deck.cockpit.icons.keys()
+        ):
             image = self.button.deck.cockpit.icons[self.texture]
             if image is not None:  # found a texture as requested
                 image = image.resize((width, height))
@@ -60,7 +72,11 @@ class DrawBase(Icon):
                 return image
 
         # Try deck cockpit_texture
-        if use_texture and self.cockpit_texture is not None and self.cockpit_texture in self.button.deck.cockpit.icons.keys():
+        if (
+            use_texture
+            and self.cockpit_texture is not None
+            and self.cockpit_texture in self.button.deck.cockpit.icons.keys()
+        ):
             image = self.button.deck.cockpit.icons[self.cockpit_texture]
             if image is not None:  # found cockpit texture
                 image = image.resize((width, height))
@@ -68,7 +84,9 @@ class DrawBase(Icon):
                 return image
 
         if use_texture and self.texture is None:
-            logger.debug(f"should use texture but no texture found, using uniform color")
+            logger.debug(
+                f"should use texture but no texture found, using uniform color"
+            )
 
         if self.bgcolor is not None:
             image = Image.new(mode="RGBA", size=(width, height), color=self.bgcolor)
@@ -137,7 +155,9 @@ class DataIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.double_icon(
+            width=ICON_SIZE, height=ICON_SIZE
+        )  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Display Data
@@ -150,10 +170,16 @@ class DataIcon(DrawBase):
         if topbar is not None:
             topbarcolor = convert_color(topbar)
             linewidth = data.get("top-line-width", 6)
-            draw.line([(0, int(linewidth / 2)), (image.width, int(linewidth / 2))], fill=topbarcolor, width=linewidth)
+            draw.line(
+                [(0, int(linewidth / 2)), (image.width, int(linewidth / 2))],
+                fill=topbarcolor,
+                width=linewidth,
+            )
 
         # Icon
-        icon, icon_format, icon_font, icon_color, icon_size, icon_position = self.get_text_detail(data, "icon")
+        icon, icon_format, icon_font, icon_color, icon_size, icon_position = (
+            self.get_text_detail(data, "icon")
+        )
 
         icon_str = "*"
         icon_arr = icon.split(":")
@@ -168,11 +194,15 @@ class DataIcon(DrawBase):
         inside = round(0.04 * image.width + 0.5)
         w = inside
         h = image.height / 2
-        draw.text((w, h), text=icon_str, font=font, anchor="lm", align="left", fill=icon_color)  # (image.width / 2, 15)
+        draw.text(
+            (w, h), text=icon_str, font=font, anchor="lm", align="left", fill=icon_color
+        )  # (image.width / 2, 15)
 
         # Data
         DATA_UNIT_SEP = " "
-        data_value, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(data, "data")
+        data_value, data_format, data_font, data_color, data_size, data_position = (
+            self.get_text_detail(data, "data")
+        )
         # print(">"*10, "DATA", data_value, data_format, data_font, data_color, data_size, data_position)
 
         if data_format is not None:
@@ -195,11 +225,25 @@ class DataIcon(DrawBase):
         #    h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
         if data_unit is not None:
             w = w - draw.textlength(DATA_UNIT_SEP + data_unit, font=font_unit)
-        draw.text((w, h), text=data_str, font=font, anchor="rs", align="right", fill=data_color)  # (image.width / 2, 15)
+        draw.text(
+            (w, h),
+            text=data_str,
+            font=font,
+            anchor="rs",
+            align="right",
+            fill=data_color,
+        )  # (image.width / 2, 15)
 
         if data_unit is not None:
             w = image.width - inside
-            draw.text((w, h), text=DATA_UNIT_SEP + data_unit, font=font_unit, anchor="rs", align="right", fill=data_color)  # (image.width / 2, 15)
+            draw.text(
+                (w, h),
+                text=DATA_UNIT_SEP + data_unit,
+                font=font_unit,
+                anchor="rs",
+                align="right",
+                fill=data_color,
+            )  # (image.width / 2, 15)
 
         # Progress bar
         DATA_PROGRESS_SPACE = 8
@@ -213,11 +257,20 @@ class DataIcon(DrawBase):
                 pct = 1
             full_color = light_off(data_color, 0.30)
             l = w + pct * ((image.width - inside) - w)
-            draw.line([(w, h), (image.width - inside, h)], fill=full_color, width=DATA_PROGRESS, joint="curve")  # 100%
-            draw.line([(w, h), (l, h)], fill=data_color, width=DATA_PROGRESS, joint="curve")
+            draw.line(
+                [(w, h), (image.width - inside, h)],
+                fill=full_color,
+                width=DATA_PROGRESS,
+                joint="curve",
+            )  # 100%
+            draw.line(
+                [(w, h), (l, h)], fill=data_color, width=DATA_PROGRESS, joint="curve"
+            )
 
         # Bottomline (forced at CENTER BOTTOM line of icon)
-        bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position = self.get_text_detail(data, "bottomline")
+        bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position = (
+            self.get_text_detail(data, "bottomline")
+        )
         # print(">"*10, "BOTL", bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position)
 
         if bottom_line is not None:
@@ -225,19 +278,41 @@ class DataIcon(DrawBase):
             w = image.width / 2
             h = image.height / 2
             h = image.height - inside - botl_size / 2  # forces BOTTOM position
-            draw.multiline_text((w, h), text=bottom_line, font=font, anchor="md", align="center", fill=botl_color)  # (image.width / 2, 15)
+            draw.multiline_text(
+                (w, h),
+                text=bottom_line,
+                font=font,
+                anchor="md",
+                align="center",
+                fill=botl_color,
+            )  # (image.width / 2, 15)
 
         # Final mark
-        mark, mark_format, mark_font, mark_color, mark_size, mark_position = self.get_text_detail(data, "mark")
+        mark, mark_format, mark_font, mark_color, mark_size, mark_position = (
+            self.get_text_detail(data, "mark")
+        )
         if mark is not None:
             font = self.get_font(mark_font, mark_size)
             w = image.width - 2 * inside
             h = image.height - 2 * inside
-            draw.text((w, h), text=mark, font=font, anchor="rb", align="right", fill=mark_color)
+            draw.text(
+                (w, h),
+                text=mark,
+                font=font,
+                anchor="rb",
+                align="right",
+                fill=mark_color,
+            )
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=self.icon_texture, color_in=self.icon_color, use_texture=True, who="Data"
+            name=self.button_name(),
+            width=ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=self.icon_texture,
+            color_in=self.icon_color,
+            use_texture=True,
+            who="Data",
         )
         bg.alpha_composite(image)
         return bg.convert("RGB")
@@ -298,31 +373,49 @@ class SwitchBase(DrawBase):
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.get_attribute("button-fill-color", SWITCH_BASE_FILL_COLOR)
+        self.button_fill_color = self.get_attribute(
+            "button-fill-color", SWITCH_BASE_FILL_COLOR
+        )
         self.button_fill_color = convert_color(self.button_fill_color)
-        self.button_stroke_color = self.get_attribute("button-stroke-color", SWITCH_BASE_STROKE_COLOR)
+        self.button_stroke_color = self.get_attribute(
+            "button-stroke-color", SWITCH_BASE_STROKE_COLOR
+        )
         self.button_stroke_color = convert_color(self.button_stroke_color)
         self.button_stroke_width = self.get_attribute("button-stroke-width", 2)
-        self.button_underline_color = self.get_attribute("button-underline-color", SWITCH_BASE_UNDERLINE_COLOR)
+        self.button_underline_color = self.get_attribute(
+            "button-underline-color", SWITCH_BASE_UNDERLINE_COLOR
+        )
         self.button_underline_color = convert_color(self.button_underline_color)
         self.button_underline_width = self.get_attribute("button-underline-width", 0)
 
-        self.handle_base_fill_color = self.get_attribute("handle-fill-color", SWITCH_HANDLE_BASE_COLOR)
+        self.handle_base_fill_color = self.get_attribute(
+            "handle-fill-color", SWITCH_HANDLE_BASE_COLOR
+        )
         self.handle_base_fill_color = convert_color(self.handle_base_fill_color)
 
-        self.handle_fill_color = self.get_attribute("handle-fill-color", SWITCH_HANDLE_FILL_COLOR)
+        self.handle_fill_color = self.get_attribute(
+            "handle-fill-color", SWITCH_HANDLE_FILL_COLOR
+        )
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.get_attribute("handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR)
+        self.handle_stroke_color = self.get_attribute(
+            "handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR
+        )
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.get_attribute("handle-stroke-width", 0)
 
-        self.top_fill_color = self.get_attribute("top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR)
+        self.top_fill_color = self.get_attribute(
+            "top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR
+        )
         self.top_fill_color = convert_color(self.top_fill_color)
-        self.top_stroke_color = self.get_attribute("top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR)
+        self.top_stroke_color = self.get_attribute(
+            "top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR
+        )
         self.top_stroke_color = convert_color(self.top_stroke_color)
         self.top_stroke_width = self.get_attribute("top-stroke-width", 2)
 
-        self.handle_tip_fill_color = self.get_attribute("handle-fill-color", HANDLE_TIP_COLOR)
+        self.handle_tip_fill_color = self.get_attribute(
+            "handle-fill-color", HANDLE_TIP_COLOR
+        )
         self.handle_tip_fill_color = convert_color(self.handle_tip_fill_color)
 
         # Ticks
@@ -331,7 +424,9 @@ class SwitchBase(DrawBase):
         self.tick_width = self.get_attribute("tick-width", 4)
         self.tick_color = self.get_attribute("tick-color", TICK_COLOR)
         self.tick_color = convert_color(self.tick_color)
-        self.tick_underline_color = self.get_attribute("tick-underline-color", TICK_COLOR)
+        self.tick_underline_color = self.get_attribute(
+            "tick-underline-color", TICK_COLOR
+        )
         self.tick_underline_color = convert_color(self.tick_underline_color)
         self.tick_underline_width = self.get_attribute("tick-underline-width", 4)
 
@@ -345,8 +440,12 @@ class SwitchBase(DrawBase):
 
         # Handle needle
         self.needle_width = self.get_attribute("needle-width", 8)
-        self.needle_start = self.get_attribute("needle-start", 10)  # from center of button
-        self.needle_length = self.get_attribute("needle-length", 50)  # end = start + length
+        self.needle_start = self.get_attribute(
+            "needle-start", 10
+        )  # from center of button
+        self.needle_length = self.get_attribute(
+            "needle-length", 50
+        )  # end = start + length
         self.needle_tip = self.switch.get("needle-tip")  # arro, arri, ball
         self.needle_tip_size = self.get_attribute("needle-tip-size", 5)
         # self.needle_length = int(self.needle_length * self.button_size / 200)
@@ -354,7 +453,9 @@ class SwitchBase(DrawBase):
         self.needle_color = convert_color(self.needle_color)
         # Options
         self.needle_underline_width = self.get_attribute("needle-underline-width", 4)
-        self.needle_underline_color = self.get_attribute("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
+        self.needle_underline_color = self.get_attribute(
+            "needle-underline-color", NEEDLE_UNDERLINE_COLOR
+        )
         self.needle_underline_color = convert_color(self.needle_underline_color)
 
         self.marker_color = self.get_attribute("marker-color", MARKER_COLOR)
@@ -362,7 +463,9 @@ class SwitchBase(DrawBase):
         # Reposition for move_and_send(), found locally in switch config
         self.draw_scale = float(self.switch.get("scale", 1))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
-            logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
+            logger.warning(
+                f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]"
+            )
             self.draw_scale = 1
         self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
         self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
@@ -374,7 +477,9 @@ class SwitchBase(DrawBase):
 
 class CircularSwitch(SwitchBase):
     def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(self, config=config, button=button, switch_type="circular-switch")
+        SwitchBase.__init__(
+            self, config=config, button=button, switch_type="circular-switch"
+        )
 
         if self.switch is None:
             logger.warning("no switch configuration")
@@ -386,16 +491,22 @@ class CircularSwitch(SwitchBase):
         self.tick_to = self.switch.get("tick-to", 270)
         if hasattr(self.button._activation, "stops"):
             self.tick_steps = self.button._activation.stops
-            logger.debug(f"button {self.button.name}: button has {self.tick_steps} steps")
+            logger.debug(
+                f"button {self.button.name}: button has {self.tick_steps} steps"
+            )
         else:
             self.tick_steps = self.switch.get("tick-steps", 2)
         if self.tick_steps < 2:
-            logger.warning(f"button {self.button.name}: insuficient number of steps: {self.tick_steps}, forcing 2")
+            logger.warning(
+                f"button {self.button.name}: insuficient number of steps: {self.tick_steps}, forcing 2"
+            )
             self.tick_steps = 2
         logger.debug(f"button {self.button.name}: {self.tick_steps} steps")
         self.angular_step = (self.tick_to - self.tick_from) / (self.tick_steps - 1)
         if len(self.tick_labels) < self.tick_steps:
-            logger.warning(f"button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})")
+            logger.warning(
+                f"button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})"
+            )
 
     def get_image_for_icon(self):
         """
@@ -419,7 +530,12 @@ class CircularSwitch(SwitchBase):
 
         tl = [center[0] - self.button_size / 2, center[1] - self.button_size / 2]
         br = [center[0] + self.button_size / 2, center[1] + self.button_size / 2]
-        draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+        draw.ellipse(
+            tl + br,
+            fill=self.button_fill_color,
+            outline=self.button_stroke_color,
+            width=self.button_stroke_width,
+        )
 
         # Ticks
         tick_start = self.button_size / 2 + self.tick_space
@@ -443,7 +559,13 @@ class CircularSwitch(SwitchBase):
         if self.tick_underline_width > 0:
             tl = [center[0] - tick_start, center[1] - tick_start]
             br = [center[0] + tick_start, center[1] + tick_start]
-            draw.arc(tl + br, fill=self.tick_underline_color, start=self.tick_from + 90, end=self.tick_to + 90, width=self.tick_underline_width)
+            draw.arc(
+                tl + br,
+                fill=self.tick_underline_color,
+                start=self.tick_from + 90,
+                end=self.tick_to + 90,
+                width=self.tick_underline_width,
+            )
 
         # Labels
         # print("-<-<", label_anchors)
@@ -461,14 +583,23 @@ class CircularSwitch(SwitchBase):
                 anchor = "ms"
                 align = "center"
             # print(self.tick_labels[i], label_anchors[i], label_anchors[i][1:3], anchor, align)
-            draw.text(label_anchors[i][1:3], text=self.tick_labels[i], font=font, anchor=anchor, align=align, fill=self.tick_label_color)
+            draw.text(
+                label_anchors[i][1:3],
+                text=self.tick_labels[i],
+                font=font,
+                anchor=anchor,
+                align=align,
+                fill=self.tick_label_color,
+            )
 
         # Needle
         value = self.button.get_current_value()
         if value is None:
             value = 0
         if value >= self.tick_steps:
-            logger.warning(f"button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}")
+            logger.warning(
+                f"button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}"
+            )
             value = self.tick_steps - 1
         angle = red(self.tick_from + value * self.angular_step)
 
@@ -479,7 +610,12 @@ class CircularSwitch(SwitchBase):
             # Base circle
             tl = [center[0] - inner, center[1] - inner]
             br = [center[0] + inner, center[1] + inner]
-            overlay_draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+            overlay_draw.ellipse(
+                tl + br,
+                fill=self.button_fill_color,
+                outline=self.button_stroke_color,
+                width=self.button_stroke_width,
+            )
 
             # Button handle needle
             home, home_drawing = self.double_icon()
@@ -495,7 +631,9 @@ class CircularSwitch(SwitchBase):
             side = handle_width / math.sqrt(2) + r / 2
             tl = [center[0] - side / 2, center[1] - side / 2]
             br = [center[0] + side / 2, center[1] + side / 2]
-            home_drawing.rounded_rectangle(tl + br, radius=r, fill=self.handle_fill_color)
+            home_drawing.rounded_rectangle(
+                tl + br, radius=r, fill=self.handle_fill_color
+            )
             home = home.rotate(45)
             a = 1
             b = 0
@@ -509,7 +647,9 @@ class CircularSwitch(SwitchBase):
             home_drawing = ImageDraw.Draw(home)
             tl = [center[0] - handle_width / 2, center[1] - handle_height]
             br = [center[0] + handle_width / 2, center[1] + handle_height]
-            home_drawing.rounded_rectangle(tl + br, radius=r, fill=self.handle_fill_color)
+            home_drawing.rounded_rectangle(
+                tl + br, radius=r, fill=self.handle_fill_color
+            )
 
             overlay.alpha_composite(home)
             overlay = overlay.rotate(red(-angle))  # ;-)
@@ -524,22 +664,49 @@ class CircularSwitch(SwitchBase):
             xc = center[0] - end * math.sin(math.radians(angle))
             yc = center[1] + end * math.cos(math.radians(angle))
             if self.needle_underline_width > 0:
-                draw.line([(xc, yc), (xr, yr)], width=self.needle_width + 2 * self.needle_underline_width, fill=self.needle_underline_color)
-            draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
+                draw.line(
+                    [(xc, yc), (xr, yr)],
+                    width=self.needle_width + 2 * self.needle_underline_width,
+                    fill=self.needle_underline_color,
+                )
+            draw.line(
+                [(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color
+            )
             # needle tip
             if self.needle_tip is not None:
                 # print("tip1", self.switch_style, self.button_size, self.needle_start, self.needle_length, self.needle_tip, self.needle_tip_size)
                 tip_image, tip_draw = self.double_icon()
                 if self.needle_tip.startswith("arr"):
                     orient = -1 if self.needle_tip == "arri" else 1
-                    tip = ((3 * self.needle_tip_size, 0), (0, 4 * self.needle_tip_size * orient), (-3 * self.needle_tip_size, 0), (3 * self.needle_tip_size, 0))
+                    tip = (
+                        (3 * self.needle_tip_size, 0),
+                        (0, 4 * self.needle_tip_size * orient),
+                        (-3 * self.needle_tip_size, 0),
+                        (3 * self.needle_tip_size, 0),
+                    )
                     tip = list(((center[0] + x[0], center[1] + x[1]) for x in tip))
-                    tip_draw.polygon(tip, fill=self.needle_color)  # , outline="red", width=3
+                    tip_draw.polygon(
+                        tip, fill=self.needle_color
+                    )  # , outline="red", width=3
                 else:
-                    tl = [center[0] - self.needle_tip_size / 2, center[1] - self.needle_tip_size / 2]
-                    br = [center[0] + self.needle_tip_size / 2, center[1] + self.needle_tip_size / 2]
-                    tip_draw.ellipse(tl + br, fill=self.needle_color, outline="red", width=3)
-                tip_image = tip_image.rotate(red(-angle), translate=(-end * math.sin(math.radians(angle)), end * math.cos(math.radians(angle))))  # ;-)
+                    tl = [
+                        center[0] - self.needle_tip_size / 2,
+                        center[1] - self.needle_tip_size / 2,
+                    ]
+                    br = [
+                        center[0] + self.needle_tip_size / 2,
+                        center[1] + self.needle_tip_size / 2,
+                    ]
+                    tip_draw.ellipse(
+                        tl + br, fill=self.needle_color, outline="red", width=3
+                    )
+                tip_image = tip_image.rotate(
+                    red(-angle),
+                    translate=(
+                        -end * math.sin(math.radians(angle)),
+                        end * math.cos(math.radians(angle)),
+                    ),
+                )  # ;-)
                 image.alpha_composite(tip_image)
 
         else:  # Just a needle
@@ -550,22 +717,49 @@ class CircularSwitch(SwitchBase):
             yc = center[1] + length * math.cos(math.radians(angle))
             # print(f"***> {value} => {angle}")
             if self.needle_underline_width > 0:
-                draw.line([(xc, yc), (xr, yr)], width=self.needle_width + 2 * self.needle_underline_width, fill=self.needle_underline_color)
-            draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
+                draw.line(
+                    [(xc, yc), (xr, yr)],
+                    width=self.needle_width + 2 * self.needle_underline_width,
+                    fill=self.needle_underline_color,
+                )
+            draw.line(
+                [(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color
+            )
             # needle tip
             if self.needle_tip is not None:
                 # print("tip2", self.switch_style, self.button_size, self.needle_start, self.needle_length, self.needle_tip, self.needle_tip_size)
                 tip_image, tip_draw = self.double_icon()
                 if self.needle_tip.startswith("arr"):
                     orient = -1 if self.needle_tip == "arri" else 1
-                    tip = ((3 * self.needle_tip_size, 0), (0, 4 * self.needle_tip_size * orient), (-3 * self.needle_tip_size, 0), (3 * self.needle_tip_size, 0))
+                    tip = (
+                        (3 * self.needle_tip_size, 0),
+                        (0, 4 * self.needle_tip_size * orient),
+                        (-3 * self.needle_tip_size, 0),
+                        (3 * self.needle_tip_size, 0),
+                    )
                     tip = list(((center[0] + x[0], center[1] + x[1]) for x in tip))
-                    tip_draw.polygon(tip, fill=self.needle_color)  # , outline="red", width=3
+                    tip_draw.polygon(
+                        tip, fill=self.needle_color
+                    )  # , outline="red", width=3
                 else:
-                    tl = [center[0] - self.needle_tip_size / 2, center[1] - self.needle_tip_size / 2]
-                    br = [center[0] + self.needle_tip_size / 2, center[1] + self.needle_tip_size / 2]
-                    tip_draw.ellipse(tl + br, fill=self.needle_color, outline="red", width=3)
-            tip_image = tip_image.rotate(red(-angle), translate=(-end * math.sin(math.radians(angle)), end * math.cos(math.radians(angle))))  # ;-)
+                    tl = [
+                        center[0] - self.needle_tip_size / 2,
+                        center[1] - self.needle_tip_size / 2,
+                    ]
+                    br = [
+                        center[0] + self.needle_tip_size / 2,
+                        center[1] + self.needle_tip_size / 2,
+                    ]
+                    tip_draw.ellipse(
+                        tl + br, fill=self.needle_color, outline="red", width=3
+                    )
+            tip_image = tip_image.rotate(
+                red(-angle),
+                translate=(
+                    -end * math.sin(math.radians(angle)),
+                    end * math.cos(math.radians(angle)),
+                ),
+            )  # ;-)
             image.alpha_composite(tip_image)
 
         return self.move_and_send(image)
@@ -598,13 +792,17 @@ class Switch(SwitchBase):
         self.invert = self.button.has_option("invert")
         self.vertical = not self.button.has_option("horizontal")
         self.hexabase = self.button.has_option("hexa")
-        self.screw_rot = randint(0, 60)  # remembers it so that it does not "turn" between updates
+        self.screw_rot = randint(
+            0, 60
+        )  # remembers it so that it does not "turn" between updates
 
         # Magic default resizing
         # Resizes default value switches to nice looking Airbus switches
         self.draw_scale = float(self.switch.get("scale", 0.8))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
-            logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
+            logger.warning(
+                f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]"
+            )
             self.draw_scale = 1
         if self.switch.get("left") is None and self.switch.get("right") is None:
             if self.vertical:
@@ -623,24 +821,49 @@ class Switch(SwitchBase):
         # Base is either hexagonal or round
         if self.hexabase:
             draw.regular_polygon(
-                (ICON_SIZE, ICON_SIZE, radius), n_sides=6, rotation=self.screw_rot, fill=self.button_fill_color, outline=self.button_stroke_color
+                (ICON_SIZE, ICON_SIZE, radius),
+                n_sides=6,
+                rotation=self.screw_rot,
+                fill=self.button_fill_color,
+                outline=self.button_stroke_color,
             )
             # screw hole is circular
             SCREW_HOLE_FRACT = 3
-            tl = [ICON_SIZE - radius / SCREW_HOLE_FRACT, ICON_SIZE - radius / SCREW_HOLE_FRACT]
-            br = [ICON_SIZE + radius / SCREW_HOLE_FRACT, ICON_SIZE + radius / SCREW_HOLE_FRACT]
+            tl = [
+                ICON_SIZE - radius / SCREW_HOLE_FRACT,
+                ICON_SIZE - radius / SCREW_HOLE_FRACT,
+            ]
+            br = [
+                ICON_SIZE + radius / SCREW_HOLE_FRACT,
+                ICON_SIZE + radius / SCREW_HOLE_FRACT,
+            ]
             # print("H>", tl, br)
-            draw.ellipse(tl + br, fill=SCREW_HOLE_COLOR, outline=SCREW_HOLE_UNDERLINE, width=SCREW_HOLE_UWIDTH)
+            draw.ellipse(
+                tl + br,
+                fill=SCREW_HOLE_COLOR,
+                outline=SCREW_HOLE_UNDERLINE,
+                width=SCREW_HOLE_UWIDTH,
+            )
         else:
             if self.button.has_option("no-ublack"):
                 tl = [ICON_SIZE - radius, ICON_SIZE - radius]
                 br = [ICON_SIZE + radius, ICON_SIZE + radius]
-                draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+                draw.ellipse(
+                    tl + br,
+                    fill=self.button_fill_color,
+                    outline=self.button_stroke_color,
+                    width=self.button_stroke_width,
+                )
             else:
                 # Add underline back
                 tl = [ICON_SIZE - radius, ICON_SIZE - radius]
                 br = [ICON_SIZE + radius, ICON_SIZE + radius]
-                draw.ellipse(tl + br, fill="black", outline=self.button_stroke_color, width=self.button_stroke_width)
+                draw.ellipse(
+                    tl + br,
+                    fill="black",
+                    outline=self.button_stroke_color,
+                    width=self.button_stroke_width,
+                )
 
                 w = 12
                 r = radius - w
@@ -654,20 +877,41 @@ class Switch(SwitchBase):
             tl = [ICON_SIZE - w, ICON_SIZE - l]
             br = [ICON_SIZE + w, ICON_SIZE + l]
             # print("rr>", tl, br)
-            draw.rounded_rectangle(tl + br, radius=w, fill=SCREW_HOLE_COLOR, outline=SCREW_HOLE_UNDERLINE, width=SCREW_HOLE_UWIDTH)
+            draw.rounded_rectangle(
+                tl + br,
+                radius=w,
+                fill=SCREW_HOLE_COLOR,
+                outline=SCREW_HOLE_UNDERLINE,
+                width=SCREW_HOLE_UWIDTH,
+            )
 
         if self.button_underline_width > 0:
-            tl1 = [ICON_SIZE - radius - self.tick_space, ICON_SIZE - radius - self.tick_space]
-            br1 = [ICON_SIZE + radius + self.tick_space, ICON_SIZE + radius + self.tick_space]
+            tl1 = [
+                ICON_SIZE - radius - self.tick_space,
+                ICON_SIZE - radius - self.tick_space,
+            ]
+            br1 = [
+                ICON_SIZE + radius + self.tick_space,
+                ICON_SIZE + radius + self.tick_space,
+            ]
             # print("U>", tl1, br1)
-            draw.ellipse(tl1 + br1, outline=self.button_underline_color, width=self.button_underline_width)
+            draw.ellipse(
+                tl1 + br1,
+                outline=self.button_underline_color,
+                width=self.button_underline_width,
+            )
 
     def draw_round_switch_from_top(self, draw, radius: int = int(ICON_SIZE / 16)):
         #### TOP
         tl = [ICON_SIZE - 2 * radius, ICON_SIZE - 2 * radius]
         br = [ICON_SIZE + 2 * radius, ICON_SIZE + 2 * radius]
         # print(">R", tl, br)
-        draw.ellipse(tl + br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+        draw.ellipse(
+            tl + br,
+            fill=self.top_fill_color,
+            outline=self.top_stroke_color,
+            width=self.top_stroke_width,
+        )
 
         # (white) tip
         tl = [ICON_SIZE - radius, ICON_SIZE - radius]
@@ -701,12 +945,22 @@ class Switch(SwitchBase):
         p3 = (ICON_SIZE + radius, swtop)
         p4 = (ICON_SIZE - radius, swtop)
         # print("|M", [p1, p2, p3, p4, p1])
-        draw.polygon([p1, p2, p3, p4, p1], fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+        draw.polygon(
+            [p1, p2, p3, p4, p1],
+            fill=self.handle_fill_color,
+            outline=self.handle_stroke_color,
+            width=self.handle_stroke_width,
+        )
         # #### TOP
         tl = [ICON_SIZE - hwidth / 2, swtop - hheight - hwidth / 4]
         br = [ICON_SIZE + hwidth / 2, swtop - hheight + hwidth / 4]
         # print("|T", tl, br)
-        draw.ellipse(tl + br, fill=self.top_fill_color, outline=self.top_stroke_color, width=self.top_stroke_width)
+        draw.ellipse(
+            tl + br,
+            fill=self.top_fill_color,
+            outline=self.top_stroke_color,
+            width=self.top_stroke_width,
+        )
 
         # # (white) tip
         hwidth = int(hwidth / 2)
@@ -723,7 +977,13 @@ class Switch(SwitchBase):
         br = [ICON_SIZE + w, ICON_SIZE + h]
         # print(">F", tl, br)
         # draw.rectangle(tl+br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
-        draw.rounded_rectangle(tl + br, radius=4, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+        draw.rounded_rectangle(
+            tl + br,
+            radius=4,
+            fill=self.top_fill_color,
+            outline=self.top_stroke_color,
+            width=int(self.top_stroke_width * 1.5),
+        )
 
         #### (white) tip
         # rrect in top 1/3 of flat part
@@ -762,14 +1022,24 @@ class Switch(SwitchBase):
         p3 = (ICON_SIZE + radius, swtop)
         p4 = (ICON_SIZE - radius, swtop)
         # print("|m", [p1, p2, p3, p4, p1])
-        draw.polygon([p1, p2, p3, p4, p1], fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+        draw.polygon(
+            [p1, p2, p3, p4, p1],
+            fill=self.handle_fill_color,
+            outline=self.handle_stroke_color,
+            width=self.handle_stroke_width,
+        )
 
         # # Then the flat part
         toph = 4 * radius
         tl = [ICON_SIZE - hwidth / 2, swtop - hheight - toph]
         br = [ICON_SIZE + hwidth / 2, swtop - hheight]
         # print("|M", [p1, p2, p3, p4, p1], "h", toph)
-        draw.rectangle(tl + br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+        draw.rectangle(
+            tl + br,
+            fill=self.handle_fill_color,
+            outline=self.handle_stroke_color,
+            width=self.handle_stroke_width,
+        )
 
         # Decoration of the flat part
         # small lines in bottom 2/3 of flat part
@@ -807,7 +1077,13 @@ class Switch(SwitchBase):
         tl = [ICON_SIZE - width / 2, ICON_SIZE - height / 2]
         br = [ICON_SIZE + width / 2, ICON_SIZE + height / 2]
         # print(">3", tl, br)
-        draw.rounded_rectangle(tl + br, radius=height / 2, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+        draw.rounded_rectangle(
+            tl + br,
+            radius=height / 2,
+            fill=self.top_fill_color,
+            outline=self.top_stroke_color,
+            width=int(self.top_stroke_width * 1.5),
+        )
 
         # Dots
         ndots = 3
@@ -844,7 +1120,12 @@ class Switch(SwitchBase):
         tl = [ICON_SIZE - hw, top0 - hh]
         br = [ICON_SIZE + hw, top0]
         # print("|M", tl+br)
-        draw.rectangle(tl + br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+        draw.rectangle(
+            tl + br,
+            fill=self.handle_fill_color,
+            outline=self.handle_stroke_color,
+            width=self.handle_stroke_width,
+        )
 
         # Big rounded rect
         radius = radius * 2
@@ -854,7 +1135,13 @@ class Switch(SwitchBase):
         tl = [ICON_SIZE - width / 2, top - height / 2 + 2]
         br = [ICON_SIZE + width / 2, top + height / 2 - 2]
         # print(">3", tl, br)
-        draw.rounded_rectangle(tl + br, radius=height / 2, fill=self.top_fill_color, outline=self.top_stroke_color, width=int(self.top_stroke_width * 1.5))
+        draw.rounded_rectangle(
+            tl + br,
+            radius=height / 2,
+            fill=self.top_fill_color,
+            outline=self.top_stroke_color,
+            width=int(self.top_stroke_width * 1.5),
+        )
 
         # Dots
         ndots = 3
@@ -873,16 +1160,37 @@ class Switch(SwitchBase):
         underline = ICON_SIZE - self.tick_space
         tick_end = underline + self.tick_length
         # top mark
-        draw.line([(underline, ICON_SIZE - self.switch_length), (tick_end, ICON_SIZE - self.switch_length)], width=self.tick_width, fill=self.tick_color)
+        draw.line(
+            [
+                (underline, ICON_SIZE - self.switch_length),
+                (tick_end, ICON_SIZE - self.switch_length),
+            ],
+            width=self.tick_width,
+            fill=self.tick_color,
+        )
         # middle mark
         if self.three_way:
-            draw.line([(underline, ICON_SIZE), (tick_end, ICON_SIZE)], width=self.tick_width, fill=self.tick_color)
+            draw.line(
+                [(underline, ICON_SIZE), (tick_end, ICON_SIZE)],
+                width=self.tick_width,
+                fill=self.tick_color,
+            )
         # bottom mark
-        draw.line([(underline, ICON_SIZE + self.switch_length), (tick_end, ICON_SIZE + self.switch_length)], width=self.tick_width, fill=self.tick_color)
+        draw.line(
+            [
+                (underline, ICON_SIZE + self.switch_length),
+                (tick_end, ICON_SIZE + self.switch_length),
+            ],
+            width=self.tick_width,
+            fill=self.tick_color,
+        )
         # underline
         if self.tick_underline_width > 0:
             draw.line(
-                [(underline, ICON_SIZE - self.switch_length), (underline, ICON_SIZE + self.switch_length)],
+                [
+                    (underline, ICON_SIZE - self.switch_length),
+                    (underline, ICON_SIZE + self.switch_length),
+                ],
                 width=self.tick_underline_width,
                 fill=self.tick_color,
             )
@@ -899,23 +1207,65 @@ class Switch(SwitchBase):
                 align = "left"
                 anchor = "lm"
             hloc = ICON_SIZE + self.tick_label_space
-            draw.text((hloc, ICON_SIZE - self.switch_length), text=self.tick_labels[0], font=font, anchor=anchor, align=align, fill=self.tick_label_color)
+            draw.text(
+                (hloc, ICON_SIZE - self.switch_length),
+                text=self.tick_labels[0],
+                font=font,
+                anchor=anchor,
+                align=align,
+                fill=self.tick_label_color,
+            )
             n = 1
             if self.three_way:
-                draw.text((hloc, ICON_SIZE), text=self.tick_labels[1], font=font, anchor=anchor, align=align, fill=self.tick_label_color)
+                draw.text(
+                    (hloc, ICON_SIZE),
+                    text=self.tick_labels[1],
+                    font=font,
+                    anchor=anchor,
+                    align=align,
+                    fill=self.tick_label_color,
+                )
                 n = 2
-            draw.text((hloc, ICON_SIZE + self.switch_length), text=self.tick_labels[n], font=font, anchor=anchor, align=align, fill=self.tick_label_color)
+            draw.text(
+                (hloc, ICON_SIZE + self.switch_length),
+                text=self.tick_labels[n],
+                font=font,
+                anchor=anchor,
+                align=align,
+                fill=self.tick_label_color,
+            )
             return
 
         # Horizontal
         # Equally space labels (centers) inside button width - 2*inside (for borders)
         vloc = ICON_SIZE + self.tick_label_space
-        draw.text((ICON_SIZE - ICON_SIZE / 2 + inside, vloc), text=self.tick_labels[0], font=font, anchor="lm", align="center", fill=self.tick_label_color)
+        draw.text(
+            (ICON_SIZE - ICON_SIZE / 2 + inside, vloc),
+            text=self.tick_labels[0],
+            font=font,
+            anchor="lm",
+            align="center",
+            fill=self.tick_label_color,
+        )
         n = 1
         if self.three_way:
-            draw.text((ICON_SIZE, vloc), text=self.tick_labels[1], font=font, anchor="mm", align="center", fill=self.tick_label_color)
+            draw.text(
+                (ICON_SIZE, vloc),
+                text=self.tick_labels[1],
+                font=font,
+                anchor="mm",
+                align="center",
+                fill=self.tick_label_color,
+            )
             n = 2
-        draw.text((ICON_SIZE + ICON_SIZE / 2 - inside, vloc), text=self.tick_labels[n], font=font, anchor="rm", align="center", fill=self.tick_label_color)
+        draw.text(
+            (ICON_SIZE + ICON_SIZE / 2 - inside, vloc),
+            text=self.tick_labels[n],
+            font=font,
+            anchor="rm",
+            align="center",
+            fill=self.tick_label_color,
+        )
 
     def get_image_for_icon(self):
         """
@@ -992,7 +1342,9 @@ class Switch(SwitchBase):
             if self.label_opposite:
                 c = -c
                 f = -f
-            tick_labels = tick_labels.transform(tick_labels.size, Image.AFFINE, (1, 0, c, 0, 1, f))
+            tick_labels = tick_labels.transform(
+                tick_labels.size, Image.AFFINE, (1, 0, c, 0, 1, f)
+            )
             image.alpha_composite(tick_labels)
         image.alpha_composite(switch)
 
@@ -1001,22 +1353,32 @@ class Switch(SwitchBase):
 
 class PushSwitch(SwitchBase):
     def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(self, config=config, button=button, switch_type="push-switch")
+        SwitchBase.__init__(
+            self, config=config, button=button, switch_type="push-switch"
+        )
 
         # Alternate defaults
         self.button_size = self.get_attribute("button-size", 80)
 
-        self.handle_size = self.get_attribute("witness-size", min(self.button_size / 2, 40))
+        self.handle_size = self.get_attribute(
+            "witness-size", min(self.button_size / 2, 40)
+        )
 
         self.handle_fill_color = self.get_attribute("witness-fill-color", (0, 0, 0, 0))
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.get_attribute("witness-stroke-color", (255, 255, 255))
+        self.handle_stroke_color = self.get_attribute(
+            "witness-stroke-color", (255, 255, 255)
+        )
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.get_attribute("witness-stroke-width", 4)
 
-        self.handle_off_fill_color = self.get_attribute("witness-fill-off-color", (0, 0, 0, 0))
+        self.handle_off_fill_color = self.get_attribute(
+            "witness-fill-off-color", (0, 0, 0, 0)
+        )
         self.handle_off_fill_color = convert_color(self.handle_off_fill_color)
-        self.handle_off_stroke_color = self.get_attribute("witness-stroke-off-color", (255, 255, 255, 0))
+        self.handle_off_stroke_color = self.get_attribute(
+            "witness-stroke-off-color", (255, 255, 255, 0)
+        )
         self.handle_off_stroke_color = convert_color(self.handle_off_stroke_color)
         self.handle_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
@@ -1032,18 +1394,36 @@ class PushSwitch(SwitchBase):
         center = [ICON_SIZE, ICON_SIZE]
         tl = [center[0] - self.button_size / 2, center[1] - self.button_size / 2]
         br = [center[0] + self.button_size / 2, center[1] + self.button_size / 2]
-        draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+        draw.ellipse(
+            tl + br,
+            fill=self.button_fill_color,
+            outline=self.button_stroke_color,
+            width=self.button_stroke_width,
+        )
 
         if self.handle_size > 0:
             tl = [center[0] - self.handle_size / 2, center[1] - self.handle_size / 2]
             br = [center[0] + self.handle_size / 2, center[1] + self.handle_size / 2]
-            if hasattr(self.button._activation, "is_off") and self.button._activation.is_off():
+            if (
+                hasattr(self.button._activation, "is_off")
+                and self.button._activation.is_off()
+            ):
                 logger.debug(f"button {self.button.name}: has on/off state and IS OFF")
-                draw.ellipse(tl + br, fill=self.handle_off_fill_color, outline=self.handle_off_stroke_color, width=self.handle_off_stroke_width)
+                draw.ellipse(
+                    tl + br,
+                    fill=self.handle_off_fill_color,
+                    outline=self.handle_off_stroke_color,
+                    width=self.handle_off_stroke_width,
+                )
             else:
                 if not hasattr(self.button._activation, "is_on"):
                     logger.debug(f"button {self.button.name}: has no on/off state")
-                draw.ellipse(tl + br, fill=self.handle_fill_color, outline=self.handle_stroke_color, width=self.handle_stroke_width)
+                draw.ellipse(
+                    tl + br,
+                    fill=self.handle_fill_color,
+                    outline=self.handle_stroke_color,
+                    width=self.handle_stroke_width,
+                )
 
         return self.move_and_send(image)
 
@@ -1057,7 +1437,9 @@ class Knob(SwitchBase):
             return
 
         self.knob_type = self.get_attribute("knob-type", "dent")
-        self.knob_mark = self.get_attribute("knob-mark", "triangle")  # needle, triangle, bar (diameter)
+        self.knob_mark = self.get_attribute(
+            "knob-mark", "triangle"
+        )  # needle, triangle, bar (diameter)
 
         # Alternate defaults
         # self.button_size = self.switch.get("button-size", 80)
@@ -1066,8 +1448,12 @@ class Knob(SwitchBase):
         self.base_stroke_color = self.get_attribute("base-stroke-color", grey(20))
         self.base_stroke_width = self.get_attribute("base-stroke-width", 16)
 
-        self.base_underline_color = self.get_attribute("base-underline-color", grey(240))
-        self.base_underline_width = self.get_attribute("base-underline-width", int(self.base_stroke_width / 2))
+        self.base_underline_color = self.get_attribute(
+            "base-underline-color", grey(240)
+        )
+        self.base_underline_width = self.get_attribute(
+            "base-underline-width", int(self.base_stroke_width / 2)
+        )
 
         self.button_fill_color = self.get_attribute("button-fill-color", grey(220))
         self.button_stroke_color = self.get_attribute("button-stroke-color", grey(0))
@@ -1083,16 +1469,22 @@ class Knob(SwitchBase):
         self.mark_underline_outer = self.get_attribute("mark-underline-outer", 12)
         self.mark_underline_color = self.get_attribute("mark-underline-color", "coral")
         self.mark_underline_width = self.get_attribute("mark-underline-width", 4)
-        self.mark_size = self.get_attribute("witness-size", min(self.button_size / 2, 40))
+        self.mark_size = self.get_attribute(
+            "witness-size", min(self.button_size / 2, 40)
+        )
         self.mark_fill_color = self.get_attribute("witness-fill-color", None)
         self.mark_fill_color = convert_color(self.mark_fill_color)
         self.mark_stroke_color = self.get_attribute("witness-stroke-color", "blue")
         self.mark_stroke_color = convert_color(self.mark_stroke_color)
         self.mark_stroke_width = self.get_attribute("witness-stroke-width", 8)
 
-        self.mark_off_fill_color = self.get_attribute("witness-fill-off-color", (0, 0, 0, 0))
+        self.mark_off_fill_color = self.get_attribute(
+            "witness-fill-off-color", (0, 0, 0, 0)
+        )
         self.mark_off_fill_color = convert_color(self.mark_off_fill_color)
-        self.mark_off_stroke_color = self.get_attribute("witness-stroke-off-color", (255, 255, 255, 0))
+        self.mark_off_stroke_color = self.get_attribute(
+            "witness-stroke-off-color", (255, 255, 255, 0)
+        )
         self.mark_off_stroke_color = convert_color(self.mark_off_stroke_color)
         self.mark_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
@@ -1127,10 +1519,18 @@ class Knob(SwitchBase):
             step = int(360 / count)
             for i in range(count):
                 angle = math.radians(i * step)
-                lc = [center[0] + radius * math.cos(angle), center[1] + radius * math.sin(angle)]
+                lc = [
+                    center[0] + radius * math.cos(angle),
+                    center[1] + radius * math.sin(angle),
+                ]
                 tl = [lc[0] - bsize, lc[1] - bsize]
                 br = [lc[0] + bsize, lc[1] + bsize]
-                dents_draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+                dents_draw.ellipse(
+                    tl + br,
+                    fill=self.button_fill_color,
+                    outline=self.button_stroke_color,
+                    width=self.button_stroke_width,
+                )
             return dents_image, dents_draw
 
         center = [ICON_SIZE, ICON_SIZE]
@@ -1140,14 +1540,23 @@ class Knob(SwitchBase):
         base = self.base_size / 2
         tl = [center[0] - base, center[1] - base]
         br = [center[0] + base, center[1] + base]
-        base_draw.ellipse(tl + br, fill=self.base_fill_color, outline=self.base_stroke_color, width=self.base_stroke_width)
+        base_draw.ellipse(
+            tl + br,
+            fill=self.base_fill_color,
+            outline=self.base_stroke_color,
+            width=self.base_stroke_width,
+        )
 
         # Base "underline", around it
         if self.base_underline_width > 0:
             base = self.base_size / 2 + self.base_underline_width / 2
             tl = [center[0] - base, center[1] - base]
             br = [center[0] + base, center[1] + base]
-            base_draw.ellipse(tl + br, outline=self.base_underline_color, width=self.base_underline_width)
+            base_draw.ellipse(
+                tl + br,
+                outline=self.base_underline_color,
+                width=self.base_underline_width,
+            )
 
         #
         # Button
@@ -1159,7 +1568,12 @@ class Knob(SwitchBase):
 
         if self.button_dents:
             # button with outline
-            draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+            draw.ellipse(
+                tl + br,
+                fill=self.button_fill_color,
+                outline=self.button_stroke_color,
+                width=self.button_stroke_width,
+            )
             # add dents over
             border_image, border = mk_dent(self.button_dents, center)
             image.alpha_composite(border_image)
@@ -1168,24 +1582,38 @@ class Knob(SwitchBase):
             draw2.ellipse(tl + br, fill=self.button_fill_color)
             image.alpha_composite(image2)
         else:
-            draw.ellipse(tl + br, fill=self.button_fill_color, outline=self.button_stroke_color, width=self.button_stroke_width)
+            draw.ellipse(
+                tl + br,
+                fill=self.button_fill_color,
+                outline=self.button_stroke_color,
+                width=self.button_stroke_width,
+            )
 
         # Button-top mark underline
         if self.mark_underline_width > 0:
             base = self.button_size / 2 - self.mark_underline_outer
             tl = [center[0] - base, center[1] - base]
             br = [center[0] + base, center[1] + base]
-            draw.ellipse(tl + br, outline=self.mark_underline_color, width=self.mark_underline_width)
+            draw.ellipse(
+                tl + br,
+                outline=self.mark_underline_color,
+                width=self.mark_underline_width,
+            )
 
         # Button-top mark
         mark_image, mark = self.double_icon()
         radius = int(ICON_SIZE / 8)
         mark.regular_polygon(
-            (ICON_SIZE, ICON_SIZE, radius), n_sides=3, fill=self.mark_fill_color, outline=self.mark_stroke_color
+            (ICON_SIZE, ICON_SIZE, radius),
+            n_sides=3,
+            fill=self.mark_fill_color,
+            outline=self.mark_stroke_color,
         )  # , width=self.mark_width, # https://github.com/python-pillow/Pillow/pull/7132
 
         image.alpha_composite(mark_image)
-        image = image.rotate(self.rotation, resample=Image.Resampling.NEAREST, center=center)
+        image = image.rotate(
+            self.rotation, resample=Image.Resampling.NEAREST, center=center
+        )
         base_image.alpha_composite(image)
 
         return self.move_and_send(base_image)
@@ -1225,7 +1653,9 @@ class Decor(DrawBase):
         self.code = self.decor.get("code", "")
         self.decor_width_horz = 10
         self.decor_width_vert = 10
-        decor_width = self.decor.get("width")  # now accepts two width 10/20, for horizontal and/ vertical lines
+        decor_width = self.decor.get(
+            "width"
+        )  # now accepts two width 10/20, for horizontal and/ vertical lines
         if decor_width is not None:
             a = str(decor_width).split("/")
             if len(a) > 1:
@@ -1241,107 +1671,335 @@ class Decor(DrawBase):
         def draw_segment(d, code):
             # From corners 1
             if "A" in code:
-                d.line([(0, 0), (ICON_SIZE - r, ICON_SIZE - r)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, 0), (ICON_SIZE - r, ICON_SIZE - r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "C" in code:
-                d.line([(ICON_SIZE + r, ICON_SIZE - r), (FULL_WIDTH, 0)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE + r, ICON_SIZE - r), (FULL_WIDTH, 0)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "R" in code:
-                d.line([(ICON_SIZE - r, ICON_SIZE + r), (0, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE - r, ICON_SIZE + r), (0, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "T" in code:
-                d.line([(ICON_SIZE + r, ICON_SIZE + r), (FULL_WIDTH, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE + r, ICON_SIZE + r), (FULL_WIDTH, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             # From corners 2
             if "D" in code:
-                d.line([(ICON_SIZE - r, ICON_SIZE - r), (ICON_SIZE - s, ICON_SIZE - s)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE - r, ICON_SIZE - r), (ICON_SIZE - s, ICON_SIZE - s)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "E" in code:
-                d.line([(ICON_SIZE + s, ICON_SIZE - s), (ICON_SIZE + r, ICON_SIZE - r)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE + s, ICON_SIZE - s), (ICON_SIZE + r, ICON_SIZE - r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "P" in code:
-                d.line([(ICON_SIZE - r, ICON_SIZE + r), (ICON_SIZE - s, ICON_SIZE + s)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE - r, ICON_SIZE + r), (ICON_SIZE - s, ICON_SIZE + s)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "Q" in code:
-                d.line([(ICON_SIZE + s, ICON_SIZE + s), (ICON_SIZE + r, ICON_SIZE + r)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE + s, ICON_SIZE + s), (ICON_SIZE + r, ICON_SIZE + r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             # From corners 3
             if "A" in code:
-                d.line([(ICON_SIZE - r, ICON_SIZE - r), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE - r, ICON_SIZE - r), (ICON_SIZE, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "C" in code:
-                d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE + r, ICON_SIZE - r)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE, ICON_SIZE), (ICON_SIZE + r, ICON_SIZE - r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "R" in code:
-                d.line([(ICON_SIZE - r, ICON_SIZE + r), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE - r, ICON_SIZE + r), (ICON_SIZE, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "T" in code:
-                d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE + r, ICON_SIZE + r)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE, ICON_SIZE), (ICON_SIZE + r, ICON_SIZE + r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             # Horizontal bars
             if "I" in code:
-                d.line([(0, ICON_SIZE), (ICON_SIZE - r, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ICON_SIZE), (ICON_SIZE - r, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "J" in code:
-                d.line([(ICON_SIZE - r, ICON_SIZE), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE - r, ICON_SIZE), (ICON_SIZE, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "K" in code:
-                d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE + r, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE, ICON_SIZE), (ICON_SIZE + r, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "L" in code:
-                d.line([(ICON_SIZE + r, ICON_SIZE), (FULL_WIDTH, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE + r, ICON_SIZE), (FULL_WIDTH, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             # Vertical bars
             if "B" in code:
-                d.line([(ICON_SIZE, 0), (ICON_SIZE, ICON_SIZE - r)], fill=self.decor_color, width=self.decor_width_vert)
+                d.line(
+                    [(ICON_SIZE, 0), (ICON_SIZE, ICON_SIZE - r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_vert,
+                )
             if "G" in code:
-                d.line([(ICON_SIZE, ICON_SIZE - r), (ICON_SIZE, ICON_SIZE)], fill=self.decor_color, width=self.decor_width_vert)
+                d.line(
+                    [(ICON_SIZE, ICON_SIZE - r), (ICON_SIZE, ICON_SIZE)],
+                    fill=self.decor_color,
+                    width=self.decor_width_vert,
+                )
             if "N" in code:
-                d.line([(ICON_SIZE, ICON_SIZE), (ICON_SIZE, ICON_SIZE + r)], fill=self.decor_color, width=self.decor_width_vert)
+                d.line(
+                    [(ICON_SIZE, ICON_SIZE), (ICON_SIZE, ICON_SIZE + r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_vert,
+                )
             if "S" in code:
-                d.line([(ICON_SIZE, ICON_SIZE + r), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_vert)
+                d.line(
+                    [(ICON_SIZE, ICON_SIZE + r), (ICON_SIZE, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_vert,
+                )
             # Circle
             if "0" in code:
-                d.arc(tl + br, start=180, end=225, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=180,
+                    end=225,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "1" in code:
-                d.arc(tl + br, start=225, end=270, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=225,
+                    end=270,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "2" in code:
-                d.arc(tl + br, start=270, end=315, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=270,
+                    end=315,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "3" in code:
-                d.arc(tl + br, start=315, end=0, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=315,
+                    end=0,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "4" in code:
-                d.arc(tl + br, start=0, end=45, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=0,
+                    end=45,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "6" in code:
-                d.arc(tl + br, start=45, end=90, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=45,
+                    end=90,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "6" in code:
-                d.arc(tl + br, start=90, end=135, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=90,
+                    end=135,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if "7" in code:
-                d.arc(tl + br, start=135, end=180, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=135,
+                    end=180,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
 
         def draw_line(d, code):
             if code == "A":
-                d.line([(cw, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(cw, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (cw, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code in "BG+J":
-                d.line([(0, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code == "C":
-                d.line([(0, ch), (ICON_SIZE, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (ICON_SIZE, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (cw, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code == "D":
-                d.line([(cw, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (cw, 0)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(cw, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (cw, 0)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code == "E":
-                d.line([(0, ch), (ICON_SIZE, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (cw, 0)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (ICON_SIZE, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (cw, 0)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code in "FIG+H":
-                d.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code == "H":
-                d.line([(0, ch), (ICON_SIZE - r, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(ICON_SIZE + r, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (ICON_SIZE - r, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(ICON_SIZE + r, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
                 tl = [cw - r, ch - r]
                 br = [cw + r, ch + r]
-                d.arc(tl + br, start=180, end=0, fill=self.decor_color, width=self.decor_width_horz)
+                d.arc(
+                    tl + br,
+                    start=180,
+                    end=0,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code == "J":
                 r = ICON_SIZE / 4
-                d.line([(cw, 0), (cw, ICON_SIZE - r)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ICON_SIZE + r), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
-                d.arc(tl + br, start=90, end=270, fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(cw, 0), (cw, ICON_SIZE - r)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ICON_SIZE + r), (cw, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.arc(
+                    tl + br,
+                    start=90,
+                    end=270,
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code in "KT":
-                d.line([(0, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (cw, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (cw, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code in "L":
-                d.line([(0, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (cw, 0)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (cw, 0)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code in "M":
-                d.line([(0, ch), (ICON_SIZE, ch)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(0, ch), (ICON_SIZE, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
             if code in "N":
-                d.line([(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)], fill=self.decor_color, width=self.decor_width_horz)
-                d.line([(cw, ch), (FULL_WIDTH, ch)], fill=self.decor_color, width=self.decor_width_horz)
+                d.line(
+                    [(ICON_SIZE, 0), (ICON_SIZE, FULL_HEIGHT)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
+                d.line(
+                    [(cw, ch), (FULL_WIDTH, ch)],
+                    fill=self.decor_color,
+                    width=self.decor_width_horz,
+                )
 
         image, draw = self.double_icon()
 

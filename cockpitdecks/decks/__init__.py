@@ -34,14 +34,17 @@ DECK_DRIVERS = {}
 #
 from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
 from .streamdeck import Streamdeck
+
 DECK_DRIVERS["streamdeck"] = [Streamdeck, StreamDeckDeviceManager]
 
 
-from Loupedeck  import DeviceManager as LoupedeckDeviceManager
-from .loupedeck  import Loupedeck
-DECK_DRIVERS["loupedeck"] = [Loupedeck,  LoupedeckDeviceManager]
+from Loupedeck import DeviceManager as LoupedeckDeviceManager
+from .loupedeck import Loupedeck
+
+DECK_DRIVERS["loupedeck"] = [Loupedeck, LoupedeckDeviceManager]
 
 
 from XTouchMini import DeviceManager as XTouchMiniDeviceManager
 from .xtouchmini import XTouchMini
+
 DECK_DRIVERS["xtouchmini"] = [XTouchMini, XTouchMiniDeviceManager]

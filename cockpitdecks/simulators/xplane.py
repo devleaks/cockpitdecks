@@ -21,18 +21,31 @@ logger = logging.getLogger(__name__)
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
 # UDP sends at most ~40 to ~50 dataref values per packet.
-DEFAULT_REQ_FREQUENCY = 1  # if no frequency is supplied (or forced to None), this is used
+DEFAULT_REQ_FREQUENCY = (
+    1  # if no frequency is supplied (or forced to None), this is used
+)
 LOOP_ALIVE = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 SOCKET_TIMEOUT = 5  # seconds
-MAX_TIMEOUT_COUNT = 5  # after x timeouts, assumes connection lost, disconnect, and restart later
+MAX_TIMEOUT_COUNT = (
+    5  # after x timeouts, assumes connection lost, disconnect, and restart later
+)
 MAX_DREF_COUNT = 80  # Maximum number of dataref that can be requested to X-Plane, CTD around ~100 datarefs
 
 # When this (internal) dataref changes, the loaded aircraft has changed
 #
 AIRCRAFT_DATAREF_IPC = Dataref.mk_internal_dataref("_aircraft_icao")
-DATETIME_DATAREFS = ["sim/time/local_date_days", "sim/time/local_date_sec", "sim/time/zulu_time_sec", "sim/time/use_system_time"]
-REPLAY_DATAREFS = ["sim/time/is_in_replay", "sim/time/sim_speed", "sim/time/sim_speed_actual"]
+DATETIME_DATAREFS = [
+    "sim/time/local_date_days",
+    "sim/time/local_date_sec",
+    "sim/time/zulu_time_sec",
+    "sim/time/use_system_time",
+]
+REPLAY_DATAREFS = [
+    "sim/time/is_in_replay",
+    "sim/time/sim_speed",
+    "sim/time/sim_speed_actual",
+]
 
 
 # XPlaneBeacon
@@ -102,7 +115,9 @@ class XPlaneBeacon:
             # * Header
             header = packet[0:5]
             if header != b"BECN\x00":
-                logger.warning(f"Unknown packet from {sender[0]}, {str(len(packet))} bytes:")
+                logger.warning(
+                    f"Unknown packet from {sender[0]}, {str(len(packet))} bytes:"
+                )
                 logger.warning(packet)
                 logger.warning(binascii.hexlify(packet))
 
@@ -135,15 +150,23 @@ class XPlaneBeacon:
                 ) = struct.unpack("<BBiiIH", data)
                 hostname = packet[21:-1]  # the hostname of the computer
                 hostname = hostname[0 : hostname.find(0)]
-                if beacon_major_version == 1 and beacon_minor_version <= 2 and application_host_id == 1:
+                if (
+                    beacon_major_version == 1
+                    and beacon_minor_version <= 2
+                    and application_host_id == 1
+                ):
                     self.beacon_data["IP"] = sender[0]
                     self.beacon_data["Port"] = port
                     self.beacon_data["hostname"] = hostname.decode()
                     self.beacon_data["XPlaneVersion"] = xplane_version_number
                     self.beacon_data["role"] = role
-                    logger.info(f"XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                    logger.info(
+                        f"XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}"
+                    )
                 else:
-                    logger.warning(f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                    logger.warning(
+                        f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}"
+                    )
                     raise XPlaneVersionNotSupported()
 
         except socket.timeout:
@@ -171,7 +194,9 @@ class XPlaneBeacon:
         logger.debug("starting..")
         WARN_FREQ = 10
         cnt = 0
-        while self.should_not_connect is not None and not self.should_not_connect.is_set():
+        while (
+            self.should_not_connect is not None and not self.should_not_connect.is_set()
+        ):
             if not self.connected:
                 try:
                     self.FindIp()
@@ -186,13 +211,17 @@ class XPlaneBeacon:
                 except XPlaneIpNotFound:
                     self.beacon_data = {}
                     if cnt % WARN_FREQ == 0:
-                        logger.error(f"..X-Plane instance not found on local network.. ({datetime.now().strftime('%H:%M:%S')})")
+                        logger.error(
+                            f"..X-Plane instance not found on local network.. ({datetime.now().strftime('%H:%M:%S')})"
+                        )
                     cnt = cnt + 1
                 if not self.connected:
                     self.should_not_connect.wait(RECONNECT_TIMEOUT)
                     logger.debug("..trying..")
             else:
-                self.should_not_connect.wait(RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
+                self.should_not_connect.wait(
+                    RECONNECT_TIMEOUT
+                )  # could be n * RECONNECT_TIMEOUT
                 logger.debug("..monitoring connection..")
         logger.debug("..ended")
 
@@ -293,13 +322,17 @@ class XPlane(Simulator, XPlaneBeacon):
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the simulator date and time"""
-        if not DATETIME_DATAREFS[0] in self.all_datarefs.keys():  # hack, means dref not created yet
+        if (
+            not DATETIME_DATAREFS[0] in self.all_datarefs.keys()
+        ):  # hack, means dref not created yet
             return super().datetime(zulu=zulu, system=system)
         now = datetime.now().astimezone()
         days = self.get_dataref_value("sim/time/local_date_days")
         secs = self.get_dataref_value("sim/time/local_date_sec")
         if not system and days is not None and secs is not None:
-            simnow = datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0).astimezone()
+            simnow = datetime(
+                year=now.year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+            ).astimezone()
             simnow = simnow + timedelta(days=days) + timedelta(days=secs)
             return simnow
         return now
@@ -314,14 +347,18 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.warning(f"no command")
             return
         elif not command.has_command():
-            logger.warning(f"command '{command}' not sent (command placeholder, no command, do nothing)")
+            logger.warning(
+                f"command '{command}' not sent (command placeholder, no command, do nothing)"
+            )
             return
         if not self.connected:
             logger.warning(f"no connection ({command})")
             return
         if command.path is not None:
             message = "CMND0" + command.path
-            self.socket.sendto(message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"]))
+            self.socket.sendto(
+                message.encode(), (self.beacon_data["IP"], self.beacon_data["Port"])
+            )
             logger.log(SPAM_LEVEL, f"execute_command: executed {command}")
         else:
             logger.warning("execute_command: no command")
@@ -359,7 +396,9 @@ class XPlane(Simulator, XPlaneBeacon):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert len(message) == 509
-        logger.debug(f"({self.beacon_data['IP']}, {self.beacon_data['Port']}): {path}={value} ..")
+        logger.debug(
+            f"({self.beacon_data['IP']}, {self.beacon_data['Port']}): {path}={value} .."
+        )
         logger.log(SPAM_LEVEL, f"write_dataref: {path}={value}")
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.debug(".. sent")
@@ -427,7 +466,9 @@ class XPlane(Simulator, XPlaneBeacon):
                 try:
                     # Receive packet
                     self.socket.settimeout(SOCKET_TIMEOUT)
-                    data, addr = self.socket.recvfrom(1472)  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
+                    data, addr = self.socket.recvfrom(
+                        1472
+                    )  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
                     # Decode Packet
                     # Read the Header "RREF,".
                     total_to = 0
@@ -445,7 +486,9 @@ class XPlane(Simulator, XPlaneBeacon):
                         numvalues = int(len(values) / lenvalue)
                         total_values = total_values + numvalues
                         for i in range(0, numvalues):
-                            singledata = data[(5 + lenvalue * i) : (5 + lenvalue * (i + 1))]
+                            singledata = data[
+                                (5 + lenvalue * i) : (5 + lenvalue * (i + 1))
+                            ]
                             (idx, value) = struct.unpack("<if", singledata)
                             self.udp_queue.put((idx, value))
                     else:
@@ -456,11 +499,18 @@ class XPlane(Simulator, XPlaneBeacon):
                         )  # ignore
                 except:  # socket timeout
                     total_to = total_to + 1
-                    logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    logger.info(
+                        f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})"
+                    )  # ignore
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
-                        logger.warning("too many times out, disconnecting, upd_enqueue terminated")  # ignore
+                        logger.warning(
+                            "too many times out, disconnecting, upd_enqueue terminated"
+                        )  # ignore
                         self.beacon_data = {}
-                        if self.no_upd_enqueue is not None and not self.no_upd_enqueue.is_set():
+                        if (
+                            self.no_upd_enqueue is not None
+                            and not self.no_upd_enqueue.is_set()
+                        ):
                             self.no_upd_enqueue.set()
         self.no_upd_enqueue = None
         logger.debug("..terminated")
@@ -486,13 +536,19 @@ class XPlane(Simulator, XPlaneBeacon):
                 d = self.datarefs.get(values[0])
                 total_values = total_values + 1
                 value = values[1]
-                if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
+                if (
+                    value < 0.0 and value > -0.001
+                ):  # convert -0.0 values to positive 0.0
                     value = 0.0
                 if d is not None:
-                    if self.all_datarefs[d].update_value(value, cascade=d in self.datarefs_to_monitor.keys()):
+                    if self.all_datarefs[d].update_value(
+                        value, cascade=d in self.datarefs_to_monitor.keys()
+                    ):
                         total_updates = total_updates + 1
                         duration = datetime.now() - before
-                        total_update_duration = total_update_duration + duration.microseconds / 1000000
+                        total_update_duration = (
+                            total_update_duration + duration.microseconds / 1000000
+                        )
                 else:
                     logger.debug(f"no dataref ({values}), probably no longer monitored")
                 duration = datetime.now() - before
@@ -573,11 +629,15 @@ class XPlane(Simulator, XPlaneBeacon):
                 logger.debug(f"local dataref {d.path} is not monitored")
                 continue
             if d.path in self.datarefs_to_monitor.keys():
-                if self.datarefs_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
+                if (
+                    self.datarefs_to_monitor[d.path] == 1
+                ):  # will be decreased by 1 in super().remove_datarefs_to_monitor()
                     if self.add_dataref_to_monitor(d.path, freq=0):
                         prnt.append(d.path)
                 else:
-                    logger.debug(f"{d.path} monitored {self.datarefs_to_monitor[d.path]} times")
+                    logger.debug(
+                        f"{d.path} monitored {self.datarefs_to_monitor[d.path]} times"
+                    )
             else:
                 logger.debug(f"no need to remove {d.path}")
 
@@ -690,7 +750,9 @@ class XPlane(Simulator, XPlaneBeacon):
             self.no_upd_enqueue.set()
             logger.debug("stopping..")
             wait = SOCKET_TIMEOUT
-            logger.debug(f"..asked to stop dataref listener (this may last {wait} secs. for UDP socket to timeout)..")
+            logger.debug(
+                f"..asked to stop dataref listener (this may last {wait} secs. for UDP socket to timeout).."
+            )
             self.udp_thread.join(wait)
             if self.udp_thread.is_alive():
                 logger.warning("..thread may hang in socket.recvfrom()..")
@@ -703,7 +765,9 @@ class XPlane(Simulator, XPlaneBeacon):
     # Cockpit interface
     #
     def terminate(self):
-        logger.debug(f"currently {'not ' if self.no_upd_enqueue is None else ''}running. terminating..")
+        logger.debug(
+            f"currently {'not ' if self.no_upd_enqueue is None else ''}running. terminating.."
+        )
         self.remove_all_collections()  # this does not destroy datarefs, only unload current collection
         self.remove_all_datarefs()
         logger.info("terminating..disconnecting..")

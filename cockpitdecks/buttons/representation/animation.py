@@ -47,7 +47,9 @@ class IconAnimation(MultiIcons):
         while not self.exit.is_set():
             self.button.render()
             self.counter = self.counter + 1
-            self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
+            self.button.set_current_value(
+                self.counter
+            )  # get_current_value() will fetch self.counter value
             self.exit.wait(self.speed)
         logger.debug(f"exited")
 
@@ -117,7 +119,9 @@ class IconAnimation(MultiIcons):
             f"and changing it every {self.speed} seconds."
         ]
         if self.icon_off is not None:
-            a.append(f"When the animation is not running, it displays an OFF icon {self.icon_off}.")
+            a.append(
+                f"When the animation is not running, it displays an OFF icon {self.icon_off}."
+            )
         return "\n\r".join(a)
 
 
@@ -193,7 +197,9 @@ class DrawAnimation(DrawBase):
             self.exit.set()
             self.thread.join(timeout=2 * self.speed)
             if self.thread.is_alive():
-                logger.warning(f"button {self.button.name}: animation did not terminate")
+                logger.warning(
+                    f"button {self.button.name}: animation did not terminate"
+                )
             logger.debug(f"stopped")
         else:
             logger.debug(f"button {self.button.name}: already stopped")
@@ -213,7 +219,9 @@ class DrawAnimation(DrawBase):
         """
         logger.debug(f"button {self.button.name}: enter")
         if self.is_valid():
-            logger.debug(f"button {self.button.name}: is valid {self.should_run()}, {self.running}")
+            logger.debug(
+                f"button {self.button.name}: is valid {self.should_run()}, {self.running}"
+            )
             if self.should_run():
                 if not self.running:
                     self.anim_start()
@@ -233,7 +241,10 @@ class DrawAnimationFTG(DrawAnimation):
         """
         I.e. only works with onoff activations.
         """
-        return hasattr(self.button._activation, "is_on") and self.button._activation.is_on()
+        return (
+            hasattr(self.button._activation, "is_on")
+            and self.button._activation.is_on()
+        )
 
     def get_image_for_icon(self):
         """
@@ -248,7 +259,9 @@ class DrawAnimationFTG(DrawAnimation):
         # Button
         cs = 4  # light size, px
         lum = 5  # num flashing green center lines
-        nb = 2 * lum  # num side bleu lights, i.e. twice more blue lights than green ones
+        nb = (
+            2 * lum
+        )  # num side bleu lights, i.e. twice more blue lights than green ones
         h0 = ICON_SIZE / 16  # space from left/right sides
         h1 = ICON_SIZE / 2 - h0  # space from bottom of upper middle part
         s = (ICON_SIZE - (2 * h0)) / (nb - 1)  # spece between blue lights
@@ -270,7 +283,9 @@ class DrawAnimationFTG(DrawAnimation):
             w = ICON_SIZE - w
             tl = [w - cs, h - cs]
             br = [w + cs, h + cs]
-            color = "lime" if self.running and (self.tween + i) % lum == 0 else "chocolate"
+            color = (
+                "lime" if self.running and (self.tween + i) % lum == 0 else "chocolate"
+            )
             draw.ellipse(tl + br, fill=color)
 
         # Text AVAIL (=off) or framed ON (=on)
@@ -279,24 +294,51 @@ class DrawAnimationFTG(DrawAnimation):
         cx = ICON_SIZE / 2
         cy = int(3 * ICON_SIZE / 4)
         if self.running:
-            draw.multiline_text((cx, cy), text="ON", font=font, anchor="mm", align="center", fill="deepskyblue")
-            txtbb = draw.multiline_textbbox((cx, cy), text="ON", font=font, anchor="mm", align="center")  # min frame, just around the text
-            text_margin = 2 * inside  # margin "around" text, line will be that far from text
-            framebb = ((txtbb[0] - text_margin, txtbb[1] - text_margin / 2), (txtbb[2] + text_margin, txtbb[3] + text_margin / 2))
+            draw.multiline_text(
+                (cx, cy),
+                text="ON",
+                font=font,
+                anchor="mm",
+                align="center",
+                fill="deepskyblue",
+            )
+            txtbb = draw.multiline_textbbox(
+                (cx, cy), text="ON", font=font, anchor="mm", align="center"
+            )  # min frame, just around the text
+            text_margin = (
+                2 * inside
+            )  # margin "around" text, line will be that far from text
+            framebb = (
+                (txtbb[0] - text_margin, txtbb[1] - text_margin / 2),
+                (txtbb[2] + text_margin, txtbb[3] + text_margin / 2),
+            )
             side_margin = 4 * inside  # margin from side of part of annunciator
             framemax = (
                 (cx - ICON_SIZE / 2 + side_margin, cy - ICON_SIZE / 4 + side_margin),
                 (cx + ICON_SIZE / 2 - side_margin, cy + ICON_SIZE / 4 - side_margin),
             )
             frame = (
-                (min(framebb[0][0], framemax[0][0]), min(framebb[0][1], framemax[0][1])),
-                (max(framebb[1][0], framemax[1][0]), max(framebb[1][1], framemax[1][1])),
+                (
+                    min(framebb[0][0], framemax[0][0]),
+                    min(framebb[0][1], framemax[0][1]),
+                ),
+                (
+                    max(framebb[1][0], framemax[1][0]),
+                    max(framebb[1][1], framemax[1][1]),
+                ),
             )
             thick = int(ICON_SIZE / 32)
             # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
             draw.rectangle(frame, outline="deepskyblue", width=thick)
         else:
             font = self.get_font(self.button.get_attribute("default-label-font"), 60)
-            draw.multiline_text((cx, cy), text="AVAIL", font=font, anchor="mm", align="center", fill="lime")
+            draw.multiline_text(
+                (cx, cy),
+                text="AVAIL",
+                font=font,
+                anchor="mm",
+                align="center",
+                fill="lime",
+            )
 
         return image.convert("RGB")

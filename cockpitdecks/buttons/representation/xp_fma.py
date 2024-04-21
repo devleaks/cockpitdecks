@@ -34,10 +34,28 @@ FMA_BOXES = [
     "AirbusFBW/FMATHRWarning",
 ]
 # Reproduction on Streamdeck touchscreen colors is difficult.
-FMA_COLORS = {"b": "#0080FF", "w": "white", "g": "#00FF00", "m": "#FF00FF", "a": "#A04000"}
+FMA_COLORS = {
+    "b": "#0080FF",
+    "w": "white",
+    "g": "#00FF00",
+    "m": "#FF00FF",
+    "a": "#A04000",
+}
 
-FMA_LABELS = {"ATHR": "Auto Thrust", "VNAV": "Vertical Navigation", "LNAV": "Horizontal Navigation", "APPR": "Approach", "AP": "Auto Pilot"}
-FMA_LABELS_ALT = {"ATHR": "Autothrust Mode", "VNAV": "Vertical Mode", "LNAV": "Horizontal Mode", "APPR": "Approach", "AP": "Autopilot Mode"}
+FMA_LABELS = {
+    "ATHR": "Auto Thrust",
+    "VNAV": "Vertical Navigation",
+    "LNAV": "Horizontal Navigation",
+    "APPR": "Approach",
+    "AP": "Auto Pilot",
+}
+FMA_LABELS_ALT = {
+    "ATHR": "Autothrust Mode",
+    "VNAV": "Vertical Mode",
+    "LNAV": "Horizontal Mode",
+    "APPR": "Approach",
+    "AP": "Autopilot Mode",
+}
 FMA_LABEL_MODE = 3  # 0 (None), 1 (keys), or 2 (values), or 3 alternates
 
 FMA_COUNT = len(FMA_LABELS.keys())
@@ -66,7 +84,9 @@ class FMAIcon(DrawAnimation):
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
         self.icon_color = "black"
-        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS}  # use FMA_LINES for testing
+        self.text = {
+            k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS
+        }  # use FMA_LINES for testing
         self.previous_text: Dict[str, str] = {}
         self.boxed: List[str] = []
         self._cached = None  # cached icon
@@ -80,10 +100,14 @@ class FMAIcon(DrawAnimation):
             fma = 1
         fma = int(fma)
         if fma < 1:
-            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            logger.warning(
+                f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range"
+            )
             fma = 1
         if fma > FMA_COUNT:
-            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            logger.warning(
+                f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range"
+            )
             fma = FMA_COUNT
         self.fma_idx = fma - 1
 
@@ -96,12 +120,18 @@ class FMAIcon(DrawAnimation):
         self.fma_text_lock = threading.RLock()
 
         self.socket = None
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.socket = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
+        )
         # Allow multiple sockets to use the same PORT number
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         # Bind to the port that we know will receive multicast data
         self.socket.bind((ANY, FMA_MCAST_PORT))
-        status = self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY))
+        status = self.socket.setsockopt(
+            socket.IPPROTO_IP,
+            socket.IP_ADD_MEMBERSHIP,
+            socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
+        )
         self.collector_avgtime = 0
 
     def should_run(self) -> bool:
@@ -116,9 +146,17 @@ class FMAIcon(DrawAnimation):
         """
         if self.is_master_fma():
             return self
-        candidates = list(filter(lambda m: isinstance(m._representation, FMAIcon) and m._representation.is_master_fma(), self.button.page.buttons.values()))
+        candidates = list(
+            filter(
+                lambda m: isinstance(m._representation, FMAIcon)
+                and m._representation.is_master_fma(),
+                self.button.page.buttons.values(),
+            )
+        )
         if len(candidates) == 1:
-            logger.debug(f"button {self.button.name}: master FMA is {candidates[0].name}, fma={candidates[0]._representation.fma_idx}")
+            logger.debug(
+                f"button {self.button.name}: master FMA is {candidates[0].name}, fma={candidates[0]._representation.fma_idx}"
+            )
             return candidates[0]._representation
         if len(candidates) == 0:
             logger.warning(f"button {self.button.name}: no master FMA found")
@@ -147,7 +185,10 @@ class FMAIcon(DrawAnimation):
                 last_read_ts = now
 
             except:
-                logger.info(f"FMA collector: socket timeout received ({total_to})", exc_info=True)
+                logger.info(
+                    f"FMA collector: socket timeout received ({total_to})",
+                    exc_info=True,
+                )
             else:
                 with self.fma_text_lock:
                     data = json.loads(data.decode("utf-8"))
@@ -160,9 +201,13 @@ class FMAIcon(DrawAnimation):
                             src_cnt = src_cnt + 1
                             self.collector_avgtime = src_tot / src_cnt
                             if src_cnt % 100 == 0:
-                                logger.info(f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}")
+                                logger.info(
+                                    f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}"
+                                )
                         src_last_ts = ts
-                    self.fma_text = {k[-2:]: v for k, v in data.items()}  # this is to adjust to older algorithm...
+                    self.fma_text = {
+                        k[-2:]: v for k, v in data.items()
+                    }  # this is to adjust to older algorithm...
                 # logger.debug(f"from {addr} at {ts}: data: {self.text}")
         self.collect_fma = None
         logger.debug("..FMA collector terminated")
@@ -178,7 +223,9 @@ class FMAIcon(DrawAnimation):
             with self.fma_text_lock:
                 self.text = self.fma_text.copy()
             self.button.render()
-            time.sleep(max(FMA_UPDATE_FREQ, self.collector_avgtime))  # autotune update frequency
+            time.sleep(
+                max(FMA_UPDATE_FREQ, self.collector_avgtime)
+            )  # autotune update frequency
         self.update_fma = None
         logger.debug("..FMA updater terminated")
 
@@ -221,7 +268,9 @@ class FMAIcon(DrawAnimation):
         if self.collect_fma is not None and self.fma_thread is not None:
             self.collect_fma.set()
             logger.debug("stopping FMA collector..")
-            logger.debug(f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
+            logger.debug(
+                f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout).."
+            )
             self.fma_thread.join(FMA_SOCKET_TIMEOUT)
             if self.fma_thread.is_alive():
                 logger.warning("..thread may hang in socket.recvfrom()..")
@@ -290,7 +339,9 @@ class FMAIcon(DrawAnimation):
                         # extract
                         m = v[s:e]
                         if len(m) != l:
-                            logger.warning(f"string '{m}' len {len(m)} has wrong size (should be {l})")
+                            logger.warning(
+                                f"string '{m}' len {len(m)} has wrong size (should be {l})"
+                            )
                         if (c + m) != empty:  # if good == empty and
                             good = str(li) + k[1] + m
                             lines.append(good)
@@ -308,11 +359,15 @@ class FMAIcon(DrawAnimation):
         if not self.is_updated() and self._cached is not None:
             return self._cached
 
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.double_icon(
+            width=ICON_SIZE, height=ICON_SIZE
+        )  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
+        text, text_format, text_font, text_color, text_size, text_position = (
+            self.get_text_detail(self.fmaconfig, "text")
+        )
 
         self.check_boxed()
         lines = self.get_fma_lines()
@@ -333,14 +388,31 @@ class FMAIcon(DrawAnimation):
                 h = image.height - inside - text_size
             # logger.debug(f"position {(w, h)}")
             color = FMA_COLORS[text[1]]
-            draw.text((w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
+            draw.text(
+                (w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color
+            )
             ref = f"{self.fma_idx+1}{idx+1}"
             if ref in self.boxed:
-                draw.rectangle((2 * inside, h - text_size / 2, ICON_SIZE - 2 * inside, h + text_size / 2 + 4), outline="white", width=3)
+                draw.rectangle(
+                    (
+                        2 * inside,
+                        h - text_size / 2,
+                        ICON_SIZE - 2 * inside,
+                        h + text_size / 2 + 4,
+                    ),
+                    outline="white",
+                    width=3,
+                )
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(), width=ICON_SIZE, height=ICON_SIZE, texture_in=None, color_in="black", use_texture=False, who="FMA"
+            name=self.button_name(),
+            width=ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=None,
+            color_in="black",
+            use_texture=False,
+            who="FMA",
         )
         bg.alpha_composite(image)
         self._cached = bg.convert("RGB")
@@ -370,7 +442,9 @@ class FMAIcon(DrawAnimation):
         inside = round(0.04 * image.height + 0.5)
 
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
+        text, text_format, text_font, text_color, text_size, text_position = (
+            self.get_text_detail(self.fmaconfig, "text")
+        )
         logger.debug(f"button {self.button.name}: is FMA master")
 
         icon_width = int(8 * ICON_SIZE / 5)
@@ -392,14 +466,31 @@ class FMAIcon(DrawAnimation):
             if self.fma_label_mode == 3:
                 lbl = list(FMA_LABELS_ALT.values())
             for i in range(FMA_COUNT):
-                draw.text((offs, h), text=lbl[i], font=font, anchor="ms", align="center", fill="white")
+                draw.text(
+                    (offs, h),
+                    text=lbl[i],
+                    font=font,
+                    anchor="ms",
+                    align="center",
+                    fill="white",
+                )
                 offs = offs + icon_width
 
         if not self.button.sim.connected:
             logger.debug("not connected")
-            draw.line(((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))), fill="white", width=1)
+            draw.line(
+                ((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))),
+                fill="white",
+                width=1,
+            )
             bg = self.button.deck.get_icon_background(
-                name=self.button_name(), width=8 * ICON_SIZE, height=ICON_SIZE, texture_in=None, color_in="black", use_texture=False, who="FMA"
+                name=self.button_name(),
+                width=8 * ICON_SIZE,
+                height=ICON_SIZE,
+                texture_in=None,
+                color_in="black",
+                use_texture=False,
+                who="FMA",
             )
             bg.alpha_composite(image)
             self._cached = bg.convert("RGB")
@@ -431,17 +522,40 @@ class FMAIcon(DrawAnimation):
                     #
                     currline = text[:2]
                     if (i == 1 or i == 2) and currline in ["3a", "3w"]:
-                        wmsg = self.text[currline][FMA_COLUMNS[1][0] : FMA_COLUMNS[2][1]].strip()
+                        wmsg = self.text[currline][
+                            FMA_COLUMNS[1][0] : FMA_COLUMNS[2][1]
+                        ].strip()
                         logger.debug(f"warning message '{wmsg}'")
-                        draw.line(((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))), fill="white", width=1)
-                        draw.text((2 * icon_width, h), text=wmsg, font=font, anchor=p + "m", align=a, fill=FMA_COLORS[text[1]])
+                        draw.line(
+                            (
+                                (2 * icon_width, 0),
+                                (2 * icon_width, int(2 * ICON_SIZE / 3)),
+                            ),
+                            fill="white",
+                            width=1,
+                        )
+                        draw.text(
+                            (2 * icon_width, h),
+                            text=wmsg,
+                            font=font,
+                            anchor=p + "m",
+                            align=a,
+                            fill=FMA_COLORS[text[1]],
+                        )
                         has_line = True
                         continue
                     #
                     #
                 color = FMA_COLORS[text[1]]
                 # logger.debug(f"added {text[2:]} @ {loffset + w}, {h}, {color}")
-                draw.text((loffset + w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
+                draw.text(
+                    (loffset + w, h),
+                    text=text[2:],
+                    font=font,
+                    anchor=p + "m",
+                    align=a,
+                    fill=color,
+                )
                 ref = f"{i+1}{idx+1}"
                 # logger.debug(ref, text)
                 if ref in self.boxed:
@@ -449,15 +563,34 @@ class FMAIcon(DrawAnimation):
                         color = "orange"
                     else:
                         color = "white"
-                    draw.rectangle((loffset + 2 * inside, h - text_size / 2, loffset + icon_width - 2 * inside, h + text_size / 2 + 4), outline=color, width=3)
+                    draw.rectangle(
+                        (
+                            loffset + 2 * inside,
+                            h - text_size / 2,
+                            loffset + icon_width - 2 * inside,
+                            h + text_size / 2 + 4,
+                        ),
+                        outline=color,
+                        width=3,
+                    )
             loffset = loffset + icon_width
 
         if not has_line:
-            draw.line(((2 * icon_width, 0), (2 * icon_width, ICON_SIZE)), fill="white", width=1)
+            draw.line(
+                ((2 * icon_width, 0), (2 * icon_width, ICON_SIZE)),
+                fill="white",
+                width=1,
+            )
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(), width=8 * ICON_SIZE, height=ICON_SIZE, texture_in=None, color_in="black", use_texture=False, who="FMA"
+            name=self.button_name(),
+            width=8 * ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=None,
+            color_in="black",
+            use_texture=False,
+            who="FMA",
         )
         bg.alpha_composite(image)
         self._cached = bg.convert("RGB")

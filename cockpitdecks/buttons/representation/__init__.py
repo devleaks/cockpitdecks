@@ -1,8 +1,16 @@
 """
 Button display and rendering abstraction.
 """
+
 import logging
-from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons, IconSide
+from .representation import (
+    Representation,
+    Icon,
+    IconText,
+    MultiTexts,
+    MultiIcons,
+    IconSide,
+)
 from .representation import LED, ColoredLED, MultiLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
@@ -86,7 +94,15 @@ except ImportError:
 #   image: [90, 90]
 #   repeat: 6
 #
-images = ["icon", "text", "icon-color", "multi-icons", "multi-texts", "icon-animate", "side"]
+images = [
+    "icon",
+    "text",
+    "icon-color",
+    "multi-icons",
+    "multi-texts",
+    "icon-animate",
+    "side",
+]
 drawn_buttons = [
     "decor",
     "data",

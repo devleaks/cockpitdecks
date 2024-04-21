@@ -29,7 +29,11 @@ class RealWeatherIcon(XPWeatherBaseIcon):
         XPWeatherBaseIcon.__init__(self, config=config, button=button)
 
         # Working variables
-        self.display_datarefs = DISPLAY_DATAREFS_REGION if self.mode == "region" else DISPLAY_DATAREFS_AIRCRAFT
+        self.display_datarefs = (
+            DISPLAY_DATAREFS_REGION
+            if self.mode == "region"
+            else DISPLAY_DATAREFS_AIRCRAFT
+        )
         self.weather_datarefs = self.display_datarefs.values()
 
     def init(self):
