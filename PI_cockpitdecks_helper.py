@@ -175,7 +175,7 @@ class PythonInterface:
                     cmd = command + "/begin"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "Begin " + cmd)
-                    self.commands[cmd][FUN] = lambda *args: self.command(command, True)
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, True)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
                     self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
@@ -183,7 +183,7 @@ class PythonInterface:
                     cmd = command + "/end"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "End " + cmd)
-                    self.commands[cmd][FUN] = lambda *args: self.command(command, False)
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, False)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
                     self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
