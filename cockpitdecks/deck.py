@@ -259,9 +259,11 @@ class DeckType(Config):
 
     def is_of_type(self, idx, query) -> bool:
         bdef = self.filter(query=query)
-        bdef0 = bdef[0]
-        prefix = bdef0.get(KW.PREFIX.value)
-        return str(idx).startswith(prefix)
+        if len(bdef) > 0:
+            bdef0 = bdef[0]
+            prefix = bdef0.get(KW.PREFIX.value)
+            return str(idx).startswith(prefix)
+        return False
 
 
 class Deck(ABC):
@@ -611,25 +613,14 @@ class Deck(ABC):
         This is the function that is called when a key is pressed.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        self.key_change_processing(PushEvent(deck=deck, button=key, pressed=state))
+        PushEvent(deck=self, button=key, pressed=state, autorun=True)
 
     def key_change_processing(self, event: DeckEvent):
         """
         This is the function that is called when a key is pressed.
+        DeckEvent should be a PushEvent
         """
-        # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         event.run()
-        # if self.current_page is not None:
-        #     idx = str(event.button)
-        #     if idx in self.current_page.buttons.keys():
-        #         self.current_page.buttons[idx].activate(event)
-        #     else:
-        #         logger.warning(
-        #             f"{idx} not found on page {self.current_page.name} ({self.current_page.buttons.keys()})"
-        #         )
-        # else:
-        #     logger.warning(f"no current page")
 
     # #######################################
     # Deck Specific Functions : Representation

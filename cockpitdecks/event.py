@@ -94,8 +94,11 @@ class DeckEvent(ABC):
 
             try:
                 logger.debug(f"doing {idx} on page {page.name} on deck {self.deck.name}..")
-                self.deck.current_page.buttons[idx].activate(self)
-                logger.debug(f"..done")
+                if not self.is_processed():
+                    self.handling()
+                    self.deck.current_page.buttons[idx].activate(self)
+                    self.handled()
+                    logger.debug(f"..done {round(self.duration, 3)}ms")
             except:
                 logger.warning(f"..done with error: deck {self.deck.name},  page {page.name}, button {idx}", exc_info=True)
                 return False
@@ -115,8 +118,8 @@ class PushEvent(DeckEvent):
         Args:
             pressed (bool): Whether the key was pressed (true) or released (false)
         """
-        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.pressed = pressed
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.is_pressed}"
@@ -139,8 +142,8 @@ class EncoderEvent(DeckEvent):
         Args:
             clockwise (bool): Whether the encoder was turned clockwise (true) or counter-clockwise (false)
         """
-        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.clockwise = clockwise
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.turned_clockwise}"
@@ -185,8 +188,8 @@ class SlideEvent(DeckEvent):
         Args:
             value (int): new slider value
         """
-        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.value = value
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.value}"
@@ -220,13 +223,13 @@ class SwipeEvent(DeckEvent):
             end_pos_y (int): End y position of swipe
             end_ts (int): Timestamp of end of swipe
         """
-        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.start_pos_x = start_pos_x
         self.start_pos_y = start_pos_y
         self.start_ts = start_ts
         self.end_pos_x = end_pos_x
         self.end_pos_y = end_pos_y
         self.end_ts = end_ts
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:swipe"
@@ -293,10 +296,10 @@ class TouchEvent(DeckEvent):
         start: TouchEvent | None = None,
         autorun: bool = False
     ):
-        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.start = start
+        DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:touch"

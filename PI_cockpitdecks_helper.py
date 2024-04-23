@@ -3,10 +3,11 @@
 #
 import os
 import glob
-import xp
 import ruamel
-from traceback import print_exc
 from ruamel.yaml import YAML
+from traceback import print_exc
+
+from XPPython3 import xp
 
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
@@ -30,10 +31,12 @@ FUN = "cmdfun"
 HDL = "cmdhdl"
 
 
-RELEASE = "1.0.4"  # local version number
+RELEASE = "1.0.5"  # local version number
 
 # Changelog:
 #
+# 21-APR-2024: 1.0.5: See https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html for correction.
+#                     Correction by dlicudi.
 # 28-NOV-2023: 1.0.4: Scanning page files with glob.
 # 21-NOV-2023: 1.0.3: Switched to ruamel.YAML.
 # 21-NOV-2023: 1.0.2: Added encoding to file open.

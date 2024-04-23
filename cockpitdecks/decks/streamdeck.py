@@ -362,7 +362,7 @@ class Streamdeck(DeckWithIcons):
         """
         return self.device
 
-    def set_dial_callback(self, deck, key, action, value):
+    def dial_callback(self, deck, key, action, value):
         """
         This is the function that is called when a dial is rotated.
         """
@@ -381,7 +381,7 @@ class Streamdeck(DeckWithIcons):
         else:
             logger.warning(f"deck {self.name}: invalid dial action {action}")
 
-    def set_touchscreen_callback(self, deck, action, value):
+    def touchscreen_callback(self, deck, action, value):
         """
         This is the function that is called when the touchscreen is touched swiped.
         """
@@ -430,10 +430,10 @@ class Streamdeck(DeckWithIcons):
             return
         self.device.set_poll_frequency(hz=POLL_FREQ)  # default is 20
         self.device.set_key_callback(self.key_change_callback)
-        if hasattr(self.device, "set_dial_callback"):
-            self.device.set_dial_callback(self.set_dial_callback)
-        if hasattr(self.device, "set_touchscreen_callback"):
-            self.device.set_touchscreen_callback(self.set_touchscreen_callback)
+        if hasattr(self.device, "dial_callback"):
+            self.device.set_dial_callback(self.dial_callback)
+        if hasattr(self.device, "touchscreen_callback"):
+            self.device.set_touchscreen_callback(self.touchscreen_callback)
 
         logger.info(f"deck {self.name}: device started")
 
