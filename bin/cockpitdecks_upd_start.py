@@ -5,7 +5,9 @@ import time
 import itertools
 import threading
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), "..")
+)  # we assume we're in subdir "bin/"
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
@@ -28,7 +30,9 @@ s = None
 try:
     logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
     logger.info(f"Starting for {ac_desc}..")
-    logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
+    logger.info(
+        f"..searching for decks and initializing them (this may take a few seconds).."
+    )
     s = Cockpit(XPlane)
     s.start_aircraft(ac)
     logger.info(f"..{ac_desc} terminated.")

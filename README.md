@@ -12,6 +12,6 @@ The project is in active development, perpetual beta software.
 
 Please head to the [documentation](https://devleaks.github.io/cockpitdecks-docs/) for more information.
 
-You can find [a few configuration for different aircrafts here](https://github.com/dlicudi/cockpitdecks-configs).
+You can find [numerous configurations for different aircrafts here](https://github.com/dlicudi/cockpitdecks-configs).
 
 ![Cockpitdecks Icon](cockpitdecks/resources/icon.png)

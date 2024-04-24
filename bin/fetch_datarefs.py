@@ -6,7 +6,9 @@ import itertools
 import threading
 from datetime import datetime
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), "..")
+)  # we assume we're in subdir "bin/"
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
 from cockpitdecks.simulator import DatarefListener, Dataref
@@ -47,7 +49,9 @@ class DatarefFetcher(DatarefListener, CockpitBase):
         if dataref.previous_value is None and dataref.current_value is not None:
             print(f"{dataref.path} get initial value: {dataref.current_value}")
             return  # got initial value, do not report it...
-        print(f"{datetime.now().strftime('%H:%M:%S.%f')} {dataref.path} changed: {dataref.previous_value} -> {dataref.current_value}")
+        print(
+            f"{datetime.now().strftime('%H:%M:%S.%f')} {dataref.path} changed: {dataref.previous_value} -> {dataref.current_value}"
+        )
 
     def fetch_datarefs(self, dataref_paths=None):
         if dataref_paths is not None:
@@ -93,7 +97,10 @@ if LOGFILE is not None:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-SAMPLE_SET = ["sim/cockpit2/clock_timer/zulu_time_seconds", "sim/cockpit2/clock_timer/zulu_time_minutes"]
+SAMPLE_SET = [
+    "sim/cockpit2/clock_timer/zulu_time_seconds",
+    "sim/cockpit2/clock_timer/zulu_time_minutes",
+]
 xp = None
 try:
     logger.info(f"{'Dataref Fetcher'.title()} {__version__} {__COPYRIGHT__}")

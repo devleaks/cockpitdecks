@@ -11,6 +11,7 @@ from cockpitdecks import DECK_ACTIONS
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+
 class DeckEvent(ABC):
     """Deck event base class.
 
@@ -89,23 +90,31 @@ class DeckEvent(ABC):
 
             idx = str(self.button)
             if idx not in self.deck.current_page.buttons.keys():
-                logger.warning(f"no button {idx} on page {page.name} on deck {self.deck.name}")
+                logger.warning(
+                    f"no button {idx} on page {page.name} on deck {self.deck.name}"
+                )
                 return False
 
             try:
-                logger.debug(f"doing {idx} on page {page.name} on deck {self.deck.name}..")
+                logger.debug(
+                    f"doing {idx} on page {page.name} on deck {self.deck.name}.."
+                )
                 if not self.is_processed():
                     self.handling()
                     self.deck.current_page.buttons[idx].activate(self)
                     self.handled()
                     logger.debug(f"..done {round(self.duration, 3)}ms")
             except:
-                logger.warning(f"..done with error: deck {self.deck.name},  page {page.name}, button {idx}", exc_info=True)
+                logger.warning(
+                    f"..done with error: deck {self.deck.name},  page {page.name}, button {idx}",
+                    exc_info=True,
+                )
                 return False
         else:
             self.deck.cockpit.event_queue.put(self)
             logger.debug(f"enqueued")
         return True
+
 
 class PushEvent(DeckEvent):
     """Event for key press"""
@@ -136,7 +145,9 @@ class PushEvent(DeckEvent):
 class EncoderEvent(DeckEvent):
     _required_deck_capability = DECK_ACTIONS.ENCODER
 
-    def __init__(self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False):
+    def __init__(
+        self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False
+    ):
         """Event for encoder stepped click.
 
         Args:
@@ -208,7 +219,7 @@ class SwipeEvent(DeckEvent):
         end_pos_x: int,
         end_pos_y: int,
         end_ts: float,
-        autorun: bool = False
+        autorun: bool = False,
     ):
         """Event when a touch screen has been touched or swiped.
 
@@ -294,7 +305,7 @@ class TouchEvent(DeckEvent):
         pos_x: int,
         pos_y: int,
         start: TouchEvent | None = None,
-        autorun: bool = False
+        autorun: bool = False,
     ):
         self.pos_x = pos_x
         self.pos_y = pos_y
@@ -315,6 +326,6 @@ class TouchEvent(DeckEvent):
                 end_pos_x=self.pos_x,
                 end_pos_y=self.pos_y,
                 end_ts=self.timestamp,
-                autorun=autorun
+                autorun=autorun,
             )
         return None

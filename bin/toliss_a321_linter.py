@@ -49,7 +49,11 @@ def parsename(m) -> tuple:
     # Should check it has garbage too (i.e. invalid chatracters, stings, etc.)
     # if m.group("garbage") is not None:
     #     logger.warning(f"has garbage")
-    return (m.group("engine"), m.group("sharklet") is not None, m.group("satcom") is not None)
+    return (
+        m.group("engine"),
+        m.group("sharklet") is not None,
+        m.group("satcom") is not None,
+    )
 
 
 def default_config(is_neo: bool = False, original: dict = {}) -> dict:
@@ -116,7 +120,9 @@ for livery in listdir(liveries):
     if m is not None:
         engine, sharklets, satcom = parsename(m)
 
-        if exists(cfg):  # Search for discrepencies between magic string and livery.tlscfg
+        if exists(
+            cfg
+        ):  # Search for discrepencies between magic string and livery.tlscfg
             logger.debug(f"livery {livery}: has magic string and config file")
             data = get_config_file(cfg)
 
@@ -125,7 +131,9 @@ for livery in listdir(liveries):
 
             e = data.get("eng_type")
             if e is not None and engine is not None and e != engine:
-                logger.warning(f"livery {livery}: engine differ {engine} (in string) vs {e} (in config file)")
+                logger.warning(
+                    f"livery {livery}: engine differ {engine} (in string) vs {e} (in config file)"
+                )
 
             if not is_neo:
                 if e is not None and e not in ["IAE", "CFM"]:
@@ -138,22 +146,28 @@ for livery in listdir(liveries):
             if s is not None:
                 s = s.upper() == YES
             if s is not None and satcom is not None and s != satcom:
-                logger.warning(f"livery {livery}: SATCOM differ {satcom} (in string) vs {s} (in config file)")
+                logger.warning(
+                    f"livery {livery}: SATCOM differ {satcom} (in string) vs {s} (in config file)"
+                )
 
             k = data.get("sharklet")
             if k is not None:
                 k = k.upper() == YES
             if k is not None and sharklets is not None and k != sharklets:
-                logger.warning(f"livery {livery}: sharkets differ {sharklets} (in string) vs {k} (in config file)")
+                logger.warning(
+                    f"livery {livery}: sharkets differ {sharklets} (in string) vs {k} (in config file)"
+                )
 
         else:
             if engine in ["IAE", "CFM"]:
                 data["eng_type"] = engine
-            if sharklets :
+            if sharklets:
                 data["sharklet"] = YES
             if satcom:
                 data["has_SatCom"] = YES
-            logger.debug(f"livery {livery}: has magic string only {engine, sharklets, satcom}")
+            logger.debug(
+                f"livery {livery}: has magic string only {engine, sharklets, satcom}"
+            )
             logger.warning(f"livery {livery}: has no config file")
 
     else:
@@ -183,16 +197,24 @@ for livery in listdir(liveries):
                     continue
                 txt = join(objects, f"fuselage321{v}.png")
                 if not exists(txt):
-                    logger.warning(f"livery {livery}: has exit configuration {e} but no texture file {txt.replace(AC_PATH, '..')}")
+                    logger.warning(
+                        f"livery {livery}: has exit configuration {e} but no texture file {txt.replace(AC_PATH, '..')}"
+                    )
             else:
                 logger.debug(f"livery {livery}: has no exit configuration")
                 txt = join(objects, "fuselage321.png")
                 if not exists(txt):
-                    logger.warning(f"livery {livery}: has no exit configuration, no texture file {txt.replace(AC_PATH, '..')}")
+                    logger.warning(
+                        f"livery {livery}: has no exit configuration, no texture file {txt.replace(AC_PATH, '..')}"
+                    )
                 else:
-                    logger.debug(f"livery {livery}: has no exit configuration, texture file found")
+                    logger.debug(
+                        f"livery {livery}: has no exit configuration, texture file found"
+                    )
 
-            txtfn = sorted([basename(f) for f in glob.glob(join(objects, "fuselage*.png"))])
+            txtfn = sorted(
+                [basename(f) for f in glob.glob(join(objects, "fuselage*.png"))]
+            )
             logger.debug(f"livery {livery}: texture files: {txtfn}")
 
             # Engine type and engine texture
@@ -200,11 +222,17 @@ for livery in listdir(liveries):
             if e is not None:
                 if is_neo:
                     if e not in ["PWG", "LEA"]:
-                        logger.warning(f"livery {livery}: invalid engine type {e} for neo")
+                        logger.warning(
+                            f"livery {livery}: invalid engine type {e} for neo"
+                        )
                 else:
                     if e not in ["CFM", "IAE"]:
-                        logger.warning(f"livery {livery}: invalid engine type {e} for ceo")
-                logger.debug(f"livery {livery}: has eng_type={e} ({'is neo' if is_neo else ''})")
+                        logger.warning(
+                            f"livery {livery}: invalid engine type {e} for ceo"
+                        )
+                logger.debug(
+                    f"livery {livery}: has eng_type={e} ({'is neo' if is_neo else ''})"
+                )
                 v = None
                 if e == "CFM":  # anim/CFM=1
                     v = "engines"
@@ -219,12 +247,16 @@ for livery in listdir(liveries):
                     continue
                 txt = join(objects, f"{v}.png")
                 if not exists(txt):
-                    logger.warning(f"livery {livery}: has engine type {e} but no texture file {txt.replace(AC_PATH, '..')}")
+                    logger.warning(
+                        f"livery {livery}: has engine type {e} but no texture file {txt.replace(AC_PATH, '..')}"
+                    )
             else:
                 logger.warning(f"livery {livery}: has no engine type")
 
         else:
-            logger.info(f"livery {livery}: has no magic string and no config file (and that's ok!)")
+            logger.info(
+                f"livery {livery}: has no magic string and no config file (and that's ok!)"
+            )
 
     if NEW_CONFIG is not None:
         newcfg = default_config(is_neo=is_neo, original=data)
@@ -237,7 +269,11 @@ for livery in listdir(liveries):
         # logger.debug(f"CONTROL <: {set2 - set1}")
 
         logger.debug(f"livery {livery}: suggested config file:")
-        logger.debug(f"\n----- livery {livery}\n" + "\n".join([f"{k} = {v}" for k, v in newcfg.items()]) + f":\n-----")
+        logger.debug(
+            f"\n----- livery {livery}\n"
+            + "\n".join([f"{k} = {v}" for k, v in newcfg.items()])
+            + f":\n-----"
+        )
         newfn = join(d, NEW_CONFIG)
         with open(newfn, "w") as fp:
             fp.write("\n".join([f"{k} = {v}" for k, v in newcfg.items()]))
@@ -269,7 +305,9 @@ for ac in acfn:
     if not exists(thm):
         logger.warning(f"Aircraft {ac} has no thumb icon")
 
-logger.info("do not forget to set all aircraft parameter values to AUTO in ISCS/AC CONFIG panel")
+logger.info(
+    "do not forget to set all aircraft parameter values to AUTO in ISCS/AC CONFIG panel"
+)
 # import re
 # STRING = "^\\[((?P<engine>IAE|CFM){0,1}|(?P<sharklet>S){0,1}|(?P<satcom>T){0,1}|(.))*\\]"
 # tests = ["[IAES]", "[S]", "[ST]", "[TS]", "[TSIAE]", "[St]", "[NEOS]", "[ARRDEP]"]

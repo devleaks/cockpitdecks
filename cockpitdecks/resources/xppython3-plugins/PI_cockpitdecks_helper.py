@@ -52,7 +52,9 @@ class PythonInterface:
         self.Desc = f"Decompose long press commands into command/begin and command/end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
-        self.trace = True  # produces extra print/debugging in XPPython3.log for this class
+        self.trace = (
+            True  # produces extra print/debugging in XPPython3.log for this class
+        )
         self.commands = {}
 
     def XPluginStart(self):
@@ -75,15 +77,21 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            ac = xp.getNthAircraftModel(
+                0
+            )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
-                acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                acpath = os.path.split(
+                    ac[1]
+                )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                 print(self.Info, "PI::XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
                 print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
                 self.enabled = True
                 return 1
-            print(self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found.")
+            print(
+                self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found."
+            )
             return 1
         except:
             if self.trace:
@@ -104,19 +112,34 @@ class PythonInterface:
         we try to load the aicraft deskconfig.
         If it does not exist, we default to a screen saver type of screen for the deck.
         """
-        if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+        if (
+            inMessage == xp.MSG_PLANE_LOADED and inParam == 0
+        ):  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                ac = xp.getNthAircraftModel(
+                    0
+                )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
                 if len(ac) == 2:
-                    acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                    acpath = os.path.split(
+                        ac[1]
+                    )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
-                        print(self.Info, "PI::XPluginReceiveMessage: trying " + acpath[0] + "..")
+                        print(
+                            self.Info,
+                            "PI::XPluginReceiveMessage: trying " + acpath[0] + "..",
+                        )
                     self.load(acpath=acpath[0])
                     if self.trace:
-                        print(self.Info, "PI::XPluginReceiveMessage: .. " + acpath[0] + " done.")
+                        print(
+                            self.Info,
+                            "PI::XPluginReceiveMessage: .. " + acpath[0] + " done.",
+                        )
                     return None
-                print(self.Info, "PI::XPluginReceiveMessage: getNthAircraftModel: aircraft not found.")
+                print(
+                    self.Info,
+                    "PI::XPluginReceiveMessage: getNthAircraftModel: aircraft not found.",
+                )
             except:
                 if self.trace:
                     print(self.Info, "PI::XPluginReceiveMessage: exception.")
@@ -178,17 +201,25 @@ class PythonInterface:
                     cmd = command + "/begin"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "Begin " + cmd)
-                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, True)
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(
+                        cmd, True
+                    )
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
-                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(
+                        self.commands[cmd][REF], self.commands[cmd][FUN], 1, None
+                    )
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
                     cmd = command + "/end"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "End " + cmd)
-                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, False)
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(
+                        cmd, False
+                    )
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
-                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(
+                        self.commands[cmd][REF], self.commands[cmd][FUN], 1, None
+                    )
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
                     # else:
@@ -213,19 +244,27 @@ class PythonInterface:
         DECKS = "decks"  # keyword to list decks used for this aircraft
         LAYOUT = "layout"  # keyword to detect layout for above deck
         TYPE = "type"  # keyword to detect the action of the button (intend)
-        COMMAND = "command"  # keyword to detect (X-Plane) command in definition of the button
+        COMMAND = (
+            "command"  # keyword to detect (X-Plane) command in definition of the button
+        )
         MULTI_COMMANDS = "commands"  # same as above for multiple commands
 
         DEBUG = False
 
         config_dn = os.path.join(acpath, CONFIG_DIR)
         if not os.path.isdir(config_dn):
-            print(self.Info, f"PI::get_beginend_commands: Cockpitdecks config directory '{config_dn}' not found in aircraft path '{acpath}'")
+            print(
+                self.Info,
+                f"PI::get_beginend_commands: Cockpitdecks config directory '{config_dn}' not found in aircraft path '{acpath}'",
+            )
             return []
 
         config_fn = os.path.join(config_dn, CONFIG_FILE)
         if not os.path.exists(config_fn):
-            print(self.Info, f"PI::get_beginend_commands: Cockpitdecks config file '{config_fn}' not found in Cockpitdecks config dir '{config_dn}'")
+            print(
+                self.Info,
+                f"PI::get_beginend_commands: Cockpitdecks config file '{config_fn}' not found in Cockpitdecks config dir '{config_dn}'",
+            )
             return []
 
         commands = []
@@ -234,13 +273,19 @@ class PythonInterface:
             if DECKS in config:
                 for deck in config[DECKS]:
                     if DEBUG:
-                        print(self.Info, f"PI::get_beginend_commands: doing deck {deck.get('name')}..")
+                        print(
+                            self.Info,
+                            f"PI::get_beginend_commands: doing deck {deck.get('name')}..",
+                        )
                     layout = DEFAULT_LAYOUT
                     if LAYOUT in deck:
                         layout = deck[LAYOUT]
                     layout_dn = os.path.join(config_dn, layout)
                     if not os.path.exists(layout_dn):
-                        print(self.Info, f"PI::get_beginend_commands: ..deck {deck.get('name')}: layout folder '{layout}' not found in '{config_dn}'")
+                        print(
+                            self.Info,
+                            f"PI::get_beginend_commands: ..deck {deck.get('name')}: layout folder '{layout}' not found in '{config_dn}'",
+                        )
                         continue
                     pages = []
                     for ext in ["yaml", "yml"]:
@@ -248,14 +293,23 @@ class PythonInterface:
                     for page in pages:
                         if os.path.basename(page) == CONFIG_FILE:
                             if DEBUG:
-                                print(self.Info, f"PI::get_beginend_commands: skipping config file {page}")
+                                print(
+                                    self.Info,
+                                    f"PI::get_beginend_commands: skipping config file {page}",
+                                )
                             continue
                         if DEBUG:
-                            print(self.Info, f"PI::get_beginend_commands: doing page {os.path.basename(page)}..")  #  (file {page})
+                            print(
+                                self.Info,
+                                f"PI::get_beginend_commands: doing page {os.path.basename(page)}..",
+                            )  #  (file {page})
                         with open(page, "r", encoding="utf-8") as page_fp:
                             page_def = yaml.load(page_fp)
                             if BUTTONS not in page_def:
-                                print(self.Info, f"PI::get_beginend_commands: page {os.path.basename(page)} has no button (file {page})")
+                                print(
+                                    self.Info,
+                                    f"PI::get_beginend_commands: page {os.path.basename(page)} has no button (file {page})",
+                                )
                                 continue
                             for button_def in page_def[BUTTONS]:
                                 # if DEBUG:
@@ -263,24 +317,42 @@ class PythonInterface:
                                 bty = button_def.get(TYPE)
                                 if bty is None:
                                     if DEBUG:
-                                        print(self.Info, f"PI::get_beginend_commands: button {button_def} has no type")
+                                        print(
+                                            self.Info,
+                                            f"PI::get_beginend_commands: button {button_def} has no type",
+                                        )
                                     continue
                                 if bty in NOTICABLE_BUTTON_TYPES:
                                     if DEBUG:
-                                        print(self.Info, f"PI::get_beginend_commands: doing button {button_def.get('index')}")
+                                        print(
+                                            self.Info,
+                                            f"PI::get_beginend_commands: doing button {button_def.get('index')}",
+                                        )
                                     if COMMAND in button_def:
                                         commands.append(button_def[COMMAND])
                                         if DEBUG:
-                                            print(self.Info, f"PI::get_beginend_commands: added {button_def[COMMAND]}")
+                                            print(
+                                                self.Info,
+                                                f"PI::get_beginend_commands: added {button_def[COMMAND]}",
+                                            )
                                     if MULTI_COMMANDS in button_def:
                                         for c in button_def[MULTI_COMMANDS]:
                                             commands.append(c)
                                             if DEBUG:
-                                                print(self.Info, f"PI::get_beginend_commands: added multi-command {c}")
+                                                print(
+                                                    self.Info,
+                                                    f"PI::get_beginend_commands: added multi-command {c}",
+                                                )
                                 # if DEBUG:
                                 #     print(self.Info, f"PI::get_beginend_commands: ..done button {button_def.get('index')}")
                         if DEBUG:
-                            print(self.Info, f"PI::get_beginend_commands: ..done page {os.path.basename(page)}")
+                            print(
+                                self.Info,
+                                f"PI::get_beginend_commands: ..done page {os.path.basename(page)}",
+                            )
                     if DEBUG:
-                        print(self.Info, f"PI::get_beginend_commands: ..done deck {deck.get('name')}")
+                        print(
+                            self.Info,
+                            f"PI::get_beginend_commands: ..done deck {deck.get('name')}",
+                        )
         return commands

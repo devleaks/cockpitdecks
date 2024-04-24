@@ -29,12 +29,12 @@ RELEASE = "2.0.4"
 MCAST_GRP = "239.255.1.1"  # same as X-Plane 12
 MCAST_PORT = 49505  # 49707 for XPlane12
 MULTICAST_TTL = 2
-FREQUENCY = 5.0  # will run every FREQUENCY seconds
+FREQUENCY = 5.0  # will run every FREQUENCY seconds at most, never faster
 
 CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 
-DEFAULT_STRING_DATAREFS = [ # default is to return these, for Toliss Airbusses
+DEFAULT_STRING_DATAREFS = [  # default is to return these, for Toliss Airbusses
     "AirbusFBW/FMA1w",
     "AirbusFBW/FMA1g",
     "AirbusFBW/FMA1b",
@@ -46,6 +46,7 @@ DEFAULT_STRING_DATAREFS = [ # default is to return these, for Toliss Airbusses
     "AirbusFBW/FMA3a",
 ]
 
+
 class PythonInterface:
     def __init__(self):
         self.Name = "String datarefs multicast"
@@ -53,10 +54,13 @@ class PythonInterface:
         self.Desc = f"Fetches string-type datarefs at regular intervals and UPD multicast their values (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
-        self.trace = True  # produces extra print/debugging in XPPython3.log for this class
+        self.trace = (
+            True  # produces extra print/debugging in XPPython3.log for this class
+        )
         self.datarefs = {}
         self.use_defaults = False
         self.run_count = 0
+        self.frequency = FREQUENCY
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
@@ -76,9 +80,13 @@ class PythonInterface:
         if self.trace:
             print(self.Info, "PI::XPluginEnable: flight loop registered")
         try:
-            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            ac = xp.getNthAircraftModel(
+                0
+            )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
-                acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                acpath = os.path.split(
+                    ac[1]
+                )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                 print(self.Info, "PI::XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
                 print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
@@ -86,7 +94,9 @@ class PythonInterface:
                 if self.trace:
                     print(self.Info, "enabled")
                 return 1
-            print(self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found.")
+            print(
+                self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found."
+            )
             return 1
         except:
             if self.trace:
@@ -111,19 +121,34 @@ class PythonInterface:
         we try to load the aicraft deskconfig.
         If it does not exist, we default to a screen saver type of screen for the deck.
         """
-        if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+        if (
+            inMessage == xp.MSG_PLANE_LOADED and inParam == 0
+        ):  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                ac = xp.getNthAircraftModel(
+                    0
+                )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
                 if len(ac) == 2:
-                    acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                    acpath = os.path.split(
+                        ac[1]
+                    )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
-                        print(self.Info, "PI::XPluginReceiveMessage: trying " + acpath[0] + "..")
+                        print(
+                            self.Info,
+                            "PI::XPluginReceiveMessage: trying " + acpath[0] + "..",
+                        )
                     self.load(acpath=acpath[0])
                     if self.trace:
-                        print(self.Info, "PI::XPluginReceiveMessage: .. " + acpath[0] + " done.")
+                        print(
+                            self.Info,
+                            "PI::XPluginReceiveMessage: .. " + acpath[0] + " done.",
+                        )
                     return None
-                print(self.Info, "PI::XPluginReceiveMessage: getNthAircraftModel: aircraft not found.")
+                print(
+                    self.Info,
+                    "PI::XPluginReceiveMessage: getNthAircraftModel: aircraft not found.",
+                )
             except:
                 if self.trace:
                     print(self.Info, "PI::XPluginReceiveMessage: exception.")
@@ -137,15 +162,22 @@ class PythonInterface:
         if self.run_count % 100 == 0:
             print(self.Info, f"PI::FlightLoopCallback: is alive ({self.run_count})")
         self.run_count = self.run_count + 1
-        drefvalues = {"ts": time.time()} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
-        fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
+        drefvalues = {"ts": time.time()} | {
+            d: xp.getDatas(self.datarefs[d]) for d in self.datarefs
+        }
+        fma_bytes = bytes(
+            json.dumps(drefvalues), "utf-8"
+        )  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
         if len(fma_bytes) > 1472:
-            print(self.Info, f"PI::FlightLoopCallback: returned value too large ({len(fma_bytes)}/1472)")
+            print(
+                self.Info,
+                f"PI::FlightLoopCallback: returned value too large ({len(fma_bytes)}/1472)",
+            )
         else:
             self.sock.sendto(fma_bytes, (MCAST_GRP, MCAST_PORT))
-        return FREQUENCY
+        return self.frequency
 
     def load(self, acpath):
         # Unload previous aircraft's command set.
@@ -173,6 +205,11 @@ class PythonInterface:
             else:
                 print(self.Info, f"PI::load: dataref {dataref} not found")
 
+        # adjust frequency since operation is expensive
+        self.frequency = max(len(self.datarefs), FREQUENCY)
+        if self.trace:
+            print(self.Info, f"PI::load: frequency adjusted to {self.frequency}")
+
     def get_string_datarefs(self, acpath):
         # Scans an aircraft deckconfig and collects long press commands.
         #
@@ -181,14 +218,20 @@ class PythonInterface:
         DEBUG = False
         config_file = os.path.join(acpath, CONFIG_DIR, CONFIG_FILE)
         if not os.path.exists(config_file):
-            print(self.Info, f"PI::get_string_datarefs: Cockpitdecks config file '{config_file}' not found")
+            print(
+                self.Info,
+                f"PI::get_string_datarefs: Cockpitdecks config file '{config_file}' not found",
+            )
             return []
         with open(config_file, "r", encoding="utf-8") as config_fp:
             config = yaml.load(config_fp)
             self.use_defaults = config.get("use-default-string-datarefs", False)
             ret = config.get("string-datarefs", [])
             if self.trace:
-                print(self.Info, f"PI::get_string_datarefs: Cockpitdecks config file '{config_file}' loaded, config length={len(ret)}, use default={self.use_defaults}.")
+                print(
+                    self.Info,
+                    f"PI::get_string_datarefs: Cockpitdecks config file '{config_file}' loaded, config length={len(ret)}, use default={self.use_defaults}.",
+                )
             return ret
 
 
