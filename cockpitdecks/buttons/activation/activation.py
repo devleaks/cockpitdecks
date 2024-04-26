@@ -4,7 +4,7 @@ Button action and activation abstraction
 
 import logging
 import threading
-from typing import Dict
+from typing import Dict, List
 
 from datetime import datetime
 
@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.event import PushEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
-from cockpitdecks import DECK_ACTIONS
+from cockpitdecks import KW, DECK_ACTIONS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -28,7 +28,16 @@ class Activation:
     Can be used for no-operation activation on display-only button.
     """
 
-    _required_deck_capability = DECK_ACTIONS.NONE
+    REQUIRED_DECK_ACTIONS: List[DECK_ACTIONS] = (
+        DECK_ACTIONS.NONE
+    )  # List of deck capabilities required to do the activation
+    # One cannot request an activiation from a deck button that does not have the capability of the action
+    # requested by the activation.
+
+    @classmethod
+    def get_required_capability(cls) -> list | tuple:
+        r = cls.REQUIRED_DECK_ACTIONS
+        return r if type(r) in [list, tuple] else [r]
 
     def __init__(self, config: dict, button: "Button"):
         self._config = config
@@ -44,7 +53,7 @@ class Activation:
 
         # Commands
         self._view = Command(
-            path=config.get("view")
+            path=config.get(KW.VIEW.value)
         )  # Optional additional command, usually to set a view
         # but could be anything.
         self._long_press = Command(
@@ -71,12 +80,16 @@ class Activation:
         self.init()
 
     def init(self):  # ~ABC
-        pass
+        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
+            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
 
     def can_handle(self, event) -> bool:
-        if type(self._required_deck_capability) in [list, tuple]:
-            return event.action in self._required_deck_capability
-        return event.action == self._required_deck_capability
+        if event.action not in self.REQUIRED_DECK_ACTIONS:
+            logger.warning(
+                f"button {self.button_name()}: invalid event received {type(event).__name__}, action {event.action}, expected {self.REQUIRED_DECK_ACTIONS}"
+            )
+            return False
+        return True
 
     def button_name(self) -> str:
         return self.button.name if self.button is not None else "no button"
@@ -267,7 +280,7 @@ class LoadPage(Activation):
     Defines a Page change activation.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     KW_BACKPAGE = "back"
 
@@ -291,9 +304,6 @@ class LoadPage(Activation):
 
     def activate(self, event: PushEvent):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         super().activate(event)
         decks = self.button.deck.cockpit.cockpit
@@ -328,7 +338,7 @@ class Reload(Activation):
     Reloads all decks.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -337,9 +347,6 @@ class Reload(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if not event.pressed:  # trigger on button "release"
             self.button.deck.cockpit.reload_decks()
@@ -360,7 +367,7 @@ class ChangeTheme(Activation):
     Reloads all decks.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -369,9 +376,6 @@ class ChangeTheme(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if not event.pressed:  # trigger on button "release"
             COCKPIT_THEME = "cockpit-theme"
@@ -395,7 +399,7 @@ class Inspect(Activation):
     Inspect all decks.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -405,9 +409,6 @@ class Inspect(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if event.pressed:
             self.button.deck.cockpit.inspect(self.what)
@@ -435,7 +436,7 @@ class Stop(Activation):
     Stops all decks.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -444,9 +445,6 @@ class Stop(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if not event.pressed:  # trigger on button "release"
             self.button.deck.cockpit.stop_decks()
@@ -471,7 +469,7 @@ class Push(Activation):
     The supplied command is executed each time a button is pressed.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
@@ -571,9 +569,6 @@ class Push(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         super().activate(event)
         if event.pressed:
@@ -645,16 +640,13 @@ class Longpress(Push):
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         super().activate(event)
         if event.pressed:
@@ -688,7 +680,7 @@ class OnOff(Activation):
     On or Off status is determined by the number of time a button is pressed.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -798,9 +790,6 @@ class OnOff(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         super().activate(event)
         if event.pressed:
@@ -856,7 +845,7 @@ class UpDown(Activation):
     another one when the value decreases.
     """
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -942,9 +931,6 @@ class UpDown(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         super().activate(event)
         if event.pressed:
@@ -1020,7 +1006,7 @@ class Encoder(Activation):
     another command is executed the encoder is turned counter-clockwise one step.
     """
 
-    _required_deck_capability = DECK_ACTIONS.ENCODER
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -1046,9 +1032,6 @@ class Encoder(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         super().activate(event)
         if event.turned_counter_clockwise:  # rotate left
@@ -1098,7 +1081,7 @@ class EncoderPush(Push):
     Command 3: Executed when turned counter-clockwise and pushed simultaneously
     """
 
-    _required_deck_capability = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -1137,9 +1120,6 @@ class EncoderPush(Push):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if hasattr(event, "pressed"):
             super().activate(event)
@@ -1220,7 +1200,7 @@ class EncoderOnOff(OnOff):
     Sixth command: Executed when turned counter-clockwise and OFF
     """
 
-    _required_deck_capability = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
@@ -1250,9 +1230,6 @@ class EncoderOnOff(OnOff):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if hasattr(event, "pressed"):
             super().activate(event)
@@ -1371,9 +1348,6 @@ class EncoderValue(OnOff):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if hasattr(event, "pressed"):
             if event.pressed:
@@ -1509,9 +1483,6 @@ class EncoderValueExtended(OnOff):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
 
         if event.pressed:
@@ -1591,7 +1562,7 @@ class Slider(Activation):  # Cursor?
     A Encoder that can turn left/right.
     """
 
-    _required_deck_capability = DECK_ACTIONS.SLIDE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SLIDE
 
     SLIDER_MAX = 8064
     SLIDER_MIN = -8192
@@ -1617,9 +1588,6 @@ class Slider(Activation):  # Cursor?
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         frac = abs(event.value - Slider.SLIDER_MAX) / (
             Slider.SLIDER_MAX - Slider.SLIDER_MIN
@@ -1656,16 +1624,13 @@ class Swipe(Activation):
     A Encoder that can turn left/right.
     """
 
-    _required_deck_capability = DECK_ACTIONS.SWIPE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         logger.info(f"button {self.button_name()} has no action (value={event})")
 
@@ -1693,7 +1658,7 @@ class EncoderToggle(Activation):
     Command 3: Executed when turned counter-clockwise
     """
 
-    _required_deck_capability = DECK_ACTIONS.ENCODER_PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER_PUSH
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -1728,9 +1693,6 @@ class EncoderToggle(Activation):
 
     def activate(self, event):
         if not self.can_handle(event):
-            logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, expected {self._required_deck_capability}"
-            )
             return
         if hasattr(event, "pressed"):
             super().activate(event)

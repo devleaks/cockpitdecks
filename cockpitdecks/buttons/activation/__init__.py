@@ -9,12 +9,14 @@ from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue, Encode
 from .activation import EncoderValueExtended
 from .activation import Slider, Swipe
 
+from cockpitdecks import DECK_ACTIONS
+
 # ###############################
 # format is activation: Classname
 #
 #   - index: e2
 #     name: FCU Baro
-#     mytype: encoder-onoff         <--------
+#     _type_: encoder-onoff         <-------- remove _ for type
 #     commands:
 #       - toliss_airbus/capt_baro_push
 #       - toliss_airbus/capt_baro_pull
@@ -90,3 +92,21 @@ DECK_ACTIVATIONS = {
     "cursor": ["cursor", "slider"],
     "swipe": ["swipe"] + push,
 }
+
+
+def get_activations_for(action: DECK_ACTIONS):
+    # trick: *simultaneous* actions are in same word, "-" separated, example encoder-push.
+    DASH = "-"
+    if DASH in action.value:
+        actions = action.split(DASH)
+        ret = []
+        for a in ACTIVATIONS.values():
+            ok = True
+            for act in actions:
+                if act not in a.REQUIRED_DECK_ACTIONS:
+                    ok = False
+            if ok:
+                ret.append(a)
+        return ret
+
+    return [a for a in ACTIVATIONS.values() if action in a.REQUIRED_DECK_ACTIONS]

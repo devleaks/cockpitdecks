@@ -162,14 +162,14 @@ class Button(DatarefListener, DatarefSetListener):
 
     @staticmethod
     def guess_index(config):
-        return str(config.get("index"))
+        return str(config.get(KW.INDEX.value))
 
     @staticmethod
     def guess_activation_type(config):
-        a = config.get("type")
+        a = config.get(KW.TYPE.value)
         if a is None:
             logger.debug(f"not type attribute, assuming 'none' type")
-            a = "none"
+            a = KW.NONE.value
         if a not in ACTIVATIONS.keys():
             logger.warning(f"invalid activation type {a} in {config}")
             return None
@@ -184,10 +184,10 @@ class Button(DatarefListener, DatarefSetListener):
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
-            if "none" not in valid_representations:
+            if KW.NONE.value not in valid_representations:
                 logger.warning(f"no representation in {config}")
-            elif "representation" in config:
-                r = config.get("representation")
+            elif KW.REPRESENTATION.value in config:
+                r = config.get(KW.REPRESENTATION.value)
                 if r is None:
                     logger.debug(f"no representation")
             else:
@@ -196,7 +196,7 @@ class Button(DatarefListener, DatarefSetListener):
                 )
         else:
             logger.warning(f"multiple representation {a} in {config}")
-        return "none"
+        return KW.NONE.value
 
     def button_name(self):
         return self.name

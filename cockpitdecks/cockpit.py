@@ -21,10 +21,10 @@ from cockpitdecks import (
     FONTS_FOLDER,
     RESOURCES_FOLDER,
 )
-from cockpitdecks import Config, KW, GLOBAL_DEFAULTS
+from cockpitdecks import Config, KW, GLOBAL_DEFAULTS, DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
-from cockpitdecks.deck import DECKS_FOLDER, DeckType
+from cockpitdecks.deck import DeckType
 from cockpitdecks.decks import DECK_DRIVERS
 
 logging.addLevelName(SPAM_LEVEL, SPAM)

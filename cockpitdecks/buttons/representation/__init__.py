@@ -23,6 +23,8 @@ from .xp_fma import FMAIcon
 from .xp_fcu import FCUIcon
 from .xp_iconside import IconSide
 
+from cockpitdecks import DECK_FEEDBACK
+
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
@@ -135,3 +137,9 @@ DECK_REPRESENTATIONS = {
     "colored-led": ["led", "colored-led"],
     "encoder-leds": ["multi-leds"],
 }
+
+
+def get_representations_for(feedback: DECK_FEEDBACK):
+    return [
+        a for a in REPRESENTATIONS.values() if feedback in a.REQUIRED_DECK_FEEDBACKS
+    ]

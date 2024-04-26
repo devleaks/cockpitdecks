@@ -21,7 +21,7 @@ class DeckEvent(ABC):
     [description]
     """
 
-    _required_deck_capability = DECK_ACTIONS.NONE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.NONE
 
     def __init__(self, deck: "Deck", button: str, autorun: bool = False):
         """Deck event
@@ -37,12 +37,12 @@ class DeckEvent(ABC):
             self.run()
 
     def __str__(self):
-        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}"
+        return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}"
 
     @property
     def action(self) -> DECK_ACTIONS:
         """Event deck action type"""
-        return self._required_deck_capability
+        return self.REQUIRED_DECK_ACTIONS
 
     @property
     def event(self) -> str:
@@ -119,7 +119,7 @@ class DeckEvent(ABC):
 class PushEvent(DeckEvent):
     """Event for key press"""
 
-    _required_deck_capability = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, deck: "Deck", button: str, pressed: bool, autorun: bool = False):
         """Event for key press.
@@ -131,7 +131,7 @@ class PushEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
-        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.is_pressed}"
+        return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:{self.is_pressed}"
 
     @property
     def is_pressed(self) -> bool:
@@ -143,7 +143,7 @@ class PushEvent(DeckEvent):
 
 
 class EncoderEvent(DeckEvent):
-    _required_deck_capability = DECK_ACTIONS.ENCODER
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
     def __init__(
         self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False
@@ -157,7 +157,7 @@ class EncoderEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
-        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.turned_clockwise}"
+        return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:{self.turned_clockwise}"
 
     @property
     def turned_clockwise(self) -> bool:
@@ -168,30 +168,8 @@ class EncoderEvent(DeckEvent):
         return not self.turned_clockwise
 
 
-# class EncoderPushEvent(DeckEvent):
-#     _required_deck_capability = DECK_ACTIONS.ENCODER_PUSH
-
-#     def __init__(self, deck: "Deck", button: str, pressed: bool, clockwise: bool):
-#         """Event for encoder stepped click.
-
-#         Args:
-#             clockwise (bool): Whether the encoder was turned clockwise (true) or counter-clockwise (false)
-#         """
-#         DeckEvent.__init__(self, deck=deck, button=button)
-#         self.pressed = pressed
-#         self.clockwise = clockwise
-
-#     @property
-#     def turned_clockwise(self) -> bool:
-#         return self.clockwise
-
-#     @property
-#     def turned_counter_clockwise(self) -> bool:
-#         return not self.turned_clockwise
-
-
 class SlideEvent(DeckEvent):
-    _required_deck_capability = DECK_ACTIONS.SLIDE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SLIDE
 
     def __init__(self, deck: "Deck", button: str, value: int, autorun: bool = False):
         """Event when sliding or rotation cursor value has changed..
@@ -203,11 +181,11 @@ class SlideEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
-        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:{self.value}"
+        return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:{self.value}"
 
 
 class SwipeEvent(DeckEvent):
-    _required_deck_capability = DECK_ACTIONS.SWIPE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
     def __init__(
         self,
@@ -243,7 +221,7 @@ class SwipeEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
-        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:swipe"
+        return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:swipe"
 
     @property
     def swipe_distance(self) -> float:
@@ -296,7 +274,7 @@ class SwipeEvent(DeckEvent):
 
 
 class TouchEvent(DeckEvent):
-    _required_deck_capability = DECK_ACTIONS.SWIPE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
     def __init__(
         self,
@@ -313,7 +291,7 @@ class TouchEvent(DeckEvent):
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
-        return f"{self.deck.name}:{self.button}:{self._required_deck_capability}:{self.timestamp}:touch"
+        return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:touch"
 
     def swipe(self) -> SwipeEvent | None:
         if self.start is not None:

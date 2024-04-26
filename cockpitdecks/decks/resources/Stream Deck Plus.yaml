@@ -6,16 +6,16 @@ driver: streamdeck
 buttons:
   - name: 0
     action: push
-    view: image
+    feedback: image
     image: [96, 96, 0, 0]
     repeat: 8
   - name: 0
     prefix: e
     action: encoder-push
-    view: none
+    feedback: none
     repeat: 4
   # touchscreen in streamdeck package vocabulary
   - name: touchscreen
     action: swipe
-    view: image
+    feedback: image
     image: [800, 100, 0, 0]

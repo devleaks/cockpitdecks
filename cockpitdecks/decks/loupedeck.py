@@ -193,7 +193,7 @@ class Loupedeck(DeckWithIcons):
                     key = 0
                 try:
                     num = int(key)
-                    bdef = self.deck_type.filter({"view": "colored-led"})
+                    bdef = self.deck_type.filter({KW.VIEW.value: "colored-led"})
                     prefix = bdef[0].get(KW.PREFIX.value)
                     key = f"{prefix}{key}"
                 except ValueError:
@@ -515,7 +515,7 @@ class Loupedeck(DeckWithIcons):
         if color is None:
             logger.warning("button returned no representation color, using default")
             color = self.get_attribute("default-color")
-        bdef = self.deck_type.filter({"view": "colored-led"})
+        bdef = self.deck_type.filter({KW.VIEW.value: "colored-led"})
         prefix = bdef[0].get(KW.PREFIX.value)
         key = button.index.lower().replace(prefix, "")
         if key == "0":
@@ -545,7 +545,7 @@ class Loupedeck(DeckWithIcons):
         for button in page.buttons.values():
             logger.debug(f"doing {button.name}..")
             if self.deck_type.is_of_type(
-                idx=button.index, query={"view": "colored-led"}
+                idx=button.index, query={KW.VIEW.value: "colored-led"}
             ):  # .is_button(button):
                 logger.debug(f"..color led has no image")
                 continue

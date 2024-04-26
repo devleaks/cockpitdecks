@@ -6,19 +6,19 @@ driver: xtouchmini
 buttons:
   - name: 0
     action: push
-    view: led
+    feedback: led
     repeat: 16
   - name: 0
     prefix: e
     action: encoder-push
-    view: encoder-leds
+    feedback: encoder-leds
     repeat: 8
   - name: A
     action: push
-    view: led
+    feedback: led
   - name: B
     action: push
-    view: led
+    feedback: led
   - name: slider
     action: cursor
-    view: none
+    feedback: none

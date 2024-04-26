@@ -17,7 +17,7 @@ from cockpitdecks.resources.color import (
     add_ext,
     DEFAULT_COLOR,
 )
-from cockpitdecks import DECK_FEEDBACK, KW
+from cockpitdecks import KW, DECK_FEEDBACK
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -33,7 +33,12 @@ class Representation:
     Base class for all representations
     """
 
-    _required_deck_capability = DECK_FEEDBACK.NONE
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.NONE
+
+    @classmethod
+    def get_required_capability(cls) -> list | tuple:
+        r = cls.REQUIRED_DECK_FEEDBACKS
+        return r if type(r) in [list, tuple] else [r]
 
     def __init__(self, config: dict, button: "Button"):
         self._config = config
@@ -46,7 +51,17 @@ class Representation:
         self.init()
 
     def init(self):  # ~ABC
-        pass
+        if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
+            self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
+
+    def can_render(self) -> bool:
+        button_cap = self.button._def[KW.VIEW.value]
+        if button_cap not in self.REQUIRED_DECK_FEEDBACKS:
+            logger.warning(
+                f"button {self.button_name()} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}."
+            )
+            return False
+        return True
 
     def button_name(self):
         return self.button.name if self.button is not None else "no button"
@@ -101,7 +116,7 @@ class Representation:
 #
 class Icon(Representation):
 
-    _required_deck_capability = DECK_FEEDBACK.IMAGE
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
@@ -830,7 +845,7 @@ class MultiIcons(Icon):
 #
 class LED(Representation):
 
-    _required_deck_capability = DECK_FEEDBACK.LED
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.LED
 
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
@@ -856,7 +871,7 @@ class LED(Representation):
 
 class ColoredLED(Representation):
 
-    _required_deck_capability = DECK_FEEDBACK.COLORED_LED
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.COLORED_LED
 
     def __init__(self, config: dict, button: "Button"):
         self._color = config.get(
@@ -940,7 +955,7 @@ class MultiLEDs(Representation):
     Ring of 13 LEDs surrounding X-Touch Mini encoders
     """
 
-    _required_deck_capability = DECK_FEEDBACK.MULTI_LEDS
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.MULTI_LEDS
 
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)

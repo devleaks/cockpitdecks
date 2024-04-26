@@ -6,16 +6,16 @@ driver: loupedeck
 buttons:
   - name: 0
     action: push
-    view: image
+    feedback: image
     image: [90, 90, 0, 0]
     repeat: 12
   - name: left
     action: swipe
-    view: image
+    feedback: image
     image: [60, 270, 0, 0]
   - name: right
     action: swipe
-    view: image
+    feedback: image
     image: [60, 270, 420, 0]
   # Commented out, means center "image" is not accessible as a whole
   # only through its 12 constituing button...
@@ -23,15 +23,18 @@ buttons:
   #
   # - name: center
   #   action: swipe
-  #   view: image
+  #   feedback: image
   #   image: [360, 270, 60, 0]
   - name: 0
     prefix: e
     action: encoder-push
-    view: none
+    feedback: none
     repeat: 6
   - name: 0
     prefix: b
     action: push
-    view: colored-led
+    feedback: colored-led
     repeat: 8
+  - name: buzzer
+    action: none
+    feedback: vibrate
