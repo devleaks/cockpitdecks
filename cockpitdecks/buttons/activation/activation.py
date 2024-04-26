@@ -1088,7 +1088,7 @@ class EncoderOnOff(OnOff):
     """
 
     ACTIVATION_NAME = "encoder-onoff"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER_PUSH, DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
@@ -1190,6 +1190,8 @@ class EncoderValue(OnOff):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
+
+    ACTIVATION_NAME = "encoder-value"
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))

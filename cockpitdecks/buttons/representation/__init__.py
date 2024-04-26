@@ -40,18 +40,14 @@ logger = logging.getLogger(__name__)
 #   dataref: AirbusFBW/PopUpStateArray[4]
 #
 def all_subclasses(cls):
-
     if cls == type:
         raise ValueError("Invalid class - 'type' is not a class")
-
     subclasses = set()
-
     stack = []
     try:
         stack.extend(cls.__subclasses__())
     except (TypeError, AttributeError) as ex:
         raise ValueError("Invalid class" + repr(cls)) from ex
-
     while stack:
         sub = stack.pop()
         subclasses.add(sub)
@@ -59,7 +55,6 @@ def all_subclasses(cls):
             stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
         except (TypeError, AttributeError):
            continue
-
     return list(subclasses)
 
 try:
@@ -69,7 +64,7 @@ except ImportError:
     logger.warning(f"LiveWeatherIcon not installed")
 
 
-REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)}
+REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
 
 def get_representations_for(feedback: DECK_FEEDBACK):
     return [a for a in REPRESENTATIONS.values() if feedback in a.get_required_capability()]

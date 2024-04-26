@@ -4,7 +4,9 @@ from functools import reduce
 
 from cockpitdecks import KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks.buttons.activation import get_activations_for
+from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
+from cockpitdecks.buttons.representation.representation import Representation
 
 loggerButtonType = logging.getLogger("ButtonType")
 # loggerButtonType.setLevel(logging.DEBUG)
@@ -65,28 +67,28 @@ class ButtonType:
         return int(idx)
 
     def valid_activations(self) -> set:
-        ret = []
+        ret = [Activation]  # always valid
         for action in self.actions:
             ret = ret + get_activations_for(DECK_ACTIONS(action))
         return set([x.name() for x in ret if x is not None])  # remove duplicates, remove None
 
     def valid_representations(self) -> set:
-        ret = []
+        ret = [Representation]  # always valid
         for feedback in self.feedbacks:
             ret = ret + get_representations_for(DECK_FEEDBACK(feedback))
         return set([x.name() for x in ret if x is not None])  # remove duplicates, remove None
-
-    def can_activate(self, activation: str) -> bool:
-        return activation in self.valid_activations()
-
-    def can_represent(self, representation: str) -> bool:
-        return representation in self.valid_representations()
 
     def has_action(self, action: str) -> bool:
         return action in self.actions
 
     def has_feedback(self, feedback: str) -> bool:
         return feedback in self.feedbacks
+
+    def has_no_feedback(self) -> bool:
+        return (KW.NONE.value in self.feedbacks and len(self.feedbacks) == 1) or len(self.feedbacks) == 0
+
+    def can_activate(self, activation: str) -> bool:
+        return activation in self.valid_activations()
 
     def can_represent(self, representation: str) -> bool:
         return representation in self.valid_representations()
@@ -180,6 +182,8 @@ class DeckType(Config):
     def valid_activations(self, index):
         b = self.get_button_definition(index)
         if b is not None:
+            if index == "e4":
+                print(index, b.actions, b.valid_activations())
             return b.valid_activations()
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
@@ -188,6 +192,13 @@ class DeckType(Config):
         b = self.get_button_definition(index)
         if b is not None:
             return b.valid_representations()
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
+        return None
+
+    def has_no_feedback(self, index):
+        b = self.get_button_definition(index)
+        if b is not None:
+            return b.has_no_feedback()
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 

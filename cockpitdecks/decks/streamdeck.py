@@ -1,9 +1,11 @@
 # Elgato Streamdeck decks
 #
+import datetime
 import os
 import logging
 import time
 from math import floor
+from datetime import datetime
 from PIL import Image, ImageOps
 
 from StreamDeck.ImageHelpers import PILHelper
@@ -348,27 +350,36 @@ class Streamdeck(DeckWithIcons):
 
         idx = KW_TOUCHSCREEN
         logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
-        kstart = floor(int(value["x"]) / KEY_SIZE)
-        x2 = int(value["x_out"] if action == TouchscreenEventType.DRAG else value["x"])
-        kend = floor(x2 / KEY_SIZE)
-        event_dict = {
-            "begin_key": kstart,
-            "begin_x": int(value["x"]),
-            "begin_y": int(value["y"]),
-            "end_key": kend,
-            "end_x": x2,
-            "end_y": int(value["y_out"] if action == TouchscreenEventType.DRAG else value["y"]),
-            "diff_x": (value["x_out"] - value["x"] if action == TouchscreenEventType.DRAG else 0),
-            "diff_y": (value["y_out"] - value["y"] if action == TouchscreenEventType.DRAG else 0),
-            "same_key": kstart == kend,
-        }
-        logger.debug(f"Deck {deck.id()} Key {idx} = {event_dict}")
         if action == TouchscreenEventType.SHORT:
-            self.key_change_processing(deck, idx, event_dict)
+            event = TouchEvent(
+                deck=self,
+                button=idx,
+                pos_x=int(value["x"]),
+                pos_y=int(value["y"]),
+                start=datetime.now().timestamp(),
+                autorun=True
+            )
         elif action == TouchscreenEventType.LONG:
-            self.key_change_processing(deck, idx, event_dict)
+            event = TouchEvent(
+                deck=self,
+                button=idx,
+                pos_x=int(value["x"]),
+                pos_y=int(value["y"]),
+                start=datetime.now().timestamp(),
+                autorun=True
+            )
         elif action == TouchscreenEventType.DRAG:
-            self.key_change_processing(deck, idx, event_dict)
+            event = SwipeEvent(
+                deck=self,
+                button=idx,
+                start_pos_x=int(value["x"]),
+                start_pos_y=int(value["y"]),
+                start_ts=datetime.now().timestamp(),
+                end_pos_x=int(value["x_out"]),
+                end_pos_y=int(value["y_out"]),
+                end_ts=datetime.now().timestamp(),
+                autorun=True,
+            )
         else:
             logger.warning(f"deck {self.name}: invalid touchscreen action {action}")
 

@@ -94,7 +94,7 @@ class Button(DatarefListener, DatarefSetListener):
             self._activation = ACTIVATIONS[atype](config, self)
             logger.debug(f"button {self.name} activation {atype}")
         else:
-            logger.warning(f"button {self.name} has no activation defined, using default")
+            logger.info(f"button {self.name} has no activation defined, using default")
             self._activation = ACTIVATIONS["none"](config, self)
 
         self._representation = None
@@ -105,7 +105,7 @@ class Button(DatarefListener, DatarefSetListener):
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
-            logger.warning(f"button {self.name} has no representation defined, using default")
+            logger.info(f"button {self.name} has no representation defined, using default")
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
@@ -144,12 +144,9 @@ class Button(DatarefListener, DatarefSetListener):
     @staticmethod
     def guess_activation_type(config):
         a = config.get(KW.TYPE.value)
-        if a is None:
+        if a is None or a == KW.NONE.value:
             logger.debug(f"not type attribute, assuming 'none' type")
-            a = KW.NONE.value
-        if a not in ACTIVATIONS.keys():
-            logger.warning(f"invalid activation type {a} in {config}")
-            return None
+            return KW.NONE.value
         return a
 
     @staticmethod
@@ -161,9 +158,9 @@ class Button(DatarefListener, DatarefSetListener):
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
-            logger.warning(f"no representation in {config}")
+            logger.debug(f"no representation in {config}")
         else:
-            logger.warning(f"multiple representation {a} in {config}")
+            logger.debug(f"multiple representation {a} in {config}")
         return KW.NONE.value
 
     def button_name(self):
