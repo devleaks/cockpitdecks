@@ -141,5 +141,5 @@ DECK_REPRESENTATIONS = {
 
 def get_representations_for(feedback: DECK_FEEDBACK):
     return [
-        a for a in REPRESENTATIONS.values() if feedback in a.REQUIRED_DECK_FEEDBACKS
+        a for a in REPRESENTATIONS.values() if feedback in a.get_required_capability()
     ]

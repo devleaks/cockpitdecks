@@ -7,8 +7,11 @@ from cockpitdecks import DECK_ACTIONS, DECK_FEEDBACK, KW, Config
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.representation import get_representations_for
 
+loggerButtonType = logging.getLogger("ButtonType")
+# loggerButtonType.setLevel(logging.DEBUG)
+
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class ButtonType:
@@ -46,18 +49,20 @@ class ButtonType:
         except ValueError:
             self._name_is_int = False
 
+        loggerButtonType.debug(f"{self.name}: {self.valid_representations()}")
+
     def valid_indices(self) -> list:
         if self.repeat == 0:
             return [self.prefix + self.name]
         if self._name_is_int:
             start = self.name
             return [self.prefix + str(i) for i in range(start, start + self.repeat)]
-        logger.warning(f"button type {self.name} cannot repeat from {self.name}")
+        loggerButtonType.warning(f"button type {self.name} cannot repeat from {self.name}")
         return [self.name]
 
     def numeric_index(self, idx) -> int:
         if not self._name_is_int:
-            logger.warning(f"button index {idx} is not numeric")
+            loggerButtonType.warning(f"button index {idx} is not numeric")
         if self.prefix == "":
             return int(idx)
         if idx.startswith(self.prefix):

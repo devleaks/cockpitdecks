@@ -98,15 +98,16 @@ def get_activations_for(action: DECK_ACTIONS):
     # trick: *simultaneous* actions are in same word, "-" separated, example encoder-push.
     DASH = "-"
     if DASH in action.value:
-        actions = action.split(DASH)
+        actions = action.value.split(DASH)
         ret = []
         for a in ACTIVATIONS.values():
             ok = True
-            for act in actions:
-                if act not in a.REQUIRED_DECK_ACTIONS:
+            for actstr in actions:
+                act = DECK_ACTIONS(actstr)
+                if act not in a.get_required_capability():
                     ok = False
             if ok:
                 ret.append(a)
         return ret
 
-    return [a for a in ACTIVATIONS.values() if action in a.REQUIRED_DECK_ACTIONS]
+    return [a for a in ACTIVATIONS.values() if action in a.get_required_capability()]

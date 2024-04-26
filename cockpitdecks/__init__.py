@@ -1,4 +1,3 @@
-# ##########################################################################
 #
 # C O C K P I T D E C K S
 #
@@ -159,10 +158,10 @@ class KW(Enum):
 # deck type action capabilities
 class DECK_ACTIONS(Enum):
     NONE = "none"
+    CURSOR = "cursor"
     ENCODER = "encoder"  # turn with clicks or stops
     ENCODER_PUSH = "encoder-push"  # requires turn and push *at the same time*
     PUSH = "push"  # push, press
-    SLIDE = "slide"
     SWIPE = "swipe"
 
 
@@ -172,6 +171,7 @@ class DECK_FEEDBACK(Enum):
     COLORED_LED = "colored-led"
     IMAGE = "image"
     LED = "led"
+    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
     MULTI_LEDS = "multi-leds"
     SOUND = "sound"
     VIBRATE = "vibrate"

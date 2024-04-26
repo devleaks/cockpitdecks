@@ -1562,7 +1562,7 @@ class Slider(Activation):  # Cursor?
     A Encoder that can turn left/right.
     """
 
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SLIDE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.CURSOR
 
     SLIDER_MAX = 8064
     SLIDER_MIN = -8192

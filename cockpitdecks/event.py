@@ -169,7 +169,7 @@ class EncoderEvent(DeckEvent):
 
 
 class SlideEvent(DeckEvent):
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SLIDE
+    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.CURSOR
 
     def __init__(self, deck: "Deck", button: str, value: int, autorun: bool = False):
         """Event when sliding or rotation cursor value has changed..

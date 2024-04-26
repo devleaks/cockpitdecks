@@ -6,7 +6,7 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks import DEFAULT_PAGE_NAME, KW
+from cockpitdecks import DECK_ACTIONS, DEFAULT_PAGE_NAME, KW
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.event import PushEvent, EncoderEvent, SlideEvent
@@ -75,11 +75,11 @@ class XTouchMini(Deck):
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
 
-        bdef = self.deck_type.filter({"action": "encoder-push"})
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER_PUSH.value})
         prefix = bdef[0].get(KW.PREFIX.value)
 
-        bdef = self.deck_type.filter({"action": "cursor"})
-        SLIDER = bdef[0].get(KW.NAME.value)
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
+        cursor = bdef[0].get(KW.NAME.value)
 
         KEY_MAP = {v: k for k, v in MAKIE_MAPPING.items()}
 
@@ -95,7 +95,7 @@ class XTouchMini(Deck):
             state1 = state == 1
             event = PushEvent(deck=self, button=key1, pressed=state == state1)
         elif key == 8:  # slider
-            key1 = SLIDER
+            key1 = cursor
             state1 = int(state)
             event = SlideEvent(deck=self, button=key1, value=state1)
         else:  # push a button
@@ -152,8 +152,8 @@ class XTouchMini(Deck):
             logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return
         bdef = self.deck_type.filter({"action": "cursor"})
-        SLIDER = bdef[0].get(KW.NAME.value)
-        if str(button.index) == SLIDER:
+        cursor = bdef[0].get(KW.NAME.value)
+        if str(button.index) == cursor:
             logger.debug(f"button type {button.index} has no representation")
             return
 
