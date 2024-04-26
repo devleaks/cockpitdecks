@@ -27,12 +27,14 @@ class Activation:
     Base class for all activation mechanism.
     Can be used for no-operation activation on display-only button.
     """
-
-    REQUIRED_DECK_ACTIONS: List[DECK_ACTIONS] = (
-        DECK_ACTIONS.NONE
-    )  # List of deck capabilities required to do the activation
+    ACTIVATION_NAME = "none"
+    REQUIRED_DECK_ACTIONS: List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
     # One cannot request an activiation from a deck button that does not have the capability of the action
     # requested by the activation.
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.ACTIVATION_NAME
 
     @classmethod
     def get_required_capability(cls) -> list | tuple:
@@ -42,9 +44,7 @@ class Activation:
     def __init__(self, config: dict, button: "Button"):
         self._config = config
         self.button = button
-        self._has_no_value = (
-            False  # Marker that control whether activation has a feedback value
-        )
+        self._has_no_value = False  # Marker that control whether activation has a feedback value
         self._inited = False
 
         self.button.deck.cockpit.set_logging_level(__name__)
@@ -52,13 +52,9 @@ class Activation:
         # Options
 
         # Commands
-        self._view = Command(
-            path=config.get(KW.VIEW.value)
-        )  # Optional additional command, usually to set a view
+        self._view = Command(path=config.get(KW.VIEW.value))  # Optional additional command, usually to set a view
         # but could be anything.
-        self._long_press = Command(
-            path=config.get("long-press")
-        )  # Optional additional command
+        self._long_press = Command(path=config.get("long-press"))  # Optional additional command
         # Datarefs
         self.writable_dataref = config.get("set-dataref")
 
@@ -73,9 +69,7 @@ class Activation:
         self.initial_value = config.get("initial-value")
 
         # Vibrate on press
-        self.vibrate = config.get(
-            "vibrate", button.get_attribute("default-vibrate", silence=True)
-        )
+        self.vibrate = config.get("vibrate", button.get_attribute("default-vibrate", silence=True))
 
         self.init()
 
@@ -84,7 +78,7 @@ class Activation:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
 
     def can_handle(self, event) -> bool:
-        if event.action not in self.REQUIRED_DECK_ACTIONS:
+        if event.action not in self.get_required_capability():
             logger.warning(
                 f"button {self.button_name()}: invalid event received {type(event).__name__}, action {event.action}, expected {self.REQUIRED_DECK_ACTIONS}"
             )
@@ -122,13 +116,9 @@ class Activation:
 
             now = datetime.now().timestamp()
             self.last_activated = now
-            self._fast = (
-                now - self.last_activated
-            )  # time between previous activation and this one
+            self._fast = now - self.last_activated  # time between previous activation and this one
 
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__} activated"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} activated")
 
             # Guard handling
             if self.button.is_guarded():
@@ -145,28 +135,18 @@ class Activation:
             if self.button.is_guarded():
                 if self.long_pressed():
                     self._write_dataref(self.button.guarded, 1)  # just open it
-                    logger.debug(
-                        f"button {self.button_name()}: {type(self).__name__}: guard removed"
-                    )
+                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
                 return
 
-            if (
-                self.button.guard is not None
-                and not self.button.is_guarded()
-                and self.long_pressed()
-            ):
+            if self.button.guard is not None and not self.button.is_guarded() and self.long_pressed():
                 self._write_dataref(self.button.guarded, 0)  # close it
-                logger.debug(
-                    f"button {self.button_name()}: {type(self).__name__}: guard replaced"
-                )
+                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
                 return
 
             # Long press handling
             if self.has_long_press() and self.long_pressed():
                 self.long_press(event)
-                logger.debug(
-                    f"button {self.button_name()}: {type(self).__name__}: long pressed"
-                )
+                logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
                 return
 
         # logger.debug(f"{type(self).__name__} activated ({event}, {self.activation_count})")
@@ -195,13 +175,9 @@ class Activation:
         """
         if dataref is not None:
             self.button.sim.write_dataref(dataref=dataref, value=value, vtype="float")
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
         else:
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__} has no set-dataref"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} has no set-dataref")
 
     def write_dataref(self, value: float):
         """
@@ -211,9 +187,7 @@ class Activation:
         self._write_dataref(self.writable_dataref, value)
 
     def __str__(self):  # print its status
-        return ", ".join(
-            [type(self).__name__, f"activation-count: {self.activation_count}"]
-        )
+        return ", ".join([type(self).__name__, f"activation-count: {self.activation_count}"])
 
     def command(self, command=None):
         if command is None:
@@ -256,9 +230,7 @@ class Activation:
             "current_value": self.activation_count,  # !
             "all_activations": self.activations_count,
             "last_activated": self.last_activated,
-            "last_activated_dt": datetime.fromtimestamp(
-                self.last_activated
-            ).isoformat(),
+            "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
             "writable_dataref": self.writable_dataref,
         }
@@ -280,6 +252,7 @@ class LoadPage(Activation):
     Defines a Page change activation.
     """
 
+    ACTIVATION_NAME = "page"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     KW_BACKPAGE = "back"
@@ -289,16 +262,12 @@ class LoadPage(Activation):
         self._has_no_value = True
 
         # Commands
-        self.page = config.get(
-            "page", LoadPage.KW_BACKPAGE
-        )  # default is to go to previously loaded page, if any
+        self.page = config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = config.get("deck")
 
     def is_valid(self):
         if self.page is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} has no page"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no page")
             return False
         return super().is_valid()
 
@@ -325,11 +294,7 @@ class LoadPage(Activation):
         """
         Describe what the button does in plain English
         """
-        deck = (
-            f"deck {self.remote_deck}"
-            if self.remote_deck is not None
-            else "the current deck"
-        )
+        deck = f"deck {self.remote_deck}" if self.remote_deck is not None else "the current deck"
         return "\n\r".join([f"The button loads page {self.page} on {deck}."])
 
 
@@ -338,6 +303,7 @@ class Reload(Activation):
     Reloads all decks.
     """
 
+    ACTIVATION_NAME = "reload"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -355,11 +321,7 @@ class Reload(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join(
-            [
-                f"The button reloads all decks and tries to reload the page that was displayed."
-            ]
-        )
+        return "\n\r".join([f"The button reloads all decks and tries to reload the page that was displayed."])
 
 
 class ChangeTheme(Activation):
@@ -367,6 +329,7 @@ class ChangeTheme(Activation):
     Reloads all decks.
     """
 
+    ACTIVATION_NAME = "theme"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -387,11 +350,7 @@ class ChangeTheme(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join(
-            [
-                f"The button switches between dark and light (night and day) themes and reload pages."
-            ]
-        )
+        return "\n\r".join([f"The button switches between dark and light (night and day) themes and reload pages."])
 
 
 class Inspect(Activation):
@@ -399,6 +358,7 @@ class Inspect(Activation):
     Inspect all decks.
     """
 
+    ACTIVATION_NAME = "inspect"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -424,11 +384,7 @@ class Inspect(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join(
-            [
-                f"The button displays '{self.what}' information about each cockpit, deck, page and/or button."
-            ]
-        )
+        return "\n\r".join([f"The button displays '{self.what}' information about each cockpit, deck, page and/or button."])
 
 
 class Stop(Activation):
@@ -436,6 +392,7 @@ class Stop(Activation):
     Stops all decks.
     """
 
+    ACTIVATION_NAME = "stop"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -453,9 +410,7 @@ class Stop(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join(
-            [f"The button stops Cockpitdecks and terminates gracefully."]
-        )
+        return "\n\r".join([f"The button stops Cockpitdecks and terminates gracefully."])
 
 
 #
@@ -469,6 +424,7 @@ class Push(Activation):
     The supplied command is executed each time a button is pressed.
     """
 
+    ACTIVATION_NAME = "push"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     # Default values
@@ -500,11 +456,7 @@ class Push(Activation):
                 self.onoff_current_value = self.initial_value != 0
 
     def __str__(self):  # print its status
-        return (
-            super()
-            + "\n"
-            + ", ".join([f"command: {self._command}", f"is_valid: {self.is_valid()}"])
-        )
+        return super() + "\n" + ", ".join([f"command: {self._command}", f"is_valid: {self.is_valid()}"])
 
     def set_auto_repeat(self):
         if not self.auto_repeat:
@@ -536,23 +488,15 @@ class Push(Activation):
         value = self.button.get_current_value()
         if value is not None:
             if type(value) in [dict, tuple]:  # gets its value from internal state
-                self.onoff_current_value = (
-                    not self.onoff_current_value
-                    if self.onoff_current_value is not None
-                    else False
-                )
+                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
             elif type(value) == bool:  # expect bool or number... (no check for number)
                 self.onoff_current_value = value
             else:
-                self.onoff_current_value = (
-                    self.initial_value != 0
-                )  # @todo: fails if not number...
+                self.onoff_current_value = self.initial_value != 0  # @todo: fails if not number...
             logger.debug(f"button {self.button_name()} is {self.onoff_current_value}")
         else:
             self.onoff_current_value = self.activation_count % 2 == 1
-            logger.debug(
-                f"button {self.button_name()} is {self.onoff_current_value} from internal state"
-            )
+            logger.debug(f"button {self.button_name()} is {self.onoff_current_value} from internal state")
 
         return self.onoff_current_value
 
@@ -561,9 +505,7 @@ class Push(Activation):
 
     def is_valid(self):
         if self._command is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} has no command"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no command")
             return False
         return super().is_valid()
 
@@ -572,9 +514,7 @@ class Push(Activation):
             return
         super().activate(event)
         if event.pressed:
-            if (
-                not self.has_long_press()
-            ):  # we don't have to wait for the release to trigger the command
+            if not self.has_long_press():  # we don't have to wait for the release to trigger the command
                 self.command()
             if self.auto_repeat and self.exit is None:
                 self.auto_repeat_start()
@@ -640,6 +580,7 @@ class Longpress(Push):
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
 
+    ACTIVATION_NAME = "long-press"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -680,6 +621,7 @@ class OnOff(Activation):
     On or Off status is determined by the number of time a button is pressed.
     """
 
+    ACTIVATION_NAME = "onoff"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -701,26 +643,16 @@ class OnOff(Activation):
                 dict,
                 tuple,
             ]:  # dataref, gets its value from internal state
-                self.onoff_current_value = (
-                    not self.onoff_current_value
-                    if self.onoff_current_value is not None
-                    else False
-                )
+                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
             else:
                 self.onoff_current_value = value
-            logger.debug(
-                f"button {self.button_name()} initialized on/off at {self.onoff_current_value}"
-            )
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value}")
         elif self.initial_value is not None:
-            if (
-                type(self.initial_value) == bool
-            ):  # expect bool or number... (no check for number)
+            if type(self.initial_value) == bool:  # expect bool or number... (no check for number)
                 self.onoff_current_value = self.initial_value
             else:
                 self.onoff_current_value = self.initial_value != 0
-            logger.debug(
-                f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value"
-            )
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
         if self.onoff_current_value is not None:
             self._inited = True
         # self.onoff_current_value can still be None here...
@@ -744,14 +676,10 @@ class OnOff(Activation):
     def is_valid(self):
         if self.num_commands() > 0:
             if self.num_commands() < 2:
-                logger.error(
-                    f"button {self.button_name()}: {type(self).__name__} must have at least two commands"
-                )
+                logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands")
                 return False
         elif self.writable_dataref is None:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         return super().is_valid()
 
@@ -759,11 +687,7 @@ class OnOff(Activation):
         value = self.button.get_current_value()
         if value is not None:
             if type(value) in [dict, tuple]:  # gets its value from internal state
-                self.onoff_current_value = (
-                    not self.onoff_current_value
-                    if self.onoff_current_value is not None
-                    else False
-                )
+                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
             elif type(value) == bool:
                 self.onoff_current_value = value
             elif type(value) in [int, float]:
@@ -773,16 +697,12 @@ class OnOff(Activation):
                 else:  # option bool or binary
                     self.onoff_current_value = value != 0
             else:
-                logger.debug(
-                    f"button {self.button_name()} has special value ({value}), using internal state"
-                )
+                logger.debug(f"button {self.button_name()} has special value ({value}), using internal state")
                 self.onoff_current_value = self.activation_count % 2 == 1
             logger.debug(f"button {self.button_name()} is {self.onoff_current_value}")
         else:
             self.onoff_current_value = self.activation_count % 2 == 1
-            logger.debug(
-                f"button {self.button_name()} is {self.onoff_current_value} from internal state"
-            )
+            logger.debug(f"button {self.button_name()} is {self.onoff_current_value} from internal state")
         return self.onoff_current_value
 
     def is_off(self):
@@ -825,13 +745,9 @@ class OnOff(Activation):
             a.append(f"The button writes its value in dataref {self.writable_dataref}.")
 
         if self.button.has_external_value():
-            a.append(
-                f"The button gets its current value from its button value (dataref, or formula)."
-            )
+            a.append(f"The button gets its current value from its button value (dataref, or formula).")
         else:
-            a.append(
-                f"The button gets its current value from an internal counter that increases by 1 each time it is pressed."
-            )
+            a.append(f"The button gets its current value from an internal counter that increases by 1 each time it is pressed.")
 
         a.append(f"The current value is {'ON' if self.is_on() else 'OFF'}.")
         return "\n\r".join(a)
@@ -845,6 +761,7 @@ class UpDown(Activation):
     another one when the value decreases.
     """
 
+    ACTIVATION_NAME = "updown"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -873,24 +790,18 @@ class UpDown(Activation):
             elif self.stop_current_value <= 0:
                 self.stop_current_value = 0
                 self.go_up = True
-            logger.debug(
-                f"button {self.button_name()} initialized stop at {self.stop_current_value}"
-            )
+            logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value}")
         elif self.initial_value is not None:
             if is_integer(self.initial_value):
                 value = abs(self.initial_value)
                 if value > self.stops - 1:
-                    logger.warning(
-                        f"button {self.button_name()} initial value {value} too large. Set to {self.stops - 1}."
-                    )
+                    logger.warning(f"button {self.button_name()} initial value {value} too large. Set to {self.stops - 1}.")
                     value = self.stops - 1
                 if self.initial_value < 0:
                     self.go_up = False  # reverse direction
                 self.initial_value = value
                 self.stop_current_value = value
-            logger.debug(
-                f"button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value"
-            )
+            logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value")
         if self.stop_current_value is not None:
             self._inited = True
 
@@ -913,19 +824,13 @@ class UpDown(Activation):
     def is_valid(self):
         if self.num_commands() > 0:
             if self.num_commands() < 2:
-                logger.error(
-                    f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands"
-                )
+                logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
                 return False
         elif self.writable_dataref is None:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         if self.stops is None or self.stops == 0:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have a number of stops"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a number of stops")
             return False
         return super().is_valid()
 
@@ -969,21 +874,13 @@ class UpDown(Activation):
         """
         a = []
         if self._commands is not None and len(self._commands) > 1:
-            a.append(
-                f"The button executes command {self._commands[0]} when it increases its current value."
-            )
-            a.append(
-                f"The button executes command {self._commands[1]} when it decreases its current value."
-            )
+            a.append(f"The button executes command {self._commands[0]} when it increases its current value.")
+            a.append(f"The button executes command {self._commands[1]} when it decreases its current value.")
         a.append(f"The button does nothing when it is de-activated (released).")
         if self.writable_dataref is not None:
             a.append(f"The button writes its value in dataref {self.writable_dataref}.")
-        a.append(
-            f"The button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed."
-        )
-        a.append(
-            f"The current value is {self.stop_current_value}. Value will {'increase' if self.go_up else 'decrease'}"
-        )
+        a.append(f"The button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed.")
+        a.append(f"The current value is {self.stop_current_value}. Value will {'increase' if self.go_up else 'decrease'}")
         return "\n\r".join(a)
 
 
@@ -1006,6 +903,7 @@ class Encoder(Activation):
     another command is executed the encoder is turned counter-clockwise one step.
     """
 
+    ACTIVATION_NAME = "encoder"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
     def __init__(self, config: dict, button: "Button"):
@@ -1024,9 +922,7 @@ class Encoder(Activation):
 
     def is_valid(self):
         if self.num_commands() < 2:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
             return False
         return super().is_valid()
 
@@ -1043,9 +939,7 @@ class Encoder(Activation):
             self._turns = self._turns - 1
             self._ccw = self._ccw + 1
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
 
     def get_status(self):
         a = super().get_status()
@@ -1081,6 +975,7 @@ class EncoderPush(Push):
     Command 3: Executed when turned counter-clockwise and pushed simultaneously
     """
 
+    ACTIVATION_NAME = "encoder-push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
@@ -1091,9 +986,7 @@ class EncoderPush(Push):
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have at least one command"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least one command")
 
         self.longpush = self.button.has_option("longpush")
 
@@ -1107,14 +1000,10 @@ class EncoderPush(Push):
 
     def is_valid(self):
         if self.longpush and self.num_commands() != 4:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} must have 4 commands for longpush mode"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 4 commands for longpush mode")
             return False
         elif not self.longpush and self.num_commands() != 3:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} must have 3 commands"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 3 commands")
             return False
         return True  # super().is_valid()
 
@@ -1148,9 +1037,7 @@ class EncoderPush(Push):
             else:
                 self.command(self._commands[2])
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} invalid event {event}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
     def get_status(self):
         a = super().get_status()
@@ -1200,6 +1087,7 @@ class EncoderOnOff(OnOff):
     Sixth command: Executed when turned counter-clockwise and OFF
     """
 
+    ACTIVATION_NAME = "encoder-onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
@@ -1217,14 +1105,10 @@ class EncoderOnOff(OnOff):
 
     def is_valid(self):
         if self.dual and self.num_commands() != 6:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} must have 6 commands for dual mode"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 6 commands for dual mode")
             return False
         elif not self.dual and self.num_commands() != 4:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} must have 4 commands"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 4 commands")
             return False
         return True  # super().is_valid()
 
@@ -1327,22 +1211,16 @@ class EncoderValue(OnOff):
         value = self.button.get_current_value()
         if value is not None:
             self.encoder_current_value = value
-            logger.debug(
-                f"button {self.button_name()} initialized on/off at {self.encoder_current_value}"
-            )
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.encoder_current_value}")
         elif self.initial_value is not None:
             self.encoder_current_value = self.initial_value
-            logger.debug(
-                f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value"
-            )
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
         if self.encoder_current_value is not None:
             self._inited = True
 
     def is_valid(self):
         if self.writable_dataref is None:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
 
@@ -1426,9 +1304,9 @@ class EncoderValueExtended(OnOff):
         self._ccw = 0
         self.encoder_current_value = float(config.get("initial-value", 1))
         self._step_mode = self.step
-        self._local_dataref = "data:" + config.get(
-            "dataref", None
-        )  # local dataref to write to
+        self._local_dataref = config.get("dataref", None)
+        if self._local_dataref is not None:
+            self._local_dataref = "data:" + self._local_dataref # local dataref to write to
 
         OnOff.__init__(self, config=config, button=button)
 
@@ -1438,22 +1316,16 @@ class EncoderValueExtended(OnOff):
         value = self.button.get_current_value()
         if value is not None:
             self.encoder_current_value = value
-            logger.debug(
-                f"button {self.button_name()} initialized on/off at {self.encoder_current_value}"
-            )
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.encoder_current_value}")
         elif self.initial_value is not None:
             self.encoder_current_value = self.initial_value
-            logger.debug(
-                f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value"
-            )
+            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
         if self.encoder_current_value is not None:
             self._inited = True
 
     def decrease(self, x):
         if self.options == "modulo":
-            new_x = (x - self._step_mode - self.value_min) % (
-                self.value_max - self.value_min + 1
-            ) + self.value_min
+            new_x = (x - self._step_mode - self.value_min) % (self.value_max - self.value_min + 1) + self.value_min
             return new_x
         else:
             x = x - self._step_mode
@@ -1463,9 +1335,7 @@ class EncoderValueExtended(OnOff):
 
     def increase(self, x):
         if self.options == "modulo":
-            new_x = (x + self._step_mode - self.value_min) % (
-                self.value_max - self.value_min + 1
-            ) + self.value_min
+            new_x = (x + self._step_mode - self.value_min) % (self.value_max - self.value_min + 1) + self.value_min
             return new_x
         else:
             x = x + self._step_mode
@@ -1475,9 +1345,7 @@ class EncoderValueExtended(OnOff):
 
     def is_valid(self):
         if self.writable_dataref is None:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
 
@@ -1511,9 +1379,7 @@ class EncoderValueExtended(OnOff):
             self._cw = self._cw + 1
         elif self.has_long_press() and self.long_pressed():
             self.long_press(event)
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__}: long pressed"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
             return
 
         if ok:
@@ -1562,6 +1428,7 @@ class Slider(Activation):  # Cursor?
     A Encoder that can turn left/right.
     """
 
+    ACTIVATION_NAME = "slider"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.CURSOR
 
     SLIDER_MAX = 8064
@@ -1580,26 +1447,20 @@ class Slider(Activation):  # Cursor?
 
     def is_valid(self):
         if self.writable_dataref is None:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
 
     def activate(self, event):
         if not self.can_handle(event):
             return
-        frac = abs(event.value - Slider.SLIDER_MAX) / (
-            Slider.SLIDER_MAX - Slider.SLIDER_MIN
-        )
+        frac = abs(event.value - Slider.SLIDER_MAX) / (Slider.SLIDER_MAX - Slider.SLIDER_MIN)
         if self.value_step != 0:
             nstep = (self.value_max - self.value_min) / self.value_step
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
         self.write_dataref(value)
-        logger.debug(
-            f"button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}"
-        )
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
 
     def describe(self):
         """
@@ -1624,6 +1485,7 @@ class Swipe(Activation):
     A Encoder that can turn left/right.
     """
 
+    ACTIVATION_NAME = "swipe"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
     def __init__(self, config: dict, button: "Button"):
@@ -1658,6 +1520,7 @@ class EncoderToggle(Activation):
     Command 3: Executed when turned counter-clockwise
     """
 
+    ACTIVATION_NAME = "encoder-toggle"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER_PUSH
 
     def __init__(self, config: dict, button: "Button"):
@@ -1668,9 +1531,7 @@ class EncoderToggle(Activation):
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:
-            logger.error(
-                f"button {self.button_name()}: {type(self).__name__} must have at least one command"
-            )
+            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least one command")
 
         # Internal status
         self._turns = 0
@@ -1685,9 +1546,7 @@ class EncoderToggle(Activation):
 
     def is_valid(self):
         if self.num_commands() != 4:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} must have 4 commands"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} must have 4 commands")
             return False
         return True  # super().is_valid()
 
@@ -1702,9 +1561,7 @@ class EncoderToggle(Activation):
         elif event.pressed and not self._on:
             self._on = True
 
-        if (
-            event.turned_counter_clockwise and not self.is_pressed()
-        ):  # rotate anti clockwise
+        if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
             if self._on:
                 self.command(self._commands[0])
             else:
@@ -1716,9 +1573,7 @@ class EncoderToggle(Activation):
             else:
                 self.command(self._commands[3])
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} invalid event {event}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
     def get_status(self):
         a = super().get_status()

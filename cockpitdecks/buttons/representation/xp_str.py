@@ -15,6 +15,9 @@ logger.setLevel(logging.DEBUG)
 
 
 class StringIcon(DrawBase, DatarefSetListener):
+
+    REPRESENTATION_NAME = "icon-string"
+
     def __init__(self, config: dict, button: "Button"):
         self.name = type(self).__name__
         self._inited = False
@@ -31,9 +34,7 @@ class StringIcon(DrawBase, DatarefSetListener):
     def dataref_collection_changed(self, dataref_collection):
         # logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} changed")
         if dataref_collection.is_completed():
-            logger.debug(
-                f"button {self.button.name}: dataref collection {dataref_collection.name} changed"
-            )
+            logger.debug(f"button {self.button.name}: dataref collection {dataref_collection.name} changed")
             currstr = dataref_collection.as_string()
             if currstr != self.text.get(dataref_collection.name):
                 self.text[dataref_collection.name] = currstr
@@ -61,18 +62,12 @@ class StringIcon(DrawBase, DatarefSetListener):
         if not self.is_updated() and self._cached is not None:
             return self._cached
 
-        image, draw = self.double_icon(
-            width=ICON_SIZE, height=ICON_SIZE
-        )  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self._strconfig, "text")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._strconfig, "text")
 
-        text = (
-            "\n".join(self.text.values()) if len(self.text) > 0 else self.text_default
-        )
+        text = "\n".join(self.text.values()) if len(self.text) > 0 else self.text_default
 
         font = self.get_font(text_font, text_size)
         w = image.width / 2
@@ -92,9 +87,7 @@ class StringIcon(DrawBase, DatarefSetListener):
         elif text_position[1] == "b":
             h = image.height - inside - text_size / 2
         # logger.debug(f"position {(w, h)}")
-        draw.multiline_text(
-            (w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color
-        )  # (image.width / 2, 15)
+        draw.multiline_text((w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color)  # (image.width / 2, 15)
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(

@@ -77,6 +77,8 @@ logger.setLevel(logging.DEBUG)
 class FMAIcon(DrawAnimation):
     """ """
 
+    REPRESENTATION_NAME = "fma"
+
     def __init__(self, config: dict, button: "Button"):
         DrawAnimation.__init__(self, config=config, button=button)
 
@@ -84,9 +86,7 @@ class FMAIcon(DrawAnimation):
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
         self.icon_color = "black"
-        self.text = {
-            k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS
-        }  # use FMA_LINES for testing
+        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS}  # use FMA_LINES for testing
         self.previous_text: Dict[str, str] = {}
         self.boxed: List[str] = []
         self._cached = None  # cached icon
@@ -100,14 +100,10 @@ class FMAIcon(DrawAnimation):
             fma = 1
         fma = int(fma)
         if fma < 1:
-            logger.warning(
-                f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range"
-            )
+            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = 1
         if fma > FMA_COUNT:
-            logger.warning(
-                f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range"
-            )
+            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = FMA_COUNT
         self.fma_idx = fma - 1
 
@@ -120,9 +116,7 @@ class FMAIcon(DrawAnimation):
         self.fma_text_lock = threading.RLock()
 
         self.socket = None
-        self.socket = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
-        )
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         # Allow multiple sockets to use the same PORT number
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         # Bind to the port that we know will receive multicast data
@@ -148,15 +142,12 @@ class FMAIcon(DrawAnimation):
             return self
         candidates = list(
             filter(
-                lambda m: isinstance(m._representation, FMAIcon)
-                and m._representation.is_master_fma(),
+                lambda m: isinstance(m._representation, FMAIcon) and m._representation.is_master_fma(),
                 self.button.page.buttons.values(),
             )
         )
         if len(candidates) == 1:
-            logger.debug(
-                f"button {self.button.name}: master FMA is {candidates[0].name}, fma={candidates[0]._representation.fma_idx}"
-            )
+            logger.debug(f"button {self.button.name}: master FMA is {candidates[0].name}, fma={candidates[0]._representation.fma_idx}")
             return candidates[0]._representation
         if len(candidates) == 0:
             logger.warning(f"button {self.button.name}: no master FMA found")
@@ -201,13 +192,9 @@ class FMAIcon(DrawAnimation):
                             src_cnt = src_cnt + 1
                             self.collector_avgtime = src_tot / src_cnt
                             if src_cnt % 100 == 0:
-                                logger.info(
-                                    f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}"
-                                )
+                                logger.info(f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}")
                         src_last_ts = ts
-                    self.fma_text = {
-                        k[-2:]: v for k, v in data.items()
-                    }  # this is to adjust to older algorithm...
+                    self.fma_text = {k[-2:]: v for k, v in data.items()}  # this is to adjust to older algorithm...
                 # logger.debug(f"from {addr} at {ts}: data: {self.text}")
         self.collect_fma = None
         logger.debug("..FMA collector terminated")
@@ -223,9 +210,7 @@ class FMAIcon(DrawAnimation):
             with self.fma_text_lock:
                 self.text = self.fma_text.copy()
             self.button.render()
-            time.sleep(
-                max(FMA_UPDATE_FREQ, self.collector_avgtime)
-            )  # autotune update frequency
+            time.sleep(max(FMA_UPDATE_FREQ, self.collector_avgtime))  # autotune update frequency
         self.update_fma = None
         logger.debug("..FMA updater terminated")
 
@@ -268,9 +253,7 @@ class FMAIcon(DrawAnimation):
         if self.collect_fma is not None and self.fma_thread is not None:
             self.collect_fma.set()
             logger.debug("stopping FMA collector..")
-            logger.debug(
-                f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout).."
-            )
+            logger.debug(f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
             self.fma_thread.join(FMA_SOCKET_TIMEOUT)
             if self.fma_thread.is_alive():
                 logger.warning("..thread may hang in socket.recvfrom()..")
@@ -339,9 +322,7 @@ class FMAIcon(DrawAnimation):
                         # extract
                         m = v[s:e]
                         if len(m) != l:
-                            logger.warning(
-                                f"string '{m}' len {len(m)} has wrong size (should be {l})"
-                            )
+                            logger.warning(f"string '{m}' len {len(m)} has wrong size (should be {l})")
                         if (c + m) != empty:  # if good == empty and
                             good = str(li) + k[1] + m
                             lines.append(good)
@@ -359,15 +340,11 @@ class FMAIcon(DrawAnimation):
         if not self.is_updated() and self._cached is not None:
             return self._cached
 
-        image, draw = self.double_icon(
-            width=ICON_SIZE, height=ICON_SIZE
-        )  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fmaconfig, "text")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
 
         self.check_boxed()
         lines = self.get_fma_lines()
@@ -388,9 +365,7 @@ class FMAIcon(DrawAnimation):
                 h = image.height - inside - text_size
             # logger.debug(f"position {(w, h)}")
             color = FMA_COLORS[text[1]]
-            draw.text(
-                (w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color
-            )
+            draw.text((w, h), text=text[2:], font=font, anchor=p + "m", align=a, fill=color)
             ref = f"{self.fma_idx+1}{idx+1}"
             if ref in self.boxed:
                 draw.rectangle(
@@ -442,9 +417,7 @@ class FMAIcon(DrawAnimation):
         inside = round(0.04 * image.height + 0.5)
 
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fmaconfig, "text")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
         logger.debug(f"button {self.button.name}: is FMA master")
 
         icon_width = int(8 * ICON_SIZE / 5)
@@ -522,9 +495,7 @@ class FMAIcon(DrawAnimation):
                     #
                     currline = text[:2]
                     if (i == 1 or i == 2) and currline in ["3a", "3w"]:
-                        wmsg = self.text[currline][
-                            FMA_COLUMNS[1][0] : FMA_COLUMNS[2][1]
-                        ].strip()
+                        wmsg = self.text[currline][FMA_COLUMNS[1][0] : FMA_COLUMNS[2][1]].strip()
                         logger.debug(f"warning message '{wmsg}'")
                         draw.line(
                             (

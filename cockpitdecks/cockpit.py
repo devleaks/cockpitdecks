@@ -24,9 +24,8 @@ from cockpitdecks import (
 from cockpitdecks import Config, KW, GLOBAL_DEFAULTS, DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
-from cockpitdecks.deck import DeckType
 from cockpitdecks.decks import DECK_DRIVERS
-from cockpitdecks.resources.decktype import DeckTypeNew
+from cockpitdecks.decks.resources import DeckType
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -43,9 +42,7 @@ class CockpitBase:
     """As used in Simulator"""
 
     def __init__(self):
-        self._debug = ROOT_DEBUG.split(
-            ","
-        )  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
+        self._debug = ROOT_DEBUG.split(",")  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
         pass
 
     def set_logging_level(self, name):
@@ -145,11 +142,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         if attribute.startswith("default-") or attribute.startswith("cockpit-"):
             prefix = self._config.get("cockpit-theme")  # prefix = "dark-"  #
-            if (
-                prefix is not None
-                and prefix not in ["default", "cockpit"]
-                and not attribute.startswith(prefix)
-            ):
+            if prefix is not None and prefix not in ["default", "cockpit"] and not attribute.startswith(prefix):
                 newattr = "-".join([prefix, attribute])
                 val = self.get_attribute(attribute=newattr, silence=silence)
                 if val is not None:
@@ -157,35 +150,22 @@ class Cockpit(DatarefListener, CockpitBase):
                     return self.is_color_attribute(attribute=attribute, value=val)
                 if theme_only(attribute):  # a theme exist, do not try without theme
                     if not silence:
-                        logger.debug(
-                            f"themed attribute {newattr} not found, cannot try without theme"
-                        )
+                        logger.debug(f"themed attribute {newattr} not found, cannot try without theme")
                     return None
                 # else, no attribute named by newattr, just try plain attr name
         # Normal ops
         self._reqdfts.add(attribute)  # internal stats
         if attribute in self._config.keys():
-            return self.is_color_attribute(
-                attribute=attribute, value=self._config.get(attribute)
-            )
+            return self.is_color_attribute(attribute=attribute, value=self._config.get(attribute))
         if attribute in self._resources_config.keys():
-            return self.is_color_attribute(
-                attribute=attribute, value=self._resources_config.get(attribute)
-            )
+            return self.is_color_attribute(attribute=attribute, value=self._resources_config.get(attribute))
         ATTRNAME = "_defaults"
         if hasattr(self, ATTRNAME):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 if attribute in ld.keys():
-                    return self.is_color_attribute(
-                        attribute=attribute, value=ld.get(attribute)
-                    )
-        if (
-            not silence
-            and "-" in attribute
-            and attribute.split("-")[-1]
-            not in ["font", "size", "color", "position", "texture"]
-        ):
+                    return self.is_color_attribute(attribute=attribute, value=ld.get(attribute))
+        if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position", "texture"]:
             logger.warning(f"no attribute {attribute}")
         return None
 
@@ -227,9 +207,7 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"Cockpitdecks Rel. {__version__} -- {what}")
 
         if what is not None and "thread" in what:
-            logger.info(
-                f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}"
-            )
+            logger.info(f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
         elif what is not None and what.startswith("datarefs"):
             self.inspect_datarefs(what)
         elif what == "monitored":
@@ -261,9 +239,7 @@ class Cockpit(DatarefListener, CockpitBase):
         )
         for deck_driver, builder in DECK_DRIVERS.items():
             decks = builder[1]().enumerate()
-            logger.info(
-                f"found {len(decks)} {deck_driver}"
-            )  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
+            logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
@@ -271,9 +247,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 if serial in EXCLUDE_DECKS:
                     logger.warning(f"deck {serial} excluded")
                     del decks[name]
-                logger.debug(
-                    f"added {type(device).__name__} (driver {deck_driver}, serial {serial[:3]}{'*'*max(1,len(serial))})"
-                )
+                logger.debug(f"added {type(device).__name__} (driver {deck_driver}, serial {serial[:3]}{'*'*max(1,len(serial))})")
                 self.devices.append(
                     {
                         KW.DRIVER.value: deck_driver,
@@ -315,9 +289,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 return device
             else:
                 if i > 1:
-                    logger.warning(
-                        f"more than one deck of type {req_driver}, no serial to disambiguate"
-                    )
+                    logger.warning(f"more than one deck of type {req_driver}, no serial to disambiguate")
             return None
         ## Got serial, search for it
         for deck in self.devices:
@@ -379,9 +351,7 @@ class Cockpit(DatarefListener, CockpitBase):
             elif not os.path.exists(acpath):
                 logger.error(f"no aircraft folder {acpath}")
             else:
-                logger.error(
-                    f"no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}"
-                )
+                logger.error(f"no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
             self.create_default_decks()
 
     def load_pages(self):
@@ -389,10 +359,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.debug(f"default_pages {self.default_pages.keys()}")
             for name, deck in self.cockpit.items():
                 if name in self.default_pages.keys():
-                    if (
-                        self.default_pages[name] in deck.pages.keys()
-                        and deck.home_page is not None
-                    ):  # do not refresh if no home page loaded...
+                    if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
                         deck.change_page(self.default_pages[name])
                     else:
                         deck.change_page()
@@ -417,9 +384,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
             # 1. Try "system" font
             try:
-                test = ImageFont.truetype(
-                    fontname, self.get_attribute("default-label-size")
-                )
+                test = ImageFont.truetype(fontname, self.get_attribute("default-label-size"))
                 logger.debug(f"font {fontname} found in computer system fonts")
                 return fontname
             except:
@@ -430,28 +395,20 @@ class Cockpit(DatarefListener, CockpitBase):
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
                 test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
-                logger.debug(
-                    f"font {fontname} found locally ({RESOURCES_FOLDER} folder)"
-                )
+                logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
-                logger.debug(
-                    f"font {fontname} not found locally ({RESOURCES_FOLDER} folder)"
-                )
+                logger.debug(f"font {fontname} not found locally ({RESOURCES_FOLDER} folder)")
 
             # 3. Try font in resources/fonts folder
             fn = None
             try:
-                fn = os.path.join(
-                    os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname
-                )
+                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
                 test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                 logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
-                logger.debug(
-                    f"font {fontname} not found locally ({FONTS_FOLDER} folder)"
-                )
+                logger.debug(f"font {fontname} not found locally ({FONTS_FOLDER} folder)")
 
             logger.debug(f"font {fontname} not found")
             return None
@@ -461,15 +418,11 @@ class Cockpit(DatarefListener, CockpitBase):
         self._resources_config = Config(fn)
 
         # Load global defaults from resources/config.yaml file or use application default
-        self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(
-            ","
-        )
+        self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
         self.set_logging_level(__name__)
 
         self.sim.set_roundings(self._resources_config.get("dataref-roundings", {}))
-        self.sim.set_dataref_frequencies(
-            self._resources_config.get("dataref-fetch-frequencies", {})
-        )
+        self.sim.set_dataref_frequencies(self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # 1. Load global icons
         #   (They are never cached when loaded without aircraft.)
@@ -494,10 +447,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         # 2.1 We try the requested "default label font"
         default_label_font = self.get_attribute("default-label-font")
-        if (
-            default_label_font is not None
-            and default_label_font not in self.fonts.keys()
-        ):
+        if default_label_font is not None and default_label_font not in self.fonts.keys():
             f = locate_font(default_label_font)
             if f is not None:  # found one, perfect
                 self.fonts[default_label_font] = f
@@ -509,15 +459,11 @@ class Cockpit(DatarefListener, CockpitBase):
         default_system_font = self.get_attribute("default-system-font")
         if default_system_font is not None:
             f = locate_font(default_system_font)
-            if (
-                f is not None
-            ):  # found it, perfect, keep it as default font for all purposes
+            if f is not None:  # found it, perfect, keep it as default font for all purposes
                 self.fonts[default_system_font] = f
                 self.set_default("default-font", default_system_font)
                 logger.debug(f"default font set to {default_system_font}")
-                if (
-                    default_label_font is None
-                ):  # additionnally, if we don't have a default label font, use it
+                if default_label_font is None:  # additionnally, if we don't have a default label font, use it
                     self.set_default("default-label-font", default_system_font)
                     logger.debug(f"default label font set to {default_system_font}")
 
@@ -525,9 +471,7 @@ class Cockpit(DatarefListener, CockpitBase):
             first_one = list(self.fonts.keys())[0]
             self.set_default("default-label-font", first_one)
             self.set_default("default-font", first_one)
-            logger.debug(
-                f"no default font found, using first available font ({first_one})"
-            )
+            logger.debug(f"no default font found, using first available font ({first_one})")
 
         if default_label_font is None:
             logger.error(f"no default font")
@@ -551,9 +495,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"no deck in config file {fn}")
             return
 
-        logger.info(
-            f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}"
-        )  # debug?
+        logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
 
         deck_count_by_type = {}
         for deck_type in self.deck_types.values():
@@ -602,19 +544,13 @@ class Cockpit(DatarefListener, CockpitBase):
                         )
                         continue
                     deck_config[KW.SERIAL.value] = device.get_serial_number()
-                    logger.info(
-                        f"deck {deck_type} {name} has serial {deck_config[KW.SERIAL.value]}"
-                    )
+                    logger.info(f"deck {deck_type} {name} has serial {deck_config[KW.SERIAL.value]}")
                 else:
                     deck_config[KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
-                    self.cockpit[name] = DECK_DRIVERS[deck_driver][0](
-                        name=name, config=deck_config, cockpit=self, device=device
-                    )
+                    self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     cnt = cnt + 1
-                    logger.info(
-                        f"deck {name} added ({deck_type}, driver {deck_driver})"
-                    )
+                    logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:
@@ -658,16 +594,12 @@ class Cockpit(DatarefListener, CockpitBase):
         folder = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
         for deck_type in glob.glob(os.path.join(folder, "*.yaml")):
             data = DeckType(deck_type)
-            data_new = DeckTypeNew(deck_type)
             name = data.get(KW.TYPE.value)
             if name is not None:
                 self.deck_types[name] = data
-                self.deck_types_new[name] = data_new
             else:
                 logger.warning(f"ignoring unnamed deck {deck_type}")
-        logger.info(
-            f"loaded {len(self.deck_types)} deck types ({list(self.deck_types.keys())})"
-        )
+        logger.info(f"loaded {len(self.deck_types)} deck types ({list(self.deck_types.keys())})")
 
     def get_deck_type_description(self, name: str):
         return self.deck_types.get(name)
@@ -730,9 +662,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
-                            test = ImageFont.truetype(
-                                fn, self.get_attribute("default-label-size")
-                            )
+                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"default font file {fn} not loaded")
@@ -748,9 +678,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(
-                                fn, self.get_attribute("default-label-size")
-                            )
+                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"custom font file {fn} not loaded")
@@ -918,9 +846,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"..event processing loop started..")
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
-            logger.info(
-                f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)"
-            )
+            logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
             logger.info(f"..started")
             logger.info(f"serving {self.name}")
             for t in threading.enumerate():

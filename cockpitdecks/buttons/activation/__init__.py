@@ -23,78 +23,33 @@ from cockpitdecks import DECK_ACTIONS
 #       - sim/instruments/barometer_down
 #       - sim/instruments/barometer_up
 #
-ACTIVATIONS = {
-    "none": Activation,
-    "page": LoadPage,
-    "reload": Reload,
-    "inspect": Inspect,
-    "stop": Stop,
-    "push": Push,
-    "longpress": Longpress,
-    "onoff": OnOff,
-    "updown": UpDown,
-    "encoder": Encoder,
-    "encoder-push": EncoderPush,
-    "encoder-onoff": EncoderOnOff,
-    "encoder-value": EncoderValue,
-    "encoder-value-extended": EncoderValueExtended,
-    "knob": EncoderValue,
-    "slider": Slider,
-    "cursor": Slider,
-    "swipe": Swipe,
-    "encoder-toggle": EncoderToggle,
-}
+def all_subclasses(cls):
 
-DEFAULT_ACTIVATIONS = ["none"] + ["page", "reload", "inspect", "stop"]
+    if cls == type:
+        raise ValueError("Invalid class - 'type' is not a class")
 
-#
-# ###############################
-# DECK ACTIVATION MAP
-#
-#
-# This estabishes the link between deck capabilities (action) and Activations
-#
-# - name: 0
-#   prefix: e
-#   action: encoder-push         <--------
-#   view: none
-#   repeat: 6
-#
-push = [
-    "page",
-    "reload",
-    "inspect",
-    "stop",
-    "push",
-    "longpress",
-    "onoff",
-    "updown",
-    "dref-collector",
-]
-encoder = [
-    "encoder",
-    "encoder-push",
-    "encoder-onoff",
-    "encoder-value",
-    "encoder-value-extended",
-    "knob",
-    "encoder-toggle",
-]
+    subclasses = set()
 
-# ###############################
-# format is action: [ activation ]
-# action is used in deck definitions
-#
-DECK_ACTIVATIONS = {
-    "push": push,
-    "encoder": encoder,
-    "encoder-push": encoder + push,
-    "cursor": ["cursor", "slider"],
-    "swipe": ["swipe"] + push,
-}
+    stack = []
+    try:
+        stack.extend(cls.__subclasses__())
+    except (TypeError, AttributeError) as ex:
+        raise ValueError("Invalid class" + repr(cls)) from ex
+
+    while stack:
+        sub = stack.pop()
+        subclasses.add(sub)
+        try:
+            stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
+        except (TypeError, AttributeError):
+           continue
+
+    return list(subclasses)
 
 
-def get_activations_for(action: DECK_ACTIONS):
+ACTIVATIONS = {s.name(): s for s in all_subclasses(Activation)}
+
+def get_activations_for(action: DECK_ACTIONS) -> list:
     # trick: *simultaneous* actions are in same word, "-" separated, example encoder-push.
     DASH = "-"
     if DASH in action.value:

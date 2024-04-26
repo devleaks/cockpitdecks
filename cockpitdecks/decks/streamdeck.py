@@ -9,7 +9,7 @@ from PIL import Image, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
-from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, KW
+from cockpitdecks import DECK_FEEDBACK, RESOURCES_FOLDER, DEFAULT_PAGE_NAME, KW, DECK_ACTIONS
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent, EncoderEvent, TouchEvent, SwipeEvent
 from cockpitdecks.page import Page
@@ -20,7 +20,7 @@ from cockpitdecks.buttons.representation import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 # Device specific data
 POLL_FREQ = 5  # default is 20
@@ -31,9 +31,7 @@ FLIP_DESCRIPTION = {
     (True, True): "mirrored horizontally/vertically",
 }
 
-KW_TOUCHSCREEN = (
-    "touchscreen"  # must match resources.decks.streamdeck*plus*.buttons[].name
-)
+KW_TOUCHSCREEN = "touchscreen"  # must match resources.decks.streamdeck*plus*.buttons[].name
 
 
 class Streamdeck(DeckWithIcons):
@@ -42,9 +40,7 @@ class Streamdeck(DeckWithIcons):
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
-        DeckWithIcons.__init__(
-            self, name=name, config=config, cockpit=cockpit, device=device
-        )
+        DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.cockpit.set_logging_level(__name__)
 
@@ -97,16 +93,10 @@ class Streamdeck(DeckWithIcons):
                 image = Image.open(image_filename).convert("RGBA")
                 image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             else:
-                logger.warning(
-                    f"deck {self.name}: no wallpaper image {image_filename} found, using default"
-                )
+                logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
                 dic = self.get_attribute("default-icon-color")
-                image = Image.new(
-                    mode="RGBA", size=(deck_width, deck_height), color=dic
-                )
-                fn = os.path.join(
-                    os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo
-                )
+                image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=dic)
+                fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
                     inside = 20
                     logo = Image.open(fn).convert("RGBA")
@@ -117,9 +107,7 @@ class Streamdeck(DeckWithIcons):
                     )
                     image.paste(logo2, (inside, inside), logo2)
                 else:
-                    logger.warning(
-                        f"deck {self.name}: no logo image {fn} found, using default"
-                    )
+                    logger.warning(f"deck {self.name}: no logo image {fn} found, using default")
             return image
 
         # Crops out a key-sized image from a larger deck-sized image, at the location
@@ -151,18 +139,12 @@ class Streamdeck(DeckWithIcons):
             return self.pil_helper.to_native_format(deck, key_image)
 
         logger.debug(f"loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
-        fn = os.path.join(
-            os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.wallpaper
-        )
+        fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.wallpaper)
         key_spacing = (36, 36)
-        image = create_full_deck_sized_image(
-            deck=self.device, key_spacing=key_spacing, image_filename=fn
-        )
+        image = create_full_deck_sized_image(deck=self.device, key_spacing=key_spacing, image_filename=fn)
         key_images = dict()
         for k in range(self.device.key_count()):
-            key_images[k] = crop_key_image_from_deck_sized_image(
-                deck=self.device, image=image, key_spacing=key_spacing, key=k
-            )
+            key_images[k] = crop_key_image_from_deck_sized_image(deck=self.device, image=image, key_spacing=key_spacing, key=k)
 
         with self.device:
             # Draw the individual key images to each of the keys.
@@ -172,9 +154,7 @@ class Streamdeck(DeckWithIcons):
                 self.device.set_key_image(k, key_image)
 
         # Add index 0 only button:
-        page0 = Page(
-            name=DEFAULT_PAGE_NAME, config={"name": DEFAULT_PAGE_NAME}, deck=self
-        )
+        page0 = Page(name=DEFAULT_PAGE_NAME, config={"name": DEFAULT_PAGE_NAME}, deck=self)
         button0 = Button(
             config={
                 "index": "0",
@@ -189,9 +169,7 @@ class Streamdeck(DeckWithIcons):
         self.pages = {DEFAULT_PAGE_NAME: page0}
         self.home_page = page0
         self.current_page = page0
-        logger.debug(
-            f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page"
-        )
+        logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
         if name is not None and name in self.icons.keys():
@@ -216,9 +194,7 @@ class Streamdeck(DeckWithIcons):
                         self.icons[name] = image
         elif index == KW_TOUCHSCREEN:
             if self.device is not None and self.pil_helper is not None:
-                bg = self.pil_helper.create_touchscreen_image(
-                    deck=self.device, background=colors
-                )
+                bg = self.pil_helper.create_touchscreen_image(deck=self.device, background=colors)
                 image = self.get_icon_background(
                     name=str(index),
                     width=bg.width,
@@ -239,9 +215,7 @@ class Streamdeck(DeckWithIcons):
             return self.icons.get(name)
 
         if self.pil_helper is not None:
-            image = self.pil_helper.create_scaled_image(
-                self.device, image, margins=[0, 0, 0, 0]
-            )
+            image = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
             if image is not None:
                 image = image.convert("RGB")
                 if name is not None:
@@ -258,9 +232,7 @@ class Streamdeck(DeckWithIcons):
     #
     def _send_touchscreen_image_to_device(self, image):
         with self.device:
-            i = self.pil_helper.to_native_touchscreen_format(
-                deck=self.device, image=image
-            )
+            i = self.pil_helper.to_native_touchscreen_format(deck=self.device, image=image)
             self.device.set_touchscreen_image(i, width=image.width, height=image.height)
 
     def _send_key_image_to_device(self, key, image):
@@ -271,17 +243,13 @@ class Streamdeck(DeckWithIcons):
             i = self.pil_helper.to_native_key_format(deck=self.device, image=image)
             self.device.set_key_image(int(key), i)
 
-    def _set_key_image(
-        self, button: Button
-    ):  # idx: int, image: str, label: str = None):
+    def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("no device")
             return
         representation = button._representation
         if not isinstance(representation, Icon):
-            logger.warning(
-                f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}"
-            )
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
             return
 
         image = button.get_representation()
@@ -292,9 +260,7 @@ class Streamdeck(DeckWithIcons):
             self._send_key_image_to_device(button.index, image)
         else:
             if image is None:
-                logger.warning(
-                    "button returned no image, no default for touch screen, ignoring"
-                )
+                logger.warning("button returned no image, no default for touch screen, ignoring")
                 return
             if button.index == KW_TOUCHSCREEN:
                 self._send_touchscreen_image_to_device(image)
@@ -336,22 +302,16 @@ class Streamdeck(DeckWithIcons):
         if self.device is None:
             logger.warning("no device")
             return
-        if self.deck_type.is_of_type(
-            idx=button.index, query={"action": "encoder-push"}
-        ):
+        if self.deck_type.is_encoder(index=button.index):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation
         if isinstance(representation, Icon):
             self._set_key_image(button)
         elif isinstance(representation, Representation):
-            logger.info(
-                f"button: {button.name}: do nothing representation for {type(self).__name__}"
-            )
+            logger.info(f"button: {button.name}: do nothing representation for {type(self).__name__}")
         else:
-            logger.warning(
-                f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}"
-            )
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device
@@ -367,7 +327,7 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a dial is rotated.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
-        bdef = self.deck_type.filter({"action": "encoder-push"})
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER_PUSH.value})
         prefix = bdef[0].get(KW.PREFIX.value)
         idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:
@@ -375,9 +335,7 @@ class Streamdeck(DeckWithIcons):
         elif action == DialEventType.TURN:
             direction = 2 if value < 0 else 3
             for i in range(abs(value)):
-                self.key_change_processing(
-                    EncoderEvent(deck=self, button=idx, clockwise=direction == 2)
-                )
+                self.key_change_processing(EncoderEvent(deck=self, button=idx, clockwise=direction == 2))
         else:
             logger.warning(f"deck {self.name}: invalid dial action {action}")
 
@@ -399,19 +357,9 @@ class Streamdeck(DeckWithIcons):
             "begin_y": int(value["y"]),
             "end_key": kend,
             "end_x": x2,
-            "end_y": int(
-                value["y_out"] if action == TouchscreenEventType.DRAG else value["y"]
-            ),
-            "diff_x": (
-                value["x_out"] - value["x"]
-                if action == TouchscreenEventType.DRAG
-                else 0
-            ),
-            "diff_y": (
-                value["y_out"] - value["y"]
-                if action == TouchscreenEventType.DRAG
-                else 0
-            ),
+            "end_y": int(value["y_out"] if action == TouchscreenEventType.DRAG else value["y"]),
+            "diff_x": (value["x_out"] - value["x"] if action == TouchscreenEventType.DRAG else 0),
+            "diff_y": (value["y_out"] - value["y"] if action == TouchscreenEventType.DRAG else 0),
             "same_key": kstart == kend,
         }
         logger.debug(f"Deck {deck.id()} Key {idx} = {event_dict}")
@@ -449,8 +397,6 @@ class Streamdeck(DeckWithIcons):
             if device.is_open():
                 device.reset()  # causes an issue when device was not set up
             device.set_key_callback(None)
-            device._setup_reader(
-                None
-            )  # terminates the _read() loop on serial line (thread).
+            device._setup_reader(None)  # terminates the _read() loop on serial line (thread).
             # device.stop()  # terminates the loop.
         logger.info(f"{name} terminated")

@@ -6,7 +6,7 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks import DECK_ACTIONS, DEFAULT_PAGE_NAME, KW
+from cockpitdecks import KW, DECK_ACTIONS, DECK_FEEDBACK, DEFAULT_PAGE_NAME
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.event import PushEvent, EncoderEvent, SlideEvent
@@ -54,9 +54,7 @@ class XTouchMini(Deck):
         self.pages = {DEFAULT_PAGE_NAME: page0}
         self.home_page = page0
         self.current_page = page0
-        logger.debug(
-            f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page"
-        )
+        logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def load_icons(self):
         pass
@@ -125,16 +123,12 @@ class XTouchMini(Deck):
         value, mode = button.get_representation()
         # find index in string
         i = int(button.index[1:])
-        logger.debug(
-            f"button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}"
-        )
+        logger.debug(f"button {button.name}: {button.index} => {i}, value={value}, mode={mode.name}")
         self._set_control(key=i, value=value, mode=mode)
 
     def _set_button_led(self, button):
         is_on = button.get_current_value()
-        logger.debug(
-            f"button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})"
-        )
+        logger.debug(f"button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
         self._set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
 
     # Low-level wrapper around device API (direct forward)
@@ -151,7 +145,7 @@ class XTouchMini(Deck):
         if self.device is None:
             logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return
-        bdef = self.deck_type.filter({"action": "cursor"})
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_FEEDBACK.CURSOR.value})
         cursor = bdef[0].get(KW.NAME.value)
         if str(button.index) == cursor:
             logger.debug(f"button type {button.index} has no representation")
@@ -163,9 +157,7 @@ class XTouchMini(Deck):
         elif isinstance(representation, MultiLEDs):
             self._set_encoder_led(button)
         else:
-            logger.warning(
-                f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}"
-            )
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
     # Deck Specific Functions : Device

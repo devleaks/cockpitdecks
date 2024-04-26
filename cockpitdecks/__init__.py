@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "8.0.3"
+__version__ = "8.0.4"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -188,12 +188,8 @@ class Config(MutableMapping):
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
-                dirname = os.path.join(
-                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ""
-                )
-                init_logger.info(
-                    f"loaded config from {os.path.abspath(filename).replace(dirname, '')}"
-                )
+                dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
+                init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
         else:
             init_logger.debug(f"no file {filename}")
 

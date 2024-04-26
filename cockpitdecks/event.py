@@ -69,11 +69,7 @@ class DeckEvent(ABC):
     @property
     def duration(self) -> float:
         """Returns event handling duration in seconds"""
-        if (
-            hasattr(self, "started")
-            and self.started is not None
-            and self.is_processed()
-        ):
+        if hasattr(self, "started") and self.started is not None and self.is_processed():
             return self.completed - self.started
         return -1.0
 
@@ -90,15 +86,11 @@ class DeckEvent(ABC):
 
             idx = str(self.button)
             if idx not in self.deck.current_page.buttons.keys():
-                logger.warning(
-                    f"no button {idx} on page {page.name} on deck {self.deck.name}"
-                )
+                logger.warning(f"no button {idx} on page {page.name} on deck {self.deck.name}")
                 return False
 
             try:
-                logger.debug(
-                    f"doing {idx} on page {page.name} on deck {self.deck.name}.."
-                )
+                logger.debug(f"doing {idx} on page {page.name} on deck {self.deck.name}..")
                 if not self.is_processed():
                     self.handling()
                     self.deck.current_page.buttons[idx].activate(self)
@@ -145,9 +137,7 @@ class PushEvent(DeckEvent):
 class EncoderEvent(DeckEvent):
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
-    def __init__(
-        self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False
-    ):
+    def __init__(self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False):
         """Event for encoder stepped click.
 
         Args:
@@ -255,9 +245,7 @@ class SwipeEvent(DeckEvent):
         """
         return self.swipe_distance < tolerance
 
-    def long_press(
-        self, minimum_duration: float = 3.0, tolerance: float = 10.0
-    ) -> bool:
+    def long_press(self, minimum_duration: float = 3.0, tolerance: float = 10.0) -> bool:
         """Returns whether the swipe was just a touch but for a long time
 
         Args:
@@ -267,10 +255,7 @@ class SwipeEvent(DeckEvent):
         Returns:
             bool: Whether the touch screen was touched (not swiped) for a longer time than `minimum_duration`.
         """
-        return (
-            self.touched_only(tolerance=tolerance)
-            and self.swipe_duration > minimum_duration
-        )
+        return self.touched_only(tolerance=tolerance) and self.swipe_duration > minimum_duration
 
 
 class TouchEvent(DeckEvent):

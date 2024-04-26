@@ -1,0 +1,1 @@
+from .decktype import DeckType

@@ -26,6 +26,8 @@ class XPWeatherBaseIcon(DrawBase):
     Icon with background weather image and text laid over
     """
 
+    REPRESENTATION_NAME = "weather-base"
+
     MIN_UPDATE = 600  # seconds between two station updates
 
     def __init__(self, config: dict, button: "Button"):
@@ -73,9 +75,7 @@ class XPWeatherBaseIcon(DrawBase):
         self._upd_count = self._upd_count + 1
         self._icon_last_updated = now()
 
-        image = Image.new(
-            mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR
-        )  # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
         inside = round(0.04 * image.width + 0.5)
 

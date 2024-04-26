@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class AircraftIcon(StringIcon):
+
+    REPRESENTATION_NAME = "aircraft"
+
     def __init__(self, config: dict, button: "Button"):
         StringIcon.__init__(self, config=config, button=button)
         self._strconfig = config.get("aircraft")  # historical

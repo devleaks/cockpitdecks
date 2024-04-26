@@ -24,33 +24,28 @@ logger = logging.getLogger(__name__)
 #
 #
 class DrawBase(Icon):
+
+    REPRESENTATION_NAME = "draw-base"
+
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
         self.texture = None
         self.bgcolor = None
-        self.cockpit_texture = config.get(
-            "cockpit-texture", self.button.get_attribute("cockpit-texture")
-        )
-        self.cockpit_color = config.get(
-            "cockpit-color", self.button.get_attribute("cockpit-color")
-        )
+        self.cockpit_texture = config.get("cockpit-texture", self.button.get_attribute("cockpit-texture"))
+        self.cockpit_color = config.get("cockpit-color", self.button.get_attribute("cockpit-color"))
 
         # Reposition for move_and_send()
         self.draw_scale = float(config.get("scale", 1))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
-            logger.warning(
-                f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]"
-            )
+            logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
             self.draw_scale = 1
         self.draw_left = config.get("left", 0) - config.get("right", 0)
         self.draw_up = config.get("up", 0) - config.get("down", 0)
 
     def double_icon(self, width: int = ICON_SIZE * 2, height: int = ICON_SIZE * 2):
         """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
-        image = Image.new(
-            mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR
-        )
+        image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         return image, draw
 
@@ -60,11 +55,7 @@ class DrawBase(Icon):
         """
         image = None
         # Try local texture
-        if (
-            use_texture
-            and self.texture is not None
-            and self.texture in self.button.deck.cockpit.icons.keys()
-        ):
+        if use_texture and self.texture is not None and self.texture in self.button.deck.cockpit.icons.keys():
             image = self.button.deck.cockpit.icons[self.texture]
             if image is not None:  # found a texture as requested
                 image = image.resize((width, height))
@@ -72,11 +63,7 @@ class DrawBase(Icon):
                 return image
 
         # Try deck cockpit_texture
-        if (
-            use_texture
-            and self.cockpit_texture is not None
-            and self.cockpit_texture in self.button.deck.cockpit.icons.keys()
-        ):
+        if use_texture and self.cockpit_texture is not None and self.cockpit_texture in self.button.deck.cockpit.icons.keys():
             image = self.button.deck.cockpit.icons[self.cockpit_texture]
             if image is not None:  # found cockpit texture
                 image = image.resize((width, height))
@@ -84,9 +71,7 @@ class DrawBase(Icon):
                 return image
 
         if use_texture and self.texture is None:
-            logger.debug(
-                f"should use texture but no texture found, using uniform color"
-            )
+            logger.debug(f"should use texture but no texture found, using uniform color")
 
         if self.bgcolor is not None:
             image = Image.new(mode="RGBA", size=(width, height), color=self.bgcolor)
@@ -139,6 +124,9 @@ class DrawBase(Icon):
 
 
 class DataIcon(DrawBase):
+
+    REPRESENTATION_NAME = "draw-icon"
+
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
 
@@ -155,9 +143,7 @@ class DataIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image, draw = self.double_icon(
-            width=ICON_SIZE, height=ICON_SIZE
-        )  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Display Data
@@ -177,9 +163,7 @@ class DataIcon(DrawBase):
             )
 
         # Icon
-        icon, icon_format, icon_font, icon_color, icon_size, icon_position = (
-            self.get_text_detail(data, "icon")
-        )
+        icon, icon_format, icon_font, icon_color, icon_size, icon_position = self.get_text_detail(data, "icon")
 
         icon_str = "*"
         icon_arr = icon.split(":")
@@ -194,15 +178,11 @@ class DataIcon(DrawBase):
         inside = round(0.04 * image.width + 0.5)
         w = inside
         h = image.height / 2
-        draw.text(
-            (w, h), text=icon_str, font=font, anchor="lm", align="left", fill=icon_color
-        )  # (image.width / 2, 15)
+        draw.text((w, h), text=icon_str, font=font, anchor="lm", align="left", fill=icon_color)  # (image.width / 2, 15)
 
         # Data
         DATA_UNIT_SEP = " "
-        data_value, data_format, data_font, data_color, data_size, data_position = (
-            self.get_text_detail(data, "data")
-        )
+        data_value, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(data, "data")
         # print(">"*10, "DATA", data_value, data_format, data_font, data_color, data_size, data_position)
 
         if data_format is not None:
@@ -263,14 +243,10 @@ class DataIcon(DrawBase):
                 width=DATA_PROGRESS,
                 joint="curve",
             )  # 100%
-            draw.line(
-                [(w, h), (l, h)], fill=data_color, width=DATA_PROGRESS, joint="curve"
-            )
+            draw.line([(w, h), (l, h)], fill=data_color, width=DATA_PROGRESS, joint="curve")
 
         # Bottomline (forced at CENTER BOTTOM line of icon)
-        bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position = (
-            self.get_text_detail(data, "bottomline")
-        )
+        bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position = self.get_text_detail(data, "bottomline")
         # print(">"*10, "BOTL", bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position)
 
         if bottom_line is not None:
@@ -288,9 +264,7 @@ class DataIcon(DrawBase):
             )  # (image.width / 2, 15)
 
         # Final mark
-        mark, mark_format, mark_font, mark_color, mark_size, mark_position = (
-            self.get_text_detail(data, "mark")
-        )
+        mark, mark_format, mark_font, mark_color, mark_size, mark_position = self.get_text_detail(data, "mark")
         if mark is not None:
             font = self.get_font(mark_font, mark_size)
             w = image.width - 2 * inside
@@ -360,6 +334,9 @@ LABEL_COLOR = grey(255)
 
 
 class SwitchBase(DrawBase):
+
+    REPRESENTATION_NAME = "switch-base"
+
     def __init__(self, config: dict, button: "Button", switch_type: str):
         DrawBase.__init__(self, config=config, button=button)
 
@@ -373,49 +350,31 @@ class SwitchBase(DrawBase):
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.get_attribute(
-            "button-fill-color", SWITCH_BASE_FILL_COLOR
-        )
+        self.button_fill_color = self.get_attribute("button-fill-color", SWITCH_BASE_FILL_COLOR)
         self.button_fill_color = convert_color(self.button_fill_color)
-        self.button_stroke_color = self.get_attribute(
-            "button-stroke-color", SWITCH_BASE_STROKE_COLOR
-        )
+        self.button_stroke_color = self.get_attribute("button-stroke-color", SWITCH_BASE_STROKE_COLOR)
         self.button_stroke_color = convert_color(self.button_stroke_color)
         self.button_stroke_width = self.get_attribute("button-stroke-width", 2)
-        self.button_underline_color = self.get_attribute(
-            "button-underline-color", SWITCH_BASE_UNDERLINE_COLOR
-        )
+        self.button_underline_color = self.get_attribute("button-underline-color", SWITCH_BASE_UNDERLINE_COLOR)
         self.button_underline_color = convert_color(self.button_underline_color)
         self.button_underline_width = self.get_attribute("button-underline-width", 0)
 
-        self.handle_base_fill_color = self.get_attribute(
-            "handle-fill-color", SWITCH_HANDLE_BASE_COLOR
-        )
+        self.handle_base_fill_color = self.get_attribute("handle-fill-color", SWITCH_HANDLE_BASE_COLOR)
         self.handle_base_fill_color = convert_color(self.handle_base_fill_color)
 
-        self.handle_fill_color = self.get_attribute(
-            "handle-fill-color", SWITCH_HANDLE_FILL_COLOR
-        )
+        self.handle_fill_color = self.get_attribute("handle-fill-color", SWITCH_HANDLE_FILL_COLOR)
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.get_attribute(
-            "handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR
-        )
+        self.handle_stroke_color = self.get_attribute("handle-stroke-color", SWITCH_HANDLE_STROKE_COLOR)
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.get_attribute("handle-stroke-width", 0)
 
-        self.top_fill_color = self.get_attribute(
-            "top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR
-        )
+        self.top_fill_color = self.get_attribute("top-fill-color", SWITCH_HANDLE_TOP_FILL_COLOR)
         self.top_fill_color = convert_color(self.top_fill_color)
-        self.top_stroke_color = self.get_attribute(
-            "top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR
-        )
+        self.top_stroke_color = self.get_attribute("top-stroke-color", SWITCH_HANDLE_TOP_STROKE_COLOR)
         self.top_stroke_color = convert_color(self.top_stroke_color)
         self.top_stroke_width = self.get_attribute("top-stroke-width", 2)
 
-        self.handle_tip_fill_color = self.get_attribute(
-            "handle-fill-color", HANDLE_TIP_COLOR
-        )
+        self.handle_tip_fill_color = self.get_attribute("handle-fill-color", HANDLE_TIP_COLOR)
         self.handle_tip_fill_color = convert_color(self.handle_tip_fill_color)
 
         # Ticks
@@ -424,9 +383,7 @@ class SwitchBase(DrawBase):
         self.tick_width = self.get_attribute("tick-width", 4)
         self.tick_color = self.get_attribute("tick-color", TICK_COLOR)
         self.tick_color = convert_color(self.tick_color)
-        self.tick_underline_color = self.get_attribute(
-            "tick-underline-color", TICK_COLOR
-        )
+        self.tick_underline_color = self.get_attribute("tick-underline-color", TICK_COLOR)
         self.tick_underline_color = convert_color(self.tick_underline_color)
         self.tick_underline_width = self.get_attribute("tick-underline-width", 4)
 
@@ -440,12 +397,8 @@ class SwitchBase(DrawBase):
 
         # Handle needle
         self.needle_width = self.get_attribute("needle-width", 8)
-        self.needle_start = self.get_attribute(
-            "needle-start", 10
-        )  # from center of button
-        self.needle_length = self.get_attribute(
-            "needle-length", 50
-        )  # end = start + length
+        self.needle_start = self.get_attribute("needle-start", 10)  # from center of button
+        self.needle_length = self.get_attribute("needle-length", 50)  # end = start + length
         self.needle_tip = self.switch.get("needle-tip")  # arro, arri, ball
         self.needle_tip_size = self.get_attribute("needle-tip-size", 5)
         # self.needle_length = int(self.needle_length * self.button_size / 200)
@@ -453,9 +406,7 @@ class SwitchBase(DrawBase):
         self.needle_color = convert_color(self.needle_color)
         # Options
         self.needle_underline_width = self.get_attribute("needle-underline-width", 4)
-        self.needle_underline_color = self.get_attribute(
-            "needle-underline-color", NEEDLE_UNDERLINE_COLOR
-        )
+        self.needle_underline_color = self.get_attribute("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
         self.needle_underline_color = convert_color(self.needle_underline_color)
 
         self.marker_color = self.get_attribute("marker-color", MARKER_COLOR)
@@ -463,9 +414,7 @@ class SwitchBase(DrawBase):
         # Reposition for move_and_send(), found locally in switch config
         self.draw_scale = float(self.switch.get("scale", 1))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
-            logger.warning(
-                f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]"
-            )
+            logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
             self.draw_scale = 1
         self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
         self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
@@ -476,10 +425,11 @@ class SwitchBase(DrawBase):
 
 
 class CircularSwitch(SwitchBase):
+
+    REPRESENTATION_NAME = "circular-switch"
+
     def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(
-            self, config=config, button=button, switch_type="circular-switch"
-        )
+        SwitchBase.__init__(self, config=config, button=button, switch_type="circular-switch")
 
         if self.switch is None:
             logger.warning("no switch configuration")
@@ -491,22 +441,16 @@ class CircularSwitch(SwitchBase):
         self.tick_to = self.switch.get("tick-to", 270)
         if hasattr(self.button._activation, "stops"):
             self.tick_steps = self.button._activation.stops
-            logger.debug(
-                f"button {self.button.name}: button has {self.tick_steps} steps"
-            )
+            logger.debug(f"button {self.button.name}: button has {self.tick_steps} steps")
         else:
             self.tick_steps = self.switch.get("tick-steps", 2)
         if self.tick_steps < 2:
-            logger.warning(
-                f"button {self.button.name}: insuficient number of steps: {self.tick_steps}, forcing 2"
-            )
+            logger.warning(f"button {self.button.name}: insuficient number of steps: {self.tick_steps}, forcing 2")
             self.tick_steps = 2
         logger.debug(f"button {self.button.name}: {self.tick_steps} steps")
         self.angular_step = (self.tick_to - self.tick_from) / (self.tick_steps - 1)
         if len(self.tick_labels) < self.tick_steps:
-            logger.warning(
-                f"button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})"
-            )
+            logger.warning(f"button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})")
 
     def get_image_for_icon(self):
         """
@@ -597,9 +541,7 @@ class CircularSwitch(SwitchBase):
         if value is None:
             value = 0
         if value >= self.tick_steps:
-            logger.warning(
-                f"button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}"
-            )
+            logger.warning(f"button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}")
             value = self.tick_steps - 1
         angle = red(self.tick_from + value * self.angular_step)
 
@@ -631,9 +573,7 @@ class CircularSwitch(SwitchBase):
             side = handle_width / math.sqrt(2) + r / 2
             tl = [center[0] - side / 2, center[1] - side / 2]
             br = [center[0] + side / 2, center[1] + side / 2]
-            home_drawing.rounded_rectangle(
-                tl + br, radius=r, fill=self.handle_fill_color
-            )
+            home_drawing.rounded_rectangle(tl + br, radius=r, fill=self.handle_fill_color)
             home = home.rotate(45)
             a = 1
             b = 0
@@ -647,9 +587,7 @@ class CircularSwitch(SwitchBase):
             home_drawing = ImageDraw.Draw(home)
             tl = [center[0] - handle_width / 2, center[1] - handle_height]
             br = [center[0] + handle_width / 2, center[1] + handle_height]
-            home_drawing.rounded_rectangle(
-                tl + br, radius=r, fill=self.handle_fill_color
-            )
+            home_drawing.rounded_rectangle(tl + br, radius=r, fill=self.handle_fill_color)
 
             overlay.alpha_composite(home)
             overlay = overlay.rotate(red(-angle))  # ;-)
@@ -669,9 +607,7 @@ class CircularSwitch(SwitchBase):
                     width=self.needle_width + 2 * self.needle_underline_width,
                     fill=self.needle_underline_color,
                 )
-            draw.line(
-                [(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color
-            )
+            draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
             # needle tip
             if self.needle_tip is not None:
                 # print("tip1", self.switch_style, self.button_size, self.needle_start, self.needle_length, self.needle_tip, self.needle_tip_size)
@@ -685,9 +621,7 @@ class CircularSwitch(SwitchBase):
                         (3 * self.needle_tip_size, 0),
                     )
                     tip = list(((center[0] + x[0], center[1] + x[1]) for x in tip))
-                    tip_draw.polygon(
-                        tip, fill=self.needle_color
-                    )  # , outline="red", width=3
+                    tip_draw.polygon(tip, fill=self.needle_color)  # , outline="red", width=3
                 else:
                     tl = [
                         center[0] - self.needle_tip_size / 2,
@@ -697,9 +631,7 @@ class CircularSwitch(SwitchBase):
                         center[0] + self.needle_tip_size / 2,
                         center[1] + self.needle_tip_size / 2,
                     ]
-                    tip_draw.ellipse(
-                        tl + br, fill=self.needle_color, outline="red", width=3
-                    )
+                    tip_draw.ellipse(tl + br, fill=self.needle_color, outline="red", width=3)
                 tip_image = tip_image.rotate(
                     red(-angle),
                     translate=(
@@ -722,9 +654,7 @@ class CircularSwitch(SwitchBase):
                     width=self.needle_width + 2 * self.needle_underline_width,
                     fill=self.needle_underline_color,
                 )
-            draw.line(
-                [(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color
-            )
+            draw.line([(xc, yc), (xr, yr)], width=self.needle_width, fill=self.needle_color)
             # needle tip
             if self.needle_tip is not None:
                 # print("tip2", self.switch_style, self.button_size, self.needle_start, self.needle_length, self.needle_tip, self.needle_tip_size)
@@ -738,9 +668,7 @@ class CircularSwitch(SwitchBase):
                         (3 * self.needle_tip_size, 0),
                     )
                     tip = list(((center[0] + x[0], center[1] + x[1]) for x in tip))
-                    tip_draw.polygon(
-                        tip, fill=self.needle_color
-                    )  # , outline="red", width=3
+                    tip_draw.polygon(tip, fill=self.needle_color)  # , outline="red", width=3
                 else:
                     tl = [
                         center[0] - self.needle_tip_size / 2,
@@ -750,9 +678,7 @@ class CircularSwitch(SwitchBase):
                         center[0] + self.needle_tip_size / 2,
                         center[1] + self.needle_tip_size / 2,
                     ]
-                    tip_draw.ellipse(
-                        tl + br, fill=self.needle_color, outline="red", width=3
-                    )
+                    tip_draw.ellipse(tl + br, fill=self.needle_color, outline="red", width=3)
             tip_image = tip_image.rotate(
                 red(-angle),
                 translate=(
@@ -766,6 +692,9 @@ class CircularSwitch(SwitchBase):
 
 
 class Switch(SwitchBase):
+
+    REPRESENTATION_NAME = "switch"
+
     def __init__(self, config: dict, button: "Button"):
         SwitchBase.__init__(self, config=config, button=button, switch_type="switch")
 
@@ -792,17 +721,13 @@ class Switch(SwitchBase):
         self.invert = self.button.has_option("invert")
         self.vertical = not self.button.has_option("horizontal")
         self.hexabase = self.button.has_option("hexa")
-        self.screw_rot = randint(
-            0, 60
-        )  # remembers it so that it does not "turn" between updates
+        self.screw_rot = randint(0, 60)  # remembers it so that it does not "turn" between updates
 
         # Magic default resizing
         # Resizes default value switches to nice looking Airbus switches
         self.draw_scale = float(self.switch.get("scale", 0.8))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
-            logger.warning(
-                f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]"
-            )
+            logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
             self.draw_scale = 1
         if self.switch.get("left") is None and self.switch.get("right") is None:
             if self.vertical:
@@ -1342,9 +1267,7 @@ class Switch(SwitchBase):
             if self.label_opposite:
                 c = -c
                 f = -f
-            tick_labels = tick_labels.transform(
-                tick_labels.size, Image.AFFINE, (1, 0, c, 0, 1, f)
-            )
+            tick_labels = tick_labels.transform(tick_labels.size, Image.AFFINE, (1, 0, c, 0, 1, f))
             image.alpha_composite(tick_labels)
         image.alpha_composite(switch)
 
@@ -1352,33 +1275,26 @@ class Switch(SwitchBase):
 
 
 class PushSwitch(SwitchBase):
+
+    REPRESENTATION_NAME = "push-switch"
+
     def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(
-            self, config=config, button=button, switch_type="push-switch"
-        )
+        SwitchBase.__init__(self, config=config, button=button, switch_type="push-switch")
 
         # Alternate defaults
         self.button_size = self.get_attribute("button-size", 80)
 
-        self.handle_size = self.get_attribute(
-            "witness-size", min(self.button_size / 2, 40)
-        )
+        self.handle_size = self.get_attribute("witness-size", min(self.button_size / 2, 40))
 
         self.handle_fill_color = self.get_attribute("witness-fill-color", (0, 0, 0, 0))
         self.handle_fill_color = convert_color(self.handle_fill_color)
-        self.handle_stroke_color = self.get_attribute(
-            "witness-stroke-color", (255, 255, 255)
-        )
+        self.handle_stroke_color = self.get_attribute("witness-stroke-color", (255, 255, 255))
         self.handle_stroke_color = convert_color(self.handle_stroke_color)
         self.handle_stroke_width = self.get_attribute("witness-stroke-width", 4)
 
-        self.handle_off_fill_color = self.get_attribute(
-            "witness-fill-off-color", (0, 0, 0, 0)
-        )
+        self.handle_off_fill_color = self.get_attribute("witness-fill-off-color", (0, 0, 0, 0))
         self.handle_off_fill_color = convert_color(self.handle_off_fill_color)
-        self.handle_off_stroke_color = self.get_attribute(
-            "witness-stroke-off-color", (255, 255, 255, 0)
-        )
+        self.handle_off_stroke_color = self.get_attribute("witness-stroke-off-color", (255, 255, 255, 0))
         self.handle_off_stroke_color = convert_color(self.handle_off_stroke_color)
         self.handle_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
@@ -1404,10 +1320,7 @@ class PushSwitch(SwitchBase):
         if self.handle_size > 0:
             tl = [center[0] - self.handle_size / 2, center[1] - self.handle_size / 2]
             br = [center[0] + self.handle_size / 2, center[1] + self.handle_size / 2]
-            if (
-                hasattr(self.button._activation, "is_off")
-                and self.button._activation.is_off()
-            ):
+            if hasattr(self.button._activation, "is_off") and self.button._activation.is_off():
                 logger.debug(f"button {self.button.name}: has on/off state and IS OFF")
                 draw.ellipse(
                     tl + br,
@@ -1429,6 +1342,9 @@ class PushSwitch(SwitchBase):
 
 
 class Knob(SwitchBase):
+
+    REPRESENTATION_NAME = "knob"
+
     def __init__(self, config: dict, button: "Button"):
         SwitchBase.__init__(self, config=config, button=button, switch_type="knob")
 
@@ -1437,9 +1353,7 @@ class Knob(SwitchBase):
             return
 
         self.knob_type = self.get_attribute("knob-type", "dent")
-        self.knob_mark = self.get_attribute(
-            "knob-mark", "triangle"
-        )  # needle, triangle, bar (diameter)
+        self.knob_mark = self.get_attribute("knob-mark", "triangle")  # needle, triangle, bar (diameter)
 
         # Alternate defaults
         # self.button_size = self.switch.get("button-size", 80)
@@ -1448,12 +1362,8 @@ class Knob(SwitchBase):
         self.base_stroke_color = self.get_attribute("base-stroke-color", grey(20))
         self.base_stroke_width = self.get_attribute("base-stroke-width", 16)
 
-        self.base_underline_color = self.get_attribute(
-            "base-underline-color", grey(240)
-        )
-        self.base_underline_width = self.get_attribute(
-            "base-underline-width", int(self.base_stroke_width / 2)
-        )
+        self.base_underline_color = self.get_attribute("base-underline-color", grey(240))
+        self.base_underline_width = self.get_attribute("base-underline-width", int(self.base_stroke_width / 2))
 
         self.button_fill_color = self.get_attribute("button-fill-color", grey(220))
         self.button_stroke_color = self.get_attribute("button-stroke-color", grey(0))
@@ -1469,22 +1379,16 @@ class Knob(SwitchBase):
         self.mark_underline_outer = self.get_attribute("mark-underline-outer", 12)
         self.mark_underline_color = self.get_attribute("mark-underline-color", "coral")
         self.mark_underline_width = self.get_attribute("mark-underline-width", 4)
-        self.mark_size = self.get_attribute(
-            "witness-size", min(self.button_size / 2, 40)
-        )
+        self.mark_size = self.get_attribute("witness-size", min(self.button_size / 2, 40))
         self.mark_fill_color = self.get_attribute("witness-fill-color", None)
         self.mark_fill_color = convert_color(self.mark_fill_color)
         self.mark_stroke_color = self.get_attribute("witness-stroke-color", "blue")
         self.mark_stroke_color = convert_color(self.mark_stroke_color)
         self.mark_stroke_width = self.get_attribute("witness-stroke-width", 8)
 
-        self.mark_off_fill_color = self.get_attribute(
-            "witness-fill-off-color", (0, 0, 0, 0)
-        )
+        self.mark_off_fill_color = self.get_attribute("witness-fill-off-color", (0, 0, 0, 0))
         self.mark_off_fill_color = convert_color(self.mark_off_fill_color)
-        self.mark_off_stroke_color = self.get_attribute(
-            "witness-stroke-off-color", (255, 255, 255, 0)
-        )
+        self.mark_off_stroke_color = self.get_attribute("witness-stroke-off-color", (255, 255, 255, 0))
         self.mark_off_stroke_color = convert_color(self.mark_off_stroke_color)
         self.mark_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
@@ -1611,9 +1515,7 @@ class Knob(SwitchBase):
         )  # , width=self.mark_width, # https://github.com/python-pillow/Pillow/pull/7132
 
         image.alpha_composite(mark_image)
-        image = image.rotate(
-            self.rotation, resample=Image.Resampling.NEAREST, center=center
-        )
+        image = image.rotate(self.rotation, resample=Image.Resampling.NEAREST, center=center)
         base_image.alpha_composite(image)
 
         return self.move_and_send(base_image)
@@ -1640,6 +1542,9 @@ DECOR = {
 
 
 class Decor(DrawBase):
+
+    REPRESENTATION_NAME = "decor"
+
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
 
@@ -1653,9 +1558,7 @@ class Decor(DrawBase):
         self.code = self.decor.get("code", "")
         self.decor_width_horz = 10
         self.decor_width_vert = 10
-        decor_width = self.decor.get(
-            "width"
-        )  # now accepts two width 10/20, for horizontal and/ vertical lines
+        decor_width = self.decor.get("width")  # now accepts two width 10/20, for horizontal and/ vertical lines
         if decor_width is not None:
             a = str(decor_width).split("/")
             if len(a) > 1:

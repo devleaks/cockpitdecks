@@ -7,3 +7,6 @@ select = [
     "W",
 ]
 ignore = []
+
+[tool.black]
+line-length = 160

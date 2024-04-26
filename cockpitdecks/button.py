@@ -50,23 +50,15 @@ class Button(DatarefListener, DatarefSetListener):
 
         self.deck.cockpit.set_logging_level(__name__)
 
-        self.index = config.get(
-            "index"
-        )  # button_type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
-        self._key = config.get(
-            "_key", self.index
-        )  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
+        self.index = config.get("index")  # button_type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
+        self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
-        self._definition = self.deck.get_deck_type_description().get_button_definition(
-            self.index
-        )  # kind of meta data capabilties of button
+        self._definition = self.deck.get_deck_type_description().get_button_definition(self.index)  # kind of meta data capabilties of button
 
         self.name = config.get("name", str(self.index))
         self.num_index = None
         if type(self.index) == str:
-            idxnum = re.findall(
-                "\\d+(?:\\.\\d+)?$", self.index
-            )  # just the numbers of a button index name knob3 -> 3.
+            idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
             if len(idxnum) > 0:
                 self.num_index = idxnum[0]
 
@@ -88,19 +80,11 @@ class Button(DatarefListener, DatarefSetListener):
         # Options
         self.options = []
         new = config.get("options")
-        if (
-            new is not None
-        ):  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
+        if new is not None:  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
             old = ""  # a, c, d are options, b, e are option values. c option value is boolean True.
             while len(old) != len(new):
                 old = new
-                new = (
-                    old.strip()
-                    .replace(" =", "=")
-                    .replace("= ", "=")
-                    .replace(" ,", ",")
-                    .replace(", ", ",")
-                )
+                new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
             self.options = [a.strip() for a in new.split(",")]
 
         # What it will do and how it will appear
@@ -110,23 +94,18 @@ class Button(DatarefListener, DatarefSetListener):
             self._activation = ACTIVATIONS[atype](config, self)
             logger.debug(f"button {self.name} activation {atype}")
         else:
-            logger.warning(
-                f"button {self.name} has no activation defined, using default"
-            )
+            logger.warning(f"button {self.name} has no activation defined, using default")
             self._activation = ACTIVATIONS["none"](config, self)
 
         self._representation = None
 
         idx = Button.guess_index(config)
-        valid_representations = self.deck.valid_representations(str(idx))
-        rtype = Button.guess_representation_type(config, valid_representations)
+        rtype = Button.guess_representation_type(config)
         if rtype is not None and rtype in REPRESENTATIONS:
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
-            logger.warning(
-                f"button {self.name} has no representation defined, using default"
-            )
+            logger.warning(f"button {self.name} has no representation defined, using default")
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
@@ -149,9 +128,7 @@ class Button(DatarefListener, DatarefSetListener):
         self.all_datarefs = None  # all datarefs used by this button
         self.all_datarefs = self.get_datarefs()  # cache them
         if len(self.all_datarefs) > 0:
-            self.page.register_datarefs(
-                self
-            )  # when the button's page is loaded, we monitor these datarefs
+            self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
 
         self.dataref_collections = None
         self.dataref_collections = self.get_dataref_collections()
@@ -176,7 +153,7 @@ class Button(DatarefListener, DatarefSetListener):
         return a
 
     @staticmethod
-    def guess_representation_type(config, valid_representations: list):
+    def guess_representation_type(config):
         a = []
         for r in REPRESENTATIONS.keys():
             if r in config:
@@ -184,16 +161,7 @@ class Button(DatarefListener, DatarefSetListener):
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
-            if KW.NONE.value not in valid_representations:
-                logger.warning(f"no representation in {config}")
-            elif KW.REPRESENTATION.value in config:
-                r = config.get(KW.REPRESENTATION.value)
-                if r is None:
-                    logger.debug(f"no representation")
-            else:
-                logger.debug(
-                    f"no representation in {config}, but no representation is OK (should be in {', '.join(REPRESENTATIONS.keys())})"
-                )
+            logger.warning(f"no representation in {config}")
         else:
             logger.warning(f"multiple representation {a} in {config}")
         return KW.NONE.value
@@ -264,9 +232,7 @@ class Button(DatarefListener, DatarefSetListener):
                 logger.info(f"\n{yaml.dump(self._config, sys.stdout)}")
 
     def describe(self):
-        return "\n\r".join(
-            [self._activation.describe(), self._representation.describe()]
-        )
+        return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
     def get_attribute(self, attribute: str, silence: bool = False):
         ATTRNAME = "_defaults"
@@ -275,11 +241,7 @@ class Button(DatarefListener, DatarefSetListener):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 val = ld.get(attribute)
-        return (
-            val
-            if val is not None
-            else self.page.get_attribute(attribute, silence=silence)
-        )
+        return val if val is not None else self.page.get_attribute(attribute, silence=silence)
 
     def on_current_page(self):
         """
@@ -302,9 +264,7 @@ class Button(DatarefListener, DatarefSetListener):
                 self.set_current_value(self.button_value())
             logger.debug(f"button {self.name}: ..has value {self.current_value}.")
         else:
-            logger.debug(
-                f"button {self.name}: already has a value ({self.current_value}), initial value ignored"
-            )
+            logger.debug(f"button {self.name}: already has a value ({self.current_value}), initial value ignored")
         # logger.debug(f"button {self.name}: {self.id()}")
 
     def set_current_value(self, value):
@@ -389,9 +349,7 @@ class Button(DatarefListener, DatarefSetListener):
                 end = MAXRANGE if arr[1] == "" else int(arr[1])
                 cnt = end - start
                 if cnt > MAXRANGE:
-                    logger.warning(
-                        f"path {path} has {cnt} elements which is beyond {MAXRANGE} max."
-                    )
+                    logger.warning(f"path {path} has {cnt} elements which is beyond {MAXRANGE} max.")
                 return [f"{pathroot}[{i}]" for i in range(start, end)]
         return [path]
 
@@ -407,9 +365,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         collections = {}
         for collection in dc:
-            name = collection.get(
-                "name", self.name + "-collection#" + str(len(collections))
-            )
+            name = collection.get("name", self.name + "-collection#" + str(len(collections)))
             count = collection.get("array")
             if count is None:  # no repetition
                 collections[name] = collection
@@ -423,9 +379,7 @@ class Button(DatarefListener, DatarefSetListener):
                 for i in range(count):
                     new_collection = collection.copy()
                     new_name = f"{name}#{i}"
-                    new_collection["datarefs"] = [
-                        f"{d}[{i}]" for d in collection["datarefs"]
-                    ]
+                    new_collection["datarefs"] = [f"{d}[{i}]" for d in collection["datarefs"]]
                     new_collection["name"] = new_name
                     collections[new_name] = new_collection
 
@@ -450,17 +404,13 @@ class Button(DatarefListener, DatarefSetListener):
             datarefs = self._activation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
-                logger.debug(
-                    f"button {self.name}: added activation datarefs {datarefs}"
-                )
+                logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
         # Representation datarefs
         if self._representation is not None:
             datarefs = self._representation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
-                logger.debug(
-                    f"button {self.name}: added representation datarefs {datarefs}"
-                )
+                logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
         return list(set(r))  # removes duplicates
 
     def scan_datarefs(self, base: dict):
@@ -546,9 +496,7 @@ class Button(DatarefListener, DatarefSetListener):
             r = r + datarefs
 
         # Clean up
-        if (
-            KW.FORMULA.value in r
-        ):  # label or text may contain like ${{KW.FORMULA.value}}, but {KW.FORMULA.value} is not a dataref.
+        if KW.FORMULA.value in r:  # label or text may contain like ${{KW.FORMULA.value}}, but {KW.FORMULA.value} is not a dataref.
             r.remove(KW.FORMULA.value)
 
         return list(set(r))  # removes duplicates
@@ -560,9 +508,7 @@ class Button(DatarefListener, DatarefSetListener):
         return self.page.get_dataref_value(dataref=dataref, default=default)
 
     def get_dataref_value_from_collection(self, dataref, collection, default=None):
-        return self.sim.collector.get_dataref_value_from_collection(
-            dataref=dataref, collection=collection, default=default
-        )
+        return self.sim.collector.get_dataref_value_from_collection(dataref=dataref, collection=collection, default=default)
 
     def is_managed(self):
         if self.managed is None:
@@ -586,28 +532,20 @@ class Button(DatarefListener, DatarefSetListener):
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
 
-    def substitute_dataref_values(
-        self, message: str, default: str = "0.0", formatting=None
-    ):
+    def substitute_dataref_values(self, message: str, default: str = "0.0", formatting=None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
         """
-        if (
-            type(message) == int or type(message) == float
-        ):  # probably formula is a constant value
+        if type(message) == int or type(message) == float:  # probably formula is a constant value
             value_str = message
             if formatting is not None:
                 if formatting is not None:
                     value_str = formatting.format(message)
-                    logger.debug(
-                        f"button {self.name}: received int or float, returning as is."
-                    )
+                    logger.debug(f"button {self.name}: received int or float, returning as is.")
                 else:
                     value_str = str(message)
-                    logger.debug(
-                        f"button {self.name}: received int or float, returning formatted {formatting}."
-                    )
+                    logger.debug(f"button {self.name}: received int or float, returning formatted {formatting}.")
             return value_str
 
         dataref_names = re.findall(PATTERN_DOLCB, message)
@@ -623,9 +561,7 @@ class Button(DatarefListener, DatarefSetListener):
                     )
                     return message
             elif type(formatting) != str:
-                logger.warning(
-                    f"button {self.name}: single format is not a string, cannot proceed."
-                )
+                logger.warning(f"button {self.name}: single format is not a string, cannot proceed.")
                 return message
 
         retmsg = message
@@ -639,9 +575,7 @@ class Button(DatarefListener, DatarefSetListener):
                 elif formatting is not None and type(formatting) == str:
                     value_str = formatting.format(value)
             else:
-                value_str = (
-                    str(value) if value is not None else str(default)
-                )  # default gets converted in float sometimes!
+                value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
             cnt = cnt + 1
 
@@ -710,17 +644,13 @@ class Button(DatarefListener, DatarefSetListener):
             return text
         t1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != t1:
-            logger.log(
-                SPAM_LEVEL, f"substitute_values: button {self.name}: {text} => {t1}"
-            )
+            logger.log(SPAM_LEVEL, f"substitute_values: button {self.name}: {text} => {t1}")
         # t2 = self.substitute_button_values(t1, default=default, formatting=formatting)
         # logger.log(SPAM_LEVEL, f"substitute_values: button {self.name}: {t1} => {t2}")
         t2 = t1
         t3 = self.substitute_dataref_values(t2, default=default, formatting=formatting)
         if t3 != t2:
-            logger.log(
-                SPAM_LEVEL, f"substitute_values: button {self.name}: {t2} => {t3}"
-            )
+            logger.log(SPAM_LEVEL, f"substitute_values: button {self.name}: {t2} => {t3}")
         return t3
 
     def execute_formula(self, formula, default: float = 0.0):
@@ -775,17 +705,13 @@ class Button(DatarefListener, DatarefSetListener):
                 res = self.execute_formula(formula=dataref_rpn)
                 if res != "":  # Format output if format present
                     if text_format is not None:
-                        logger.debug(
-                            f"button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}"
-                        )
+                        logger.debug(f"button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                         res = text_format.format(res)
                     else:
                         res = str(res)
                 text = text.replace(KW_FORMULA_STR, res)
             else:
-                logger.warning(
-                    f"button {self.name}: text contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found"
-                )
+                logger.warning(f"button {self.name}: text contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
 
         text = self.substitute_values(text, formatting=text_format, default="---")
 
@@ -844,9 +770,7 @@ class Button(DatarefListener, DatarefSetListener):
         if len(self.all_datarefs) > 1:
             # 4.1 Mutiple Dataref with a formula, returns only one value
             if self.dataref_rpn is not None:
-                logger.debug(
-                    f"button {self.name}: getting formula with more than one datarefs"
-                )
+                logger.debug(f"button {self.name}: getting formula with more than one datarefs")
                 return self.execute_formula(formula=self.dataref_rpn)
             # 4.1 bis: If button has a dataref in its attribute, we may favor that dataref first?
             # if self.dataref is not None:
@@ -867,23 +791,17 @@ class Button(DatarefListener, DatarefSetListener):
         self._last_activation_state = self._activation.get_status()
 
         if "current_value" in self._last_activation_state:
-            logger.debug(
-                f"button {self.name}: getting activation current value ({self._last_activation_state['current_value']})"
-            )
+            logger.debug(f"button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
             return self._last_activation_state["current_value"]
 
-        logger.debug(
-            f"button {self.name}: getting entire state ({self._last_activation_state})"
-        )
+        logger.debug(f"button {self.name}: getting entire state ({self._last_activation_state})")
         return self._last_activation_state
 
     # ##################################
     # External API
     #
     def use_internal_state(self) -> bool:
-        return len(self.all_datarefs if self.all_datarefs is not None else []) == 0 or (
-            self._activation is not None and self._activation._has_no_value
-        )
+        return len(self.all_datarefs if self.all_datarefs is not None else []) == 0 or (self._activation is not None and self._activation._has_no_value)
 
     def dataref_changed(self, dataref: "Dataref"):
         """
@@ -915,9 +833,7 @@ class Button(DatarefListener, DatarefSetListener):
         """
         if self._activation is not None:
             if not self._activation.is_valid():
-                logger.warning(
-                    f"button {self.name}: activation is not valid, nothing executed"
-                )
+                logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return
             self._activs = self._activs + 1
             self._activation.activate(event)
@@ -980,7 +896,5 @@ class Button(DatarefListener, DatarefSetListener):
         Button removes itself from device
         """
         self._clean = self._clean + 1
-        self.previous_value = (
-            None  # this will provoke a refresh of the value on data reload
-        )
+        self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()

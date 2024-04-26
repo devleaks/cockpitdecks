@@ -15,18 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 class IconSide(Icon):  # modified Representation IconSide class
+
+    REPRESENTATION_NAME = "icon-side"
+
     def __init__(self, config: dict, button: "Button"):
-        config["icon-color"] = config["side"].get(
-            "icon-color", button.get_attribute("default-icon-color")
-        )
+        config["icon-color"] = config["side"].get("icon-color", button.get_attribute("default-icon-color"))
         Icon.__init__(self, config=config, button=button)
 
         self.side = config.get("side")  # multi-labels
         self.centers = self.side.get("centers", [43, 150, 227])  # type: ignore
         self.labels: str | None = self.side.get("labels")  # type: ignore
-        self.label_position = config.get(
-            "label-position", "cm"
-        )  # "centered" on middle of side image
+        self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
 
     def get_datarefs(self):
         datarefs = []
@@ -49,9 +48,7 @@ class IconSide(Icon):  # modified Representation IconSide class
 
     def is_valid(self):
         if self.button.index not in ["left", "right"]:
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}")
             return False
         return super().is_valid()
 
@@ -125,9 +122,7 @@ class IconSide(Icon):  # modified Representation IconSide class
                     font=font,
                     anchor=p + "m",
                     align=a,
-                    fill=label.get(
-                        "label-color", self.label_color
-                    ),  # (image.width / 2, 15)
+                    fill=label.get("label-color", self.label_color),  # (image.width / 2, 15)
                 )
 
                 # Text below LABEL
@@ -135,9 +130,7 @@ class IconSide(Icon):  # modified Representation IconSide class
                 tsize = label.get("text-size")
                 tfont = self.get_font(tfont, tsize)
 
-                text_position = (
-                    h + lsize + 5
-                )  # Adjust based on your needs, adding lsize for simplicity
+                text_position = h + lsize + 5  # Adjust based on your needs, adding lsize for simplicity
                 draw.text(
                     (w, text_position),
                     text=txto,

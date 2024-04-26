@@ -32,8 +32,12 @@ class Representation:
     """
     Base class for all representations
     """
-
+    REPRESENTATION_NAME = "none"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.NONE
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.REPRESENTATION_NAME
 
     @classmethod
     def get_required_capability(cls) -> list | tuple:
@@ -56,10 +60,8 @@ class Representation:
 
     def can_render(self) -> bool:
         button_cap = self.button._def[KW.VIEW.value]
-        if button_cap not in self.REQUIRED_DECK_FEEDBACKS:
-            logger.warning(
-                f"button {self.button_name()} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}."
-            )
+        if button_cap not in self.get_required_capability():
+            logger.warning(f"button {self.button_name()} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}.")
             return False
         return True
 
@@ -92,9 +94,7 @@ class Representation:
         it to the deck's render() function which takes appropriate action
         to pass the returned value to the appropriate device function for display.
         """
-        logger.debug(
-            f"button {self.button_name()}: {type(self).__name__} has no rendering"
-        )
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} has no rendering")
         return None
 
     def vibrate(self):
@@ -116,6 +116,7 @@ class Representation:
 #
 class Icon(Representation):
 
+    REPRESENTATION_NAME = "icon"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
     def __init__(self, config: dict, button: "Button"):
@@ -126,32 +127,18 @@ class Icon(Representation):
         # from hierarchy.
         self.label = config.get("label")
         self.label_format = config.get("label-format")
-        self.label_font = config.get(
-            "label-font", button.get_attribute("default-label-font")
-        )
-        self.label_size = int(
-            config.get("label-size", button.get_attribute("default-label-size"))
-        )
-        self.label_color = config.get(
-            "label-color", button.get_attribute("default-label-color")
-        )
+        self.label_font = config.get("label-font", button.get_attribute("default-label-font"))
+        self.label_size = int(config.get("label-size", button.get_attribute("default-label-size")))
+        self.label_color = config.get("label-color", button.get_attribute("default-label-color"))
         self.label_color = convert_color(self.label_color)
-        self.label_position = config.get(
-            "label-position", button.get_attribute("default-label-position")
-        )
+        self.label_position = config.get("label-position", button.get_attribute("default-label-position"))
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default")
             self.label_position = button.get_attribute("default-label-position")
 
-        self.icon_color = config.get(
-            "icon-color", button.get_attribute("default-icon-color")
-        )
+        self.icon_color = config.get("icon-color", button.get_attribute("default-icon-color"))
         self.icon_color = convert_color(self.icon_color)
-        self.icon_texture = config.get(
-            "icon-texture", button.get_attribute("default-icon-texture")
-        )
+        self.icon_texture = config.get("icon-texture", button.get_attribute("default-icon-texture"))
 
         self.text_config = config  # where to get text from
 
@@ -165,13 +152,9 @@ class Icon(Representation):
                 fn = add_ext(candidate_icon, ext)
                 if self.icon is None and fn in deck.icons.keys():
                     self.icon = fn
-                    logger.debug(
-                        f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} found"
-                    )
+                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} found")
             if self.icon is None:
-                logger.warning(
-                    f"button {self.button_name()}: {type(self).__name__}: icon not found {candidate_icon}"
-                )
+                logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {candidate_icon}")
 
         if self.icon is None:
             self.make_icon()
@@ -186,24 +169,18 @@ class Icon(Representation):
             texture=self.icon_texture,
             name=self.icon,
         )
-        logger.debug(
-            f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}"
-        )
+        logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}")
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
             if self.icon is not None:
                 if self.icon not in self.button.deck.icons.keys():
-                    logger.warning(
-                        f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck"
-                    )
+                    logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
                     return False
                 return True
             if self.icon_color is not None:
                 return True
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no icon and no icon color"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon and no icon color")
         return False
 
     def render(self):
@@ -225,9 +202,7 @@ class Icon(Representation):
         if dflt_text_font is None:
             dflt_text_font = self.button.get_attribute("default-label-font")
             if dflt_text_font is None:
-                logger.warning(
-                    f"button {self.button_name()}: no default label font, using system font"
-                )
+                logger.warning(f"button {self.button_name()}: no default label font, using system font")
                 dflt_text_font = dflt_system_font
 
         text_font = config.get(f"{which_text}-font", dflt_text_font)
@@ -236,9 +211,7 @@ class Icon(Representation):
         if dflt_text_size is None:
             dflt_text_size = self.button.get_attribute("default-label-size")
             if dflt_text_size is None:
-                logger.warning(
-                    f"button {self.button_name()}: no default label size, using 10"
-                )
+                logger.warning(f"button {self.button_name()}: no default label size, using 10")
                 dflt_text_size = 16
         text_size = config.get(f"{which_text}-size", dflt_text_size)
 
@@ -246,9 +219,7 @@ class Icon(Representation):
         if dflt_text_color is None:
             dflt_text_color = self.button.get_attribute("default-label-color")
             if dflt_text_color is None:
-                logger.warning(
-                    f"button {self.button_name()}: no default label color, using {DEFAULT_COLOR}"
-                )
+                logger.warning(f"button {self.button_name()}: no default label color, using {DEFAULT_COLOR}")
                 dflt_text_color = DEFAULT_COLOR
         text_color = config.get(f"{which_text}-color", dflt_text_color)
         text_color = convert_color(text_color)
@@ -257,28 +228,20 @@ class Icon(Representation):
         if dflt_text_position is None:
             dflt_text_position = self.button.get_attribute("default-label-position")
             if dflt_text_position is None:
-                logger.warning(
-                    f"button {self.button_name()}: no default label position, using cm"
-                )
+                logger.warning(f"button {self.button_name()}: no default label position, using cm")
                 dflt_text_position = "cm"  # middle of icon
         text_position = config.get(f"{which_text}-position", dflt_text_position)
         if text_position[0] not in "lcr":
             text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
         if text_position[1] not in "tmb":
             text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
 
         # print(f">>>> {self.button.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
 
         if text is not None and not isinstance(text, str):
-            logger.warning(
-                f"button {self.button_name()}: converting text {text} to string (type {type(text)})"
-            )
+            logger.warning(f"button {self.button_name()}: converting text {text} to string (type {type(text)})")
             text = str(text)
 
         return text, text_format, text_font, text_color, text_size, text_position
@@ -351,15 +314,11 @@ class Icon(Representation):
                     logger.debug(f"button {this_button}: found {fn} in deck")
                     self.icon = fn
                     image = deck.icons[self.icon]
-                elif (
-                    fn in deck.cockpit.icons.keys()
-                ):  # then icon, but need to resize it if necessary
+                elif fn in deck.cockpit.icons.keys():  # then icon, but need to resize it if necessary
                     logger.debug(f"button {this_button}: found {fn} in cockpit")
                     self.icon = fn
                     image = deck.cockpit.icons[self.icon]
-                    image = deck.scale_icon_for_key(
-                        self.button.index, image, name=self.icon
-                    )  # this will cache it in the deck as well
+                    image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
         if image is None:
             logger.warning(f"button {this_button}: {self.icon} not found")
         return image
@@ -377,9 +336,7 @@ class Icon(Representation):
             image = self.get_image_for_icon()
 
         if image is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} no image"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} no image")
             return None
 
         if self.button.has_option("placeholder"):
@@ -410,10 +367,7 @@ class Icon(Representation):
                 draw.polygon(pologon, fill="orange")
 
             # Activation is invalid, add a little red mark (may be on top of above mark...)
-            if (
-                self.button._activation is not None
-                and not self.button._activation.is_valid()
-            ):
+            if self.button._activation is not None and not self.button._activation.is_valid():
                 image = image.copy()  # we will add text over it
                 draw = ImageDraw.Draw(image)
                 c = round(0.97 * image.width)  # % from edge
@@ -442,12 +396,7 @@ class Icon(Representation):
         this_button = f"{self.button_name()}: {type(self).__name__}"
         image = None
         deck = self.button.deck
-        if (
-            frame is None
-            or frame_size is None
-            or frame_position is None
-            or frame_content is None
-        ):
+        if frame is None or frame_size is None or frame_position is None or frame_content is None:
             logger.warning(f"button {this_button}: invalid frame {self.frame}, {frame}")
         else:
             image = deck.get_icon_background(
@@ -467,9 +416,7 @@ class Icon(Representation):
                 90,
                 125,
             )  # frame_position + (frame_position[0]+frame_content[0],frame_position[1]+frame_content[1])
-            logger.debug(
-                f"button {this_button}: {self.icon}, {frame}, {image}, {inside}, {box}"
-            )
+            logger.debug(f"button {this_button}: {self.icon}, {frame}, {image}, {inside}, {box}")
             image.paste(inside, box)
             image = deck.scale_icon_for_key(self.button, image)
             return image
@@ -483,9 +430,7 @@ class Icon(Representation):
         if which_text == "text":  # hum.
             text_dict = self.text_config
 
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(text_dict, which_text)
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
 
         if which_text == "label":
             text_size = int(text_size * image.width / 72)
@@ -519,9 +464,7 @@ class Icon(Representation):
         elif text_position[1] == "b":
             h = image.height - inside - text_size / 2
         # logger.debug(f"position {(w, h)}")
-        draw.multiline_text(
-            (w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color
-        )  # (image.width / 2, 15)
+        draw.multiline_text((w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color)  # (image.width / 2, 15)
         return image
 
     def clean(self):
@@ -541,15 +484,16 @@ class Icon(Representation):
         if icon is not None:
             deck._send_key_image_to_device(self.button._key, icon)
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no clean icon"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no clean icon")
 
     def describe(self):
         return "The representation places an icon with optional label overlay."
 
 
 class IconText(Icon):
+
+    REPRESENTATION_NAME = "text"
+
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
@@ -577,6 +521,9 @@ class IconText(Icon):
 
 
 class MultiTexts(IconText):
+
+    REPRESENTATION_NAME = "muti-texts"
+
     def __init__(self, config: dict, button: "Button"):
         IconText.__init__(self, config=config, button=button)
 
@@ -584,9 +531,7 @@ class MultiTexts(IconText):
         if self.multi_texts is None:
             self.multi_texts = config.get("multi-texts", [])
         else:
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
 
     def get_datarefs(self):
         datarefs = []
@@ -598,14 +543,10 @@ class MultiTexts(IconText):
 
     def is_valid(self):
         if self.multi_texts is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no icon"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
             return False
         if len(self.multi_texts) == 0:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no icon"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
         return super().is_valid()
 
     def num_texts(self):
@@ -614,16 +555,12 @@ class MultiTexts(IconText):
     def render(self):
         value = self.get_current_value()
         if value is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None
         if type(value) in [str, int, float]:
             value = int(value)
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: complex value {value}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
             return None
         if self.num_texts() > 0:
             if value >= 0 and value < self.num_texts():
@@ -632,33 +569,32 @@ class MultiTexts(IconText):
                 self.text_config = self.multi_texts[value % self.multi_texts()]
             return super().render()
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts()}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts()}")
         return None
 
     def describe(self):
         return "\n\r".join(
-            [
-                f"The representation produces an icon with text, text is selected from a list of {len(self.multi_texts)} texts bsaed on the button's value."
-            ]
+            [f"The representation produces an icon with text, text is selected from a list of {len(self.multi_texts)} texts bsaed on the button's value."]
         )
 
 
 class IconSide(Icon):
+
+    REPRESENTATION_NAME = "side"
+
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
         page = self.button.page
         self.side = config.get("side")  # multi-labels
+        if self.side is None:
+            logger.error(f"button {self.button_name()}: invalid config {config}, no side details")
         self.icon_color = self.side.get("icon-color", page.default_icon_color)  # type: ignore
         if self.icon_color is not None:
             self.icon_color = convert_color(self.icon_color)
         self.centers = self.side.get("centers", [43, 150, 227])  # type: ignore
         self.labels: str | None = self.side.get("labels")  # type: ignore
-        self.label_position = config.get(
-            "label-position", "cm"
-        )  # "centered" on middle of side image
+        self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
 
     def get_datarefs(self):
         if self.datarefs is None:
@@ -667,17 +603,13 @@ class IconSide(Icon):
                 for label in self.labels:
                     dref = label.get(KW.MANAGED.value)
                     if dref is not None:
-                        logger.debug(
-                            f"button {self.button_name()}: added label dataref {dref}"
-                        )
+                        logger.debug(f"button {self.button_name()}: added label dataref {dref}")
                         self.datarefs.append(dref)
         return self.datarefs
 
     def is_valid(self):
         if self.button.index not in ["left", "right"]:
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__}: not a valid index {self.button.index}")
             return False
         return super().is_valid()
 
@@ -754,9 +686,7 @@ class IconSide(Icon):
                     font=font,
                     anchor=p + "m",
                     align=a,
-                    fill=label.get(
-                        "label-color", self.label_color
-                    ),  # (image.width / 2, 15)
+                    fill=label.get("label-color", self.label_color),  # (image.width / 2, 15)
                 )
                 li = li + 1
         return image
@@ -766,6 +696,9 @@ class IconSide(Icon):
 
 
 class MultiIcons(Icon):
+
+    REPRESENTATION_NAME = "multi-icons"
+
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
@@ -773,32 +706,22 @@ class MultiIcons(Icon):
         if len(self.multi_icons) == 0:
             self.multi_icons = config.get("multi-icons", [])
         else:
-            logger.debug(
-                f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}"
-            )
+            logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
 
         if len(self.multi_icons) > 0:
             for i in range(len(self.multi_icons)):
                 self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
                 if self.multi_icons[i] not in self.button.deck.icons.keys():
-                    logger.warning(
-                        f"button {self.button_name()}: {type(self).__name__}: icon not found {self.multi_icons[i]}"
-                    )
+                    logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no icon"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
 
     def is_valid(self):
         if self.multi_icons is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no icon"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
             return False
         if len(self.multi_icons) == 0:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no icon"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
         return super().is_valid()
 
     def num_icons(self):
@@ -807,16 +730,12 @@ class MultiIcons(Icon):
     def render(self):
         value = self.get_current_value()
         if value is None:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None
         if type(value) in [str, int, float]:
             value = int(value)
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: complex value {value}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
             return None
         if self.num_icons() > 0:
             if value >= 0 and value < self.num_icons():
@@ -825,17 +744,11 @@ class MultiIcons(Icon):
                 self.icon = self.multi_icons[value % self.num_icons()]
             return super().render()
         else:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_icons()}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
         return None
 
     def describe(self):
-        return "\n\r".join(
-            [
-                f"The representation produces an icon selected from a list of {len(self.multi_icons)} icons."
-            ]
-        )
+        return "\n\r".join([f"The representation produces an icon selected from a list of {len(self.multi_icons)} icons."])
 
 
 #
@@ -845,6 +758,7 @@ class MultiIcons(Icon):
 #
 class LED(Representation):
 
+    REPRESENTATION_NAME = "led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.LED
 
     def __init__(self, config: dict, button: "Button"):
@@ -871,12 +785,11 @@ class LED(Representation):
 
 class ColoredLED(Representation):
 
+    REPRESENTATION_NAME = "colored-led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.COLORED_LED
 
     def __init__(self, config: dict, button: "Button"):
-        self._color = config.get(
-            KW.COLORED_LED.value, button.get_attribute("cockpit-color")
-        )
+        self._color = config.get(KW.COLORED_LED.value, button.get_attribute("cockpit-color"))
         self.color = (128, 128, 256)
         Representation.__init__(self, config=config, button=button)
 
@@ -884,9 +797,7 @@ class ColoredLED(Representation):
         if type(self._color) == dict:  # @todo: does not currently work
             self.datarefs = self.button.scan_datarefs(self._color)
             if self.datarefs is not None and len(self.datarefs) > 0:
-                logger.debug(
-                    f"button {self.button_name()}: adding datarefs {self.datarefs} for color"
-                )
+                logger.debug(f"button {self.button_name()}: adding datarefs {self.datarefs} for color")
         else:
             self.color = convert_color(self._color)
 
@@ -909,15 +820,11 @@ class ColoredLED(Representation):
                 hue = self.button.execute_formula(formula=dataref_rpn)
         else:
             hue = int(color_str)
-            logger.warning(
-                f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found"
-            )
+            logger.warning(f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
 
         color_rgb = colorsys.hsv_to_rgb((int(hue) % 360) / 360, 1, 1)
         self.color = [int(255 * i) for i in color_rgb]  # type: ignore
-        logger.debug(
-            f"{color_str}, {hue}, {[(int(hue) % 360)/360,1,1]}, {color_rgb}, {self.color}"
-        )
+        logger.debug(f"{color_str}, {hue}, {[(int(hue) % 360)/360,1,1]}, {color_rgb}, {self.color}")
         return self.color
 
     def render(self):
@@ -934,9 +841,7 @@ class ColoredLED(Representation):
         """
         Describe what the button does in plain English
         """
-        a = [
-            f"The representation turns ON or OFF a single LED light and changes the color of the LED."
-        ]
+        a = [f"The representation turns ON or OFF a single LED light and changes the color of the LED."]
         return "\n\r".join(a)
 
 
@@ -955,6 +860,7 @@ class MultiLEDs(Representation):
     Ring of 13 LEDs surrounding X-Touch Mini encoders
     """
 
+    REPRESENTATION_NAME = "encoder-led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.MULTI_LEDS
 
     def __init__(self, config: dict, button: "Button"):
@@ -973,9 +879,7 @@ class MultiLEDs(Representation):
         maxval = 7 if self.mode == LED_MODE.SPREAD else 13
         value = self.get_current_value()
         if value >= maxval:
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: value {value} too large for mode {self.mode}"
-            )
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: value {value} too large for mode {self.mode}")
         return super().is_valid()
 
     def render(self):
@@ -993,50 +897,3 @@ class MultiLEDs(Representation):
         """
         a = [f"The representation turns multiple LED ON or OFF"]
         return "\n\r".join(a)
-
-
-#
-# #############################################################################################
-# #############################################################################################
-#
-# REPRESENTATIONS
-#
-# "Icon" Buttons that are dynamically drawn
-#
-from .annunciator import Annunciator, AnnunciatorAnimate
-from .draw import DataIcon, Switch, CircularSwitch, PushSwitch
-from .animation import IconAnimation, DrawAnimationFTG
-
-REPRESENTATIONS = {
-    "none": Representation,
-    "icon": Icon,
-    "text": IconText,
-    "icon-color": Icon,
-    "multi-icons": MultiIcons,
-    "icon-animate": IconAnimation,
-    "side": IconSide,
-    "led": LED,
-    "colored-led": ColoredLED,
-    "multi-leds": MultiLEDs,
-    "annunciator": Annunciator,
-    "annunciator-animate": AnnunciatorAnimate,
-    "switch": Switch,
-    "circular-switch": CircularSwitch,
-    "push-switch": PushSwitch,
-    "data": DataIcon,
-    "ftg": DrawAnimationFTG,
-}
-
-#
-# ###############################
-# OPTIONAL REPRESENTATIONS
-#
-#
-# Will only load if AVWX is installed
-try:
-    from .button_ext import WeatherIcon
-
-    REPRESENTATIONS["weather"] = WeatherIcon
-    logger.info(f"WeatherIcon installed")
-except ImportError:
-    pass

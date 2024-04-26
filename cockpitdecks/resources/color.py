@@ -51,18 +51,14 @@ def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
         try:
             color = ImageColor.getrgb(instr)
         except ValueError:
-            logger.debug(
-                f"fail to convert color {instr} ({type(instr)}), using {DEFAULT_COLOR}"
-            )
+            logger.debug(f"fail to convert color {instr} ({type(instr)}), using {DEFAULT_COLOR}")
             color = DEFAULT_COLOR
         return tuple(color)
     logger.debug(f"not a string {instr} ({type(instr)}), using {DEFAULT_COLOR}")
     return DEFAULT_COLOR
 
 
-def light_off(
-    color: str | Tuple[int, int, int], lightness: float = 0.10
-) -> Tuple[int, int, int]:
+def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tuple[int, int, int]:
     # Darkens (or lighten) a color
     if type(color) not in [tuple, list]:
         color = convert_color(color)
@@ -72,17 +68,13 @@ def light_off(
 
 
 def has_ext(name: str, ext: str) -> bool:
-    rext = (
-        ext if not ext.startswith(".") else ext[1:]
-    )  # remove leading period from extension if any
+    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")
     return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
 
 
 def add_ext(name: str, ext: str) -> str:
-    rext = (
-        ext if not ext.startswith(".") else ext[1:]
-    )  # remove leading period from extension if any
+    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
     narr = name.split(".")
     if len(narr) < 2:  # has no extension
         return name + "." + rext

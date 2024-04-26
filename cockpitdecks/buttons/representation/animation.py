@@ -26,6 +26,7 @@ class IconAnimation(MultiIcons):
     To stop the anination, set the button's current_value to 0.
     When not running, an optional icon_off can be supplied, otherwise first icon in multi-icons list will be used.
     """
+    REPRESENTATION_NAME = "icon-animation"
 
     def __init__(self, config: dict, button: "Button"):
         MultiIcons.__init__(self, config=config, button=button)
@@ -47,9 +48,7 @@ class IconAnimation(MultiIcons):
         while not self.exit.is_set():
             self.button.render()
             self.counter = self.counter + 1
-            self.button.set_current_value(
-                self.counter
-            )  # get_current_value() will fetch self.counter value
+            self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
             self.exit.wait(self.speed)
         logger.debug(f"exited")
 
@@ -119,9 +118,7 @@ class IconAnimation(MultiIcons):
             f"and changing it every {self.speed} seconds."
         ]
         if self.icon_off is not None:
-            a.append(
-                f"When the animation is not running, it displays an OFF icon {self.icon_off}."
-            )
+            a.append(f"When the animation is not running, it displays an OFF icon {self.icon_off}.")
         return "\n\r".join(a)
 
 
@@ -134,6 +131,7 @@ class DrawAnimation(DrawBase):
     """
     https://stackoverflow.com/questions/5114292/break-interrupt-a-time-sleep-in-python
     """
+    REPRESENTATION_NAME = "draw-animation"
 
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
@@ -197,9 +195,7 @@ class DrawAnimation(DrawBase):
             self.exit.set()
             self.thread.join(timeout=2 * self.speed)
             if self.thread.is_alive():
-                logger.warning(
-                    f"button {self.button.name}: animation did not terminate"
-                )
+                logger.warning(f"button {self.button.name}: animation did not terminate")
             logger.debug(f"stopped")
         else:
             logger.debug(f"button {self.button.name}: already stopped")
@@ -219,9 +215,7 @@ class DrawAnimation(DrawBase):
         """
         logger.debug(f"button {self.button.name}: enter")
         if self.is_valid():
-            logger.debug(
-                f"button {self.button.name}: is valid {self.should_run()}, {self.running}"
-            )
+            logger.debug(f"button {self.button.name}: is valid {self.should_run()}, {self.running}")
             if self.should_run():
                 if not self.running:
                     self.anim_start()
@@ -234,6 +228,9 @@ class DrawAnimation(DrawBase):
 
 
 class DrawAnimationFTG(DrawAnimation):
+
+    REPRESENTATION_NAME = "ftg"
+
     def __init__(self, config: dict, button: "Button"):
         DrawAnimation.__init__(self, config=config, button=button)
 
@@ -241,10 +238,7 @@ class DrawAnimationFTG(DrawAnimation):
         """
         I.e. only works with onoff activations.
         """
-        return (
-            hasattr(self.button._activation, "is_on")
-            and self.button._activation.is_on()
-        )
+        return hasattr(self.button._activation, "is_on") and self.button._activation.is_on()
 
     def get_image_for_icon(self):
         """
@@ -259,9 +253,7 @@ class DrawAnimationFTG(DrawAnimation):
         # Button
         cs = 4  # light size, px
         lum = 5  # num flashing green center lines
-        nb = (
-            2 * lum
-        )  # num side bleu lights, i.e. twice more blue lights than green ones
+        nb = 2 * lum  # num side bleu lights, i.e. twice more blue lights than green ones
         h0 = ICON_SIZE / 16  # space from left/right sides
         h1 = ICON_SIZE / 2 - h0  # space from bottom of upper middle part
         s = (ICON_SIZE - (2 * h0)) / (nb - 1)  # spece between blue lights
@@ -283,9 +275,7 @@ class DrawAnimationFTG(DrawAnimation):
             w = ICON_SIZE - w
             tl = [w - cs, h - cs]
             br = [w + cs, h + cs]
-            color = (
-                "lime" if self.running and (self.tween + i) % lum == 0 else "chocolate"
-            )
+            color = "lime" if self.running and (self.tween + i) % lum == 0 else "chocolate"
             draw.ellipse(tl + br, fill=color)
 
         # Text AVAIL (=off) or framed ON (=on)
@@ -302,12 +292,8 @@ class DrawAnimationFTG(DrawAnimation):
                 align="center",
                 fill="deepskyblue",
             )
-            txtbb = draw.multiline_textbbox(
-                (cx, cy), text="ON", font=font, anchor="mm", align="center"
-            )  # min frame, just around the text
-            text_margin = (
-                2 * inside
-            )  # margin "around" text, line will be that far from text
+            txtbb = draw.multiline_textbbox((cx, cy), text="ON", font=font, anchor="mm", align="center")  # min frame, just around the text
+            text_margin = 2 * inside  # margin "around" text, line will be that far from text
             framebb = (
                 (txtbb[0] - text_margin, txtbb[1] - text_margin / 2),
                 (txtbb[2] + text_margin, txtbb[3] + text_margin / 2),

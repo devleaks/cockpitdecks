@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 class FCUIcon(DrawBase):
     """Highly customized class to display FCU on Streamdeck Plus touchscreen (whole screen)."""
 
+    REPRESENTATION_NAME = "fcu"
+
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
         self.fcuconfig = config.get("fcu")
@@ -65,21 +67,12 @@ class FCUIcon(DrawBase):
 
         inside = round(0.04 * ICON_SIZE + 0.5)
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fcuconfig, "text")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fcuconfig, "text")
 
         # demo through default values
         #
-        mach_mode = (
-            self.button.get_dataref_value(
-                "sim/cockpit/autopilot/airspeed_is_mach", default=0
-            )
-            == 1
-        )
-        heading_mode = (
-            self.button.get_dataref_value("AirbusFBW/HDGTRKmode", default=1) == 0
-        )
+        mach_mode = self.button.get_dataref_value("sim/cockpit/autopilot/airspeed_is_mach", default=0) == 1
+        heading_mode = self.button.get_dataref_value("AirbusFBW/HDGTRKmode", default=1) == 0
 
         # print("\n".join(self.button.page.datarefs.keys()))
         # print(
@@ -115,9 +108,7 @@ class FCUIcon(DrawBase):
                 fill=text_color,
             )
 
-        draw.text(
-            (720, h), text="LAT", font=font, anchor="ls", align="left", fill=text_color
-        )
+        draw.text((720, h), text="LAT", font=font, anchor="ls", align="left", fill=text_color)
         if heading_mode:
             draw.text(
                 (460, h),
@@ -188,9 +179,7 @@ class FCUIcon(DrawBase):
                 fill=text_color,
             )
 
-        draw.text(
-            (1320, h), text="ALT", font=font, anchor="ls", align="left", fill=text_color
-        )
+        draw.text((1320, h), text="ALT", font=font, anchor="ls", align="left", fill=text_color)
         draw.text(
             (1600, h),
             text="LVL/CH",
@@ -234,9 +223,7 @@ class FCUIcon(DrawBase):
 
         # values
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fcuconfig, "value")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fcuconfig, "value")
         font = self.get_font(text_font, text_size)
         one = " 1" if text_font == "Seven Segment" else "1"
         h = 200
@@ -245,13 +232,9 @@ class FCUIcon(DrawBase):
 
         #
         # SPEED
-        speed_managed = (
-            self.button.get_dataref_value("AirbusFBW/SPDmanaged", default=0) == 1
-        )
+        speed_managed = self.button.get_dataref_value("AirbusFBW/SPDmanaged", default=0) == 1
         speed = "---"
-        speed_dashed = (
-            self.button.get_dataref_value("AirbusFBW/SPDdashed", default=0) == 1
-        )
+        speed_dashed = self.button.get_dataref_value("AirbusFBW/SPDdashed", default=0) == 1
         if speed_dashed:
             draw.text(
                 (20, h),
@@ -263,9 +246,7 @@ class FCUIcon(DrawBase):
             )
         else:
             spdft = 0.56 if mach_mode else 249
-            speed_val = self.button.get_dataref_value(
-                "sim/cockpit2/autopilot/airspeed_dial_kts_mach", default=spdft
-            )
+            speed_val = self.button.get_dataref_value("sim/cockpit2/autopilot/airspeed_dial_kts_mach", default=spdft)
             if speed_val is not None:
                 if mach_mode:
                     speed_val = round(speed_val * 100) / 100
@@ -287,12 +268,8 @@ class FCUIcon(DrawBase):
             draw.ellipse(dot, fill=text_color)
         #
         # HEADING
-        heading_managed = (
-            self.button.get_dataref_value("AirbusFBW/HDGmanaged", default=0) == 1
-        )
-        heading_dashed = (
-            self.button.get_dataref_value("AirbusFBW/HDGdashed", default=0) == 1
-        )
+        heading_managed = self.button.get_dataref_value("AirbusFBW/HDGmanaged", default=0) == 1
+        heading_dashed = self.button.get_dataref_value("AirbusFBW/HDGdashed", default=0) == 1
         if heading_dashed:
             heading = "---"
             draw.text(
@@ -304,9 +281,7 @@ class FCUIcon(DrawBase):
                 fill=text_color,
             )
         else:
-            heading_val = self.button.get_dataref_value(
-                "sim/cockpit/autopilot/heading_mag", 0
-            )
+            heading_val = self.button.get_dataref_value("sim/cockpit/autopilot/heading_mag", 0)
             heading_val = int(round(heading_val, 0))
             heading = f"{heading_val:03d}"
             draw.text(
@@ -323,13 +298,9 @@ class FCUIcon(DrawBase):
             draw.ellipse(dot, fill=text_color)
         #
         # ALTITUDE (always displayed)
-        alt_managed = (
-            self.button.get_dataref_value("AirbusFBW/ALTmanaged", default=0) == 1
-        )
+        alt_managed = self.button.get_dataref_value("AirbusFBW/ALTmanaged", default=0) == 1
         vs_dashed = self.button.get_dataref_value("AirbusFBW/VSdashed", False)
-        alt_ft_val = self.button.get_dataref_value(
-            "sim/cockpit2/autopilot/altitude_dial_ft", 26789
-        )
+        alt_ft_val = self.button.get_dataref_value("sim/cockpit2/autopilot/altitude_dial_ft", 26789)
         alt_ft_val = int(round(alt_ft_val, 0))
         alt = f"{alt_ft_val: 5d}"
         draw.text(
@@ -359,9 +330,7 @@ class FCUIcon(DrawBase):
             )  # should always be len=5 or 6
         else:
             vsdft = -1200 if heading_mode else -2.5
-            vs_val = self.button.get_dataref_value(
-                "sim/cockpit/autopilot/vertical_velocity", default=vsdft
-            )
+            vs_val = self.button.get_dataref_value("sim/cockpit/autopilot/vertical_velocity", default=vsdft)
             vs_val_abs = abs(vs_val)
             vs = ""
             if heading_mode:  # V/S
@@ -415,19 +384,10 @@ class FCUIcon(DrawBase):
         inside = round(0.04 * ICON_SIZE + 0.5)
 
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fcuconfig, "text")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fcuconfig, "text")
 
-        mach_mode = (
-            self.button.get_dataref_value(
-                "sim/cockpit/autopilot/airspeed_is_mach", default=0
-            )
-            == 1
-        )
-        heading_mode = (
-            self.button.get_dataref_value("AirbusFBW/HDGTRKmode", default=1) == 0
-        )
+        mach_mode = self.button.get_dataref_value("sim/cockpit/autopilot/airspeed_is_mach", default=0) == 1
+        heading_mode = self.button.get_dataref_value("AirbusFBW/HDGTRKmode", default=1) == 0
 
         font = self.get_font(text_font, text_size)
         h = inside + text_size
@@ -479,9 +439,7 @@ class FCUIcon(DrawBase):
 
         # values
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fcuconfig, "value")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fcuconfig, "value")
         font = self.get_font(text_font, text_size)
         one = " 1" if text_font == "Seven Segment" else "1"
         dot_size = 10
@@ -489,12 +447,8 @@ class FCUIcon(DrawBase):
 
         #
         # SPEED
-        speed_managed = (
-            self.button.get_dataref_value("AirbusFBW/SPDmanaged", default=0) == 1
-        )
-        speed_dashed = (
-            self.button.get_dataref_value("AirbusFBW/SPDdashed", default=0) == 1
-        )
+        speed_managed = self.button.get_dataref_value("AirbusFBW/SPDmanaged", default=0) == 1
+        speed_dashed = self.button.get_dataref_value("AirbusFBW/SPDdashed", default=0) == 1
         h = ICON_SIZE / 2
         speed = "---"
         if speed_dashed:
@@ -508,9 +462,7 @@ class FCUIcon(DrawBase):
             )
         else:
             spdft = 0.56 if mach_mode else 249
-            speed_val = self.button.get_dataref_value(
-                "sim/cockpit2/autopilot/airspeed_dial_kts_mach", default=spdft
-            )
+            speed_val = self.button.get_dataref_value("sim/cockpit2/autopilot/airspeed_dial_kts_mach", default=spdft)
             if speed_val is not None:
                 if mach_mode:
                     speed_val = round(speed_val * 100) / 100
@@ -531,12 +483,8 @@ class FCUIcon(DrawBase):
             draw.ellipse(dot, fill=text_color)
         #
         # HEADING
-        heading_managed = (
-            self.button.get_dataref_value("AirbusFBW/HDGmanaged", default=0) == 1
-        )
-        heading_dashed = (
-            self.button.get_dataref_value("AirbusFBW/HDGdashed", default=0) == 1
-        )
+        heading_managed = self.button.get_dataref_value("AirbusFBW/HDGmanaged", default=0) == 1
+        heading_dashed = self.button.get_dataref_value("AirbusFBW/HDGdashed", default=0) == 1
         h = 3 * ICON_SIZE / 2
         if heading_dashed:
             heading = "---"
@@ -549,9 +497,7 @@ class FCUIcon(DrawBase):
                 fill=text_color,
             )
         else:
-            heading_val = self.button.get_dataref_value(
-                "sim/cockpit/autopilot/heading_mag", 0
-            )
+            heading_val = self.button.get_dataref_value("sim/cockpit/autopilot/heading_mag", 0)
             heading_val = int(round(heading_val, 0))
             heading = f"{heading_val:03d}"
             draw.text(
@@ -580,9 +526,7 @@ class FCUIcon(DrawBase):
                 fill=text_color,
             )
         else:
-            qnh_val = self.button.get_dataref_value(
-                "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot", 0
-            )
+            qnh_val = self.button.get_dataref_value("sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot", 0)
             qnh_metric = self.button.get_dataref_value("AirbusFBW/BaroUnitCapt", 1) == 1
             if qnh_metric:
                 qnh_val = int(round(float(qnh_val) * 33.8639, 0))
@@ -624,13 +568,9 @@ class FCUIcon(DrawBase):
         inside = round(0.04 * ICON_SIZE + 0.5)
 
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fcuconfig, "text")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fcuconfig, "text")
 
-        heading_mode = (
-            self.button.get_dataref_value("AirbusFBW/HDGTRKmode", default=1) == 0
-        )
+        heading_mode = self.button.get_dataref_value("AirbusFBW/HDGTRKmode", default=1) == 0
 
         font = self.get_font(text_font, text_size)
         h = inside + text_size
@@ -674,9 +614,7 @@ class FCUIcon(DrawBase):
 
         # values
         # pylint: disable=W0612
-        text, text_format, text_font, text_color, text_size, text_position = (
-            self.get_text_detail(self.fcuconfig, "value")
-        )
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fcuconfig, "value")
         text_size = int(2 * text_size / 3)
         font = self.get_font(text_font, text_size)
         one = " 1" if text_font == "Seven Segment" else "1"
@@ -684,9 +622,7 @@ class FCUIcon(DrawBase):
         wdot = image.width - inside - dot_size * 2
 
         # ALTITUDE (always displayed)
-        alt_ft_val = self.button.get_dataref_value(
-            "sim/cockpit2/autopilot/altitude_dial_ft", 26789
-        )
+        alt_ft_val = self.button.get_dataref_value("sim/cockpit2/autopilot/altitude_dial_ft", 26789)
         alt_ft_val = int(round(alt_ft_val, 0))
         alt = f"{alt_ft_val: 5d}"
         h = ICON_SIZE / 2
@@ -699,9 +635,7 @@ class FCUIcon(DrawBase):
             fill=text_color,
         )
 
-        alt_managed = (
-            self.button.get_dataref_value("AirbusFBW/ALTmanaged", default=0) == 1
-        )
+        alt_managed = self.button.get_dataref_value("AirbusFBW/ALTmanaged", default=0) == 1
         if alt_managed:
             dot = ((wdot - dot_size, h - dot_size), (wdot + dot_size, h + dot_size))
             draw.ellipse(dot, fill=text_color)
@@ -722,9 +656,7 @@ class FCUIcon(DrawBase):
             )
         else:
             vsdft = -1200 if heading_mode else -2.5
-            vs_val = self.button.get_dataref_value(
-                "sim/cockpit/autopilot/vertical_velocity", default=vsdft
-            )
+            vs_val = self.button.get_dataref_value("sim/cockpit/autopilot/vertical_velocity", default=vsdft)
             vs_val_abs = abs(vs_val)
             vs = ""
             if heading_mode:  # V/S
@@ -745,9 +677,7 @@ class FCUIcon(DrawBase):
         # little + or - in front of vertical speed
         font = self.get_font("Seven Segment", int(text_size))
         vs = "-" if vs_val < 0 else "+"
-        draw.text(
-            (inside, h), text=vs, font=font, anchor="lm", align="left", fill=text_color
-        )  # should always be len=5 or 6
+        draw.text((inside, h), text=vs, font=font, anchor="lm", align="left", fill=text_color)  # should always be len=5 or 6
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(

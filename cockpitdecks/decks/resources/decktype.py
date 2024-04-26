@@ -2,16 +2,15 @@ import logging
 
 from functools import reduce
 
-from cockpitdecks import DECK_ACTIONS, DECK_FEEDBACK, KW, Config
-
+from cockpitdecks import KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.representation import get_representations_for
 
 loggerButtonType = logging.getLogger("ButtonType")
 # loggerButtonType.setLevel(logging.DEBUG)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+loggerDeckType = logging.getLogger("DeckType")
+# loggerDeckType.setLevel(logging.DEBUG)
 
 
 class ButtonType:
@@ -29,16 +28,12 @@ class ButtonType:
         self.init()
 
     def init(self):
-        if self.actions is None or (
-            type(self.actions) is str and self.actions.lower() == KW.NONE.value
-        ):
+        if self.actions is None or (type(self.actions) is str and self.actions.lower() == KW.NONE.value):
             self.actions = [KW.NONE.value]
         elif type(self.actions) not in [list, tuple]:
             self.actions = [self.actions]
 
-        if self.feedbacks is None or (
-            type(self.feedbacks) is str and self.feedbacks.lower() == KW.NONE.value
-        ):
+        if self.feedbacks is None or (type(self.feedbacks) is str and self.feedbacks.lower() == KW.NONE.value):
             self.feedbacks = [KW.NONE.value]
         elif type(self.feedbacks) not in [list, tuple]:
             self.feedbacks = [self.feedbacks]
@@ -73,28 +68,39 @@ class ButtonType:
         ret = []
         for action in self.actions:
             ret = ret + get_activations_for(DECK_ACTIONS(action))
-        return set([x for x in ret if x is not None])  # remove duplicates, remove None
+        return set([x.name() for x in ret if x is not None])  # remove duplicates, remove None
 
     def valid_representations(self) -> set:
         ret = []
         for feedback in self.feedbacks:
             ret = ret + get_representations_for(DECK_FEEDBACK(feedback))
-        return set([x for x in ret if x is not None])  # remove duplicates, remove None
+        return set([x.name() for x in ret if x is not None])  # remove duplicates, remove None
 
-    def can_do(self, activation: str) -> bool:
+    def can_activate(self, activation: str) -> bool:
         return activation in self.valid_activations()
 
-    def can_show(self, representation: str) -> bool:
+    def can_represent(self, representation: str) -> bool:
+        return representation in self.valid_representations()
+
+    def has_action(self, action: str) -> bool:
+        return action in self.actions
+
+    def has_feedback(self, feedback: str) -> bool:
+        return feedback in self.feedbacks
+
+    def can_represent(self, representation: str) -> bool:
         return representation in self.valid_representations()
 
     def display_size(self, return_offset: bool = False):
         """Parses info from resources.decks.*.yaml"""
-        if DECK_FEEDBACK.IMAGE.value in self.feedbacks and self.image is not None:
+        if self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.image is not None:
             return self.image[0:2] if not return_offset else self.image[2:4]
         return None
 
+    def is_encoder(self):
+        return self.has_action(DECK_ACTIONS.ENCODER.value) or self.has_action(DECK_ACTIONS.ENCODER_PUSH.value)
 
-class DeckTypeNew(Config):
+class DeckType(Config):
     """reads and parse deck template file"""
 
     def __init__(self, filename: str) -> None:
@@ -118,8 +124,8 @@ class DeckTypeNew(Config):
             for i in button.valid_indices():
                 self._buttons[i] = button
 
-        logger.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
-        logger.debug(f"..deck type {self.name} done")
+        loggerDeckType.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
+        loggerDeckType.debug(f"..deck type {self.name} done")
 
     def special_displays(self):
         """Returns name of all special displays (i.e. not "keys")"""
@@ -128,11 +134,7 @@ class DeckTypeNew(Config):
             return self._special_displays
         self._special_displays = []
         for b in self.store.get(KW.BUTTONS.value, []):
-            if (
-                KW.REPEAT.value not in b
-                and b.get(KW.VIEW.value, "") == DECK_FEEDBACK.IMAGE.value
-                and b.get(DECK_FEEDBACK.IMAGE.value) is not None
-            ):
+            if KW.REPEAT.value not in b and b.get(KW.VIEW.value, "") == DECK_FEEDBACK.IMAGE.value and b.get(DECK_FEEDBACK.IMAGE.value) is not None:
                 n = b.get(KW.NAME.value)
                 if n is not None:
                     self._special_displays.append(n)
@@ -145,13 +147,15 @@ class DeckTypeNew(Config):
     # to satify the button's definition.
     #
     def get_button_definition(self, index):
+        if type(index) is int:
+            index = str(index)
         return self._buttons.get(index)
 
     def get_index_prefix(self, index):
         b = self.get_button_definition(index)
         if b is not None:
             return b.prefix
-        logger.warning(f"deck {self.name}: no button index {index}")
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def get_index_numeric(self, index):
@@ -159,7 +163,7 @@ class DeckTypeNew(Config):
         b = self.get_button_definition(index)
         if b is not None:
             return b.get_index_numeric()
-        logger.warning(f"deck {self.name}: no button index {index}")
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def valid_indices(self, with_icon: bool = False):
@@ -169,7 +173,7 @@ class DeckTypeNew(Config):
                 lambda x: DECK_FEEDBACK.IMAGE.value in x.feedbacks,
                 self._buttons.values(),
             )
-            return [a[KW.INDEX.value] for a in with_image]
+            return set(reduce(lambda l, b: l.union(set(b.valid_indices())), with_image, set()))
         # else, returns all of them
         return list(self._buttons.keys())
 
@@ -177,38 +181,45 @@ class DeckTypeNew(Config):
         b = self.get_button_definition(index)
         if b is not None:
             return b.valid_activations()
-        logger.warning(f"deck {self.name}: no button index {index}")
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def valid_representations(self, index):
         b = self.get_button_definition(index)
         if b is not None:
             return b.valid_representations()
-        logger.warning(f"deck {self.name}: no button index {index}")
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
     def display_size(self, index, return_offset: bool = False):
         b = self.get_button_definition(index)
         if b is not None:
             return b.display_size(return_offset)
-        logger.warning(f"deck {self.name}: no button index {index}")
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
-    # TO REDO
-    # Especially, action and feedback can be multivalue
-    # def filter(self, query: dict) -> dict:
-    #     res = []
-    #     for button in self[KW.BUTTONS.value]:
-    #         for k, v in query.items():
-    #             if k in button:
-    #                 if v == button.get(k):
-    #                     res.append(button)
-    #     return res
+    def is_encoder(self, index) -> bool:
+        b = self.get_button_definition(index)
+        if b is not None:
+            return b.is_encoder()
+        return None
 
-    # def is_of_type(self, idx, query) -> bool:
-    #     bdef = self.filter(query=query)
-    #     if len(bdef) > 0:
-    #         bdef0 = bdef[0]
-    #         prefix = bdef0.get(KW.PREFIX.value)
-    #         return str(idx).startswith(prefix)
-    #     return False
+        bty = self.deck_type.get_button_definition(index=idx)
+        if bty is not None:
+            actions = bty.actions
+            return DECK_ACTIONS.ENCODER in actions or DECK_ACTIONS.ENCODER_PUSH in actions
+        loggerDeckType.warning(f"cannot find index {idx} in button definitions")
+        return False
+
+    def filter(self, query: dict) -> dict:
+        res = []
+        for what,value in query.items():
+            for button in self[KW.BUTTONS.value]:
+                if what == KW.ACTION.value:
+                    if value in button[what]:
+                        res.append(button)
+                elif what == KW.VIEW.value:
+                    if value in button[what]:
+                        res.append(button)
+        # loggerDeckType.debug(f"filter {query} returns {res}")
+        return res

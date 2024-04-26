@@ -263,6 +263,8 @@ class LiveWeatherIcon(DrawAnimation):
     Depends on avwx-engine
     """
 
+    REPRESENTATION_NAME = "weather-live"
+
     MIN_UPDATE = 600  # seconds between two station updates
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
@@ -325,12 +327,8 @@ class LiveWeatherIcon(DrawAnimation):
 
     def at_default_station(self):
         if self.weather is not None and self.station is not None:
-            logger.debug(
-                f"default station installed {self.station.icao}, {self.weather.get('station', LiveWeatherIcon.DEFAULT_STATION)}, {self._moved}"
-            )
-            return not self._moved and self.station.icao == self.weather.get(
-                "station", LiveWeatherIcon.DEFAULT_STATION
-            )
+            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', LiveWeatherIcon.DEFAULT_STATION)}, {self._moved}")
+            return not self._moved and self.station.icao == self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
         logger.debug(f"True")
         return True
 
@@ -361,9 +359,7 @@ class LiveWeatherIcon(DrawAnimation):
             now = datetime.now()
             diff = now.timestamp() - self._last_updated.timestamp()
             if diff < LiveWeatherIcon.MIN_UPDATE:
-                logger.debug(
-                    f"updated less than {LiveWeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping.."
-                )
+                logger.debug(f"updated less than {LiveWeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
                 return None
             logger.debug(f"updated  {diff} secs. ago")
 
@@ -373,9 +369,7 @@ class LiveWeatherIcon(DrawAnimation):
 
         if lat is None or lon is None:
             logger.warning(f"no coordinates")
-            if (
-                self.station is None
-            ):  # If no station, attempt to suggest the default one if we find it
+            if self.station is None:  # If no station, attempt to suggest the default one if we find it
                 icao = self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
                 logger.warning(f"no station, getting default {icao}")
                 return Station.from_icao(icao)
@@ -406,9 +400,7 @@ class LiveWeatherIcon(DrawAnimation):
 
         if new is None:
             if self.station is None:
-                return (
-                    updated  # no new station, no existing station, we leave it as it is
-                )
+                return updated  # no new station, no existing station, we leave it as it is
 
         if self.station is None:
             try:
@@ -422,9 +414,7 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.info(f"UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(
-                    f"new station {new.icao}: Metar not created", exc_info=True
-                )
+                logger.warning(f"new station {new.icao}: Metar not created", exc_info=True)
         elif new is not None and new.icao != self.station.icao:
             try:
                 self.station = new
@@ -437,9 +427,7 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.info(f"UPDATED: station changed to {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(
-                    f"change station to {new.icao}: Metar not created", exc_info=True
-                )
+                logger.warning(f"change station to {new.icao}: Metar not created", exc_info=True)
         elif self.metar is None:
             try:
                 self.metar = Metar(self.station.icao)
@@ -460,9 +448,7 @@ class LiveWeatherIcon(DrawAnimation):
                     updated = self.metar.update()
                     if updated:
                         self._last_updated = datetime.now()
-                        logger.info(
-                            f"UPDATED: station {self.station.icao}, Metar updated"
-                        )
+                        logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
                     else:
                         logger.info(f"could not update station {self.station.icao}")
                 else:
@@ -471,20 +457,14 @@ class LiveWeatherIcon(DrawAnimation):
                         updated = self.metar.update()
                         if updated:
                             self._last_updated = datetime.now()
-                            logger.info(
-                                f"UPDATED: station {self.station.icao}, Metar updated"
-                            )
+                            logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
                         else:
                             logger.info(f"could not update station {self.station.icao}")
                     else:
-                        logger.debug(
-                            f"station {self.station.icao}, Metar does not need updating"
-                        )
+                        logger.debug(f"station {self.station.icao}, Metar does not need updating")
             except:
                 self.metar = None
-                logger.warning(
-                    f"station {self.station.icao}: Metar not updated", exc_info=True
-                )
+                logger.warning(f"station {self.station.icao}: Metar not updated", exc_info=True)
 
         # if new is None, we leave it as it is
         if updated and self.station is not None:
@@ -513,9 +493,7 @@ class LiveWeatherIcon(DrawAnimation):
             else:
                 logger.debug(f"no metar for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()
-            logger.debug(
-                f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}"
-            )
+            logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
             self._upd_count = self._upd_count + 1
 
         return updated
@@ -533,9 +511,7 @@ class LiveWeatherIcon(DrawAnimation):
             logger.debug(f"..not updated, using cache..")
         logger.debug(f"..updated ({self._upd_count}/{self._upd_calls})")
 
-        image = Image.new(
-            mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR
-        )  # annunciator text and leds , color=(0, 0, 0, 0)
+        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
         inside = round(0.04 * image.width + 0.5)
 
@@ -638,9 +614,7 @@ class LiveWeatherIcon(DrawAnimation):
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
         # Uses the simulator local time
-        hours = self.button.get_dataref_value(
-            "sim/cockpit2/clock_timer/local_time_hours", default=12
-        )
+        hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
         if self.sun is not None:
             sr = self.sun.get_sunrise_time()
             ss = self.sun.get_sunset_time()
@@ -734,11 +708,7 @@ class LiveWeatherIcon(DrawAnimation):
                 precip = []
             logger.debug(f"PRECIP {precip}")
             # Wind
-            wind = (
-                self.metar.data.wind_speed.value
-                if hasattr(self.metar.data, "wind_speed")
-                else 0
-            )
+            wind = self.metar.data.wind_speed.value if hasattr(self.metar.data, "wind_speed") else 0
             logger.debug(f"WIND {wind}")
 
             findIcon = []
@@ -773,9 +743,7 @@ class LiveWeatherIcon(DrawAnimation):
                 ok = t1 and t_precip and t_clouds and t_wind and t_vis
                 if ok:
                     findIcon.append(item)
-                logger.debug(
-                    f"findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}"
-                )
+                logger.debug(f"findIcon: {item[KW_NAME]}, list={t1}, precip={t_precip}, clouds={t_clouds}, wind={t_wind}, vis={t_vis} {('<'*10) if ok else ''}")
             logger.debug(f"STEP 1 {findIcon}")
 
             # findIcon = list(filter(lambda item: reduce(lambda x, y: x + y, [rawtext.find(desc) for desc in item[KW_TAGS]], 0) == len(item[KW_TAGS])

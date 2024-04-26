@@ -52,9 +52,7 @@ class PythonInterface:
         self.Desc = f"Decompose long press commands into command/begin and command/end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
-        self.trace = (
-            True  # produces extra print/debugging in XPPython3.log for this class
-        )
+        self.trace = True  # produces extra print/debugging in XPPython3.log for this class
         self.commands = {}
 
     def XPluginStart(self):
@@ -77,21 +75,15 @@ class PythonInterface:
 
     def XPluginEnable(self):
         try:
-            ac = xp.getNthAircraftModel(
-                0
-            )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
-                acpath = os.path.split(
-                    ac[1]
-                )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                 print(self.Info, "PI::XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
                 print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
                 self.enabled = True
                 return 1
-            print(
-                self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found."
-            )
+            print(self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found.")
             return 1
         except:
             if self.trace:
@@ -112,18 +104,12 @@ class PythonInterface:
         we try to load the aicraft deskconfig.
         If it does not exist, we default to a screen saver type of screen for the deck.
         """
-        if (
-            inMessage == xp.MSG_PLANE_LOADED and inParam == 0
-        ):  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+        if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                ac = xp.getNthAircraftModel(
-                    0
-                )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
                 if len(ac) == 2:
-                    acpath = os.path.split(
-                        ac[1]
-                    )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                    acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
                         print(
                             self.Info,
@@ -201,25 +187,17 @@ class PythonInterface:
                     cmd = command + "/begin"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "Begin " + cmd)
-                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(
-                        cmd, True
-                    )
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, True)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
-                    self.commands[cmd][HDL] = xp.registerCommandHandler(
-                        self.commands[cmd][REF], self.commands[cmd][FUN], 1, None
-                    )
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
                     cmd = command + "/end"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "End " + cmd)
-                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(
-                        cmd, False
-                    )
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, False)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
-                    self.commands[cmd][HDL] = xp.registerCommandHandler(
-                        self.commands[cmd][REF], self.commands[cmd][FUN], 1, None
-                    )
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"PI::load: added {cmd}")
                     # else:
@@ -244,9 +222,7 @@ class PythonInterface:
         DECKS = "decks"  # keyword to list decks used for this aircraft
         LAYOUT = "layout"  # keyword to detect layout for above deck
         TYPE = "type"  # keyword to detect the action of the button (intend)
-        COMMAND = (
-            "command"  # keyword to detect (X-Plane) command in definition of the button
-        )
+        COMMAND = "command"  # keyword to detect (X-Plane) command in definition of the button
         MULTI_COMMANDS = "commands"  # same as above for multiple commands
 
         DEBUG = False

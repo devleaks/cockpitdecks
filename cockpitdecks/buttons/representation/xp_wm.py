@@ -15,9 +15,7 @@ from metar import Metar
 from tabulate import tabulate
 
 # When we are developing this class, we need this to run it standalone
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)  # we assume we're in subdir "bin/"
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", ".."))  # we assume we're in subdir "bin/"
 
 from cockpitdecks.simulator import Dataref
 from cockpitdecks import to_fl
@@ -200,14 +198,11 @@ class XPWeather:
     # Must be supplied with dict of {path: Dataref(path)}
     # Make dataref accessible through instance attributes like weather.temperature.
     #
+
     def __init__(self, drefs):
         self.weather = Weather(drefs)
-        self.wind_layers: List[WindLayer] = (
-            []
-        )  #  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
-        self.cloud_layers: List[CloudLayer] = (
-            []
-        )  #  Defined cloud layers. Not all layers are always defined. up to 3 layers
+        self.wind_layers: List[WindLayer] = []  #  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
+        self.cloud_layers: List[CloudLayer] = []  #  Defined cloud layers. Not all layers are always defined. up to 3 layers
 
         for i in range(CLOUD_LAYERS):
             self.cloud_layers.append(CloudLayer(drefs, i))
