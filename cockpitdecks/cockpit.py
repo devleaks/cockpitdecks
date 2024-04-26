@@ -26,6 +26,7 @@ from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.deck import DeckType
 from cockpitdecks.decks import DECK_DRIVERS
+from cockpitdecks.resources.decktype import DeckTypeNew
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.acpath = None
         self.cockpit = {}  # all decks: { deckname: deck }
         self.deck_types = {}
+        self.deck_types_new = {}
 
         self.fonts = {}
 
@@ -656,9 +658,11 @@ class Cockpit(DatarefListener, CockpitBase):
         folder = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
         for deck_type in glob.glob(os.path.join(folder, "*.yaml")):
             data = DeckType(deck_type)
+            data_new = DeckTypeNew(deck_type)
             name = data.get(KW.TYPE.value)
             if name is not None:
                 self.deck_types[name] = data
+                self.deck_types_new[name] = data_new
             else:
                 logger.warning(f"ignoring unnamed deck {deck_type}")
         logger.info(

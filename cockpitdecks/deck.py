@@ -10,7 +10,7 @@ from functools import reduce
 
 from PIL import Image
 
-from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
+from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, DECK_FEEDBACK, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import ID_SEP, KW, DEFAULT_LAYOUT
 from cockpitdecks import Config
 from cockpitdecks.resources.color import convert_color
@@ -130,13 +130,13 @@ class DeckType(Config):
         if self._special_displays is not None:
             return self._special_displays
         self._special_displays = []
-        for b in self.store.get("buttons", []):
+        for b in self.store.get(KW.BUTTONS.value, []):
             if (
                 "repeat" not in b
-                and b.get("view", "") == "image"
-                and b.get("image") is not None
+                and b.get(KW.VIEW.value, "") == DECK_FEEDBACK.IMAGE.value
+                and b.get(KW.IMAGE.value) is not None
             ):
-                n = b.get("name")
+                n = b.get(KW.NAME.value)
                 if n is not None:
                     self._special_displays.append(n)
         return self._special_displays
@@ -152,19 +152,19 @@ class DeckType(Config):
                 pass
             return False
 
-        for b in self.store.get("buttons", []):
-            if b.get("view", "") == "image":
+        for b in self.store.get(KW.BUTTONS.value, []):
+            if b.get(KW.VIEW.value, "") == DECK_FEEDBACK.IMAGE.value:
                 if isint(name):
-                    s = b.get("image")  # [width, height, offset_x, offset_y]
+                    s = b.get(KW.IMAGE.value)  # [width, height, offset_x, offset_y]
                     if s is not None:
                         return s[0:2] if not return_offset else s[2:4]
                 else:
-                    n = b.get("name")
-                    p = b.get("prefix")
+                    n = b.get(KW.NAME.value)
+                    p = b.get(KW.PREFIX.value)
                     if (n is not None and name == n) or (
                         p is not None and name.startswith(str(p))
                     ):
-                        s = b.get("image")  # [width, height, offset_x, offset_y]
+                        s = b.get(KW.IMAGE.value)  # [width, height, offset_x, offset_y]
                         if s is not None:
                             return s[0:2] if not return_offset else s[2:4]
         return None
