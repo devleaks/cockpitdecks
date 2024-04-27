@@ -46,7 +46,7 @@ class ButtonType:
         except ValueError:
             self._name_is_int = False
 
-        loggerButtonType.debug(f"{self.name}: {self.valid_representations()}")
+        loggerButtonType.debug(f"{self.prefix}/{self.name}: {self.valid_representations()}")
 
     def valid_indices(self) -> list:
         if self.repeat == 0:
@@ -100,7 +100,7 @@ class ButtonType:
         return None
 
     def is_encoder(self):
-        return self.has_action(DECK_ACTIONS.ENCODER.value) or self.has_action(DECK_ACTIONS.ENCODER_PUSH.value)
+        return self.has_action(DECK_ACTIONS.ENCODER.value)
 
 class DeckType(Config):
     """reads and parse deck template file"""
@@ -213,14 +213,8 @@ class DeckType(Config):
         b = self.get_button_definition(index)
         if b is not None:
             return b.is_encoder()
+        loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
-
-        bty = self.deck_type.get_button_definition(index=idx)
-        if bty is not None:
-            actions = bty.actions
-            return DECK_ACTIONS.ENCODER in actions or DECK_ACTIONS.ENCODER_PUSH in actions
-        loggerDeckType.warning(f"cannot find index {idx} in button definitions")
-        return False
 
     def filter(self, query: dict) -> dict:
         res = []

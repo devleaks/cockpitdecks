@@ -27,7 +27,7 @@ buttons:
   #   image: [360, 270, 60, 0]
   - name: 0
     prefix: e
-    action: encoder-push
+    action: [encoder, push]
     feedback: none
     repeat: 6
   - name: 0

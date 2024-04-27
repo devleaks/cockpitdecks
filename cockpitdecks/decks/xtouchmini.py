@@ -73,7 +73,7 @@ class XTouchMini(Deck):
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
 
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER_PUSH.value})
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
         prefix = bdef[0].get(KW.PREFIX.value)
 
         bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.CURSOR.value})

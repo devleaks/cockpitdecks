@@ -160,7 +160,6 @@ class DECK_ACTIONS(Enum):
     NONE = "none"
     CURSOR = "cursor"
     ENCODER = "encoder"  # turn with clicks or stops
-    ENCODER_PUSH = "encoder-push"  # requires turn and push *at the same time*
     PUSH = "push"  # push, press
     SWIPE = "swipe"
 

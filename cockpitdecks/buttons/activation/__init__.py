@@ -45,16 +45,4 @@ def all_subclasses(cls):
 ACTIVATIONS = {s.name(): s for s in all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
 
 def get_activations_for(action: DECK_ACTIONS) -> list:
-    # trick: *simultaneous* actions are in same word, "-" separated, example encoder-push.
-    DASH = "-"
-    if DASH in action.value:
-        actions = action.value.split(DASH)
-        ret = []
-        for a in ACTIVATIONS.values():
-            for actstr in actions:
-                act = DECK_ACTIONS(actstr)
-                if act in a.get_required_capability():
-                    ret.append(a)
-        return ret
-
     return [a for a in ACTIVATIONS.values() if action in a.get_required_capability()]

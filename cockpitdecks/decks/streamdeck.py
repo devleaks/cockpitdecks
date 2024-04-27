@@ -329,7 +329,7 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a dial is rotated.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER_PUSH.value})
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
         prefix = bdef[0].get(KW.PREFIX.value)
         idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:

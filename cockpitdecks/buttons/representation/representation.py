@@ -490,7 +490,44 @@ class Icon(Representation):
         return "The representation places an icon with optional label overlay."
 
 
+class IconColor(Icon):
+    """Uniform color or texture icon
+
+    Attributes:
+        REPRESENTATION_NAME: "icon-color"
+    """
+
+    REPRESENTATION_NAME = "icon-color"
+
+    def __init__(self, config: dict, button: "Button"):
+        Icon.__init__(self, config=config, button=button)
+
+        self.icon = None
+        self.icon_color = config.get("icon-color", self.icon_color)
+        self.icon_color = convert_color(self.icon_color)
+        self.icon_texture = config.get("icon-texture", self.icon_texture)
+
+    def get_image(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        self.make_icon(force=True)
+        image = super().get_image()
+        return self.overlay_text(image, "label")
+
+    def describe(self):
+        return "The representation places a uniform color or textured icon."
+
+
 class IconText(Icon):
+
+    """Uniform color or texture icon with text laid over.
+
+    Attributes:
+        REPRESENTATION_NAME: "text"
+    """
 
     REPRESENTATION_NAME = "text"
 
@@ -522,7 +559,7 @@ class IconText(Icon):
 
 class MultiTexts(IconText):
 
-    REPRESENTATION_NAME = "muti-texts"
+    REPRESENTATION_NAME = "multi-texts"
 
     def __init__(self, config: dict, button: "Button"):
         IconText.__init__(self, config=config, button=button)

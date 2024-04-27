@@ -10,7 +10,7 @@ buttons:
     repeat: 16
   - name: 0
     prefix: e
-    action: encoder-push
+    action: [encoder, push]
     feedback: encoder-leds
     repeat: 8
   - name: A
