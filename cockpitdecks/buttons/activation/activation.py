@@ -27,6 +27,7 @@ class Activation:
     Base class for all activation mechanism.
     Can be used for no-operation activation on display-only button.
     """
+
     ACTIVATION_NAME = "none"
     REQUIRED_DECK_ACTIONS: List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
     # One cannot request an activiation from a deck button that does not have the capability of the action
@@ -1308,7 +1309,7 @@ class EncoderValueExtended(OnOff):
         self._step_mode = self.step
         self._local_dataref = config.get("dataref", None)
         if self._local_dataref is not None:
-            self._local_dataref = "data:" + self._local_dataref # local dataref to write to
+            self._local_dataref = "data:" + self._local_dataref  # local dataref to write to
 
         OnOff.__init__(self, config=config, button=button)
 

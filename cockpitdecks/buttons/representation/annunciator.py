@@ -666,7 +666,7 @@ class Annunciator(DrawBase):
 class AnnunciatorAnimate(Annunciator):
     """ """
 
-    REPRESENTATION_NAME = "annunciator-animation"
+    REPRESENTATION_NAME = "annunciator-animate"
 
     def __init__(self, config: dict, button: "Button"):
         config["annunciator"] = config.get("annunciator-animate")

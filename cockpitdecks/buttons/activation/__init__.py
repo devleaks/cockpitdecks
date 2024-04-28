@@ -11,6 +11,7 @@ from .activation import Slider, Swipe
 
 from cockpitdecks import DECK_ACTIONS
 
+
 # ###############################
 # format is activation: Classname
 #
@@ -38,11 +39,12 @@ def all_subclasses(cls):
         try:
             stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
         except (TypeError, AttributeError):
-           continue
+            continue
     return list(subclasses)
 
 
 ACTIVATIONS = {s.name(): s for s in all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
+
 
 def get_activations_for(action: DECK_ACTIONS) -> list:
     return [a for a in ACTIVATIONS.values() if action in a.get_required_capability()]

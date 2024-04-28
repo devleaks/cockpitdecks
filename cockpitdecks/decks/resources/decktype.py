@@ -102,6 +102,7 @@ class ButtonType:
     def is_encoder(self):
         return self.has_action(DECK_ACTIONS.ENCODER.value)
 
+
 class DeckType(Config):
     """reads and parse deck template file"""
 
@@ -218,7 +219,7 @@ class DeckType(Config):
 
     def filter(self, query: dict) -> dict:
         res = []
-        for what,value in query.items():
+        for what, value in query.items():
             for button in self[KW.BUTTONS.value]:
                 if what == KW.ACTION.value:
                     if value in button[what]:

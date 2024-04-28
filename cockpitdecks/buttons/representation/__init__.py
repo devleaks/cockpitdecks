@@ -28,6 +28,7 @@ from cockpitdecks import DECK_FEEDBACK
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+
 # ###############################
 # format is representation: Classname
 #
@@ -54,17 +55,20 @@ def all_subclasses(cls):
         try:
             stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
         except (TypeError, AttributeError):
-           continue
+            continue
     return list(subclasses)
+
 
 try:
     from .external import LiveWeatherIcon
+
     logger.info(f"LiveWeatherIcon installed")
 except ImportError:
     logger.warning(f"LiveWeatherIcon not installed")
 
 
 REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
+
 
 def get_representations_for(feedback: DECK_FEEDBACK):
     return [a for a in REPRESENTATIONS.values() if feedback in a.get_required_capability()]

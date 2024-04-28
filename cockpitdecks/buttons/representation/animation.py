@@ -26,6 +26,7 @@ class IconAnimation(MultiIcons):
     To stop the anination, set the button's current_value to 0.
     When not running, an optional icon_off can be supplied, otherwise first icon in multi-icons list will be used.
     """
+
     REPRESENTATION_NAME = "icon-animation"
 
     def __init__(self, config: dict, button: "Button"):
@@ -131,6 +132,7 @@ class DrawAnimation(DrawBase):
     """
     https://stackoverflow.com/questions/5114292/break-interrupt-a-time-sleep-in-python
     """
+
     REPRESENTATION_NAME = "draw-animation"
 
     def __init__(self, config: dict, button: "Button"):

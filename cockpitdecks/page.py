@@ -101,12 +101,14 @@ class Page:
             # How the button will behave, it is does something
             aty = Button.guess_activation_type(button_config)
             if aty is None or aty not in self.deck.valid_activations(idx):
-                logger.error(f"page {self.name}: button has invalid activation type {aty} not in {self.deck.valid_activations(idx)} for index {idx}, ignoring {button_config}")
+                logger.error(
+                    f"page {self.name}: button has invalid activation type {aty} not in {self.deck.valid_activations(idx)} for index {idx}, ignoring {button_config}"
+                )
                 continue
 
             # How the button will be represented, if it is
             rty = Button.guess_representation_type(button_config)
-            if rty not in  self.deck.valid_representations(idx):
+            if rty not in self.deck.valid_representations(idx):
                 logger.error(f"page {self.name}: button has invalid representation type {rty} for index {idx}, ignoring {button_config}")
                 continue
             if rty == "none":

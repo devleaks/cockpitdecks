@@ -22,7 +22,7 @@ from cockpitdecks.buttons.representation import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # Device specific data
 POLL_FREQ = 5  # default is 20
@@ -324,6 +324,13 @@ class Streamdeck(DeckWithIcons):
         """
         return self.device
 
+    def key_change_callback(self, deck, key, state):
+        """
+        This is the function that is called when a key is pressed.
+        """
+        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        PushEvent(deck=self, button=key, pressed=state, autorun=True)  # autorun enqueues it in cockpit.event_queue for later execution
+
     def dial_callback(self, deck, key, action, value):
         """
         This is the function that is called when a dial is rotated.
@@ -345,29 +352,16 @@ class Streamdeck(DeckWithIcons):
         """
         This is the function that is called when the touchscreen is touched swiped.
         """
+        logger.debug(f"Deck {deck.id()} Action {action} = {value}")
         NUMVIRTUALKEYS = 4  # number of "virtual" keys across touchscreen
         KEY_SIZE = 800 / NUMVIRTUALKEYS
 
         idx = KW_TOUCHSCREEN
         logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
         if action == TouchscreenEventType.SHORT:
-            event = TouchEvent(
-                deck=self,
-                button=idx,
-                pos_x=int(value["x"]),
-                pos_y=int(value["y"]),
-                start=datetime.now().timestamp(),
-                autorun=True
-            )
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp(), autorun=True)
         elif action == TouchscreenEventType.LONG:
-            event = TouchEvent(
-                deck=self,
-                button=idx,
-                pos_x=int(value["x"]),
-                pos_y=int(value["y"]),
-                start=datetime.now().timestamp(),
-                autorun=True
-            )
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp(), autorun=True)
         elif action == TouchscreenEventType.DRAG:
             event = SwipeEvent(
                 deck=self,

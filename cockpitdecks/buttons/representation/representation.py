@@ -32,6 +32,7 @@ class Representation:
     """
     Base class for all representations
     """
+
     REPRESENTATION_NAME = "none"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.NONE
 
@@ -522,7 +523,6 @@ class IconColor(Icon):
 
 
 class IconText(Icon):
-
     """Uniform color or texture icon with text laid over.
 
     Attributes:

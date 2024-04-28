@@ -44,6 +44,7 @@ ENCODER_MAP = {
     "knobBR": "e5",
 }
 
+
 class Loupedeck(DeckWithIcons):
     """
     Loads the configuration of a Loupedeck.

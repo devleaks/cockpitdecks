@@ -333,17 +333,12 @@ class Deck(ABC):
     # #######################################
     # Deck Specific Functions : Activation
     #
-    def key_change_callback(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        PushEvent(deck=self, button=key, pressed=state, autorun=True)  # autorun enqueues it in cockpit.event_queue for later execution
-
     def key_change_processing(self, event: DeckEvent):
         """
-        This is the function that is called when a key is pressed.
-        DeckEvent should be a PushEvent
+        For those that did not process the event, this does the work.
+        Mainly, mostly, it enqueues the event for execution.
+        Sometimes, this is done right away from the Deck driver.
+        But if it not the case, this function does it.
         """
         event.run()
 
@@ -378,8 +373,11 @@ class Deck(ABC):
 
 class DeckWithIcons(Deck):
     """
-    Loads the configuration of a Deck.
-    A Deck has a collection of Pages, and knows which one is currently being displayed.
+    This type of deck is a variant of the above for decks with LCD capabilites,
+    LCD being individual key display (like streamdecks) or a larger LCD with areas
+    of interaction, like LoupedeckLive.
+    This class complement the generic deck with image display function
+    and utilities for image transformation.
     """
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
