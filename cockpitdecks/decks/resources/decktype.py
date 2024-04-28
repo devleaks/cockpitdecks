@@ -183,8 +183,6 @@ class DeckType(Config):
     def valid_activations(self, index):
         b = self.get_button_definition(index)
         if b is not None:
-            if index == "e4":
-                print(index, b.actions, b.valid_activations())
             return b.valid_activations()
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None

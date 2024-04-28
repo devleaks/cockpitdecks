@@ -892,13 +892,13 @@ class LED_MODE(Enum):
     SPREAD = 3
 
 
-class MultiLEDs(Representation):
+class EncoderLEDs(Representation):
     """
     Ring of 13 LEDs surrounding X-Touch Mini encoders
     """
 
-    REPRESENTATION_NAME = "encoder-led"
-    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.MULTI_LEDS
+    REPRESENTATION_NAME = "encoder-leds"
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.ENCODER_LEDS
 
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)

@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "8.0.6"
+__version__ = "8.0.7"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -156,27 +156,6 @@ class KW(Enum):
     VIEW = "feedback"
 
 
-# deck type action capabilities
-class DECK_ACTIONS(Enum):
-    NONE = "none"
-    CURSOR = "cursor"
-    ENCODER = "encoder"  # turn with clicks or stops
-    PUSH = "push"  # push, press
-    SWIPE = "swipe"
-
-
-# deck type feedback capabilities
-class DECK_FEEDBACK(Enum):
-    NONE = "none"
-    COLORED_LED = "colored-led"
-    IMAGE = "image"
-    LED = "led"
-    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
-    MULTI_LEDS = "multi-leds"
-    SOUND = "sound"
-    VIBRATE = "vibrate"
-
-
 class Config(MutableMapping):
     """
     A dictionary that loads from a yaml config file.
@@ -215,4 +194,29 @@ class Config(MutableMapping):
         return self.store is not None and len(self.store) > 1
 
 
+# ############################################################
+#
+# deck type action capabilities
+#
+class DECK_ACTIONS(Enum):
+    NONE = "none"
+    CURSOR = "cursor"
+    ENCODER = "encoder"  # turn with clicks or stops
+    PUSH = "push"  # push, press
+    SWIPE = "swipe"
+
+#
+# deck type feedback capabilities
+#
+class DECK_FEEDBACK(Enum):
+    NONE = "none"
+    COLORED_LED = "colored-led"
+    IMAGE = "image"
+    LED = "led"
+    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
+    MULTI_LEDS = "multi-leds"
+    SOUND = "sound"
+    VIBRATE = "vibrate"
+
+# ############################################################
 from .cockpit import Cockpit, CockpitBase

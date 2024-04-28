@@ -11,7 +11,7 @@ from .representation import (
     MultiIcons,
     IconSide,
 )
-from .representation import LED, ColoredLED, MultiLEDs
+from .representation import LED, ColoredLED, EncoderLEDs
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG

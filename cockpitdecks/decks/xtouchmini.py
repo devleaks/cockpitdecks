@@ -11,10 +11,10 @@ from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.event import PushEvent, EncoderEvent, SlideEvent
 from cockpitdecks.button import Button
-from cockpitdecks.buttons.representation import LED, MultiLEDs
+from cockpitdecks.buttons.representation import LED, EncoderLEDs
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # Warning, the logger in package XTouchMini is called "XTouchMini".
 
 
@@ -145,7 +145,7 @@ class XTouchMini(Deck):
         if self.device is None:
             logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_FEEDBACK.CURSOR.value})
+        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
         cursor = bdef[0].get(KW.NAME.value)
         if str(button.index) == cursor:
             logger.debug(f"button type {button.index} has no representation")
@@ -154,7 +154,7 @@ class XTouchMini(Deck):
         representation = button._representation
         if isinstance(representation, LED):
             self._set_button_led(button)
-        elif isinstance(representation, MultiLEDs):
+        elif isinstance(representation, EncoderLEDs):
             self._set_encoder_led(button)
         else:
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
