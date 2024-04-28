@@ -11,7 +11,7 @@ from .representation import (
     MultiIcons,
     IconSide,
 )
-from .representation import LED, ColoredLED, EncoderLEDs
+from .representation import LED, ColoredLED
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
@@ -22,6 +22,7 @@ from .xp_xw import XPWeatherIcon
 from .xp_fma import FMAIcon
 from .xp_fcu import FCUIcon
 from .xp_iconside import IconSide
+from .xtouch import EncoderLEDs
 
 from cockpitdecks import DECK_FEEDBACK
 
