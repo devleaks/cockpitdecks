@@ -7,6 +7,7 @@ import logging
 from PIL import ImageDraw
 from cockpitdecks.resources.color import convert_color
 from .representation import Icon
+from cockpitdecks import KW, DECK_FEEDBACK
 
 # from cockpitdecks.button import Button
 
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class IconSide(Icon):  # modified Representation IconSide class
 
-    REPRESENTATION_NAME = "icon-side"
+    REPRESENTATION_NAME = "side"
 
     def __init__(self, config: dict, button: "Button"):
         config["icon-color"] = config["side"].get("icon-color", button.get_attribute("default-icon-color"))
@@ -35,12 +36,13 @@ class IconSide(Icon):  # modified Representation IconSide class
                 datarefs = datarefs + drefs
         return datarefs
 
+    # get_datarefs from old IconSide
     # def get_datarefs(self):
     #     if self.datarefs is None:
     #         self.datarefs = []
     #         if self.labels is not None:
     #             for label in self.labels:
-    #                 dref = label.get('dataref')
+    #                 dref = label.get(KW.MANAGED.value)
     #                 if dref is not None:
     #                     logger.debug(f"button {self.button_name()}: added label dataref {dref}")
     #                     self.datarefs.append(dref)
@@ -89,6 +91,17 @@ class IconSide(Icon):  # modified Representation IconSide class
 
                 if li >= len(vcenter) or txt is None:
                     continue
+
+                # Managed block from old IconSide
+                # managed = label.get(KW.MANAGED.value)
+                # if managed is not None:
+                #     value = self.button.get_dataref_value(managed)
+                #     txto = txt
+                #     if value:
+                #         txt = txt + "•"  # \n•"
+                #     else:
+                #         txt = txt + " "  # \n"
+                #     logger.debug(f"watching {managed}: {value}, {txto} -> {txt}")
 
                 txto = get_text
 
