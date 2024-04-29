@@ -45,6 +45,7 @@ WEATHER_ICONS = {
     "wi_night_alt_storm_showers": "\uf02c",
     "wi_night_alt_thunderstorm": "\uf02d",
     "wi_night_clear": "\uf02e",
+    "wi_night_cloud": "\uf031",
     "wi_night_cloudy": "\uf031",
     "wi_night_cloudy_gusts": "\uf02f",
     "wi_night_cloudy_high": "\uf080",

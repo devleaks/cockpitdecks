@@ -10,6 +10,8 @@ from enum import Enum
 
 from PIL import ImageDraw, ImageFont
 
+from XTouchMini.Devices.xtouchmini import LED_MODE
+
 from cockpitdecks.resources.color import (
     convert_color,
     is_integer,
@@ -26,8 +28,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
 
-from XTouchMini.Devices.xtouchmini import LED_MODE
-
 class EncoderLEDs(Representation):
     """
     Ring of 13 LEDs surrounding X-Touch Mini encoders
@@ -39,7 +39,9 @@ class EncoderLEDs(Representation):
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
-        mode = config.get("multi-leds", LED_MODE.SINGLE.name)
+        mode = config.get("encoder-leds", LED_MODE.SINGLE.name)
+
+        self.mode = LED_MODE.SINGLE
         if is_integer(mode) and int(mode) in [l.value for l in LED_MODE]:
             self.mode = LED_MODE(mode)
         elif type(mode) is str and mode.upper() in [l.name for l in LED_MODE]:

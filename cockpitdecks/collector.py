@@ -287,11 +287,14 @@ class DatarefSet(DatarefListener):
         if not self._collected.is_set():
             loggerDatarefSet.debug(f"collection {self.name}: releasing (setting event)")
             self._collected.set()
-            diff = self.sim.datetime() - self.last_loaded
-            loggerDatarefSet.log(
-                SPAM_LEVEL,
-                f"collection {self.name} released after {round(diff.total_seconds(), 3)} secs.",
-            )
+            if self.last_loaded is not None:
+                diff = self.sim.datetime() - self.last_loaded
+                loggerDatarefSet.log(
+                    SPAM_LEVEL,
+                    f"collection {self.name} released after {round(diff.total_seconds(), 3)} secs.",
+                )
+            else:
+                loggerDatarefSet.debug(f"collection {self.name}: released not not loaded")
         # else:
         #     loggerDatarefSet.debug(f"collection {self.name}: not collecting or already released ({self.is_loaded})")
 

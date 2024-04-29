@@ -125,7 +125,7 @@ class DrawBase(Icon):
 
 class DataIcon(DrawBase):
 
-    REPRESENTATION_NAME = "draw-icon"
+    REPRESENTATION_NAME = "data"
 
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)

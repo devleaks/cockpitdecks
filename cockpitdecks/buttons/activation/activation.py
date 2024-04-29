@@ -81,7 +81,7 @@ class Activation:
     def can_handle(self, event) -> bool:
         if event.action not in self.get_required_capability():
             logger.warning(
-                f"button {self.button_name()}: invalid event received {type(event).__name__}, action {event.action}, expected {self.REQUIRED_DECK_ACTIONS}"
+                f"button {self.button_name()}: {type(self).__name__}: invalid event received {type(event).__name__}, action {event.action}, expected {self.REQUIRED_DECK_ACTIONS}"
             )
             return False
         return True
@@ -1193,6 +1193,7 @@ class EncoderValue(OnOff):
     """
 
     ACTIVATION_NAME = "encoder-value"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
@@ -1232,10 +1233,13 @@ class EncoderValue(OnOff):
             return
         if hasattr(event, "pressed"):
             if event.pressed:
-                if self.is_off():
-                    self.command(self._commands[0])
+                if len(self._commands) > 1:
+                    if self.is_off():
+                        self.command(self._commands[0])
+                    else:
+                        self.command(self._commands[1])
                 else:
-                    self.command(self._commands[1])
+                    logger.debug(f"button {self.button_name()} not enough commands {len(self._commands)}/é")
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
                 self.view()
@@ -1245,14 +1249,14 @@ class EncoderValue(OnOff):
         if x is None:
             x = 0
         if event.turned_counter_clockwise:  # rotate left
-            x = x + self.step
-            ok = True
-            self._turns = self._turns + 1
-            self._cw = self._cw + 1
-        elif event.turned_clockwise:  # rotate right
-            x = x - self.step
+            x = max(self.value_min, x - self.step)
             ok = True
             self._turns = self._turns - 1
+            self._cw = self._cw + 1
+        elif event.turned_clockwise:  # rotate right
+            x = min(self.value_max, x + self.step)
+            ok = True
+            self._turns = self._turns + 1
             self._ccw = self._ccw + 1
         else:
             logger.warning(f"{type(self).__name__} invalid event {event}")
@@ -1293,6 +1297,8 @@ class EncoderValueExtended(OnOff):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
+    ACTIVATION_NAME = "encoder-value-extended"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))

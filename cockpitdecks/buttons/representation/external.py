@@ -1,8 +1,8 @@
 # ###########################
 # Buttons that are drawn on render()
 #
-# Buttons were isolated here bevcause they use quite larger packages (avwx-engine),
-# call and rely on external services.
+# Buttons were isolated here because they use specific packages (avwx-engine)
+# and rely on external services.
 #
 import logging
 import random
@@ -45,14 +45,14 @@ KW_VIS = "visibility"  # [""],
 KW_CLOUD = "cloud"  # ["BKN"],
 KW_WIND = "wind"  # [0, 21]
 
-WI_PREFIX = "wi-"
-DAY = "day-"
-NIGHT = "night-"
-NIGHT_ALT = "night-alt-"
+WI_PREFIX = "wi_"
+DAY = "day_"
+NIGHT = "night_"
+NIGHT_ALT = "night_alt_"
 
 KW_CAVOK = "clear"  # Special keyword for CAVOK day or night
-CAVOK_DAY = "wi-day-sunny"
-CAVOK_NIGHT = "wi-night-clear"
+CAVOK_DAY = "wi_day_sunny"
+CAVOK_NIGHT = "wi_night_clear"
 
 
 class WI:
@@ -263,7 +263,7 @@ class LiveWeatherIcon(DrawAnimation):
     Depends on avwx-engine
     """
 
-    REPRESENTATION_NAME = "weather-live"
+    REPRESENTATION_NAME = "weather-metar"
 
     MIN_UPDATE = 600  # seconds between two station updates
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
@@ -470,28 +470,33 @@ class LiveWeatherIcon(DrawAnimation):
         if updated and self.station is not None:
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
             if self.has_metar("data"):
+                logger.debug(f"data for {self.station.icao}")
                 self.button.sim.write_dataref(
                     dataref=Dataref.mk_internal_dataref("weather:pressure"),
                     value=self.metar.data.altimeter.value,
                     vtype="float",
                 )
+                logger.debug(f"pressure {self.metar.data.altimeter.value}")
                 self.button.sim.write_dataref(
                     dataref=Dataref.mk_internal_dataref("weather:wind_speed"),
                     value=self.metar.data.wind_speed.value,
                     vtype="float",
                 )
+                logger.debug(f"wind speed {self.metar.data.wind_speed.value}")
                 self.button.sim.write_dataref(
                     dataref=Dataref.mk_internal_dataref("weather:temperature"),
                     value=self.metar.data.temperature.value,
                     vtype="float",
                 )
+                logger.debug(f"temperature {self.metar.data.temperature.value}")
                 self.button.sim.write_dataref(
                     dataref=Dataref.mk_internal_dataref("weather:dew_point"),
                     value=self.metar.data.dewpoint.value,
                     vtype="float",
                 )
+                logger.debug(f"dew point {self.metar.data.dewpoint.value}")
             else:
-                logger.debug(f"no metar for {self.station.icao}")
+                logger.debug(f"no metar data for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()
             logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
             self._upd_count = self._upd_count + 1
@@ -654,6 +659,7 @@ class LiveWeatherIcon(DrawAnimation):
             return CAVOK_DAY if day else CAVOK_NIGHT
 
         # Do we have a variant?
+        icon_np = icon.replace("wi_", "")
         try_icon = None
         dft_name = None
         for prefix in [
@@ -663,7 +669,8 @@ class LiveWeatherIcon(DrawAnimation):
             WI_PREFIX + NIGHT_ALT,
         ]:
             if try_icon is None:
-                dft_name = prefix + icon
+                dft_name = prefix + icon_np
+                logger.debug(f"trying {dft_name}..")
                 try_icon = WEATHER_ICONS.get(dft_name)
         if try_icon is None:
             logger.debug(f"no such icon or variant {icon}")
@@ -781,7 +788,7 @@ class LiveWeatherIcon(DrawAnimation):
         if daynight_icon is None:
             logger.warning(f"no icon, using default {DEFAULT_WEATHER_ICON}")
             daynight_icon = DEFAULT_WEATHER_ICON
-        daynight_icon = daynight_icon.replace("-", "_")
+        daynight_icon = daynight_icon.replace("-", "_")  # ! Important
         logger.debug(f"day/night version: {day}: {daynight_icon}")
         return daynight_icon
 
