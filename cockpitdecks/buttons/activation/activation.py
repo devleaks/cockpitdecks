@@ -1300,6 +1300,9 @@ class EncoderValueExtended(OnOff):
     ACTIVATION_NAME = "encoder-value-extended"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
 
+    ACTIVATION_NAME = "encoder-value-extended"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
         self.stepxl = float(config.get("stepxl", 10))
@@ -1319,7 +1322,7 @@ class EncoderValueExtended(OnOff):
 
         OnOff.__init__(self, config=config, button=button)
 
-    def init(self):
+    def init(self):        
         if self._inited:
             return
         value = self.button.get_current_value()
@@ -1361,35 +1364,40 @@ class EncoderValueExtended(OnOff):
     def activate(self, event):
         if not self.can_handle(event):
             return
+        if hasattr(event, "pressed"):
+            super().activate(event)
 
-        if event.pressed:
-            if self._step_mode == self.step:
-                self._step_mode = self.stepxl
-            else:
-                self._step_mode = self.step
-            self.view()
-            return
+            if event.pressed:
+
+                if self.has_long_press() and self.long_pressed():
+                    self.long_press(event)
+                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
+                    return
+
+                if self._step_mode == self.step:
+                    self._step_mode = self.stepxl
+                else:
+                    self._step_mode = self.step
+                self.view()
+                return
 
         ok = False
         x = self.encoder_current_value
         if x is None:
             x = 0
-        if event.turned_counter_clockwise:  # anti-clockwise
-            # x = x - self._step_mode
-            x = self.decrease(x)
-            ok = True
-            self._turns = self._turns - 1
-            self._ccw = self._ccw + 1
-        elif event.turned_clockwise:  # clockwise
-            # x = x + self._step_mode
-            x = self.increase(x)
-            ok = True
-            self._turns = self._turns + 1
-            self._cw = self._cw + 1
-        elif self.has_long_press() and self.long_pressed():
-            self.long_press(event)
-            logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
-            return
+
+        if not hasattr(event, "pressed"):
+            if event.turned_counter_clockwise:  # anti-clockwise
+                x = self.decrease(x)
+                ok = True
+                self._turns = self._turns - 1
+                self._ccw = self._ccw + 1
+            elif event.turned_clockwise:  # clockwise
+                x = self.increase(x)
+                ok = True
+                self._turns = self._turns + 1
+                self._cw = self._cw + 1
+                
 
         if ok:
             self.encoder_current_value = x
@@ -1397,7 +1405,9 @@ class EncoderValueExtended(OnOff):
 
             # write to local dataref if configured
             if self._local_dataref:
-                self._write_dataref(self._local_dataref, x)
+                self._write_dataref(self._local_dataref, x)            
+        
+
 
     def get_status(self):
         a = super().get_status()
@@ -1565,24 +1575,25 @@ class EncoderToggle(Activation):
         if hasattr(event, "pressed"):
             super().activate(event)
 
-        if event.pressed and self._on:
-            self._on = False
-        elif event.pressed and not self._on:
-            self._on = True
+            if event.pressed and self._on:
+                self._on = False
+            elif event.pressed and not self._on:
+                self._on = True
 
-        if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
-            if self._on:
-                self.command(self._commands[0])
-            else:
-                self.command(self._commands[2])
-
-        elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
-            if self._on:
-                self.command(self._commands[1])
-            else:
-                self.command(self._commands[3])
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+            if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
+                if self._on:
+                    self.command(self._commands[0])
+                else:
+                    self.command(self._commands[2])
+
+            elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
+                if self._on:
+                    self.command(self._commands[1])
+                else:
+                    self.command(self._commands[3])
+            else:
+                logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
     def get_status(self):
         a = super().get_status()

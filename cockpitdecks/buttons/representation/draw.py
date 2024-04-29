@@ -278,6 +278,10 @@ class DataIcon(DrawBase):
                 fill=mark_color,
             )
 
+        # Get background colour or use default value
+        # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
+        self.icon_color = self._config.get("data-bg-color", self.icon_color)
+
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
             name=self.button_name(),

@@ -8,8 +8,7 @@ from .representation import (
     Icon,
     IconText,
     MultiTexts,
-    MultiIcons,
-    IconSide,
+    MultiIcons
 )
 from .representation import LED, ColoredLED
 from .annunciator import Annunciator, AnnunciatorAnimate
