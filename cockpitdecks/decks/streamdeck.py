@@ -178,7 +178,7 @@ class Streamdeck(DeckWithIcons):
             return self.icons.get(name)
 
         image = None
-        if index not in self.get_deck_type_description().special_displays():
+        if index not in self.get_deck_type().special_displays():
             if self.device is not None and self.pil_helper is not None:
                 bg = self.pil_helper.create_image(deck=self.device, background=colors)
                 image = self.get_icon_background(
@@ -238,7 +238,7 @@ class Streamdeck(DeckWithIcons):
             self.device.set_touchscreen_image(i, width=image.width, height=image.height)
 
     def _send_key_image_to_device(self, key, image):
-        if key in self.get_deck_type_description().special_displays():
+        if key in self.get_deck_type().special_displays():
             self._send_touchscreen_image_to_device(image=image)
             return
         with self.device:
@@ -255,7 +255,7 @@ class Streamdeck(DeckWithIcons):
             return
 
         image = button.get_representation()
-        if button.index not in self.get_deck_type_description().special_displays():
+        if button.index not in self.get_deck_type().special_displays():
             if image is None:
                 logger.warning("button returned no image, using default")
                 image = self.icons[self.get_attribute("default-icon-name")]
@@ -340,11 +340,11 @@ class Streamdeck(DeckWithIcons):
         prefix = bdef[0].get(KW.PREFIX.value)
         idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:
-            self.key_change_processing(PushEvent(deck=self, button=idx, pressed=value))
+            event = PushEvent(deck=self, button=idx, pressed=value, autorun=True)
         elif action == DialEventType.TURN:
             direction = 2 if value < 0 else 3
             for i in range(abs(value)):
-                self.key_change_processing(EncoderEvent(deck=self, button=idx, clockwise=direction == 2))
+                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2, autorun=True)
         else:
             logger.warning(f"deck {self.name}: invalid dial action {action}")
 

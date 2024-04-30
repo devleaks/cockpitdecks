@@ -81,6 +81,11 @@ class Deck(ABC):
     # Deck Common Functions
     #
     def init(self):
+        """Initialisation procedure
+
+        Load deck type definition, load deck parameters, load layout, pages,
+        and install and start deck software.
+        """
         if not self.valid:
             logger.warning(f"deck {self.name}: is invalid")
             return
@@ -88,23 +93,55 @@ class Deck(ABC):
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
 
-    def get_id(self):
+    def get_id(self) -> str:
+        """Returns deck identifier
+
+        Returns:
+            [str]: Deck identifier string
+        """
         l = self.layout if self.layout is not None else "-nolayout-"
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
     def get_deck_button_definition(self, idx):
+        """Returns a deck's button definition from the deck type.
+
+        Args:
+            idx ([strıint]): Button index on deck
+
+        Returns:
+            [ButtonType]: The button type at index.
+        """
         return self.deck_type.get_button_definition(idx)
 
     def set_deck_type(self):
+        """Installs the reference to the deck type.
+        """
         deck_type = self._config.get(KW.TYPE.value)
-        self.deck_type = self.cockpit.get_deck_type_description(deck_type)
+        self.deck_type = self.cockpit.get_deck_type(deck_type)
         if self.deck_type is None:
             logger.error(f"no deck definition for {deck_type}")
 
-    def get_deck_type_description(self):
+    def get_deck_type(self) -> DeckType:
+        """Returns the deck's type
+
+        Returns:
+            DeckType: the deck's type
+        """
         return self.deck_type
 
     def get_attribute(self, attribute: str, silence: bool = False):
+        """Returns the default attribute value
+
+        ..if avaialble at the deck level.
+        If not, returns the parent's default attribute value (cockpit).
+
+        Args:
+            attribute (str): Attribute name
+            silence (bool): Whether to complain if defalut value is not found (default: `False`)
+
+        Returns:
+            [type]: [description]
+        """
         val = self._config.get(attribute)
         if val is not None:
             return val
@@ -120,6 +157,16 @@ class Deck(ABC):
         return val if val is not None else self.cockpit.get_attribute(attribute, silence=silence)
 
     def get_button_value(self, name):
+        """Get the value of a button from its internal identifier name
+
+        [description]
+
+        Args:
+            name ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
         a = name.split(ID_SEP)
         if len(a) > 0:
             if a[0] == self.name:
@@ -132,7 +179,8 @@ class Deck(ABC):
         return None
 
     def inspect(self, what: str | None = None):
-        """
+        """Triggered by the Inspect activation.
+
         This function is called on all pages of this Deck.
         """
         logger.info(f"*" * 60)
@@ -142,7 +190,9 @@ class Deck(ABC):
 
     def load(self):
         """
-        Loads Streamdeck pages during configuration
+        Loads pages during configuration. If none is found, create a simple,
+        static page with one activatio.
+
         """
         if self.layout is None:
             self.make_default_page()
@@ -232,16 +282,19 @@ class Deck(ABC):
             logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
 
     def change_page(self, page: str | None = None):
-        """
-        Returns the currently loaded page name
+        """Change the deck's page to the one supplied as argument.
+           If none supplied, load the default page.
 
-        :param    page:  The page
-        :type      page:  str
+        Args:
+            page| None ([str]): Name of page to load (default: `None`)
+
+        Returns:
+            [str | None]: Name of page loaded or None.
         """
         if page is None:
             logger.debug(f"deck {self.name} loading home page")
             self.load_home_page()
-            return
+            return None
         if page == KW.BACKPAGE.value:
             if len(self.page_history) > 1:
                 page = self.page_history.pop()  # this page
@@ -280,9 +333,16 @@ class Deck(ABC):
         return None
 
     def reload_page(self):
+        """Reloads page to take into account changes in definition
+
+        Please note that this may loead to unexpected results if page was
+        too heavily modified or interaction with other pages occurred.
+        """
         self.change_page(self.current_page.name)
 
     def set_home_page(self):
+        """Finds and install the home page, if any.
+        """
         if not len(self.pages) > 0:
             self.valid = False
             logger.error(f"deck {self.name} has no page, ignoring")
@@ -295,8 +355,7 @@ class Deck(ABC):
             logger.debug(f"deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
-        """
-        Connects to device and send initial keys.
+        """Loads the home page, if any.
         """
         if self.home_page is not None:
             self.change_page(self.home_page.name)
@@ -306,8 +365,8 @@ class Deck(ABC):
 
     @abstractmethod
     def make_default_page(self, b: str | None = None):
-        """
-        Connects to device and send initial keys.
+        """Generates a default home page for the deck,
+        in accordance with its capabilities.
         """
         pass
 
@@ -315,47 +374,66 @@ class Deck(ABC):
     # Deck Specific Functions : Description (capabilities)
     #
     def get_index_prefix(self, index):
+        """Returns the prefix of a button index for this deck.
+        """
         return self.deck_type.get_index_prefix(index=index)
 
     def get_index_numeric(self, index):
-        # Useful to just get the int value of index
+        """Returns the numeric part of the index of a button index for this deck.
+        """
         return self.deck_type.get_index_numeric(index=index)
 
     def valid_indices(self, with_icon: bool = False):
+        """Returns the valid indices for this deck.
+        """
         return self.deck_type.valid_indices(with_icon=with_icon)
 
     def valid_activations(self, index=None):
+        """Returns the valid activations for the button pointed by the index.
+        If None is given, returns all valid activations.
+        """
         return self.deck_type.valid_activations(index=index)
 
     def valid_representations(self, index=None):
+        """Returns the valid representations for the button pointed by the index.
+        If None is given, returns all valid representations.
+        """
         return self.deck_type.valid_representations(index=index)
-
-    # #######################################
-    # Deck Specific Functions : Activation
-    #
-    def key_change_processing(self, event: DeckEvent):
-        """
-        For those that did not process the event, this does the work.
-        Mainly, mostly, it enqueues the event for execution.
-        Sometimes, this is done right away from the Deck driver.
-        But if it not the case, this function does it.
-        """
-        event.run()
 
     # #######################################
     # Deck Specific Functions : Representation
     #
     def print_page(self, page: Page):
+        """Produces an image of the deck's layout in the current directory.
+        For testing and development purpose.
+        """
         pass
 
     def fill_empty(self, key):
+        """Procedure to fill keys that do not contain any feedback rendering.
+            key ([str]): Key index to fill with empty/void feedback.
+        """
         pass
 
     def clean_empty(self, key):
+        """Procedure to clean (remove previous) keys that do not contain any feedback rendering.
+            key ([str]): Key index to clean with empty/void feedback.
+        """
         pass
 
     @abstractmethod
     def render(self, button: Button):
+        """Main procedure to render a button on the deck
+
+        The procedure mainly fetches information from the button, for example,
+        gets an image for display in a neutral, generic format (PNG, JPEG...),
+        then format the image to the deck specific format (B646 format for example)
+        and send it to the deck for display using the deck drive APIs.
+        It also convert the button index to the specific index required by the deck.
+
+        Args;
+            button ([Button]): Button to render on the deck.
+        """
         pass
 
     # #######################################
@@ -363,9 +441,15 @@ class Deck(ABC):
     #
     @abstractmethod
     def start(self):
+        """Called at end of initialisation to start the deck interaction,
+        both ways.
+        """
         pass
 
     def terminate(self):
+        """Called at end of use of deck to cleanly reset all buttons to a default, neutral state
+        and stop deck interaction,
+        """
         for p in self.pages.values():
             p.terminate()
         self.pages = {}
@@ -393,6 +477,12 @@ class DeckWithIcons(Deck):
     # Deck Specific Functions : Installation
     #
     def init(self):
+        """Specific DeckIcon initialisation procedure.
+
+        Add a step to prepare and cache deck icons.
+        Icons in proper format are cached locally for performance reasons.
+        New icons will be cached when created.
+        """
         if not self.valid:
             logger.warning(f"deck {self.name}: is invalid")
             return
@@ -408,6 +498,8 @@ class DeckWithIcons(Deck):
         return self.device
 
     def get_index_image_size(self, index):
+        """Returns the image size and offset for supplied deck index.
+        """
         b = self._buttons.get(index)
         if b is not None:
             return b.get(KW.IMAGE.value)
@@ -417,7 +509,9 @@ class DeckWithIcons(Deck):
     def load_icons(self):
         """
         Each device model requires a different icon format (size).
-        We could build a set per deck model rather than deck instance...
+        This procedure loads all registered icons, converts and caches them
+        inside this deck's specific format.
+        (We could build a set per deck model rather than deck instance.)
         """
         cache_icon = self.get_attribute("cache-icon")
         logger.info(f"deck {self.name}: use cache {cache_icon}")
@@ -527,18 +621,27 @@ class DeckWithIcons(Deck):
         return image
 
     def create_icon_for_key(self, index, colors, texture, name: str | None = None):
-        # Abstact
+        """Create a default icon for supplied key
+        """
         return None
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
-        # Abstact
+        """Scale an image for supplied key, cache it with supplied name, if any
+        """
         return None
 
     def get_image_size(self, index):
+        """Gets image size for deck button index
+        """
         # Abstact
         return (0, 0)
 
     def fill_empty(self, key, clean: bool = False):
+        """Fills all empty buttons with e defalut representation.
+
+        If clean is True, removes the reprensetation rather than install a default one.
+        Removing a representation often means installing a default, neutral one.
+        """
         icon = None
         if self.current_page is not None:
             icon = self.create_icon_for_key(
@@ -560,10 +663,19 @@ class DeckWithIcons(Deck):
             logger.warning(f"deck {self.name}: {key}: no fill icon{' cleaning' if clean else ''}")
 
     def clean_empty(self, key):
+        """Fills a button pointed by index with an empty representation.
+        """
         self.fill_empty(key, clean=True)
 
     # #######################################
     # Deck Specific Functions : Rendering
     #
     def _send_key_image_to_device(self, key, image):
+        """Access to lower level, raw function to install an image on a deck display
+        pointed by th index key.
+
+        Args:
+            key ([type]): [description]
+            image ([type]): [description]
+        """
         pass

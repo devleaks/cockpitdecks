@@ -53,7 +53,7 @@ class Button(DatarefListener, DatarefSetListener):
         self.index = config.get("index")  # button_type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
         self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
-        self._definition = self.deck.get_deck_type_description().get_button_definition(self.index)  # kind of meta data capabilties of button
+        self._definition = self.deck.get_deck_type().get_button_definition(self.index)  # kind of meta data capabilties of button
 
         self.name = config.get("name", str(self.index))
         self.num_index = None

@@ -179,12 +179,12 @@ class Loupedeck(DeckWithIcons):
                     logger.warning(f"invalid button key {key}")
             state = msg[CALLBACK_KEYWORD.STATE.value] == "down"
             logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-            self.key_change_processing(PushEvent(deck=self, button=key, pressed=state))
+            event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
 
         elif action == CALLBACK_KEYWORD.ROTATE.value:
             state = msg[CALLBACK_KEYWORD.STATE.value] != "left"
             logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-            self.key_change_processing(EncoderEvent(deck=self, button=key, clockwise=state))
+            event = EncoderEvent(deck=self, button=key, clockwise=state, autorun=True)
 
         elif action == CALLBACK_KEYWORD.TOUCH_START.value:  # we don't deal with slides now, just push on key
             state = True
@@ -196,7 +196,7 @@ class Loupedeck(DeckWithIcons):
                     logger.warning(f"invalid button key {key} {msg}")
                 self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg
                 logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-                self.key_change_processing(PushEvent(deck=self, button=key, pressed=state))
+                event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
 
             else:
                 self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg
@@ -209,7 +209,7 @@ class Loupedeck(DeckWithIcons):
                         i = i + 1
                     logger.debug(f"side bar pressed, SIDE_INDIVIDUAL_KEYS event {k} = {state}")
                     # This transfer a (virtual) button push event
-                    self.key_change_processing(PushEvent(deck=self, button=k, pressed=state))
+                    event = PushEvent(deck=self, button=k, pressed=state, autorun=True)
                     # WATCH OUT! If the release occurs in another key (virtual or not),
                     # the corresponding release event will be not be sent to the same, original key
                 else:
@@ -225,7 +225,7 @@ class Loupedeck(DeckWithIcons):
                 ):
                     key = self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value]
                     del self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]]
-                    self.key_change_processing(PushEvent(deck=self, button=key, pressed=state))
+                    event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
                 else:
                     dx = msg[CALLBACK_KEYWORD.X.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.X.value]
                     dy = msg[CALLBACK_KEYWORD.Y.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.Y.value]
@@ -290,10 +290,9 @@ class Loupedeck(DeckWithIcons):
                             event = event + [pressed]
                             logger.debug(f"side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
                             # This transfer a (virtual) button release event
-                            self.key_change_processing(PushEvent(deck=self, button=key, pressed=state))
+                            event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
 
-                    self.key_change_processing(
-                        SwipeEvent(
+                    event = SwipeEvent(
                             deck=self,
                             button=pressed,
                             start_pos_x=event["begin_x"],
@@ -302,8 +301,8 @@ class Loupedeck(DeckWithIcons):
                             end_pos_x=event["end_x"],
                             end_pos_y=event["end_y"],
                             end_ts=msg[CALLBACK_KEYWORD.TIMESTAMP.value],
+                            autorun=True
                         )
-                    )
 
             else:
                 logger.error(f"received touchend but no matching touchstart found")
@@ -318,7 +317,7 @@ class Loupedeck(DeckWithIcons):
         """
         Return device or device element to use for PIL.
         """
-        return "button" if index not in self.get_deck_type_description().special_displays() else index
+        return "button" if index not in self.get_deck_type().special_displays() else index
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
         if name is not None and name in self.icons.keys():
@@ -373,7 +372,7 @@ class Loupedeck(DeckWithIcons):
 
         image = button.get_representation()
         if image is not None:
-            if button.index in self.get_deck_type_description().special_displays():
+            if button.index in self.get_deck_type().special_displays():
                 self.device.set_key_image(button.index, image)
             else:
                 sizes = self.device.key_image_format()

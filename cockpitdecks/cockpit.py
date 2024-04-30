@@ -601,7 +601,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"ignoring unnamed deck {deck_type}")
         logger.info(f"loaded {len(self.deck_types)} deck types ({list(self.deck_types.keys())})")
 
-    def get_deck_type_description(self, name: str):
+    def get_deck_type(self, name: str):
         return self.deck_types.get(name)
 
     def load_icons(self):
