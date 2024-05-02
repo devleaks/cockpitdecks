@@ -109,8 +109,8 @@ class FMAIcon(DrawAnimation):
 
         self.collect_fma: threading.Event | None = None
         self.update_fma: threading.Event | None = None
-        self.fma_thread: threading.Thread | None = None
-        self.fma_thread2: threading.Thread | None = None
+        self.fma_collector_thread: threading.Thread | None = None
+        self.fma_updater_thread: threading.Thread | None = None
 
         self.fma_text: Dict[str, Dict] = {}
         self.fma_text_lock = threading.RLock()
@@ -156,7 +156,7 @@ class FMAIcon(DrawAnimation):
         return None
 
     def collector(self):
-        logger.debug("starting FMA collector..")
+        logger.info("starting FMA collector..")
         total_to = 0
         total_reads = 0
         last_read_ts = datetime.now()
@@ -165,13 +165,17 @@ class FMAIcon(DrawAnimation):
         src_cnt = 0
         src_tot = 0
         # Bind to the port that we know will receive multicast data
-        self.socket.bind((ANY, FMA_MCAST_PORT))
-        status = self.socket.setsockopt(
-            socket.IPPROTO_IP,
-            socket.IP_ADD_MEMBERSHIP,
-            socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
-        )
-        logger.debug("..socket bound..")
+        try:
+            self.socket.bind((ANY, FMA_MCAST_PORT))
+            status = self.socket.setsockopt(
+                socket.IPPROTO_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
+            )
+            logger.debug("..socket bound..")
+        except:
+            logger.info("socket bind return error", exc_info=True)
+
         while self.collect_fma is not None and not self.collect_fma.is_set():
             try:
                 self.socket.settimeout(max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ))
@@ -207,8 +211,9 @@ class FMAIcon(DrawAnimation):
                 # logger.debug(f"from {addr} at {ts}: data: {self.text}")
         self.collect_fma = None
         # Bind to the port that we know will receive multicast data
-        self.socket.close()
-        logger.debug("..socket closed..")
+        # self.socket.shutdown()
+        # self.socket.close()
+        # logger.info("..socket closed..")
         logger.debug("..FMA collector terminated")
 
     def updator(self):
@@ -235,39 +240,44 @@ class FMAIcon(DrawAnimation):
         return self.text != self.previous_text
 
     def anim_start(self) -> None:
+        if self.running:
+            logger.debug("anim already running")
+        logger.info(self)
         if self.collect_fma is None:
             self.collect_fma = threading.Event()
-            self.fma_thread = threading.Thread(target=self.collector)
-            self.fma_thread.name = "FMA::collector"
-            self.fma_thread.start()
+            self.fma_collector_thread = threading.Thread(target=self.collector)
+            self.fma_collector_thread.name = "FMA::collector"
+            self.fma_collector_thread.start()
             logger.info("FMA collector started")
         else:
             logger.info("FMA collector already running.")
         if self.update_fma is None:
             self.update_fma = threading.Event()
-            self.fma_thread2 = threading.Thread(target=self.updator)
-            self.fma_thread2.name = "FMA::updater"
-            self.fma_thread2.start()
+            self.fma_updater_thread = threading.Thread(target=self.updator)
+            self.fma_updater_thread.name = "FMA::updater"
+            self.fma_updater_thread.start()
             logger.info("FMA updater started")
         else:
             logger.info("FMA updater already running.")
         self.running = True
 
     def anim_stop(self) -> None:
-        if self.update_fma is not None and self.fma_thread2 is not None:
+        if not self.running:
+            logger.debug("anim not running")
+        if self.update_fma is not None and self.fma_updater_thread is not None:
             self.update_fma.set()
             logger.debug("stopping FMA updater..")
-            self.fma_thread2.join(FMA_UPDATE_FREQ)
-            self.collect_fma = None
+            self.fma_updater_thread.join(FMA_UPDATE_FREQ)
+            self.update_fma = None
             logger.debug("..FMA updater stopped")
         else:
             logger.debug("FMA updater not running")
-        if self.collect_fma is not None and self.fma_thread is not None:
+        if self.collect_fma is not None and self.fma_collector_thread is not None:
             self.collect_fma.set()
             logger.debug("stopping FMA collector..")
             logger.debug(f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
-            self.fma_thread.join(FMA_SOCKET_TIMEOUT)
-            if self.fma_thread.is_alive():
+            self.fma_collector_thread.join(FMA_SOCKET_TIMEOUT)
+            if self.fma_collector_thread.is_alive():
                 logger.warning("..thread may hang in socket.recvfrom()..")
             self.collect_fma = None
             logger.debug("..FMA collector stopped")

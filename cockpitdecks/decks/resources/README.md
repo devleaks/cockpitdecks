@@ -24,9 +24,9 @@ class DECK_ACTIONS(Enum):
 ```
 
 - `none`: No activation, button is display only, like power LED.
-- `press`: Simple press button (1 event)
-- `longpress`: Long press button (1 event), Streamdeck specific, which does not provide timing info. See https://github.com/abcminiuser/python-elgato-streamdeck/issues/141.
-- `push`: Press button (2 event, pushed, released)
+- `press`: Simple press button (*1 event*)
+- `longpress`: Long press button (*1 event*), Streamdeck specific, which does not provide timing info. See https://github.com/abcminiuser/python-elgato-streamdeck/issues/141.
+- `push`: Press button (*2 events*, pushed, released)
 - `encoder`: Encoder (2 events, turn clockwise, counter-clockwise, stepped)
 - `cursor`: Continuous value between a minimum and a maximum values, produce a countinuous number within range. Slide is a historical synonnym.
 - `swipe`: (a touch surface, complex events between touched, dragged, released, modelled into simpler events.)
@@ -44,6 +44,7 @@ class DECK_FEEDBACK(Enum):
     COLORED_LED = "colored-led"
     ENCODER_LEDS = "encoder-leds"
     IMAGE = "image"
+    VIBRATE = "vibrate"
 ```
 
 - `none`: No feedback, like the cursor on the X-Touch Mini, feedback is physical by sliding the cursor on its ramp.

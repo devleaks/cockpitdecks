@@ -262,7 +262,7 @@ class LoadPage(Activation):
     """
 
     ACTIVATION_NAME = "page"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     KW_BACKPAGE = "back"
 
@@ -313,7 +313,7 @@ class Reload(Activation):
     """
 
     ACTIVATION_NAME = "reload"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -339,7 +339,7 @@ class ChangeTheme(Activation):
     """
 
     ACTIVATION_NAME = "theme"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -368,7 +368,7 @@ class Inspect(Activation):
     """
 
     ACTIVATION_NAME = "inspect"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -402,7 +402,7 @@ class Stop(Activation):
     """
 
     ACTIVATION_NAME = "stop"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -434,7 +434,7 @@ class Push(Activation):
     """
 
     ACTIVATION_NAME = "push"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
@@ -590,7 +590,7 @@ class Longpress(Push):
     """
 
     ACTIVATION_NAME = "long-press"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -631,7 +631,7 @@ class OnOff(Activation):
     """
 
     ACTIVATION_NAME = "onoff"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -771,7 +771,7 @@ class UpDown(Activation):
     """
 
     ACTIVATION_NAME = "updown"
-    REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -985,7 +985,7 @@ class EncoderPush(Push):
     """
 
     ACTIVATION_NAME = "encoder-push"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -1097,7 +1097,7 @@ class EncoderOnOff(OnOff):
     """
 
     ACTIVATION_NAME = "encoder-onoff"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
@@ -1201,7 +1201,7 @@ class EncoderValue(OnOff):
     """
 
     ACTIVATION_NAME = "encoder-value"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
@@ -1306,10 +1306,7 @@ class EncoderValueExtended(OnOff):
     Activation that maintains an internal value and optionally write that value to a dataref
     """
     ACTIVATION_NAME = "encoder-value-extended"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
-
-    ACTIVATION_NAME = "encoder-value-extended"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
@@ -1548,7 +1545,7 @@ class EncoderToggle(Activation):
     """
 
     ACTIVATION_NAME = "encoder-toggle"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PUSH]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)

@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "8.0.13"
+__version__ = "8.0.14"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -218,10 +218,11 @@ def all_subclasses(cls):
 #
 class DECK_ACTIONS(Enum):
     NONE = "none"
-    CURSOR = "cursor"
+    PRESS = "press"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
+    LONGPRESS = "longpress"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
+    PUSH = "push"  # TWO events, pressed and released
     ENCODER = "encoder"  # turn with clicks or stops
-    LONGPUSH = "longpush"  # triggered automatically by Elgato firmwire
-    PUSH = "push"  # push, press
+    CURSOR = "cursor"
     SWIPE = "swipe"
 
 #
@@ -233,9 +234,8 @@ class DECK_FEEDBACK(Enum):
     IMAGE = "image"
     LED = "led"
     ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
-    MULTI_LEDS = "multi-leds"
-    SOUND = "sound"
     VIBRATE = "vibrate"
+
 
 # ############################################################
 from .cockpit import Cockpit, CockpitBase

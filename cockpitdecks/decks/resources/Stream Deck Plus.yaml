@@ -16,6 +16,6 @@ buttons:
     repeat: 4
   # touchscreen in streamdeck package vocabulary
   - name: touchscreen
-    action: [push, longpush, swipe]
+    action: [press, longpress, swipe]
     feedback: image
     image: [800, 100, 0, 0]
