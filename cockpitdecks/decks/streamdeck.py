@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
-from cockpitdecks import DECK_FEEDBACK, RESOURCES_FOLDER, DEFAULT_PAGE_NAME, KW, DECK_ACTIONS
+from cockpitdecks import DECK_FEEDBACK, RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent, EncoderEvent, TouchEvent, SwipeEvent
 from cockpitdecks.page import Page
@@ -338,8 +338,8 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a dial is rotated.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
-        prefix = bdef[0].get(KW.PREFIX.value)
+        bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
+        prefix = bdef[0].get(DECK_KW.PREFIX.value)
         idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:
             event = PushEvent(deck=self, button=idx, pressed=value, autorun=True)

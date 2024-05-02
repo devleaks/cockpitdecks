@@ -2,7 +2,7 @@ import logging
 
 from functools import reduce
 
-from cockpitdecks import KW, Config, DECK_ACTIONS, DECK_FEEDBACK
+from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
@@ -18,25 +18,25 @@ loggerDeckType = logging.getLogger("DeckType")
 class ButtonType:
     def __init__(self, config: dict) -> None:
 
-        self.name = config.get(KW.NAME.value, config.get("_intname"))
-        self.prefix = config.get(KW.PREFIX.value, "")
-        self.repeat = int(config.get(KW.REPEAT.value, 0))
+        self.name = config.get(DECK_KW.NAME.value, config.get("_intname"))
+        self.prefix = config.get(DECK_KW.PREFIX.value, "")
+        self.repeat = int(config.get(DECK_KW.REPEAT.value, 0))
 
-        self.actions = config.get(KW.ACTION.value)
-        self.feedbacks = config.get(KW.VIEW.value)
+        self.actions = config.get(DECK_KW.ACTION.value)
+        self.feedbacks = config.get(DECK_KW.FEEDBACK.value)
 
-        self.image = config.get(KW.IMAGE.value)
+        self.image = config.get(DECK_KW.IMAGE.value)
 
         self.init()
 
     def init(self):
-        if self.actions is None or (type(self.actions) is str and self.actions.lower() == KW.NONE.value):
-            self.actions = [KW.NONE.value]
+        if self.actions is None or (type(self.actions) is str and self.actions.lower() == DECK_KW.NONE.value):
+            self.actions = [DECK_KW.NONE.value]
         elif type(self.actions) not in [list, tuple]:
             self.actions = [self.actions]
 
-        if self.feedbacks is None or (type(self.feedbacks) is str and self.feedbacks.lower() == KW.NONE.value):
-            self.feedbacks = [KW.NONE.value]
+        if self.feedbacks is None or (type(self.feedbacks) is str and self.feedbacks.lower() == DECK_KW.NONE.value):
+            self.feedbacks = [DECK_KW.NONE.value]
         elif type(self.feedbacks) not in [list, tuple]:
             self.feedbacks = [self.feedbacks]
 
@@ -85,7 +85,7 @@ class ButtonType:
         return feedback in self.feedbacks
 
     def has_no_feedback(self) -> bool:
-        return (KW.NONE.value in self.feedbacks and len(self.feedbacks) == 1) or len(self.feedbacks) == 0
+        return (DECK_KW.NONE.value in self.feedbacks and len(self.feedbacks) == 1) or len(self.feedbacks) == 0
 
     def can_activate(self, activation: str) -> bool:
         return activation in self.valid_activations()
@@ -108,7 +108,7 @@ class DeckType(Config):
 
     def __init__(self, filename: str) -> None:
         Config.__init__(self, filename=filename)
-        self.name = self[KW.TYPE.value]
+        self.name = self[DECK_KW.TYPE.value]
         self._buttons = {}
         self._special_displays = None  # cache
         self.init()
@@ -120,7 +120,7 @@ class DeckType(Config):
         button can provide as a feedback.
         """
         cnt = 0
-        for bdef in self[KW.BUTTONS.value]:
+        for bdef in self[DECK_KW.BUTTONS.value]:
             bdef["_intname"] = "NO_NAME_" + str(cnt)
             cnt = cnt + 1
             button = ButtonType(bdef)
@@ -136,9 +136,13 @@ class DeckType(Config):
         if self._special_displays is not None:
             return self._special_displays
         self._special_displays = []
-        for b in self.store.get(KW.BUTTONS.value, []):
-            if KW.REPEAT.value not in b and b.get(KW.VIEW.value, "") == DECK_FEEDBACK.IMAGE.value and b.get(DECK_FEEDBACK.IMAGE.value) is not None:
-                n = b.get(KW.NAME.value)
+        for b in self.store.get(DECK_KW.BUTTONS.value, []):
+            if (
+                DECK_KW.REPEAT.value not in b
+                and b.get(DECK_KW.FEEDBACK.value, "") == DECK_FEEDBACK.IMAGE.value
+                and b.get(DECK_FEEDBACK.IMAGE.value) is not None
+            ):
+                n = b.get(DECK_KW.NAME.value)
                 if n is not None:
                     self._special_displays.append(n)
         return self._special_displays
@@ -218,11 +222,11 @@ class DeckType(Config):
     def filter(self, query: dict) -> dict:
         res = []
         for what, value in query.items():
-            for button in self[KW.BUTTONS.value]:
-                if what == KW.ACTION.value:
+            for button in self[DECK_KW.BUTTONS.value]:
+                if what == DECK_KW.ACTION.value:
                     if value in button[what]:
                         res.append(button)
-                elif what == KW.VIEW.value:
+                elif what == DECK_KW.FEEDBACK.value:
                     if value in button[what]:
                         res.append(button)
         # loggerDeckType.debug(f"filter {query} returns {res}")

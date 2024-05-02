@@ -67,7 +67,7 @@ ANY = "0.0.0.0"
 FMA_MCAST_PORT = 49505
 FMA_MCAST_GRP = "239.255.1.1"
 FMA_UPDATE_FREQ = 1.0
-FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0 # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
+FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
 
 logger = logging.getLogger(__file__)
 # logger.setLevel(logging.DEBUG)
@@ -191,7 +191,7 @@ class FMAIcon(DrawAnimation):
                 total_to = total_to + 1
                 logger.debug(
                     f"FMA collector: socket timeout received ({total_to})",
-                    exc_info=(logger.level==logging.DEBUG),
+                    exc_info=(logger.level == logging.DEBUG),
                 )
             else:
                 with self.fma_text_lock:
@@ -223,7 +223,7 @@ class FMAIcon(DrawAnimation):
         # total_values = 0
         # last_read_ts = datetime.now()
         # total_read_time = 0.0
-        while not self.update_fma.is_set():
+        while self.update_fma is not None and not self.update_fma.is_set():
             with self.fma_text_lock:
                 self.text = self.fma_text.copy()
             self.button.render()

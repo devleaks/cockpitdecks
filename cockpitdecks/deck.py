@@ -31,6 +31,7 @@ class Deck(ABC):
     Loads the configuration of a Deck.
     A Deck has a collection of Pages, and knows which one is currently being displayed.
     """
+
     DECK_NAME = "none"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
@@ -115,8 +116,7 @@ class Deck(ABC):
         return self.deck_type.get_button_definition(idx)
 
     def set_deck_type(self):
-        """Installs the reference to the deck type.
-        """
+        """Installs the reference to the deck type."""
         deck_type = self._config.get(KW.TYPE.value)
         self.deck_type = self.cockpit.get_deck_type(deck_type)
         if self.deck_type is None:
@@ -342,8 +342,7 @@ class Deck(ABC):
         self.change_page(self.current_page.name)
 
     def set_home_page(self):
-        """Finds and install the home page, if any.
-        """
+        """Finds and install the home page, if any."""
         if not len(self.pages) > 0:
             self.valid = False
             logger.error(f"deck {self.name} has no page, ignoring")
@@ -356,8 +355,7 @@ class Deck(ABC):
             logger.debug(f"deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
-        """Loads the home page, if any.
-        """
+        """Loads the home page, if any."""
         if self.home_page is not None:
             self.change_page(self.home_page.name)
             logger.debug(f"deck {self.name}, home page {self.home_page.name} loaded")
@@ -375,18 +373,15 @@ class Deck(ABC):
     # Deck Specific Functions : Description (capabilities)
     #
     def get_index_prefix(self, index):
-        """Returns the prefix of a button index for this deck.
-        """
+        """Returns the prefix of a button index for this deck."""
         return self.deck_type.get_index_prefix(index=index)
 
     def get_index_numeric(self, index):
-        """Returns the numeric part of the index of a button index for this deck.
-        """
+        """Returns the numeric part of the index of a button index for this deck."""
         return self.deck_type.get_index_numeric(index=index)
 
     def valid_indices(self, with_icon: bool = False):
-        """Returns the valid indices for this deck.
-        """
+        """Returns the valid indices for this deck."""
         return self.deck_type.valid_indices(with_icon=with_icon)
 
     def valid_activations(self, index=None):
@@ -412,13 +407,13 @@ class Deck(ABC):
 
     def fill_empty(self, key):
         """Procedure to fill keys that do not contain any feedback rendering.
-            key ([str]): Key index to fill with empty/void feedback.
+        key ([str]): Key index to fill with empty/void feedback.
         """
         pass
 
     def clean_empty(self, key):
         """Procedure to clean (remove previous) keys that do not contain any feedback rendering.
-            key ([str]): Key index to clean with empty/void feedback.
+        key ([str]): Key index to clean with empty/void feedback.
         """
         pass
 
@@ -499,8 +494,7 @@ class DeckWithIcons(Deck):
         return self.device
 
     def get_index_image_size(self, index):
-        """Returns the image size and offset for supplied deck index.
-        """
+        """Returns the image size and offset for supplied deck index."""
         b = self._buttons.get(index)
         if b is not None:
             return b.get(KW.IMAGE.value)
@@ -622,18 +616,15 @@ class DeckWithIcons(Deck):
         return image
 
     def create_icon_for_key(self, index, colors, texture, name: str | None = None):
-        """Create a default icon for supplied key
-        """
+        """Create a default icon for supplied key"""
         return None
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
-        """Scale an image for supplied key, cache it with supplied name, if any
-        """
+        """Scale an image for supplied key, cache it with supplied name, if any"""
         return None
 
     def get_image_size(self, index):
-        """Gets image size for deck button index
-        """
+        """Gets image size for deck button index"""
         # Abstact
         return (0, 0)
 
@@ -664,8 +655,7 @@ class DeckWithIcons(Deck):
             logger.warning(f"deck {self.name}: {key}: no fill icon{' cleaning' if clean else ''}")
 
     def clean_empty(self, key):
-        """Fills a button pointed by index with an empty representation.
-        """
+        """Fills a button pointed by index with an empty representation."""
         self.fill_empty(key, clean=True)
 
     # #######################################

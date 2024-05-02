@@ -1,4 +1,4 @@
-List deck buttons and capabilities for each deck model.
+# List deck buttons and capabilities for each deck model
 
 The `.yaml` files that describe decks must be placed into
 
@@ -31,7 +31,7 @@ class DECK_ACTIONS(Enum):
 - `cursor`: Continuous value between a minimum and a maximum values, produce a countinuous number within range. Slide is a historical synonnym.
 - `swipe`: (a touch surface, complex events between touched, dragged, released, modelled into simpler events.)
 
-(Currently, there is no distinction between `press` and `push` events.)
+(Currently, there is little distinction between `press` and `push` events. The difference being that since press events have only one event, they cannot be used for activation that requires a timing like `long-press`.)
 
 ## Feedback
 

@@ -6,7 +6,7 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks import KW, DECK_ACTIONS, DECK_FEEDBACK, DEFAULT_PAGE_NAME
+from cockpitdecks import DECK_KW, DECK_ACTIONS, DECK_FEEDBACK, DEFAULT_PAGE_NAME
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.event import PushEvent, EncoderEvent, SlideEvent
@@ -75,11 +75,11 @@ class XTouchMini(Deck):
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
 
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
-        prefix = bdef[0].get(KW.PREFIX.value)
+        bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
+        prefix = bdef[0].get(DECK_KW.PREFIX.value)
 
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
-        cursor = bdef[0].get(KW.NAME.value)
+        bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
+        cursor = bdef[0].get(DECK_KW.NAME.value)
 
         KEY_MAP = {v: k for k, v in MAKIE_MAPPING.items()}
 
@@ -147,8 +147,8 @@ class XTouchMini(Deck):
         if self.device is None:
             logger.warning(f"no device ({hasattr(self, 'device')}, {type(self)})")
             return
-        bdef = self.deck_type.filter({KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
-        cursor = bdef[0].get(KW.NAME.value)
+        bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
+        cursor = bdef[0].get(DECK_KW.NAME.value)
         if str(button.index) == cursor:
             logger.debug(f"button type {button.index} has no representation")
             return

@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "8.0.14"
+__version__ = "8.0.15"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -93,6 +93,7 @@ GLOBAL_DEFAULTS = {
     "cache-icon": True,
     "cockpit-color": "cornflowerblue",
     "cockpit-texture": None,
+    "cockpit-theme": "light",
     "default-annunciator-color": "black",
     "default-annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
     "default-annunciator-texture": None,
@@ -113,7 +114,6 @@ GLOBAL_DEFAULTS = {
     "default-text-font": "DIN.ttf",
     "default-text-position": "cm",
     "default-text-size": 32,
-    "cockpit-theme": "light",
     "default-wallpaper": "wallpaper.png",
     "system-font": "Monaco.ttf",  # alias
 }
@@ -123,14 +123,13 @@ ID_SEP = "/"
 
 
 # deckconfig attribute keywords
+#
+# Config.yaml
+#
 class KW(Enum):
-    ACTION = "action"
-    ACTIVATION = "activation"
-    ACTIVATIONS = "activations"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BUTTONS = "buttons"
-    COLORED_LED = "colored-led"
     DATAREF = "dataref"
     DEVICE = "device"
     DISABLED = "disabled"
@@ -139,7 +138,6 @@ class KW(Enum):
     FORMULA = "formula"
     FRAME = "frame"
     GUARD = "guard"
-    IMAGE = "image"
     INCLUDES = "includes"
     INDEX = "index"
     INDEX_NUMERIC = "_index"
@@ -147,15 +145,30 @@ class KW(Enum):
     MANAGED = "managed"
     NAME = "name"
     NONE = "none"
-    PREFIX = "prefix"
-    REPEAT = "repeat"
-    REPRESENTATION = "representation"
-    REPRESENTATIONS = "representations"
     SERIAL = "serial"
     TYPE = "type"
-    VIEW = "feedback"
+    VIEW = "view"
 
 
+#
+# Deck.yaml (decks/resources/*.yaml)
+#
+class DECK_KW(Enum):
+    ACTION = "action"
+    BUTTONS = "buttons"
+    DRIVER = "driver"
+    FEEDBACK = "feedback"
+    IMAGE = "image"
+    NAME = "name"
+    NONE = "none"
+    PREFIX = "prefix"
+    REPEAT = "repeat"
+    TYPE = "type"
+
+
+#
+#  Yaml config file reader
+#
 class Config(MutableMapping):
     """
     A dictionary that loads from a yaml config file.
@@ -187,13 +200,25 @@ class Config(MutableMapping):
     def __len__(self):
         return len(self.store)
 
-    def _keytransform(self, key):
+    def _keytransform(self, key) -> str:
+        """Allows to alter key to internal hidden name"""
         return key
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self.store is not None and len(self.store) > 1
 
-def all_subclasses(cls):
+
+def all_subclasses(cls) -> list:
+    """Returns the list of all subclasses.
+
+    Recurses through all sub-sub classes
+
+    Returns:
+        [list]: list of all subclasses
+
+    Raises:
+        ValueError: If invalid class found in recursion (types, etc.)
+    """
     if cls == type:
         raise ValueError("Invalid class - 'type' is not a class")
     subclasses = set()
@@ -224,6 +249,7 @@ class DECK_ACTIONS(Enum):
     ENCODER = "encoder"  # turn with clicks or stops
     CURSOR = "cursor"
     SWIPE = "swipe"
+
 
 #
 # deck type feedback capabilities

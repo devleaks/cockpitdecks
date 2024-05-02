@@ -1305,6 +1305,7 @@ class EncoderValueExtended(OnOff):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
+
     ACTIVATION_NAME = "encoder-value-extended"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
@@ -1327,7 +1328,7 @@ class EncoderValueExtended(OnOff):
 
         OnOff.__init__(self, config=config, button=button)
 
-    def init(self):        
+    def init(self):
         if self._inited:
             return
         value = self.button.get_current_value()
@@ -1402,7 +1403,6 @@ class EncoderValueExtended(OnOff):
                 ok = True
                 self._turns = self._turns + 1
                 self._cw = self._cw + 1
-                
 
         if ok:
             self.encoder_current_value = x
@@ -1410,9 +1410,7 @@ class EncoderValueExtended(OnOff):
 
             # write to local dataref if configured
             if self._local_dataref:
-                self._write_dataref(self._local_dataref, x)            
-        
-
+                self._write_dataref(self._local_dataref, x)
 
     def get_status(self):
         a = super().get_status()

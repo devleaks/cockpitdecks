@@ -709,7 +709,7 @@ class ColoredLED(Representation):
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.COLORED_LED
 
     def __init__(self, config: dict, button: "Button"):
-        self._color = config.get(KW.COLORED_LED.value, button.get_attribute("cockpit-color"))
+        self._color = config.get(DECK_FEEDBACK.COLORED_LED.value, button.get_attribute("cockpit-color"))
         self.color = (128, 128, 256)
         Representation.__init__(self, config=config, button=button)
 

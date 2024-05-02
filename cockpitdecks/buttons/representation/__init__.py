@@ -3,13 +3,7 @@ Button display and rendering abstraction.
 """
 
 import logging
-from .representation import (
-    Representation,
-    Icon,
-    IconText,
-    MultiTexts,
-    MultiIcons
-)
+from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons
 from .representation import LED, ColoredLED
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor

@@ -295,16 +295,16 @@ class Loupedeck(DeckWithIcons):
                             event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
 
                     event = SwipeEvent(
-                            deck=self,
-                            button=pressed,
-                            start_pos_x=event["begin_x"],
-                            start_pos_y=event["begin_y"],
-                            start_ts=self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.TIMESTAMP.value],
-                            end_pos_x=event["end_x"],
-                            end_pos_y=event["end_y"],
-                            end_ts=msg[CALLBACK_KEYWORD.TIMESTAMP.value],
-                            autorun=True
-                        )
+                        deck=self,
+                        button=pressed,
+                        start_pos_x=event["begin_x"],
+                        start_pos_y=event["begin_y"],
+                        start_ts=self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.TIMESTAMP.value],
+                        end_pos_x=event["end_x"],
+                        end_pos_y=event["end_y"],
+                        end_ts=msg[CALLBACK_KEYWORD.TIMESTAMP.value],
+                        autorun=True,
+                    )
 
             else:
                 logger.error(f"received touchend but no matching touchstart found")
