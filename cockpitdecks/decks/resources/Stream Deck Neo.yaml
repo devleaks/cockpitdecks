@@ -1,0 +1,19 @@
+# This is the description of a deck's capabilities for a Elgato Streamdeck Mini device
+#
+---
+type: Stream Deck Neo
+driver: streamdeck
+buttons:
+  - name: 0
+    action: push
+    feedback: image
+    image: [96, 96, 0, 0]
+    repeat: 8
+  - name: 0
+    prefix: b
+    action: push
+    feedback: led
+    repeat: 2
+  - name: display
+    feedback: image
+    image: [200, 50, 0, 0]

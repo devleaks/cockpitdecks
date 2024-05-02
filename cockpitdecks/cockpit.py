@@ -9,6 +9,7 @@ import pkg_resources
 from queue import Queue
 
 from PIL import Image, ImageFont
+from cairosvg import svg2png
 
 from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
@@ -636,6 +637,12 @@ class Cockpit(DatarefListener, CockpitBase):
                     if has_ext(i, "png"):  # later, might load JPG as well.
                         fn = os.path.join(dn, i)
                         image = Image.open(fn)
+                        self.icons[i] = image
+                    elif has_ext(i, "svg"):  # Wow.
+                        fn = os.path.join(dn, i)
+                        fout = fn.replace(".svg", ".png")
+                        svg2png(url=fn, write_to=fout)
+                        image = Image.open(fout)
                         self.icons[i] = image
 
                 if cache_icon:  # we cache both folders of icons

@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "8.0.11"
+__version__ = "8.0.13"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -193,6 +193,24 @@ class Config(MutableMapping):
     def is_valid(self):
         return self.store is not None and len(self.store) > 1
 
+def all_subclasses(cls):
+    if cls == type:
+        raise ValueError("Invalid class - 'type' is not a class")
+    subclasses = set()
+    stack = []
+    try:
+        stack.extend(cls.__subclasses__())
+    except (TypeError, AttributeError) as ex:
+        raise ValueError("Invalid class" + repr(cls)) from ex
+    while stack:
+        sub = stack.pop()
+        subclasses.add(sub)
+        try:
+            stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
+        except (TypeError, AttributeError):
+            continue
+    return list(subclasses)
+
 
 # ############################################################
 #
@@ -202,6 +220,7 @@ class DECK_ACTIONS(Enum):
     NONE = "none"
     CURSOR = "cursor"
     ENCODER = "encoder"  # turn with clicks or stops
+    LONGPUSH = "longpush"  # triggered automatically by Elgato firmwire
     PUSH = "push"  # push, press
     SWIPE = "swipe"
 

@@ -41,6 +41,8 @@ class Streamdeck(DeckWithIcons):
     Loads the configuration of a Stream Deck.
     """
 
+    DECK_NAME = "streamdeck"
+
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 

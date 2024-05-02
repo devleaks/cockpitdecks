@@ -23,42 +23,15 @@ from .xp_fcu import FCUIcon
 from .xp_iconside import IconSide
 from .xtouch import EncoderLEDs
 
-from cockpitdecks import DECK_FEEDBACK
+from cockpitdecks import DECK_FEEDBACK, all_subclasses
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
 # ###############################
-# format is representation: Classname
+# Optional representations
 #
-# - index: b2
-#   name: Popup ND1
-#   mytype: push
-#   colored-led: (255, 128, 0)         <--------  Representation.name() keyword
-#   label: ND1
-#   command: AirbusFBW/PopUpND1
-#   dataref: AirbusFBW/PopUpStateArray[4]
-#
-def all_subclasses(cls):
-    if cls == type:
-        raise ValueError("Invalid class - 'type' is not a class")
-    subclasses = set()
-    stack = []
-    try:
-        stack.extend(cls.__subclasses__())
-    except (TypeError, AttributeError) as ex:
-        raise ValueError("Invalid class" + repr(cls)) from ex
-    while stack:
-        sub = stack.pop()
-        subclasses.add(sub)
-        try:
-            stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
-        except (TypeError, AttributeError):
-            continue
-    return list(subclasses)
-
-
 try:
     from .external import LiveWeatherIcon
 

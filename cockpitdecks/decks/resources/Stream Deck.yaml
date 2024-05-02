@@ -1,7 +1,7 @@
 # This is the description of a deck's capabilities for a Elgato Streamdeck device
 #
 ---
-type: streamdeck
+type: Streamdeck
 driver: streamdeck
 buttons:
   - name: 0

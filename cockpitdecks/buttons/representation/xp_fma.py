@@ -66,11 +66,11 @@ FMA_LINES = 3
 ANY = "0.0.0.0"
 FMA_MCAST_PORT = 49505
 FMA_MCAST_GRP = "239.255.1.1"
-FMA_UPDATE_FREQ = 4.0
-FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0
+FMA_UPDATE_FREQ = 1.0
+FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0 # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
 
 logger = logging.getLogger(__file__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
 
 
@@ -95,15 +95,15 @@ class FMAIcon(DrawAnimation):
         self.all_in_one = False
         fma = self.fmaconfig.get("index")
         if fma is None:
-            logger.warning(f"button {button.name}: no FMA index, assuming all-in-one")
+            logger.info(f"button {button.name}: no FMA index, assuming all-in-one")
             self.all_in_one = True
             fma = 1
         fma = int(fma)
         if fma < 1:
-            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            logger.info(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = 1
         if fma > FMA_COUNT:
-            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            logger.info(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = FMA_COUNT
         self.fma_idx = fma - 1
 
@@ -118,14 +118,14 @@ class FMAIcon(DrawAnimation):
         self.socket = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         # Allow multiple sockets to use the same PORT number
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Bind to the port that we know will receive multicast data
-        self.socket.bind((ANY, FMA_MCAST_PORT))
-        status = self.socket.setsockopt(
-            socket.IPPROTO_IP,
-            socket.IP_ADD_MEMBERSHIP,
-            socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
-        )
+        # self.socket.bind((ANY, FMA_MCAST_PORT))
+        # status = self.socket.setsockopt(
+        #     socket.IPPROTO_IP,
+        #     socket.IP_ADD_MEMBERSHIP,
+        #     socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
+        # )
         self.collector_avgtime = 0
 
     def should_run(self) -> bool:
@@ -164,6 +164,14 @@ class FMAIcon(DrawAnimation):
         src_last_ts = 0
         src_cnt = 0
         src_tot = 0
+        # Bind to the port that we know will receive multicast data
+        self.socket.bind((ANY, FMA_MCAST_PORT))
+        status = self.socket.setsockopt(
+            socket.IPPROTO_IP,
+            socket.IP_ADD_MEMBERSHIP,
+            socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
+        )
+        logger.debug("..socket bound..")
         while self.collect_fma is not None and not self.collect_fma.is_set():
             try:
                 self.socket.settimeout(max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ))
@@ -176,9 +184,10 @@ class FMAIcon(DrawAnimation):
                 last_read_ts = now
 
             except:
-                logger.info(
+                total_to = total_to + 1
+                logger.debug(
                     f"FMA collector: socket timeout received ({total_to})",
-                    exc_info=True,
+                    exc_info=(logger.level==logging.DEBUG),
                 )
             else:
                 with self.fma_text_lock:
@@ -197,6 +206,9 @@ class FMAIcon(DrawAnimation):
                     self.fma_text = {k[-2:]: v for k, v in data.items()}  # this is to adjust to older algorithm...
                 # logger.debug(f"from {addr} at {ts}: data: {self.text}")
         self.collect_fma = None
+        # Bind to the port that we know will receive multicast data
+        self.socket.close()
+        logger.debug("..socket closed..")
         logger.debug("..FMA collector terminated")
 
     def updator(self):

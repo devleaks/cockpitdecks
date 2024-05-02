@@ -23,6 +23,8 @@ class XTouchMini(Deck):
     Loads the configuration of a X-Touch Mini.
     """
 
+    DECK_NAME = "xtouchmini"
+
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 

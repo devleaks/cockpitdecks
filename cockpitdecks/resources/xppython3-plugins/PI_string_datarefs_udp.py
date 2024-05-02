@@ -12,16 +12,18 @@ import json
 import ruamel
 from ruamel.yaml import YAML
 from traceback import print_exc
+from threading import RLock
 
 from XPPython3 import xp
 
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
-RELEASE = "2.0.4"
+RELEASE = "2.0.5"
 
 # Changelog:
 #
+# 02-MAY-2024: 2.0.5: Now changing dataref set in one operation to minimize impact on flightloop
 # 23-APR-2024: 2.0.4: Now reading from config.yaml for aircraft.
 # 22-DEC-2023: 1.0.0: Initial version.
 #
@@ -62,6 +64,7 @@ class PythonInterface:
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+        self.RLock = RLock()
 
     def XPluginStart(self):
         if self.trace:
@@ -148,7 +151,8 @@ class PythonInterface:
         if self.run_count % 100 == 0:
             print(self.Info, f"PI::FlightLoopCallback: is alive ({self.run_count})")
         self.run_count = self.run_count + 1
-        drefvalues = {"ts": time.time()} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+        with self.RLock:
+            drefvalues = {"ts": time.time()} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
         fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
@@ -166,7 +170,7 @@ class PythonInterface:
         # Load current aircraft command set.
         #
         # remove previous command set
-        self.datarefs = {}
+        new_dataref_set = {}
 
         # install this aircraft's set
         datarefs = self.get_string_datarefs(acpath)
@@ -181,16 +185,21 @@ class PythonInterface:
         for dataref in datarefs:
             dref = xp.findDataRef(dataref)
             if dref is not None:
-                self.datarefs[dataref] = dref
+                new_dataref_set[dataref] = dref
                 if self.trace:
                     print(self.Info, f"PI::load: added string dataref {dataref}")
             else:
                 print(self.Info, f"PI::load: dataref {dataref} not found")
 
-        # adjust frequency since operation is expensive
-        self.frequency = max(len(self.datarefs), FREQUENCY)
-        if self.trace:
-            print(self.Info, f"PI::load: frequency adjusted to {self.frequency}")
+        if len(new_dataref_set) > 0:
+            with self.RLock:
+                self.datarefs = new_dataref_set
+            if self.trace:
+                print(self.Info, f"PI::load: new dataref set installed {', '.join(new_dataref_set.keys())}")
+            # adjust frequency since operation is expensive
+            self.frequency = max(len(self.datarefs), FREQUENCY)
+            if self.trace:
+                print(self.Info, f"PI::load: frequency adjusted to {self.frequency}")
 
     def get_string_datarefs(self, acpath):
         # Scans an aircraft deckconfig and collects long press commands.

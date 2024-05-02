@@ -61,6 +61,7 @@ class Activation:
 
         # Working variables, internal state
         self._last_event = None
+        self._activate_start = None
 
         self.activation_count = 0
         self.activations_count: Dict[str, int] = {}
@@ -99,6 +100,7 @@ class Activation:
         if not self._inited:
             self.init()
         self._last_event = event
+        self._activate_start = datetime.now()
 
         # Stats keeping
         s = str(type(event).__name__)
@@ -151,6 +153,12 @@ class Activation:
                 return
 
         # logger.debug(f"{type(self).__name__} activated ({event}, {self.activation_count})")
+
+    def done(self):
+        if self._activate_start is not None:
+            self._activation_completed = self._activation_completed + 1
+            duration = datetime.now() - self._activate_start
+            self._total_duration = self._total_duration + duration
 
     def is_pressed(self):
         return self.pressed

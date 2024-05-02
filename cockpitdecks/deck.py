@@ -31,6 +31,7 @@ class Deck(ABC):
     Loads the configuration of a Deck.
     A Deck has a collection of Pages, and knows which one is currently being displayed.
     """
+    DECK_NAME = "none"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         self._config = config
