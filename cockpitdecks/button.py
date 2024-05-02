@@ -21,7 +21,7 @@ from .simulator import (
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, KW, yaml
+from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -109,19 +109,19 @@ class Button(DatarefListener, DatarefSetListener):
             self._representation = REPRESENTATIONS["none"](config, self)
 
         # Datarefs
-        self.dataref = config.get(KW.DATAREF.value)
-        self.dataref_rpn = config.get(KW.FORMULA.value)
+        self.dataref = config.get(CONFIG_KW.DATAREF.value)
+        self.dataref_rpn = config.get(CONFIG_KW.FORMULA.value)
         self.managed = None
-        self.manager = config.get(KW.MANAGED.value)
+        self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
-            self.managed = self.manager.get(KW.DATAREF.value)
+            self.managed = self.manager.get(CONFIG_KW.DATAREF.value)
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
         self.guarded = None
-        self.guard = config.get(KW.GUARD.value)
+        self.guard = config.get(CONFIG_KW.GUARD.value)
         if self.guard is not None:
-            self.guarded = self.guard.get(KW.DATAREF.value)
+            self.guarded = self.guard.get(CONFIG_KW.DATAREF.value)
             if self.guarded is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
 
@@ -139,14 +139,14 @@ class Button(DatarefListener, DatarefSetListener):
 
     @staticmethod
     def guess_index(config):
-        return str(config.get(KW.INDEX.value))
+        return str(config.get(CONFIG_KW.INDEX.value))
 
     @staticmethod
     def guess_activation_type(config):
-        a = config.get(KW.TYPE.value)
-        if a is None or a == KW.NONE.value:
+        a = config.get(CONFIG_KW.TYPE.value)
+        if a is None or a == CONFIG_KW.NONE.value:
             logger.debug(f"not type attribute, assuming 'none' type")
-            return KW.NONE.value
+            return CONFIG_KW.NONE.value
         return a
 
     @staticmethod
@@ -161,7 +161,7 @@ class Button(DatarefListener, DatarefSetListener):
             logger.debug(f"no representation in {config}")
         else:
             logger.debug(f"multiple representation {a} in {config}")
-        return KW.NONE.value
+        return CONFIG_KW.NONE.value
 
     def button_name(self):
         return self.name
@@ -423,32 +423,32 @@ class Button(DatarefListener, DatarefSetListener):
             for s in PREFIX:
                 if r.startswith(s + SEP):
                     return False
-            return r != KW.FORMULA.value
+            return r != CONFIG_KW.FORMULA.value
 
         r = []
 
         # Direct use of datarefs:
         #
         # 1. Single
-        dataref = base.get(KW.DATAREF.value)
+        dataref = base.get(CONFIG_KW.DATAREF.value)
         if dataref is not None:
             r.append(dataref)
             logger.debug(f"button {self.name}: added single dataref {dataref}")
 
         # 1b. Managed values
         managed = None
-        managed_dict = base.get(KW.MANAGED.value)
+        managed_dict = base.get(CONFIG_KW.MANAGED.value)
         if managed_dict is not None:
-            managed = managed_dict.get(KW.DATAREF.value)
+            managed = managed_dict.get(CONFIG_KW.DATAREF.value)
         if managed is not None:
             r.append(managed)
             logger.debug(f"button {self.name}: added managed dataref {managed}")
 
         # 1c. Guarded buttons
         guarded = None
-        guard_dict = base.get(KW.GUARD.value)
+        guard_dict = base.get(CONFIG_KW.GUARD.value)
         if guard_dict is not None:
-            guarded = guard_dict.get(KW.DATAREF.value)
+            guarded = guard_dict.get(CONFIG_KW.DATAREF.value)
         if guarded is not None:
             r.append(guarded)
             logger.debug(f"button {self.name}: added guarding dataref {guarded}")
@@ -458,7 +458,7 @@ class Button(DatarefListener, DatarefSetListener):
         # Use of datarefs in formula:
         #
         # 2. Formula datarefs
-        dataref_rpn = base.get(KW.FORMULA.value)
+        dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall(PATTERN_DOLCB, dataref_rpn)
             datarefs = list(filter(is_dref, datarefs))
@@ -493,8 +493,8 @@ class Button(DatarefListener, DatarefSetListener):
             r = r + datarefs
 
         # Clean up
-        if KW.FORMULA.value in r:  # label or text may contain like ${{KW.FORMULA.value}}, but {KW.FORMULA.value} is not a dataref.
-            r.remove(KW.FORMULA.value)
+        if CONFIG_KW.FORMULA.value in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
+            r.remove(CONFIG_KW.FORMULA.value)
 
         return list(set(r))  # removes duplicates
 
@@ -694,10 +694,10 @@ class Button(DatarefListener, DatarefSetListener):
 
         # Formula in text
         text_format = base.get(f"{root}-format")
-        KW_FORMULA_STR = f"${{{KW.FORMULA.value}}}"  # "${formula}"
+        KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
             # If text contains ${formula}, it is replaced by the value of the formula calculation.
-            dataref_rpn = base.get(KW.FORMULA.value)
+            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
             if dataref_rpn is not None:
                 res = self.execute_formula(formula=dataref_rpn)
                 if res != "":  # Format output if format present
@@ -708,7 +708,7 @@ class Button(DatarefListener, DatarefSetListener):
                         res = str(res)
                 text = text.replace(KW_FORMULA_STR, res)
             else:
-                logger.warning(f"button {self.name}: text contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
+                logger.warning(f"button {self.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
         text = self.substitute_values(text, formatting=text_format, default="---")
 
@@ -872,6 +872,23 @@ class Button(DatarefListener, DatarefSetListener):
             return None
         self._repres = self._repres + 1
         return self._representation.render()
+
+    def get_vibration(self):
+        return self.get_representation().get_vibration()
+
+    def vibrate(self):
+        """
+        Ask deck to vibrate.
+        """
+        if self.deck is not None:
+            if self.on_current_page():
+                self._render = self._render + 1
+                self.deck.vibrate(self)
+                # logger.debug(f"button {self.name} rendered")
+            else:
+                logger.debug(f"button {self.name} not on current page")
+        else:
+            logger.warning(f"button {self.name} has no deck")  # error
 
     def render(self):
         """

@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.event import PushEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
-from cockpitdecks import KW, DECK_ACTIONS
+from cockpitdecks import CONFIG_KW, DECK_ACTIONS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -53,7 +53,7 @@ class Activation:
         # Options
 
         # Commands
-        self._view = Command(path=config.get(KW.VIEW.value))  # Optional additional command, usually to set a view
+        self._view = Command(path=config.get(CONFIG_KW.VIEW.value))  # Optional additional command, usually to set a view
         # but could be anything.
         self._long_press = Command(path=config.get("long-press"))  # Optional additional command
         # Datarefs

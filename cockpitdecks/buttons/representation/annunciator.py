@@ -7,7 +7,7 @@ from typing import Dict, List
 from enum import Enum
 from PIL import Image, ImageDraw, ImageFilter
 
-from cockpitdecks import KW, ANNUNCIATOR_STYLES, ICON_SIZE
+from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.simulator import Dataref
@@ -109,14 +109,14 @@ class AnnunciatorPart:
             return True
 
         ret = None
-        if KW.FORMULA.value in self._config:
-            calc = self._config[KW.FORMULA.value]
+        if CONFIG_KW.FORMULA.value in self._config:
+            calc = self._config[CONFIG_KW.FORMULA.value]
             expr = self.annunciator.button.substitute_values(calc)
             rpc = RPC(expr)
             ret = rpc.calculate()
             logger.debug(f"button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
-        elif KW.DATAREF.value in self._config:
-            dataref = self._config[KW.DATAREF.value]
+        elif CONFIG_KW.DATAREF.value in self._config:
+            dataref = self._config[CONFIG_KW.DATAREF.value]
             ret = self.annunciator.button.get_dataref_value(dataref)
             logger.debug(f"button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
         else:
@@ -394,7 +394,7 @@ class Annunciator(DrawBase):
                 self.annunciator_parts = arr
                 logger.debug(f"button {self.button.name}: annunciator parts normalized ({list(self.annunciator_parts.keys())})")
             else:
-                self.annunciator[KW.ANNUNCIATOR_MODEL.value] = ANNUNCIATOR_DEFAULT_MODEL
+                self.annunciator[CONFIG_KW.ANNUNCIATOR_MODEL.value] = ANNUNCIATOR_DEFAULT_MODEL
                 self.model = ANNUNCIATOR_DEFAULT_MODEL
                 arr[ANNUNCIATOR_DEFAULT_MODEL_PART] = AnnunciatorPart(
                     name=ANNUNCIATOR_DEFAULT_MODEL_PART,
@@ -410,7 +410,7 @@ class Annunciator(DrawBase):
             self.model = ctrl[0]
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        for a in [KW.DATAREF.value, KW.FORMULA.value]:
+        for a in [CONFIG_KW.DATAREF.value, CONFIG_KW.FORMULA.value]:
             if a in config:
                 logger.warning(f"button {self.button.name}: annunciator parent button has property {a} which is ignored")
 
@@ -439,7 +439,7 @@ class Annunciator(DrawBase):
         Build annunciator part index list
         """
         if self._part_iterator is None:
-            t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
+            t = self.annunciator.get(CONFIG_KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
             if t not in "ABCDEF":
                 logger.warning(f"button {self.button.name}: invalid annunciator type {t}")
                 return []
@@ -617,7 +617,7 @@ class Annunciator(DrawBase):
 
         # PART 4: Guard
         if self.button.guard is not None:
-            cover = self.button.guard.get(KW.ANNUNCIATOR_MODEL.value, GUARD_TYPES.COVER.value)
+            cover = self.button.guard.get(CONFIG_KW.ANNUNCIATOR_MODEL.value, GUARD_TYPES.COVER.value)
             guard_color = self.button.guard.get("color", "red")
             guard_color = convert_color(guard_color)
             sw = self.button.guard.get("grid-width", 16)
@@ -654,7 +654,7 @@ class Annunciator(DrawBase):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
+        t = self.annunciator.get(CONFIG_KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
         a = [f"The representation displays an annunciator of type {t}."]
         return "\n\r".join(a)
 
@@ -756,7 +756,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         Describe what the button does in plain English
         """
-        t = self.annunciator.get(KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
+        t = self.annunciator.get(CONFIG_KW.ANNUNCIATOR_MODEL.value, ANNUNCIATOR_DEFAULT_MODEL)
         a = [
             f"The representation displays an annunciator of type {t}.",
             f"This annunciator is blinking every {self.speed} seconds when it is ON.",

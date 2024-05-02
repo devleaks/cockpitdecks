@@ -12,10 +12,10 @@ from .xp_str import StringIcon
 from .xp_ac import AircraftIcon
 from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
-from .xp_fma import FMAIcon
-from .xp_fcu import FCUIcon
 from .xp_iconside import IconSide
 from .xtouch import EncoderLEDs
+from .tl_fma import FMAIcon
+from .tl_fcu import FCUIcon
 
 from cockpitdecks import DECK_FEEDBACK, all_subclasses
 

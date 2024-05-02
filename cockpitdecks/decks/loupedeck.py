@@ -13,7 +13,7 @@ from Loupedeck.Devices.LoupedeckLive import (
     CALLBACK_KEYWORD,
 )
 
-from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, KW, DECK_ACTIONS, DECK_FEEDBACK
+from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
@@ -24,7 +24,7 @@ from cockpitdecks.resources.color import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # Warning, the logger in package Loupedeck is also called "Loupedeck".
 
 SIDE_INDIVIDUAL_KEYS = False
@@ -174,8 +174,8 @@ class Loupedeck(DeckWithIcons):
                     key = 0
                 try:
                     num = int(key)
-                    bdef = self.deck_type.filter({KW.VIEW.value: "colored-led"})
-                    prefix = bdef[0].get(KW.PREFIX.value)
+                    bdef = self.deck_type.filter({DECK_KW.FEEDBACK.value: "colored-led"})
+                    prefix = bdef[0].get(DECK_KW.PREFIX.value)
                     key = f"{prefix}{key}"
                 except ValueError:
                     logger.warning(f"invalid button key {key}")
@@ -188,9 +188,17 @@ class Loupedeck(DeckWithIcons):
             logger.debug(f"Deck {deck.id()} Key {key} = {state}")
             event = EncoderEvent(deck=self, button=key, clockwise=state, autorun=True)
 
+        # msg={'id': 24, 'action': 'touchstart', 'screen': 'left', 'key': None, 'x': 38, 'y': 199, 'ts': 1714656052.813476}
         elif action == CALLBACK_KEYWORD.TOUCH_START.value:  # we don't deal with slides now, just push on key
             state = True
-            if CALLBACK_KEYWORD.KEY.value in msg and msg[CALLBACK_KEYWORD.KEY.value] is not None:  # we touched a key, not a side bar
+
+            screen = msg[CALLBACK_KEYWORD.SCREEN.value]
+            if screen in [KW_LEFT, KW_RIGHT]:
+                logger.debug(f"Deck {deck.id()} Key {screen} = {state}")
+                self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg  # we also register it as a touch event
+                event = PushEvent(deck=self, button=screen, pressed=state, autorun=True)  # Push event
+
+            elif CALLBACK_KEYWORD.KEY.value in msg and msg[CALLBACK_KEYWORD.KEY.value] is not None:  # we touched a key, not a side bar
                 key = msg[CALLBACK_KEYWORD.KEY.value]
                 try:
                     key = int(key)
@@ -220,6 +228,12 @@ class Loupedeck(DeckWithIcons):
 
         elif action == CALLBACK_KEYWORD.TOUCH_END.value:  # since user can "release" touch in another key, we send the touchstart one.
             state = False
+
+            screen = msg[CALLBACK_KEYWORD.SCREEN.value]
+            if screen in [KW_LEFT, KW_RIGHT]:
+                logger.debug(f"Deck {deck.id()} Key {screen} = {state}")
+                event = PushEvent(deck=self, button=screen, pressed=state, autorun=True)  # Release event
+
             if msg[CALLBACK_KEYWORD.IDENTIFIER.value] in self.touches:
                 if (
                     CALLBACK_KEYWORD.KEY.value in self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]]
@@ -294,14 +308,20 @@ class Loupedeck(DeckWithIcons):
                             # This transfer a (virtual) button release event
                             event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
 
+                    if same_key:
+                        key = kstart
+                    else:
+                        key = msg[CALLBACK_KEYWORD.SCREEN.value]
+                    logger.debug(f"swipe event key is {key}")
+
                     event = SwipeEvent(
                         deck=self,
-                        button=pressed,
-                        start_pos_x=event["begin_x"],
-                        start_pos_y=event["begin_y"],
+                        button=key,
+                        start_pos_x=event_dict["begin_x"],
+                        start_pos_y=event_dict["begin_y"],
                         start_ts=self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.TIMESTAMP.value],
-                        end_pos_x=event["end_x"],
-                        end_pos_y=event["end_y"],
+                        end_pos_x=event_dict["end_x"],
+                        end_pos_y=event_dict["end_y"],
                         end_ts=msg[CALLBACK_KEYWORD.TIMESTAMP.value],
                         autorun=True,
                     )
@@ -406,8 +426,8 @@ class Loupedeck(DeckWithIcons):
         if color is None:
             logger.warning("button returned no representation color, using default")
             color = self.get_attribute("default-color")
-        bdef = self.deck_type.filter({KW.VIEW.value: "colored-led"})
-        prefix = bdef[0].get(KW.PREFIX.value)
+        bdef = self.deck_type.filter({DECK_KW.FEEDBACK.value: "colored-led"})
+        prefix = bdef[0].get(DECK_KW.PREFIX.value)
         key = button.index.lower().replace(prefix, "")
         if key == "0":
             key = KW_CIRCLE

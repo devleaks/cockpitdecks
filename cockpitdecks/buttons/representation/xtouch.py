@@ -19,7 +19,7 @@ from cockpitdecks.resources.color import (
     add_ext,
     DEFAULT_COLOR,
 )
-from cockpitdecks import KW, DECK_FEEDBACK
+from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 from cockpitdecks.buttons.representation import Representation
 
 logger = logging.getLogger(__name__)

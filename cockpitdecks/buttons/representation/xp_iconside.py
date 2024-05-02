@@ -7,7 +7,7 @@ import logging
 from PIL import ImageDraw
 from cockpitdecks.resources.color import convert_color
 from .representation import Icon
-from cockpitdecks import KW, DECK_FEEDBACK
+from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 
 # from cockpitdecks.button import Button
 
@@ -42,7 +42,7 @@ class IconSide(Icon):  # modified Representation IconSide class
     #         self.datarefs = []
     #         if self.labels is not None:
     #             for label in self.labels:
-    #                 dref = label.get(KW.MANAGED.value)
+    #                 dref = label.get(CONFIG_KW.MANAGED.value)
     #                 if dref is not None:
     #                     logger.debug(f"button {self.button_name()}: added label dataref {dref}")
     #                     self.datarefs.append(dref)
@@ -93,7 +93,7 @@ class IconSide(Icon):  # modified Representation IconSide class
                     continue
 
                 # Managed block from old IconSide
-                # managed = label.get(KW.MANAGED.value)
+                # managed = label.get(CONFIG_KW.MANAGED.value)
                 # if managed is not None:
                 #     value = self.button.get_dataref_value(managed)
                 #     txto = txt

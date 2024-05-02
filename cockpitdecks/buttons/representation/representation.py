@@ -17,7 +17,7 @@ from cockpitdecks.resources.color import (
     add_ext,
     DEFAULT_COLOR,
 )
-from cockpitdecks import KW, DECK_FEEDBACK
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -60,7 +60,7 @@ class Representation:
             self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
 
     def can_render(self) -> bool:
-        button_cap = self.button._def[KW.VIEW.value]
+        button_cap = self.button._def[DECK_KW.FEEDBACK.value]
         if button_cap not in self.get_required_capability():
             logger.warning(f"button {self.button_name()} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}.")
             return False
@@ -99,8 +99,10 @@ class Representation:
         return None
 
     def vibrate(self):
-        if self._sound is not None and hasattr(self.button.deck, "_vibrate"):
-            self.button.deck._vibrate(self._sound)
+        return self.get_vibration()
+
+    def get_vibration(self):
+        return self._sound
 
     def clean(self):
         # logger.warning(f"button {self.button_name()}: no cleaning")
@@ -143,7 +145,7 @@ class Icon(Representation):
 
         self.text_config = config  # where to get text from
 
-        self.frame = config.get(KW.FRAME.value)
+        self.frame = config.get(CONFIG_KW.FRAME.value)
 
         self.icon = None
         deck = self.button.deck
@@ -732,15 +734,15 @@ class ColoredLED(Representation):
         if color_str is None:
             return self.color
         # Formula in text
-        KW_FORMULA_STR = f"${{{KW.FORMULA.value}}}"  # "${formula}"
+        KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         hue = 0  # red
         if KW_FORMULA_STR in str(color_str):
-            dataref_rpn = base.get(KW.FORMULA.value)
+            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
             if dataref_rpn is not None:
                 hue = self.button.execute_formula(formula=dataref_rpn)
         else:
             hue = int(color_str)
-            logger.warning(f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {KW.FORMULA.value} attribute found")
+            logger.warning(f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
         color_rgb = colorsys.hsv_to_rgb((int(hue) % 360) / 360, 1, 1)
         self.color = [int(255 * i) for i in color_rgb]  # type: ignore

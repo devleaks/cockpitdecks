@@ -11,7 +11,7 @@ from functools import reduce
 from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, DECK_FEEDBACK, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import ID_SEP, KW, DEFAULT_LAYOUT
+from cockpitdecks import ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
 from cockpitdecks import Config
 from cockpitdecks.resources.color import convert_color
 
@@ -68,7 +68,7 @@ class Deck(ABC):
             if self.device is not None:
                 self.device.set_brightness(self.brightness)
 
-        self.layout = config.get(KW.LAYOUT.value)
+        self.layout = config.get(CONFIG_KW.LAYOUT.value)
         # if self.layout is None:
         #     self.layout = DEFAULT_LAYOUT
         #     logger.warning(f"deck has no layout, using default")
@@ -80,6 +80,7 @@ class Deck(ABC):
         self.valid = True
 
     # #######################################
+    #
     # Deck Common Functions
     #
     def init(self):
@@ -117,7 +118,7 @@ class Deck(ABC):
 
     def set_deck_type(self):
         """Installs the reference to the deck type."""
-        deck_type = self._config.get(KW.TYPE.value)
+        deck_type = self._config.get(CONFIG_KW.TYPE.value)
         self.deck_type = self.cockpit.get_deck_type(deck_type)
         if self.deck_type is None:
             logger.error(f"no deck definition for {deck_type}")
@@ -157,38 +158,10 @@ class Deck(ABC):
                 val = ld.get(attribute)
         return val if val is not None else self.cockpit.get_attribute(attribute, silence=silence)
 
-    def get_button_value(self, name):
-        """Get the value of a button from its internal identifier name
-
-        [description]
-
-        Args:
-            name ([type]): [description]
-
-        Returns:
-            [type]: [description]
-        """
-        a = name.split(ID_SEP)
-        if len(a) > 0:
-            if a[0] == self.name:
-                if a[1] in self.pages.keys():
-                    return self.pages[a[1]].get_button_value(ID_SEP.join(a[1:]))
-                else:
-                    logger.warning(f"so such page {a[1]}")
-            else:
-                logger.warning(f"not my deck {a[0]} ({self.name})")
-        return None
-
-    def inspect(self, what: str | None = None):
-        """Triggered by the Inspect activation.
-
-        This function is called on all pages of this Deck.
-        """
-        logger.info(f"*" * 60)
-        logger.info(f"Deck {self.name} -- {what}")
-        for v in self.pages.values():
-            v.inspect(what)
-
+    # ##################################################
+    #
+    # Page manipulations
+    #
     def load(self):
         """
         Loads pages during configuration. If none is found, create a simple,
@@ -226,15 +199,15 @@ class Deck(ABC):
                 continue
 
             page_name = ".".join(p.split(".")[:-1])  # build default page name, remove extension ".yaml" or ".yml" from filename
-            if KW.NAME.value in page_config:
-                page_name = page_config[KW.NAME.value]
+            if CONFIG_KW.NAME.value in page_config:
+                page_name = page_config[CONFIG_KW.NAME.value]
 
             if page_name in self.pages.keys():
                 logger.warning(f"page {page_name}: duplicate name, ignored")
                 continue
 
-            if not KW.BUTTONS.value in page_config:
-                logger.error(f"{page_name} has no button definition '{KW.BUTTONS.value}', ignoring")
+            if not CONFIG_KW.BUTTONS.value in page_config:
+                logger.error(f"{page_name} has no button definition '{CONFIG_KW.BUTTONS.value}', ignoring")
                 continue
 
             display_fn = fn.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
@@ -244,12 +217,12 @@ class Deck(ABC):
             self.pages[page_name] = this_page
 
             # Page buttons
-            this_page.load_buttons(page_config[KW.BUTTONS.value])
+            this_page.load_buttons(page_config[CONFIG_KW.BUTTONS.value])
 
             # Page includes
-            if KW.INCLUDES.value in page_config:
-                includes = page_config[KW.INCLUDES.value]
-                if type(page_config[KW.INCLUDES.value]) == str:  # just one file
+            if CONFIG_KW.INCLUDES.value in page_config:
+                includes = page_config[CONFIG_KW.INCLUDES.value]
+                if type(page_config[CONFIG_KW.INCLUDES.value]) == str:  # just one file
                     includes = includes.split(",")
                 logger.debug(f"deck {self.name}: page {page_name} includes {includes}..")
                 ipb = 0
@@ -258,11 +231,11 @@ class Deck(ABC):
                     inc_config = Config(fni)
                     if inc_config.is_valid():
                         this_page.merge_attributes(inc_config.store)  # merges attributes first since can have things for buttons....
-                        if KW.BUTTONS.value in inc_config:
+                        if CONFIG_KW.BUTTONS.value in inc_config:
                             before = len(this_page.buttons)
-                            this_page.load_buttons(inc_config[KW.BUTTONS.value])
+                            this_page.load_buttons(inc_config[CONFIG_KW.BUTTONS.value])
                             ipb = len(this_page.buttons) - before
-                        del inc_config.store[KW.BUTTONS.value]
+                        del inc_config.store[CONFIG_KW.BUTTONS.value]
                     else:
                         logger.warning(f"includes: {inc}: file {fni} not found")
                 display_fni = fni.replace(
@@ -296,7 +269,7 @@ class Deck(ABC):
             logger.debug(f"deck {self.name} loading home page")
             self.load_home_page()
             return None
-        if page == KW.BACKPAGE.value:
+        if page == CONFIG_KW.BACKPAGE.value:
             if len(self.page_history) > 1:
                 page = self.page_history.pop()  # this page
                 page = self.page_history.pop()  # previous one
@@ -369,7 +342,34 @@ class Deck(ABC):
         """
         pass
 
+    # ##################################################
+    #
+    # Usage
+    #
+    def get_button_value(self, name):
+        """Get the value of a button from its internal identifier name
+
+        [description]
+
+        Args:
+            name ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        a = name.split(ID_SEP)
+        if len(a) > 0:
+            if a[0] == self.name:
+                if a[1] in self.pages.keys():
+                    return self.pages[a[1]].get_button_value(ID_SEP.join(a[1:]))
+                else:
+                    logger.warning(f"so such page {a[1]}")
+            else:
+                logger.warning(f"not my deck {a[0]} ({self.name})")
+        return None
+
     # #######################################
+    #
     # Deck Specific Functions : Description (capabilities)
     #
     def get_index_prefix(self, index):
@@ -397,8 +397,19 @@ class Deck(ABC):
         return self.deck_type.valid_representations(index=index)
 
     # #######################################
+    #
     # Deck Specific Functions : Representation
     #
+    def inspect(self, what: str | None = None):
+        """Triggered by the Inspect activation.
+
+        This function is called on all pages of this Deck.
+        """
+        logger.info(f"*" * 60)
+        logger.info(f"Deck {self.name} -- {what}")
+        for v in self.pages.values():
+            v.inspect(what)
+
     def print_page(self, page: Page):
         """Produces an image of the deck's layout in the current directory.
         For testing and development purpose.
@@ -417,6 +428,10 @@ class Deck(ABC):
         """
         pass
 
+    def vibrate(self, button):
+        if hasattr(self, "_vibrate"):
+            self._vibrate(button.get_vibration())
+
     @abstractmethod
     def render(self, button: Button):
         """Main procedure to render a button on the deck
@@ -433,6 +448,7 @@ class Deck(ABC):
         pass
 
     # #######################################
+    #
     # Deck Specific Functions : Device
     #
     @abstractmethod
@@ -497,7 +513,7 @@ class DeckWithIcons(Deck):
         """Returns the image size and offset for supplied deck index."""
         b = self._buttons.get(index)
         if b is not None:
-            return b.get(KW.IMAGE.value)
+            return b.get(CONFIG_KW.IMAGE.value)
         logger.warning(f"deck {self.name}: no button index {index}")
         return None
 

@@ -22,7 +22,7 @@ from cockpitdecks import (
     FONTS_FOLDER,
     RESOURCES_FOLDER,
 )
-from cockpitdecks import Config, KW, GLOBAL_DEFAULTS, DECKS_FOLDER
+from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -69,7 +69,7 @@ class Cockpit(DatarefListener, CockpitBase):
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)
 
-        self._defaults = GLOBAL_DEFAULTS
+        self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._reqdfts = set()
         self._config = {}  # content of aircraft/deckconfig/config.yaml
         self._resources_config = {}  # content of resources/config.yaml
@@ -251,9 +251,9 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.debug(f"added {type(device).__name__} (driver {deck_driver}, serial {serial[:3]}{'*'*max(1,len(serial))})")
                 self.devices.append(
                     {
-                        KW.DRIVER.value: deck_driver,
-                        KW.DEVICE.value: device,
-                        KW.SERIAL.value: serial,
+                        CONFIG_KW.DRIVER.value: deck_driver,
+                        CONFIG_KW.DEVICE.value: device,
+                        CONFIG_KW.SERIAL.value: serial,
                     }
                 )
             logger.debug(f"using {len(decks)} {deck_driver}")
@@ -272,12 +272,12 @@ class Cockpit(DatarefListener, CockpitBase):
             i = 0
             good = None
             for deck in self.devices:
-                if deck[KW.DRIVER.value] == req_driver:
+                if deck[CONFIG_KW.DRIVER.value] == req_driver:
                     good = deck
                     i = i + 1
             if i == 1 and good is not None:
                 logger.debug(f"only one deck of type {req_driver}, returning it")
-                device = good[KW.DEVICE.value]
+                device = good[CONFIG_KW.DEVICE.value]
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
@@ -294,8 +294,8 @@ class Cockpit(DatarefListener, CockpitBase):
             return None
         ## Got serial, search for it
         for deck in self.devices:
-            if deck[KW.SERIAL.value] == req_serial:
-                device = deck[KW.DEVICE.value]
+            if deck[CONFIG_KW.SERIAL.value] == req_serial:
+                device = deck[CONFIG_KW.DEVICE.value]
                 device.open()
                 if device.is_visual():
                     image_format = device.key_image_format()
@@ -500,7 +500,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         deck_count_by_type = {}
         for deck_type in self.deck_types.values():
-            ty = deck_type.get(KW.TYPE.value)
+            ty = deck_type.get(CONFIG_KW.TYPE.value)
             if ty is not None:
                 if ty not in deck_count_by_type:
                     deck_count_by_type[ty] = 0
@@ -508,9 +508,9 @@ class Cockpit(DatarefListener, CockpitBase):
 
         cnt = 0
         for deck_config in decks:
-            name = deck_config.get(KW.NAME.value, f"Deck {cnt}")
+            name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
 
-            disabled = deck_config.get(KW.DISABLED.value)
+            disabled = deck_config.get(CONFIG_KW.DISABLED.value)
             if type(disabled) != bool:
                 if type(disabled) == str:
                     disabled = disabled.upper() in ["YES", "TRUE"]
@@ -520,17 +520,17 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.info(f"deck {name} disabled, ignoring")
                 continue
 
-            deck_type = deck_config.get(KW.TYPE.value)
+            deck_type = deck_config.get(CONFIG_KW.TYPE.value)
             if deck_type not in self.deck_types.keys():
                 logger.warning(f"invalid deck type {deck_type}, ignoring")
                 continue
 
-            deck_driver = self.deck_types[deck_type][KW.DRIVER.value]
+            deck_driver = self.deck_types[deck_type][CONFIG_KW.DRIVER.value]
             if deck_driver not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck driver {deck_driver}, ignoring")
                 continue
 
-            serial = deck_config.get(KW.SERIAL.value)
+            serial = deck_config.get(CONFIG_KW.SERIAL.value)
             if serial is None:  # get it from the secret file
                 serial = serial_numbers[name] if name in serial_numbers.keys() else None
 
@@ -544,10 +544,10 @@ class Cockpit(DatarefListener, CockpitBase):
                             f"only one deck of that type but more than one configuration in config.yaml for decks of that type and no serial number, ignoring"
                         )
                         continue
-                    deck_config[KW.SERIAL.value] = device.get_serial_number()
-                    logger.info(f"deck {deck_type} {name} has serial {deck_config[KW.SERIAL.value]}")
+                    deck_config[CONFIG_KW.SERIAL.value] = device.get_serial_number()
+                    logger.info(f"deck {deck_type} {name} has serial {deck_config[CONFIG_KW.SERIAL.value]}")
                 else:
-                    deck_config[KW.SERIAL.value] = serial
+                    deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     cnt = cnt + 1
@@ -566,24 +566,24 @@ class Cockpit(DatarefListener, CockpitBase):
         self.acpath = None
 
         # {
-        #    KW.TYPE.value: decktype,
-        #    KW.DEVICE.value: device,
-        #    KW.SERIAL.value: serial
+        #    CONFIG_KW.TYPE.value: decktype,
+        #    CONFIG_KW.DEVICE.value: device,
+        #    CONFIG_KW.SERIAL.value: serial
         # }
         for deck in self.devices:
-            deckdriver = deck.get(KW.DRIVER.value)
+            deckdriver = deck.get(CONFIG_KW.DRIVER.value)
             if deckdriver not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck driver {deckdriver}, ignoring")
                 continue
-            device = deck[KW.DEVICE.value]
+            device = deck[CONFIG_KW.DEVICE.value]
             device.open()
             device.reset()
             name = device.id()
             config = {
-                KW.NAME.value: name,
-                KW.TYPE.value: device.deck_type(),
-                KW.SERIAL.value: device.get_serial_number(),
-                KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
+                CONFIG_KW.NAME.value: name,
+                CONFIG_KW.TYPE.value: device.deck_type(),
+                CONFIG_KW.SERIAL.value: device.get_serial_number(),
+                CONFIG_KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
             self.cockpit[name] = DECK_DRIVERS[deckdriver][0](name, config, self, device)
@@ -595,7 +595,7 @@ class Cockpit(DatarefListener, CockpitBase):
         folder = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
         for deck_type in glob.glob(os.path.join(folder, "*.yaml")):
             data = DeckType(deck_type)
-            name = data.get(KW.TYPE.value)
+            name = data.get(CONFIG_KW.TYPE.value)
             if name is not None:
                 self.deck_types[name] = data
             else:
@@ -811,12 +811,12 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def terminate_devices(self):
         for deck in self.devices:
-            deck_driver = deck.get(KW.DRIVER.value)
+            deck_driver = deck.get(CONFIG_KW.DRIVER.value)
             if deck_driver not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck type {deck_driver}, ignoring")
                 continue
-            device = deck[KW.DEVICE.value]
-            DECK_DRIVERS[deck_driver][0].terminate_device(device, deck[KW.SERIAL.value])
+            device = deck[CONFIG_KW.DEVICE.value]
+            DECK_DRIVERS[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
         logger.info(f"terminating..")

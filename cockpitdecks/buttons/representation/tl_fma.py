@@ -82,6 +82,7 @@ class FMAIcon(DrawAnimation):
     def __init__(self, config: dict, button: "Button"):
         DrawAnimation.__init__(self, config=config, button=button)
 
+        self._udp_inited = False
         self.fmaconfig = config.get("fma", {})  # should not be none, empty at most...
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
@@ -127,6 +128,23 @@ class FMAIcon(DrawAnimation):
         #     socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
         # )
         self.collector_avgtime = 0
+        self.init_udp()
+
+    def init_udp(self):
+        if self._udp_inited:
+            return
+        # Bind to the port that we know will receive multicast data
+        try:
+            self.socket.bind((ANY, FMA_MCAST_PORT))
+            status = self.socket.setsockopt(
+                socket.IPPROTO_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
+            )
+            logger.debug("..socket bound..")
+        except:
+            logger.info("socket bind return error", exc_info=True)
+        self._udp_inited = True
 
     def should_run(self) -> bool:
         return True
@@ -164,17 +182,6 @@ class FMAIcon(DrawAnimation):
         src_last_ts = 0
         src_cnt = 0
         src_tot = 0
-        # Bind to the port that we know will receive multicast data
-        try:
-            self.socket.bind((ANY, FMA_MCAST_PORT))
-            status = self.socket.setsockopt(
-                socket.IPPROTO_IP,
-                socket.IP_ADD_MEMBERSHIP,
-                socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
-            )
-            logger.debug("..socket bound..")
-        except:
-            logger.info("socket bind return error", exc_info=True)
 
         while self.collect_fma is not None and not self.collect_fma.is_set():
             try:
