@@ -433,7 +433,8 @@ class Loupedeck(DeckWithIcons):
         logger.debug(f"page {self.name}: image {image.width}x{image.height}..")
         for button in page.buttons.values():
             logger.debug(f"doing {button.name}..")
-            bty = self.deck_type.get_button_definition(index=idx)
+            # bty = self.deck_type.get_button_definition(index=idx)
+            bty = self.deck_type.get_button_definition(index=button.index)
             is_colored_led = False
             if bty is not None:
                 is_colored_led = DECK_FEEDBACK.COLORED_LED.value in bty.feedbacks
