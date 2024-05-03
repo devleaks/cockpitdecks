@@ -236,10 +236,8 @@ class Streamdeck(DeckWithIcons):
     #
     def _send_touchscreen_image_to_device(self, image):
         with self.device:
-            print("********>>", 0, image)
             i = self.pil_helper.to_native_touchscreen_format(deck=self.device, image=image)
             self.device.set_touchscreen_image(i, width=image.width, height=image.height)
-            print("********<<", 0)
 
     def _send_key_image_to_device(self, key, image):
         if key in self.get_deck_type().special_displays():
@@ -305,7 +303,6 @@ class Streamdeck(DeckWithIcons):
         logger.debug(f"page {self.name}: ..done")
 
     def render(self, button: Button):  # idx: int, image: str, label: str = None):
-        print("**********", button.index)
         if self.device is None:
             logger.warning("no device")
             return

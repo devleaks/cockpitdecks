@@ -70,7 +70,7 @@ FMA_UPDATE_FREQ = 1.0
 FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
 
 logger = logging.getLogger(__file__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
 
 
@@ -119,7 +119,7 @@ class FMAIcon(DrawAnimation):
         self.socket = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         # Allow multiple sockets to use the same PORT number
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1) # SO_REUSEPORT
         # Bind to the port that we know will receive multicast data
         # self.socket.bind((ANY, FMA_MCAST_PORT))
         # status = self.socket.setsockopt(
@@ -142,9 +142,9 @@ class FMAIcon(DrawAnimation):
                 socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
             )
             logger.debug("..socket bound..")
+            self._udp_inited = True
         except:
             logger.info("socket bind return error", exc_info=True)
-        self._udp_inited = True
 
     def should_run(self) -> bool:
         return True

@@ -241,7 +241,7 @@ class PythonInterface:
 # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
 # # Allow multiple sockets to use the same PORT number
-# sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
 # # Bind to the port that we know will receive multicast data
 # sock.bind((ANY, MCAST_PORT))
