@@ -24,7 +24,7 @@ from cockpitdecks.resources.color import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # Warning, the logger in package Loupedeck is also called "Loupedeck".
 
 SIDE_INDIVIDUAL_KEYS = False

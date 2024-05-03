@@ -70,7 +70,7 @@ FMA_UPDATE_FREQ = 1.0
 FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
 
 logger = logging.getLogger(__file__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
 
 
@@ -193,7 +193,7 @@ class FMAIcon(DrawAnimation):
                 delta = now - last_read_ts
                 total_read_time = total_read_time + delta.microseconds / 1000000
                 last_read_ts = now
-
+                logger.debug(f"FMA collector: got data")  # ({data})
             except:
                 total_to = total_to + 1
                 logger.debug(
@@ -249,7 +249,6 @@ class FMAIcon(DrawAnimation):
     def anim_start(self) -> None:
         if self.running:
             logger.debug("anim already running")
-        logger.info(self)
         if self.collect_fma is None:
             self.collect_fma = threading.Event()
             self.fma_collector_thread = threading.Thread(target=self.collector)
@@ -275,6 +274,8 @@ class FMAIcon(DrawAnimation):
             self.update_fma.set()
             logger.debug("stopping FMA updater..")
             self.fma_updater_thread.join(FMA_UPDATE_FREQ)
+            if self.fma_updater_thread.is_alive():
+                logger.warning("..thread may hang..")
             self.update_fma = None
             logger.debug("..FMA updater stopped")
         else:
@@ -282,11 +283,13 @@ class FMAIcon(DrawAnimation):
         if self.collect_fma is not None and self.fma_collector_thread is not None:
             self.collect_fma.set()
             logger.debug("stopping FMA collector..")
-            logger.debug(f"..asked to stop FMA collector (this may last {FMA_SOCKET_TIMEOUT} secs. for UDP socket to timeout)..")
-            self.fma_collector_thread.join(FMA_SOCKET_TIMEOUT)
+            timeout = max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ)
+            logger.debug(f"..asked to stop FMA collector (this may last {timeout} secs. for UDP socket to timeout)..")
+            self.fma_collector_thread.join(timeout)
             if self.fma_collector_thread.is_alive():
                 logger.warning("..thread may hang in socket.recvfrom()..")
-            self.collect_fma = None
+            else:
+                self.collect_fma = None
             logger.debug("..FMA collector stopped")
         else:
             logger.debug("FMA collector not running")

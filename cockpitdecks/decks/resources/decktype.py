@@ -26,6 +26,7 @@ class ButtonType:
         self.feedbacks = config.get(DECK_KW.FEEDBACK.value)
 
         self.image = config.get(DECK_KW.IMAGE.value)
+        self.range = config.get(DECK_KW.RANGE.value)
 
         self.init()
 

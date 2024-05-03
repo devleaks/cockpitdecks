@@ -18,7 +18,7 @@ __DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "8.0.16"
+__version__ = "8.0.17"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"
@@ -162,6 +162,7 @@ class DECK_KW(Enum):
     NAME = "name"
     NONE = "none"
     PREFIX = "prefix"
+    RANGE = "range"
     REPEAT = "repeat"
     TYPE = "type"
 

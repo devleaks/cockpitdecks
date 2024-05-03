@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.event import PushEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
-from cockpitdecks import CONFIG_KW, DECK_ACTIONS
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -29,7 +29,7 @@ class Activation:
     """
 
     ACTIVATION_NAME = "none"
-    REQUIRED_DECK_ACTIONS: List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
+    REQUIRED_DECK_ACTIONS: DECK_ACTIONS | List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
     # One cannot request an activiation from a deck button that does not have the capability of the action
     # requested by the activation.
 
@@ -1453,8 +1453,8 @@ class Slider(Activation):  # Cursor?
     ACTIVATION_NAME = "slider"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.CURSOR
 
-    SLIDER_MAX = 8064
-    SLIDER_MIN = -8192
+    SLIDER_MAX = 100
+    SLIDER_MIN = -100
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -1466,6 +1466,12 @@ class Slider(Activation):  # Cursor?
             temp = self.value_min
             self.value_min = self.value_max
             self.value_max = temp
+
+        bdef = self.button.deck.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
+        range_values = bdef[0].get(DECK_KW.RANGE.value)
+        if range_values is not None and type(range_values) in [list, tuple]:
+            Slider.SLIDER_MAX = max(range_values)
+            Slider.SLIDER_MIN = min(range_values)
 
     def is_valid(self):
         if self.writable_dataref is None:

@@ -26,9 +26,9 @@ class DECK_ACTIONS(Enum):
 - `none`: No activation, button is display only, like power LED.
 - `press`: Simple press button (*1 event*)
 - `longpress`: Long press button (*1 event*), Streamdeck specific, which does not provide timing info. See https://github.com/abcminiuser/python-elgato-streamdeck/issues/141.
-- `push`: Press button (*2 events*, pushed, released)
+- `push`: Press button (*2 events*, pushed, released, remain pushed as long as necessary.)
 - `encoder`: Encoder (2 events, turn clockwise, counter-clockwise, stepped)
-- `cursor`: Continuous value between a minimum and a maximum values, produce a countinuous number within range. Slide is a historical synonnym.
+- `cursor`: Continuous value between a minimum and a maximum values, produce a countinuous number within range. Slide, slider is a historical synonnym.
 - `swipe`: (a touch surface, complex events between touched, dragged, released, modelled into simpler events.)
 
 (Currently, there is little distinction between `press` and `push` events. The difference being that since press events have only one event, they cannot be used for activation that requires a timing like `long-press`.)
@@ -84,6 +84,18 @@ There are currently 3 drivers:
 
 `ìmage` defines the icon image size on the deck,
 and its position on the larger screen if necessary.
+
+```yaml
+  - name: slider
+    action: cursor
+    range: [-8192, 8064]
+    feedback: none
+```
+
+`range` defines range of values for slider, cursor, pontentiometers, etc. if available.
+
+
+## Usage
 
 When a button is created, it receives the portion of the `buttons` attribute applicable to it.
 

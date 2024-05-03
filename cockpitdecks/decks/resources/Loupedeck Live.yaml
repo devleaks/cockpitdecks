@@ -10,11 +10,11 @@ buttons:
     image: [90, 90, 0, 0]
     repeat: 12
   - name: left
-    action: swipe
+    action: [swipe, push]
     feedback: image
     image: [60, 270, 0, 0]
   - name: right
-    action: swipe
+    action: [swipe, push]
     feedback: image
     image: [60, 270, 420, 0]
   # Commented out, means center "image" is not accessible as a whole
