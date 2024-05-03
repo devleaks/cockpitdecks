@@ -5,13 +5,7 @@ import logging
 from PIL import Image, ImageOps
 
 from Loupedeck.ImageHelpers import PILHelper
-from Loupedeck.Devices.LoupedeckLive import (
-    KW_LEFT,
-    KW_RIGHT,
-    KW_CIRCLE,
-    HAPTIC,
-    CALLBACK_KEYWORD,
-)
+from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
@@ -31,19 +25,6 @@ SIDE_INDIVIDUAL_KEYS = False
 
 VIBRATION_MODES = set(HAPTIC.keys())
 
-# Note:
-# Keys are large icon-backed portions of the LCD screen.
-# Buttons are smaller, colored push buttons labeled 0 (dotted circle) to 7.
-# Knobs are rotating knobs on either side.
-ENCODER_MAP = {
-    "knobTL": "e0",
-    "knobCL": "e1",
-    "knobBL": "e2",
-    "knobTR": "e3",
-    "knobCR": "e4",
-    "knobBR": "e5",
-}
-
 
 class Loupedeck(DeckWithIcons):
     """
@@ -51,6 +32,8 @@ class Loupedeck(DeckWithIcons):
     """
 
     DECK_NAME = "loupedeck"
+    DRIVER_NAME = "loupedeck"
+    MIN_DRIVER_VERSION = "1.4.5"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
@@ -65,6 +48,7 @@ class Loupedeck(DeckWithIcons):
         self.valid = True
 
         self.init()
+        logger.debug(f"created encoder mapping {self.get_encoder_map()}")
 
     # #######################################
     # Deck Specific Functions
@@ -72,6 +56,17 @@ class Loupedeck(DeckWithIcons):
     # #######################################
     # Deck Specific Functions : Definition
     #
+    def get_encoder_map(self):
+        bdef = self.deck_type.filter({DECK_KW.ACTION.value: "encoder"})
+        prefix = bdef[0].get(DECK_KW.PREFIX.value)
+        new_map = {}
+        idx = 0
+        for k in BUTTONS.values():
+            if k.startswith(KW_KNOB):
+                new_map[k] = f"{prefix}{idx}"
+                idx = idx + 1
+        return new_map
+
     def make_default_page(self):
         # Generates an image that is correctly sized to fit across all keys of a given
         #
@@ -163,6 +158,7 @@ class Loupedeck(DeckWithIcons):
         action = msg[CALLBACK_KEYWORD.ACTION.value]
 
         # Map between our convenient "e3" and Loupedeck naming knobTR
+        ENCODER_MAP = self.get_encoder_map()
         if key in ENCODER_MAP.keys():
             key = ENCODER_MAP[key]
 

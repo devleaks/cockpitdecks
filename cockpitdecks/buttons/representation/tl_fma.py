@@ -119,7 +119,7 @@ class FMAIcon(DrawAnimation):
         self.socket = None
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         # Allow multiple sockets to use the same PORT number
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1) # SO_REUSEPORT
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # SO_REUSEPORT
         # Bind to the port that we know will receive multicast data
         # self.socket.bind((ANY, FMA_MCAST_PORT))
         # status = self.socket.setsockopt(

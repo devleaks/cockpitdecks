@@ -42,6 +42,8 @@ class Streamdeck(DeckWithIcons):
     """
 
     DECK_NAME = "streamdeck"
+    DRIVER_NAME = "streamdeck"
+    MIN_DRIVER_VERSION = "0.9.5"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)

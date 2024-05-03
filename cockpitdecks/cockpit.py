@@ -238,6 +238,10 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(
             f"drivers installed for {', '.join([f'{deck_driver} {pkg_resources.get_distribution(deck_driver).version}' for deck_driver in DECK_DRIVERS.keys()])}; scanning.."
         )
+        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for v in DECK_DRIVERS.values()]
+        logger.debug(f"dependencies: {dependencies}")
+        pkg_resources.require(dependencies)
+
         for deck_driver, builder in DECK_DRIVERS.items():
             decks = builder[1]().enumerate()
             logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")

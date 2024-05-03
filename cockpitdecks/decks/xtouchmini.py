@@ -24,6 +24,8 @@ class XTouchMini(Deck):
     """
 
     DECK_NAME = "xtouchmini"
+    DRIVER_NAME = "xtouchmini"
+    MIN_DRIVER_VERSION = "1.3.6"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
