@@ -207,6 +207,9 @@ class Page:
         ):
             self.deck.fill_empty(key)
 
+        if self.get_attribute("print-page-dir"):
+            self.deck.print_page(self)
+
     def print(self):
         self.deck.print_page(self)
 
