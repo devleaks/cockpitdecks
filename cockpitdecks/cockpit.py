@@ -88,6 +88,10 @@ class Cockpit(DatarefListener, CockpitBase):
         self.event_loop_thread = None
         self.event_queue = Queue()
 
+        self.drefupd_loop_run = False
+        self.drefupd_loop_thread = None
+        self.drefupd_queue = Queue()
+
         self.devices = []
 
         self.acpath = None
@@ -761,6 +765,50 @@ class Cockpit(DatarefListener, CockpitBase):
         else:
             logger.warning(f"not running")
 
+    # #########################################################
+    # Dataref Updates
+    #
+    def start_drefupd_loop(self):
+        if not self.drefupd_loop_run:
+            self.drefupd_loop_thread = threading.Thread(target=self.drefupd_loop)
+            self.drefupd_loop_thread.name = f"Cockpit::drefupd_loop"
+            self.drefupd_loop_run = True
+            self.drefupd_loop_thread.start()
+            logger.debug(f"started")
+        else:
+            logger.warning(f"already running")
+
+    def drefupd_loop(self):
+        logger.debug("starting dataref update loop..")
+        while self.drefupd_loop_run:
+
+            e = self.drefupd_queue.get()  # blocks infinitely here
+            if type(e) is str:
+                if e == "terminate":
+                    self.end_drefupd_loop()
+                continue
+            try:
+                dref, value, cascade = e
+                logger.debug(f"updating {dref}..")
+                self.sim.all_datarefs[dref].update_value(value, cascade=cascade)
+                logger.debug(f"..updated without error")
+            except:
+                logger.warning(f"..updated with error", exc_info=True)
+
+        logger.debug(f".. dataref update loop ended")
+
+    def end_drefupd_loop(self):
+        if self.drefupd_loop_run:
+            self.drefupd_loop_run = False
+            self.drefupd_queue.put("terminate")  # to unblock the Queue.get()
+            # self.drefupd_loop_thread.join()
+            logger.debug(f"stopped")
+        else:
+            logger.warning(f"not running")
+
+    # #########################################################
+    # Other
+    #
     def reload_decks(self, just_do_it: bool = False):
         """
         Development function to reload page yaml without leaving the page
@@ -827,6 +875,9 @@ class Cockpit(DatarefListener, CockpitBase):
         # Stop processing events
         if self.event_loop_run:
             self.end_event_loop()
+        # Stop processing datarefs
+        if self.drefupd_loop_run:
+            self.end_drefupd_loop()
         # Terminate decks
         self.terminate_aircraft()
         # Terminate dataref collection
@@ -855,6 +906,8 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"..connect to simulator loop started..")
             self.start_event_loop()
             logger.info(f"..event processing loop started..")
+            self.start_drefupd_loop()
+            logger.info(f"..dataref update loop started..")
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")

@@ -22,7 +22,7 @@ from cockpitdecks.buttons.representation import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # Device specific data
 POLL_FREQ = 5  # default is 20

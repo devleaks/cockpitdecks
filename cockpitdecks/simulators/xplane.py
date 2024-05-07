@@ -28,6 +28,14 @@ SOCKET_TIMEOUT = 5  # seconds
 MAX_TIMEOUT_COUNT = 5  # after x timeouts, assumes connection lost, disconnect, and restart later
 MAX_DREF_COUNT = 80  # Maximum number of dataref that can be requested to X-Plane, CTD around ~100 datarefs
 
+# String dataref listener
+ANY = "0.0.0.0"
+SDL_MCAST_PORT = 49505
+SDL_MCAST_GRP = "239.255.1.1"
+SDL_UPDATE_FREQ = 1.0
+SDL_SOCKET_TIMEOUT = SDL_UPDATE_FREQ + 5.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
+
+
 # When this (internal) dataref changes, the loaded aircraft has changed
 #
 AIRCRAFT_DATAREF_IPC = Dataref.mk_internal_dataref("_aircraft_icao")
@@ -263,16 +271,17 @@ class XPlane(Simulator, XPlaneBeacon):
         self.datarefs = {}  # key = idx, value = dataref path
         self._max_monitored = 0
 
-        self.udp_queue = Queue()
         self.udp_thread = None
         self.dref_thread = None
-        self.no_upd_enqueue = None
+        self.udp_event = None
 
         Simulator.__init__(self, cockpit=cockpit)
         self.cockpit.set_logging_level(__name__)
 
         XPlaneBeacon.__init__(self)
         self.collector = DatarefSetCollector(self)
+
+        self.socket_strdref = None
 
         self.init()
 
@@ -284,6 +293,11 @@ class XPlane(Simulator, XPlaneBeacon):
         self.register(dref)
         logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
         self.add_datetime_datarefs()
+
+        self.socket_strdref = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        # Allow multiple sockets to use the same PORT number
+        self.socket_strdref.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # SO_REUSEPORT
+
         self._inited = True
 
     def __del__(self):
@@ -420,18 +434,18 @@ class XPlane(Simulator, XPlaneBeacon):
             time.sleep(0.2)
         return True
 
-    def upd_enqueue(self):
+    def udp_enqueue(self):
         """Read and decode socket messages and enqueue dataref values
 
         Terminates after 5 timeouts.
         """
-        logger.debug("starting..")
+        logger.debug("starting dataref listener..")
         total_to = 0
         total_reads = 0
         total_values = 0
         last_read_ts = datetime.now()
         total_read_time = 0.0
-        while not self.no_upd_enqueue.is_set():
+        while self.udp_event is not None and not self.udp_event.is_set():
             if len(self.datarefs) > 0:
                 try:
                     # Receive packet
@@ -456,7 +470,14 @@ class XPlane(Simulator, XPlaneBeacon):
                         for i in range(0, numvalues):
                             singledata = data[(5 + lenvalue * i) : (5 + lenvalue * (i + 1))]
                             (idx, value) = struct.unpack("<if", singledata)
-                            self.udp_queue.put((idx, value))
+
+                            d = self.datarefs.get(idx)
+                            if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
+                                value = 0.0
+                            if d is not None:
+                                self.cockpit.drefupd_queue.put((d, value, d in self.datarefs_to_monitor.keys()))
+                            else:
+                                logger.debug(f"no dataref ({values}), probably no longer monitored")
                     else:
                         logger.warning(f"{binascii.hexlify(data)}")
                     if total_reads % 10 == 0:
@@ -467,54 +488,61 @@ class XPlane(Simulator, XPlaneBeacon):
                     total_to = total_to + 1
                     logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
-                        logger.warning("too many times out, disconnecting, upd_enqueue terminated")  # ignore
+                        logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
                         self.beacon_data = {}
-                        if self.no_upd_enqueue is not None and not self.no_upd_enqueue.is_set():
-                            self.no_upd_enqueue.set()
-        self.no_upd_enqueue = None
-        logger.debug("..terminated")
+                        if self.udp_event is not None and not self.udp_event.is_set():
+                            self.udp_event.set()
+        self.udp_event = None
+        logger.debug("..dataref listener terminated")
 
-    def dataref_listener(self):
-        logger.debug("starting..")
-        dequeue_run = True
-        total_updates = 0
-        total_values = 0
-        total_duration = 0.0
-        total_update_duration = 0.0
-        maxbl = 0
+    def strdref_enqueue(self):
+        logger.info("starting string dataref listener..")
+        total_to = 0
+        total_reads = 0
+        last_read_ts = datetime.now()
+        total_read_time = 0.0
+        src_last_ts = 0
+        src_cnt = 0
+        src_tot = 0
 
-        while dequeue_run:
-            values = self.udp_queue.get()
-            bl = self.udp_queue.qsize()
-            maxbl = max(bl, maxbl)
-            if type(values) is str and values == XPlane.TERMINATE_QUEUE:
-                dequeue_run = False
-                continue
+        while self.dref_event is not None and not self.dref_event.is_set():
             try:
-                before = datetime.now()
-                d = self.datarefs.get(values[0])
-                total_values = total_values + 1
-                value = values[1]
-                if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
-                    value = 0.0
-                if d is not None:
-                    if self.all_datarefs[d].update_value(value, cascade=d in self.datarefs_to_monitor.keys()):
-                        total_updates = total_updates + 1
-                        duration = datetime.now() - before
-                        total_update_duration = total_update_duration + duration.microseconds / 1000000
-                else:
-                    logger.debug(f"no dataref ({values}), probably no longer monitored")
-                duration = datetime.now() - before
-                total_duration = total_duration + duration.microseconds / 1000000
-                if total_values % LOOP_ALIVE == 0 and total_updates > 0:
-                    logger.debug(
-                        f"average update time {round(total_update_duration / total_updates, 3)} ({total_updates} updates), {round(total_duration / total_values, 5)} ({total_values} values), backlog {bl}/{maxbl}."
-                    )  # ignore
+                self.socket_strdref.settimeout(max(SDL_SOCKET_TIMEOUT, SDL_UPDATE_FREQ))
+                data, addr = self.socket_strdref.recvfrom(1472)
+                total_to = 0
+                total_reads = total_reads + 1
+                now = datetime.now()
+                delta = now - last_read_ts
+                total_read_time = total_read_time + delta.microseconds / 1000000
+                last_read_ts = now
+                logger.debug(f"string dataref listener: got data")  # ({data})
+                data = json.loads(data.decode("utf-8"))
+                ts = 0
+                if "ts" in data:
+                    ts = data["ts"]
+                    del data["ts"]
+                    if src_last_ts > 0:
+                        src_tot = src_tot + (ts - src_last_ts)
+                        src_cnt = src_cnt + 1
+                        self.collector_avgtime = src_tot / src_cnt
+                        if src_cnt % 100 == 0:
+                            logger.info(f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)}")
+                    src_last_ts = ts
+                for k,v in data:
+                    self.cockpit.drefupd_queue.put((k,v, True))
+            except:
+                total_to = total_to + 1
+                logger.debug(
+                    f"string dataref listener: socket timeout received ({total_to})",
+                    exc_info=(logger.level == logging.DEBUG),
+                )
 
-            except RuntimeError:
-                logger.warning(f"dataref_listener:", exc_info=True)
-
-        logger.debug("..terminated")
+        self.dref_event = None
+        # Bind to the port that we know will receive multicast data
+        # self.socket_strdref.shutdown()
+        # self.socket_strdref.close()
+        # logger.info("..strdref socket closed..")
+        logger.debug("..string dataref listener terminated")
 
     # ################################
     # X-Plane Interface
@@ -667,21 +695,25 @@ class XPlane(Simulator, XPlaneBeacon):
         if not self.connected:
             logger.warning("no IP address. could not start.")
             return
-        if self.no_upd_enqueue is None:
-            self.no_upd_enqueue = threading.Event()
-            self.udp_thread = threading.Thread(target=self.upd_enqueue)
-            self.udp_thread.name = "XPlaneUDP::upd_enqueue"
+
+        if self.udp_event is None:
+            self.udp_event = threading.Event()
+            self.udp_thread = threading.Thread(target=self.udp_enqueue)
+            self.udp_thread.name = "XPlaneUDP::udp_enqueue"
             self.udp_thread.start()
-            logger.info("XPlaneUDP started")
-        else:
-            logger.info("XPlaneUDP already running.")
-        if self.dref_thread is None:
-            self.dref_thread = threading.Thread(target=self.dataref_listener)
-            self.dref_thread.name = "XPlaneUDP::dataref_listener"
-            self.dref_thread.start()
             logger.info("dataref listener started")
         else:
-            logger.info("dataref listener running.")
+            logger.info("dataref listener already running.")
+
+        if self.dref_thread is None:
+            self.dref_event = threading.Event()
+            self.dref_thread = threading.Thread(target=self.strdref_enqueue)
+            self.dref_thread.name = "XPlaneUDP::strdref_enqueue"
+            self.dref_thread.start()
+            logger.info("string dataref listener started")
+        else:
+            logger.info("string dataref listener running.")
+
         # When restarted after network failure, should clean all datarefs
         # then reload datarefs from current page of each deck
         self.clean_datarefs_to_monitor()
@@ -690,29 +722,39 @@ class XPlane(Simulator, XPlaneBeacon):
         self.cockpit.reload_pages()  # to take into account updated values
 
     def stop(self):
-        if self.udp_queue is not None and self.dref_thread is not None:
-            self.udp_queue.put(XPlane.TERMINATE_QUEUE)
-            self.dref_thread.join()
-            self.dref_thread = None
-            logger.debug("dataref listener stopped")
-        if self.no_upd_enqueue is not None:
-            self.no_upd_enqueue.set()
-            logger.debug("stopping..")
+        if self.udp_event is not None:
+            self.udp_event.set()
+            logger.debug("stopping dataref listener..")
             wait = SOCKET_TIMEOUT
             logger.debug(f"..asked to stop dataref listener (this may last {wait} secs. for UDP socket to timeout)..")
             self.udp_thread.join(wait)
             if self.udp_thread.is_alive():
                 logger.warning("..thread may hang in socket.recvfrom()..")
-            self.no_upd_enqueue = None
-            logger.debug("..stopped")
+            self.udp_event = None
+            logger.debug("..dataref listener stopped")
         else:
-            logger.debug("not running")
+            logger.debug("dataref listener not running")
+
+        if self.dref_event is not None and self.dref_thread is not None:
+            self.dref_event.set()
+            logger.debug("stopping string dataref listener..")
+            timeout = max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ)
+            logger.debug(f"..asked to stop string dataref listener (this may last {timeout} secs. for UDP socket to timeout)..")
+            self.dref_thread.join(timeout)
+            if self.dref_thread.is_alive():
+                logger.warning("..thread may hang in socket.recvfrom()..")
+            else:
+                self.dref_event = None
+            logger.debug("..string dataref listener stopped")
+        else:
+            logger.debug("string dataref listener not running")
+
 
     # ################################
     # Cockpit interface
     #
     def terminate(self):
-        logger.debug(f"currently {'not ' if self.no_upd_enqueue is None else ''}running. terminating..")
+        logger.debug(f"currently {'not ' if self.udp_event is None else ''}running. terminating..")
         self.remove_all_collections()  # this does not destroy datarefs, only unload current collection
         self.remove_all_datarefs()
         logger.info("terminating..disconnecting..")

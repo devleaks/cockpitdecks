@@ -74,8 +74,6 @@ class Dataref:
         self.dataref = path  # some/path/values
         self.index = 0  # 6
         self.length = length  # length of some/path/values array, if available.
-        self.sim_datatype = None
-        self.data_type = "float"  # int, float, byte, UDP always returns a float...
         self.is_array = False  # array of above
         self.is_decimal = is_decimal
         self.is_string = is_string
@@ -93,22 +91,14 @@ class Dataref:
         self.update_frequency = 1  # sent by the simulator that many times per second.
         self.expire = None
 
-        # dataref/path:t where t in d, i, f, s, b.
-        if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
-            path = path[:-2]
-            typ = path[-1]
-            if typ == "d":
-                self.is_decimal = True
-                self.data_type = "int"
-            elif typ == "s":
-                self.is_string = True
-                self.data_type = "str"
-                self.is_array = True
-            elif typ == "b":
-                self.data_type = "byte"
-
         if self.is_decimal and self.is_string:
-            loggerDataref.error(f"__init__: index {path} cannot be both decimal and string")
+            loggerDataref.error(f"__init__: index {self.path} cannot be both decimal and string")
+
+        self.data_type = "float"  # int, float, byte, UDP always returns a float...
+        if self.is_decimal:
+            self.data_type = "int"
+        elif self.is_string:
+            self.data_type = "str"
 
         if self.length is not None and self.length > 1:
             self.is_array = True
@@ -122,6 +112,12 @@ class Dataref:
                 self.length = self.index + 1  # at least that many values
             if self.index >= self.length:
                 loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
+
+    @staticmethod
+    def get_dataref_type(path):
+        if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
+            return path[:-2], path[-1]
+        return path, "f"
 
     @staticmethod
     def is_internal_dataref(path: str) -> bool:
@@ -182,7 +178,10 @@ class Dataref:
         self._previous_value = self._current_value  # raw
         self._current_value = new_value  # raw
         self.previous_value = self.current_value  # exposed
-        self.current_value = self.round(new_value)
+        if self.is_string:
+            self.current_value = new_value
+        else:
+            self.current_value = self.round(new_value)
         self._updated = self._updated + 1
         self._last_updated = now()
         self.notify_updated()
