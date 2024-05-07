@@ -341,7 +341,7 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a key is pressed.
         """
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        PushEvent(deck=self, button=key, pressed=state, autorun=True)  # autorun enqueues it in cockpit.event_queue for later execution
+        PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
 
     def dial_callback(self, deck, key, action, value):
         """
@@ -352,11 +352,11 @@ class Streamdeck(DeckWithIcons):
         prefix = bdef[0].get(DECK_KW.PREFIX.value)
         idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:
-            event = PushEvent(deck=self, button=idx, pressed=value, autorun=True)
+            event = PushEvent(deck=self, button=idx, pressed=value)
         elif action == DialEventType.TURN:
             direction = 2 if value < 0 else 3
             for i in range(abs(value)):
-                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2, autorun=True)
+                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2)
         else:
             logger.warning(f"deck {self.name}: invalid dial action {action}")
 
@@ -371,9 +371,9 @@ class Streamdeck(DeckWithIcons):
         idx = KW_TOUCHSCREEN
         logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
         if action == TouchscreenEventType.SHORT:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp(), autorun=True)
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
         elif action == TouchscreenEventType.LONG:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp(), autorun=True)
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
         elif action == TouchscreenEventType.DRAG:
             event = SwipeEvent(
                 deck=self,

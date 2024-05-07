@@ -177,12 +177,12 @@ class Loupedeck(DeckWithIcons):
                     logger.warning(f"invalid button key {key}")
             state = msg[CALLBACK_KEYWORD.STATE.value] == "down"
             logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-            event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
+            event = PushEvent(deck=self, button=key, pressed=state)
 
         elif action == CALLBACK_KEYWORD.ROTATE.value:
             state = msg[CALLBACK_KEYWORD.STATE.value] != "left"
             logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-            event = EncoderEvent(deck=self, button=key, clockwise=state, autorun=True)
+            event = EncoderEvent(deck=self, button=key, clockwise=state)
 
         # msg={'id': 24, 'action': 'touchstart', 'screen': 'left', 'key': None, 'x': 38, 'y': 199, 'ts': 1714656052.813476}
         elif action == CALLBACK_KEYWORD.TOUCH_START.value:  # we don't deal with slides now, just push on key
@@ -192,7 +192,7 @@ class Loupedeck(DeckWithIcons):
             if screen in [KW_LEFT, KW_RIGHT]:
                 logger.debug(f"Deck {deck.id()} Key {screen} = {state}")
                 self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg  # we also register it as a touch event
-                event = PushEvent(deck=self, button=screen, pressed=state, autorun=True)  # Push event
+                event = PushEvent(deck=self, button=screen, pressed=state)  # Push event
 
             elif CALLBACK_KEYWORD.KEY.value in msg and msg[CALLBACK_KEYWORD.KEY.value] is not None:  # we touched a key, not a side bar
                 key = msg[CALLBACK_KEYWORD.KEY.value]
@@ -202,7 +202,7 @@ class Loupedeck(DeckWithIcons):
                     logger.warning(f"invalid button key {key} {msg}")
                 self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg
                 logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-                event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
+                event = PushEvent(deck=self, button=key, pressed=state)
 
             else:
                 self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]] = msg
@@ -215,7 +215,7 @@ class Loupedeck(DeckWithIcons):
                         i = i + 1
                     logger.debug(f"side bar pressed, SIDE_INDIVIDUAL_KEYS event {k} = {state}")
                     # This transfer a (virtual) button push event
-                    event = PushEvent(deck=self, button=k, pressed=state, autorun=True)
+                    event = PushEvent(deck=self, button=k, pressed=state)
                     # WATCH OUT! If the release occurs in another key (virtual or not),
                     # the corresponding release event will be not be sent to the same, original key
                 else:
@@ -228,7 +228,7 @@ class Loupedeck(DeckWithIcons):
             screen = msg[CALLBACK_KEYWORD.SCREEN.value]
             if screen in [KW_LEFT, KW_RIGHT]:
                 logger.debug(f"Deck {deck.id()} Key {screen} = {state}")
-                event = PushEvent(deck=self, button=screen, pressed=state, autorun=True)  # Release event
+                event = PushEvent(deck=self, button=screen, pressed=state)  # Release event
 
             if msg[CALLBACK_KEYWORD.IDENTIFIER.value] in self.touches:
                 if (
@@ -237,7 +237,7 @@ class Loupedeck(DeckWithIcons):
                 ):
                     key = self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value]
                     del self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]]
-                    event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
+                    event = PushEvent(deck=self, button=key, pressed=state)
                 else:
                     dx = msg[CALLBACK_KEYWORD.X.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.X.value]
                     dy = msg[CALLBACK_KEYWORD.Y.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.Y.value]
@@ -302,7 +302,7 @@ class Loupedeck(DeckWithIcons):
                             event = event + [pressed]
                             logger.debug(f"side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
                             # This transfer a (virtual) button release event
-                            event = PushEvent(deck=self, button=key, pressed=state, autorun=True)
+                            event = PushEvent(deck=self, button=key, pressed=state)
 
                     if same_key:
                         key = kstart
