@@ -300,7 +300,15 @@ class Streamdeck(DeckWithIcons):
             image.paste(bs, (x, y))
             logger.debug(f"added {button.name} at ({x}, {y})")
         logger.debug(f"page {self.name}: ..saving..")
-        with open(page.name + ".png", "wb") as im:
+
+        # If print-page-dir is defined add this to the path
+        print_page_dir = self.get_attribute("print-page-dir")
+        if print_page_dir is None:
+            output_dst = page.name + ".png"
+        else:
+            output_dst = print_page_dir + "/" + page.name + ".png"
+
+        with open(output_dst, "wb") as im:
             image.save(im, format="PNG")
         logger.debug(f"page {self.name}: ..done")
 
