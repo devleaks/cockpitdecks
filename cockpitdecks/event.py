@@ -23,7 +23,7 @@ class DeckEvent(ABC):
 
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.NONE
 
-    def __init__(self, deck: "Deck", button: str, autorun: bool = False):
+    def __init__(self, deck: "Deck", button: str, autorun: bool = True):
         """Deck event
 
         Args:
@@ -113,7 +113,7 @@ class PushEvent(DeckEvent):
 
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
-    def __init__(self, deck: "Deck", button: str, pressed: bool, autorun: bool = False):
+    def __init__(self, deck: "Deck", button: str, pressed: bool, autorun: bool = True):
         """Event for key press.
 
         Args:
@@ -137,7 +137,7 @@ class PushEvent(DeckEvent):
 class EncoderEvent(DeckEvent):
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
-    def __init__(self, deck: "Deck", button: str, clockwise: bool, autorun: bool = False):
+    def __init__(self, deck: "Deck", button: str, clockwise: bool, autorun: bool = True):
         """Event for encoder stepped click.
 
         Args:
@@ -161,7 +161,7 @@ class EncoderEvent(DeckEvent):
 class SlideEvent(DeckEvent):
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.CURSOR
 
-    def __init__(self, deck: "Deck", button: str, value: int, autorun: bool = False):
+    def __init__(self, deck: "Deck", button: str, value: int, autorun: bool = True):
         """Event when sliding or rotation cursor value has changed..
 
         Args:
@@ -187,7 +187,7 @@ class SwipeEvent(DeckEvent):
         end_pos_x: int,
         end_pos_y: int,
         end_ts: float,
-        autorun: bool = False,
+        autorun: bool = True,
     ):
         """Event when a touch screen has been touched or swiped.
 
@@ -268,7 +268,7 @@ class TouchEvent(DeckEvent):
         pos_x: int,
         pos_y: int,
         start: TouchEvent | None = None,
-        autorun: bool = False,
+        autorun: bool = True,
     ):
         self.pos_x = pos_x
         self.pos_y = pos_y

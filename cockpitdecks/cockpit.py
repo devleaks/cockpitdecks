@@ -604,7 +604,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 self.deck_types[name] = data
             else:
                 logger.warning(f"ignoring unnamed deck {deck_type}")
-        logger.info(f"loaded {len(self.deck_types)} deck types ({list(self.deck_types.keys())})")
+        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())})")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
