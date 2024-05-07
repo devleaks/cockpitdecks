@@ -214,7 +214,7 @@ class FMAIcon(DrawAnimation):
                             if src_cnt % 100 == 0:
                                 logger.info(f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}")
                         src_last_ts = ts
-                    self.fma_text = {k[-2:]: v for k, v in data.items()}  # this is to adjust to older algorithm...
+                    self.fma_text = {k: data.get("AirbusFBW/FMA" + k, "") for k in FMA_DATAREFS}  # this is to adjust to older algorithm...
                 # logger.debug(f"from {addr} at {ts}: data: {self.text}")
         self.collect_fma = None
         # Bind to the port that we know will receive multicast data
