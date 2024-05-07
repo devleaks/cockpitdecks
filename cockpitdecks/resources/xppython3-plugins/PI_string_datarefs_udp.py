@@ -6,6 +6,7 @@ Return value must be smaller than 1472 bytes.
 """
 
 import os
+import glob
 import socket
 import time
 import json
@@ -19,10 +20,11 @@ from XPPython3 import xp
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
-RELEASE = "2.0.5"
+RELEASE = "3.0.0"
 
 # Changelog:
 #
+# 07-MAY-2024: 3.0.0: Now scan all button definitions for string-datarefs: [] attribute.
 # 02-MAY-2024: 2.0.5: Now changing dataref set in one operation to minimize impact on flightloop
 # 23-APR-2024: 2.0.4: Now reading from config.yaml for aircraft.
 # 22-DEC-2023: 1.0.0: Initial version.
@@ -35,8 +37,11 @@ FREQUENCY = 5.0  # will run every FREQUENCY seconds at most, never faster
 
 CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
+DEFAULT_LAYOUT = "default"
+
 
 DEFAULT_STRING_DATAREFS = [  # default is to return these, for Toliss Airbusses
+    "sim/aircraft/view/acf_ICAO",
     "AirbusFBW/FMA1w",
     "AirbusFBW/FMA1g",
     "AirbusFBW/FMA1b",
@@ -202,29 +207,119 @@ class PythonInterface:
                 print(self.Info, f"PI::load: frequency adjusted to {self.frequency}")
 
     def get_string_datarefs(self, acpath):
-        # Scans an aircraft deckconfig and collects long press commands.
+        # Scans an aircraft deckconfig and collects string datarefs.
         #
         # Internal constants (keywords in yaml file)
         #
+        BUTTONS = "buttons"  # keyword for button definitions on page
+        DECKS = "decks"  # keyword to list decks used for this aircraft
+        LAYOUT = "layout"  # keyword to detect layout for above deck
+        STRING_DATAREFS = "string-datarefs"  # keyword to detect (X-Plane) command in definition of the button
+
         DEBUG = False
-        config_file = os.path.join(acpath, CONFIG_DIR, CONFIG_FILE)
-        if not os.path.exists(config_file):
+
+        config_dn = os.path.join(acpath, CONFIG_DIR)
+        if not os.path.isdir(config_dn):
             print(
                 self.Info,
-                f"PI::get_string_datarefs: Cockpitdecks config file '{config_file}' not found",
+                f"PI::get_string_datarefs: Cockpitdecks config directory '{config_dn}' not found in aircraft path '{acpath}'",
             )
             return []
-        with open(config_file, "r", encoding="utf-8") as config_fp:
+
+        config_fn = os.path.join(config_dn, CONFIG_FILE)
+        if not os.path.exists(config_fn):
+            print(
+                self.Info,
+                f"PI::get_string_datarefs: Cockpitdecks config file '{config_fn}' not found in Cockpitdecks config dir '{config_dn}'",
+            )
+            return []
+
+        strings = []
+        with open(config_fn, "r", encoding="utf-8") as config_fp:
             config = yaml.load(config_fp)
             self.use_defaults = config.get("use-default-string-datarefs", False)
             ret = config.get("string-datarefs", [])
             if self.trace:
                 print(
                     self.Info,
-                    f"PI::get_string_datarefs: Cockpitdecks config file '{config_file}' loaded, config length={len(ret)}, use default={self.use_defaults}.",
+                    f"PI::get_string_datarefs: Cockpitdecks config file '{config_fn}' loaded, config length={len(ret)}, use default={self.use_defaults}.",
                 )
-            return ret
-
+            strings = strings + ret
+            if DECKS in config:
+                for deck in config[DECKS]:
+                    if DEBUG:
+                        print(
+                            self.Info,
+                            f"PI::get_string_datarefs: doing deck {deck.get('name')}..",
+                        )
+                    layout = DEFAULT_LAYOUT
+                    if LAYOUT in deck:
+                        layout = deck[LAYOUT]
+                    layout_dn = os.path.join(config_dn, layout)
+                    if not os.path.exists(layout_dn):
+                        print(
+                            self.Info,
+                            f"PI::get_string_datarefs: ..deck {deck.get('name')}: layout folder '{layout}' not found in '{config_dn}'",
+                        )
+                        continue
+                    pages = []
+                    for ext in ["yaml", "yml"]:
+                        pages = pages + glob.glob(os.path.join(layout_dn, "*." + ext))
+                    for page in pages:
+                        if os.path.basename(page) == CONFIG_FILE:
+                            if DEBUG:
+                                print(
+                                    self.Info,
+                                    f"PI::get_string_datarefs: skipping config file {page}",
+                                )
+                            continue
+                        if DEBUG:
+                            print(
+                                self.Info,
+                                f"PI::get_string_datarefs: doing page {os.path.basename(page)}..",
+                            )  #  (file {page})
+                        with open(page, "r", encoding="utf-8") as page_fp:
+                            page_def = yaml.load(page_fp)
+                            if BUTTONS not in page_def:
+                                print(
+                                    self.Info,
+                                    f"PI::get_string_datarefs: page {os.path.basename(page)} has no button (file {page})",
+                                )
+                                continue
+                            for button_def in page_def[BUTTONS]:
+                                # if DEBUG:
+                                #     print(self.Info, f"PI::get_string_datarefs: doing button {button_def.get('index')}..")
+                                sdrefs = button_def.get(STRING_DATAREFS)
+                                if sdrefs is None:
+                                    # if DEBUG:
+                                    #     print(
+                                    #         self.Info,
+                                    #         f"PI::get_string_datarefs: button {button_def.get('index')} has no string datarefs",
+                                    #     )
+                                    continue
+                                strings = strings + sdrefs
+                                if self.trace:
+                                    print(
+                                        self.Info,
+                                        f"PI::get_string_datarefs: deck {deck.get('name')}, layout {layout}, page {os.path.basename(os.path.splitext(page)[0])}, button {button_def.get('index')}: added {sdrefs}",
+                                    )
+                                continue
+                        if DEBUG:
+                            print(
+                                self.Info,
+                                f"PI::get_string_datarefs: ..done page {os.path.basename(page)}",
+                            )
+                    if DEBUG:
+                        print(
+                            self.Info,
+                            f"PI::get_string_datarefs: ..done deck {deck.get('name')}",
+                        )
+                if DEBUG:
+                    print(
+                        self.Info,
+                        f"PI::get_string_datarefs: ..done config {config_fn}",
+                    )
+        return set(strings)
 
 # #####################################################@
 # Multicast client
