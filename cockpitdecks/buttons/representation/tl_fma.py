@@ -13,15 +13,15 @@ from cockpitdecks import ICON_SIZE, STRING_DATAREF_PREFIX
 # ##############################
 # Toliss Airbus FMA display
 FMA_DATAREFS = {
-    "1w": "AirbusFBW/FMA1w[:36]",
-    "1g": "AirbusFBW/FMA1g[:36]",
-    "1b": "AirbusFBW/FMA1b[:36]",
-    "2w": "AirbusFBW/FMA2w[:36]",
-    "2b": "AirbusFBW/FMA2b[:36]",
-    "2m": "AirbusFBW/FMA2m[:36]",
-    "3w": "AirbusFBW/FMA3w[:36]",
-    "3b": "AirbusFBW/FMA3b[:36]",
-    "3a": "AirbusFBW/FMA3a[:36]",
+    "1w": "AirbusFBW/FMA1w",
+    "1g": "AirbusFBW/FMA1g",
+    "1b": "AirbusFBW/FMA1b",
+    "2w": "AirbusFBW/FMA2w",
+    "2b": "AirbusFBW/FMA2b",
+    "2m": "AirbusFBW/FMA2m",
+    "3w": "AirbusFBW/FMA3w",
+    "3b": "AirbusFBW/FMA3b",
+    "3a": "AirbusFBW/FMA3a",
 }
 FMA_BOXES = [
     "AirbusFBW/FMAAPFDboxing",
@@ -63,16 +63,11 @@ FMA_COLUMNS = [[0, 7], [7, 15], [15, 21], [21, 28], [28, 37]]
 FMA_LINE_LENGTH = FMA_COLUMNS[-1][-1]
 FMA_LINES = 3
 
-ANY = "0.0.0.0"
-FMA_MCAST_PORT = 49505
-FMA_MCAST_GRP = "239.255.1.1"
-FMA_UPDATE_FREQ = 1.0
-FMA_SOCKET_TIMEOUT = FMA_UPDATE_FREQ + 5.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
+FMA_UPDATE_FREQ = 3.0
 
 logger = logging.getLogger(__file__)
 # logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
-
 
 class FMAIcon(DrawAnimation):
     """ """
@@ -82,7 +77,6 @@ class FMAIcon(DrawAnimation):
     def __init__(self, config: dict, button: "Button"):
         DrawAnimation.__init__(self, config=config, button=button)
 
-        self._udp_inited = False
         self.fmaconfig = config.get("fma", {})  # should not be none, empty at most...
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
@@ -90,8 +84,8 @@ class FMAIcon(DrawAnimation):
         self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS}  # use FMA_LINES for testing
         self.previous_text: Dict[str, str] = {}
         self.boxed: List[str] = []
-        self._cached = None  # cached icon
         self.string_datarefs = config.get("string-datarefs", [])
+        self._cached = None  # cached icon
 
         # get mandatory index
         self.all_in_one = False
@@ -109,9 +103,7 @@ class FMAIcon(DrawAnimation):
             fma = FMA_COUNT
         self.fma_idx = fma - 1
 
-        self.collect_fma: threading.Event | None = None
-        self.update_fma: threading.Event | None = None
-        self.fma_collector_thread: threading.Thread | None = None
+        self.fma_updater_event: threading.Event | None = None
         self.fma_updater_thread: threading.Thread | None = None
 
         self.fma_text: Dict[str, Dict] = {}
@@ -129,30 +121,12 @@ class FMAIcon(DrawAnimation):
         #     socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
         # )
         self.collector_avgtime = 0
-        self.init_udp()
 
     def describe(self) -> str:
-        return "The representation is specific to Toliss Airbus and display the Flight Management Annunciators (FMA)."
+        return "The representation is specific to Toliss Airbus and display the Flight Mode Annunciators (FMA)."
 
     def get_datarefs(self) -> list:
-        print("-" * 20, self.string_datarefs)
         return [STRING_DATAREF_PREFIX + d for d in self.string_datarefs]
-
-    def init_udp(self):
-        if self._udp_inited:
-            return
-        # Bind to the port that we know will receive multicast data
-        try:
-            self.socket.bind((ANY, FMA_MCAST_PORT))
-            status = self.socket.setsockopt(
-                socket.IPPROTO_IP,
-                socket.IP_ADD_MEMBERSHIP,
-                socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
-            )
-            logger.debug("..socket bound..")
-            self._udp_inited = True
-        except:
-            logger.info("socket bind return error", exc_info=True)
 
     def should_run(self) -> bool:
         return True
@@ -181,69 +155,20 @@ class FMAIcon(DrawAnimation):
             logger.warning(f"button {self.button.name}: too many master FMA")
         return None
 
-    def collector(self):
-        logger.info("starting FMA collector..")
-        total_to = 0
-        total_reads = 0
-        last_read_ts = datetime.now()
-        total_read_time = 0.0
-        src_last_ts = 0
-        src_cnt = 0
-        src_tot = 0
-
-        while self.collect_fma is not None and not self.collect_fma.is_set():
-            try:
-                self.socket.settimeout(max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ))
-                data, addr = self.socket.recvfrom(1472)
-                total_to = 0
-                total_reads = total_reads + 1
-                now = datetime.now()
-                delta = now - last_read_ts
-                total_read_time = total_read_time + delta.microseconds / 1000000
-                last_read_ts = now
-                logger.debug(f"FMA collector: got data")  # ({data})
-            except:
-                total_to = total_to + 1
-                logger.debug(
-                    f"FMA collector: socket timeout received ({total_to})",
-                    exc_info=(logger.level == logging.DEBUG),
-                )
-            else:
-                with self.fma_text_lock:
-                    data = json.loads(data.decode("utf-8"))
-                    ts = 0
-                    if "ts" in data:
-                        ts = data["ts"]
-                        del data["ts"]
-                        if src_last_ts > 0:
-                            src_tot = src_tot + (ts - src_last_ts)
-                            src_cnt = src_cnt + 1
-                            self.collector_avgtime = src_tot / src_cnt
-                            if src_cnt % 100 == 0:
-                                logger.info(f"FMA collector: average time between reads {round(self.collector_avgtime, 4)}")
-                        src_last_ts = ts
-                    self.fma_text = {k: data.get("AirbusFBW/FMA" + k, "") for k in FMA_DATAREFS}  # this is to adjust to older algorithm...
-                # logger.debug(f"from {addr} at {ts}: data: {self.text}")
-        self.collect_fma = None
-        # Bind to the port that we know will receive multicast data
-        # self.socket.shutdown()
-        # self.socket.close()
-        # logger.info("..socket closed..")
-        logger.debug("..FMA collector terminated")
-
-    def updator(self):
+    def fma_updater(self):
         logger.debug("starting FMA updater..")
         # total_to = 0
         # total_reads = 0
         # total_values = 0
         # last_read_ts = datetime.now()
         # total_read_time = 0.0
-        while self.update_fma is not None and not self.update_fma.is_set():
+        while self.fma_updater_event is not None and not self.fma_updater_event.is_set():
+            self.fma_text = {k: self.button.get_dataref_value(v) for k, v in FMA_DATAREFS.items()}
             with self.fma_text_lock:
                 self.text = self.fma_text.copy()
             self.button.render()
-            time.sleep(max(FMA_UPDATE_FREQ, self.collector_avgtime))  # autotune update frequency
-        self.update_fma = None
+            time.sleep(FMA_UPDATE_FREQ)
+        self.fma_updater_event = None
         logger.debug("..FMA updater terminated")
 
     def is_updated(self) -> bool:
@@ -257,17 +182,9 @@ class FMAIcon(DrawAnimation):
     def anim_start(self) -> None:
         if self.running:
             logger.debug("anim already running")
-        if self.collect_fma is None:
-            self.collect_fma = threading.Event()
-            self.fma_collector_thread = threading.Thread(target=self.collector)
-            self.fma_collector_thread.name = "FMA::collector"
-            self.fma_collector_thread.start()
-            logger.info("FMA collector started")
-        else:
-            logger.info("FMA collector already running.")
-        if self.update_fma is None:
-            self.update_fma = threading.Event()
-            self.fma_updater_thread = threading.Thread(target=self.updator)
+        if self.fma_updater_event is None:
+            self.fma_updater_event = threading.Event()
+            self.fma_updater_thread = threading.Thread(target=self.fma_updater)
             self.fma_updater_thread.name = "FMA::updater"
             self.fma_updater_thread.start()
             logger.info("FMA updater started")
@@ -278,29 +195,16 @@ class FMAIcon(DrawAnimation):
     def anim_stop(self) -> None:
         if not self.running:
             logger.debug("anim not running")
-        if self.update_fma is not None and self.fma_updater_thread is not None:
-            self.update_fma.set()
+        if self.fma_updater_event is not None and self.fma_updater_thread is not None:
+            self.fma_updater_event.set()
             logger.debug("stopping FMA updater..")
             self.fma_updater_thread.join(FMA_UPDATE_FREQ)
             if self.fma_updater_thread.is_alive():
                 logger.warning("..thread may hang..")
-            self.update_fma = None
+            self.fma_updater_event = None
             logger.debug("..FMA updater stopped")
         else:
             logger.debug("FMA updater not running")
-        if self.collect_fma is not None and self.fma_collector_thread is not None:
-            self.collect_fma.set()
-            logger.debug("stopping FMA collector..")
-            timeout = max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ)
-            logger.debug(f"..asked to stop FMA collector (this may last {timeout} secs. for UDP socket to timeout)..")
-            self.fma_collector_thread.join(timeout)
-            if self.fma_collector_thread.is_alive():
-                logger.warning("..thread may hang in socket.recvfrom()..")
-            else:
-                self.collect_fma = None
-            logger.debug("..FMA collector stopped")
-        else:
-            logger.debug("FMA collector not running")
         self.running = False
 
     def check_boxed(self):
