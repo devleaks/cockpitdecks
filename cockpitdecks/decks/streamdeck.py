@@ -302,7 +302,7 @@ class Streamdeck(DeckWithIcons):
         logger.debug(f"page {self.name}: ..saving..")
 
         # If print-page-dir is defined add this to the path
-        print_page_dir = self.get_attribute("print-page-dir")
+        print_page_dir = self.get_attribute("print-page-dir", silence=True)
         if print_page_dir is None:
             output_dst = page.name + ".png"
         else:

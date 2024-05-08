@@ -66,9 +66,9 @@ class EncoderLEDs(Representation):
         self.button.set_current_value(0)
         self.button.render()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
-        a = [f"The representation turns multiple LED ON or OFF"]
+        a = [f"The representation turns multiple LED ON or OFF around X-Touch Mini encoders"]
         return "\n\r".join(a)

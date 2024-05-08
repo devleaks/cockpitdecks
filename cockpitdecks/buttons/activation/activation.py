@@ -299,7 +299,7 @@ class LoadPage(Activation):
             else:
                 logger.warning(f"{type(self).__name__}: page not found {self.page}")
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -326,7 +326,7 @@ class Reload(Activation):
         if not event.pressed:  # trigger on button "release"
             self.button.deck.cockpit.reload_decks()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -355,7 +355,7 @@ class ChangeTheme(Activation):
             cockpit._config[COCKPIT_THEME] = self.theme
             cockpit.reload_decks()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -389,7 +389,7 @@ class Inspect(Activation):
         s = s | {"what": self.what}
         return s
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -415,7 +415,7 @@ class Stop(Activation):
         if not event.pressed:  # trigger on button "release"
             self.button.deck.cockpit.stop_decks()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -538,7 +538,7 @@ class Push(Activation):
             if self.auto_repeat:
                 self.auto_repeat_stop()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -611,7 +611,7 @@ class Longpress(Push):
         elif what is not None and "activation" in what:
             super().inspect(what=what)
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -739,7 +739,7 @@ class OnOff(Activation):
         s = s | {"on": self.is_on()}
         return s
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -877,7 +877,7 @@ class UpDown(Activation):
         s = s | {"stops": self.stops, "go_up": self.go_up}
         return s
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -956,7 +956,7 @@ class Encoder(Activation):
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -1054,7 +1054,7 @@ class EncoderPush(Push):
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -1165,7 +1165,7 @@ class EncoderOnOff(OnOff):
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -1287,7 +1287,7 @@ class EncoderValue(OnOff):
             "turns": self._turns,
         }
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -1426,7 +1426,7 @@ class EncoderValueExtended(OnOff):
             "turns": self._turns,
         }
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -1490,7 +1490,7 @@ class Slider(Activation):  # Cursor?
         self.write_dataref(value)
         logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -1524,7 +1524,7 @@ class Swipe(Activation):
             return
         logger.info(f"button {self.button_name()} has no action (value={event})")
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """

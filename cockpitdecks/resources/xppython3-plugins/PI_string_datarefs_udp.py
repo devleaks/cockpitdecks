@@ -20,10 +20,11 @@ from XPPython3 import xp
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
-RELEASE = "3.0.0"
+RELEASE = "3.0.1"
 
 # Changelog:
 #
+# 08-MAY-2024: 3.0.1: Limited defaults to acf_icao.
 # 07-MAY-2024: 3.0.0: Now scan all button definitions for string-datarefs: [] attribute.
 # 02-MAY-2024: 2.0.5: Now changing dataref set in one operation to minimize impact on flightloop
 # 23-APR-2024: 2.0.4: Now reading from config.yaml for aircraft.
@@ -32,7 +33,8 @@ RELEASE = "3.0.0"
 
 MCAST_GRP = "239.255.1.1"  # same as X-Plane 12
 MCAST_PORT = 49505  # 49707 for XPlane12
-MULTICAST_TTL = 2
+MCAST_TTL = 2
+
 FREQUENCY = 5.0  # will run every FREQUENCY seconds at most, never faster
 
 CONFIG_DIR = "deckconfig"
@@ -40,18 +42,7 @@ CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
 
-DEFAULT_STRING_DATAREFS = [  # default is to return these, for Toliss Airbusses
-    "sim/aircraft/view/acf_ICAO",
-    "AirbusFBW/FMA1w",
-    "AirbusFBW/FMA1g",
-    "AirbusFBW/FMA1b",
-    "AirbusFBW/FMA2w",
-    "AirbusFBW/FMA2b",
-    "AirbusFBW/FMA2m",
-    "AirbusFBW/FMA3w",
-    "AirbusFBW/FMA3b",
-    "AirbusFBW/FMA3a",
-]
+DEFAULT_STRING_DATAREFS = ["sim/aircraft/view/acf_ICAO"]  # default is to return these, for Toliss Airbusses
 
 
 class PythonInterface:
@@ -68,7 +59,7 @@ class PythonInterface:
         self.frequency = FREQUENCY
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+        self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MCAST_TTL)
         self.RLock = RLock()
 
     def XPluginStart(self):
@@ -156,8 +147,8 @@ class PythonInterface:
         if self.run_count % 100 == 0:
             print(self.Info, f"PI::FlightLoopCallback: is alive ({self.run_count})")
         self.run_count = self.run_count + 1
-        with self.RLock:
-            drefvalues = {"ts": time.time()} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+        with self.RLock:  # add a meta data to sync effectively
+            drefvalues = {"ts": time.time(), "f": self.frequency} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
         fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
@@ -202,8 +193,9 @@ class PythonInterface:
             if self.trace:
                 print(self.Info, f"PI::load: new dataref set installed {', '.join(new_dataref_set.keys())}")
             # adjust frequency since operation is expensive
+            oldf = self.frequency
             self.frequency = max(len(self.datarefs), FREQUENCY)
-            if self.trace:
+            if oldf != self.frequency and self.trace:
                 print(self.Info, f"PI::load: frequency adjusted to {self.frequency}")
 
     def get_string_datarefs(self, acpath):
@@ -320,6 +312,7 @@ class PythonInterface:
                         f"PI::get_string_datarefs: ..done config {config_fn}",
                     )
         return set(strings)
+
 
 # #####################################################@
 # Multicast client

@@ -83,6 +83,8 @@ DECKS_FOLDER = "decks"
 
 ICON_SIZE = 256  # px
 
+STRING_DATAREF_PREFIX = "str:"
+
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing

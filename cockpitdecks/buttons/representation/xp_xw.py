@@ -142,3 +142,6 @@ class XPWeatherIcon(XPWeatherBaseIcon):
         lines.append(f"Winds: {wind_speed} m/s {wind_dir}° (L{idx})")
 
         return lines
+
+    def describe(self) -> str:
+        return "The representation is specific to X-Plane and show X-Plane internal weather fetched from wind and cloud layers."

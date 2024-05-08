@@ -108,7 +108,7 @@ class Representation:
         # logger.warning(f"button {self.button_name()}: no cleaning")
         pass
 
-    def describe(self):
+    def describe(self) -> str:
         return "The button does not produce any output."
 
 
@@ -305,11 +305,12 @@ class Icon(Representation):
 
     def get_image_for_icon(self):
         deck = self.button.deck
+        this_button = f"{self.button_name()}: {type(self).__name__}"
         if self.icon in deck.icons.keys():
+            logger.debug(f"button {this_button}: returning from cache ({self.icon})")
             return deck.icons.get(self.icon)
         # Else, search for it and cache it
         image = None
-        this_button = f"{self.button_name()}: {type(self).__name__}"
         for ext in ["png", "jpg"]:
             if image is None:
                 fn = add_ext(self.icon, ext)
@@ -435,6 +436,8 @@ class Icon(Representation):
 
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
 
+        logger.debug(f"button {self.button_name()}: text is from {which_text}: {text}")
+
         if which_text == "label":
             text_size = int(text_size * image.width / 72)
 
@@ -489,7 +492,7 @@ class Icon(Representation):
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no clean icon")
 
-    def describe(self):
+    def describe(self) -> str:
         return "The representation places an icon with optional label overlay."
 
 
@@ -520,7 +523,7 @@ class IconColor(Icon):
         image = super().get_image()
         return self.overlay_text(image, "label")
 
-    def describe(self):
+    def describe(self) -> str:
         return "The representation places a uniform color or textured icon."
 
 
@@ -555,7 +558,7 @@ class IconText(Icon):
         image = super().get_image()
         return self.overlay_text(image, "text")
 
-    def describe(self):
+    def describe(self) -> str:
         return "The representation places an icon with optional text and label overlay."
 
 
@@ -611,7 +614,7 @@ class MultiTexts(IconText):
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts()}")
         return None
 
-    def describe(self):
+    def describe(self) -> str:
         return "\n\r".join(
             [f"The representation produces an icon with text, text is selected from a list of {len(self.multi_texts)} texts bsaed on the button's value."]
         )
@@ -669,7 +672,7 @@ class MultiIcons(Icon):
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
         return None
 
-    def describe(self):
+    def describe(self) -> str:
         return "\n\r".join([f"The representation produces an icon selected from a list of {len(self.multi_icons)} icons."])
 
 
@@ -697,7 +700,7 @@ class LED(Representation):
         self.button.set_current_value(0)
         self.button.render()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -759,7 +762,7 @@ class ColoredLED(Representation):
         self.button.set_current_value(0)
         self.button.render()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """

@@ -156,5 +156,5 @@ class IconSide(Icon):  # modified Representation IconSide class
                 li = li + 1
         return image
 
-    def describe(self):
+    def describe(self) -> str:
         return "The representation produces an icon with optional label overlay for larger side buttons on LoupedeckLive."

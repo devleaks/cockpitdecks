@@ -21,7 +21,7 @@ from .simulator import (
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml
+from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, STRING_DATAREF_PREFIX, yaml
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -126,9 +126,10 @@ class Button(DatarefListener, DatarefSetListener):
                 logger.warning(f"button {self.name} has guard but no dataref")
 
         self.all_datarefs = None  # all datarefs used by this button
-        self.all_datarefs = self.get_datarefs()  # cache them
+        self.all_datarefs = self.get_datarefs()  # get them all raw, included string prefixes
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
+        self.all_datarefs = [d.replace(STRING_DATAREF_PREFIX, "") for d in self.get_datarefs()]  # cache them WITHOUT the string prefix
 
         self.dataref_collections = None
         self.dataref_collections = self.get_dataref_collections()
@@ -228,7 +229,7 @@ class Button(DatarefListener, DatarefSetListener):
                 logger.info("")
                 logger.info(f"\n{yaml.dump(self._config, sys.stdout)}")
 
-    def describe(self):
+    def describe(self) -> str:
         return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
     def get_attribute(self, attribute: str, silence: bool = False):

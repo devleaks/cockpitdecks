@@ -26,6 +26,9 @@ class FCUIcon(DrawBase):
         self.icon_color = "#101010"
         self.count = 0
 
+    def describe(self) -> str:
+        return "The representation is specific to Toliss Airbus and display the Flight Control Unit (FCU)."
+
     def get_fcu_datarefs(self):
         return {
             "speed": "sim/cockpit2/autopilot/airspeed_dial_kts_mach",

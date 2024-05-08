@@ -76,7 +76,7 @@ class Dataref:
         self.length = length  # length of some/path/values array, if available.
         self.is_array = False  # array of above
         self.is_decimal = is_decimal
-        self.is_string = is_string
+        self._is_string = is_string
         self._previous_value = None  # raw values
         self._current_value = None
         self._last_updated = None
@@ -91,13 +91,12 @@ class Dataref:
         self.update_frequency = 1  # sent by the simulator that many times per second.
         self.expire = None
 
-        if self.is_decimal and self.is_string:
-            loggerDataref.error(f"__init__: index {self.path} cannot be both decimal and string")
-
         self.data_type = "float"  # int, float, byte, UDP always returns a float...
         if self.is_decimal:
             self.data_type = "int"
-        elif self.is_string:
+            if self._is_string:
+                loggerDataref.error(f"__init__: index {self.path} cannot be both decimal and string")
+        elif self._is_string:
             self.data_type = "str"
 
         if self.length is not None and self.length > 1:
@@ -127,6 +126,9 @@ class Dataref:
     def mk_internal_dataref(path: str) -> str:
         return INTERNAL_DATAREF_PREFIX + path
 
+    def is_string(self) -> bool:
+        return self._is_string
+
     def is_internal(self) -> bool:
         return Dataref.is_internal_dataref(self.path)
 
@@ -150,7 +152,7 @@ class Dataref:
             return float(self.current_value)
         elif self.data_type == "int" or self.is_decimal:
             return int(self.current_value)
-        elif self.data_type == "str" or self.data_type == "string" or self.is_string:
+        elif self.data_type == "str" or self.data_type == "string" or self.is_string():
             return str(self.current_value)
         # arrays, etc
         return self.current_value
@@ -178,7 +180,7 @@ class Dataref:
         self._previous_value = self._current_value  # raw
         self._current_value = new_value  # raw
         self.previous_value = self.current_value  # exposed
-        if self.is_string:
+        if self.is_string():
             self.current_value = new_value
         else:
             self.current_value = self.round(new_value)

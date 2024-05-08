@@ -650,7 +650,7 @@ class Annunciator(DrawBase):
         else:
             logger.warning("no annunciator parts to light")
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
@@ -752,7 +752,7 @@ class AnnunciatorAnimate(Annunciator):
                 return super().render()
         return None
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """

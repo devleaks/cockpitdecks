@@ -153,3 +153,6 @@ class XPWeatherBaseIcon(DrawBase):
 
     def select_random_weather_icon(self):
         return random.choice(list(WEATHER_ICONS.keys()))
+
+    def describe(self) -> str:
+        return "The representation is specific to X-Plane, it is the base for weather information display."

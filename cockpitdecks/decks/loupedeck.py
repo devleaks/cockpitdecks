@@ -482,7 +482,7 @@ class Loupedeck(DeckWithIcons):
         logger.debug(f"page {self.name}: ..saving..")
 
         # If print-page-dir is defined add this to the path
-        print_page_dir = self.get_attribute("print-page-dir")
+        print_page_dir = self.get_attribute("print-page-dir", silence=True)
         if print_page_dir is None:
             output_dst = page.name + ".png"
         else:
@@ -491,7 +491,6 @@ class Loupedeck(DeckWithIcons):
         with open(output_dst, "wb") as im:
             image.save(im, format="PNG")
         logger.debug(f"page {self.name}: ..done")
-
 
     def render(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:

@@ -110,7 +110,7 @@ class IconAnimation(MultiIcons):
         self.icon = self.icon_off
         return super(MultiIcons, self).render()
 
-    def describe(self):
+    def describe(self) -> str:
         """
         Describe what the button does in plain English
         """

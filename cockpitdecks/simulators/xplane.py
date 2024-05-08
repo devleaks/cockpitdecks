@@ -7,6 +7,7 @@ import platform
 import threading
 import logging
 import time
+import json
 from datetime import datetime, timedelta
 from queue import Queue
 
@@ -32,8 +33,9 @@ MAX_DREF_COUNT = 80  # Maximum number of dataref that can be requested to X-Plan
 ANY = "0.0.0.0"
 SDL_MCAST_PORT = 49505
 SDL_MCAST_GRP = "239.255.1.1"
-SDL_UPDATE_FREQ = 1.0
-SDL_SOCKET_TIMEOUT = SDL_UPDATE_FREQ + 5.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY (= 5.0 default)
+
+SDL_UPDATE_FREQ = 5.0  # same starting value as PI_string_datarefs_udp.FREQUENCY  (= 5.0 default)
+SDL_SOCKET_TIMEOUT = SDL_UPDATE_FREQ + 1.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY
 
 
 # When this (internal) dataref changes, the loaded aircraft has changed
@@ -298,6 +300,11 @@ class XPlane(Simulator, XPlaneBeacon):
         # Allow multiple sockets to use the same PORT number
         self.socket_strdref.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # SO_REUSEPORT
 
+        self.socket_strdref.bind((ANY, SDL_MCAST_PORT))
+        # Tell the kernel that we want to add ourselves to a multicast group
+        # The address for the multicast group is the third param
+        status = self.socket_strdref.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(SDL_MCAST_GRP) + socket.inet_aton(ANY))
+
         self._inited = True
 
     def __del__(self):
@@ -327,10 +334,10 @@ class XPlane(Simulator, XPlaneBeacon):
             return simnow
         return now
 
-    def get_dataref(self, path):
+    def get_dataref(self, path: str, is_string: bool = False):
         if path in self.all_datarefs.keys():
             return self.all_datarefs[path]
-        return self.register(Dataref(path))
+        return self.register(Dataref(path, is_string=is_string))
 
     def execute_command(self, command: Command):
         if command is None:
@@ -497,6 +504,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
     def strdref_enqueue(self):
         logger.info("starting string dataref listener..")
+        frequency = max(SDL_SOCKET_TIMEOUT, SDL_UPDATE_FREQ)
         total_to = 0
         total_reads = 0
         last_read_ts = datetime.now()
@@ -507,15 +515,15 @@ class XPlane(Simulator, XPlaneBeacon):
 
         while self.dref_event is not None and not self.dref_event.is_set():
             try:
-                self.socket_strdref.settimeout(max(SDL_SOCKET_TIMEOUT, SDL_UPDATE_FREQ))
-                data, addr = self.socket_strdref.recvfrom(1472)
+                self.socket_strdref.settimeout(frequency)
+                data, addr = self.socket_strdref.recvfrom(1024)
                 total_to = 0
                 total_reads = total_reads + 1
                 now = datetime.now()
                 delta = now - last_read_ts
                 total_read_time = total_read_time + delta.microseconds / 1000000
                 last_read_ts = now
-                logger.debug(f"string dataref listener: got data")  # ({data})
+                logger.debug(f"string dataref listener: got data")  # \n({json.dumps(json.loads(data.decode('utf-8')), indent=2)})
                 data = json.loads(data.decode("utf-8"))
                 ts = 0
                 if "ts" in data:
@@ -528,14 +536,23 @@ class XPlane(Simulator, XPlaneBeacon):
                         if src_cnt % 100 == 0:
                             logger.info(f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)}")
                     src_last_ts = ts
-                for k,v in data:
-                    self.cockpit.drefupd_queue.put((k,v, True))
+                freq = None
+                oldf = frequency
+                if "f" in data:
+                    freq = data["f"]
+                    del data["f"]
+                    if freq is not None and (oldf != (freq + 1)):
+                        frequency = freq + 1
+                        logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
+                for k, v in data.items():
+                    self.cockpit.drefupd_queue.put((k, v, True))
             except:
                 total_to = total_to + 1
                 logger.debug(
-                    f"string dataref listener: socket timeout received ({total_to})",
+                    f"string dataref listener: socket timeout ({frequency} secs.) received ({total_to})",
                     exc_info=(logger.level == logging.DEBUG),
                 )
+                frequency = frequency + 1
 
         self.dref_event = None
         # Bind to the port that we know will receive multicast data
@@ -585,6 +602,9 @@ class XPlane(Simulator, XPlaneBeacon):
         for d in datarefs.values():
             if d.is_internal():
                 logger.debug(f"local dataref {d.path} is not monitored")
+                continue
+            if d.is_string():
+                logger.debug(f"string dataref {d.path} is not monitored")
                 continue
             if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
                 prnt.append(d.path)
@@ -673,7 +693,7 @@ class XPlane(Simulator, XPlaneBeacon):
         prnt = []
         for path in self.datarefs_to_monitor.keys():
             d = self.all_datarefs.get(path)
-            if d is not None:
+            if d is not None and not d.is_string():
                 if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
                     prnt.append(d.path)
                 else:
@@ -738,7 +758,7 @@ class XPlane(Simulator, XPlaneBeacon):
         if self.dref_event is not None and self.dref_thread is not None:
             self.dref_event.set()
             logger.debug("stopping string dataref listener..")
-            timeout = max(FMA_SOCKET_TIMEOUT, FMA_UPDATE_FREQ)
+            timeout = max(SDL_SOCKET_TIMEOUT, SDL_UPDATE_FREQ)
             logger.debug(f"..asked to stop string dataref listener (this may last {timeout} secs. for UDP socket to timeout)..")
             self.dref_thread.join(timeout)
             if self.dref_thread.is_alive():
@@ -748,7 +768,6 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.debug("..string dataref listener stopped")
         else:
             logger.debug("string dataref listener not running")
-
 
     # ################################
     # Cockpit interface

@@ -34,6 +34,9 @@ class RealWeatherIcon(XPWeatherBaseIcon):
         self.display_datarefs = DISPLAY_DATAREFS_REGION if self.mode == "region" else DISPLAY_DATAREFS_AIRCRAFT
         self.weather_datarefs = self.display_datarefs.values()
 
+    def describe(self) -> str:
+        return "The representation is specific to X-Plane and show X-Plane internal weather fetched from datarefs."
+
     def init(self):
         if self._inited:
             return

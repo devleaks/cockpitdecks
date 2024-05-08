@@ -790,8 +790,11 @@ class Cockpit(DatarefListener, CockpitBase):
             try:
                 dref, value, cascade = e
                 logger.debug(f"updating {dref}..")
-                self.sim.all_datarefs[dref].update_value(value, cascade=cascade)
-                logger.debug(f"..updated without error")
+                if dref in self.sim.all_datarefs:
+                    self.sim.all_datarefs[dref].update_value(value, cascade=cascade)
+                    logger.debug(f"..updated without error")
+                else:
+                    logger.debug(f"dataref {dref} not found in database")
             except:
                 logger.warning(f"..updated with error", exc_info=True)
 

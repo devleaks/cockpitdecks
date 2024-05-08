@@ -4,7 +4,7 @@ import datetime
 import logging
 from typing import Dict
 
-from cockpitdecks import ID_SEP
+from cockpitdecks import ID_SEP, STRING_DATAREF_PREFIX
 from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button, DECK_DEF
 
@@ -144,13 +144,18 @@ class Page:
         logger.debug(f"page {self.name}: button {idx} {button.name} added")
 
     def register_datarefs(self, button: Button):
-        for d in button.get_datarefs():
+        for d0 in button.get_datarefs():
+            d = d0
+            is_string = False
+            if d0.startswith(STRING_DATAREF_PREFIX):
+                d = d0[len(STRING_DATAREF_PREFIX) :]
+                is_string = True
             if d not in self.datarefs:
-                ref = self.sim.get_dataref(d)  # creates or return already defined dataref
+                ref = self.sim.get_dataref(d, is_string=is_string)  # creates or return already defined dataref
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
-                    logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
+                    logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d} (string={is_string})")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
@@ -207,7 +212,7 @@ class Page:
         ):
             self.deck.fill_empty(key)
 
-        if self.get_attribute("print-page-dir"):
+        if self.get_attribute("print-page-dir", silence=True):
             self.deck.print_page(self)
 
     def print(self):
