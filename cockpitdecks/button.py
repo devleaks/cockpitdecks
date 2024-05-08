@@ -535,7 +535,7 @@ class Button(DatarefListener, DatarefSetListener):
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
         """
-        if type(message) == int or type(message) == float:  # probably formula is a constant value
+        if type(message) is int or type(message) is float:  # probably formula is a constant value
             value_str = message
             if formatting is not None:
                 if formatting is not None:

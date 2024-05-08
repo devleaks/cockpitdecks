@@ -9,7 +9,6 @@ from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
 from .xp_str import StringIcon
-from .xp_ac import AircraftIcon
 from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
 from .xp_iconside import IconSide
