@@ -25,12 +25,9 @@ class AircraftIcon(IconText):
         return [STRING_DATAREF_PREFIX + d for d in self.string_datarefs]
 
     def get_image(self):
-        new_text = self.button.get_dataref_value(self.string_datarefs[0], default="----")
-        old_text = self.text_config.get("text")
-        if new_text != old_text:
-            self.text_config["text"] = new_text
+        # need to delete from cache to recreate a new image
+        if self.icon is not None and self.icon in self.button.deck.icons:
             del self.button.deck.icons[self.icon]
-            logger.debug(f"{'*'*40} {self.button.button_name()}: {self.string_datarefs[0]}={self.text}")
         return super().get_image()
 
     def describe(self) -> str:
