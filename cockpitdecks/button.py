@@ -130,12 +130,10 @@ class Button(DatarefListener, DatarefSetListener):
             if "," in self.string_datarefs:
                 self.string_datarefs = self.string_datarefs.replace(" ", "").split(",")
             else:
-                self.string_datarefs = [ self.string_datarefs ]
+                self.string_datarefs = [self.string_datarefs]
 
         self.all_datarefs = None  # all datarefs used by this button
-
         self.all_datarefs = self.get_datarefs()  # this does not add string datarefs
-        print(">>>>>>>", self.all_datarefs)
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
 
@@ -400,7 +398,7 @@ class Button(DatarefListener, DatarefSetListener):
             return [STRING_DATAREF_PREFIX + d for d in self.string_datarefs]
         return self.string_datarefs
 
-    def get_datarefs(self, base: dict | None = None):
+    def get_datarefs(self, base: dict | None = None) -> list:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -409,24 +407,28 @@ class Button(DatarefListener, DatarefSetListener):
         if base is None:  # local, button-level ones
             if self.all_datarefs is not None:  # cached if globals (base is None)
                 return self.all_datarefs
+            base = self._config
 
-        r = self.scan_datarefs(self._config)
+        r = self.scan_datarefs(base)
         logger.debug(f"button {self.name}: added button datarefs {r}")
+
         # Activation datarefs
         if self._activation is not None:
             datarefs = self._activation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
                 logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
+
         # Representation datarefs
         if self._representation is not None:
             datarefs = self._representation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
+
         return list(set(r))  # removes duplicates
 
-    def scan_datarefs(self, base: dict):
+    def scan_datarefs(self, base: dict) -> list:
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
@@ -823,6 +825,7 @@ class Button(DatarefListener, DatarefSetListener):
         if not isinstance(dataref, Dataref):
             logger.error(f"button {self.name}: not a dataref")
             return
+        logger.debug(f"{self.button_name()}: {dataref.path} changed")
         self.set_current_value(self.button_value())
         if self.has_changed() or dataref.has_changed():
             logger.log(

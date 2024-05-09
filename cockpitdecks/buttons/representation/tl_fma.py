@@ -4,10 +4,10 @@ import logging
 import time
 import json
 
-from typing import Dict, List
+from typing import Dict, List, Set
 from datetime import datetime
 
-from cockpitdecks.buttons.representation.animation import DrawAnimation
+from cockpitdecks.buttons.representation.draw import DrawBase
 from cockpitdecks import ICON_SIZE
 
 # ##############################
@@ -61,6 +61,7 @@ FMA_LABEL_MODE = 3  # 0 (None), 1 (keys), or 2 (values), or 3 alternates
 FMA_COUNT = len(FMA_LABELS.keys())
 FMA_COLUMNS = [[0, 7], [7, 15], [15, 21], [21, 28], [28, 37]]
 FMA_LINE_LENGTH = FMA_COLUMNS[-1][-1]
+FMA_EMPTY_LINE = " " * FMA_LINE_LENGTH
 FMA_LINES = 3
 
 FMA_UPDATE_FREQ = 3.0
@@ -70,21 +71,26 @@ logger = logging.getLogger(__file__)
 # logger.setLevel(15)
 
 
-class FMAIcon(DrawAnimation):
-    """ """
+class FMAIcon(DrawBase):
+    """Displays Toliss Airbus Flight Mode Annunciators on Streamdeck Plus touchscreen
+
+    This is an animation because it constantly gets updated.
+
+    """
 
     REPRESENTATION_NAME = "fma"
 
     def __init__(self, config: dict, button: "Button"):
-        DrawAnimation.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, config=config, button=button)
 
         self.fmaconfig = config.get("fma", {})  # should not be none, empty at most...
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
         self.icon_color = "black"
-        self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS}  # use FMA_LINES for testing
+        self.text = {k: FMA_EMPTY_LINE for k in FMA_DATAREFS}  # use FMA_LINES for testing
+        self.fma_text: Dict[str, str] = {}
         self.previous_text: Dict[str, str] = {}
-        self.boxed: List[str] = []
+        self.boxed: Set[str] = []
         self._cached = None  # cached icon
 
         # get mandatory index
@@ -103,30 +109,8 @@ class FMAIcon(DrawAnimation):
             fma = FMA_COUNT
         self.fma_idx = fma - 1
 
-        self.fma_updater_event: threading.Event | None = None
-        self.fma_updater_thread: threading.Thread | None = None
-
-        self.fma_text: Dict[str, Dict] = {}
-        self.fma_text_lock = threading.RLock()
-
-        self.socket = None
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        # Allow multiple sockets to use the same PORT number
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # SO_REUSEPORT
-        # Bind to the port that we know will receive multicast data
-        # self.socket.bind((ANY, FMA_MCAST_PORT))
-        # status = self.socket.setsockopt(
-        #     socket.IPPROTO_IP,
-        #     socket.IP_ADD_MEMBERSHIP,
-        #     socket.inet_aton(FMA_MCAST_GRP) + socket.inet_aton(ANY),
-        # )
-        self.collector_avgtime = 0
-
     def describe(self) -> str:
         return "The representation is specific to Toliss Airbus and display the Flight Mode Annunciators (FMA)."
-
-    def should_run(self) -> bool:
-        return True
 
     def is_master_fma(self) -> bool:
         return self.all_in_one or self.fma_idx == 1
@@ -152,57 +136,15 @@ class FMAIcon(DrawAnimation):
             logger.warning(f"button {self.button.name}: too many master FMA")
         return None
 
-    def fma_updater(self):
-        logger.debug("starting FMA updater..")
-        # total_to = 0
-        # total_reads = 0
-        # total_values = 0
-        # last_read_ts = datetime.now()
-        # total_read_time = 0.0
-        while self.fma_updater_event is not None and not self.fma_updater_event.is_set():
-            self.fma_text = {k: self.button.get_dataref_value(v) for k, v in FMA_DATAREFS.items()}
-            with self.fma_text_lock:
-                self.text = self.fma_text.copy()
-            self.button.render()
-            time.sleep(FMA_UPDATE_FREQ)
-        self.fma_updater_event = None
-        logger.debug("..FMA updater terminated")
-
     def is_updated(self) -> bool:
         oldboxed = self.boxed
         self.check_boxed()
         if self.boxed != oldboxed:
             logger.debug(f"boxed changed {self.boxed}/{oldboxed}")
             return True
+        self.previous_text = self.text
+        self.text = {k: self.button.get_dataref_value(v, default=FMA_EMPTY_LINE) for k, v in FMA_DATAREFS.items()}
         return self.text != self.previous_text
-
-    def anim_start(self) -> None:
-        if self.running:
-            logger.debug("anim already running")
-        if self.fma_updater_event is None:
-            self.fma_updater_event = threading.Event()
-            self.fma_updater_thread = threading.Thread(target=self.fma_updater)
-            self.fma_updater_thread.name = "FMA::updater"
-            self.fma_updater_thread.start()
-            logger.info("FMA updater started")
-        else:
-            logger.info("FMA updater already running.")
-        self.running = True
-
-    def anim_stop(self) -> None:
-        if not self.running:
-            logger.debug("anim not running")
-        if self.fma_updater_event is not None and self.fma_updater_thread is not None:
-            self.fma_updater_event.set()
-            logger.debug("stopping FMA updater..")
-            self.fma_updater_thread.join(FMA_UPDATE_FREQ)
-            if self.fma_updater_thread.is_alive():
-                logger.warning("..thread may hang..")
-            self.fma_updater_event = None
-            logger.debug("..FMA updater stopped")
-        else:
-            logger.debug("FMA updater not running")
-        self.running = False
 
     def check_boxed(self):
         """Check "boxed" datarefs to determine which texts are boxed/framed.

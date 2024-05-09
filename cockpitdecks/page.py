@@ -9,7 +9,7 @@ from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button, DECK_DEF
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Page:

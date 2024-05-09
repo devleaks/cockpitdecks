@@ -273,9 +273,11 @@ class XPlane(Simulator, XPlaneBeacon):
         self.datarefs = {}  # key = idx, value = dataref path
         self._max_monitored = 0
 
+        self.udp_event = None  # thread to read X-Plane UDP port for datarefs
         self.udp_thread = None
+
+        self.dref_event = None  # thread to read XPPython3 PI_string_datarefs_udp alternate UDP port for string datarefs
         self.dref_thread = None
-        self.udp_event = None
 
         Simulator.__init__(self, cockpit=cockpit)
         self.cockpit.set_logging_level(__name__)
