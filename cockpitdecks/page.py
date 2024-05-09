@@ -9,7 +9,7 @@ from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button, DECK_DEF
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Page:
@@ -144,23 +144,36 @@ class Page:
         logger.debug(f"page {self.name}: button {idx} {button.name} added")
 
     def register_datarefs(self, button: Button):
-        for d0 in button.get_datarefs():
-            d = d0
-            is_string = False
-            if d0.startswith(STRING_DATAREF_PREFIX):
-                d = d0[len(STRING_DATAREF_PREFIX) :]
-                is_string = True
+        # Declared string dataref must be create FIRST so that they get the proper type.
+        # If they are later used (in expression), at least they were created with STRING type first.
+        for d in button.get_string_datarefs():
             if d not in self.datarefs:
-                ref = self.sim.get_dataref(d, is_string=is_string)  # creates or return already defined dataref
+                ref = self.sim.get_dataref(d, is_string=True)  # creates or return already defined dataref
+                if ref is not None:
+                    self.datarefs[d] = ref
+                    ref.add_listener(button)
+                    logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string()})")
+                else:
+                    logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
+            else:  # dataref already exists in list, just add this button as a listener
+                self.datarefs[d].add_listener(button)
+                logger.debug(f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.datarefs[d].is_string()})")
+
+        # Possible issue if a dataref is created here below and is a string dataref
+        # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref
+        for d in button.get_datarefs():
+            if d not in self.datarefs:
+                ref = self.sim.get_dataref(d)  # creates or return already defined dataref
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
-                    logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d} (string={is_string})")
+                    logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
                 self.datarefs[d].add_listener(button)
                 logger.debug(f"page {self.name}: button {button.name} registered for existing dataref {d}")
+
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
     def register_dataref_collections(self, button: Button):

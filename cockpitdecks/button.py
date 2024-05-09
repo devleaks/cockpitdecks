@@ -125,11 +125,21 @@ class Button(DatarefListener, DatarefSetListener):
             if self.guarded is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
 
+        self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, [])
+        if type(self.string_datarefs) is str:
+            if "," in self.string_datarefs:
+                self.string_datarefs = self.string_datarefs.replace(" ", "").split(",")
+            else:
+                self.string_datarefs = [ self.string_datarefs ]
+
         self.all_datarefs = None  # all datarefs used by this button
-        self.all_datarefs = self.get_datarefs()  # get them all raw, included string prefixes
+
+        self.all_datarefs = self.get_datarefs()  # this does not add string datarefs
+        print(">>>>>>>", self.all_datarefs)
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
-        self.all_datarefs = [d.replace(STRING_DATAREF_PREFIX, "") for d in self.get_datarefs()]  # cache them WITHOUT the string prefix
+
+        self.all_datarefs = self.all_datarefs + self.string_datarefs
 
         self.dataref_collections = None
         self.dataref_collections = self.get_dataref_collections()
@@ -384,6 +394,11 @@ class Button(DatarefListener, DatarefSetListener):
         self.dataref_collections = collections
         logger.debug(f"button {self.name}: loaded {len(collections)} collections")
         return self.dataref_collections
+
+    def get_string_datarefs(self, add_prefix: bool = False) -> list:
+        if add_prefix:
+            return [STRING_DATAREF_PREFIX + d for d in self.string_datarefs]
+        return self.string_datarefs
 
     def get_datarefs(self, base: dict | None = None):
         """

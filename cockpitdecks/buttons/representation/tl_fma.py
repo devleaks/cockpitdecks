@@ -8,7 +8,7 @@ from typing import Dict, List
 from datetime import datetime
 
 from cockpitdecks.buttons.representation.animation import DrawAnimation
-from cockpitdecks import ICON_SIZE, STRING_DATAREF_PREFIX
+from cockpitdecks import ICON_SIZE
 
 # ##############################
 # Toliss Airbus FMA display
@@ -69,6 +69,7 @@ logger = logging.getLogger(__file__)
 # logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
 
+
 class FMAIcon(DrawAnimation):
     """ """
 
@@ -84,7 +85,6 @@ class FMAIcon(DrawAnimation):
         self.text = {k: " " * FMA_LINE_LENGTH for k in FMA_DATAREFS}  # use FMA_LINES for testing
         self.previous_text: Dict[str, str] = {}
         self.boxed: List[str] = []
-        self.string_datarefs = config.get("string-datarefs", [])
         self._cached = None  # cached icon
 
         # get mandatory index
@@ -124,9 +124,6 @@ class FMAIcon(DrawAnimation):
 
     def describe(self) -> str:
         return "The representation is specific to Toliss Airbus and display the Flight Mode Annunciators (FMA)."
-
-    def get_datarefs(self) -> list:
-        return [STRING_DATAREF_PREFIX + d for d in self.string_datarefs]
 
     def should_run(self) -> bool:
         return True
