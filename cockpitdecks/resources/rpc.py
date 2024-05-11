@@ -66,6 +66,14 @@ class RPC:
                 stack.append(0 if stack.pop() != 0 else 1)
             elif token == "inf":  # inf is used as a keyword to return a special value
                 stack.append(math.inf)
+            elif token == "cos":  # calculate cosine, input expected in degrees
+                angle_in_degrees = stack.pop()
+                angle_in_radians = math.radians(angle_in_degrees)
+                stack.append(math.cos(angle_in_radians))
+            elif token == "sin":  # calculate sine, input expected in degrees
+                angle_in_degrees = stack.pop()
+                angle_in_radians = math.radians(angle_in_degrees)
+                stack.append(math.sin(angle_in_radians))
             else:
                 print(f"RPC: invalid token {token}")
 
