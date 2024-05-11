@@ -20,10 +20,11 @@ from XPPython3 import xp
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
-RELEASE = "3.0.1"
+RELEASE = "3.0.2"
 
 # Changelog:
 #
+# 08-MAY-2024: 3.0.2: Attempts to reload aircraft if not loaded after MSG_PLANE_LOADED message.
 # 08-MAY-2024: 3.0.1: Limited defaults to acf_icao.
 # 07-MAY-2024: 3.0.0: Now scan all button definitions for string-datarefs: [] attribute.
 # 02-MAY-2024: 2.0.5: Now changing dataref set in one operation to minimize impact on flightloop
@@ -44,6 +45,9 @@ DEFAULT_LAYOUT = "default"
 
 DEFAULT_STRING_DATAREFS = ["sim/aircraft/view/acf_ICAO"]  # default is to return these, for Toliss Airbusses
 
+RUN_COUNT = 5
+MIN_DREF = 0
+
 
 class PythonInterface:
     def __init__(self):
@@ -53,6 +57,7 @@ class PythonInterface:
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
         self.trace = True  # produces extra print/debugging in XPPython3.log for this class
+        self.acpath = ""
         self.datarefs = {}
         self.use_defaults = False
         self.run_count = 0
@@ -124,6 +129,12 @@ class PythonInterface:
                             "PI::XPluginReceiveMessage: trying " + acpath[0] + "..",
                         )
                     self.load(acpath=acpath[0])
+                    if self.run_count > 0:
+                        print(
+                            self.Info,
+                            "PI::XPluginReceiveMessage: old run count " + self.run_count + ", run count reset",
+                        )
+                        self.run_count = 0
                     if self.trace:
                         print(
                             self.Info,
@@ -146,6 +157,11 @@ class PythonInterface:
             return 0
         if self.run_count % 100 == 0:
             print(self.Info, f"PI::FlightLoopCallback: is alive ({self.run_count})")
+        elif self.run_count == RUN_COUNT:
+            if not len(self.datarefs) > MIN_DREF and (self.acpath is not None and len(self.acpath) > 0):
+                self.load(acpath=self.acpath)
+            else:
+                print(self.Info, f"PI::FlightLoopCallback: is alive ({self.run_count}), {len(self.datarefs)} string datarefs for {self.acpath}")
         self.run_count = self.run_count + 1
         with self.RLock:  # add a meta data to sync effectively
             drefvalues = {"ts": time.time(), "f": self.frequency} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
@@ -162,9 +178,10 @@ class PythonInterface:
         return self.frequency
 
     def load(self, acpath):
-        # Unload previous aircraft's command set.
-        # Load current aircraft command set.
+        # Load current aircraft string datarefs.
         #
+        self.acpath = acpath
+
         # remove previous command set
         new_dataref_set = {}
 

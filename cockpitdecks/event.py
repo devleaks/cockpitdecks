@@ -1,5 +1,5 @@
 from __future__ import annotations
-from abc import ABC
+from abc import ABC, abstractmethod
 from datetime import datetime
 from math import sqrt
 import logging
@@ -12,7 +12,61 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class DeckEvent(ABC):
+class Event(ABC):
+    """Event base class.
+
+    Defines required capability to handle event.
+    """
+
+    def __init__(self, autorun: bool = True):
+        """Deck event
+
+        Args:
+            action (DECK_ACTIONS): Action produced by this event (~ DeckEvent type)
+            deck (Deck): Deck that produced the event
+        """
+        self._ts = datetime.now().timestamp()
+        if autorun:
+            self.run()
+
+    def __str__(self):
+        return f"{self.event}:{self.timestamp}"
+
+    @property
+    def event(self) -> str:
+        """Event type"""
+        return type(self).__name__
+
+    @property
+    def timestamp(self) -> float:
+        """Event creation timestamp"""
+        return self._ts
+
+    def handling(self):
+        """Called before event is processed"""
+        self.started = datetime.now().timestamp()
+
+    def handled(self):
+        """Called when event has been processed"""
+        self.completed = datetime.now().timestamp()
+
+    def is_processed(self) -> bool:
+        """Returns whether event has been processed and marked as such"""
+        return hasattr(self, "completed") and self.completed is not None
+
+    @property
+    def duration(self) -> float:
+        """Returns event handling duration in seconds"""
+        if hasattr(self, "started") and self.started is not None and self.is_processed():
+            return self.completed - self.started
+        return -1.0
+
+    @abstractmethod
+    def run(self, just_do_it: bool = False) -> bool:
+        return False
+
+
+class DeckEvent(Event):
     """Deck event base class.
 
     Defines required capability to handle event.

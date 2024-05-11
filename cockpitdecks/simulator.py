@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 
 from cockpitdecks import SPAM_LEVEL, now
+from cockpitdecks.event import Event
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
@@ -275,6 +276,7 @@ class Simulator(ABC):
 
     def __init__(self, cockpit):
         self._inited = False
+        self.name = type(self).__name__
         self.cockpit = cockpit
         self.running = False
         self.all_datarefs = {}
@@ -416,6 +418,32 @@ class Simulator(ABC):
     @abstractmethod
     def commandEnd(self, command: Command):
         pass
+
+
+class SimulatorEvent(Event):
+    """Simulator event base class.
+
+    Defines required capability to handle event.
+    Keeps a timestamp when event was created
+
+    [description]
+    """
+
+    def __init__(self, sim: Simulator, autorun: bool = True):
+        """Simulator event
+
+        Args:
+            action (DECK_ACTIONS): Action produced by this event (~ DeckEvent type)
+            deck (Deck): Deck that produced the event
+        """
+        Event.__init__(self, autorun=autorun)
+        self.sim = sim
+        self._ts = datetime.now().timestamp()
+        if autorun:
+            self.run()
+
+    def __str__(self):
+        return f"{self.sim.name}:{self.timestamp}"
 
 
 from .collector import (

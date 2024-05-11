@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL
-from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF
+from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF, SimulatorEvent
 from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
@@ -196,9 +196,9 @@ class XPlaneBeacon:
                     self.FindIp()
                     if self.connected:
                         logger.info(self.beacon_data)
-                        logger.debug("..connected, starting dataref listener..")
+                        logger.debug("..connected, starting dataref listeners..")
                         self.start()
-                        logger.info("..dataref listener started..")
+                        logger.info("..dataref listeners started..")
                 except XPlaneVersionNotSupported:
                     self.beacon_data = {}
                     logger.error("..X-Plane Version not supported..")
@@ -718,7 +718,7 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.warning("no IP address. could not start.")
             return
 
-        if self.udp_event is None:
+        if self.udp_event is None:  # Thread for X-Plane datarefs
             self.udp_event = threading.Event()
             self.udp_thread = threading.Thread(target=self.udp_enqueue)
             self.udp_thread.name = "XPlaneUDP::udp_enqueue"
@@ -727,7 +727,7 @@ class XPlane(Simulator, XPlaneBeacon):
         else:
             logger.info("dataref listener already running.")
 
-        if self.dref_thread is None:
+        if self.dref_thread is None:  # Thread for string datarefs
             self.dref_event = threading.Event()
             self.dref_thread = threading.Thread(target=self.strdref_enqueue)
             self.dref_thread.name = "XPlaneUDP::strdref_enqueue"
@@ -788,3 +788,47 @@ class XPlane(Simulator, XPlaneBeacon):
         else:
             logger.info("..no Collector..")
         logger.info("..terminated")
+
+
+class DatarefEvent(SimulatorEvent):
+    """Dataref Update Event"""
+
+    def __init__(self, sim: "XPlane", dataref: str, value: float | str, cascade: bool, autorun: bool = True):
+        """Event for key press.
+
+        Args:
+            pressed (bool): Whether the key was pressed (true) or released (false)
+        """
+        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
+        self.dataref_path = dataref
+        self.value = value
+        self.cascade = cascade
+
+    def __str__(self):
+        return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
+
+    def run(self, just_do_it: bool = False) -> bool:
+        if self.sim is None:
+            logger.warning("no simulator")
+            return False
+
+        if just_do_it:
+
+            dataref = self.sim.all_datarefs.get(self.dataref_path)
+            if dataref is None:
+                logger.debug(f"dataref {self.dataref_path} not found in database")
+                return
+
+            try:
+                logger.debug(f"updating {dataref.path}..")
+                self.handling()
+                dataref.update_value(self.value, cascade=self.cascade)
+                self.handled()
+                logger.debug(f"..updated without error")
+            except:
+                logger.warning(f"..updated with error", exc_info=True)
+                return False
+        else:
+            self.sim.cockpit.drefupd_queue.put(self)
+            logger.debug(f"enqueued")
+        return True
