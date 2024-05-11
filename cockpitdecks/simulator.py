@@ -442,6 +442,12 @@ class SimulatorEvent(Event):
     def __str__(self):
         return f"{self.sim.name}:{self.timestamp}"
 
+    def enqueue(self):
+        if self.sim is not None:
+            self.sim.cockpit.event_queue.put(self)
+        else:
+            logger.warning("no simulator")
+
 
 from .collector import (
     MAX_COLLECTION_SIZE,

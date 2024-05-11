@@ -157,9 +157,17 @@ class DeckEvent(Event):
                 )
                 return False
         else:
-            self.deck.cockpit.event_queue.put(self)
+            self.enqueue()
             logger.debug(f"enqueued")
         return True
+
+    def enqueue(self):
+        if self.deck is not None:
+            self.deck.cockpit.event_queue.put(self)
+        else:
+            logger.warning("no deck")
+
+
 
 
 class PushEvent(DeckEvent):

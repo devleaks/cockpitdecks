@@ -484,7 +484,7 @@ class XPlane(Simulator, XPlaneBeacon):
                             if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
                                 value = 0.0
                             if d is not None:
-                                self.cockpit.drefupd_queue.put(DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys()))
+                                e = DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys())
                             else:
                                 logger.debug(f"no dataref ({values}), probably no longer monitored")
                     else:
@@ -547,7 +547,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         frequency = freq + 1
                         logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
                 for k, v in data.items():
-                    self.cockpit.drefupd_queue.put(DatarefEvent(sim=self, dataref=k, value=v, cascade=True))
+                    e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)
             except:
                 total_to = total_to + 1
                 logger.debug(
@@ -807,12 +807,10 @@ class DatarefEvent(SimulatorEvent):
         return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
 
     def run(self, just_do_it: bool = False) -> bool:
-        if self.sim is None:
-            logger.warning("no simulator")
-            return False
-
         if just_do_it:
-
+            if self.sim is None:
+                logger.warning("no simulator")
+                return False
             dataref = self.sim.all_datarefs.get(self.dataref_path)
             if dataref is None:
                 logger.debug(f"dataref {self.dataref_path} not found in database")
@@ -828,6 +826,6 @@ class DatarefEvent(SimulatorEvent):
                 logger.warning(f"..updated with error", exc_info=True)
                 return False
         else:
-            self.sim.cockpit.drefupd_queue.put(self)
+            self.enqueue()
             logger.debug(f"enqueued")
         return True
