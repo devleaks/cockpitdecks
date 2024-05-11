@@ -298,6 +298,19 @@ class Simulator(ABC):
     def set_dataref_frequencies(self, dataref_frequencies):
         self.dataref_frequencies = dataref_frequencies
 
+    def get_rounding(self, dataref_path: str) -> float | None:
+        if dataref_path.find("[") > 0:
+            rnd = self.roundings.get(dataref_path)
+            if rnd is not None:
+                return rnd
+            else:
+                idx = dataref_path.find("[")
+                base = dataref_path[:idx]
+                rnd = self.roundings.get(base + "[*]")  # rounds all datarefs in array, explicit
+                return rnd
+        else:
+            self.roundings.get(dataref_path)
+
     def set_rounding(self, dataref):
         if dataref.path.find("[") > 0:
             rnd = self.roundings.get(dataref.path)

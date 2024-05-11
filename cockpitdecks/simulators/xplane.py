@@ -275,9 +275,11 @@ class XPlane(Simulator, XPlaneBeacon):
 
         self.udp_event = None  # thread to read X-Plane UDP port for datarefs
         self.udp_thread = None
+        self._dref_cache = {}
 
         self.dref_event = None  # thread to read XPPython3 PI_string_datarefs_udp alternate UDP port for string datarefs
         self.dref_thread = None
+        self._strdref_cache = {}
 
         Simulator.__init__(self, cockpit=cockpit)
         self.cockpit.set_logging_level(__name__)
@@ -481,10 +483,17 @@ class XPlane(Simulator, XPlaneBeacon):
                             (idx, value) = struct.unpack("<if", singledata)
 
                             d = self.datarefs.get(idx)
-                            if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
-                                value = 0.0
                             if d is not None:
-                                e = DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys())
+                                # Should cache with roundings applied
+                                if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
+                                    value = 0.0
+                                v = value
+                                r = self.get_rounding(dataref_path=d)
+                                if r is not None and value is not None:
+                                    v = round(value, r)
+                                if d not in self._dref_cache or (d in self._dref_cache and self._dref_cache[d] != v):
+                                    e = DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys())
+                                    self._dref_cache[d] = v
                             else:
                                 logger.debug(f"no dataref ({values}), probably no longer monitored")
                     else:
@@ -495,7 +504,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         )  # ignore
                 except:  # socket timeout
                     total_to = total_to + 1
-                    logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})", exc_info=True)  # ignore
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
                         self.beacon_data = {}
@@ -546,8 +555,10 @@ class XPlane(Simulator, XPlaneBeacon):
                     if freq is not None and (oldf != (freq + 1)):
                         frequency = freq + 1
                         logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
-                for k, v in data.items():
-                    e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)
+                for k, v in data.items(): # simple cache mechanism
+                    if k not in self._strdref_cache or (k in self._strdref_cache and self._strdref_cache[k] != v):
+                        e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)
+                        self._strdref_cache[k] = v
             except:
                 total_to = total_to + 1
                 logger.debug(
@@ -591,6 +602,8 @@ class XPlane(Simulator, XPlaneBeacon):
         for i in range(len(self.datarefs)):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         super().clean_datarefs_to_monitor()
+        self._strdref_cache = {}
+        self._dref_cache = {}
         logger.debug("done")
 
     def add_datarefs_to_monitor(self, datarefs):
