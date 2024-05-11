@@ -436,11 +436,8 @@ class SimulatorEvent(Event):
             action (DECK_ACTIONS): Action produced by this event (~ DeckEvent type)
             deck (Deck): Deck that produced the event
         """
-        Event.__init__(self, autorun=autorun)
         self.sim = sim
-        self._ts = datetime.now().timestamp()
-        if autorun:
-            self.run()
+        Event.__init__(self, autorun=autorun)
 
     def __str__(self):
         return f"{self.sim.name}:{self.timestamp}"

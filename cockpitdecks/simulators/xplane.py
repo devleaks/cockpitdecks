@@ -484,7 +484,7 @@ class XPlane(Simulator, XPlaneBeacon):
                             if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
                                 value = 0.0
                             if d is not None:
-                                self.cockpit.drefupd_queue.put((d, value, d in self.datarefs_to_monitor.keys()))
+                                self.cockpit.drefupd_queue.put(DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys()))
                             else:
                                 logger.debug(f"no dataref ({values}), probably no longer monitored")
                     else:
@@ -547,7 +547,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         frequency = freq + 1
                         logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
                 for k, v in data.items():
-                    self.cockpit.drefupd_queue.put((k, v, True))
+                    self.cockpit.drefupd_queue.put(DatarefEvent(sim=self, dataref=k, value=v, cascade=True))
             except:
                 total_to = total_to + 1
                 logger.debug(
@@ -794,15 +794,14 @@ class DatarefEvent(SimulatorEvent):
     """Dataref Update Event"""
 
     def __init__(self, sim: "XPlane", dataref: str, value: float | str, cascade: bool, autorun: bool = True):
-        """Event for key press.
+        """Dataref Update Event.
 
         Args:
-            pressed (bool): Whether the key was pressed (true) or released (false)
         """
-        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
         self.dataref_path = dataref
         self.value = value
         self.cascade = cascade
+        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
 
     def __str__(self):
         return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
