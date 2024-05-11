@@ -504,7 +504,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         )  # ignore
                 except:  # socket timeout
                     total_to = total_to + 1
-                    logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})", exc_info=True)  # ignore
+                    logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
                         self.beacon_data = {}
@@ -555,7 +555,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     if freq is not None and (oldf != (freq + 1)):
                         frequency = freq + 1
                         logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
-                for k, v in data.items(): # simple cache mechanism
+                for k, v in data.items():  # simple cache mechanism
                     if k not in self._strdref_cache or (k in self._strdref_cache and self._strdref_cache[k] != v):
                         e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)
                         self._strdref_cache[k] = v

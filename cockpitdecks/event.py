@@ -168,8 +168,6 @@ class DeckEvent(Event):
             logger.warning("no deck")
 
 
-
-
 class PushEvent(DeckEvent):
     """Event for key press"""
 

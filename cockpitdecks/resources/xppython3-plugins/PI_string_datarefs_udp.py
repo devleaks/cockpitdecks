@@ -44,9 +44,7 @@ CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
 
-DEFAULT_STRING_DATAREFS = [
-    "sim/aircraft/view/acf_ICAO"
-]  # default is to return these, for Toliss Airbusses
+DEFAULT_STRING_DATAREFS = ["sim/aircraft/view/acf_ICAO"]  # default is to return these, for Toliss Airbusses
 
 CHECK_COUNT = [5, 20]
 
@@ -58,9 +56,7 @@ class PythonInterface:
         self.Desc = f"Fetches string-type datarefs at regular intervals and UPD multicast their values (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
-        self.trace = (
-            True  # produces extra print/debugging in XPPython3.log for this class
-        )
+        self.trace = True  # produces extra print/debugging in XPPython3.log for this class
         self.acpath = ""
         self.datarefs = {}
         self.use_defaults = False
@@ -87,13 +83,9 @@ class PythonInterface:
         if self.trace:
             print(self.Info, "PI::XPluginEnable: flight loop registered")
         try:
-            ac = xp.getNthAircraftModel(
-                0
-            )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
-                acpath = os.path.split(
-                    ac[1]
-                )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                 print(self.Info, "PI::XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
                 print(self.Info, "PI::XPluginEnable: " + acpath[0] + " done.")
@@ -101,9 +93,7 @@ class PythonInterface:
                 if self.trace:
                     print(self.Info, "enabled")
                 return 1
-            print(
-                self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found."
-            )
+            print(self.Info, "PI::XPluginEnable: getNthAircraftModel: aircraft not found.")
             return 1
         except:
             if self.trace:
@@ -128,18 +118,12 @@ class PythonInterface:
         we try to load the aicraft deskconfig.
         If it does not exist, we default to a screen saver type of screen for the deck.
         """
-        if (
-            inMessage == xp.MSG_PLANE_LOADED and inParam == 0
-        ):  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+        if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "PI::XPluginReceiveMessage: user aircraft received")
             try:
-                ac = xp.getNthAircraftModel(
-                    0
-                )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
                 if len(ac) == 2:
-                    acpath = os.path.split(
-                        ac[1]
-                    )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                    acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
                         print(
                             self.Info,
@@ -149,9 +133,7 @@ class PythonInterface:
                     if self.run_count > 0:
                         print(
                             self.Info,
-                            "PI::XPluginReceiveMessage: old run count "
-                            + str(self.run_count)
-                            + ", run count reset",
+                            "PI::XPluginReceiveMessage: old run count " + str(self.run_count) + ", run count reset",
                         )
                         self.run_count = 0
                     if self.trace:
@@ -177,9 +159,7 @@ class PythonInterface:
         if self.run_count % 100 == 0:
             print(self.Info, f"PI::FlightLoopCallback: is alive ({self.run_count})")
         elif self.run_count in CHECK_COUNT:
-            if len(self.datarefs) < self.num_collected_drefs and (
-                self.acpath is not None and len(self.acpath) > 0
-            ):
+            if len(self.datarefs) < self.num_collected_drefs and (self.acpath is not None and len(self.acpath) > 0):
                 print(
                     self.Info,
                     f"PI::FlightLoopCallback: is alive ({self.run_count}), missing string datarefs {len(self.datarefs)}/{self.num_collected_drefs} for {self.acpath}",
@@ -192,12 +172,8 @@ class PythonInterface:
                 )
         self.run_count = self.run_count + 1
         with self.RLock:  # add a meta data to sync effectively
-            drefvalues = {"ts": time.time(), "f": self.frequency} | {
-                d: xp.getDatas(self.datarefs[d]) for d in self.datarefs
-            }
-        fma_bytes = bytes(
-            json.dumps(drefvalues), "utf-8"
-        )  # no time to think. serialize as json
+            drefvalues = {"ts": time.time(), "f": self.frequency} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+        fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
         if len(fma_bytes) > 1472:

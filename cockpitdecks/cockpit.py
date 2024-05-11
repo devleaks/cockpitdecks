@@ -761,7 +761,6 @@ class Cockpit(DatarefListener, CockpitBase):
         else:
             logger.warning(f"not running")
 
-
     # #########################################################
     # Other
     #
