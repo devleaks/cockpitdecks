@@ -196,9 +196,9 @@ class XPlaneBeacon:
                     self.FindIp()
                     if self.connected:
                         logger.info(self.beacon_data)
-                        logger.debug("..connected, starting dataref listeners..")
+                        logger.debug("..connected, starting dataref listener..")
                         self.start()
-                        logger.info("..dataref listeners started..")
+                        logger.info("..dataref listener started..")
                 except XPlaneVersionNotSupported:
                     self.beacon_data = {}
                     logger.error("..X-Plane Version not supported..")
@@ -536,10 +536,16 @@ class XPlane(Simulator, XPlaneBeacon):
                 last_read_ts = now
                 logger.debug(f"string dataref listener: got data")  # \n({json.dumps(json.loads(data.decode('utf-8')), indent=2)})
                 data = json.loads(data.decode("utf-8"))
+
+                meta = data  # older version carried meta data directly in message
+                if "meta" in data:  # some meta data in string values message
+                    meta = data["meta"]
+                    del data["meta"]
+
                 ts = 0
-                if "ts" in data:
-                    ts = data["ts"]
-                    del data["ts"]
+                if "ts" in meta:
+                    ts = meta["ts"]
+                    del meta["ts"]
                     if src_last_ts > 0:
                         src_tot = src_tot + (ts - src_last_ts)
                         src_cnt = src_cnt + 1
@@ -547,14 +553,16 @@ class XPlane(Simulator, XPlaneBeacon):
                         if src_cnt % 100 == 0:
                             logger.info(f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)}")
                     src_last_ts = ts
+
                 freq = None
                 oldf = frequency
-                if "f" in data:
-                    freq = data["f"]
-                    del data["f"]
+                if "f" in meta:
+                    freq = meta["f"]
+                    del meta["f"]
                     if freq is not None and (oldf != (freq + 1)):
                         frequency = freq + 1
                         logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
+
                 for k, v in data.items():  # simple cache mechanism
                     if k not in self._strdref_cache or (k in self._strdref_cache and self._strdref_cache[k] != v):
                         e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)

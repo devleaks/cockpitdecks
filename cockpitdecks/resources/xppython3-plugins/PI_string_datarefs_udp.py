@@ -20,10 +20,11 @@ from XPPython3 import xp
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
-RELEASE = "3.0.3"
+RELEASE = "3.1.0"
 
 # Changelog:
 #
+# 13-MAY-2024: 3.1.0: Isolated meta data in "meta" attributes.
 # 08-MAY-2024: 3.0.3: Trying to reload missing datarefs..
 # 08-MAY-2024: 3.0.2: Attempts to reload aircraft if not loaded after MSG_PLANE_LOADED message.
 # 08-MAY-2024: 3.0.1: Limited defaults to acf_icao.
@@ -172,7 +173,7 @@ class PythonInterface:
                 )
         self.run_count = self.run_count + 1
         with self.RLock:  # add a meta data to sync effectively
-            drefvalues = {"ts": time.time(), "f": self.frequency} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+            drefvalues = {"meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
         fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
