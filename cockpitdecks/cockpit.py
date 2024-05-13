@@ -5,6 +5,7 @@ import glob
 import threading
 import logging
 import pickle
+import json
 import pkg_resources
 from queue import Queue
 
@@ -87,6 +88,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.event_loop_run = False
         self.event_loop_thread = None
         self.event_queue = Queue()
+        self._stats = {}
 
         self.devices = []
 
@@ -729,7 +731,14 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"already running")
 
     def event_loop(self):
+        def add_event(s: str):
+            if s in self._stats:
+                self._stats[s] = self._stats[s] + 1
+            else:
+                self._stats[s] = 1
+
         logger.debug("starting event loop..")
+
         while self.event_loop_run:
 
             e = self.event_queue.get()  # blocks infinitely here
@@ -741,10 +750,12 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.reload_decks(just_do_it=True)
                 elif e == "stop":
                     self.stop_decks(just_do_it=True)
+                add_event(e)
                 continue
 
             try:
                 logger.debug(f"doing {e}..")
+                add_event(type(e).__name__)
                 e.run(just_do_it=True)
                 logger.debug(f"..done without error")
             except:
@@ -758,6 +769,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.event_queue.put("terminate")  # to unblock the Queue.get()
             # self.event_loop_thread.join()
             logger.debug(f"stopped")
+            logger.info("event processing stats: " + json.dumps(self._stats, indent=2))
         else:
             logger.warning(f"not running")
 
