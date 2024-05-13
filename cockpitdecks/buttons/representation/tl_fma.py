@@ -56,26 +56,24 @@ FMA_LABELS_ALT = {
     "APPR": "Approach",
     "AP": "Autopilot Mode",
 }
+
 FMA_LABEL_MODE = 3  # 0 (None), 1 (keys), or 2 (values), or 3 alternates
 
 FMA_COUNT = len(FMA_LABELS.keys())
+FMA_LINES = len(set([c[0] for c in FMA_DATAREFS]))
 FMA_COLUMNS = [[0, 7], [7, 15], [15, 21], [21, 28], [28, 37]]
 FMA_LINE_LENGTH = FMA_COLUMNS[-1][-1]
 FMA_EMPTY_LINE = " " * FMA_LINE_LENGTH
-FMA_LINES = 3
-
-FMA_UPDATE_FREQ = 3.0
+COMBINED = "combined"
+WARNING = "warn"
 
 logger = logging.getLogger(__file__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
 
 
 class FMAIcon(DrawBase):
     """Displays Toliss Airbus Flight Mode Annunciators on Streamdeck Plus touchscreen
-
-    This is an animation because it constantly gets updated.
-
     """
 
     REPRESENTATION_NAME = "fma"
@@ -87,7 +85,7 @@ class FMAIcon(DrawBase):
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
         self.icon_color = "black"
-        self.text = {k: FMA_EMPTY_LINE for k in FMA_DATAREFS}  # use FMA_LINES for testing
+        self.text = {k: FMA_EMPTY_LINE for k in FMA_DATAREFS}
         self.fma_text: Dict[str, str] = {}
         self.previous_text: Dict[str, str] = {}
         self.boxed: Set[str] = []
@@ -108,6 +106,11 @@ class FMAIcon(DrawBase):
             logger.info(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = FMA_COUNT
         self.fma_idx = fma - 1
+
+    @property
+    def combined(self) -> bool:
+        """FMA vertical and lateral combined into one"""
+        return COMBINED in self.boxed
 
     def describe(self) -> str:
         return "The representation is specific to Toliss Airbus and display the Flight Mode Annunciators (FMA)."
@@ -148,7 +151,7 @@ class FMAIcon(DrawBase):
 
     def check_boxed(self):
         """Check "boxed" datarefs to determine which texts are boxed/framed.
-        They are listed as FMA#-LINE# pairs of digit. Special keyword "warn" if warning enabled.
+        They are listed as FMA#-LINE# pairs of digit. Special keyword WARNING if warning enabled.
         """
         boxed = []
         if self.button.get_dataref_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
@@ -167,7 +170,7 @@ class FMAIcon(DrawBase):
             boxed.append("11")
             boxed.append("12")
         if self.button.get_dataref_value("AirbusFBW/FMATHRWarning") == 1:
-            boxed.append("warn")
+            boxed.append(WARNING)
         # big mess:
         boxcode = self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing")
         if boxcode is not None:  # can be 0-7, is it a set of binary flags?
@@ -178,6 +181,8 @@ class FMAIcon(DrawBase):
                 boxed.append("52")
             if boxcode & 4 == 4:
                 boxed.append("53")
+            if boxcode & 8 == 8:
+                boxed.append(COMBINED)
             # etc.
         self.boxed = set(boxed)
         logger.debug(f"boxed: {boxcode}, {self.boxed}")
@@ -191,8 +196,16 @@ class FMAIcon(DrawBase):
             l = e - s
             c = "1w"
             empty = c + " " * l
+            if self.combined and idx == 1:
+                s = FMA_COLUMNS[idx][0]
+                e = FMA_COLUMNS[idx+1][1]
+                l = e - s
+                c = "1w"
+                empty = c + " " * l
+            elif self.combined and idx == 2:
+                return set()
             lines = []
-            for li in range(1, 4):
+            for li in range(1, 4): # Loop on lines
                 good = empty
                 for k, v in self.text.items():
                     raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
@@ -229,7 +242,6 @@ class FMAIcon(DrawBase):
         # pylint: disable=W0612
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
 
-        self.check_boxed()
         lines = self.get_fma_lines()
         logger.debug(f"button {self.button.name}: {lines}")
         font = self.get_font(text_font, text_size)
@@ -303,14 +315,20 @@ class FMAIcon(DrawBase):
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self.fmaconfig, "text")
         logger.debug(f"button {self.button.name}: is FMA master")
 
+        # replaces a few bizarre strings...
+        if text is not None:
+            text = text.replace("THRIDLE", "THR IDLE")  # ?
+            text = text.replace("FNL", "FINAL")  # ?
+
         icon_width = int(8 * ICON_SIZE / 5)
         loffset = 0
+        lthinkness = 3
         has_line = False
         for i in range(FMA_COUNT - 1):
             loffset = loffset + icon_width
             if i == 1:  # second line skipped
                 continue
-            draw.line(((loffset, 0), (loffset, ICON_SIZE)), fill="white", width=1)
+            draw.line(((loffset, 0), (loffset, ICON_SIZE)), fill="white", width=lthinkness)
         if self.fma_label_mode > 0:
             ls = 20
             font = self.get_font(text_font, ls)
@@ -334,11 +352,12 @@ class FMAIcon(DrawBase):
 
         if not self.button.sim.connected:
             logger.debug("not connected")
-            draw.line(
-                ((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))),
-                fill="white",
-                width=1,
-            )
+            if not self.combined:
+                draw.line(
+                    ((2 * icon_width, 0), (2 * icon_width, int(2 * ICON_SIZE / 3))),
+                    fill="white",
+                    width=lthinkness,
+                )
             bg = self.button.deck.get_icon_background(
                 name=self.button_name(),
                 width=8 * ICON_SIZE,
@@ -356,8 +375,12 @@ class FMAIcon(DrawBase):
 
         loffset = 0
         for i in range(FMA_COUNT):
+            if i == 2 and self.combined:  # skip it
+                loffset = loffset + icon_width
+                continue
             lines = self.get_fma_lines(idx=i)
             logger.debug(f"button {self.button.name}: FMA {i+1}: {lines}")
+            logger.debug(f"{i}: {self.combined}")
             font = self.get_font(text_font, text_size)
             w = int(4 * ICON_SIZE / 5)
             p = "m"
@@ -386,7 +409,7 @@ class FMAIcon(DrawBase):
                                 (2 * icon_width, int(2 * ICON_SIZE / 3)),
                             ),
                             fill="white",
-                            width=1,
+                            width=lthinkness,
                         )
                         draw.text(
                             (2 * icon_width, h),
@@ -402,8 +425,11 @@ class FMAIcon(DrawBase):
                     #
                 color = FMA_COLORS[text[1]]
                 # logger.debug(f"added {text[2:]} @ {loffset + w}, {h}, {color}")
+                lat = loffset + w
+                if i == 1 and self.combined:
+                    lat = lat + w
                 draw.text(
-                    (loffset + w, h),
+                    (lat, h),
                     text=text[2:],
                     font=font,
                     anchor=p + "m",
@@ -413,7 +439,7 @@ class FMAIcon(DrawBase):
                 ref = f"{i+1}{idx+1}"
                 # logger.debug(ref, text)
                 if ref in self.boxed:
-                    if "warn" in self.boxed:
+                    if WARNING in self.boxed:
                         color = "orange"
                     else:
                         color = "white"
@@ -429,11 +455,11 @@ class FMAIcon(DrawBase):
                     )
             loffset = loffset + icon_width
 
-        if not has_line:
+        if not has_line and not self.combined:
             draw.line(
                 ((2 * icon_width, 0), (2 * icon_width, ICON_SIZE)),
                 fill="white",
-                width=1,
+                width=lthinkness,
             )
 
         # Paste image on cockpit background and return it.
