@@ -3,15 +3,26 @@ Button display and rendering abstraction.
 """
 
 import logging
-from .representation import Representation, Icon, IconText, MultiTexts, MultiIcons
-from .representation import LED, ColoredLED
+
+from .representation import Representation
+
+# Image/icon based
+from .icon import Icon, IconText, MultiTexts, MultiIcons
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG
+
+# Deck specific
+from .led import LED, ColoredLED
+from .xtouch import EncoderLEDs
+
+# X-Plane specific
 from .xp_rw import RealWeatherIcon
 from .xp_xw import XPWeatherIcon
 from .xp_iconside import IconSide
-from .xtouch import EncoderLEDs
+from .xp_acf import Aircraft
+
+# Toliss Airbus specific
 from .tl_fma import FMAIcon
 from .tl_fcu import FCUIcon
 

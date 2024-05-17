@@ -23,7 +23,7 @@ from cockpitdecks import (
     FONTS_FOLDER,
     RESOURCES_FOLDER,
 )
-from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
+from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER, DECK_KW, VIRTUAL_DECK_DRIVER
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -96,6 +96,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.cockpit = {}  # all decks: { deckname: deck }
         self.deck_types = {}
         self.deck_types_new = {}
+        self.virtual_decks = {}
 
         self.fonts = {}
 
@@ -238,13 +239,16 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.error(f"no driver")
             return
         logger.info(
-            f"drivers installed for {', '.join([f'{deck_driver} {pkg_resources.get_distribution(deck_driver).version}' for deck_driver in DECK_DRIVERS.keys()])}; scanning.."
+            f"drivers installed for {', '.join([f'{deck_driver} {pkg_resources.get_distribution(deck_driver).version}' for deck_driver in DECK_DRIVERS.keys() if deck_driver != VIRTUAL_DECK_DRIVER])}; scanning.."
         )
-        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for v in DECK_DRIVERS.values()]
+        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in DECK_DRIVERS.items() if k != VIRTUAL_DECK_DRIVER]
         logger.debug(f"dependencies: {dependencies}")
         pkg_resources.require(dependencies)
 
         for deck_driver, builder in DECK_DRIVERS.items():
+            if deck_driver == VIRTUAL_DECK_DRIVER:
+                # will be added later, when we have acpath set, in add_virtual_decks()
+                continue
             decks = builder[1]().enumerate()
             logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
             for name, device in enumerate(decks):
@@ -488,6 +492,29 @@ class Cockpit(DatarefListener, CockpitBase):
             f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
         )
 
+    def add_virtual_decks(self):
+        cnt = 0
+        builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
+        decks = builder[1]().enumerate(self.acpath)
+        logger.info(f"found {len(decks)} virtual deck(s)")
+        for name, device in decks.items():
+            device.open()
+            serial = device.get_serial_number()
+            device.close()
+            if serial in EXCLUDE_DECKS:
+                logger.warning(f"deck {serial} excluded")
+                del decks[name]
+            logger.info(f"added virtual deck {name}, serial {serial[:3]}{'*'*max(1,len(serial))})")
+            self.devices.append(
+                {
+                    CONFIG_KW.DRIVER.value: VIRTUAL_DECK_DRIVER,
+                    CONFIG_KW.DEVICE.value: device,
+                    CONFIG_KW.SERIAL.value: serial,
+                }
+            )
+            cnt = cnt + 1
+        logger.debug(f"added {cnt} virtual decks")
+
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         self._config = Config(fn)
@@ -501,6 +528,8 @@ class Cockpit(DatarefListener, CockpitBase):
         if decks is None:
             logger.warning(f"no deck in config file {fn}")
             return
+
+        self.add_virtual_decks()
 
         logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
 
@@ -538,7 +567,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
             serial = deck_config.get(CONFIG_KW.SERIAL.value)
             if serial is None:  # get it from the secret file
-                serial = serial_numbers[name] if name in serial_numbers.keys() else None
+                serial = serial_numbers.get(name)
 
             # if serial is not None:
             device = self.get_device(req_serial=serial, req_driver=deck_driver)
@@ -601,12 +630,28 @@ class Cockpit(DatarefListener, CockpitBase):
         folder = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
         for deck_type in glob.glob(os.path.join(folder, "*.yaml")):
             data = DeckType(deck_type)
-            name = data.get(CONFIG_KW.TYPE.value)
-            if name is not None:
-                self.deck_types[name] = data
-            else:
+            name = data.get(DECK_KW.TYPE.value)
+            if name is None:
                 logger.warning(f"ignoring unnamed deck {deck_type}")
-        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())})")
+                continue
+            self.deck_types[name] = data
+            if data.get(DECK_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                layout = data.get(DECK_KW.LAYOUT.value)
+                if layout is not None:
+                    self.virtual_decks[name] = {
+                        "h": layout[0],
+                        "v": layout[1],
+                        "s": layout[2],
+                    }
+                    address = data.get("address")
+                    if address is not None:
+                        self.virtual_decks[name]["address"] = address
+                    port = data.get("port")
+                    if port is not None:
+                        self.virtual_decks[name]["port"] = port
+                else:
+                    logger.warning(f"ignoring virtual deck {data}, no layout")
+        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_decks)} virtual decks")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
@@ -722,8 +767,7 @@ class Cockpit(DatarefListener, CockpitBase):
     #
     def start_event_loop(self):
         if not self.event_loop_run:
-            self.event_loop_thread = threading.Thread(target=self.event_loop)
-            self.event_loop_thread.name = f"Cockpit::event_loop"
+            self.event_loop_thread = threading.Thread(target=self.event_loop, name=f"Cockpit::event_loop")
             self.event_loop_run = True
             self.event_loop_thread.start()
             logger.debug(f"started")

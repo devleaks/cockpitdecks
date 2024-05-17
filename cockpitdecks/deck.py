@@ -65,8 +65,7 @@ class Deck(ABC):
         self.brightness = 100
         if "brightness" in config:
             self.brightness = int(config["brightness"])
-            if self.device is not None:
-                self.device.set_brightness(self.brightness)
+            self.set_brightness(self.brightness)
 
         self.layout = config.get(CONFIG_KW.LAYOUT.value)
         # if self.layout is None:
@@ -431,6 +430,10 @@ class Deck(ABC):
     def vibrate(self, button):
         if hasattr(self, "_vibrate"):
             self._vibrate(button.get_vibration())
+
+    def set_brightness(self, brightness: int):
+        if self.device is not None and hasattr(self.device, "set_brightness"):
+            self.device.set_brightness(brightness)
 
     @abstractmethod
     def render(self, button: Button):

@@ -4,7 +4,7 @@
 import logging
 import threading
 
-from .representation import MultiIcons
+from .icon import MultiIcons
 from .draw import DrawBase
 from cockpitdecks import ICON_SIZE
 
@@ -66,8 +66,7 @@ class IconAnimation(MultiIcons):
         """
         if not self.running:
             self.running = True
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.button_name()})"
+            self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button_name()})")
             self.thread.start()
         else:
             logger.warning(f"button {self.button_name()}: already started")
@@ -181,8 +180,7 @@ class DrawAnimation(DrawBase):
         """
         if not self.running:
             self.running = True
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
+            self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button.name})")
             self.thread.start()
             logger.debug(f"started")
         else:

@@ -8,6 +8,7 @@ from .activation import Push, Longpress, OnOff, UpDown
 from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue, EncoderToggle
 from .activation import EncoderValueExtended
 from .activation import Slider, Swipe
+from .tl_dimmer import LightDimmer
 
 from cockpitdecks import DECK_ACTIONS, all_subclasses
 

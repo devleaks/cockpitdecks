@@ -4,7 +4,7 @@ import datetime
 import logging
 from typing import Dict
 
-from cockpitdecks import ID_SEP, STRING_DATAREF_PREFIX
+from cockpitdecks import ID_SEP
 from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button, DECK_DEF
 

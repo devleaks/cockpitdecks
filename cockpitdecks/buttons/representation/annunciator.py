@@ -704,8 +704,7 @@ class AnnunciatorAnimate(Annunciator):
         Starts animation
         """
         if not self.running:
-            self.thread = threading.Thread(target=self.loop)
-            self.thread.name = f"ButtonAnimate::loop({self.button.name})"
+            self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button.name})")
             self.running = True
             self.thread.start()
         else:

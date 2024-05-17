@@ -12,7 +12,7 @@ from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
-from .representation import Icon  # explicit Icon from file to avoid circular import
+from .icon import Icon  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

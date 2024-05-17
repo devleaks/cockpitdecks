@@ -3,8 +3,6 @@
 import datetime
 import os
 import logging
-import time
-from math import floor
 from datetime import datetime
 from PIL import Image, ImageOps
 

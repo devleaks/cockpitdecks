@@ -224,8 +224,7 @@ class XPlaneBeacon:
         """
         if self.should_not_connect is None:
             self.should_not_connect = threading.Event()
-            self.connect_thread = threading.Thread(target=self.connect_loop)
-            self.connect_thread.name = "XPlaneBeacon::connect_loop"
+            self.connect_thread = threading.Thread(target=self.connect_loop, name="XPlaneBeacon::connect_loop")
             self.connect_thread.start()
             logger.debug("connect_loop started")
         else:
@@ -741,8 +740,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         if self.udp_event is None:  # Thread for X-Plane datarefs
             self.udp_event = threading.Event()
-            self.udp_thread = threading.Thread(target=self.udp_enqueue)
-            self.udp_thread.name = "XPlaneUDP::udp_enqueue"
+            self.udp_thread = threading.Thread(target=self.udp_enqueue, name="XPlaneUDP::udp_enqueue")
             self.udp_thread.start()
             logger.info("dataref listener started")
         else:
@@ -750,8 +748,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         if self.dref_thread is None:  # Thread for string datarefs
             self.dref_event = threading.Event()
-            self.dref_thread = threading.Thread(target=self.strdref_enqueue)
-            self.dref_thread.name = "XPlaneUDP::strdref_enqueue"
+            self.dref_thread = threading.Thread(target=self.strdref_enqueue, name="XPlaneUDP::strdref_enqueue")
             self.dref_thread.start()
             logger.info("string dataref listener started")
         else:

@@ -21,7 +21,7 @@ from .simulator import (
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, STRING_DATAREF_PREFIX, yaml
+from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -393,9 +393,7 @@ class Button(DatarefListener, DatarefSetListener):
         logger.debug(f"button {self.name}: loaded {len(collections)} collections")
         return self.dataref_collections
 
-    def get_string_datarefs(self, add_prefix: bool = False) -> list:
-        if add_prefix:
-            return [STRING_DATAREF_PREFIX + d for d in self.string_datarefs]
+    def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
     def get_datarefs(self, base: dict | None = None) -> list:

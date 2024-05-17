@@ -7,7 +7,7 @@ from PIL import Image, ImageOps
 from Loupedeck.ImageHelpers import PILHelper
 from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
 
-from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS, DECK_FEEDBACK
+from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button

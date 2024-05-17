@@ -472,8 +472,7 @@ class DatarefSetCollector:
             return
         logger.debug("starting..")
         self.collector_must_stop = threading.Event()
-        self.thread = threading.Thread(target=self.loop)
-        self.thread.name = "Collector::loop"
+        self.thread = threading.Thread(target=self.loop, name="Collector::loop")
         self.thread.start()
         logger.info("Collector started")
 

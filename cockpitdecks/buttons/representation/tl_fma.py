@@ -68,13 +68,12 @@ COMBINED = "combined"
 WARNING = "warn"
 
 logger = logging.getLogger(__file__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 # logger.setLevel(15)
 
 
 class FMAIcon(DrawBase):
-    """Displays Toliss Airbus Flight Mode Annunciators on Streamdeck Plus touchscreen
-    """
+    """Displays Toliss Airbus Flight Mode Annunciators on Streamdeck Plus touchscreen"""
 
     REPRESENTATION_NAME = "fma"
 
@@ -198,14 +197,14 @@ class FMAIcon(DrawBase):
             empty = c + " " * l
             if self.combined and idx == 1:
                 s = FMA_COLUMNS[idx][0]
-                e = FMA_COLUMNS[idx+1][1]
+                e = FMA_COLUMNS[idx + 1][1]
                 l = e - s
                 c = "1w"
                 empty = c + " " * l
             elif self.combined and idx == 2:
                 return set()
             lines = []
-            for li in range(1, 4): # Loop on lines
+            for li in range(1, 4):  # Loop on lines
                 good = empty
                 for k, v in self.text.items():
                     raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
@@ -380,7 +379,6 @@ class FMAIcon(DrawBase):
                 continue
             lines = self.get_fma_lines(idx=i)
             logger.debug(f"button {self.button.name}: FMA {i+1}: {lines}")
-            logger.debug(f"{i}: {self.combined}")
             font = self.get_font(text_font, text_size)
             w = int(4 * ICON_SIZE / 5)
             p = "m"

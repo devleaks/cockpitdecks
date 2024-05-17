@@ -563,8 +563,7 @@ class Push(Activation):
         """
         if self.exit is None:
             self.exit = threading.Event()
-            self.thread = threading.Thread(target=self.auto_repeat_loop)
-            self.thread.name = f"Activation::auto_repeat({self.button_name()})"
+            self.thread = threading.Thread(target=self.auto_repeat_loop, name=f"Activation::auto_repeat({self.button_name()})")
             self.thread.start()
         else:
             logger.warning(f"button {self.button_name()}: already started")

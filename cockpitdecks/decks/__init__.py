@@ -30,6 +30,14 @@ try:
 except ImportError:
     pass
 
+# try:
+#     from cockpitdecks_virtualdeck import DeviceManager as VirtualDeckDeviceManager
+#     from .virtualdeck import VirtualDeck
+
+#     DECK_DRIVERS[VirtualDeck.DECK_NAME] = [VirtualDeck, VirtualDeckDeviceManager]
+# except ImportError:
+#     pass
+
 # removed try/except blocks for development
 #
 # from StreamDeck.DeviceManager import DeviceManager as StreamDeckDeviceManager
@@ -48,3 +56,8 @@ except ImportError:
 # from .xtouchmini import XTouchMini
 
 # DECK_DRIVERS["xtouchmini"] = [XTouchMini, XTouchMiniDeviceManager]
+
+from .resources.virtualdeckmanager import VirtualDeckManager
+from .virtualdeck import VirtualDeck
+
+DECK_DRIVERS[VirtualDeck.DECK_NAME] = [VirtualDeck, VirtualDeckManager]

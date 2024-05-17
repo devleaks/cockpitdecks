@@ -1,7 +1,5 @@
 # Behringer X-Touch Mini decks
 #
-import os
-import re
 import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING

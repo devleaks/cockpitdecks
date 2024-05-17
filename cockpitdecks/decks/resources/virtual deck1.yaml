@@ -1,0 +1,13 @@
+# This is the description of a deck's capabilities for a virtual deck
+#
+---
+type: Virtual Deck#1
+driver: virtualdeck
+layout: [4, 3, 64]
+port: 7701
+buttons:
+  - name: 0
+    action: push
+    feedback: image
+    image: [64, 64]
+    repeat: 12

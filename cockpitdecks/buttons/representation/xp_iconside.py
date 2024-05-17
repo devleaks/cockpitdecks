@@ -6,7 +6,7 @@
 import logging
 from PIL import ImageDraw
 from cockpitdecks.resources.color import convert_color
-from .representation import Icon
+from .icon import Icon
 from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 
 # from cockpitdecks.button import Button

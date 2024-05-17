@@ -44,8 +44,10 @@ CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
+AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
 
-DEFAULT_STRING_DATAREFS = ["sim/aircraft/view/acf_ICAO"]  # default is to return these, for Toliss Airbusses
+# default is to return these if asked for default dataref
+DEFAULT_STRING_DATAREFS = [AIRCRAFT_DATAREF]  # dataref that gets updated if new aircraft loaded
 
 CHECK_COUNT = [5, 20]
 
@@ -224,7 +226,7 @@ class PythonInterface:
                 )
             # adjust frequency since operation is expensive
             oldf = self.frequency
-            self.frequency = max(len(self.datarefs), FREQUENCY)
+            self.frequency = max(FREQUENCY + len(self.datarefs) / 2, FREQUENCY)
             if oldf != self.frequency and self.trace:
                 print(self.Info, f"PI::load: frequency adjusted to {self.frequency}")
 
