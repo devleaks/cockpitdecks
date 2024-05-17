@@ -23,7 +23,8 @@ from cockpitdecks import (
     FONTS_FOLDER,
     RESOURCES_FOLDER,
 )
-from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER, DECK_KW, VIRTUAL_DECK_DRIVER
+from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
+from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -495,16 +496,14 @@ class Cockpit(DatarefListener, CockpitBase):
     def add_virtual_decks(self):
         cnt = 0
         builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
-        decks = builder[1]().enumerate(self.acpath)
+        decks = builder[1]().enumerate(acpath=self.acpath, cdip=COCKPITDECKS_HOST)
         logger.info(f"found {len(decks)} virtual deck(s)")
         for name, device in decks.items():
-            device.open()
             serial = device.get_serial_number()
-            device.close()
             if serial in EXCLUDE_DECKS:
                 logger.warning(f"deck {serial} excluded")
                 del decks[name]
-            logger.info(f"added virtual deck {name}, serial {serial[:3]}{'*'*max(1,len(serial))})")
+            logger.info(f"added virtual deck {name}, serial {serial})")
             self.devices.append(
                 {
                     CONFIG_KW.DRIVER.value: VIRTUAL_DECK_DRIVER,

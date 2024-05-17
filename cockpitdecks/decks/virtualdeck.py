@@ -1,4 +1,7 @@
-# Cockpitdecks Virtual simple decks
+# Cockpitdecks Virtual Deck driver.
+#
+# Sends update to VirtualDeckUI through TCP/IP socket
+# Receives interactions from VirtualDeckUI
 #
 import socket
 import struct
@@ -7,10 +10,7 @@ import logging
 
 from PIL import Image, ImageOps
 
-from .resources.virtualdeck import VirtualDeck as VirtualDeckDevice
-from .resources.ImageHelpers import PILHelper
-
-from cockpitdecks import DEFAULT_PAGE_NAME
+from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent
 from cockpitdecks.page import Page
@@ -20,11 +20,14 @@ from cockpitdecks.buttons.representation import (
     Icon,
 )  # valid representations for this type of deck
 
+from .resources.ImageHelpers import PILHelper
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Device specific data
 SOCKET_TIMEOUT = 5  # seconds
+BUFFER_SIZE = 4096
 
 
 class VirtualDeck(DeckWithIcons):
@@ -42,9 +45,8 @@ class VirtualDeck(DeckWithIcons):
         self.cockpit.set_logging_level(__name__)
 
         # Address and port of virtual deck
-        self.address = config.get("address", "127.0.0.1")
-        self.port = config.get("port", 7700)
-        self.my_port = config.get("my-port", 7770)
+        self.address = config.get("address")
+        self.port = config.get("port")
 
         self.rcv_event = None
         self.rcv_thread = None
@@ -100,6 +102,7 @@ class VirtualDeck(DeckWithIcons):
         logger.debug(f"deck {self.name}: _send_touchscreen_image_to_device {type(self).__name__}")
 
     def _send_key_image_to_device(self, key, image):
+        # Sends the PIL Image bytes with a few meta
         image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         width, height = image.size
         content = image.tobytes()
@@ -110,10 +113,22 @@ class VirtualDeck(DeckWithIcons):
                 s.sendall(payload)
         except:
             logger.warning(f"key: {key}: problem sending message")
-        logger.debug(f"key: {key}: message sent")
+        logger.debug(f"key: {key}: message sent to ({self.address}, {self.port})")
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
-        logger.debug(f"button: {button.name}: _set_key_image {type(self).__name__}")
+        if self.device is None:
+            logger.warning("no device")
+            return
+        representation = button._representation
+        if not isinstance(representation, Icon):
+            logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
+            return
+
+        image = button.get_representation()
+        if image is None:
+            logger.warning("button returned no image, using default")
+            image = self.icons[self.get_attribute("default-icon-name")]
+        self._send_key_image_to_device(button.index, image)
 
     def print_page(self, page: Page):
         """
@@ -159,7 +174,7 @@ class VirtualDeck(DeckWithIcons):
 
     def receive_events(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("0.0.0.0", self.my_port))
+            s.bind((COCKPITDECKS_HOST[0], COCKPITDECKS_HOST[1]))
             s.listen()
             s.settimeout(SOCKET_TIMEOUT)
             while self.rcv_event is not None and not self.rcv_event.is_set():

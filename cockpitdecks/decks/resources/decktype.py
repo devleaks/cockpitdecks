@@ -131,6 +131,31 @@ class DeckType(Config):
         loggerDeckType.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
         loggerDeckType.debug(f"..deck type {self.name} done")
 
+    def validate_virtual_deck(self) -> bool:
+        """Validate consistency between virtual deck parameters.
+
+        Virtual decks need to provide additional information (like layout).
+        We check for consistency between layout (used by user interface to create deck)
+        and information for Cockpitdecks.
+
+        Returns:
+            bool: Virtual deck definition is consistent or not
+        """
+        layout = self.store.get(DECK_KW.LAYOUT.value)
+        imgsz = layout[2]
+        keycnt = layout[0]*layout[1]
+        for n, b in self._buttons.items():
+            if b.repeat != keycnt:
+                loggerDeckType.warning(f"deck type {self.name}: buttons {n}: invalid repeat: {b.repeat} vs {keycnt}")
+                return False
+            if b.image is None:
+                loggerDeckType.warning(f"deck type {self.name}: buttons {n}: no image")
+                return False
+            if b.image != [imgsz, imgsz]:
+                loggerDeckType.warning(f"deck type {self.name}: buttons {n}: invalid image: {b.image} vs {imgsz}")
+                return False
+        return True
+
     def special_displays(self):
         """Returns name of all special displays (i.e. not "keys")"""
 

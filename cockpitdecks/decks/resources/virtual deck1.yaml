@@ -3,11 +3,10 @@
 ---
 type: Virtual Deck#1
 driver: virtualdeck
-layout: [4, 3, 64]
-port: 7701
+layout: [5, 3, 128]
 buttons:
   - name: 0
     action: push
     feedback: image
-    image: [64, 64]
-    repeat: 12
+    image: [128, 128]
+    repeat: 15

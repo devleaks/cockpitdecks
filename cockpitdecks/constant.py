@@ -39,6 +39,8 @@ ICON_SIZE = 256  # px
 
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 
+COCKPITDECKS_HOST = ("127.0.0.1", 7700)
+
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
