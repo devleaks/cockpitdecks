@@ -69,17 +69,18 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
-        content = bytes(self.name, 'utf-8')
+        content = bytes(self.name, "utf-8")
         pressed = 1 if event == "pressed" else 0
         payload = struct.pack(f"II{len(content)}s", key, pressed, content)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.cd_address, self.cd_port))
             s.sendall(payload)
-            logger.debug(f"sent {self.name}:{key} = {pressed}")
+            # logger.debug(f"sent {self.name}:{key} = {pressed}")
 
     def handle_event(self, data: bytes):
         (key, w, h, length), img = struct.unpack("IIII", data[:16]), data[16:]
         x, y = self.get_xy(key)
+        # logger.debug(f"received {key}, {x}, {y}, {w}, {h}")
         with self:
             self.icons[key] = (img, x, y, w, h)
 

@@ -20,10 +20,9 @@ from cockpitdecks.buttons.representation import (
     Icon,
 )  # valid representations for this type of deck
 
-from .resources.ImageHelpers import PILHelper
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class VirtualDeck(DeckWithIcons):
     """
@@ -43,42 +42,24 @@ class VirtualDeck(DeckWithIcons):
         self.address = config.get("address")
         self.port = config.get("port")
 
-        self.pil_helper = PILHelper
+        self.pil_helper = self
 
         self.valid = True
 
         self.init()
 
     # #######################################
-    # Deck Specific PILHelper
+    # Deck Specific PILHelper (provided by self! What a Duck Typing!)
     #
-    def get_dimensions(self, display:str):
-        return (128, 128)
+    def get_dimensions(self, display: str):
+        # works for now for all virtual decks, to be resized more formally later (display == button name)
+        b = list(self.deck_type._buttons.values())
+        return b[0].image
 
     def create_image(self, deck, background="black", display="button"):
         return Image.new("RGB", self.get_dimensions(display=display), background)
 
     def create_scaled_image(self, deck, image, margins=[0, 0, 0, 0], background="black", display="button"):
-        """
-        Creates a new key image that contains a scaled version of a given image,
-        resized to best fit the given StreamDeck device's keys with the given
-        margins around each side.
-
-        The scaled image is centered within the new key image, offset by the given
-        margins. The aspect ratio of the image is preserved.
-
-        .. seealso:: See :func:`~PILHelper.to_native_format` method for converting a
-                     PIL image instance to the native image format of a given
-                     StreamDeck device.
-
-        :param Loupedeck deck: Loupedeck device.
-        :param Image image: PIL Image object to scale
-        :param str background: Background color to use, compatible with `PIL.Image.new()`.
-        :param str display: button name to generate a compatible image for.
-
-        :rtrype: PIL.Image
-        :return: Loaded PIL image scaled and centered
-        """
         if len(margins) != 4:
             raise ValueError("Margins should be given as an array of four integers.")
 

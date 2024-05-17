@@ -31,7 +31,6 @@ from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
-from cockpitdecks.event import PushEvent
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -893,7 +892,6 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.debug("..virtual deck event listener stopped")
         else:
             logger.debug("virtual deck event listener not running")
-
 
     # #########################################################
     # Other
