@@ -25,11 +25,6 @@ from .resources.ImageHelpers import PILHelper
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Device specific data
-SOCKET_TIMEOUT = 5  # seconds
-BUFFER_SIZE = 4096
-
-
 class VirtualDeck(DeckWithIcons):
     """
     Loads the configuration of a virtual deck
@@ -48,9 +43,6 @@ class VirtualDeck(DeckWithIcons):
         self.address = config.get("address")
         self.port = config.get("port")
 
-        self.rcv_event = None
-        self.rcv_thread = None
-
         self.pil_helper = PILHelper
 
         self.valid = True
@@ -58,8 +50,53 @@ class VirtualDeck(DeckWithIcons):
         self.init()
 
     # #######################################
-    # Deck Specific Functions
+    # Deck Specific PILHelper
     #
+    def get_dimensions(self, display:str):
+        return (128, 128)
+
+    def create_image(self, deck, background="black", display="button"):
+        return Image.new("RGB", self.get_dimensions(display=display), background)
+
+    def create_scaled_image(self, deck, image, margins=[0, 0, 0, 0], background="black", display="button"):
+        """
+        Creates a new key image that contains a scaled version of a given image,
+        resized to best fit the given StreamDeck device's keys with the given
+        margins around each side.
+
+        The scaled image is centered within the new key image, offset by the given
+        margins. The aspect ratio of the image is preserved.
+
+        .. seealso:: See :func:`~PILHelper.to_native_format` method for converting a
+                     PIL image instance to the native image format of a given
+                     StreamDeck device.
+
+        :param Loupedeck deck: Loupedeck device.
+        :param Image image: PIL Image object to scale
+        :param str background: Background color to use, compatible with `PIL.Image.new()`.
+        :param str display: button name to generate a compatible image for.
+
+        :rtrype: PIL.Image
+        :return: Loaded PIL image scaled and centered
+        """
+        if len(margins) != 4:
+            raise ValueError("Margins should be given as an array of four integers.")
+
+        final_image = self.create_image(deck, background=background, display=display)
+
+        thumbnail_max_width = final_image.width - (margins[1] + margins[3])
+        thumbnail_max_height = final_image.height - (margins[0] + margins[2])
+
+        thumbnail = image.convert("RGBA")
+        thumbnail.thumbnail((thumbnail_max_width, thumbnail_max_height), Image.LANCZOS)
+
+        thumbnail_x = margins[3] + (thumbnail_max_width - thumbnail.width) // 2
+        thumbnail_y = margins[0] + (thumbnail_max_height - thumbnail.height) // 2
+
+        final_image.paste(thumbnail, (thumbnail_x, thumbnail_y), thumbnail)
+
+        return final_image
+
     # #######################################
     # Deck Specific Functions : Definition
     #
@@ -85,10 +122,36 @@ class VirtualDeck(DeckWithIcons):
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     def create_icon_for_key(self, index, colors, texture, name: str = None):
-        logger.debug(f"deck {self.name}: create_icon_for_key {type(self).__name__}")
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
+        image = None
+        bg = self.create_image(deck=self.device, background=colors)
+        image = self.get_icon_background(
+            name=str(index),
+            width=bg.width,
+            height=bg.height,
+            texture_in=texture,
+            color_in=colors,
+            use_texture=True,
+            who="VirtualDeck",
+        )
+        if image is not None:
+            image = image.convert("RGB")
+            if name is not None:
+                self.icons[name] = image
+        return image
 
     def scale_icon_for_key(self, index, image, name: str = None):
-        logger.debug(f"deck {self.name}: scale_icon_for_key {type(self).__name__}")
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
+        image = self.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+        if image is not None:
+            image = image.convert("RGB")
+            if name is not None:
+                self.icons[name] = image
+        return image
 
     # #######################################
     # Deck Specific Functions : Activation
@@ -98,15 +161,12 @@ class VirtualDeck(DeckWithIcons):
     # #######################################
     # Deck Specific Functions : Representation
     #
-    def _send_touchscreen_image_to_device(self, image):
-        logger.debug(f"deck {self.name}: _send_touchscreen_image_to_device {type(self).__name__}")
-
     def _send_key_image_to_device(self, key, image):
         # Sends the PIL Image bytes with a few meta
         image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         width, height = image.size
         content = image.tobytes()
-        payload = struct.pack(f"IIII{len(content)}s", key, width, height, len(content), content)
+        payload = struct.pack(f"IIII{len(content)}s", int(key), width, height, len(content), content)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.address, self.port))
@@ -158,70 +218,15 @@ class VirtualDeck(DeckWithIcons):
         """
         This is the function that is called when a key is pressed.
         """
-        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        logger.debug(f"Deck {self.name} Key {key} = {state}")
         PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
 
-    def touchscreen_callback(self, deck, action, value):
-        """
-        This is the function that is called when the touchscreen is touched swiped.
-        """
+    def start(self):
         pass
 
-    def handle_event(self, data):
-        # need to try/except unpack for wrong data
-        key, event = struct.unpack("II", data)
-        e = PushEvent(deck=self, button=key, pressed=event == "pressed")
-
-    def receive_events(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((COCKPITDECKS_HOST[0], COCKPITDECKS_HOST[1]))
-            s.listen()
-            s.settimeout(SOCKET_TIMEOUT)
-            while self.rcv_event is not None and not self.rcv_event.is_set():
-                buff = bytes()
-                try:
-                    conn, addr = s.accept()
-                    with conn:
-                        while True:
-                            data = conn.recv(BUFFER_SIZE)
-                            if not data:
-                                break
-                            buff = buff + data
-                        self.handle_event(buff)
-                except TimeoutError:
-                    pass
-                    # logger.debug(f"receive event", exc_info=True)
-                except:
-                    logger.warning(f"receive events: abnormal exception", exc_info=True)
-
-    def start(self):
-        if self.rcv_event is None:  # Thread for X-Plane datarefs
-            self.rcv_event = threading.Event()
-            self.rcv_thread = threading.Thread(target=self.receive_events, name="VirtualDeck::event_listener")
-            self.rcv_thread.start()
-            logger.info("virtual deck event listener started")
-        else:
-            logger.info("virtual deck event listener already running")
-
     def stop(self):
-        if self.rcv_event is not None:
-            self.rcv_event.set()
-            logger.debug("stopping virtual deck event listener..")
-            wait = SOCKET_TIMEOUT
-            logger.debug(f"..asked to stop virtual deck event listener (this may last {wait} secs. for accept to timeout)..")
-            self.rcv_thread.join(wait)
-            if self.rcv_thread.is_alive():
-                logger.warning("..thread may hang in socket.accept()..")
-            self.rcv_event = None
-            logger.debug("..virtual deck event listener stopped")
-        else:
-            logger.debug("virtual deck event listener not running")
-
-    def terminate(self):
-        self.stop()
-        super().terminate()  # cleanly unload current page, if any
+        pass
 
     @staticmethod
     def terminate_device(device, name: str = "unspecified"):
-        pass
         logger.info(f"{name} terminated")

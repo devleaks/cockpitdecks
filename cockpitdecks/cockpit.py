@@ -6,6 +6,8 @@ import threading
 import logging
 import pickle
 import json
+import socket
+import struct
 import pkg_resources
 from queue import Queue
 
@@ -29,16 +31,21 @@ from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
+from cockpitdecks.event import PushEvent
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
     handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+# Device specific data
+SOCKET_TIMEOUT = 5  # seconds
+BUFFER_SIZE = 4096
 
 
 class CockpitBase:
@@ -86,10 +93,16 @@ class Cockpit(DatarefListener, CockpitBase):
         self.disabled = False
         self.default_pages = None  # for debugging
 
+        # Main event look
         self.event_loop_run = False
         self.event_loop_thread = None
         self.event_queue = Queue()
         self._stats = {}
+
+        # Virtual deck
+        self.rcv_loop_run = False
+        self.rcv_event = None
+        self.rcv_thread = None
 
         self.devices = []
 
@@ -767,8 +780,8 @@ class Cockpit(DatarefListener, CockpitBase):
     def start_event_loop(self):
         if not self.event_loop_run:
             self.event_loop_thread = threading.Thread(target=self.event_loop, name=f"Cockpit::event_loop")
-            self.event_loop_run = True
             self.event_loop_thread.start()
+            self.event_loop_run = True
             logger.debug(f"started")
         else:
             logger.warning(f"already running")
@@ -788,7 +801,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
             if type(e) is str:
                 if e == "terminate":
-                    self.end_event_loop()
+                    self.stop_event_loop()
                 elif e == "reload":
                     self.reload_decks(just_do_it=True)
                 elif e == "stop":
@@ -806,15 +819,81 @@ class Cockpit(DatarefListener, CockpitBase):
 
         logger.debug(f".. event loop ended")
 
-    def end_event_loop(self):
+    def stop_event_loop(self):
         if self.event_loop_run:
-            self.event_loop_run = False
             self.event_queue.put("terminate")  # to unblock the Queue.get()
             # self.event_loop_thread.join()
+            self.event_loop_run = False
             logger.debug(f"stopped")
             logger.info("event processing stats: " + json.dumps(self._stats, indent=2))
         else:
             logger.warning(f"not running")
+
+    # #########################################################
+    # Cockpit start/stop/handle procedures for virtual decks
+    #
+    def has_virtual_decks(self) -> bool:
+        return True
+
+    def handle_event(self, data: bytes):
+        # need to try/except unpack for wrong data
+        (key, event), name = struct.unpack("II", data[:8]), data[8:]
+        name = name.decode("utf-8")
+        deck = self.cockpit.get(name)
+        logger.debug(f"received {name}:{key} = {event}")
+        if deck is None:
+            logger.warning(f"handle event: deck {name} not found")
+            return
+        deck.key_change_callback(deck=deck, key=key, state=event == 1)
+
+    def receive_events(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((COCKPITDECKS_HOST[0], COCKPITDECKS_HOST[1]))
+            s.listen()
+            s.settimeout(SOCKET_TIMEOUT)
+            while self.rcv_event is not None and not self.rcv_event.is_set():
+                buff = bytes()
+                try:
+                    conn, addr = s.accept()
+                    with conn:
+                        while True:
+                            data = conn.recv(BUFFER_SIZE)
+                            if not data:
+                                break
+                            buff = buff + data
+                        self.handle_event(buff)
+                except TimeoutError:
+                    pass
+                    # logger.debug(f"receive event", exc_info=True)
+                except:
+                    logger.warning(f"receive events: abnormal exception", exc_info=True)
+
+    def start_vd_listener(self):
+        if not self.rcv_loop_run:
+            self.rcv_event = threading.Event()
+            self.rcv_thread = threading.Thread(target=self.receive_events, name="VirtualDeck::event_listener")
+            self.rcv_thread.start()
+            self.rcv_loop_run = True
+            logger.info("virtual deck event listener started")
+        else:
+            logger.info("virtual deck event listener already running")
+
+    def stop_vd_listener(self):
+        if self.rcv_loop_run:
+            if self.rcv_event is not None:
+                self.rcv_event.set()
+                logger.debug("stopping virtual deck event listener..")
+                wait = SOCKET_TIMEOUT
+                logger.debug(f"..asked to stop virtual deck event listener (this may last {wait} secs. for accept to timeout)..")
+                self.rcv_thread.join(wait)
+                if self.rcv_thread.is_alive():
+                    logger.warning("..thread may hang in socket.accept()..")
+                self.rcv_event = None
+                self.rcv_loop_run = False
+                logger.debug("..virtual deck event listener stopped")
+        else:
+            logger.debug("virtual deck event listener not running")
+
 
     # #########################################################
     # Other
@@ -884,7 +963,9 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"terminating..")
         # Stop processing events
         if self.event_loop_run:
-            self.end_event_loop()
+            self.stop_event_loop()
+        if self.rcv_loop_run:
+            self.stop_vd_listener()
         # Terminate decks
         self.terminate_aircraft()
         # Terminate dataref collection
@@ -913,6 +994,9 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"..connect to simulator loop started..")
             self.start_event_loop()
             logger.info(f"..event processing loop started..")
+            if self.has_virtual_decks():
+                self.start_vd_listener()
+                logger.info(f"..virtual deck listener started..")
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")

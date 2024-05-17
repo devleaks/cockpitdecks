@@ -1521,7 +1521,6 @@ class Knob(SwitchBase):
         image.alpha_composite(mark_image)
         image = image.rotate(self.rotation, resample=Image.Resampling.NEAREST, center=center)
         base_image.alpha_composite(image)
-
         return self.move_and_send(base_image)
 
 

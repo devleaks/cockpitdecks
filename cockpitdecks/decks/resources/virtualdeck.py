@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 DEVICE_MANUFACTURER = "Cockpitdecks"  # verbose descriptive
 
+
 class VirtualDeck:
     DECK_NAME = "virtualdeck"
 

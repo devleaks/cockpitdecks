@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class VirtualDeckManager:
-    virtual_decks:List[VirtualDeck] = {}
+    virtual_decks: List[VirtualDeck] = {}
 
     @staticmethod
     def virtual_deck_types() -> Dict[str, DeckType]:

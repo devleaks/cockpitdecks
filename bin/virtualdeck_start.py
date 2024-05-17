@@ -25,8 +25,8 @@ try:
     decks = VirtualDeckManagerUI.enumerate(acpath=ac, cdip=COCKPITDECKS_HOST)
     logger.info(f"..running..")
     VirtualDeckManagerUI.run()
-    logger.info(f"..virtual decks for {name} terminated.")
+    logger.info(f"..virtual decks for {ac_desc} terminated.")
 except KeyboardInterrupt:
     logger.warning("terminating virtual decks (please wait)..")
     VirtualDeckManagerUI.terminate()
-    logger.info(f"..virtual decks for {name} terminated.")
+    logger.info(f"..virtual decks for {ac_desc} terminated.")

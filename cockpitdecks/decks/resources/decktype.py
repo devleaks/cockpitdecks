@@ -143,7 +143,7 @@ class DeckType(Config):
         """
         layout = self.store.get(DECK_KW.LAYOUT.value)
         imgsz = layout[2]
-        keycnt = layout[0]*layout[1]
+        keycnt = layout[0] * layout[1]
         for n, b in self._buttons.items():
             if b.repeat != keycnt:
                 loggerDeckType.warning(f"deck type {self.name}: buttons {n}: invalid repeat: {b.repeat} vs {keycnt}")

@@ -88,6 +88,7 @@ class Icon(Representation):
             if self.icon is not None:
                 if self.icon not in self.button.deck.icons.keys():
                     logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
+                    print(self.button.deck.icons.keys())
                     return False
                 return True
             if self.icon_color is not None:
