@@ -25,13 +25,18 @@ logger.setLevel(logging.DEBUG)
 BUFFER_SIZE = 4096
 SOCKET_TIMEOUT = 5
 
+KEY_HSPACING = 8
+KEY_VSPACING = 8
+
 
 class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
 
     def __init__(self, name: str, definition: dict, config: dict, cdip: list):
 
         VirtualDeck.__init__(self, name=name, definition=definition, config=config, cdip=cdip)
-        pyglet.window.Window.__init__(self, self.keys_horiz * self.icon_width, self.keys_vert * self.icon_height)
+        winwidth = self.keys_horiz * self.icon_width + (self.keys_horiz - 1) * KEY_HSPACING
+        winheight = self.keys_vert * self.icon_height + (self.keys_vert - 1) * KEY_VSPACING
+        pyglet.window.Window.__init__(self, winwidth, winheight)
 
         self.icons = [() for i in range(self.keys_horiz * self.keys_vert)]
         self.update_lock = threading.RLock()
@@ -61,8 +66,9 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
     # ######################################
     #
     def get_xy(self, key: int) -> tuple:
-        y = self.icon_height * (self.keys_vert - 1 - int(key / self.keys_horiz))
+        y = (self.icon_height + KEY_VSPACING) * (self.keys_vert - 1 - int(key / self.keys_horiz))
         x = self.icon_width * (key % self.keys_horiz)
+        x = x + (key % self.keys_horiz) * KEY_HSPACING
         return (x, y)
 
     def send_event(self, key, event):
