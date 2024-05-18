@@ -19,7 +19,7 @@ from .virtualdeck import VirtualDeck
 from .virtualdeckmanager import VirtualDeckManager
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 BUFFER_SIZE = 4096
@@ -28,6 +28,7 @@ SOCKET_TIMEOUT = 5
 KEY_HSPACING = 8
 KEY_VSPACING = 8
 
+PYGLET_RUN_INTERVAL = 0.8
 
 class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
 
@@ -120,7 +121,7 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
             self.rcv_event = threading.Event()
             self.rcv_thread = threading.Thread(target=self.receive_events, name="VirtualDeck::event_listener")
             self.rcv_thread.start()
-            logger.info("virtual deck listener started")
+            logger.info(f"virtual deck listener started (port {self.port})")
         else:
             logger.info("virtual deck listener already running")
 
@@ -187,7 +188,7 @@ class VirtualDeckManagerUI(VirtualDeckManager):
             deck.start()
             logger.debug(f"..started")
         VirtualDeckManager.event_loop = pyglet.app.EventLoop()
-        VirtualDeckManager.event_loop.run(interval=0.5)
+        VirtualDeckManager.event_loop.run(interval=PYGLET_RUN_INTERVAL)
         logger.info(f"started all virtual decks")
 
     @staticmethod

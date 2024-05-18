@@ -34,7 +34,7 @@ from cockpitdecks.decks.resources import DeckType
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
@@ -779,8 +779,8 @@ class Cockpit(DatarefListener, CockpitBase):
     def start_event_loop(self):
         if not self.event_loop_run:
             self.event_loop_thread = threading.Thread(target=self.event_loop, name=f"Cockpit::event_loop")
-            self.event_loop_thread.start()
             self.event_loop_run = True
+            self.event_loop_thread.start()
             logger.debug(f"started")
         else:
             logger.warning(f"already running")
@@ -820,9 +820,9 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def stop_event_loop(self):
         if self.event_loop_run:
+            self.event_loop_run = False
             self.event_queue.put("terminate")  # to unblock the Queue.get()
             # self.event_loop_thread.join()
-            self.event_loop_run = False
             logger.debug(f"stopped")
             logger.info("event processing stats: " + json.dumps(self._stats, indent=2))
         else:
@@ -870,9 +870,9 @@ class Cockpit(DatarefListener, CockpitBase):
     def start_vd_listener(self):
         if not self.rcv_loop_run:
             self.rcv_event = threading.Event()
-            self.rcv_thread = threading.Thread(target=self.receive_events, name="VirtualDeck::event_listener")
-            self.rcv_thread.start()
             self.rcv_loop_run = True
+            self.rcv_thread = threading.Thread(target=self.receive_events, name="Cockpit::virtdeckevntlsnr")
+            self.rcv_thread.start()
             logger.info("virtual deck event listener started")
         else:
             logger.info("virtual deck event listener already running")
@@ -887,8 +887,8 @@ class Cockpit(DatarefListener, CockpitBase):
                 self.rcv_thread.join(wait)
                 if self.rcv_thread.is_alive():
                     logger.warning("..thread may hang in socket.accept()..")
-                self.rcv_event = None
                 self.rcv_loop_run = False
+                self.rcv_event = None
                 logger.debug("..virtual deck event listener stopped")
         else:
             logger.debug("virtual deck event listener not running")
@@ -991,7 +991,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.sim.connect()
             logger.info(f"..connect to simulator loop started..")
             self.start_event_loop()
-            logger.info(f"..event processing loop started..")
+            logger.info(f"..event loop started..")
             if self.has_virtual_decks():
                 self.start_vd_listener()
                 logger.info(f"..virtual deck listener started..")

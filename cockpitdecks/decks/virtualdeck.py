@@ -21,7 +21,7 @@ from cockpitdecks.buttons.representation import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class VirtualDeck(DeckWithIcons):
@@ -161,7 +161,7 @@ class VirtualDeck(DeckWithIcons):
                 s.sendall(payload)
         except:
             logger.warning(f"key: {key}: problem sending message")
-        logger.debug(f"key: {key}: message sent to ({self.address}, {self.port})")
+        logger.debug(f"key: {key}: image sent to ({self.address}, {self.port})")
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
@@ -209,8 +209,9 @@ class VirtualDeck(DeckWithIcons):
         """
         This is the function that is called when a key is pressed.
         """
-        logger.debug(f"Deck {self.name} Key {key} = {state}")
+        # logger.debug(f"Deck {self.name} Key {key} = {state}")
         PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
+        logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
 
     def start(self):
         pass

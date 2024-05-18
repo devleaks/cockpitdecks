@@ -150,6 +150,8 @@ class DeckEvent(Event):
                     self.deck.current_page.buttons[idx].activate(self)
                     self.handled()
                     logger.debug(f"..done {round(self.duration, 3)}ms")
+                else:
+                    logger.debug(f"..already processed")
             except:
                 logger.warning(
                     f"..done with error: deck {self.deck.name},  page {page.name}, button {idx}",
