@@ -646,22 +646,8 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"ignoring unnamed deck {deck_type}")
                 continue
             self.deck_types[name] = data
-            if data.get(DECK_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
-                layout = data.get(DECK_KW.LAYOUT.value)
-                if layout is not None:
-                    self.virtual_decks[name] = {
-                        "h": layout[0],
-                        "v": layout[1],
-                        "s": layout[2],
-                    }
-                    address = data.get("address")
-                    if address is not None:
-                        self.virtual_decks[name]["address"] = address
-                    port = data.get("port")
-                    if port is not None:
-                        self.virtual_decks[name]["port"] = port
-                else:
-                    logger.warning(f"ignoring virtual deck {data}, no layout")
+            if data.is_virtual_deck():
+                self.virtual_decks[name] = data.get_virtual_deck_layout()
         logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_decks)} virtual decks")
 
     def get_deck_type(self, name: str):
@@ -836,7 +822,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def handle_event(self, data: bytes):
         # need to try/except unpack for wrong data
-        (key, event), name = struct.unpack("II", data[:8]), data[8:]
+        (code, key, event), name = struct.unpack("III", data[:12]), data[12:]
         name = name.decode("utf-8")
         deck = self.cockpit.get(name)
         logger.debug(f"received {name}:{key} = {event}")

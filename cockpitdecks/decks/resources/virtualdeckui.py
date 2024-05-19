@@ -7,7 +7,7 @@ import threading
 import socket
 import struct
 import logging
-from typing import List
+from typing import Dict
 
 import pyglet
 from pyglet.window import mouse
@@ -28,7 +28,8 @@ SOCKET_TIMEOUT = 5
 KEY_HSPACING = 8
 KEY_VSPACING = 8
 
-PYGLET_RUN_INTERVAL = 0.8
+PYGLET_RUN_INTERVAL = 1/2  # twice per second
+
 
 class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
 
@@ -78,14 +79,15 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
         content = bytes(self.name, "utf-8")
         pressed = 1 if event == "pressed" else 0
-        payload = struct.pack(f"II{len(content)}s", key, pressed, content)
+        code = 0
+        payload = struct.pack(f"III{len(content)}s", code, key, pressed, content)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.cd_address, self.cd_port))
             s.sendall(payload)
             # logger.debug(f"sent {self.name}:{key} = {pressed}")
 
     def handle_event(self, data: bytes):
-        (key, w, h, length), img = struct.unpack("IIII", data[:16]), data[16:]
+        (code, key, w, h, length), img = struct.unpack("IIIII", data[:20]), data[20:]
         x, y = self.get_xy(key)
         # logger.debug(f"received {key}, {x}, {y}, {w}, {h}")
         with self:
@@ -168,17 +170,16 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
 class VirtualDeckManagerUI(VirtualDeckManager):
 
     @staticmethod
-    def enumerate(acpath: str, cdip: list) -> List[VirtualDeck]:
-        vdt = VirtualDeckManager.virtual_deck_types()
-        vdt_names = [d.get(DECK_KW.TYPE.value) for d in vdt.values()]
+    def enumerate(acpath: str, cdip: list) -> Dict[str, VirtualDeck]:
+        virtual_deck_types = VirtualDeckManager.virtual_deck_types()
         fn = os.path.join(acpath, CONFIG_FOLDER, CONFIG_FILE)
         config = Config(fn)
-        decks = config.get(CONFIG_KW.DECKS.value)
+        decks = config.get(CONFIG_KW.DECKS.value, {})
         for deck in decks:
-            dt = deck.get(CONFIG_KW.TYPE.value)
-            if dt in vdt_names:
+            deck_type = deck.get(CONFIG_KW.TYPE.value)
+            if deck_type in virtual_deck_types:
                 name = deck.get(DECK_KW.NAME.value)
-                VirtualDeckManager.virtual_decks[name] = VirtualDeckUI(name=name, definition=vdt.get(dt), config=deck, cdip=cdip)
+                VirtualDeckManager.virtual_decks[name] = VirtualDeckUI(name=name, definition=virtual_deck_types.get(deck_type), config=deck, cdip=cdip)
         return VirtualDeckManager.virtual_decks
 
     @staticmethod

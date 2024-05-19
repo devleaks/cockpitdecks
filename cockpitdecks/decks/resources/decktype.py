@@ -7,6 +7,7 @@ from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
 from cockpitdecks.buttons.representation.representation import Representation
+from cockpitdecks.constant import VIRTUAL_DECK_DRIVER
 
 loggerButtonType = logging.getLogger("ButtonType")
 # loggerButtonType.setLevel(logging.DEBUG)
@@ -18,9 +19,15 @@ loggerDeckType = logging.getLogger("DeckType")
 class ButtonType:
     def __init__(self, config: dict) -> None:
 
+        self._config = config
         self.name = config.get(DECK_KW.NAME.value, config.get("_intname"))
         self.prefix = config.get(DECK_KW.PREFIX.value, "")
+
         self.repeat = int(config.get(DECK_KW.REPEAT.value, 0))
+        layout = config.get(DECK_KW.LAYOUT.value)
+        if layout is not None:
+            self.repeat = int(layout[0]) * int(layout[1])
+            loggerButtonType.debug(f"{self.prefix}/{self.name}: set repeat from layout")
 
         self.actions = config.get(DECK_KW.ACTION.value)
         self.feedbacks = config.get(DECK_KW.FEEDBACK.value)
@@ -48,6 +55,9 @@ class ButtonType:
             self._name_is_int = False
 
         loggerButtonType.debug(f"{self.prefix}/{self.name}: {self.valid_representations()}")
+
+    def has_layout(self) -> bool:
+        return self._config.get(DECK_KW.LAYOUT.value) is not None
 
     def valid_indices(self) -> list:
         if self.repeat == 0:
@@ -110,6 +120,7 @@ class DeckType(Config):
     def __init__(self, filename: str) -> None:
         Config.__init__(self, filename=filename)
         self.name = self[DECK_KW.TYPE.value]
+        self.driver = self[DECK_KW.DRIVER.value]
         self._buttons = {}
         self._special_displays = None  # cache
         self.init()
@@ -131,7 +142,7 @@ class DeckType(Config):
         loggerDeckType.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
         loggerDeckType.debug(f"..deck type {self.name} done")
 
-    def validate_virtual_deck(self) -> bool:
+    def is_virtual_deck(self) -> bool:
         """Validate consistency between virtual deck parameters.
 
         Virtual decks need to provide additional information (like layout).
@@ -141,20 +152,27 @@ class DeckType(Config):
         Returns:
             bool: Virtual deck definition is consistent or not
         """
-        layout = self.store.get(DECK_KW.LAYOUT.value)
-        imgsz = layout[2]
-        keycnt = layout[0] * layout[1]
-        for n, b in self._buttons.items():
-            if b.repeat != keycnt:
-                loggerDeckType.warning(f"deck type {self.name}: buttons {n}: invalid repeat: {b.repeat} vs {keycnt}")
-                return False
-            if b.image is None:
-                loggerDeckType.warning(f"deck type {self.name}: buttons {n}: no image")
-                return False
-            if b.image != [imgsz, imgsz]:
-                loggerDeckType.warning(f"deck type {self.name}: buttons {n}: invalid image: {b.image} vs {imgsz}")
-                return False
-        return True
+        for b in self._buttons.values():
+            if b.has_layout():
+                return True and self.driver == VIRTUAL_DECK_DRIVER
+        return False
+
+    def get_virtual_deck_layout(self):
+        if self.is_virtual_deck():
+            buttons = self.store.get(DECK_KW.BUTTONS.value, {})
+            first_button = buttons[0]
+            if first_button is not None:
+                layout = first_button.get(DECK_KW.LAYOUT.value)
+                if layout is not None:
+                    a = {"h": layout[0], "v": layout[1], "s": first_button.get(DECK_KW.IMAGE.value)[0]}
+                    address = self.store.get("address")
+                    if address is not None:
+                        a["address"] = address
+                    port = self.store.get("port")
+                    if port is not None:
+                        a["port"] = port
+                return a
+        return {"h": 0, "v": 0, "s": 0, "addresse": "0.0.0.0", "port": 0}
 
     def special_displays(self):
         """Returns name of all special displays (i.e. not "keys")"""

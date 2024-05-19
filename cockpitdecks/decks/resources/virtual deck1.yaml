@@ -3,10 +3,9 @@
 ---
 type: Virtual Deck#1
 driver: virtualdeck
-layout: [5, 3, 128]
 buttons:
   - name: 0
     action: push
     feedback: image
-    image: [128, 128]
-    repeat: 15
+    image: [96, 96]
+    layout: [5, 3]

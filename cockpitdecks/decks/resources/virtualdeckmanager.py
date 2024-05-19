@@ -18,35 +18,23 @@ logger = logging.getLogger(__name__)
 
 
 class VirtualDeckManager:
-    virtual_decks: List[VirtualDeck] = {}
+    virtual_decks: Dict[str, VirtualDeck] = {}
 
     @staticmethod
     def virtual_deck_types() -> Dict[str, DeckType]:
-        vd = {}
-        for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), "*.yaml")):
-            dt = DeckType(deck_type)
-            driver = dt.get(DECK_KW.DRIVER.value)
-            if driver == VIRTUAL_DECK_DRIVER:
-                name = dt.get(DECK_KW.TYPE.value)
-                if name is None:
-                    logger.warning(f"ignoring unnamed deck type {deck_type}")
-                    continue
-                if not dt.validate_virtual_deck():
-                    logger.warning(f"invalid deck type {deck_type}")
-                    continue
-                vd[name] = dt
-        return vd
+        deck_types = [DeckType(deck_type) for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), "*.yaml"))]
+        virtual_deck_types = filter(lambda d: d.is_virtual_deck(), deck_types)
+        return {d.name: d for d in virtual_deck_types}
 
     @staticmethod
-    def enumerate(acpath: str, cdip: list) -> List[VirtualDeck]:
-        vdt = VirtualDeckManager.virtual_deck_types()
-        vdt_names = [d.get(DECK_KW.TYPE.value) for d in vdt.values()]
+    def enumerate(acpath: str, cdip: list) -> Dict[str, VirtualDeck]:
+        virtual_deck_types = VirtualDeckManager.virtual_deck_types()
         fn = os.path.join(acpath, CONFIG_FOLDER, CONFIG_FILE)
         config = Config(fn)
-        decks = config.get(CONFIG_KW.DECKS.value)
+        decks = config.get(CONFIG_KW.DECKS.value, {})
         for deck in decks:
-            dt = deck.get(CONFIG_KW.TYPE.value)
-            if dt in vdt_names:
+            deck_type = deck.get(CONFIG_KW.TYPE.value)
+            if deck_type in virtual_deck_types:
                 name = deck.get(DECK_KW.NAME.value)
-                VirtualDeckManager.virtual_decks[name] = VirtualDeck(name=name, definition=vdt.get(dt), config=deck, cdip=cdip)
+                VirtualDeckManager.virtual_decks[name] = VirtualDeck(name=name, definition=virtual_deck_types.get(deck_type), config=deck, cdip=cdip)
         return VirtualDeckManager.virtual_decks

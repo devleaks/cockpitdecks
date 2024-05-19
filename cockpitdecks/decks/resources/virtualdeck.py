@@ -32,11 +32,11 @@ class VirtualDeck:
         self.cd_address = cdip[0]
         self.cd_port = cdip[1]
 
-        layout = self.virtual_deck_definition.get(DECK_KW.LAYOUT.value, [3, 2, 128])
-        self.keys_horiz = layout[0]
-        self.keys_vert = layout[1]
-        self.icon_width = layout[2]
-        self.icon_height = layout[2]
+        layout = self.virtual_deck_definition.get_virtual_deck_layout()
+        self.keys_horiz = layout.get("h")
+        self.keys_vert = layout.get("v")
+        self.icon_width = layout.get("s")
+        self.icon_height = layout.get("s")
 
     def deck_type(self):
         return VirtualDeck.DECK_NAME

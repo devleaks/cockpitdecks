@@ -154,7 +154,8 @@ class VirtualDeck(DeckWithIcons):
         image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         width, height = image.size
         content = image.tobytes()
-        payload = struct.pack(f"IIII{len(content)}s", int(key), width, height, len(content), content)
+        code = 0
+        payload = struct.pack(f"IIIII{len(content)}s", int(code), int(key), width, height, len(content), content)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.address, self.port))
