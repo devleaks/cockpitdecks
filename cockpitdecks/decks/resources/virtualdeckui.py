@@ -28,9 +28,6 @@ SOCKET_TIMEOUT = 5
 KEY_HSPACING = 8
 KEY_VSPACING = 8
 
-PYGLET_RUN_INTERVAL = 1/2  # twice per second
-
-
 class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
 
     def __init__(self, name: str, definition: dict, config: dict, cdip: list):
@@ -72,6 +69,14 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         x = self.icon_width * (key % self.keys_horiz)
         x = x + (key % self.keys_horiz) * KEY_HSPACING
         return (x, y)
+
+    def get_key(self, x: int, y: int) -> int:
+        w2 = self.icon_width + KEY_VSPACING
+        h2 = self.icon_height + KEY_HSPACING
+        h = int(x / w2)
+        v = self.keys_vert - int(y / h2) - 1
+        key = v * self.keys_horiz + h
+        return key
 
     def send_event(self, key, event):
         # Send interaction event to Cockpitdecks virtual deck driver
@@ -147,18 +152,12 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
     #
     def on_mouse_press(self, x, y, button, modifiers):
         if button == mouse.LEFT:
-            h = int(x / self.icon_width)
-            v = self.keys_vert - int(y / self.icon_height) - 1
-            # print(f"The left mouse button was pressed at ({x},{y})")
-            key = v * self.keys_horiz + h
+            key = self.get_key(x, y)
             self.send_event(key, "pressed")
 
     def on_mouse_release(self, x, y, button, modifiers):
         if button == mouse.LEFT:
-            h = int(x / self.icon_width)
-            v = self.keys_vert - int(y / self.icon_height) - 1
-            # print(f"The left mouse button was pressed at ({x},{y})")
-            key = v * self.keys_horiz + h
+            key = self.get_key(x, y)
             self.send_event(key, "released")
 
     def on_draw(self):
@@ -183,13 +182,13 @@ class VirtualDeckManagerUI(VirtualDeckManager):
         return VirtualDeckManager.virtual_decks
 
     @staticmethod
-    def run():
+    def run(interval: float = 0.5):
         for name, deck in VirtualDeckManager.virtual_decks.items():
             logger.debug(f"starting virtual deck {name}..")
             deck.start()
             logger.debug(f"..started")
         VirtualDeckManager.event_loop = pyglet.app.EventLoop()
-        VirtualDeckManager.event_loop.run(interval=PYGLET_RUN_INTERVAL)
+        VirtualDeckManager.event_loop.run(interval=interval)
         logger.info(f"started all virtual decks")
 
     @staticmethod
