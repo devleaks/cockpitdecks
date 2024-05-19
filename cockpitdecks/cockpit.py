@@ -820,10 +820,22 @@ class Cockpit(DatarefListener, CockpitBase):
     def has_virtual_decks(self) -> bool:
         return True
 
+    def handle_code(self, code: int, name: str):
+        if code == 1:
+            deck = self.cockpit.get(name)
+            logger.debug(f"received code {name}:{code}")
+            if deck is None:
+                logger.warning(f"handle code: deck {name} not found")
+                return
+            deck.reload_page()
+
     def handle_event(self, data: bytes):
         # need to try/except unpack for wrong data
         (code, key, event), name = struct.unpack("III", data[:12]), data[12:]
         name = name.decode("utf-8")
+        if code != 0:
+            self.handle_code(code, name)
+            return
         deck = self.cockpit.get(name)
         logger.debug(f"received {name}:{key} = {event}")
         if deck is None:

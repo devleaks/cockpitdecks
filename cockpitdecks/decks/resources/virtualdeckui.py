@@ -28,6 +28,7 @@ SOCKET_TIMEOUT = 5
 KEY_HSPACING = 8
 KEY_VSPACING = 8
 
+
 class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
 
     def __init__(self, name: str, definition: dict, config: dict, cdip: list):
@@ -91,6 +92,17 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
             s.sendall(payload)
             # logger.debug(f"sent {self.name}:{key} = {pressed}")
 
+    def send_code(self, code):
+        # Send interaction event to Cockpitdecks virtual deck driver
+        # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
+        # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
+        content = bytes(self.name, "utf-8")
+        payload = struct.pack(f"III{len(content)}s", code, 0, 0, content)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((self.cd_address, self.cd_port))
+            s.sendall(payload)
+            logger.debug(f"sent code {self.name}:{code}")
+
     def handle_event(self, data: bytes):
         (code, key, w, h, length), img = struct.unpack("IIIII", data[:20]), data[20:]
         x, y = self.get_xy(key)
@@ -129,6 +141,7 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
             self.rcv_thread = threading.Thread(target=self.receive_events, name="VirtualDeck::event_listener")
             self.rcv_thread.start()
             logger.info(f"virtual deck listener started (port {self.port})")
+            self.send_code(1)  # just started
         else:
             logger.info("virtual deck listener already running")
 
