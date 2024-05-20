@@ -1,11 +1,11 @@
 # This is the description of a deck's capabilities for a virtual deck
 #
 ---
-type: Virtual Deck#2
+type: Virtual XKeys 80
 driver: virtualdeck
 buttons:
   - name: 0
     action: push
     feedback: image
-    image: [96, 96]
-    layout: [8, 4]
+    image: [64, 64]
+    layout: [10, 8]

@@ -109,7 +109,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.cockpit = {}  # all decks: { deckname: deck }
         self.deck_types = {}
         self.deck_types_new = {}
-        self.virtual_decks = {}
+        self.virtual_deck_types = {}
 
         self.fonts = {}
 
@@ -647,8 +647,8 @@ class Cockpit(DatarefListener, CockpitBase):
                 continue
             self.deck_types[name] = data
             if data.is_virtual_deck():
-                self.virtual_decks[name] = data.get_virtual_deck_layout()
-        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_decks)} virtual decks")
+                self.virtual_deck_types[name] = data.get_virtual_deck_layout()
+        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} virtual decks")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
@@ -820,10 +820,16 @@ class Cockpit(DatarefListener, CockpitBase):
     def has_virtual_decks(self) -> bool:
         return True
 
+    def broadcast_code(self, code):
+        for deck in self.cockpit.values():
+            if type(deck).__name__ == "VirtualDeck":
+                deck.send_code(code)
+                logger.debug(f"sent code {deck.name}:{code}")
+
     def handle_code(self, code: int, name: str):
+        logger.debug(f"received code {name}:{code}")
         if code == 1:
             deck = self.cockpit.get(name)
-            logger.debug(f"received code {name}:{code}")
             if deck is None:
                 logger.warning(f"handle code: deck {name} not found")
                 return
@@ -890,6 +896,8 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.debug("..virtual deck event listener stopped")
         else:
             logger.debug("virtual deck event listener not running")
+        # Now send last message to tell no longer listening
+        self.broadcast_code(code=2)  # terminate listening
 
     # #########################################################
     # Other

@@ -85,6 +85,7 @@ ID_SEP = "/"
 # Config.yaml
 #
 class CONFIG_KW(Enum):
+    ADDRESS = "address"  # could be host, hostname
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BUTTONS = "buttons"
@@ -104,6 +105,7 @@ class CONFIG_KW(Enum):
     MANAGED = "managed"
     NAME = "name"
     NONE = "none"
+    PORT = "port"
     SERIAL = "serial"
     STRING_DATAREFS = "string-datarefs"
     TYPE = "type"

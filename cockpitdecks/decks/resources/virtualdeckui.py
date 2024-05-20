@@ -87,10 +87,12 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         pressed = 1 if event == "pressed" else 0
         code = 0
         payload = struct.pack(f"III{len(content)}s", code, key, pressed, content)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.cd_address, self.cd_port))
-            s.sendall(payload)
-            # logger.debug(f"sent {self.name}:{key} = {pressed}")
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.cd_address, self.cd_port))
+                s.sendall(payload)
+        except:
+            logger.warning(f"{self.name}: problem sending event")
 
     def send_code(self, code):
         # Send interaction event to Cockpitdecks virtual deck driver
@@ -98,13 +100,23 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
         content = bytes(self.name, "utf-8")
         payload = struct.pack(f"III{len(content)}s", code, 0, 0, content)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.cd_address, self.cd_port))
-            s.sendall(payload)
-            logger.debug(f"sent code {self.name}:{code}")
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.cd_address, self.cd_port))
+                s.sendall(payload)
+                logger.debug(f"sent code {self.name}:{code}")
+        except:
+            logger.warning(f"{self.name}: problem sending code")
+
+    def handle_code(self, code: int):
+        if code == 2:  # cockpitdecks terminated
+            logger.info(f"{self.name}: Cockpitdecks terminated")
 
     def handle_event(self, data: bytes):
         (code, key, w, h, length), img = struct.unpack("IIIII", data[:20]), data[20:]
+        if code != 0:
+            self.handle_code(code)
+            return
         x, y = self.get_xy(key)
         # logger.debug(f"received {key}, {x}, {y}, {w}, {h}")
         with self:

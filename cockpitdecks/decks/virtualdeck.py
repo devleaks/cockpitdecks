@@ -149,6 +149,19 @@ class VirtualDeck(DeckWithIcons):
     # #######################################
     # Deck Specific Functions : Representation
     #
+    def send_code(self, code):
+        # Send interaction event to Cockpitdecks virtual deck driver
+        # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
+        # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
+        content = bytes(self.name, "utf-8")
+        payload = struct.pack(f"IIIII{len(content)}s", int(code), 0, 0, 0, len(content), content)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.address, self.port))
+                s.sendall(payload)
+        except:
+            logger.warning(f"key: {key}: problem sending code")
+
     def _send_key_image_to_device(self, key, image):
         # Sends the PIL Image bytes with a few meta
         image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)

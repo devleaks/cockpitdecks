@@ -3,14 +3,11 @@ Virtual deck cockpitdeck interface class
 Does not perform any action. Just a wrapper for
 """
 
-import threading
-import socket
-import struct
 import logging
+import struct
+import socket
 
-from PIL import Image
-
-from cockpitdecks.constant import DECK_KW
+from cockpitdecks.constant import CONFIG_KW
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -22,13 +19,13 @@ DEVICE_MANUFACTURER = "Cockpitdecks"  # verbose descriptive
 class VirtualDeck:
     DECK_NAME = "virtualdeck"
 
-    def __init__(self, name: str, definition: dict, config: dict, cdip: list):
+    def __init__(self, name: str, definition: "DeckType", config: dict, cdip: list):
         self.name: str = name
         self.virtual_deck_definition: dict = definition  # DeckType
         self.virtual_deck_config: dict = config  # Deck entry in deckconfig/config.yaml
 
-        self.address = self.virtual_deck_config.get("address")
-        self.port = self.virtual_deck_config.get("port")
+        self.address = self.virtual_deck_config.get(CONFIG_KW.ADDRESS.value)
+        self.port = self.virtual_deck_config.get(CONFIG_KW.PORT.value)
         self.cd_address = cdip[0]
         self.cd_port = cdip[1]
 
