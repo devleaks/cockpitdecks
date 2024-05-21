@@ -160,7 +160,7 @@ class VirtualDeck(DeckWithIcons):
                 s.connect((self.address, self.port))
                 s.sendall(payload)
         except:
-            logger.warning(f"key: {key}: problem sending code")
+            logger.warning(f"{self.name}: problem sending code", exc_info=True)
 
     def _send_key_image_to_device(self, key, image):
         # Sends the PIL Image bytes with a few meta

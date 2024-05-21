@@ -62,6 +62,7 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
             x, y = self.get_xy(i)
             with self:
                 self.icons[i] = (icon.tobytes(), x, y, icon.width, icon.height)
+        self.set_caption(f"Cockpitdecks - {self.name}")
 
     # ######################################
     #
@@ -78,6 +79,16 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         v = self.keys_vert - int(y / h2) - 1
         key = v * self.keys_horiz + h
         return key
+
+    def get_sector(self, x: int, y: int) -> tuple:
+        # returns (right, up), right=1 if right, up=1 if up
+        key = self.get_key(x, y)
+        x1, y1 = self.get_xy(key)
+        dx = x-x1
+        dy = y-y1
+        right = int(2 * dx / self.icon_width) # 0=left, 1=right
+        up = int(2 * dy / self.icon_height) # 0=up, 1=down
+        return (right, up)
 
     def send_event(self, key, event):
         # Send interaction event to Cockpitdecks virtual deck driver
@@ -178,11 +189,13 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if button == mouse.LEFT:
             key = self.get_key(x, y)
+            a, b = self.get_sector(x, y)
             self.send_event(key, "pressed")
 
     def on_mouse_release(self, x, y, button, modifiers):
         if button == mouse.LEFT:
             key = self.get_key(x, y)
+            a, b = self.get_sector(x, y)
             self.send_event(key, "released")
 
     def on_draw(self):
