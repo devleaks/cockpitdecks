@@ -157,7 +157,7 @@ def cockpit():
     try:
         while True:
             data = ws.receive()
-            print(data)
+            print("received", data)
             logger.debug(data)
             data = json.loads(data)
             if data.get("code") == 1:
@@ -167,7 +167,7 @@ def cockpit():
             elif data.get("code") == 0:
                 deck = data.get("deck")
                 web_receiver.send_event(deck, 0, int(data.get("z")))
-                print("registerd new deck", deck)
+                print("event sent", deck, int(data.get("z")))
 
     except ConnectionClosed:
         pass
