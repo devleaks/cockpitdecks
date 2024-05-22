@@ -260,7 +260,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         for deck_driver, builder in DECK_DRIVERS.items():
             if deck_driver == VIRTUAL_DECK_DRIVER:
-                # will be added later, when we have acpath set, in add_virtual_decks()
+                # will be added later, when we have acpath set, in add virtual_decks()
                 continue
             decks = builder[1]().enumerate()
             logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
@@ -553,6 +553,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 deck_count_by_type[ty] = deck_count_by_type[ty] + 1
 
         cnt = 0
+        virtual_deck_list = {}
         for deck_config in decks:
             name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
 
@@ -596,12 +597,16 @@ class Cockpit(DatarefListener, CockpitBase):
                     deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+                    if deck_driver == VIRTUAL_DECK_DRIVER:
+                        virtual_deck_list[name] = deck_config | {"deck-type-desc": self.deck_types.get(deck_type).store}
                     cnt = cnt + 1
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:
             #    logger.error(f"deck {deck_type} {name} has no serial number, ignoring")
+        with open("vdecks.json", "w") as fp:
+            json.dump(virtual_deck_list, fp, indent=2)
 
     def create_default_decks(self):
         """

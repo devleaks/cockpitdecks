@@ -42,6 +42,10 @@ class VirtualDeck(DeckWithIcons):
         self.address = config.get("address")
         self.port = config.get("port")
 
+        # Address and port of virtual deck
+        self.web_address = "127.0.0.1"
+        self.web_port = "7699"
+
         self.pil_helper = self
 
         self.valid = True
@@ -174,8 +178,25 @@ class VirtualDeck(DeckWithIcons):
                 s.connect((self.address, self.port))
                 s.sendall(payload)
         except:
-            logger.warning(f"key: {key}: problem sending message")
+            logger.warning(f"key: {key}: problem sending image to virtual deck")
         logger.debug(f"key: {key}: image sent to ({self.address}, {self.port})")
+        self._send_key_image_to_web(key, image)
+
+    def _send_key_image_to_web(self, key, image):
+        # Sends the PIL Image bytes with a few meta to Flask for web display
+        # Need to supply deck name as well.
+        width, height = image.size
+        content = image.tobytes()
+        code = 0
+        content2 = bytes(self.name, "utf-8")
+        payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.web_address, self.web_port))
+                s.sendall(payload)
+        except:
+            logger.warning(f"key: {key}: problem sending image to web")
+        logger.debug(f"key: {key}: image sent to ({self.web_address}, {self.web_port})")
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:

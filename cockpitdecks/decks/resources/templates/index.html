@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Cockpitdecks Web Decks</title>
+</head>
+<body>
+    <h2>Welcome to Cockpitdecks Web Desks</h2>
+    <p>List of available decks:</p>
+    <ul id="navigation">
+    {% for deck in virtual_decks %}
+        <li><a href="/deck/{{ deck|e }}" target=_blank>{{ deck }}</a></li>
+    {% endfor %}
+    </ul>
+    <p>Deck will start in a new window.</p>
+</body>
+</html>

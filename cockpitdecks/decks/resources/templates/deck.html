@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cockpitdecks - {{ deck.name }} </title>
+</head>
+<!-- Structure as received:
+  {
+    "name": "Virtual Streamdeck XL",
+    "type": "Virtual Streamdeck XL",
+    "layout": "consoles",
+    "address": "127.0.0.1",
+    "port": 7702,
+    "brightness": 100,
+    "disabled": false,
+    "serial": "127.0.0.1:7702",
+    "deck-type-desc": {
+      "type": "Virtual Streamdeck XL",
+      "driver": "virtualdeck",
+      "buttons": [
+        {
+          "name": 0,
+          "action": "push",
+          "feedback": "image",
+          "image": [
+            96,
+            96
+          ],
+          "layout": [
+            8,
+            4
+          ],
+          "_intname": "NO_NAME_0"
+        }
+      ],
+      "__filename__": "/Users/pierre/Developer/fs/cockpitdecks/bin/../cockpitdecks/decks/resources/virtual streamdeck xl.yaml"
+    }
+  }
+-->
+<body>
+    <h1>{{ deck.name }}</h1>
+    <input type="text" id="message" placeholder="Type a message">
+    <button onclick="sendMessage()">Send</button>
+    <div>
+        <canvas id="canvas" width="800" height="600" style="border:1px solid grey;">
+            Sorry, your browser does not support canvas.
+        </canvas>
+    </div>
+    <div>{{ deck }}</div>
+    <div>{{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}</div>
+<script type="text/javascript">
+// WebSocket initialisation and setup
+var ws = new WebSocket("ws://127.0.0.1:7777/cockpit");
+
+ws.onopen = (event) => {
+    console.log("opened");
+    // sends its name on new connection to help identify
+    sendCode(1, "{{deck.name}}")
+};
+
+ws.onmessage = (event) => {
+    console.log(event.data + " received");
+    var data = event.data
+    if (data.code == 0) {
+        console.log("regular handling")
+    }
+};
+
+// Send functions
+function sendMessage() {
+    var message = document.getElementById("message").value;
+    ws.send(message);
+    console.log(message + " sent");
+}
+
+function sendCode(code, deck) {
+    c = {"code": code, "deck": deck }
+    var message = JSON.stringify(c)
+    ws.send(message);
+    console.log(message + " sent");
+}
+
+function sendCoordinates(deck, c, z) {
+    c["deck"] = deck
+    c["z"] = z
+    var message = JSON.stringify(c)
+    ws.send(message);
+    console.log(message + " sent");
+}
+
+// Canvas functions
+function resize_canvas(ctx, image, layout) {
+    ctx.canvas.width = image[0] * layout[0]
+    ctx.canvas.height = image[1] * layout[1]
+}
+
+function relMouseCoords(event){
+    var totalOffsetX = 0;
+    var totalOffsetY = 0;
+    var canvasX = 0;
+    var canvasY = 0;
+    var currentElement = this;
+
+    do{
+        totalOffsetX += currentElement.offsetLeft - currentElement.scrollLeft;
+        totalOffsetY += currentElement.offsetTop - currentElement.scrollTop;
+    }
+    while(currentElement = currentElement.offsetParent)
+
+    canvasX = event.pageX - totalOffsetX;
+    canvasY = event.pageY - totalOffsetY;
+
+    return {x:canvasX, y:canvasY}
+}
+HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
+
+// Canvas setup
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+resize_canvas(ctx, {{ deck["deck-type-desc"]["buttons"][0]["image"] }}, {{ deck["deck-type-desc"]["buttons"][0]["layout"] }})
+
+canvas.addEventListener("mousedown", function(e) {
+    coords = canvas.relMouseCoords(event);
+    sendCoordinates("{{deck.name}}", coords, 1)
+})
+
+canvas.addEventListener("mouseup", function(e) {
+    coords = canvas.relMouseCoords(event);
+    canvasX = coords.x;
+    canvasY = coords.y;
+    sendCoordinates("{{deck.name}}", coords, 0)
+})
+
+</script>
+</body>
+</html>
