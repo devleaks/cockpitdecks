@@ -84,10 +84,10 @@ class VirtualDeckUI(VirtualDeck, pyglet.window.Window):
         # returns (right, up), right=1 if right, up=1 if up
         key = self.get_key(x, y)
         x1, y1 = self.get_xy(key)
-        dx = x-x1
-        dy = y-y1
-        right = int(2 * dx / self.icon_width) # 0=left, 1=right
-        up = int(2 * dy / self.icon_height) # 0=up, 1=down
+        dx = x - x1
+        dy = y - y1
+        right = int(2 * dx / self.icon_width)  # 0=left, 1=right
+        up = int(2 * dy / self.icon_height)  # 0=up, 1=down
         return (right, up)
 
     def send_event(self, key, event):
