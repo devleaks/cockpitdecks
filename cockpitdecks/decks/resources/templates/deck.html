@@ -80,7 +80,9 @@ function sendCode(code, deck) {
 }
 
 function sendCoordinates(deck, c, z) {
-    payload = {"code": 0, "deck": deck, "x": c[0], "y": c[1], "z": z}
+    console.log(deck, c, z)
+    key = get_key(c.x, c.y)
+    payload = {"code": 0, "deck": deck, "key": key, "x": c[0], "y": c[1], "z": z}
     var message = JSON.stringify(payload)
     ws.send(message);
     console.log(message + " sent");
@@ -115,8 +117,33 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 // Canvas setup
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const KEY_HSPACING = 8
+const KEY_VSPACING = 8
+const icon_height = {{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}
+const icon_width = {{ deck["deck-type-desc"]["buttons"][0]["image"][1] }}
+const keys_horiz = {{ deck["deck-type-desc"]["buttons"][0]["layout"][0] }}
+const keys_vert = {{ deck["deck-type-desc"]["buttons"][0]["layout"][1] }}
 
-resize_canvas(ctx, {{ deck["deck-type-desc"]["buttons"][0]["image"] }}, {{ deck["deck-type-desc"]["buttons"][0]["layout"] }})
+// Internal kitchen functions
+function get_xy(key) {
+    var y = (icon_height + KEY_VSPACING) * (keys_vert - 1 - Math.round(key / keys_horiz))
+    var x = icon_width * (key % keys_horiz)
+    x = x + (key % keys_horiz) * KEY_HSPACING
+    return (x, y)
+}
+
+function get_key(x, y) {
+    console.log(icon_height, icon_width, keys_horiz, keys_vert, KEY_HSPACING, KEY_VSPACING)
+    w2 = icon_width + KEY_VSPACING
+    h2 = icon_height + KEY_HSPACING
+    h = Math.floor(x / w2)
+    v = Math.floor(y / h2)
+    key = v * keys_horiz + h
+    console.log(x, y, w2, h2, h, v, key)
+    return key
+}
+
+resize_canvas(ctx, [icon_width, icon_height], [keys_horiz, keys_vert])
 
 canvas.addEventListener("mousedown", function(e) {
     coords = canvas.relMouseCoords(event);

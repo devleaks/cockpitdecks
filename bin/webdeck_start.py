@@ -166,7 +166,11 @@ def cockpit():
                 print("registerd new deck", deck)
             elif data.get("code") == 0:
                 deck = data.get("deck")
-                web_receiver.send_event(deck, 0, int(data.get("z")))
+                key = data.get("key")
+                if type(key) is str:
+                    print("invalid key", key)
+                    key = 0
+                web_receiver.send_event(deck, key, int(data.get("z")))
                 print("event sent", deck, int(data.get("z")))
 
     except ConnectionClosed:
