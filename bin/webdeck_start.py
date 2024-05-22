@@ -13,8 +13,10 @@ from simple_websocket import Server, ConnectionClosed
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-WS="_ws"
+WS = "_ws"
+BUFFER_SIZE = 4096
 SOCKET_TIMEOUT = 5
+
 
 class WebReceiver:
 
@@ -66,37 +68,38 @@ class WebReceiver:
 
     def handle_event(self, data: bytes):
         # payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
-        (code, key, w, h, deck_length, image_length), payload = struct.unpack("IIIIIII", data[:28]), data[28:]
+        (code, key, w, h, deck_length, image_length), payload = struct.unpack("IIIIII", data[:24]), data[24:]
         deck = payload[:deck_length].decode("utf-8")
         image = payload[deck_length:]
         if code != 0:
             self.handle_code(code)
             return
-        x, y = self.get_xy(key)
-        # logger.debug(f"received {key}, {x}, {y}, {w}, {h}")
-
-        response = {
-            "code": 0,
-            "deck": deck,
-            "image": base64.b64encode(image).decode("utf-8")
-        }
-        for ws in self.virtual_decks.get("deck").get(WS):
-            ws.send(json.dumps(response))
+        response = {"code": 0, "deck": deck, "key": key, "image": base64.b64encode(image).decode("utf-8")}
+        client_list = self.vd_ws_conn.get(deck)
+        if client_list is not None:
+            for ws in client_list:  # send to each instance of this deck connected to this websocket server
+                ws.send(json.dumps(response))
+                print(f"sent for {deck}")
+        else:
+            print(f"no client for {deck}")
 
     def receive_events(self):
         # Receives update events from Cockpitdecks
         while self.rcv_event is not None and not self.rcv_event.is_set():
             buff = bytes()
             try:
+                print(f"accepting.. ({self.address}, {self.port})")
                 conn, addr = self.socket.accept()
                 with conn:
                     while True:
                         data = conn.recv(BUFFER_SIZE)
+                        print("got data")
                         if not data:
                             break
                         buff = buff + data
                     self.handle_event(buff)
             except TimeoutError:
+                print("..timed out")
                 pass
                 # logger.debug(f"receive event", exc_info=True)
             except:
@@ -108,6 +111,7 @@ class WebReceiver:
             self.socket.bind((self.address, self.port))
             self.socket.listen()
             self.socket.settimeout(SOCKET_TIMEOUT)
+            print(f"listening on ({self.address}, {self.port})")
 
         if self.rcv_event is None:  # Thread for X-Plane datarefs
             self.rcv_event = threading.Event()
@@ -139,17 +143,20 @@ class WebReceiver:
 web_receiver = WebReceiver()
 web_receiver.start()
 
-app = Flask(__name__, template_folder=os.path.join("..", "cockpitdecks", "decks",  "resources", "templates"))
+app = Flask(__name__, template_folder=os.path.join("..", "cockpitdecks", "decks", "resources", "templates"))
+
 
 @app.route("/")
 def index():
     return render_template("index.html", virtual_decks=web_receiver.all_decks)
+
 
 @app.route("/deck/<name>")
 def deck(name: str):
     uname = urllib.parse.unquote(name)
     logger.debug(f"Starting deck {uname}")
     return render_template("deck.html", deck=web_receiver.get_deck_description(uname))
+
 
 @app.route("/cockpit", websocket=True)
 def cockpit():
@@ -181,17 +188,15 @@ def cockpit():
 
     return ""
 
+
 @app.route("/image/<deck>/<name>")
 def image(deck: str, name: str):
     deck = urllib.parse.unquote(deck)
     with open(name, "rb") as fp:
         image = fp.read()
-    response = {
-        "code": 0,
-        "deck": deck,
-        "image": base64.b64encode(image).decode("utf-8")
-    }
+    response = {"code": 0, "deck": deck, "image": base64.b64encode(image).decode("utf-8")}
     vd[deck]["ws"].send(json.dumps(response))
     return f"{name} ok"
+
 
 app.run(host="0.0.0.0", port=7777)

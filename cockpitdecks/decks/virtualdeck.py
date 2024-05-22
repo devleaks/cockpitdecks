@@ -44,7 +44,7 @@ class VirtualDeck(DeckWithIcons):
 
         # Address and port of virtual deck
         self.web_address = "127.0.0.1"
-        self.web_port = "7699"
+        self.web_port = 7699
 
         self.pil_helper = self
 
@@ -194,9 +194,9 @@ class VirtualDeck(DeckWithIcons):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.web_address, self.web_port))
                 s.sendall(payload)
+                logger.debug(f"key: {key}: image sent to ({self.web_address}, {self.web_port})")
         except:
-            logger.warning(f"key: {key}: problem sending image to web")
-        logger.debug(f"key: {key}: image sent to ({self.web_address}, {self.web_port})")
+            logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
