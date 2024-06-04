@@ -7,6 +7,7 @@ import socket
 import struct
 import threading
 import logging
+import io
 
 from PIL import Image, ImageOps
 
@@ -180,13 +181,17 @@ class VirtualDeck(DeckWithIcons):
         except:
             logger.warning(f"key: {key}: problem sending image to virtual deck")
         logger.debug(f"key: {key}: image sent to ({self.address}, {self.port})")
+        # if web is being used (i.e. started)
         self._send_key_image_to_web(key, image)
 
     def _send_key_image_to_web(self, key, image):
         # Sends the PIL Image bytes with a few meta to Flask for web display
+        # Image is sent as a stream of bytes which is the file content of the image saved in PNG format
         # Need to supply deck name as well.
         width, height = image.size
-        content = image.tobytes()
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG')
+        content = img_byte_arr.getvalue()
         code = 0
         content2 = bytes(self.name, "utf-8")
         payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)

@@ -248,6 +248,8 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{dref}")
 
     def scan_devices(self):
+        """Scan for hardware devices
+        """
         if len(DECK_DRIVERS) == 0:
             logger.error(f"no driver")
             return
@@ -284,7 +286,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def get_device(self, req_serial: str, req_driver: str):
         """
-        Get a HIDAPI device for the supplied serial number.
+        Get a hardware device for the supplied serial number.
         If found, the device is opened and reset and returned open.
 
         :param    req_serial:  The request serial
@@ -352,10 +354,6 @@ class Cockpit(DatarefListener, CockpitBase):
             self.sim.clean_datarefs_to_monitor()
             logger.warning(f"{os.path.basename(self.acpath)} unloaded")
 
-        if len(self.devices) == 0:
-            logger.warning(f"no device")
-            return
-
         self.cockpit = {}
         self.icons = {}
         # self.fonts = {}
@@ -365,6 +363,12 @@ class Cockpit(DatarefListener, CockpitBase):
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
+            self.scan_virtual_decks()
+
+            if len(self.devices) == 0:
+                logger.warning(f"no device")
+                return
+
             self.load_icons()
             self.load_fonts()
             self.create_decks()
@@ -505,7 +509,14 @@ class Cockpit(DatarefListener, CockpitBase):
             f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
         )
 
-    def add_virtual_decks(self):
+    def scan_virtual_decks(self):
+        """Virtual decks are declared in the cockpit configuration
+        Therefore it is necessary to have an aircraft folder.
+
+        [description]
+        """
+        if self.acpath is None:
+            logger.warning(f"no aircraft folder, cannot load virtual decks")
         cnt = 0
         builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
         decks = builder[1]().enumerate(acpath=self.acpath, cdip=COCKPITDECKS_HOST)
@@ -539,8 +550,6 @@ class Cockpit(DatarefListener, CockpitBase):
         if decks is None:
             logger.warning(f"no deck in config file {fn}")
             return
-
-        self.add_virtual_decks()
 
         logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
 
@@ -653,7 +662,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.deck_types[name] = data
             if data.is_virtual_deck():
                 self.virtual_deck_types[name] = data.get_virtual_deck_layout()
-        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} virtual decks")
+        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
@@ -823,7 +832,10 @@ class Cockpit(DatarefListener, CockpitBase):
     # Cockpit start/stop/handle procedures for virtual decks
     #
     def has_virtual_decks(self) -> bool:
-        return True
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                return True
+        return False
 
     def broadcast_code(self, code):
         for deck in self.cockpit.values():

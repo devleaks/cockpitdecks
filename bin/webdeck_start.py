@@ -70,11 +70,11 @@ class WebReceiver:
         # payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
         (code, key, w, h, deck_length, image_length), payload = struct.unpack("IIIIII", data[:24]), data[24:]
         deck = payload[:deck_length].decode("utf-8")
-        image = payload[deck_length:]
+        image = payload[deck_length:]  # this is a stream of bytes that represent the file content as PNG image.
         if code != 0:
             self.handle_code(code)
             return
-        response = {"code": 0, "deck": deck, "key": key, "image": base64.b64encode(image).decode("utf-8")}
+        response = {"code": 0, "deck": deck, "key": key, "image": base64.encodebytes(image).decode("ascii")}
         client_list = self.vd_ws_conn.get(deck)
         if client_list is not None:
             for ws in client_list:  # send to each instance of this deck connected to this websocket server
@@ -188,15 +188,13 @@ def cockpit():
 
     return ""
 
-
-@app.route("/image/<deck>/<name>")
-def image(deck: str, name: str):
-    deck = urllib.parse.unquote(deck)
-    with open(name, "rb") as fp:
-        image = fp.read()
-    response = {"code": 0, "deck": deck, "image": base64.b64encode(image).decode("utf-8")}
-    vd[deck]["ws"].send(json.dumps(response))
-    return f"{name} ok"
-
+# @app.route("/image/<deck>/<name>")
+# def image(deck: str, name: str):
+#     deck = urllib.parse.unquote(deck)
+#     with open(name, "rb") as fp:
+#         image = fp.read()
+#     response = {"code": 0, "deck": deck, "image": base64.b64encode(image).decode("utf-8")}
+#     vd[deck]["ws"].send(json.dumps(response))
+#     return f"{name} ok"
 
 app.run(host="0.0.0.0", port=7777)

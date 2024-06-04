@@ -22,17 +22,31 @@ class VirtualDeckManager:
 
     @staticmethod
     def virtual_deck_types() -> Dict[str, DeckType]:
-        deck_types = [DeckType(deck_type) for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), "*.yaml"))]
+        """Returns the list of virtual deck types.
+
+        Returns:
+            Dict[str, DeckType]: [description]
+        """
+        deck_types = [DeckType(filename=deck_type) for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), "*.yaml"))]
         virtual_deck_types = filter(lambda d: d.is_virtual_deck(), deck_types)
         return {d.name: d for d in virtual_deck_types}
 
     @staticmethod
     def enumerate(acpath: str, cdip: list) -> Dict[str, VirtualDeck]:
+        """Returns all the virtual devices available to Cockpitdecks.
+
+        Virtual devices are discovered in the cockpit currently in use.
+        Therefore, it is necesary to supply the path to the cockpit configuration.
+        At creation time, Virtual Decks require to know the IP addresse where they report their activity.
+        """
         virtual_deck_types = VirtualDeckManager.virtual_deck_types()
         fn = os.path.join(acpath, CONFIG_FOLDER, CONFIG_FILE)
         config = Config(fn)
         decks = config.get(CONFIG_KW.DECKS.value, {})
         for deck in decks:
+            disabled = deck.get(CONFIG_KW.DISABLED.value, False)
+            if disabled:
+                continue
             deck_type = deck.get(CONFIG_KW.TYPE.value)
             if deck_type in virtual_deck_types:
                 name = deck.get(DECK_KW.NAME.value)
