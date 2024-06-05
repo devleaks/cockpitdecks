@@ -2,6 +2,11 @@
 <html>
 <head>
     <title>Cockpitdecks - {{ deck.name }} </title>
+<style>
+body {
+    font-family: sans-serif;
+}
+</style>
 </head>
 <!-- Structure as received:
   {
@@ -43,16 +48,17 @@
     <button onclick="sendMessage()">Send</button>
 -->
     <div>
-        <canvas id="canvas" width="800" height="600" style="border:1px solid grey;">
+        <canvas id="deck" width="800" height="600" style="border:1px solid grey;">
             Sorry, your browser does not support canvas.
         </canvas>
     </div>
-    <div>{{ deck }}</div>
-    <div>{{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}</div>
+    <h4>Debugging Deck Data</h4>
+    <div><pre>{{ deck|tojson(indent=2) }}</pre></div>
+    <!-- div>{{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}</div -->
 <script type="text/javascript">
 
 // Canvas setup
-const canvas = document.getElementById("canvas");
+const canvas = document.getElementById("deck");
 const ctx = canvas.getContext("2d");
 const KEY_HSPACING = 8
 const KEY_VSPACING = 8
@@ -63,9 +69,9 @@ const keys_vert = {{ deck["deck-type-desc"]["buttons"][0]["layout"][1] }}
 
 
 // Canvas functions
-function resize_canvas(ctx, image, layout) {
-    ctx.canvas.width = image[0] * layout[0]
-    ctx.canvas.height = image[1] * layout[1]
+function resize_canvas(ctx, image, layout, spacing) {
+    ctx.canvas.width = image[0] * layout[0] + spacing[0] * (layout[0] - 1)
+    ctx.canvas.height = image[1] * layout[1] + spacing[1] * (layout[1] - 1)
 }
 
 function relMouseCoords(event){
@@ -95,7 +101,7 @@ function get_xy(key) {
     var y = (icon_height + KEY_HSPACING) * Math.floor(key/keys_horiz)
     x = x + (key % keys_horiz) * KEY_HSPACING
     console.log("get_xy", x, y);
-    return (x, y)
+    return [x, y]
 }
 
 function get_key(x, y) {
@@ -108,7 +114,7 @@ function get_key(x, y) {
     return key
 }
 
-resize_canvas(ctx, [icon_width, icon_height], [keys_horiz, keys_vert])
+resize_canvas(ctx, [icon_width, icon_height], [keys_horiz, keys_vert], [KEY_HSPACING, KEY_VSPACING])
 
 canvas.addEventListener("mousedown", function(e) {
     coords = canvas.relMouseCoords(event);
@@ -143,7 +149,7 @@ ws.onmessage = (event) => {
             ctx.drawImage(image, coords[0], coords[1]);
             console.log("drawing at", coords[0], coords[1])
         };
-        image.src = "data:image/png;base64,"+data.image;
+        image.src = "data:image/jpeg;base64,"+data.image;
         console.log("..done")
     }
 };
@@ -152,14 +158,14 @@ ws.onmessage = (event) => {
 function sendMessage() {
     var message = document.getElementById("message").value;
     ws.send(message);
-    console.log(message + " sent");
+    console.log("send message", message + " sent");
 }
 
 function sendCode(code, deck) {
     c = {"code": code, "deck": deck}
     var message = JSON.stringify(c)
     ws.send(message);
-    console.log(message + " sent");
+    console.log("send code", message + " sent");
 }
 
 function sendCoordinates(deck, c, z) {

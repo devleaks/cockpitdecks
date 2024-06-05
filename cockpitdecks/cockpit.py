@@ -851,6 +851,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"handle code: deck {name} not found")
                 return
             deck.reload_page()
+            logger.debug(f"{name} reloaded")
 
     def handle_event(self, data: bytes):
         # need to try/except unpack for wrong data
@@ -985,10 +986,13 @@ class Cockpit(DatarefListener, CockpitBase):
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
+            logger.info(f"..event loop stopped..")
         if self.rcv_loop_run:
             self.stop_vd_listener()
+            logger.info(f"..virtual deck listener stopped..")
         # Terminate decks
         self.terminate_aircraft()
+        logger.info(f"..aircraft terminated..")
         # Terminate dataref collection
         if self.sim is not None:
             logger.info("..terminating connection to simulator..")

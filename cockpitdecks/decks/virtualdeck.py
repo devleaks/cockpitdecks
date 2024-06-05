@@ -190,7 +190,8 @@ class VirtualDeck(DeckWithIcons):
         # Need to supply deck name as well.
         width, height = image.size
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format='PNG')
+        transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
+        transformed.save(img_byte_arr, format='PNG')
         content = img_byte_arr.getvalue()
         code = 0
         content2 = bytes(self.name, "utf-8")

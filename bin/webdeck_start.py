@@ -51,6 +51,19 @@ class WebReceiver:
     def get_deck_description(self, deck):
         return self.all_decks.get(deck)
 
+    def send_code(self, deck, code):
+        # Send interaction event to Cockpitdecks virtual deck driver
+        # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
+        # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
+        content = bytes(deck, "utf-8")
+        payload = struct.pack(f"III{len(content)}s", code, 0, 0, content)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.cd_address, self.cd_port))
+                s.sendall(payload)
+        except:
+            logger.warning(f"{deck}: problem sending event")
+
     def send_event(self, deck, key, event):
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
@@ -66,40 +79,54 @@ class WebReceiver:
         except:
             logger.warning(f"{deck}: problem sending event")
 
+    def handle_code(self, deck, code):
+        logger.debug(f"deck {deck} handling code {code}")
+
+    def is_closed(self, ws):
+        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0
+
+
     def handle_event(self, data: bytes):
         # payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
         (code, key, w, h, deck_length, image_length), payload = struct.unpack("IIIIII", data[:24]), data[24:]
         deck = payload[:deck_length].decode("utf-8")
         image = payload[deck_length:]  # this is a stream of bytes that represent the file content as PNG image.
         if code != 0:
-            self.handle_code(code)
+            self.handle_code(deck, code)
             return
         response = {"code": 0, "deck": deck, "key": key, "image": base64.encodebytes(image).decode("ascii")}
         client_list = self.vd_ws_conn.get(deck)
+        closed_ws = []
         if client_list is not None:
             for ws in client_list:  # send to each instance of this deck connected to this websocket server
+                if self.is_closed(ws):
+                    closed_ws.append(ws)
+                    continue
                 ws.send(json.dumps(response))
-                print(f"sent for {deck}")
+                logger.debug(f"sent for {deck}")
+            if len(closed_ws) > 0:
+                for ws in closed_ws:
+                    client_list.remove(ws)
         else:
-            print(f"no client for {deck}")
+            logger.warning(f"no client for {deck}")
 
     def receive_events(self):
         # Receives update events from Cockpitdecks
         while self.rcv_event is not None and not self.rcv_event.is_set():
             buff = bytes()
             try:
-                print(f"accepting.. ({self.address}, {self.port})")
+                logger.debug(f"accepting.. ({self.address}, {self.port})")
                 conn, addr = self.socket.accept()
                 with conn:
                     while True:
                         data = conn.recv(BUFFER_SIZE)
-                        print("got data")
+                        logger.debug("got event from web deck")
                         if not data:
                             break
                         buff = buff + data
                     self.handle_event(buff)
             except TimeoutError:
-                print("..timed out")
+                logger.debug("..timed out")
                 pass
                 # logger.debug(f"receive event", exc_info=True)
             except:
@@ -145,6 +172,7 @@ web_receiver.start()
 
 app = Flask(__name__, template_folder=os.path.join("..", "cockpitdecks", "decks", "resources", "templates"))
 
+app.logger.setLevel(logging.DEBUG)
 
 @app.route("/")
 def index():
@@ -154,7 +182,7 @@ def index():
 @app.route("/deck/<name>")
 def deck(name: str):
     uname = urllib.parse.unquote(name)
-    logger.debug(f"Starting deck {uname}")
+    app.logger.debug(f"Starting deck {uname}")
     return render_template("deck.html", deck=web_receiver.get_deck_description(uname))
 
 
@@ -164,21 +192,23 @@ def cockpit():
     try:
         while True:
             data = ws.receive()
-            print("received", data)
-            logger.debug(data)
+            app.logger.debug(f"received {data}")
             data = json.loads(data)
-            if data.get("code") == 1:
+            code = data.get("code")
+            if code == 1:
                 deck = data.get("deck")
                 web_receiver.register_deck(deck, ws)
-                print("registerd new deck", deck)
+                app.logger.info(f"registered deck {deck}")
+                web_receiver.send_code(deck, code)
+                app.logger.debug(f"forwarded code deck={deck}, code={code}")
             elif data.get("code") == 0:
                 deck = data.get("deck")
                 key = data.get("key")
                 if type(key) is str:
-                    print("invalid key", key)
+                    app.logger.warning(f"invalid key '{key}'")
                     key = 0
                 web_receiver.send_event(deck, key, int(data.get("z")))
-                print("event sent", deck, int(data.get("z")))
+                app.logger.debug(f"event sent deck={deck}, value={int(data.get('z'))}")
 
     except ConnectionClosed:
         pass
