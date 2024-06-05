@@ -8,13 +8,14 @@ import pickle
 import json
 import socket
 import struct
+import weakref
 import pkg_resources
 from queue import Queue
 
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-from cockpitdecks import __version__, LOGFILE, FORMAT
+from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
 from cockpitdecks import (
     CONFIG_FOLDER,
@@ -26,7 +27,7 @@ from cockpitdecks import (
     RESOURCES_FOLDER,
 )
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
-from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST
+from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -110,6 +111,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.deck_types = {}
         self.deck_types_new = {}
         self.virtual_deck_types = {}
+        self.virtual_deck_list = {}
         self.virtual_decks_added = False
 
         self.fonts = {}
@@ -583,7 +585,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 deck_count_by_type[ty] = deck_count_by_type[ty] + 1
 
         cnt = 0
-        virtual_deck_list = {}
+        self.virtual_deck_list = {}
         for deck_config in decks:
             name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
 
@@ -628,12 +630,12 @@ class Cockpit(DatarefListener, CockpitBase):
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
-                        virtual_deck_list[name] = deck_config | {"deck-type-desc": self.deck_types.get(deck_type).store}
-                        # vitaul decks need to have a decor
-                        decor = deck_config.get(CONFIG_KW.DECOR.value)
-                        if decor is None:
-                            deck_config = deck_config | {CONFIG_KW.DECOR.value: {"background": "", "offset": [0, 0], "spacing": [0, 0]}}
-                            logger.debug(f"deck {name} added neutral decor")
+                        self.virtual_deck_list[name] = deck_config | {"deck-type-desc": self.deck_types.get(deck_type).store}
+                        # web decks need to have a decor
+                        # decor = deck_config.get(CONFIG_KW.DECOR.value)
+                        # if decor is None:
+                        #     deck_config = deck_config | {CONFIG_KW.DECOR.value: {"background": "", "offset": [0, 0], "spacing": [0, 0]}}
+                        #     logger.debug(f"deck {name} added neutral decor")
                     cnt = cnt + 1
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
@@ -641,8 +643,8 @@ class Cockpit(DatarefListener, CockpitBase):
             # else:
             #    logger.error(f"deck {deck_type} {name} has no serial number, ignoring")
         # Temporary solution to hand over web decks
-        with open("vdecks.json", "w") as fp:
-            json.dump(virtual_deck_list, fp, indent=2)
+        # with open("vdecks.json", "w") as fp:
+        #     json.dump(self.virtual_deck_list, fp, indent=2)
 
     def create_default_decks(self):
         """
@@ -878,6 +880,14 @@ class Cockpit(DatarefListener, CockpitBase):
                 deck.send_code(code)
                 logger.debug(f"sent code {deck.name}:{code}")
 
+    def get_web_decks(self):
+        # Not all virtual decks are web decks
+        webdeck_list = {}
+        for name, deck in self.virtual_deck_list.items():
+            if CONFIG_KW.DECOR.value in deck:  # has a decor, must be a web deck
+                webdeck_list[name] = deck
+        return webdeck_list
+
     def handle_code(self, code: int, name: str):
         logger.debug(f"received code {name}:{code}")
         if code == 1:
@@ -887,6 +897,21 @@ class Cockpit(DatarefListener, CockpitBase):
                 return
             deck.reload_page()
             logger.debug(f"{name} reloaded")
+        elif code == 3:  # web decks ask for initialisation (list of decks)
+            webdeck_list = self.get_web_decks()
+            vdecks = json.dumps(webdeck_list)
+            content = bytes(vdecks, "utf-8")
+            content2 = bytes(__NAME__, "utf-8")
+            payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), 0, 0, 0, len(content2), len(content), content2, content)
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.connect((PROXY_HOST[0], PROXY_HOST[1]))
+                    s.sendall(payload)
+                    logger.debug(f"Code {code}: sent data to ({PROXY_HOST})")
+                    logger.info(f"Web decks sent ({len(webdeck_list)})")
+            except:
+                logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
+
 
     def handle_event(self, data: bytes):
         # need to try/except unpack for wrong data

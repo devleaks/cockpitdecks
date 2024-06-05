@@ -11,7 +11,7 @@ import io
 
 from PIL import Image, ImageOps
 
-from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST
+from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST, PROXY_HOST
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent
 from cockpitdecks.page import Page
@@ -44,8 +44,8 @@ class VirtualDeck(DeckWithIcons):
         self.port = config.get("port")
 
         # Address and port of virtual deck
-        self.web_address = "127.0.0.1"
-        self.web_port = 7699
+        self.web_address = PROXY_HOST[0]
+        self.web_port = PROXY_HOST[1]
 
         self.pil_helper = self
 
