@@ -6,43 +6,57 @@
 body {
     font-family: sans-serif;
 }
+#deck {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+#deckname {
+    text-align: center;
+}
 </style>
 </head>
 <!-- Structure as received:
-  {
-    "name": "Virtual Streamdeck XL",
-    "type": "Virtual Streamdeck XL",
-    "layout": "consoles",
-    "address": "127.0.0.1",
-    "port": 7702,
-    "brightness": 100,
-    "disabled": false,
-    "serial": "127.0.0.1:7702",
-    "deck-type-desc": {
-      "type": "Virtual Streamdeck XL",
-      "driver": "virtualdeck",
-      "buttons": [
-        {
-          "name": 0,
-          "action": "push",
-          "feedback": "image",
-          "image": [
-            96,
-            96
-          ],
-          "layout": [
-            8,
-            4
-          ],
-          "_intname": "NO_NAME_0"
-        }
-      ],
-      "__filename__": "/Users/pierre/Developer/fs/cockpitdecks/bin/../cockpitdecks/decks/resources/virtual streamdeck xl.yaml"
-    }
-  }
+{
+  "address": "127.0.0.1",
+  "deck-type-desc": {
+    "__filename__": "/Users/pierre/Developer/fs/cockpitdecks/bin/../cockpitdecks/decks/resources/development deck.yaml",
+    "buttons": [
+      {
+        "_intname": "NO_NAME_0",
+        "action": "push",
+        "feedback": "image",
+        "image": [
+          128,
+          128
+        ],
+        "layout": [
+          2,
+          1
+        ],
+        "name": 0
+      }
+    ],
+    "driver": "virtualdeck",
+    "type": "Virtual Deck for Development"
+  },
+  "decor": {
+    "background": "devdeck.png",
+    "hspacing": 8,
+    "vspacing": 8
+  },
+  "disabled": false,
+  "layout": "virtualdevdeck",
+  "name": "Virtual deck for development",
+  "port": 7775,
+  "serial": "127.0.0.1:7775",
+  "type": "Virtual Deck for Development"
+}
 -->
 <body>
-    <h1>{{ deck.name }}</h1>
+    <h2 id="deckname">{{ deck.name }}</h2>
 <!--
     <input type="text" id="message" placeholder="Type a message">
     <button onclick="sendMessage()">Send</button>
@@ -52,9 +66,9 @@ body {
             Sorry, your browser does not support canvas.
         </canvas>
     </div>
-    <h4>Debugging Deck Data</h4>
+    <!-- h4>Debugging Deck Data</h4>
     <div><pre>{{ deck|tojson(indent=2) }}</pre></div>
-    <!-- div>{{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}</div -->
+    <div>{{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}</div -->
 <script type="text/javascript">
 
 // Canvas setup
@@ -72,6 +86,7 @@ const keys_vert = {{ deck["deck-type-desc"]["buttons"][0]["layout"][1] }}
 function resize_canvas(ctx, image, layout, spacing) {
     ctx.canvas.width = image[0] * layout[0] + spacing[0] * (layout[0] - 1)
     ctx.canvas.height = image[1] * layout[1] + spacing[1] * (layout[1] - 1)
+    console.log("canvas resize", image[0], layout[0], spacing[0], image[1], layout[1], spacing[1], ctx.canvas.width, ctx.canvas.height)
 }
 
 function relMouseCoords(event){
@@ -97,10 +112,10 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 
 // Internal kitchen functions
 function get_xy(key) {
+
     var x = (icon_width + KEY_HSPACING) * (key % keys_horiz)
     var y = (icon_height + KEY_HSPACING) * Math.floor(key/keys_horiz)
-    x = x + (key % keys_horiz) * KEY_HSPACING
-    console.log("get_xy", x, y);
+    // console.log("get_xy", key, x, y);
     return [x, y]
 }
 
@@ -110,7 +125,7 @@ function get_key(x, y) {
     h = Math.floor(x / w2)
     v = Math.floor(y / h2)
     key = v * keys_horiz + h
-    console.log("get_key", key);
+    //console.log("get_key", key);
     return key
 }
 
@@ -138,19 +153,19 @@ ws.onopen = (event) => {
 };
 
 ws.onmessage = (event) => {
-    console.log("data received");
+    //console.log("data received");
     var data = JSON.parse(event.data)
     console.log("code received:", data.code);
     if (data.code == 0) {
-        console.log("loading image (key)..", data.key)
+        //console.log("loading image (key)..", data.key)
         coords = get_xy(data.key)
         var image = new Image();
         image.onload = function() {
             ctx.drawImage(image, coords[0], coords[1]);
-            console.log("drawing at", coords[0], coords[1])
+            //console.log("drawing at", coords[0], coords[1])
         };
         image.src = "data:image/jpeg;base64,"+data.image;
-        console.log("..done")
+        //console.log("..done")
     }
 };
 
@@ -169,12 +184,12 @@ function sendCode(code, deck) {
 }
 
 function sendCoordinates(deck, c, z) {
-    console.log(deck, c.x, c.y, z)
+    //console.log(deck, c.x, c.y, z)
     key = get_key(c.x, c.y)
     payload = {"code": 0, "deck": deck, "key": key, "x": c.x, "y": c.y, "z": z}
     var message = JSON.stringify(payload)
     ws.send(message);
-    console.log(message + " sent");
+    //console.log(message + " sent");
 }
 
 </script>

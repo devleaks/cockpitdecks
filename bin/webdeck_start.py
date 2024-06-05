@@ -10,6 +10,9 @@ import logging
 from flask import Flask, render_template, request, jsonify
 from simple_websocket import Server, ConnectionClosed
 
+FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -46,7 +49,9 @@ class WebReceiver:
     def register_deck(self, deck, websocket):
         if deck not in self.vd_ws_conn:
             self.vd_ws_conn[deck] = []
+            logger.debug(f"{deck}: new registration")
         self.vd_ws_conn[deck].append(websocket)
+        logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
 
     def get_deck_description(self, deck):
         return self.all_decks.get(deck)
@@ -69,9 +74,8 @@ class WebReceiver:
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
         content = bytes(deck, "utf-8")
-        pressed = 1 if event == "pressed" else 0
         code = 0
-        payload = struct.pack(f"III{len(content)}s", code, key, pressed, content)
+        payload = struct.pack(f"III{len(content)}s", code, key, event, content)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.cd_address, self.cd_port))
@@ -83,8 +87,7 @@ class WebReceiver:
         logger.debug(f"deck {deck} handling code {code}")
 
     def is_closed(self, ws):
-        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0
-
+        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # need a better way to do this...
 
     def handle_event(self, data: bytes):
         # payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
@@ -201,7 +204,7 @@ def cockpit():
                 app.logger.info(f"registered deck {deck}")
                 web_receiver.send_code(deck, code)
                 app.logger.debug(f"forwarded code deck={deck}, code={code}")
-            elif data.get("code") == 0:
+            elif code == 0:
                 deck = data.get("deck")
                 key = data.get("key")
                 if type(key) is str:

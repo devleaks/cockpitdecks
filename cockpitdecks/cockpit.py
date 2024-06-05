@@ -110,6 +110,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.deck_types = {}
         self.deck_types_new = {}
         self.virtual_deck_types = {}
+        self.virtual_decks_added = False
 
         self.fonts = {}
 
@@ -316,6 +317,9 @@ class Cockpit(DatarefListener, CockpitBase):
             else:
                 if i > 1:
                     logger.warning(f"more than one deck of type {req_driver}, no serial to disambiguate")
+                for deck in self.devices:
+                    if deck[CONFIG_KW.DRIVER.value] == req_driver:
+                        print(deck)
             return None
         ## Got serial, search for it
         for deck in self.devices:
@@ -517,6 +521,10 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         if self.acpath is None:
             logger.warning(f"no aircraft folder, cannot load virtual decks")
+            return
+        if self.virtual_decks_added:
+            logger.info(f"virtual decks already added")
+            return
         cnt = 0
         builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
         decks = builder[1]().enumerate(acpath=self.acpath, cdip=COCKPITDECKS_HOST)
@@ -535,7 +543,21 @@ class Cockpit(DatarefListener, CockpitBase):
                 }
             )
             cnt = cnt + 1
+        self.virtual_decks_added = True
         logger.debug(f"added {cnt} virtual decks")
+
+    def remove_virtual_decks(self):
+        if not self.virtual_decks_added:
+            logger.info(f"virtual decks not added")
+            return
+        to_remove = []
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                to_remove.append(device)
+        for device in to_remove:
+            self.devices.remove(device)
+        self.virtual_decks_added = False
+        logger.debug(f"removed {len(to_remove)} virtual decks")
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
@@ -837,6 +859,14 @@ class Cockpit(DatarefListener, CockpitBase):
                 return True
         return False
 
+    def has_web_decks(self) -> bool:
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                vdev = device.get(CONFIG_KW.DEVICE.value)
+                if vdev is not None and vdev.virtual_deck_definition.get(CONFIG_KW.ADDRESS.value) is not None:
+                    return True
+        return False
+
     def broadcast_code(self, code):
         for deck in self.cockpit.values():
             if type(deck).__name__ == "VirtualDeck":
@@ -861,7 +891,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.handle_code(code, name)
             return
         deck = self.cockpit.get(name)
-        logger.debug(f"received {name}:{key} = {event}")
+        logger.debug(f"received {name}: key={key}, event={event}")
         if deck is None:
             logger.warning(f"handle event: deck {name} not found")
             return
@@ -965,6 +995,7 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"terminating..")
         for deck in self.cockpit.values():
             deck.terminate()
+        self.remove_virtual_decks()
         self.cockpit = {}
         nt = len(threading.enumerate())
         if nt > 1:
