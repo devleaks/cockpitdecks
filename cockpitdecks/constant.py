@@ -91,6 +91,7 @@ class CONFIG_KW(Enum):
     BUTTONS = "buttons"
     DATAREF = "dataref"
     DECKS = "decks"
+    DECOR = "decor"
     DEVICE = "device"
     DISABLED = "disabled"
     DRIVER = "driver"
@@ -177,6 +178,7 @@ class Config(MutableMapping):
     def __init__(self, filename: str):
         self.store = dict()
         if os.path.exists(filename):
+            filename = os.path.abspath(filename)
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename

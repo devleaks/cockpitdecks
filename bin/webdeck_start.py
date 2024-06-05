@@ -14,7 +14,7 @@ FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 WS = "_ws"
 BUFFER_SIZE = 4096
@@ -52,6 +52,15 @@ class WebReceiver:
             logger.debug(f"{deck}: new registration")
         self.vd_ws_conn[deck].append(websocket)
         logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
+
+    def remove(self, websocket):
+        for deck in self.vd_ws_conn:
+            remove = []
+            for ws in deck:
+                if ws == websocket:
+                    remove.append(websocket)
+            for ws in remove:
+                deck.remove(ws)
 
     def get_deck_description(self, deck):
         return self.all_decks.get(deck)
@@ -175,7 +184,7 @@ web_receiver.start()
 
 app = Flask(__name__, template_folder=os.path.join("..", "cockpitdecks", "decks", "resources", "templates"))
 
-app.logger.setLevel(logging.DEBUG)
+app.logger.setLevel(logging.INFO)
 
 @app.route("/")
 def index():
@@ -214,10 +223,9 @@ def cockpit():
                 app.logger.debug(f"event sent deck={deck}, value={int(data.get('z'))}")
 
     except ConnectionClosed:
-        pass
-
-    # Start a thread to listen to socket
-    # and forward to websocket
+        app.logger.debug(f"connection closed")
+        web_receiver.remove(ws)
+        app.logger.debug(f"client removed")
 
     return ""
 

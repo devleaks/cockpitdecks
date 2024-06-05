@@ -249,8 +249,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{dref}")
 
     def scan_devices(self):
-        """Scan for hardware devices
-        """
+        """Scan for hardware devices"""
         if len(DECK_DRIVERS) == 0:
             logger.error(f"no driver")
             return
@@ -630,12 +629,18 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
                         virtual_deck_list[name] = deck_config | {"deck-type-desc": self.deck_types.get(deck_type).store}
+                        # vitaul decks need to have a decor
+                        decor = deck_config.get(CONFIG_KW.DECOR.value)
+                        if decor is None:
+                            deck_config = deck_config | {CONFIG_KW.DECOR.value: {"background": "", "offset": [0, 0], "spacing": [0, 0]}}
+                            logger.debug(f"deck {name} added neutral decor")
                     cnt = cnt + 1
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:
             #    logger.error(f"deck {deck_type} {name} has no serial number, ignoring")
+        # Temporary solution to hand over web decks
         with open("vdecks.json", "w") as fp:
             json.dump(virtual_deck_list, fp, indent=2)
 
