@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Cockpitdecks - {{ deck.name }} </title>
-<style>
+<style type="text/css">
 /* everything is centerd in browser window */
 body {
     font-family: sans-serif;
@@ -75,6 +75,8 @@ body {
 const canvas = document.getElementById("deck");
 const ctx = canvas.getContext("2d");
 
+const DECK_NAME = "{{deck.name}}"
+
 const icon_width = {{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}
 const icon_height = {{ deck["deck-type-desc"]["buttons"][0]["image"][1] }}
 
@@ -127,14 +129,14 @@ HTMLCanvasElement.prototype.relative_mouse_coordinates = relative_mouse_coordina
 
 canvas.addEventListener("mousedown", function(e) {
     coords = canvas.relative_mouse_coordinates(event);
-    sendEvent("{{deck.name}}", coords, 1)
+    sendEvent(DECK_NAME, coords, 1)
 })
 
 canvas.addEventListener("mouseup", function(e) {
     coords = canvas.relative_mouse_coordinates(event);
     canvasX = coords.x;
     canvasY = coords.y;
-    sendEvent("{{deck.name}}", coords, 0)
+    sendEvent(DECK_NAME, coords, 0)
 })
 
 resize_canvas()
@@ -177,7 +179,7 @@ var ws = new WebSocket(ws_url);
 ws.onopen = (event) => {
     console.log(ws_url, "connection opened");
     // sends its name on new connection to help identify
-    sendCode(1, "{{deck.name}}")  // filled by jinja templating engine
+    sendCode(1, DECK_NAME)  // filled by jinja templating engine
 };
 
 ws.onmessage = (event) => {

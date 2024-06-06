@@ -55,13 +55,13 @@ class CDProxy:
     def init(self):
         self.send_code(deck=__NAME__, code=3)  # request initialisation
 
-    def ready(self):
+    def ready(self) -> bool:
         if self.inited:
             return True
         self.init()
         return False
 
-    def register_deck(self, deck, websocket):
+    def register_deck(self, deck: str, websocket):
         if deck not in self.vd_ws_conn:
             self.vd_ws_conn[deck] = []
             logger.debug(f"{deck}: new registration")
@@ -79,10 +79,10 @@ class CDProxy:
             for ws in remove:
                 deck.remove(ws)
 
-    def get_deck_description(self, deck):
+    def get_deck_description(self, deck: str) -> dict:
         return self.all_decks.get(deck)
 
-    def send_code(self, deck, code) -> bool:
+    def send_code(self, deck: str, code: int) -> bool:
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
@@ -97,7 +97,7 @@ class CDProxy:
             logger.warning(f"{deck}: problem sending event")
         return False
 
-    def send_event(self, deck, key, event) -> bool:
+    def send_event(self, deck: str, key, event) -> bool:
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
@@ -123,7 +123,7 @@ class CDProxy:
             logger.info(f"inited: {(len(self.all_decks))} web decks received")
 
     def is_closed(self, ws):
-        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # need a better way to do this...
+        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # there must be a better way to do this...
 
     def handle_event(self, data: bytes):
         # payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
@@ -215,7 +215,6 @@ TEMPLATE_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "temp
 app = Flask(__name__, template_folder=TEMPLATE_FOLDER)
 
 app.logger.setLevel(logging.INFO)
-
 # app.config['EXPLAIN_TEMPLATE_LOADING'] = True
 
 
@@ -245,7 +244,7 @@ def deck(name: str):
     return render_template("deck.j2", deck=cdproxy.get_deck_description(uname))
 
 
-@app.route("/cockpit", websocket=True)
+@app.route("/cockpit", websocket=True)  # How convenient...
 def cockpit():
     ws = Server.accept(request.environ)
     try:
@@ -276,14 +275,14 @@ def cockpit():
 
     return ""
 
-
-# @app.route("/image/<deck>/<name>")
-# def image(deck: str, name: str):
-#     deck = urllib.parse.unquote(deck)
-#     with open(name, "rb") as fp:
-#         image = fp.read()
-#     response = {"code": 0, "deck": deck, "image": base64.b64encode(image).decode("utf-8")}
-#     vd[deck]["ws"].send(json.dumps(response))
-#     return f"{name} ok"
-
-app.run(host=APP_HOST[0], port=APP_HOST[1])
+try:
+    app.run(host=APP_HOST[0], port=APP_HOST[1])
+except KeyboardInterrupt:
+    def shutdown_server():
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
+    logger.warning("terminating (please wait)..")
+    cdproxy.stop()
+    shutdown_server()

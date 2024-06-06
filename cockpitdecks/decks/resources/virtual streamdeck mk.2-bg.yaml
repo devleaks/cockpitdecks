@@ -7,5 +7,5 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    image: [196, 196]
+    image: [96, 96]
     layout: [5, 3]
