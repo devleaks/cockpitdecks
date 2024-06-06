@@ -13,10 +13,15 @@ from datetime import datetime
 import ruamel
 from ruamel.yaml import YAML
 
+from .network import *
+
 
 # ##############################################################
 # A few constants and default values
 # Adjust with care...
+#
+# These are mainly used inside Cockpitdecks and should not be changed.
+# Values that might need adjustments are isolated in network.py file.
 #
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 ROOT_DEBUG = ""
@@ -39,10 +44,6 @@ ICON_SIZE = 256  # px
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
-COCKPITDECKS_HOST = ("127.0.0.1", 7700)  # That's where cockpitdecks receives updates from virtual decks
-PROXY_HOST = ["127.0.0.1", 7699]  # That's where cockpitdecks send information to web decks
-APP_HOST = ["0.0.0.0", 7777] # That's where the web deck app run and can be contacted by the browser.
-
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing

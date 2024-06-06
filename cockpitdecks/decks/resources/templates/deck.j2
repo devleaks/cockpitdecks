@@ -83,14 +83,17 @@ const numkeys_vert = {{ deck["deck-type-desc"]["buttons"][0]["layout"][1] }}
 const keyspc_horiz = {{ deck["decor"]["spacing"][0] }}
 const keyspc_vert = {{ deck["decor"]["spacing"][1] }}
 
+const offset_horiz = {{ deck["decor"]["offset"][0] }}
+const offset_vert = {{ deck["decor"]["offset"][1] }}
+
 
 // Canvas functions & preparation
 function resize_canvas() {
-    ctx.canvas.width = icon_width * numkeys_horiz + keyspc_horiz * (numkeys_horiz - 1)
-    ctx.canvas.height = icon_height * numkeys_vert + keyspc_vert * (numkeys_vert - 1)
+    ctx.canvas.width = 2 * offset_horiz + icon_width  * numkeys_horiz + keyspc_horiz * (numkeys_horiz - 1)
+    ctx.canvas.height = 2 * offset_vert + icon_height * numkeys_vert  + keyspc_vert  * (numkeys_vert - 1)
 }
 
-function relMouseCoords(event){
+function relative_mouse_coordinates(event){
     var totalOffsetX = 0;
     var totalOffsetY = 0;
     var canvasX = 0;
@@ -108,15 +111,15 @@ function relMouseCoords(event){
 
     return {x:canvasX, y:canvasY}
 }
-HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
+HTMLCanvasElement.prototype.relative_mouse_coordinates = relative_mouse_coordinates;
 
 canvas.addEventListener("mousedown", function(e) {
-    coords = canvas.relMouseCoords(event);
+    coords = canvas.relative_mouse_coordinates(event);
     sendEvent("{{deck.name}}", coords, 1)
 })
 
 canvas.addEventListener("mouseup", function(e) {
-    coords = canvas.relMouseCoords(event);
+    coords = canvas.relative_mouse_coordinates(event);
     canvasX = coords.x;
     canvasY = coords.y;
     sendEvent("{{deck.name}}", coords, 0)
@@ -127,28 +130,35 @@ resize_canvas()
 
 // Internal kitchen functions
 function get_xy(key) {
-
-    var x = (icon_width + keyspc_horiz) * (key % numkeys_horiz)
-    var y = (icon_height + keyspc_horiz) * Math.floor(key/numkeys_horiz)
+    var x = offset_horiz + (icon_width + keyspc_horiz)  * (key % numkeys_horiz)
+    var y = offset_vert  + (icon_height + keyspc_horiz) * Math.floor(key/numkeys_horiz)
     // console.log("get_xy", key, x, y);
     return [x, y]
 }
 
 function get_key(x, y) {
+    // needs to be fixed for when user click between keys
+    // should return -1 in these cases
     w2 = icon_width + keyspc_vert
     h2 = icon_height + keyspc_horiz
-    h = Math.floor(x / w2)
-    v = Math.floor(y / h2)
-    key = v * numkeys_horiz + h
+    x2 = (x - offset_horiz)
+    y2 = (y - offset_vert)
+    key = -1
+    if (x2 >= 0 && y2 >= 0) {
+        h = Math.floor(x2 / w2)
+        v = Math.floor(y2 / h2)
+        key = v * numkeys_horiz + h
+    }
     // console.log("get_key", key);
     return key
 }
 
 // WebSocket initialisation and setup
-var ws = new WebSocket("ws://127.0.0.1:7777/cockpit");
+ws_url = "{{ deck.ws_url }}"
+var ws = new WebSocket(ws_url);
 
 ws.onopen = (event) => {
-    console.log("websocket connection opened");
+    console.log(ws_url, "connection opened");
     // sends its name on new connection to help identify
     sendCode(1, "{{deck.name}}")  // filled by jinja templating engine
 };
@@ -188,10 +198,14 @@ function sendCode(code, deck) {
 function sendEvent(deck, c, z) {
     //console.log(deck, c.x, c.y, z)
     key = get_key(c.x, c.y)
-    payload = {"code": 0, "deck": deck, "key": key, "x": c.x, "y": c.y, "z": z}
-    var message = JSON.stringify(payload)
-    ws.send(message);
-    // console.log("sent event", message);
+    if (key == -1) {
+        console.log("clicked outside deck");
+    } else {
+        payload = {"code": 0, "deck": deck, "key": key, "x": c.x, "y": c.y, "z": z}
+        var message = JSON.stringify(payload)
+        ws.send(message);
+        // console.log("sent event", message);
+    }
 }
 
 </script>

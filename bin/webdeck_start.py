@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we'r
 
 from cockpitdecks import __NAME__, COCKPITDECKS_HOST, PROXY_HOST, APP_HOST
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, send_from_directory, request
 from simple_websocket import Server, ConnectionClosed
 
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
@@ -218,16 +218,21 @@ app.logger.setLevel(logging.INFO)
 
 @app.route("/")
 def index():
-    if cdproxy.ready():
-        return render_template("index.html", virtual_decks=cdproxy.all_decks)
-    return render_template("index_alt.html")
+    dummy = cdproxy.ready()  # provoque deck request
+    return render_template("index.j2", virtual_decks=cdproxy.all_decks)
 
+@app.route('/favicon.ico')
+def send_favicon():
+    return send_from_directory(TEMPLATE_FOLDER, 'favicon.ico')
 
 @app.route("/deck/<name>")
 def deck(name: str):
     uname = urllib.parse.unquote(name)
     app.logger.debug(f"Starting deck {uname}")
-    return render_template("deck.html", deck=cdproxy.get_deck_description(uname))
+    deck_desc = cdproxy.get_deck_description(uname)
+    # Inject our contact address:
+    deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+    return render_template("deck.j2", deck=cdproxy.get_deck_description(uname))
 
 
 @app.route("/cockpit", websocket=True)

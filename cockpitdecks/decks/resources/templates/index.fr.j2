@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Cockpitdecks Web Decks</title>
+<style>
+body {
+    font-family: sans-serif;
+}
+</style>
+</head>
+<body>
+    <h2>Bienvenue</h2>
+    {% if virtual_decks|length > 0 %}
+        <p>Liste des decks disponibles:</p>
+        <ul id="decklist">
+        {% for deck in virtual_decks %}
+            <li><a href="/deck/{{ deck|e }}" target=_blank>{{ deck }}</a></li>
+        {% endfor %}
+        </ul>
+        <p>Le deck s'ouvrira dans une nouvelle fenêtre.</p>
+    {% else %}
+        <p>Veuillez démarrer Cockpitdecks pour voir la liste des decks disponibles.</p>
+        <p><a href="/">Rafraîchir la page</a></p>
+    {% endif %}
+</body>
+</html>
