@@ -1,7 +1,7 @@
 # This is the description of a deck's capabilities for a virtual deck
 #
 ---
-type: Virtual Streamdeck XL BG
+type: Virtual Streamdeck XL
 driver: virtualdeck
 buttons:
   - name: 0
