@@ -912,7 +912,6 @@ class Cockpit(DatarefListener, CockpitBase):
             except:
                 logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
 
-
     def handle_event(self, data: bytes):
         # need to try/except unpack for wrong data
         (code, key, event), name = struct.unpack("III", data[:12]), data[12:]

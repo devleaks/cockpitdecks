@@ -7,6 +7,7 @@ import socket
 import struct
 import threading
 import logging
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
 
 from cockpitdecks import __NAME__, COCKPITDECKS_HOST, PROXY_HOST, APP_HOST
@@ -23,6 +24,7 @@ logger.setLevel(logging.INFO)
 
 SOCKET_TIMEOUT = 5
 BUFFER_SIZE = 4096
+
 
 # ##################################
 # Web Proxy between Cockpitdecks and websockets to web pages with decks
@@ -216,18 +218,22 @@ app.logger.setLevel(logging.INFO)
 
 # app.config['EXPLAIN_TEMPLATE_LOADING'] = True
 
+
 @app.route("/")
 def index():
     dummy = cdproxy.ready()  # provoque deck request
     return render_template("index.j2", virtual_decks=cdproxy.all_decks)
 
-@app.route('/favicon.ico')
-def send_favicon():
-    return send_from_directory(TEMPLATE_FOLDER, 'favicon.ico')
 
-@app.route('/deckbg/<path:path>')
+@app.route("/favicon.ico")
+def send_favicon():
+    return send_from_directory(TEMPLATE_FOLDER, "favicon.ico")
+
+
+@app.route("/deckbg/<path:path>")
 def send_report(path):
     return send_from_directory(TEMPLATE_FOLDER, path)
+
 
 @app.route("/deck/<name>")
 def deck(name: str):
@@ -237,6 +243,7 @@ def deck(name: str):
     # Inject our contact address:
     deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
     return render_template("deck.j2", deck=cdproxy.get_deck_description(uname))
+
 
 @app.route("/cockpit", websocket=True)
 def cockpit():
@@ -268,6 +275,7 @@ def cockpit():
         app.logger.debug(f"client removed")
 
     return ""
+
 
 # @app.route("/image/<deck>/<name>")
 # def image(deck: str, name: str):

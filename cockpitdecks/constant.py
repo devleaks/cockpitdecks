@@ -45,6 +45,7 @@ ICON_SIZE = 256  # px
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 
+
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
     VIVISUN = "v"  # v(ivisun): bright, sharp.
