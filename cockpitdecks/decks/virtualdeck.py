@@ -22,8 +22,8 @@ from cockpitdecks.buttons.representation import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
+# logger.setLevel(logging.DEBUG)
+WEB_LOG = False
 
 class VirtualDeck(DeckWithIcons):
     """
@@ -165,7 +165,8 @@ class VirtualDeck(DeckWithIcons):
                 s.connect((self.address, self.port))
                 s.sendall(payload)
         except:
-            logger.warning(f"{self.name}: problem sending code", exc_info=True)
+            if WEB_LOG:
+                logger.warning(f"{self.name}: problem sending code", exc_info=True)
 
     def _send_key_image_to_device(self, key, image):
         # Sends the PIL Image bytes with a few meta
@@ -179,7 +180,8 @@ class VirtualDeck(DeckWithIcons):
                 s.connect((self.address, self.port))
                 s.sendall(payload)
         except:
-            logger.warning(f"key: {key}: problem sending image to virtual deck")
+            if WEB_LOG:
+                logger.warning(f"key: {key}: problem sending image to virtual deck")
         logger.debug(f"key: {key}: image sent to ({self.address}, {self.port})")
         # if web is being used (i.e. started)
         self._send_key_image_to_web(key, image)
@@ -217,7 +219,8 @@ class VirtualDeck(DeckWithIcons):
                 s.sendall(payload)
                 logger.debug(f"key: {key}: image sent to ({self.web_address}, {self.web_port})")
         except:
-            logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
+            if WEB_LOG:
+                logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
