@@ -7,10 +7,11 @@ import socket
 import struct
 import threading
 import logging
+import io
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageDraw, ImageOps
 
-from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST
+from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST, PROXY_HOST
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent
 from cockpitdecks.page import Page
@@ -21,7 +22,7 @@ from cockpitdecks.buttons.representation import (
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class VirtualDeck(DeckWithIcons):
@@ -41,6 +42,10 @@ class VirtualDeck(DeckWithIcons):
         # Address and port of virtual deck
         self.address = config.get("address")
         self.port = config.get("port")
+
+        # Address and port of virtual deck
+        self.web_address = PROXY_HOST[0]
+        self.web_port = PROXY_HOST[1]
 
         self.pil_helper = self
 
@@ -174,8 +179,45 @@ class VirtualDeck(DeckWithIcons):
                 s.connect((self.address, self.port))
                 s.sendall(payload)
         except:
-            logger.warning(f"key: {key}: problem sending message")
+            logger.warning(f"key: {key}: problem sending image to virtual deck")
         logger.debug(f"key: {key}: image sent to ({self.address}, {self.port})")
+        # if web is being used (i.e. started)
+        self._send_key_image_to_web(key, image)
+
+    def _send_key_image_to_web(self, key, image):
+        # Sends the PIL Image bytes with a few meta to Flask for web display
+        # Image is sent as a stream of bytes which is the file content of the image saved in PNG format
+        # Need to supply deck name as well.
+        def add_corners(im, rad):
+            circle = Image.new("L", (rad * 2, rad * 2), 0)
+            draw = ImageDraw.Draw(circle)
+            draw.ellipse((0, 0, rad * 2 - 1, rad * 2 - 1), fill=255)
+            alpha = Image.new("L", im.size, 255)
+            w, h = im.size
+            alpha.paste(circle.crop((0, 0, rad, rad)), (0, 0))
+            alpha.paste(circle.crop((0, rad, rad, rad * 2)), (0, h - rad))
+            alpha.paste(circle.crop((rad, 0, rad * 2, rad)), (w - rad, 0))
+            alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
+            im.putalpha(alpha)
+            return im
+
+        image = add_corners(image, int(image.width / 8))
+
+        width, height = image.size
+        img_byte_arr = io.BytesIO()
+        transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
+        transformed.save(img_byte_arr, format="PNG")
+        content = img_byte_arr.getvalue()
+        code = 0
+        content2 = bytes(self.name, "utf-8")
+        payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.web_address, self.web_port))
+                s.sendall(payload)
+                logger.debug(f"key: {key}: image sent to ({self.web_address}, {self.web_port})")
+        except:
+            logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:

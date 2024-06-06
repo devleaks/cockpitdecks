@@ -8,13 +8,14 @@ import pickle
 import json
 import socket
 import struct
+import weakref
 import pkg_resources
 from queue import Queue
 
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-from cockpitdecks import __version__, LOGFILE, FORMAT
+from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
 from cockpitdecks import (
     CONFIG_FOLDER,
@@ -26,7 +27,7 @@ from cockpitdecks import (
     RESOURCES_FOLDER,
 )
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
-from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST
+from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -34,7 +35,7 @@ from cockpitdecks.decks.resources import DeckType
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
@@ -110,6 +111,8 @@ class Cockpit(DatarefListener, CockpitBase):
         self.deck_types = {}
         self.deck_types_new = {}
         self.virtual_deck_types = {}
+        self.virtual_deck_list = {}
+        self.virtual_decks_added = False
 
         self.fonts = {}
 
@@ -248,6 +251,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{dref}")
 
     def scan_devices(self):
+        """Scan for hardware devices"""
         if len(DECK_DRIVERS) == 0:
             logger.error(f"no driver")
             return
@@ -260,7 +264,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         for deck_driver, builder in DECK_DRIVERS.items():
             if deck_driver == VIRTUAL_DECK_DRIVER:
-                # will be added later, when we have acpath set, in add_virtual_decks()
+                # will be added later, when we have acpath set, in add virtual_decks()
                 continue
             decks = builder[1]().enumerate()
             logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
@@ -284,7 +288,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def get_device(self, req_serial: str, req_driver: str):
         """
-        Get a HIDAPI device for the supplied serial number.
+        Get a hardware device for the supplied serial number.
         If found, the device is opened and reset and returned open.
 
         :param    req_serial:  The request serial
@@ -314,6 +318,9 @@ class Cockpit(DatarefListener, CockpitBase):
             else:
                 if i > 1:
                     logger.warning(f"more than one deck of type {req_driver}, no serial to disambiguate")
+                for deck in self.devices:
+                    if deck[CONFIG_KW.DRIVER.value] == req_driver:
+                        print(deck)
             return None
         ## Got serial, search for it
         for deck in self.devices:
@@ -352,10 +359,6 @@ class Cockpit(DatarefListener, CockpitBase):
             self.sim.clean_datarefs_to_monitor()
             logger.warning(f"{os.path.basename(self.acpath)} unloaded")
 
-        if len(self.devices) == 0:
-            logger.warning(f"no device")
-            return
-
         self.cockpit = {}
         self.icons = {}
         # self.fonts = {}
@@ -365,6 +368,12 @@ class Cockpit(DatarefListener, CockpitBase):
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
+            self.scan_virtual_decks()
+
+            if len(self.devices) == 0:
+                logger.warning(f"no device")
+                return
+
             self.load_icons()
             self.load_fonts()
             self.create_decks()
@@ -505,7 +514,18 @@ class Cockpit(DatarefListener, CockpitBase):
             f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
         )
 
-    def add_virtual_decks(self):
+    def scan_virtual_decks(self):
+        """Virtual decks are declared in the cockpit configuration
+        Therefore it is necessary to have an aircraft folder.
+
+        [description]
+        """
+        if self.acpath is None:
+            logger.warning(f"no aircraft folder, cannot load virtual decks")
+            return
+        if self.virtual_decks_added:
+            logger.info(f"virtual decks already added")
+            return
         cnt = 0
         builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
         decks = builder[1]().enumerate(acpath=self.acpath, cdip=COCKPITDECKS_HOST)
@@ -524,7 +544,21 @@ class Cockpit(DatarefListener, CockpitBase):
                 }
             )
             cnt = cnt + 1
+        self.virtual_decks_added = True
         logger.debug(f"added {cnt} virtual decks")
+
+    def remove_virtual_decks(self):
+        if not self.virtual_decks_added:
+            logger.info(f"virtual decks not added")
+            return
+        to_remove = []
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                to_remove.append(device)
+        for device in to_remove:
+            self.devices.remove(device)
+        self.virtual_decks_added = False
+        logger.debug(f"removed {len(to_remove)} virtual decks")
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
@@ -540,8 +574,6 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"no deck in config file {fn}")
             return
 
-        self.add_virtual_decks()
-
         logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
 
         deck_count_by_type = {}
@@ -553,6 +585,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 deck_count_by_type[ty] = deck_count_by_type[ty] + 1
 
         cnt = 0
+        self.virtual_deck_list = {}
         for deck_config in decks:
             name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
 
@@ -596,12 +629,22 @@ class Cockpit(DatarefListener, CockpitBase):
                     deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+                    if deck_driver == VIRTUAL_DECK_DRIVER:
+                        self.virtual_deck_list[name] = deck_config | {"deck-type-desc": self.deck_types.get(deck_type).store}
+                        # web decks need to have a decor
+                        # decor = deck_config.get(CONFIG_KW.DECOR.value)
+                        # if decor is None:
+                        #     deck_config = deck_config | {CONFIG_KW.DECOR.value: {"background": "", "offset": [0, 0], "spacing": [0, 0]}}
+                        #     logger.debug(f"deck {name} added neutral decor")
                     cnt = cnt + 1
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:
             #    logger.error(f"deck {deck_type} {name} has no serial number, ignoring")
+        # Temporary solution to hand over web decks
+        # with open("vdecks.json", "w") as fp:
+        #     json.dump(self.virtual_deck_list, fp, indent=2)
 
     def create_default_decks(self):
         """
@@ -648,7 +691,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.deck_types[name] = data
             if data.is_virtual_deck():
                 self.virtual_deck_types[name] = data.get_virtual_deck_layout()
-        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} virtual decks")
+        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
@@ -818,13 +861,32 @@ class Cockpit(DatarefListener, CockpitBase):
     # Cockpit start/stop/handle procedures for virtual decks
     #
     def has_virtual_decks(self) -> bool:
-        return True
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                return True
+        return False
+
+    def has_web_decks(self) -> bool:
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                vdev = device.get(CONFIG_KW.DEVICE.value)
+                if vdev is not None and vdev.virtual_deck_definition.get(CONFIG_KW.ADDRESS.value) is not None:
+                    return True
+        return False
 
     def broadcast_code(self, code):
         for deck in self.cockpit.values():
             if type(deck).__name__ == "VirtualDeck":
                 deck.send_code(code)
                 logger.debug(f"sent code {deck.name}:{code}")
+
+    def get_web_decks(self):
+        # Not all virtual decks are web decks
+        webdeck_list = {}
+        for name, deck in self.virtual_deck_list.items():
+            if CONFIG_KW.DECOR.value in deck:  # has a decor, must be a web deck
+                webdeck_list[name] = deck
+        return webdeck_list
 
     def handle_code(self, code: int, name: str):
         logger.debug(f"received code {name}:{code}")
@@ -834,6 +896,21 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"handle code: deck {name} not found")
                 return
             deck.reload_page()
+            logger.debug(f"{name} reloaded")
+        elif code == 3:  # web decks ask for initialisation (list of decks)
+            webdeck_list = self.get_web_decks()
+            vdecks = json.dumps(webdeck_list)
+            content = bytes(vdecks, "utf-8")
+            content2 = bytes(__NAME__, "utf-8")
+            payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), 0, 0, 0, len(content2), len(content), content2, content)
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.connect((PROXY_HOST[0], PROXY_HOST[1]))
+                    s.sendall(payload)
+                    logger.debug(f"Code {code}: sent data to ({PROXY_HOST})")
+                    logger.info(f"Web decks sent ({len(webdeck_list)})")
+            except:
+                logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
 
     def handle_event(self, data: bytes):
         # need to try/except unpack for wrong data
@@ -843,7 +920,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.handle_code(code, name)
             return
         deck = self.cockpit.get(name)
-        logger.debug(f"received {name}:{key} = {event}")
+        logger.debug(f"received {name}: key={key}, event={event}")
         if deck is None:
             logger.warning(f"handle event: deck {name} not found")
             return
@@ -947,6 +1024,7 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"terminating..")
         for deck in self.cockpit.values():
             deck.terminate()
+        self.remove_virtual_decks()
         self.cockpit = {}
         nt = len(threading.enumerate())
         if nt > 1:
@@ -968,10 +1046,13 @@ class Cockpit(DatarefListener, CockpitBase):
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
+            logger.info(f"..event loop stopped..")
         if self.rcv_loop_run:
             self.stop_vd_listener()
+            logger.info(f"..virtual deck listener stopped..")
         # Terminate decks
         self.terminate_aircraft()
+        logger.info(f"..aircraft terminated..")
         # Terminate dataref collection
         if self.sim is not None:
             logger.info("..terminating connection to simulator..")

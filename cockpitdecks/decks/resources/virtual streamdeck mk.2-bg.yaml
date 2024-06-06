@@ -1,11 +1,11 @@
 # This is the description of a deck's capabilities for a virtual deck
 #
 ---
-type: Virtual Streamdeck XL BG
+type: Virtual Streamdeck MK.2 BG
 driver: virtualdeck
 buttons:
   - name: 0
     action: push
     feedback: image
     image: [96, 96]
-    layout: [8, 4]
+    layout: [5, 3]

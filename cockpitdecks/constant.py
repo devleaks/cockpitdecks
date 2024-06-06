@@ -13,10 +13,15 @@ from datetime import datetime
 import ruamel
 from ruamel.yaml import YAML
 
+from .network import *
+
 
 # ##############################################################
 # A few constants and default values
 # Adjust with care...
+#
+# These are mainly used inside Cockpitdecks and should not be changed.
+# Values that might need adjustments are isolated in network.py file.
 #
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 ROOT_DEBUG = ""
@@ -37,9 +42,8 @@ DECKS_FOLDER = "decks"
 
 ICON_SIZE = 256  # px
 
+# Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
-
-COCKPITDECKS_HOST = ("127.0.0.1", 7700)
 
 
 class ANNUNCIATOR_STYLES(Enum):
@@ -91,6 +95,7 @@ class CONFIG_KW(Enum):
     BUTTONS = "buttons"
     DATAREF = "dataref"
     DECKS = "decks"
+    DECOR = "decor"
     DEVICE = "device"
     DISABLED = "disabled"
     DRIVER = "driver"
@@ -177,6 +182,7 @@ class Config(MutableMapping):
     def __init__(self, filename: str):
         self.store = dict()
         if os.path.exists(filename):
+            filename = os.path.abspath(filename)
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
                 self.store["__filename__"] = filename
