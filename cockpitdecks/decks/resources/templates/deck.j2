@@ -3,6 +3,7 @@
 <head>
     <title>Cockpitdecks - {{ deck.name }} </title>
 <style>
+/* everything is centerd in browser window */
 body {
     font-family: sans-serif;
 }
@@ -86,11 +87,22 @@ const keyspc_vert = {{ deck["decor"]["spacing"][1] }}
 const offset_horiz = {{ deck["decor"]["offset"][0] }}
 const offset_vert = {{ deck["decor"]["offset"][1] }}
 
+const background_image = "{{deck["decor"]["background"]}}"
 
 // Canvas functions & preparation
 function resize_canvas() {
     ctx.canvas.width = 2 * offset_horiz + icon_width  * numkeys_horiz + keyspc_horiz * (numkeys_horiz - 1)
     ctx.canvas.height = 2 * offset_vert + icon_height * numkeys_vert  + keyspc_vert  * (numkeys_vert - 1)
+}
+
+function set_deck_bg_image(url) {
+    if (url != null && url != "" && url.toLowerCase() != "none" && url.toLowerCase() != "null") {
+        var image = new Image();
+        image.onload = function() {
+            ctx.drawImage(image, 0, 0);
+        };
+        image.src = "/deckbg/" + url;
+    }
 }
 
 function relative_mouse_coordinates(event){
@@ -126,12 +138,12 @@ canvas.addEventListener("mouseup", function(e) {
 })
 
 resize_canvas()
-
+set_deck_bg_image(background_image)
 
 // Internal kitchen functions
 function get_xy(key) {
-    var x = offset_horiz + (icon_width + keyspc_horiz)  * (key % numkeys_horiz)
-    var y = offset_vert  + (icon_height + keyspc_horiz) * Math.floor(key/numkeys_horiz)
+    var x = offset_horiz + (icon_width + keyspc_horiz) * (key % numkeys_horiz)
+    var y = offset_vert  + (icon_height + keyspc_vert) * Math.floor(key/numkeys_horiz)
     // console.log("get_xy", key, x, y);
     return [x, y]
 }
@@ -139,15 +151,20 @@ function get_xy(key) {
 function get_key(x, y) {
     // needs to be fixed for when user click between keys
     // should return -1 in these cases
-    w2 = icon_width + keyspc_vert
-    h2 = icon_height + keyspc_horiz
-    x2 = (x - offset_horiz)
-    y2 = (y - offset_vert)
-    key = -1
+    var w2 = icon_width + keyspc_vert
+    var h2 = icon_height + keyspc_horiz
+    var x2 = (x - offset_horiz)
+    var y2 = (y - offset_vert)
+    var key = -1
     if (x2 >= 0 && y2 >= 0) {
-        h = Math.floor(x2 / w2)
-        v = Math.floor(y2 / h2)
-        key = v * numkeys_horiz + h
+        var h = Math.floor(x2 / w2)
+        var v = Math.floor(y2 / h2)
+        // now check tht we are not between keys, in the spacing
+        var xlim = icon_width * (h+1) + keyspc_horiz * h
+        var ylim = icon_height * (v+1) + keyspc_vert * v
+        if (x2 <= xlim && y2 <= ylim) { // if not, ok
+            key = v * numkeys_horiz + h
+        }
     }
     // console.log("get_key", key);
     return key
@@ -166,7 +183,7 @@ ws.onopen = (event) => {
 ws.onmessage = (event) => {
     // console.log("data received");
     var data = JSON.parse(event.data)
-    console.log("code received", data.code);
+    // console.log("code received", data.code);
     if (data.code == 0) {
         // console.log("loading image (key)..", data.key)
         coords = get_xy(data.key)
@@ -177,29 +194,25 @@ ws.onmessage = (event) => {
         };
         image.src = "data:image/jpeg;base64,"+data.image;
         // console.log("..done")
+    } else {
+        console.log("non zero code received, uninterpreted", data.code);
     }
 };
 
 // Send functions
 //
-// function sendMessage() {
-//     var message = document.getElementById("message").value;
-//     ws.send(message);
-//     console.log("sent message", message);
-// }
-
 function sendCode(code, deck) {
-    c = {"code": code, "deck": deck}
-    var message = JSON.stringify(c)
+    payload = {"code": code, "deck": deck}
+    var message = JSON.stringify(payload)
     ws.send(message);
-    console.log("sent code", message);
+    console.log("sent code", deck, code);
 }
 
 function sendEvent(deck, c, z) {
     //console.log(deck, c.x, c.y, z)
     key = get_key(c.x, c.y)
     if (key == -1) {
-        console.log("clicked outside deck");
+        console.log("probably not clicked on a key");
     } else {
         payload = {"code": 0, "deck": deck, "key": key, "x": c.x, "y": c.y, "z": z}
         var message = JSON.stringify(payload)

@@ -225,6 +225,10 @@ def index():
 def send_favicon():
     return send_from_directory(TEMPLATE_FOLDER, 'favicon.ico')
 
+@app.route('/deckbg/<path:path>')
+def send_report(path):
+    return send_from_directory(TEMPLATE_FOLDER, path)
+
 @app.route("/deck/<name>")
 def deck(name: str):
     uname = urllib.parse.unquote(name)
@@ -233,7 +237,6 @@ def deck(name: str):
     # Inject our contact address:
     deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
     return render_template("deck.j2", deck=cdproxy.get_deck_description(uname))
-
 
 @app.route("/cockpit", websocket=True)
 def cockpit():
