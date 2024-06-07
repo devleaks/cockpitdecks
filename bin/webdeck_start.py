@@ -94,7 +94,7 @@ class CDProxy:
                 s.sendall(payload)
             return True
         except:
-            logger.warning(f"{deck}: problem sending event")
+            logger.warning(f"{deck}: problem sending event", exc_info=True)
         return False
 
     def send_event(self, deck: str, key, event) -> bool:
@@ -181,25 +181,25 @@ class CDProxy:
 
         if self.rcv_event is None:  # Thread for X-Plane datarefs
             self.rcv_event = threading.Event()
-            self.rcv_thread = threading.Thread(target=self.receive_events, name="VirtualDeck::event_listener")
+            self.rcv_thread = threading.Thread(target=self.receive_events, name="CDProxy::receive_events")
             self.rcv_thread.start()
-            logger.info(f"virtual deck listener started (port {self.port})")
+            logger.info(f"web deck proxy started (port {self.port})")
         else:
-            logger.info("virtual deck listener already running")
+            logger.info("web deck proxy already running")
 
     def stop(self):
         if self.rcv_event is not None:
             self.rcv_event.set()
-            logger.debug("stopping virtual deck listener..")
+            logger.debug("stopping web deck proxy..")
             wait = SOCKET_TIMEOUT
-            logger.debug(f"..asked to stop virtual deck listener (this may last {wait} secs. for accept to timeout)..")
+            logger.debug(f"..asked to stop web deck proxy (this may last {wait} secs. for accept to timeout)..")
             self.rcv_thread.join(wait)
             if self.rcv_thread.is_alive():
                 logger.warning("..thread may hang in socket.accept()..")
             self.rcv_event = None
-            logger.debug("..virtual deck listener stopped")
+            logger.debug("..web deck proxy stopped")
         else:
-            logger.debug("virtual deck listener not running")
+            logger.debug("web deck proxy not running")
 
 
 cdproxy = CDProxy()
