@@ -14,14 +14,7 @@ body {
         <p>List of available web decks:</p>
         <ul id="decklist">
         {% for deck in virtual_decks %}
-            <li><a href="#"
-                   onclick="window.open(
-                        '/deck/{{ deck|e }}',
-                        '{{ deck }}',
-                        'height=200,width=200,resisable=0,toolbar=0,locationbar=0,menubar=0,statusbar=0,personalbar=0,scrollbars=0'
-                   );"
-                   target="_blank"
-            >{{ deck }}</a></li>
+            <li><a href="/deck/{{ deck|e }}" target=_blank>{{ deck }}</a></li>
         {% endfor %}
         </ul>
         <p>Deck will start in a new window.</p>
@@ -29,5 +22,10 @@ body {
         <p>Please start Cockpitdecks to see available web decks.</p>
         <p><a href="/">Refresh</a></p>
     {% endif %}
+<script type="text/javascript">
+function start_deck() {
+    ;
+}
+</script>
 </body>
 </html>

@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 WEB_LOG = False
 
+
 class VirtualDeck(DeckWithIcons):
     """
     Loads the configuration of a virtual deck

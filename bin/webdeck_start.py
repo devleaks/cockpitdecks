@@ -275,14 +275,17 @@ def cockpit():
 
     return ""
 
+
 try:
     app.run(host=APP_HOST[0], port=APP_HOST[1])
 except KeyboardInterrupt:
+
     def shutdown_server():
-        func = request.environ.get('werkzeug.server.shutdown')
+        func = request.environ.get("werkzeug.server.shutdown")
         if func is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
+            raise RuntimeError("Not running with the Werkzeug Server")
         func()
+
     logger.warning("terminating (please wait)..")
     cdproxy.stop()
     shutdown_server()
