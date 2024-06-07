@@ -94,7 +94,7 @@ class CDProxy:
                 s.sendall(payload)
             return True
         except:
-            logger.warning(f"{deck}: problem sending event", exc_info=True)
+            logger.warning(f"{deck}: problem sending event to {(self.cd_address, self.cd_port)}", exc_info=True)
         return False
 
     def send_event(self, deck: str, key, event) -> bool:
