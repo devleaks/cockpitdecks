@@ -304,7 +304,7 @@ class Streamdeck(DeckWithIcons):
         if print_page_dir is None:
             output_dst = page.name + ".png"
         else:
-            output_dst = print_page_dir + "/" + page.name + ".png"
+            output_dst = print_page_dir + "/" + page.deck.layout + "." + page.name + ".png"
 
         with open(output_dst, "wb") as im:
             image.save(im, format="PNG")
