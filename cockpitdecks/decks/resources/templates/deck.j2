@@ -75,6 +75,8 @@ ws.onopen = (event) => {
     sendCode(1, DECK.name);  // filled by jinja templating engine
 };
 
+//
+// Receives messages from Cockpitdecks and take action on this deck
 ws.onmessage = (event) => {
     // console.log("data received");
     var data = JSON.parse(event.data);
@@ -82,8 +84,10 @@ ws.onmessage = (event) => {
     if (data.code == 0) {
         // console.log("loading image (key)..", data.key);
         deck.set_key_image(data.key, data.image, image_layer);
-        deck.add_interaction_to_layer(interaction_layer);
         // console.log("..done")
+    } else if (data.code == 1) {
+        console.log("received initialisation code", data.code);
+        // init here
     } else {
         console.log("non zero code received, uninterpreted", data.code);
     }
@@ -91,6 +95,7 @@ ws.onmessage = (event) => {
 
 // Send functions
 //
+// Send code to Cockpitdecks
 function sendCode(code, deck) {
     payload = {"code": code, "deck": deck};
     var message = JSON.stringify(payload);
@@ -98,6 +103,8 @@ function sendCode(code, deck) {
     console.log("sent code", deck, code);
 }
 
+//
+// Send event to Cockpitdecks
 function sendEvent(deck, key, value, coords) {
     if (key == -1) {
         console.log("probably not clicked on a key");

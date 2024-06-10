@@ -916,7 +916,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if deck is None:
             logger.warning(f"handle event: deck {name} not found")
             return
-        deck.key_change_callback(deck=deck, key=key, state=event == 1)
+        deck.key_change_callback(deck=deck, key=key, state=event)
 
     def receive_events(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
