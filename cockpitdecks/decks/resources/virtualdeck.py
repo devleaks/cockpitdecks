@@ -13,9 +13,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-DEVICE_MANUFACTURER = "Cockpitdecks"  # verbose descriptive
-
-
 class VirtualDeck:
     DECK_NAME = "virtualdeck"
 
@@ -24,8 +21,7 @@ class VirtualDeck:
         self.virtual_deck_definition: dict = definition  # DeckType
         self.virtual_deck_config: dict = config  # Deck entry in deckconfig/config.yaml
 
-        self.address = self.virtual_deck_config.get(CONFIG_KW.ADDRESS.value)
-        self.port = self.virtual_deck_config.get(CONFIG_KW.PORT.value)
+        self.serial_number = None
         self.cd_address = cdip[0]
         self.cd_port = cdip[1]
 
@@ -38,8 +34,11 @@ class VirtualDeck:
     def deck_type(self):
         return VirtualDeck.DECK_NAME
 
+    def set_serial_number(self, serial):
+        self.serial_number = serial
+
     def get_serial_number(self):
-        return f"{self.address}:{self.port}"
+        return self.serial_number
 
     def is_visual(self):
         return True

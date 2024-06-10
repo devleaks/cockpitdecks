@@ -866,14 +866,6 @@ class Cockpit(DatarefListener, CockpitBase):
                 return True
         return False
 
-    def has_web_decks(self) -> bool:
-        for device in self.devices:
-            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
-                vdev = device.get(CONFIG_KW.DEVICE.value)
-                if vdev is not None and vdev.virtual_deck_definition.get(CONFIG_KW.ADDRESS.value) is not None:
-                    return True
-        return False
-
     def broadcast_code(self, code):
         for deck in self.cockpit.values():
             if type(deck).__name__ == "VirtualDeck":
@@ -884,7 +876,7 @@ class Cockpit(DatarefListener, CockpitBase):
         # Not all virtual decks are web decks
         webdeck_list = {}
         for name, deck in self.virtual_deck_list.items():
-            if CONFIG_KW.DECOR.value in deck:  # has a decor, must be a web deck
+            if CONFIG_KW.LAYOUT.value in deck:  # has a decor, must be a web deck
                 webdeck_list[name] = deck
         return webdeck_list
 

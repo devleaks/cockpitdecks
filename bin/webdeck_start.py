@@ -240,9 +240,10 @@ def deck(name: str):
     uname = urllib.parse.unquote(name)
     app.logger.debug(f"Starting deck {uname}")
     deck_desc = cdproxy.get_deck_description(uname)
+    print(deck_desc)
     # Inject our contact address:
     deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
-    return render_template("deck.j2", deck=cdproxy.get_deck_description(uname))
+    return render_template("deck.j2", deck=deck_desc)
 
 
 @app.route("/cockpit", websocket=True)  # How convenient...
