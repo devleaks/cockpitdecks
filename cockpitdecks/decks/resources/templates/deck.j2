@@ -63,25 +63,26 @@ body {
             Sorry, your browser does not support canvas.
         </canvas>
     </div>
+<script src="/assets/js/konva.js" type="text/javascript"></script>
 <script type="text/javascript">
+// Transfer from Cockpitdecks through Jinja2
+const DECK = {{ deck|tojson }}
 
 // Canvas setup
 const canvas = document.getElementById("deck");
 const ctx = canvas.getContext("2d");
 
-const DECK_NAME = "{{deck.name}}"
+const icon_width = DECK["deck-type-desc"]["buttons"][0]["image"][0]
+const icon_height = DECK["deck-type-desc"]["buttons"][0]["image"][1]
 
-const icon_width = {{ deck["deck-type-desc"]["buttons"][0]["image"][0] }}
-const icon_height = {{ deck["deck-type-desc"]["buttons"][0]["image"][1] }}
+const numkeys_horiz = DECK["deck-type-desc"]["buttons"][0]["layout"][0]
+const numkeys_vert = DECK["deck-type-desc"]["buttons"][0]["layout"][1]
 
-const numkeys_horiz = {{ deck["deck-type-desc"]["buttons"][0]["layout"][0] }}
-const numkeys_vert = {{ deck["deck-type-desc"]["buttons"][0]["layout"][1] }}
+const keyspc_horiz = DECK["decor"]["spacing"][0]
+const keyspc_vert = DECK["decor"]["spacing"][1]
 
-const keyspc_horiz = {{ deck["decor"]["spacing"][0] }}
-const keyspc_vert = {{ deck["decor"]["spacing"][1] }}
-
-const offset_horiz = {{ deck["decor"]["offset"][0] }}
-const offset_vert = {{ deck["decor"]["offset"][1] }}
+const offset_horiz = DECK["decor"]["offset"][0]
+const offset_vert = DECK["decor"]["offset"][1]
 
 const background_image = "{{deck["decor"]["background"]}}"
 
@@ -100,6 +101,8 @@ function resize_canvas(sizes) {
 }
 
 function set_deck_bg_image(url) {
+    // Loads a deck background picture (with dark bacground color)
+    // or draws a border around the whole canvas if no image.
     if (url != null && url != "" && url.toLowerCase() != "none" && url.toLowerCase() != "null") {
         var image = new Image();
         image.onerror = function() {
@@ -111,7 +114,7 @@ function set_deck_bg_image(url) {
             resize_canvas([image.naturalWidth, image.naturalHeight])
             ctx.drawImage(image, 0, 0);
         };
-        image.src = "/deckbg/" + url;
+        image.src = "/assets/decks/images/" + url;
     } else { // add CSS frame around deck limits
         canvas.style["border"] = "1px solid grey"
     }
@@ -139,14 +142,14 @@ HTMLCanvasElement.prototype.relative_mouse_coordinates = relative_mouse_coordina
 
 canvas.addEventListener("mousedown", function(e) {
     coords = canvas.relative_mouse_coordinates(event);
-    sendEvent(DECK_NAME, coords, 1)
+    sendEvent(DECK.name, coords, 1)
 })
 
 canvas.addEventListener("mouseup", function(e) {
     coords = canvas.relative_mouse_coordinates(event);
     canvasX = coords.x;
     canvasY = coords.y;
-    sendEvent(DECK_NAME, coords, 0)
+    sendEvent(DECK.name, coords, 0)
 })
 
 resize_canvas(required_size())
@@ -183,13 +186,13 @@ function get_key(x, y) {
 }
 
 // WebSocket initialisation and setup
-ws_url = "{{ deck.ws_url }}"
+ws_url = DECK.ws_url
 var ws = new WebSocket(ws_url);
 
 ws.onopen = (event) => {
     console.log(ws_url, "connection opened");
     // sends its name on new connection to help identify
-    sendCode(1, DECK_NAME)  // filled by jinja templating engine
+    sendCode(1, DECK.name)  // filled by jinja templating engine
 };
 
 ws.onmessage = (event) => {

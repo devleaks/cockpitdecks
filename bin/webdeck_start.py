@@ -166,8 +166,8 @@ class CDProxy:
                     self.handle_event(buff)
             except TimeoutError:
                 logger.debug("..timed out")
-                pass
                 # logger.debug(f"receive event", exc_info=True)
+                pass
             except:
                 logger.warning(f"receive events: abnormal exception", exc_info=True)
 
@@ -177,13 +177,13 @@ class CDProxy:
             self.socket.bind((self.address, self.port))
             self.socket.listen()
             self.socket.settimeout(SOCKET_TIMEOUT)
-            logger.info(f"listening on ({self.address}, {self.port})")
+            logger.info(f"web deck proxy listening on ({self.address}, {self.port})")
 
         if self.rcv_event is None:  # Thread for X-Plane datarefs
             self.rcv_event = threading.Event()
             self.rcv_thread = threading.Thread(target=self.receive_events, name="CDProxy::receive_events")
             self.rcv_thread.start()
-            logger.info(f"web deck proxy started (port {self.port})")
+            logger.info(f"web deck proxy started")
         else:
             logger.info("web deck proxy already running")
 
@@ -211,6 +211,7 @@ cdproxy.start()
 #
 #
 TEMPLATE_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "templates")
+ASSET_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "assets")
 
 app = Flask(__name__, template_folder=TEMPLATE_FOLDER)
 
@@ -229,9 +230,9 @@ def send_favicon():
     return send_from_directory(TEMPLATE_FOLDER, "favicon.ico")
 
 
-@app.route("/deckbg/<path:path>")
+@app.route("/assets/<path:path>")
 def send_report(path):
-    return send_from_directory(TEMPLATE_FOLDER, path)
+    return send_from_directory(ASSET_FOLDER, path)
 
 
 @app.route("/deck/<name>")

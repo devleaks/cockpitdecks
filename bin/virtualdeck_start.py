@@ -17,6 +17,9 @@ ac = sys.argv[1] if len(sys.argv) > 1 else None
 ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 d = None
 
+print("""*******************************************************************
+* Virtual decks using pyglet are being phased out.
+*******************************************************************""")
 
 try:
     logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
