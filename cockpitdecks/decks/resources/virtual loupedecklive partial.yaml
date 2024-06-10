@@ -11,7 +11,7 @@ buttons:
     layout: [4, 3]
 layout:
   background:
-    color: black
+    color: "#222"
     image: loupedeck.live.png
     offset: [152, 72]
     spacing: [2, 2]

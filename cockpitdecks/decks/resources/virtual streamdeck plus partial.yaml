@@ -9,3 +9,9 @@ buttons:
     feedback: image
     image: [96, 96]
     layout: [4, 2]
+layout:
+  background:
+    color: black
+    image: streamdeck.plus.png
+    offset: [48, 85]
+    spacing: [43, 22]

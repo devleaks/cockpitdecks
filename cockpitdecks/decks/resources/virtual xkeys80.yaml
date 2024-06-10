@@ -9,3 +9,8 @@ buttons:
     feedback: image
     image: [64, 64]
     layout: [10, 8]
+layout:
+  background:
+    color: black
+    offset: [20, 20]
+    spacing: [10, 10]
