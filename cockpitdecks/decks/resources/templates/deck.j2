@@ -3,29 +3,16 @@
 <head>
     <title>Cockpitdecks - {{ deck.name }} </title>
 <style type="text/css">
-/* everything is centerd in browser window */
 body {
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #222; /* should be white for light themes */
     font-family: sans-serif;
-}
-#deck {
-    width: inherit;
-    height: inherit;
-    margin: 0;
-    padding: 0;
-    display: block;
 }
 </style>
 </head>
-<!-- Structure of deck as received:
-
--->
 <body>
-    <div id="deck"></div>
 <script src="/assets/js/konva.js" type="text/javascript"></script>
 <script src="/assets/js/buttons.js" type="text/javascript"></script>
 <script type="text/javascript">
@@ -33,15 +20,25 @@ body {
 //
 // Konva layout set up and initialisation
 //
+// create and add <div id="deck"></div> with proper styling
 DECK_ELEMID = "deck"
-var deck_elem = document.getElementById(DECK_ELEMID);
+var deck_elem = document.createElement("div");
+deck_elem.setAttribute("id", DECK_ELEMID);
+deck_elem.setAttribute("width", "inherit");
+deck_elem.setAttribute("height", "inherit");
+deck_elem.setAttribute("display", "block");
+deck_elem.setAttribute("padding", 0);
+deck_elem.setAttribute("marging", 0);
+document.getElementsByTagName("body")[0].appendChild(deck_elem)
 
+// create state
 var stage = new Konva.Stage({
     container: DECK_ELEMID,
     width: window.innerWidth,
     height: window.innerHeight,
 });
 
+// create layers to cleanly separate content by function
 var background_layer = new Konva.Layer();   // Background image or iniform color
 var interaction_layer = new Konva.Layer();  // Shapes with events attached to it
 var image_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
@@ -58,7 +55,7 @@ stage.add(interaction_layer);
 // Transfer from Cockpitdecks through Jinja2
 const DECK = {{ deck|tojson(indent=2) }};
 
-deck = new Deck(DECK, deck_elem);
+deck = new Deck(DECK, deck_elem);  // we need to pass the div element to style it (cursor)
 deck.add_background_image(background_layer, stage);
 deck.add_interaction_to_layer(interaction_layer);
 
@@ -67,14 +64,20 @@ deck.add_interaction_to_layer(interaction_layer);
 // WebSocket initialisation and setup
 //
 ws_url = DECK.ws_url;
+
+if (ws_url == undefined) {
+    alert("No WebSocket address. Please start Cockpitdecks first.")
+}
+
 var ws = new WebSocket(ws_url);
 
 ws.onopen = (event) => {
-    console.log(ws_url, "connection opened");
+    console.log("connection opened", ws_url);
     // sends its name on new connection to help identify
-    sendCode(1, DECK.name);  // filled by jinja templating engine
+    sendCode(1, DECK.name);
 };
 
+// RECEIVE function
 //
 // Receives messages from Cockpitdecks and take action on this deck
 ws.onmessage = (event) => {
@@ -87,13 +90,13 @@ ws.onmessage = (event) => {
         // console.log("..done")
     } else if (data.code == 1) {
         console.log("received initialisation code", data.code);
-        // init here
+        // init here, later if necessary
     } else {
-        console.log("non zero code received, uninterpreted", data.code);
+        console.log("unhandled code received, uninterpreted", data.code);
     }
 };
 
-// Send functions
+// SEND functions (global, to be used by decks, etc.)
 //
 // Send code to Cockpitdecks
 function sendCode(code, deck) {
@@ -115,7 +118,6 @@ function sendEvent(deck, key, value, coords) {
         // console.log("sent event", message);
     }
 }
-
 </script>
 </body>
 </html>

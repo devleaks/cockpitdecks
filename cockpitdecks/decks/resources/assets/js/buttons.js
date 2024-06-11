@@ -3,10 +3,19 @@
  * Draws button placeholders at their location.
  * Capture interaction in the button and send it to Cockpitdecks.
  */
-TRANSLUCENT_WHITE = "#ffffff80"  // white, opacity 80/FF
-HIGHLIGHT = "#00ffff"  // cyan, opacity 50%
-EDITOR_MODE = false
-ROTATE_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+// A   F E W   C O N S T A N T 2
+//
+//
+const HIGHLIGHT = "#ffffff80"  // white, opacity 80/FF
+const FLASH = "#00ffff"  // cyan, opacity 50%
+const FLASH_DURATION = 300
+const EDITOR_MODE = false
+const DECK_TYPE_DESCRIPTION = "deck-type-desc"
+const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
+
+// does not work...
+const CURSOR_ROTATE_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="100%" height="100%" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
     <g transform="matrix(0.0354795,-0.0867772,0.0867772,0.0354795,-3.16272,18.5397)">
@@ -15,7 +24,7 @@ ROTATE_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"
         </g>
     </g>
 </svg>`
-ROTATE_COUNTER_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+const CURSOR_ROTATE_COUNTER_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="100%" height="100%" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
     <g transform="matrix(0.0354795,-0.0867772,0.0867772,0.0354795,-3.65214,18.5614)">
@@ -25,6 +34,12 @@ ROTATE_COUNTER_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding
     </g>
 </svg>`
 
+// Since no multiple inheritence, and traits are too heavy
+// some code needs repeating...
+
+// B U T T O N S
+//
+//
 class Key extends Konva.Rect {
     // Represent a simply rectangular key
 
@@ -35,7 +50,7 @@ class Key extends Konva.Rect {
             width: config.width,
             height: config.height,
             cornerRadius: config.corner_radius,
-            stroke: TRANSLUCENT_WHITE,
+            stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -47,23 +62,23 @@ class Key extends Konva.Rect {
         this.inside = false
 
         // Inside key
-        this.on('pointerover', function () {
+        this.on("pointerover", function () {
             this.container.style.cursor = "pointer"
             this.inside = true
         });
 
-        this.on('pointerout', function () {
+        this.on("pointerout", function () {
             this.container.style.cursor = "auto"
             this.inside = false
         });
 
         // Clicks
-        this.on('pointerdown', function () {
-            this.flash(HIGHLIGHT, TRANSLUCENT_WHITE)
+        this.on("pointerdown", function () {
+            this.flash(FLASH, HIGHLIGHT)
             sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
         });
 
-        this.on('pointerup', function () {
+        this.on("pointerup", function () {
             sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
         });
 
@@ -74,11 +89,31 @@ class Key extends Konva.Rect {
         this.stroke(colorin)
         setTimeout(function() {
             that.stroke(colorout)
-        }, 500)
+        }, FLASH_DURATION)
+    }
+
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    save() {
+        const code = {
+            type: "key",
+            name: this.name,
+            x: this.x(),
+            y: this.y(),
+            width: this.width(),
+            height: this.height(),
+            corner_radius: this.cornerRadius()
+        };
+        return code;
     }
 }
 
-
+//
+//
+//
 class KeyRound extends Konva.Circle {
     // Represent a simply rectangular key
 
@@ -87,7 +122,7 @@ class KeyRound extends Konva.Circle {
             x: config.x,
             y: config.y,
             radius: config.radius,
-            stroke: TRANSLUCENT_WHITE,
+            stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -99,29 +134,46 @@ class KeyRound extends Konva.Circle {
         this.inside = false
 
         // Inside key
-        this.on('pointerover', function () {
+        this.on("pointerover", function () {
             this.container.style.cursor = "pointer"
             this.inside = true
         });
 
-        this.on('pointerout', function () {
+        this.on("pointerout", function () {
             this.container.style.cursor = "auto"
             this.inside = false
         });
 
         // Clicks
-        this.on('pointerdown', function () {
+        this.on("pointerdown", function () {
             sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
         });
 
-        this.on('pointerup', function () {
+        this.on("pointerup", function () {
             sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
         });
 
     }
+
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    save() {
+        const code = {
+            type: "keyr",
+            name: this.name,
+            x: this.x(),
+            y: this.y(),
+        };
+        return code;
+    }
 }
 
-
+//
+//
+//
 class Encoder extends Konva.Circle {
 
     constructor(config, container) {
@@ -129,7 +181,7 @@ class Encoder extends Konva.Circle {
             x: config.x,
             y: config.y,
             radius: config.radius,
-            stroke: TRANSLUCENT_WHITE,
+            stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -141,32 +193,32 @@ class Encoder extends Konva.Circle {
         this.inside = false
 
         // Inside key
-        this.on('pointerover', function () {
+        this.on("pointerover", function () {
             this.inside = true
         });
 
-        this.on('pointerout', function () {
+        this.on("pointerout", function () {
             this.container.style.cursor = "auto"
             this.inside = false
         });
 
-        this.on('pointermove', function () {
+        this.on("pointermove", function () {
             if (this.inside) {
-                if (this.clockwise()) {
-                    this.container.style.cursor = "url('/assets/images/clockwise.svg') 24 24, pointer";
+                if (this.clockwise()) { // SVG cursor origin is on middle top
+                    this.container.style.cursor = "url('/assets/images/clockwise.svg') 12 0, pointer";
                 } else {
-                    this.container.style.cursor = "url('/assets/images/counter-clockwise.svg') 24 24, pointer";
+                    this.container.style.cursor = "url('/assets/images/counter-clockwise.svg') 12 0, pointer";
                 }
             }
         });
 
         // Clicks
-        this.on('pointerdown', function () {
+        this.on("pointerdown", function () {
             let value = this.clockwise() ? 2 : 3
             sendEvent(DECK.name, 1, value, {x: 0, y: 0})
         });
 
-        this.on('pointerup', function () {
+        this.on("pointerup", function () {
             sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
         });
 
@@ -177,9 +229,26 @@ class Encoder extends Konva.Circle {
         return (this.layer.getRelativePointerPosition().x - this.x()) < 0
     }
 
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    save() {
+        const code = {
+            type: "encoder",
+            name: this.name,
+            x: this.x(),
+            y: this.y(),
+            radius: this.radius()
+        };
+        return code;
+    }
 }
 
-
+//
+//
+//
 class Touchscreen extends Konva.Rect {
 
     constructor(config, container) {
@@ -189,7 +258,7 @@ class Touchscreen extends Konva.Rect {
             width: config.width,
             height: config.height,
             cornerRadius: config.corner_radius,
-            stroke: TRANSLUCENT_WHITE,
+            stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -201,23 +270,23 @@ class Touchscreen extends Konva.Rect {
         this.inside = false
 
         // Inside key
-        this.on('pointerover', function () {
+        this.on("pointerover", function () {
             this.container.style.cursor = "pointer"
             this.inside = true
         });
 
-        this.on('pointerout', function () {
+        this.on("pointerout", function () {
             this.container.style.cursor = "auto"
             this.inside = false
         });
 
         // Clicks
-        this.on('pointerdown', function () {
-            this.flash(HIGHLIGHT, TRANSLUCENT_WHITE)
+        this.on("pointerdown", function () {
+            this.flash(FLASH, HIGHLIGHT)
             sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
         });
 
-        this.on('pointerup', function () {
+        this.on("pointerup", function () {
             sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
         });
 
@@ -231,8 +300,28 @@ class Touchscreen extends Konva.Rect {
         }, 500)
     }
 
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    save() {
+        const code = {
+            type: "touchscreen",
+            name: this.name,
+            x: this.x(),
+            y: this.y(),
+            width: this.width(),
+            height: this.height(),
+            corner_radius: this.cornerRadius()
+        };
+        return code;
+    }
 }
 
+//
+//
+//
 class Slider extends Konva.Rect {
 
     constructor(config, container) {
@@ -242,7 +331,7 @@ class Slider extends Konva.Rect {
             width: config.width,
             height: config.height,
             cornerRadius: config.corner_radius,
-            stroke: TRANSLUCENT_WHITE,
+            stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -254,14 +343,40 @@ class Slider extends Konva.Rect {
         this.inside = false
     }
 
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    save() {
+        const code = {
+            type: "slider",
+            name: this.name,
+            x: this.x(),
+            y: this.y(),
+            width: this.width(),
+            height: this.height(),
+            corner_radius: this.cornerRadius()
+        };
+        return code;
+    }
 }
 
+//
+//
+//
+class Label {  // later, idea: overlay text or image on top of background (logo, etc.)
 
-class Label {
     constructor(config, container) {
         this.config = config
         this.container = container
     }
+
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
 }
 
 CONSTRUCTORS = {
@@ -270,19 +385,21 @@ CONSTRUCTORS = {
     "encoder": Encoder,
     "touchsreen": Touchscreen,
     "slider": Slider,
-    "label": Label
 }
 
+// D E C K
+//
+//
 class Deck {
 
     constructor(config, container) {
         this.config = config;
-        this.buttons = Array();  // array of Konva shapes to be added to layer
+        this.buttons = Array();  // array of Konva shapes to be added to layer, should be a Map()?
 
         this.name = config.name;
         this.container = container;
 
-        const deck_type = config["deck-type-desc"];
+        const deck_type = config[DECK_TYPE_DESCRIPTION];
 
         this.icon_width = deck_type.buttons[0].image[0];
         this.icon_height = deck_type.buttons[0].image[1];
@@ -348,7 +465,7 @@ class Deck {
     }
 
     build_new(layout) {
-        const deck_type = this.config["deck-type-desc"]
+        const deck_type = this.config[DECK_TYPE_DESCRIPTION]
         let allbuttons = deck_type.buttons
         allbuttons.forEach( (button_type) => {
             buttons = allbuttons[button_type]
@@ -362,7 +479,8 @@ class Deck {
 
     add_background_image(layer, stage) {
         const TITLE_BAR_HEIGHT = 24
-        const deck_type = this.config["deck-type-desc"]
+        const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
+        const deck_type = this.config[DECK_TYPE_DESCRIPTION]
         let bgcolor = deck_type.layout.background.color
         if (bgcolor != undefined) {
             this.container.style["background-color"] = bgcolor
@@ -376,7 +494,7 @@ class Deck {
 
             stage.width(width);
             stage.height(height);
-            window.resizeTo(width,height + TITLE_BAR_HEIGHT);
+            window.resizeTo(width,height + extra_space);
         }
         deckImage.onload = function () {
             let deckbg = new Konva.Image({
@@ -386,14 +504,19 @@ class Deck {
             });
             stage.width(deckImage.naturalWidth);
             stage.height(deckImage.naturalHeight);
-            window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + TITLE_BAR_HEIGHT);
+            window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
             layer.add(deckbg);
         };
-        deckImage.src = "/assets/decks/images/" + this.background_image;
+        deckImage.src = DECK_BACKGROUND_IMAGE_PATH + this.background_image;
     }
 
     add_interaction_to_layer(layer) {
-        this.buttons.forEach( (x) => { x.layer = layer; layer.add(x); } );
+        this.buttons.forEach( (x) => { x.add_to_layer(layer); } );
+    }
+
+    save() {
+        const buttons = this.buttons.reduce((acc, val) => acc.push(val), Array());
+        console.log(buttons);
     }
 
     set_key_image(key, image, layer) {

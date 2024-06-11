@@ -8,7 +8,18 @@ import glob
 import logging
 from typing import List, Dict
 
-from cockpitdecks.constant import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, RESOURCES_FOLDER, CONFIG_KW, DECKS_FOLDER, DECK_KW, VIRTUAL_DECK_DRIVER, Config
+from cockpitdecks.constant import (
+    CONFIG_FOLDER,
+    CONFIG_FILE,
+    SECRET_FILE,
+    EXCLUDE_DECKS,
+    RESOURCES_FOLDER,
+    CONFIG_KW,
+    DECKS_FOLDER,
+    DECK_KW,
+    VIRTUAL_DECK_DRIVER,
+    Config,
+)
 
 from .virtualdeck import VirtualDeck
 from .decktype import DeckType
