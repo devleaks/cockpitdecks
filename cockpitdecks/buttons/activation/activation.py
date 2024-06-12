@@ -553,7 +553,7 @@ class Push(Activation):
     def auto_repeat_loop(self):
         self.exit.wait(self.auto_repeat_delay)
         while not self.exit.is_set():
-            self.activate(self.pressed)
+            self.command()
             self.exit.wait(self.auto_repeat_speed)
         logger.debug(f"exited")
 
