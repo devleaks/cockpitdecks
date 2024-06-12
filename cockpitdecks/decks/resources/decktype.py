@@ -85,6 +85,9 @@ class DeckButton:
     def has_layout(self) -> bool:
         return self._config.get(DECK_KW.LAYOUT.value) is not None
 
+    def is_encoder(self) -> bool:
+        return self.has_action("encoder")
+
     def numeric_index(self, idx) -> int:
         if not self._name_is_int:
             loggerButtonType.warning(f"button index {idx} is not numeric")
@@ -230,8 +233,8 @@ class DeckType(Config):
         start = int(start)  # should be int, but no test
         button_types = {}
         idx = start
-        for x in range(repeat[0]):
-            for y in range(repeat[1]):
+        for y in range(repeat[1]):
+            for x in range(repeat[0]):
                 name = prefix + str(idx)
                 sizes = button_block.get(DECK_KW.DIMENSION.value)
                 if sizes is None:

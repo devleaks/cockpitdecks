@@ -9,9 +9,10 @@ buttons:
     feedback: image
     dimension: [96, 96]
     repeat: [5, 3]
-layout:
-  background:
-    color: black
-    image: streamdeck.mk2.png
-    offset: [86, 91]
-    spacing: [22, 20]
+    layout:
+      offset: [86, 91]
+      spacing: [22, 20]
+    options: corner_radius=8
+background:
+  color: black
+  image: streamdeck.mk2.png

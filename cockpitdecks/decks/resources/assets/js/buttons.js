@@ -39,17 +39,25 @@ const CURSOR_ROTATE_COUNTER_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="
 
 // B U T T O N S
 //
+// Key
+// Simple key to press, square, with optional rounded corners.
 //
 class Key extends Konva.Rect {
     // Represent a simply rectangular key
 
     constructor(config, container) {
+
+        let corner_radius = 0
+        if (config.options != undefined && config.options != null) {
+            corner_radius = parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius)
+        }
+
         super({
             x: config.position[0],
             y: config.position[1],
             width: config.dimension[0],
             height: config.dimension[1],
-            cornerRadius: parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius),
+            cornerRadius: corner_radius,
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -111,8 +119,8 @@ class Key extends Konva.Rect {
     }
 }
 
-//
-//
+// KeyRound
+// Simple key to press but round.
 //
 class KeyRound extends Konva.Circle {
     // Represent a simply rectangular key
@@ -180,8 +188,8 @@ class KeyRound extends Konva.Circle {
     }
 }
 
-//
-//
+// Encoder
+// Round encoder knob.
 //
 class Encoder extends Konva.Circle {
 
@@ -270,12 +278,18 @@ class Encoder extends Konva.Circle {
 class Touchscreen extends Konva.Rect {
 
     constructor(config, container) {
+
+        let corner_radius = 0
+        if (config.options != undefined && config.options != null) {
+            corner_radius = parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius)
+        }
+
         super({
             x: config.position[0],
             y: config.position[1],
             width: config.dimension[0],
             height: config.dimension[1],
-            cornerRadius: parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius),
+            cornerRadius: corner_radius,
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -343,12 +357,18 @@ class Touchscreen extends Konva.Rect {
 class Slider extends Konva.Rect {
 
     constructor(config, container) {
+
+        let corner_radius = 0
+        if (config.options != undefined && config.options != null) {
+            corner_radius = parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius)
+        }
+
         super({
             x: config.x,
             y: config.y,
             width: config.width,
             height: config.height,
-            cornerRadius: config.corner_radius,
+            cornerRadius: corner_radius,
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -419,33 +439,35 @@ class Deck {
         this.deck_type = config[DECK_TYPE_DESCRIPTION];
         console.log("config", this.deck_type)
 
-        this.buttons = Array();  // array of Konva shapes to be added to layer, should be a Map()?
+        this.buttons = new Map();  // array of Konva shapes to be added to layer, should be a Map()?
         this.build(config);
     }
 
     add(button) {
-        this.buttons.push(button);
+        this.buttons[button.name] = button
     }
 
     get_xy(key) {
-        let x = this.offset_horiz + (this.icon_width + this.keyspc_horiz) * (key % this.numkeys_horiz);
-        let y = this.offset_vert  + (this.icon_height + this.keyspc_vert) * Math.floor(key/this.numkeys_horiz);
-        // console.log("get_xy", key, x, y);
-        return {"x": x, "y": y};
+        const shape = this.buttons[key]
+        if (shape != undefined && shape != null) {
+            return {"x": shape.x(), "y": shape.y()}
+        }
+        console.log("get_xy", key, shape);
+        return {"x": 0, "y": 0};
     }
 
     build(layout) {
         this.deck_type.buttons.forEach((button) => {
             // decide which shape to use
             if (button.actions.indexOf("encoder") > -1) {
-                // console.log("encoder", button)
+                console.log("encoder", button)
                 this.add(new Encoder(button, this.container))
             } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
                 if (button.dimension.constructor == Array) {
                     // console.log("key", button)
                     this.add(new Key(button, this.container))
                 } else {
-                    console.log("keyround", button)
+                    // console.log("keyround", button)
                     this.add(new KeyRound(button, this.container))
                 }
             } else if (button.actions.indexOf("swipe") > -1) {
@@ -461,12 +483,18 @@ class Deck {
         const TITLE_BAR_HEIGHT = 24
         const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
 
-        const bgcolor = this.deck_type.background.color
+        const background = this.deck_type.background
+        if (background == undefined || background == null) {
+            console.log("no background", this.deck_type)
+            return;
+        }
+
+        const bgcolor = background.color
         if (bgcolor != undefined) {
             this.container.style["background-color"] = bgcolor
         }
 
-        const background_image = this.deck_type.background.image;
+        const background_image = background.image;
         if (background_image == undefined || background_image == null) {
             return;
         }
@@ -497,7 +525,9 @@ class Deck {
     }
 
     add_interaction_to_layer(layer) {
-        this.buttons.forEach( (x) => { x.add_to_layer(layer); } );
+        for (let b in this.buttons.values()) {
+            b.add_to_layer(layer)
+        }
     }
 
     save() {
@@ -506,7 +536,6 @@ class Deck {
     }
 
     set_key_image(key, image, layer) {
-        return;
         let coords = this.get_xy(key);
         let buttonImage = new Image();
         buttonImage.onload = function () {

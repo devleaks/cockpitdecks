@@ -16,13 +16,18 @@ buttons:
     prefix: e
     action: [encoder, push]
     feedback: none
+    dimension: 30
     repeat: [4, 1]
+    layout:
+      offset: [93, 502]
+      spacing: [81, 0]
   # touchscreen in streamdeck package vocabulary
   - name: touchscreen
     action: [press, longpress, swipe]
     feedback: image
-    dimension: [800, 100]
-layout:
-  background:
-    color: black
-    image: streamdeck.plus.png
+    dimension: [548, 95]
+    layout:
+      offset: [31, 330]
+background:
+  color: black
+  image: streamdeck.plus.png

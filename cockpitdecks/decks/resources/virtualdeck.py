@@ -1,6 +1,7 @@
 """
 Virtual deck cockpitdeck interface class
-Does not perform any action. Just a wrapper for
+Does not perform any action. Just a wrapper for Cockpitdecks.
+Behaves like a "device driver".
 """
 
 import logging
