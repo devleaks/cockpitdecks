@@ -1,8 +1,12 @@
+import os
 import logging
+import json
+from typing import List, Dict
 
 from functools import reduce
 
-from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
+from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK, DECK_BUTTON_TYPES
+from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
@@ -15,25 +19,30 @@ loggerButtonType = logging.getLogger("ButtonType")
 loggerDeckType = logging.getLogger("DeckType")
 # loggerDeckType.setLevel(logging.DEBUG)
 
+DECK_TYPE_LOCATION = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
+DECK_TYPE_GLOB = "*.new.yaml"
 
-class ButtonType:
+
+class DeckButton:
+    """Defines a button on a deck, its capabilities, its representation.
+
+    For web decks, adds position and sizes information.
+    """
+
     def __init__(self, config: dict) -> None:
-
         self._config = config
-        self.name = config.get(DECK_KW.NAME.value, config.get("_intname"))
-        self.prefix = config.get(DECK_KW.PREFIX.value, "")
+        self.name = config.get(DECK_KW.NAME.value, config.get(DECK_KW.INT_NAME.value))
 
-        self.repeat = int(config.get(DECK_KW.REPEAT.value, 0))
-        layout = config.get(DECK_KW.LAYOUT.value)
-        if layout is not None:
-            self.repeat = int(layout[0]) * int(layout[1])
-            loggerButtonType.debug(f"{self.prefix}/{self.name}: set repeat from layout")
+        self.index = config.get(DECK_KW.INDEX.value)
+        self.prefix = config.get(DECK_KW.PREFIX.value, "")
 
         self.actions = config.get(DECK_KW.ACTION.value)
         self.feedbacks = config.get(DECK_KW.FEEDBACK.value)
 
-        self.image = config.get(DECK_KW.IMAGE.value)
-        self.range = config.get(DECK_KW.RANGE.value)
+        self.position = config.get(DECK_KW.POSITION.value)  # for web decks drawing
+        self.sizes = config.get(DECK_KW.DIMENSION.value)
+
+        self.range = config.get(DECK_KW.RANGE.value, [0, 0])  # for sliders
 
         self.init()
 
@@ -56,8 +65,8 @@ class ButtonType:
 
         loggerButtonType.debug(f"{self.prefix}/{self.name}: {self.valid_representations()}")
 
-    def has_layout(self) -> bool:
-        return self._config.get(DECK_KW.LAYOUT.value) is not None
+    def has_drawing(self):
+        return self.position is not None and self.sizes is not None
 
     def valid_indices(self) -> list:
         if self.repeat == 0:
@@ -67,6 +76,9 @@ class ButtonType:
             return [self.prefix + str(i) for i in range(start, start + self.repeat)]
         loggerButtonType.warning(f"button type {self.name} cannot repeat from {self.name}")
         return [self.name]
+
+    def has_layout(self) -> bool:
+        return self._config.get(DECK_KW.LAYOUT.value) is not None
 
     def numeric_index(self, idx) -> int:
         if not self._name_is_int:
@@ -110,19 +122,39 @@ class ButtonType:
             return self.image[0:2] if not return_offset else self.image[2:4]
         return None
 
-    def is_encoder(self):
-        return self.has_action(DECK_ACTIONS.ENCODER.value)
+    def desc(self):
+        """Returns a flattened description of the button
+
+        Ready to be used by web deck
+
+        Returns:
+            dict: ButtonDeck description, simply flattened for web decks
+        """
+        return {
+            "name": self.name,
+            "index": self.index,
+            "prefix": self.prefix,
+            "actions": self.actions,
+            "feedbacks": self.feedbacks,
+            "range": self.range,
+            "position": self.position,
+            "sizes": self.sizes,
+        }
 
 
 class DeckType(Config):
-    """reads and parse deck template file"""
+    """Description of a deck capabilities, including its representation for web decks
+
+    Reads and parse deck template file"""
 
     def __init__(self, filename: str) -> None:
         Config.__init__(self, filename=filename)
-        self.name = self[DECK_KW.TYPE.value]
+        self.name = self[DECK_KW.NAME.value]
         self.driver = self[DECK_KW.DRIVER.value]
-        self._buttons = {}
+        self.buttons: Dict[str | int, DeckButton] = {}
+        self.background = self[DECK_KW.BACKGROUND.value]
         self._special_displays = None  # cache
+        self.count = 0
         self.init()
 
     def init(self):
@@ -132,15 +164,75 @@ class DeckType(Config):
         button can provide as a feedback.
         """
         cnt = 0
-        for bdef in self[DECK_KW.BUTTONS.value]:
-            bdef["_intname"] = "NO_NAME_" + str(cnt)
-            cnt = cnt + 1
-            button = ButtonType(bdef)
-            for i in button.valid_indices():
-                self._buttons[i] = button
-
-        loggerDeckType.debug(f"deck type {self.name}: buttons: {self._buttons.keys()}..")
+        for button_block in self[DECK_KW.BUTTONS.value]:
+            self.buttons = self.buttons | self.parse_deck_button_block(button_block=button_block)
+        loggerDeckType.debug(f"deck type {self.name}: buttons: {self.buttons.keys()}..")
         loggerDeckType.debug(f"..deck type {self.name} done")
+
+        print(json.dumps(self.desc(), indent=2))
+
+    def parse_deck_button_block(self, button_block) -> Dict[str | int, DeckButton]:
+        """Parses a deck button definition block
+
+        A DeckButton block defines either a single deck button (no repeat attribute)
+        or a collection of similar buttons if there is a repeat attribute.
+        """
+        button_block[DECK_KW.INT_NAME.value] = "NO_NAME_" + str(self.count)  # assign technical name
+        self.count = self.count + 1
+
+        repeat = button_block.get(DECK_KW.REPEAT.value)
+        if type(repeat) is int:
+            repeat = [repeat, 1]
+        layout = button_block.get(DECK_KW.LAYOUT.value)
+        offset = layout.get(DECK_KW.OFFSET.value, [0, 0])
+        spacing = layout.get(DECK_KW.SPACING.value, [0, 0])
+        prefix = button_block.get(DECK_KW.PREFIX.value, "")
+        start = button_block.get(DECK_KW.NAME.value)
+
+        # this definition is for a single button
+        if repeat is None or repeat == [1, 1]:
+            name = prefix + str(start)
+            return {
+                name: DeckButton(
+                    config={
+                        DECK_KW.NAME.value: name,
+                        DECK_KW.INDEX.value: start,
+                        DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
+                        DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
+                        DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
+                        DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
+                        DECK_KW.POSITION.value: offset,
+                        DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value, [0, 0]),
+                    }
+                )
+            }
+
+        # definition is a for a collection of similar buttons
+        start = int(start)  # should be int, but no test
+        button_types = {}
+        idx = start
+        for x in range(repeat[0]):
+            for y in range(repeat[1]):
+                name = prefix + str(idx)
+                sizes = button_block.get(DECK_KW.DIMENSION.value, [0, 0])
+                position = [0, 0]
+                position[0] = offset[0] + x * (sizes[0] + spacing[0])
+                position[1] = offset[1] + y * (sizes[1] + spacing[1])
+                button_types[name] = DeckButton(
+                    config={
+                        DECK_KW.NAME.value: name,
+                        DECK_KW.INDEX.value: idx,
+                        DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
+                        DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
+                        DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
+                        DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
+                        DECK_KW.POSITION.value: position,
+                        DECK_KW.DIMENSION.value: sizes,
+                    }
+                )
+                idx = idx + 1
+
+        return button_types
 
     def is_virtual_deck(self) -> bool:
         """Validate consistency between virtual deck parameters.
@@ -152,27 +244,12 @@ class DeckType(Config):
         Returns:
             bool: Virtual deck definition is consistent or not
         """
-        for b in self._buttons.values():
-            if b.has_layout():
-                return True and self.driver == VIRTUAL_DECK_DRIVER
-        return False
+        return self.driver == VIRTUAL_DECK_DRIVER
 
     def get_virtual_deck_layout(self):
         if self.is_virtual_deck():
-            buttons = self.store.get(DECK_KW.BUTTONS.value, {})
-            first_button = buttons[0]
-            if first_button is not None:
-                layout = first_button.get(DECK_KW.LAYOUT.value)
-                if layout is not None:
-                    a = {"h": layout[0], "v": layout[1], "s": first_button.get(DECK_KW.IMAGE.value)[0]}
-                    address = self.store.get("address")
-                    if address is not None:
-                        a["address"] = address
-                    port = self.store.get("port")
-                    if port is not None:
-                        a["port"] = port
-                return a
-        return {"h": 0, "v": 0, "s": 0, "addresse": "0.0.0.0", "port": 0}
+            return self.desc()
+        return {}
 
     def special_displays(self):
         """Returns name of all special displays (i.e. not "keys")"""
@@ -200,7 +277,7 @@ class DeckType(Config):
     def get_button_definition(self, index):
         if type(index) is int:
             index = str(index)
-        return self._buttons.get(index)
+        return self.buttons.get(index)
 
     def get_index_prefix(self, index):
         b = self.get_button_definition(index)
@@ -222,11 +299,11 @@ class DeckType(Config):
         if with_icon:
             with_image = filter(
                 lambda x: DECK_FEEDBACK.IMAGE.value in x.feedbacks,
-                self._buttons.values(),
+                self.buttons.values(),
             )
             return set(reduce(lambda l, b: l.union(set(b.valid_indices())), with_image, set()))
         # else, returns all of them
-        return list(self._buttons.keys())
+        return list(self.buttons.keys())
 
     def valid_activations(self, index):
         b = self.get_button_definition(index)
@@ -275,3 +352,14 @@ class DeckType(Config):
                         res.append(button)
         # loggerDeckType.debug(f"filter {query} returns {res}")
         return res
+
+    def desc(self):
+        """Returns a flattened description of the deck
+
+        Ready to be used by web deck
+
+        Returns:
+            dict: Deck description (DeckType), simply flattened for web decks
+        """
+        buttons = [b.desc() for b in self.buttons.values()]
+        return {"name": self.name, "driver": self.driver, "buttons": buttons, "background": self.background}

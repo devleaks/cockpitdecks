@@ -22,7 +22,7 @@ from cockpitdecks.constant import (
 )
 
 from .virtualdeck import VirtualDeck
-from .decktype import DeckType
+from .decktype import DeckType, DECK_TYPE_GLOB
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -38,7 +38,7 @@ class VirtualDeckManager:
         Returns:
             Dict[str, DeckType]: [description]
         """
-        deck_types = [DeckType(filename=deck_type) for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), "*.yaml"))]
+        deck_types = [DeckType(filename=deck_type) for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), DECK_TYPE_GLOB))]
         virtual_deck_types = filter(lambda d: d.is_virtual_deck(), deck_types)
         return {d.name: d for d in virtual_deck_types}
 

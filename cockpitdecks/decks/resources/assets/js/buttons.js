@@ -365,7 +365,7 @@ class Slider extends Konva.Rect {
 //
 //
 //
-class Label {  // later, idea: overlay text or image on top of background (logo, etc.)
+class Overlay {  // later, idea: overlay text or image on top of background (logo, etc.)
 
     constructor(config, container) {
         this.config = config
@@ -384,7 +384,7 @@ CONSTRUCTORS = {
     "keyr": KeyRound,
     "encoder": Encoder,
     "touchsreen": Touchscreen,
-    "slider": Slider,
+    "slider": Slider
 }
 
 // D E C K
@@ -478,6 +478,8 @@ class Deck {
     }
 
     add_background_image(layer, stage) {
+        // Add bacground image and resize deck around it.
+        // Resize window as well. Cannot get rid of top bar... (adds 24px)
         const TITLE_BAR_HEIGHT = 24
         const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
         const deck_type = this.config[DECK_TYPE_DESCRIPTION]

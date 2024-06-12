@@ -120,20 +120,37 @@ class CONFIG_KW(Enum):
 #
 class DECK_KW(Enum):
     ACTION = "action"
+    BACKGROUND = "background"
     BUTTONS = "buttons"
+    DIMENSION = "image"  # !!
     DRIVER = "driver"
     FEEDBACK = "feedback"
     IMAGE = "image"
+    INDEX = "index"
+    INT_NAME = "_intname"
     LAYOUT = "layout"
     NAME = "name"
     NONE = "none"
+    OFFSET = "offset"
+    POSITION = "position"
     PREFIX = "prefix"
     RANGE = "range"
     REPEAT = "repeat"
-    TYPE = "type"
+    SPACING = "spacing"
 
 
 # ############################################################
+#
+# button types
+#
+class DECK_BUTTON_TYPES(Enum):
+    KEY = "key"  # suare or rectangular key
+    KEY_ROUND = "keyr"  # round key
+    ENCODER = "encoder"  # turn with clicks or stops
+    SLIDER = "slider"  # slide up and down or left to right.
+    TOUCHSCREEN = "touchscreen"
+
+
 #
 # deck type action capabilities
 #

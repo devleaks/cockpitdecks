@@ -28,10 +28,11 @@ from cockpitdecks import (
 )
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
 from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST
+from cockpitdecks.decks.resources.decktype import DECK_TYPE_LOCATION
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
-from cockpitdecks.decks.resources import DeckType
+from cockpitdecks.decks.resources import DeckType, DECK_TYPE_LOCATION, DECK_TYPE_GLOB
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -681,8 +682,7 @@ class Cockpit(DatarefListener, CockpitBase):
     # Cockpit data caches
     #
     def load_deck_types(self):
-        folder = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
-        for deck_type in glob.glob(os.path.join(folder, "*.yaml")):
+        for deck_type in glob.glob(os.path.join(DECK_TYPE_LOCATION, DECK_TYPE_GLOB)):
             data = DeckType(deck_type)
             name = data.get(DECK_KW.TYPE.value)
             if name is None:
