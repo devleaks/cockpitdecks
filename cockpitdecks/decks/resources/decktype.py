@@ -1,11 +1,12 @@
 import os
 import logging
 import json
+import glob
 from typing import List, Dict
 
 from functools import reduce
 
-from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK, DECK_BUTTON_TYPES
+from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
@@ -18,9 +19,6 @@ loggerButtonType = logging.getLogger("ButtonType")
 
 loggerDeckType = logging.getLogger("DeckType")
 # loggerDeckType.setLevel(logging.DEBUG)
-
-DECK_TYPE_LOCATION = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER)
-DECK_TYPE_GLOB = "*.new.yaml"
 
 
 class DeckButton:
@@ -40,8 +38,9 @@ class DeckButton:
         self.feedbacks = config.get(DECK_KW.FEEDBACK.value)
 
         self.position = config.get(DECK_KW.POSITION.value)  # for web decks drawing
-        self.sizes = config.get(DECK_KW.DIMENSION.value)
+        self.dimension = config.get(DECK_KW.DIMENSION.value)
 
+        self.options = config.get(DECK_KW.OPTIONS.value)
         self.range = config.get(DECK_KW.RANGE.value, [0, 0])  # for sliders
 
         self.init()
@@ -63,19 +62,25 @@ class DeckButton:
         except ValueError:
             self._name_is_int = False
 
+        # rearrange options
+        # options: a=2,b -> options: {"a":2, b:True}
+        if self.options is not None:
+            options_new = {}
+            for opt in self.options.split(","):
+                opt_arr = opt.split("=")
+                if len(opt_arr) > 1:
+                    options_new[opt_arr[0]] = "=".join(opt_arr[1:])
+                else:
+                    options_new[opt_arr[0]] = True
+            self.options = options_new
+
         loggerButtonType.debug(f"{self.prefix}/{self.name}: {self.valid_representations()}")
 
     def has_drawing(self):
-        return self.position is not None and self.sizes is not None
+        return self.position is not None and self.dimension is not None
 
-    def valid_indices(self) -> list:
-        if self.repeat == 0:
-            return [self.prefix + self.name]
-        if self._name_is_int:
-            start = self.name
-            return [self.prefix + str(i) for i in range(start, start + self.repeat)]
-        loggerButtonType.warning(f"button type {self.name} cannot repeat from {self.name}")
-        return [self.name]
+    def has_icon(self) -> bool:
+        return self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.dimension is not None
 
     def has_layout(self) -> bool:
         return self._config.get(DECK_KW.LAYOUT.value) is not None
@@ -138,8 +143,13 @@ class DeckButton:
             "feedbacks": self.feedbacks,
             "range": self.range,
             "position": self.position,
-            "sizes": self.sizes,
+            "dimension": self.dimension,
+            "options": self.options
         }
+
+
+DECK_TYPE_LOCATION = os.path.join(os.path.dirname(__file__))
+DECK_TYPE_GLOB = "*.yaml"
 
 
 class DeckType(Config):
@@ -152,10 +162,14 @@ class DeckType(Config):
         self.name = self[DECK_KW.NAME.value]
         self.driver = self[DECK_KW.DRIVER.value]
         self.buttons: Dict[str | int, DeckButton] = {}
-        self.background = self[DECK_KW.BACKGROUND.value]
+        self.background = self.store.get(DECK_KW.BACKGROUND.value)
         self._special_displays = None  # cache
         self.count = 0
         self.init()
+
+    @staticmethod
+    def list():
+        return glob.glob(os.path.join(DECK_TYPE_LOCATION, DECK_TYPE_GLOB))
 
     def init(self):
         """Parses a deck definition file and build a list of what's available.
@@ -169,7 +183,8 @@ class DeckType(Config):
         loggerDeckType.debug(f"deck type {self.name}: buttons: {self.buttons.keys()}..")
         loggerDeckType.debug(f"..deck type {self.name} done")
 
-        print(json.dumps(self.desc(), indent=2))
+        # with open(self.name+".json", "w") as fd:
+        #     json.dump(self.desc(), fd, indent=2)
 
     def parse_deck_button_block(self, button_block) -> Dict[str | int, DeckButton]:
         """Parses a deck button definition block
@@ -184,8 +199,11 @@ class DeckType(Config):
         if type(repeat) is int:
             repeat = [repeat, 1]
         layout = button_block.get(DECK_KW.LAYOUT.value)
-        offset = layout.get(DECK_KW.OFFSET.value, [0, 0])
-        spacing = layout.get(DECK_KW.SPACING.value, [0, 0])
+        offset = [0, 0]
+        spacing = [0, 0]
+        if layout is not None:
+            offset = layout.get(DECK_KW.OFFSET.value, [0, 0])
+            spacing = layout.get(DECK_KW.SPACING.value, [0, 0])
         prefix = button_block.get(DECK_KW.PREFIX.value, "")
         start = button_block.get(DECK_KW.NAME.value)
 
@@ -203,6 +221,7 @@ class DeckType(Config):
                         DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
                         DECK_KW.POSITION.value: offset,
                         DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value, [0, 0]),
+                        DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     }
                 )
             }
@@ -214,7 +233,11 @@ class DeckType(Config):
         for x in range(repeat[0]):
             for y in range(repeat[1]):
                 name = prefix + str(idx)
-                sizes = button_block.get(DECK_KW.DIMENSION.value, [0, 0])
+                sizes = button_block.get(DECK_KW.DIMENSION.value)
+                if sizes is None:
+                    sizes = [0, 0]
+                if type(sizes) is int:  # radius
+                    sizes = [2*sizes, 2*sizes]  # "bounding box"
                 position = [0, 0]
                 position[0] = offset[0] + x * (sizes[0] + spacing[0])
                 position[1] = offset[1] + y * (sizes[1] + spacing[1])
@@ -227,7 +250,8 @@ class DeckType(Config):
                         DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
                         DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
                         DECK_KW.POSITION.value: position,
-                        DECK_KW.DIMENSION.value: sizes,
+                        DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value),
+                        DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     }
                 )
                 idx = idx + 1
@@ -298,10 +322,10 @@ class DeckType(Config):
         # If with_icon is True, only returns keys with image icon associted with it
         if with_icon:
             with_image = filter(
-                lambda x: DECK_FEEDBACK.IMAGE.value in x.feedbacks,
+                lambda x: x.has_icon(),
                 self.buttons.values(),
             )
-            return set(reduce(lambda l, b: l.union(set(b.valid_indices())), with_image, set()))
+            return [b.name for b in with_image]
         # else, returns all of them
         return list(self.buttons.keys())
 

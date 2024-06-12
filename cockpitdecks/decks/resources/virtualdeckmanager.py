@@ -22,7 +22,7 @@ from cockpitdecks.constant import (
 )
 
 from .virtualdeck import VirtualDeck
-from .decktype import DeckType, DECK_TYPE_GLOB
+from .decktype import DeckType
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -38,12 +38,12 @@ class VirtualDeckManager:
         Returns:
             Dict[str, DeckType]: [description]
         """
-        deck_types = [DeckType(filename=deck_type) for deck_type in glob.glob(os.path.join(os.path.dirname(__file__), DECK_TYPE_GLOB))]
+        deck_types = [DeckType(filename=deck_type) for deck_type in DeckType.list()]
         virtual_deck_types = filter(lambda d: d.is_virtual_deck(), deck_types)
         return {d.name: d for d in virtual_deck_types}
 
     @staticmethod
-    def enumerate(acpath: str, cdip: list) -> Dict[str, VirtualDeck]:
+    def enumerate(acpath: str) -> Dict[str, VirtualDeck]:
         """Returns all the virtual devices available to Cockpitdecks.
 
         Virtual devices are discovered in the cockpit currently in use.
@@ -63,6 +63,6 @@ class VirtualDeckManager:
             deck_type = deck.get(CONFIG_KW.TYPE.value)
             if deck_type in virtual_deck_types:
                 name = deck.get(DECK_KW.NAME.value)
-                VirtualDeckManager.virtual_decks[name] = VirtualDeck(name=name, definition=virtual_deck_types.get(deck_type), config=deck, cdip=cdip)
+                VirtualDeckManager.virtual_decks[name] = VirtualDeck(name=name, definition=virtual_deck_types.get(deck_type), config=deck)
                 VirtualDeckManager.virtual_decks[name].set_serial_number(serials.get(name))
         return VirtualDeckManager.virtual_decks

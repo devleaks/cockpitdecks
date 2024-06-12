@@ -16,20 +16,11 @@ logger = logging.getLogger(__name__)
 class VirtualDeck:
     DECK_NAME = "virtualdeck"
 
-    def __init__(self, name: str, definition: "DeckType", config: dict, cdip: list):
+    def __init__(self, name: str, definition: "DeckType", config: dict):
         self.name: str = name
         self.virtual_deck_definition: dict = definition  # DeckType
         self.virtual_deck_config: dict = config  # Deck entry in deckconfig/config.yaml
-
         self.serial_number = None
-        self.cd_address = cdip[0]
-        self.cd_port = cdip[1]
-
-        layout = self.virtual_deck_definition.get_virtual_deck_layout()
-        self.keys_horiz = layout.get("h")
-        self.keys_vert = layout.get("v")
-        self.icon_width = layout.get("s")
-        self.icon_height = layout.get("s")
 
     def deck_type(self):
         return VirtualDeck.DECK_NAME
@@ -44,8 +35,9 @@ class VirtualDeck:
         return True
 
     def key_image_format(self):
+        # dummy
         return {
-            "size": (self.icon_width, self.icon_height),
+            "size": (0, 0),
             "format": "",
             "flip": (False, False),
             "rotation": 0,

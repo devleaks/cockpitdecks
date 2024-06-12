@@ -1,14 +1,17 @@
-# This is the description of a deck's capabilities for a Elgato Streamdeck Plus device
+# This is the description of a deck's capabilities for a virtual deck
 #
 ---
-name: Stream Deck +
-driver: streamdeck
+name: Streamdeck +
+driver: virtualdeck
 buttons:
   - name: 0
     action: push
     feedback: image
     dimension: [96, 96]
     repeat: [4, 2]
+    layout:
+      offset: [48, 85]
+      spacing: [43, 22]
   - name: 0
     prefix: e
     action: [encoder, push]
@@ -19,3 +22,7 @@ buttons:
     action: [press, longpress, swipe]
     feedback: image
     dimension: [800, 100]
+layout:
+  background:
+    color: black
+    image: streamdeck.plus.png

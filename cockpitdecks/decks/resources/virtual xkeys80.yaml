@@ -9,7 +9,7 @@ buttons:
     repeat: [10, 8]
     action: push
     feedback: image
-    image: [64, 64]
+    dimension: [64, 64]
     layout:
       offset: [20, 20]
       spacing: [10, 10]

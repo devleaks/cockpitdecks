@@ -28,15 +28,14 @@ from cockpitdecks import (
 )
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
 from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST
-from cockpitdecks.decks.resources.decktype import DECK_TYPE_LOCATION
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
-from cockpitdecks.decks.resources import DeckType, DECK_TYPE_LOCATION, DECK_TYPE_GLOB
+from cockpitdecks.decks.resources import DeckType
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 if LOGFILE is not None:
     formatter = logging.Formatter(FORMAT)
@@ -529,7 +528,7 @@ class Cockpit(DatarefListener, CockpitBase):
             return
         cnt = 0
         builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
-        decks = builder[1]().enumerate(acpath=self.acpath, cdip=COCKPITDECKS_HOST)
+        decks = builder[1]().enumerate(acpath=self.acpath)
         logger.info(f"found {len(decks)} virtual deck(s)")
         for name, device in decks.items():
             serial = device.get_serial_number()
@@ -631,7 +630,10 @@ class Cockpit(DatarefListener, CockpitBase):
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
-                        self.virtual_deck_list[name] = deck_config | {"deck-type-desc": self.deck_types.get(deck_type).store}
+                        self.virtual_deck_list[name] = deck_config | {
+                            "deck-type-desc": self.deck_types.get(deck_type).store,
+                            "deck-type-flat": self.deck_types.get(deck_type).desc(),
+                        }
                         # web decks need to have a decor
                         # decor = deck_config.get(CONFIG_KW.DECOR.value)
                         # if decor is None:
@@ -682,15 +684,11 @@ class Cockpit(DatarefListener, CockpitBase):
     # Cockpit data caches
     #
     def load_deck_types(self):
-        for deck_type in glob.glob(os.path.join(DECK_TYPE_LOCATION, DECK_TYPE_GLOB)):
+        for deck_type in DeckType.list():
             data = DeckType(deck_type)
-            name = data.get(DECK_KW.TYPE.value)
-            if name is None:
-                logger.warning(f"ignoring unnamed deck {deck_type}")
-                continue
-            self.deck_types[name] = data
+            self.deck_types[data.name] = data
             if data.is_virtual_deck():
-                self.virtual_deck_types[name] = data.get_virtual_deck_layout()
+                self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
         logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
 
     def get_deck_type(self, name: str):

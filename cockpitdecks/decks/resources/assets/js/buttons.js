@@ -9,9 +9,9 @@
 //
 const HIGHLIGHT = "#ffffff80"  // white, opacity 80/FF
 const FLASH = "#00ffff"  // cyan, opacity 50%
-const FLASH_DURATION = 300
+const FLASH_DURATION = 100
 const EDITOR_MODE = false
-const DECK_TYPE_DESCRIPTION = "deck-type-desc"
+const DECK_TYPE_DESCRIPTION = "deck-type-flat"
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
 
 // does not work...
@@ -45,11 +45,11 @@ class Key extends Konva.Rect {
 
     constructor(config, container) {
         super({
-            x: config.x,
-            y: config.y,
-            width: config.width,
-            height: config.height,
-            cornerRadius: config.corner_radius,
+            x: config.position[0],
+            y: config.position[1],
+            width: config.dimension[0],
+            height: config.dimension[1],
+            cornerRadius: parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius),
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -74,7 +74,7 @@ class Key extends Konva.Rect {
 
         // Clicks
         this.on("pointerdown", function () {
-            this.flash(FLASH, HIGHLIGHT)
+            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
             sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
         });
 
@@ -119,9 +119,9 @@ class KeyRound extends Konva.Circle {
 
     constructor(config, container) {
         super({
-            x: config.x,
-            y: config.y,
-            radius: config.radius,
+            x: config.position[0],
+            y: config.position[1],
+            radius: config.dimension, // only one value
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -146,6 +146,7 @@ class KeyRound extends Konva.Circle {
 
         // Clicks
         this.on("pointerdown", function () {
+            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
             sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
         });
 
@@ -153,6 +154,14 @@ class KeyRound extends Konva.Circle {
             sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
         });
 
+    }
+
+    flash(colorin, colorout, time) {
+        let that = this
+        this.stroke(colorin)
+        setTimeout(function() {
+            that.stroke(colorout)
+        }, time)
     }
 
     add_to_layer(layer) {
@@ -178,9 +187,9 @@ class Encoder extends Konva.Circle {
 
     constructor(config, container) {
         super({
-            x: config.x,
-            y: config.y,
-            radius: config.radius,
+            x: config.position[0],
+            y: config.position[1],
+            radius: config.dimension, // only one value
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -214,6 +223,7 @@ class Encoder extends Konva.Circle {
 
         // Clicks
         this.on("pointerdown", function () {
+            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION/3)
             let value = this.clockwise() ? 2 : 3
             sendEvent(DECK.name, 1, value, {x: 0, y: 0})
         });
@@ -227,6 +237,14 @@ class Encoder extends Konva.Circle {
     clockwise() {
         // How encoder was turned
         return (this.layer.getRelativePointerPosition().x - this.x()) < 0
+    }
+
+    flash(colorin, colorout, time) {
+        let that = this
+        this.stroke(colorin)
+        setTimeout(function() {
+            that.stroke(colorout)
+        }, time)
     }
 
     add_to_layer(layer) {
@@ -253,11 +271,11 @@ class Touchscreen extends Konva.Rect {
 
     constructor(config, container) {
         super({
-            x: config.x,
-            y: config.y,
-            width: config.width,
-            height: config.height,
-            cornerRadius: config.corner_radius,
+            x: config.position[0],
+            y: config.position[1],
+            width: config.dimension[0],
+            height: config.dimension[1],
+            cornerRadius: parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius),
             stroke: HIGHLIGHT,
             strokeWidth: 1,
             draggable: EDITOR_MODE
@@ -282,7 +300,7 @@ class Touchscreen extends Konva.Rect {
 
         // Clicks
         this.on("pointerdown", function () {
-            this.flash(FLASH, HIGHLIGHT)
+            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
             sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
         });
 
@@ -292,12 +310,12 @@ class Touchscreen extends Konva.Rect {
 
     }
 
-    flash(colorin, colorout) {
+    flash(colorin, colorout, time) {
         let that = this
         this.stroke(colorin)
         setTimeout(function() {
             that.stroke(colorout)
-        }, 500)
+        }, time)
     }
 
     add_to_layer(layer) {
@@ -393,29 +411,16 @@ CONSTRUCTORS = {
 class Deck {
 
     constructor(config, container) {
-        this.config = config;
-        this.buttons = Array();  // array of Konva shapes to be added to layer, should be a Map()?
+        this._config = config;
 
         this.name = config.name;
         this.container = container;
 
-        const deck_type = config[DECK_TYPE_DESCRIPTION];
+        this.deck_type = config[DECK_TYPE_DESCRIPTION];
+        console.log("config", this.deck_type)
 
-        this.icon_width = deck_type.buttons[0].image[0];
-        this.icon_height = deck_type.buttons[0].image[1];
-
-        this.numkeys_horiz = deck_type.buttons[0].layout[0];
-        this.numkeys_vert = deck_type.buttons[0].layout[1];
-
-        this.keyspc_horiz = deck_type.layout.background.spacing[0];
-        this.keyspc_vert = deck_type.layout.background.spacing[1];
-
-        this.offset_horiz = deck_type.layout.background.offset[0];
-        this.offset_vert = deck_type.layout.background.offset[1];
-
-        this.background_image = deck_type.layout.background.image;
-
-        this.build(config.layout);
+        this.buttons = Array();  // array of Konva shapes to be added to layer, should be a Map()?
+        this.build(config);
     }
 
     add(button) {
@@ -430,51 +435,24 @@ class Deck {
     }
 
     build(layout) {
-        const max_keys = this.numkeys_horiz * this.numkeys_vert
-        for (let i = 0; i < max_keys; i++) {
-            let coords = this.get_xy(i);
-            let key = new Key({name: i, x: coords.x, y: coords.y, width: this.icon_width, height: this.icon_height, corner_radius: 8}, this.container);
-            this.add(key);
-        }
-
-        // test for LoupedeckLive
-        // Encoders
-        let r = 27
-        for (let i = 0; i < 6; i++) {
-            let x = 47+(Math.floor(i/3)*575);
-            let y = 120+((i%3)*(this.icon_height+this.keyspc_vert));
-            let encoder = new Encoder({name: "e"+i, x: x, y: y, radius: r}, this.container);
-            this.add(encoder);
-        }
-
-        // Colored buttons
-        r = 20
-        for (let i = 0; i < 8; i++) {
-            let x = 46+i*82;
-            let y = 398;
-            let encoder = new KeyRound({name: "e"+i, x: x, y: y, radius: r}, this.container);
-            this.add(encoder);
-        }
-
-        // Side screens
-        let key = new Key({name: "left", x: 104, y: 74, width: 45, height: 270, corner_radius: 4}, this.container);
-        this.add(key);
-        key = new Key({name: "right", x: 521, y: 74, width: 46, height: 270, corner_radius: 4}, this.container);
-        this.add(key);
-
-    }
-
-    build_new(layout) {
-        const deck_type = this.config[DECK_TYPE_DESCRIPTION]
-        let allbuttons = deck_type.buttons
-        allbuttons.forEach( (button_type) => {
-            buttons = allbuttons[button_type]
-            buttons.forEach( (button) => {
-                buttons = allbuttons[button_type]
-                this.add(shape);
-            })
-        })
-
+        this.deck_type.buttons.forEach((button) => {
+            // decide which shape to use
+            if (button.actions.indexOf("encoder") > -1) {
+                // console.log("encoder", button)
+                this.add(new Encoder(button, this.container))
+            } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
+                if (button.dimension.constructor == Array) {
+                    // console.log("key", button)
+                    this.add(new Key(button, this.container))
+                } else {
+                    console.log("keyround", button)
+                    this.add(new KeyRound(button, this.container))
+                }
+            } else if (button.actions.indexOf("swipe") > -1) {
+                // console.log("touchscreen", button)
+                this.add(new Touchscreen(button, this.container))
+            }
+        });
     }
 
     add_background_image(layer, stage) {
@@ -482,11 +460,17 @@ class Deck {
         // Resize window as well. Cannot get rid of top bar... (adds 24px)
         const TITLE_BAR_HEIGHT = 24
         const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
-        const deck_type = this.config[DECK_TYPE_DESCRIPTION]
-        let bgcolor = deck_type.layout.background.color
+
+        const bgcolor = this.deck_type.background.color
         if (bgcolor != undefined) {
             this.container.style["background-color"] = bgcolor
         }
+
+        const background_image = this.deck_type.background.image;
+        if (background_image == undefined || background_image == null) {
+            return;
+        }
+
         let deckImage = new Image();
         deckImage.onerror = function() {
             this.container.style["border"] = "1px solid red";
@@ -509,7 +493,7 @@ class Deck {
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
             layer.add(deckbg);
         };
-        deckImage.src = DECK_BACKGROUND_IMAGE_PATH + this.background_image;
+        deckImage.src = DECK_BACKGROUND_IMAGE_PATH + background_image;
     }
 
     add_interaction_to_layer(layer) {
@@ -522,6 +506,7 @@ class Deck {
     }
 
     set_key_image(key, image, layer) {
+        return;
         let coords = this.get_xy(key);
         let buttonImage = new Image();
         buttonImage.onload = function () {

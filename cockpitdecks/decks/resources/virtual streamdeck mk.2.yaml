@@ -1,14 +1,14 @@
 # This is the description of a deck's capabilities for a virtual deck
 #
 ---
-type: Virtual Streamdeck MK.2
+name: Virtual Streamdeck MK.2
 driver: virtualdeck
 buttons:
   - name: 0
     action: push
     feedback: image
-    image: [96, 96]
-    layout: [5, 3]
+    dimension: [96, 96]
+    repeat: [5, 3]
 layout:
   background:
     color: black

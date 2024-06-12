@@ -527,6 +527,8 @@ class DeckWithIcons(Deck):
         inside this deck's specific format.
         (We could build a set per deck model rather than deck instance.)
         """
+        if self.deck_type.is_virtual_deck():
+            return
         cache_icon = self.get_attribute("cache-icon")
         logger.info(f"deck {self.name}: use cache {cache_icon}")
         dn = self.cockpit.icon_folder

@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 WEB_LOG = False
 
+TEMPORARY_MAP = {"left": 100, "right": 101, "center": 102, "touchscreen": 103}
+
 
 class VirtualDeck(DeckWithIcons):
     """
@@ -33,22 +35,18 @@ class VirtualDeck(DeckWithIcons):
 
     DECK_NAME = "virtualdeck"
     DRIVER_NAME = "virtualdeck"
-    MIN_DRIVER_VERSION = "0.1.0"
+    MIN_DRIVER_VERSION = "0.0.0"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.cockpit.set_logging_level(__name__)
 
-        # Address and port of virtual deck
-        self.address = config.get("address")
-        self.port = config.get("port")
+        # Address and port of web socket proxy
+        self.proxy_address = PROXY_HOST[0]
+        self.proxy_port = PROXY_HOST[1]
 
-        # Address and port of virtual deck
-        self.web_address = PROXY_HOST[0]
-        self.web_port = PROXY_HOST[1]
-
-        self.pil_helper = self
+        self.pil_helper = self  # hum. wow.
 
         self.valid = True
 
@@ -61,13 +59,13 @@ class VirtualDeck(DeckWithIcons):
     #
     def get_dimensions(self, display: str):
         # works for now for all virtual decks, to be resized more formally later (display == button name)
-        b = list(self.deck_type._buttons.values())
-        return b[0].image
+        b = self.deck_type.buttons[display]
+        return b.dimension if b is not None else [0, 0]
 
-    def create_image(self, deck, background="black", display="button"):
+    def create_image(self, deck, background="black", display=None):
         return Image.new("RGB", self.get_dimensions(display=display), background)
 
-    def create_scaled_image(self, deck, image, margins=[0, 0, 0, 0], background="black", display="button"):
+    def create_scaled_image(self, deck, image, margins=[0, 0, 0, 0], background="black", display=None):
         if len(margins) != 4:
             raise ValueError("Margins should be given as an array of four integers.")
 
@@ -85,10 +83,10 @@ class VirtualDeck(DeckWithIcons):
         final_image.paste(thumbnail, (thumbnail_x, thumbnail_y), thumbnail)
         return final_image
 
-    def to_native_key_format(self, image):
+    def to_native_key_format(self, image, display):
         # Final resize of image
-        if image.size != self.get_dimensions(display="button"):
-            image.thumbnail(self.get_dimensions(display="button"))
+        if image.size != self.get_dimensions(display=display):
+            image.thumbnail(self.get_dimensions(display=display))
         return image
 
     # #######################################
@@ -120,7 +118,7 @@ class VirtualDeck(DeckWithIcons):
             return self.icons.get(name)
 
         image = None
-        bg = self.create_image(deck=self.device, background=colors)
+        bg = self.create_image(deck=self.device, background=colors, display=str(index))
         image = self.get_icon_background(
             name=str(index),
             width=bg.width,
@@ -140,7 +138,7 @@ class VirtualDeck(DeckWithIcons):
         if name is not None and name in self.icons.keys():
             return self.icons.get(name)
 
-        image = self.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
+        image = self.create_scaled_image(self.device, image, margins=[0, 0, 0, 0], display=str(index))
         if image is not None:
             image = image.convert("RGB")
             if name is not None:
@@ -163,31 +161,13 @@ class VirtualDeck(DeckWithIcons):
         payload = struct.pack(f"IIIII{len(content)}s", int(code), 0, 0, 0, len(content), content)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.address, self.port))
+                s.connect((self.proxy_address, self.proxy_port))
                 s.sendall(payload)
         except:
             if WEB_LOG:
                 logger.warning(f"{self.name}: problem sending code", exc_info=True)
 
     def _send_key_image_to_device(self, key, image):
-        # Sends the PIL Image bytes with a few meta
-        image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
-        width, height = image.size
-        content = image.tobytes()
-        code = 0
-        payload = struct.pack(f"IIIII{len(content)}s", int(code), int(key), width, height, len(content), content)
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.address, self.port))
-                s.sendall(payload)
-        except:
-            if WEB_LOG:
-                logger.warning(f"key: {key}: problem sending image to virtual deck")
-        logger.debug(f"key: {key}: image sent to ({self.address}, {self.port})")
-        # if web is being used (i.e. started)
-        self._send_key_image_to_web(key, image)
-
-    def _send_key_image_to_web(self, key, image):
         # Sends the PIL Image bytes with a few meta to Flask for web display
         # Image is sent as a stream of bytes which is the file content of the image saved in PNG format
         # Need to supply deck name as well.
@@ -204,8 +184,16 @@ class VirtualDeck(DeckWithIcons):
             im.putalpha(alpha)
             return im
 
-        image = add_corners(image, int(image.width / 8))
+        def map_key(k):
+            try:
+                d = int(k)
+                return d
+            except:
+                logger.warning("TEMPORARY MAP: {k} -> {TEMPORARY_MAP[k]}")
+                return TEMPORARY_MAP[k]
 
+        image = add_corners(image, int(image.width / 8))
+        key = map_key(key)
         width, height = image.size
         img_byte_arr = io.BytesIO()
         transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
@@ -216,9 +204,9 @@ class VirtualDeck(DeckWithIcons):
         payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.web_address, self.web_port))
+                s.connect((self.proxy_address, self.proxy_port))
                 s.sendall(payload)
-                logger.debug(f"key: {key}: image sent to ({self.web_address}, {self.web_port})")
+                logger.debug(f"key: {key}: image sent to ({self.proxy_address}, {self.proxy_port})")
         except:
             if WEB_LOG:
                 logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
@@ -237,7 +225,7 @@ class VirtualDeck(DeckWithIcons):
             logger.warning("button returned no image, using default")
             image = self.icons[self.get_attribute("default-icon-name")]
 
-        image = self.to_native_key_format(image)
+        image = self.to_native_key_format(image, display=str(button.index))
 
         self._send_key_image_to_device(button.index, image)
 
