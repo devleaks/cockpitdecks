@@ -82,12 +82,14 @@ class Key extends Konva.Rect {
 
         // Clicks
         this.on("pointerdown", function () {
+            console.log("down", this.name)
             this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
-            sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
+            sendEvent(DECK.name, this.name, 1, {x: 0, y: 0})
         });
 
         this.on("pointerup", function () {
-            sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
+            console.log("up", this.name)
+            sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
         });
 
     }
@@ -155,11 +157,11 @@ class KeyRound extends Konva.Circle {
         // Clicks
         this.on("pointerdown", function () {
             this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
-            sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
+            sendEvent(DECK.name, this.name, 1, {x: 0, y: 0})
         });
 
         this.on("pointerup", function () {
-            sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
+            sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
         });
 
     }
@@ -233,11 +235,11 @@ class Encoder extends Konva.Circle {
         this.on("pointerdown", function () {
             this.flash(FLASH, HIGHLIGHT, FLASH_DURATION/3)
             let value = this.clockwise() ? 2 : 3
-            sendEvent(DECK.name, 1, value, {x: 0, y: 0})
+            sendEvent(DECK.name, this.name, value, {x: 0, y: 0})
         });
 
         this.on("pointerup", function () {
-            sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
+            sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
         });
 
     }
@@ -439,7 +441,7 @@ class Deck {
         this.deck_type = config[DECK_TYPE_DESCRIPTION];
         console.log("config", this.deck_type)
 
-        this.buttons = new Map();  // array of Konva shapes to be added to layer, should be a Map()?
+        this.buttons = {};
         this.build(config);
     }
 
@@ -450,6 +452,7 @@ class Deck {
     get_xy(key) {
         const shape = this.buttons[key]
         if (shape != undefined && shape != null) {
+            // console.log("get_xy", key, shape.x(), shape.y());
             return {"x": shape.x(), "y": shape.y()}
         }
         console.log("get_xy", key, shape);
@@ -460,14 +463,14 @@ class Deck {
         this.deck_type.buttons.forEach((button) => {
             // decide which shape to use
             if (button.actions.indexOf("encoder") > -1) {
-                console.log("encoder", button)
+                // console.log("encoder", button)
                 this.add(new Encoder(button, this.container))
             } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
                 if (button.dimension.constructor == Array) {
-                    // console.log("key", button)
+                    console.log("key", button)
                     this.add(new Key(button, this.container))
                 } else {
-                    // console.log("keyround", button)
+                    console.log("keyround", button)
                     this.add(new KeyRound(button, this.container))
                 }
             } else if (button.actions.indexOf("swipe") > -1) {
@@ -475,6 +478,7 @@ class Deck {
                 this.add(new Touchscreen(button, this.container))
             }
         });
+        // console.log("build", this.buttons)
     }
 
     add_background_image(layer, stage) {
@@ -525,9 +529,12 @@ class Deck {
     }
 
     add_interaction_to_layer(layer) {
-        for (let b in this.buttons.values()) {
-            b.add_to_layer(layer)
+        for (let name in this.buttons) {
+            if(this.buttons.hasOwnProperty(name)) {
+                this.buttons[name].add_to_layer(layer);
+            }
         }
+        // console.log("add_interaction_to_layer", this.buttons)
     }
 
     save() {

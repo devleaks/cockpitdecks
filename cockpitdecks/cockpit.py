@@ -27,11 +27,13 @@ from cockpitdecks import (
     RESOURCES_FOLDER,
 )
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
-from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST
+from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST, APP_HOST
 from cockpitdecks.resources.color import convert_color, has_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
+
+# from cockpitdecks.webdeckproxyapp import app
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -883,10 +885,19 @@ class Cockpit(DatarefListener, CockpitBase):
         if code == 1:
             deck = self.cockpit.get(name)
             if deck is None:
-                logger.warning(f"handle code: deck {name} not found")
+                logger.warning(f"handle code: deck {name} not found (code {code})")
                 return
+            deck.add_client()
+            logger.debug(f"{name} opened")
             deck.reload_page()
             logger.debug(f"{name} reloaded")
+        if code == 2:
+            deck = self.cockpit.get(name)
+            if deck is None:
+                logger.warning(f"handle code: deck {name} not found (code {code})")
+                return
+            deck.remove_client()
+            logger.debug(f"{name} closed")
         elif code == 3:  # web decks ask for initialisation (list of decks)
             webdeck_list = self.get_web_decks()
             vdecks = json.dumps(webdeck_list)
@@ -1038,6 +1049,8 @@ class Cockpit(DatarefListener, CockpitBase):
             self.stop_event_loop()
             logger.info(f"..event loop stopped..")
         if self.rcv_loop_run:
+            # app.quit()
+            # logger.info(f"..web deck proxy server stopped..")
             self.stop_vd_listener()
             logger.info(f"..virtual deck listener stopped..")
         # Terminate decks
@@ -1072,6 +1085,8 @@ class Cockpit(DatarefListener, CockpitBase):
             if self.has_virtual_decks():
                 self.start_vd_listener()
                 logger.info(f"..virtual deck listener started..")
+                # threading.Thread(target=lambda: app.run(host=APP_HOST[0], port=APP_HOST[1], debug=True, use_reloader=False), name="Flask").start()
+                # logger.info(f"..web deck proxy server started..")
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")

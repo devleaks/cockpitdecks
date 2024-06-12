@@ -31,6 +31,10 @@ class DeckButton:
         self._config = config
         self.name = config.get(DECK_KW.NAME.value, config.get(DECK_KW.INT_NAME.value))
 
+        # alternate "name" for string button names like "left", "right", or "touchscreen"
+        # can safely be passed over by proxy
+        self.name_int = config.get(DECK_KW.NAME_INT.value)
+
         self.index = config.get(DECK_KW.INDEX.value)
         self.prefix = config.get(DECK_KW.PREFIX.value, "")
 
@@ -140,6 +144,7 @@ class DeckButton:
         """
         return {
             "name": self.name,
+            "name_int": self.name_int,
             "index": self.index,
             "prefix": self.prefix,
             "actions": self.actions,
@@ -147,7 +152,7 @@ class DeckButton:
             "range": self.range,
             "position": self.position,
             "dimension": self.dimension,
-            "options": self.options
+            "options": self.options,
         }
 
 
@@ -217,6 +222,7 @@ class DeckType(Config):
                 name: DeckButton(
                     config={
                         DECK_KW.NAME.value: name,
+                        DECK_KW.NAME_INT.value: button_block.get(DECK_KW.NAME_INT.value),
                         DECK_KW.INDEX.value: start,
                         DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
                         DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
@@ -240,13 +246,14 @@ class DeckType(Config):
                 if sizes is None:
                     sizes = [0, 0]
                 if type(sizes) is int:  # radius
-                    sizes = [2*sizes, 2*sizes]  # "bounding box"
+                    sizes = [2 * sizes, 2 * sizes]  # "bounding box"
                 position = [0, 0]
                 position[0] = offset[0] + x * (sizes[0] + spacing[0])
                 position[1] = offset[1] + y * (sizes[1] + spacing[1])
                 button_types[name] = DeckButton(
                     config={
                         DECK_KW.NAME.value: name,
+                        DECK_KW.NAME_INT.value: button_block.get(DECK_KW.NAME_INT.value),
                         DECK_KW.INDEX.value: idx,
                         DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
                         DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),

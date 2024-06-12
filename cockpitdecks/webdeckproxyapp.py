@@ -5,18 +5,13 @@ import urllib.parse
 import base64
 import socket
 import struct
-import threading
 import logging
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
+import threading
 
 from cockpitdecks import __NAME__, COCKPITDECKS_HOST, PROXY_HOST, APP_HOST
 
 from flask import Flask, render_template, send_from_directory, request
 from simple_websocket import Server, ConnectionClosed
-
-FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
-logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -65,7 +60,6 @@ class CDProxy:
         if deck not in self.vd_ws_conn:
             self.vd_ws_conn[deck] = []
             logger.debug(f"{deck}: new registration")
-            self.send_code(deck, 1)
         self.vd_ws_conn[deck].append(websocket)
         logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
 
@@ -79,9 +73,6 @@ class CDProxy:
                     remove.append(websocket)
             for ws in remove:
                 deck.remove(ws)
-        for deck in self.vd_ws_conn:
-            if len(self.vd_ws_conn[deck]) == 0:
-                self.send_code(deck, 2)
 
     def get_deck_description(self, deck: str) -> dict:
         return self.all_decks.get(deck)
@@ -268,11 +259,8 @@ def cockpit():
                 deck = data.get("deck")
                 key = data.get("key")
                 if type(key) is str:
-                    try:
-                        key = int(key)
-                    except:
-                        app.logger.warning(f"invalid key '{key}', using 0")
-                        key = 0
+                    app.logger.warning(f"invalid key '{key}'")
+                    key = 0
                 cdproxy.send_event(deck, key, int(data.get("z")))
                 app.logger.debug(f"event sent deck={deck}, value={int(data.get('z'))}")
 
@@ -282,19 +270,3 @@ def cockpit():
         app.logger.debug(f"client removed")
 
     return ""
-
-
-try:
-    # threading.Thread(target=lambda: app.run(host=APP_HOST[0], port=APP_HOST[1], debug=True, use_reloader=False), name="Flask").start()
-    app.run(host=APP_HOST[0], port=APP_HOST[1])
-except KeyboardInterrupt:
-
-    def shutdown_server():
-        func = request.environ.get("werkzeug.server.shutdown")
-        if func is None:
-            raise RuntimeError("Not running with the Werkzeug Server")
-        func()
-
-    logger.warning("terminating (please wait)..")
-    cdproxy.stop()
-    shutdown_server()

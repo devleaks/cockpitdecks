@@ -25,8 +25,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 WEB_LOG = False
 
-TEMPORARY_MAP = {"left": 100, "right": 101, "center": 102, "touchscreen": 103}
-
 
 class VirtualDeck(DeckWithIcons):
     """
@@ -49,6 +47,7 @@ class VirtualDeck(DeckWithIcons):
         self.pil_helper = self  # hum. wow.
 
         self.valid = True
+        self.clients = 0
 
         self.init()
 
@@ -57,6 +56,17 @@ class VirtualDeck(DeckWithIcons):
     # These three functions are usually provided by PILHelper.
     # For virtualdecks, they are included in here, inside the class.
     #
+    def add_client(self):
+        self.clients = self.clients + 1
+
+    def remove_client(self):
+        if self.clients > 0:
+            self.clients = self.clients - 1
+
+    def has_clients(self) -> bool:
+        return True
+        # return self.clients > 0
+
     def get_dimensions(self, display: str):
         # works for now for all virtual decks, to be resized more formally later (display == button name)
         b = self.deck_type.buttons[display]
@@ -189,8 +199,13 @@ class VirtualDeck(DeckWithIcons):
                 d = int(k)
                 return d
             except:
-                logger.warning("TEMPORARY MAP: {k} -> {TEMPORARY_MAP[k]}")
-                return TEMPORARY_MAP[k]
+                deckbutton = self.deck_type.get_button_definition(k)
+                logger.warning(f"temporary map string key name to integer: {k} -> {deckbutton.name_int}")
+                return deckbutton.name_int
+
+        if not self.has_clients():
+            logger.warning(f"deck {self.name} has no client")
+            return
 
         image = add_corners(image, int(image.width / 8))
         key = map_key(key)

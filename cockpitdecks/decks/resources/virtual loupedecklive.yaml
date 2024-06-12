@@ -39,6 +39,7 @@ buttons:
       offset: [45, 398]
       spacing: [43, 0]
   - name: left
+    name_int: 2001
     action: swipe
     feedback: image
     dimension: [52, 270]
@@ -46,12 +47,21 @@ buttons:
       offset: [96, 78]
     options: corner_radius=4
   - name: right
+    name_int: 2003
     action: swipe
     feedback: image
     dimension: [42, 270]
     layout:
       offset: [524, 78]
     options: corner_radius=4
+  # - name: center
+  #   name_int: 2002
+  #   action: swipe
+  #   feedback: image
+  #   dimension: [344, 270]
+  #   layout:
+  #     offset: [150, 78]
+  #   options: corner_radius=4
 background:
   color: "#222"
   image: loupedeck.live.png
