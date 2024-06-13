@@ -109,11 +109,11 @@ function sendCode(deck, code) {
 
 //
 // Send event to Cockpitdecks
-function sendEvent(deck, key, value, coords) {
+function sendEvent(deck, key, value, data) {
     if (key == -1) {
         console.log("probably not clicked on a key");
     } else {
-        payload = {"code": 0, "deck": deck, "key": key, "z": value, "x": coords.x, "y": coords.y};
+        payload = {"code": 0, "deck": deck, "key": key, "event": value, "data": data};
         var message = JSON.stringify(payload);
         ws.send(message);
         console.log("sent event", message);

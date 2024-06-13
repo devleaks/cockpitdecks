@@ -563,7 +563,9 @@ class DeckWithIcons(Deck):
                 logger.debug(f"deck {self.name}: {type(self).__name__}: icon {fn} found")
                 return fn
         # icon is still None
-        logger.warning(f"deck {self.name}: {type(self).__name__}: icon not found {candidate_icon}, available={self.icons.keys()}, asking to cockpit...")  # , cockpit_icons={self.cockpit.icons.keys()}
+        logger.warning(
+            f"deck {self.name}: {type(self).__name__}: icon not found {candidate_icon}, asking to cockpit..."
+        )  # , cockpit_icons={self.cockpit.icons.keys()}
         return self.cockpit.get_icon(candidate_icon)
 
     def get_icon_image(self, icon):

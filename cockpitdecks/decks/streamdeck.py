@@ -338,6 +338,7 @@ class Streamdeck(DeckWithIcons):
         """
         This is the function that is called when a key is pressed.
         """
+        print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
 
@@ -345,6 +346,7 @@ class Streamdeck(DeckWithIcons):
         """
         This is the function that is called when a dial is rotated.
         """
+        print(f"DIAL: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
         bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
         prefix = bdef[0].get(DECK_KW.PREFIX.value)
@@ -362,6 +364,7 @@ class Streamdeck(DeckWithIcons):
         """
         This is the function that is called when the touchscreen is touched swiped.
         """
+        print(f"TOUCHSCREEN: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
         logger.debug(f"Deck {deck.id()} Action {action} = {value}")
         NUMVIRTUALKEYS = 4  # number of "virtual" keys across touchscreen
         KEY_SIZE = 800 / NUMVIRTUALKEYS

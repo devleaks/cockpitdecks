@@ -130,7 +130,6 @@ class DECK_KW(Enum):
     INT_NAME = "_intname"
     LAYOUT = "layout"
     NAME = "name"
-    NAME_INT = "name_int"
     NONE = "none"
     OFFSET = "offset"
     OPTIONS = "options"

@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageOps
 
 from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST, PROXY_HOST
 from cockpitdecks.deck import DeckWithIcons
-from cockpitdecks.event import PushEvent
+from cockpitdecks.event import PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
 from cockpitdecks.buttons.representation import (
@@ -199,7 +199,11 @@ class VirtualDeck(DeckWithIcons):
             logger.debug(f"deck {self.name} has no client")
             return
 
-        image = add_corners(image, int(image.width / 8))
+        buttondef = self.deck_type.get_button_definition(key)
+        rc = buttondef.get_option("corner_radius")
+        # rc = int(image.width / 8)
+        if rc is not None:
+            image = add_corners(image, int(rc))
         width, height = image.size
         img_byte_arr = io.BytesIO()
         # transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
@@ -280,8 +284,11 @@ class VirtualDeck(DeckWithIcons):
         This is the function that is called when a key is pressed.
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
-        logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
+        if state in [0, 1, 4]:
+            PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
+            logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
+        if state in [2,3]:
+            EncoderEvent(deck=self, button=key, clockwise=state == 2)
 
     def start(self):
         pass

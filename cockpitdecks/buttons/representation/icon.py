@@ -16,7 +16,7 @@ from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK
 from .representation import Representation
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 

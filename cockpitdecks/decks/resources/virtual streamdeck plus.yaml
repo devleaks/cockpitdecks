@@ -12,6 +12,7 @@ buttons:
     layout:
       offset: [48, 85]
       spacing: [43, 22]
+    options: corner_radius=8
   - name: 0
     prefix: e
     action: [encoder, push]

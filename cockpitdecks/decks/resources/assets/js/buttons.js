@@ -22,8 +22,17 @@ const DEFAULT_WIDTH = 200
 const DEFAULT_HEIGHT = 100
 const TITLE_BAR_HEIGHT = 24
 
-// Since no multiple inheritence, and traits are too heavy
-// some code needs repeating...
+// Event codes
+// 0 = Push/press RELEASE
+// 1 = Push/press PRESS
+// 2 = Turned clockwise
+// 3 = Turned counter-clockwise
+// 4 = Pulled
+// 9 = Slider, event data contains value
+// 10 = Touch start, event data contains value
+// 11 = Touch end, event data contains value
+// 12 = Swipe, event data contains value
+
 
 // B U T T O N S
 //
@@ -252,7 +261,7 @@ class Encoder extends Konva.Circle {
         this.on("pointerup", function () {
             this.down = false
             this.stroke(HIGHLIGHT)
-            sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
+            // sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
         });
 
     }
@@ -455,6 +464,8 @@ CONSTRUCTORS = {
 class Deck {
 
     constructor(config, container) {
+        console.log(config)
+
         this._config = config;
 
         this.name = config.name;
@@ -572,7 +583,6 @@ class Deck {
     }
 
     set_key_image(key, image, layer) {
-        console.log(key, image.length)
         let coords = this.get_xy(key);
         let buttonImage = new Image();
         buttonImage.onload = function () {

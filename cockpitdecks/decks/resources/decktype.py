@@ -29,11 +29,9 @@ class DeckButton:
 
     def __init__(self, config: dict) -> None:
         self._config = config
-        self.name = config.get(DECK_KW.NAME.value, config.get(DECK_KW.INT_NAME.value))
+        self._inited = False
 
-        # alternate "name" for string button names like "left", "right", or "touchscreen"
-        # can safely be passed over by proxy
-        self.name_int = config.get(DECK_KW.NAME_INT.value)
+        self.name = config.get(DECK_KW.NAME.value, config.get(DECK_KW.INT_NAME.value))
 
         self.index = config.get(DECK_KW.INDEX.value)
         self.prefix = config.get(DECK_KW.PREFIX.value, "")
@@ -50,6 +48,8 @@ class DeckButton:
         self.init()
 
     def init(self):
+        if self._inited:
+            return
         if self.actions is None or (type(self.actions) is str and self.actions.lower() == DECK_KW.NONE.value):
             self.actions = [DECK_KW.NONE.value]
         elif type(self.actions) not in [list, tuple]:
@@ -68,17 +68,21 @@ class DeckButton:
 
         # rearrange options
         # options: a=2,b -> options: {"a":2, b:True}
+        options_new = {}
         if self.options is not None:
-            options_new = {}
             for opt in self.options.split(","):
                 opt_arr = opt.split("=")
                 if len(opt_arr) > 1:
                     options_new[opt_arr[0]] = "=".join(opt_arr[1:])
                 else:
                     options_new[opt_arr[0]] = True
-            self.options = options_new
+        self.options = options_new
 
         loggerButtonType.debug(f"{self.prefix}/{self.name}: {self.valid_representations()}")
+        self._inited = True
+
+    def get_option(self, option):
+        return self.options.get(option)
 
     def has_drawing(self):
         return self.position is not None and self.dimension is not None
@@ -144,7 +148,6 @@ class DeckButton:
         """
         return {
             "name": self.name,
-            "name_int": self.name_int,
             "index": self.index,
             "prefix": self.prefix,
             "actions": self.actions,
@@ -222,7 +225,6 @@ class DeckType(Config):
                 name: DeckButton(
                     config={
                         DECK_KW.NAME.value: name,
-                        DECK_KW.NAME_INT.value: button_block.get(DECK_KW.NAME_INT.value),
                         DECK_KW.INDEX.value: start,
                         DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
                         DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
@@ -253,7 +255,6 @@ class DeckType(Config):
                 button_types[name] = DeckButton(
                     config={
                         DECK_KW.NAME.value: name,
-                        DECK_KW.NAME_INT.value: button_block.get(DECK_KW.NAME_INT.value),
                         DECK_KW.INDEX.value: idx,
                         DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
                         DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
@@ -287,15 +288,15 @@ class DeckType(Config):
 
     def special_displays(self):
         """Returns name of all special displays (i.e. not "keys")"""
-
+        # Empirical, need better handling
         if self._special_displays is not None:
             return self._special_displays
         self._special_displays = []
         for b in self.store.get(DECK_KW.BUTTONS.value, []):
             if (
                 DECK_KW.REPEAT.value not in b
-                and b.get(DECK_KW.FEEDBACK.value, "") == DECK_FEEDBACK.IMAGE.value
-                and b.get(DECK_FEEDBACK.IMAGE.value) is not None
+                and DECK_FEEDBACK.IMAGE.value in b.get(DECK_KW.FEEDBACK.value, "")
+                and b.get(DECK_KW.DIMENSION.value) is not None
             ):
                 n = b.get(DECK_KW.NAME.value)
                 if n is not None:

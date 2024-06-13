@@ -99,7 +99,7 @@ class CDProxy:
             logger.warning(f"{deck}: problem sending event to {(self.cd_address, self.cd_port)}", exc_info=True)
         return False
 
-    def send_event(self, deck: str, key, event) -> bool:
+    def send_event(self, deck: str, key, event, data = None) -> bool:
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
@@ -270,8 +270,10 @@ def cockpit():
             elif code == 0:
                 deck = data.get("deck")
                 key = data.get("key")
-                cdproxy.send_event(deck, key, int(data.get("z")))
-                app.logger.debug(f"event sent deck={deck}, value={int(data.get('z'))}")
+                event = data.get("event")
+                payload = data.get("data")
+                cdproxy.send_event(deck=deck, key=key, event=event, data=payload)
+                app.logger.debug(f"event sent deck={deck}, event={event} data={payload}")
 
     except ConnectionClosed:
         app.logger.debug(f"connection closed")
