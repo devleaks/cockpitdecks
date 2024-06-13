@@ -287,7 +287,7 @@ class VirtualDeck(DeckWithIcons):
         if state in [0, 1, 4]:
             PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
-        if state in [2,3]:
+        if state in [2, 3]:
             EncoderEvent(deck=self, button=key, clockwise=state == 2)
 
     def start(self):

@@ -4,8 +4,9 @@
  * Capture interaction in the button and send it to Cockpitdecks.
  */
 
-// A   F E W   C O N S T A N T 2
+// A   F E W   C O N S T A N T S
 //
+// Conventions and codes
 //
 const HIGHLIGHT = "#ffffff80"  // white, opacity 80/FF
 
@@ -22,6 +23,8 @@ const DEFAULT_WIDTH = 200
 const DEFAULT_HEIGHT = 100
 const TITLE_BAR_HEIGHT = 24
 
+const OPT_CORNER_RADIUS = "corner_radius"
+
 // Event codes
 // 0 = Push/press RELEASE
 // 1 = Push/press PRESS
@@ -32,7 +35,12 @@ const TITLE_BAR_HEIGHT = 24
 // 10 = Touch start, event data contains value
 // 11 = Touch end, event data contains value
 // 12 = Swipe, event data contains value
+// 14 = Tap, event data contains value
 
+
+// Uses:
+// function sendCode(deck, code)
+// sendEvent(deck, key, value, data)
 
 // B U T T O N S
 //
@@ -46,7 +54,7 @@ class Key extends Konva.Rect {
 
         let corner_radius = 0
         if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius)
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
         }
 
         super({
@@ -314,7 +322,7 @@ class Touchscreen extends Konva.Rect {
 
         let corner_radius = 0
         if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius)
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
         }
 
         super({
@@ -332,33 +340,82 @@ class Touchscreen extends Konva.Rect {
         this.name = config.name
         this.container = container
 
-        this.inside = false
+        this.sliding = false
+        this.pressed = false
 
         // Inside key
         this.on("pointerover", function () {
             this.container.style.cursor = "pointer"
-            this.inside = true
         });
 
         this.on("pointerout", function () {
             this.container.style.cursor = "auto"
-            this.inside = false
         });
 
-        // Clicks
+        // Pointer events: 
         this.on("pointerdown", function () {
-            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
-            sendEvent(DECK.name, 1, 1, {x: 0, y: 0})
+            this.container.style.cursor = "grab"
+            this.pressed = true
+            const pos = this.getRelativePointerCoordinates();
+            console.log("pointerdown", pos, Date.now());
+        });
+
+        this.on("pointermove", function () {
+            if (this.pressed && ! this.sliding) { // sliding start
+                const pos = this.getRelativePointerCoordinates();
+                this.sliding = true
+                this.container.style.cursor = "grabbing"
+                console.log("touchstart/pointermove", pos, Date.now());
+                sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.x, ts: Date.now()});
+            }
         });
 
         this.on("pointerup", function () {
-            sendEvent(DECK.name, 1, 0, {x: 0, y: 0})
+            this.pressed = false
+            if (! this.sliding) {
+                const pos = this.getRelativePointerCoordinates();
+                this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
+                console.log("tap/pointerup", pos, Date.now());
+                sendEvent(DECK.name, this.name, 14, {x: pos.x, y: pos.x, ts: Date.now()});
+            } else {
+                const pos = this.getRelativePointerCoordinates();
+                this.sliding = false
+                this.container.style.cursor = "pointer"
+                console.log("touchend/pointerdown", pos, Date.now());
+                sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.x, ts: Date.now()});
+            }
+        });
+
+        // Touch events: touchstart, touchmove, touchend, tap
+        this.on("tap", function () {
+            const pos = this.getRelativePointerCoordinates();
+            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION);
+            console.log("tap", pos, Date.now());
+            sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.x, ts: Date.now()});
+        });
+
+        this.on("touchmove", function () {
+            this.container.style.cursor = "grabbing";
+        });
+
+        this.on("touchstart", function () {
+            this.container.style.cursor = "grab";
+            const pos = this.getRelativePointerCoordinates();
+            console.log("touchstart", pos, Date.now());
+            sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.x, ts: Date.now()});
+        });
+
+        this.on("touchend", function () {
+            this.container.style.cursor = "pointer";
+            const pos = this.getRelativePointerCoordinates();
+            console.log("touchend", pos, Date.now());
+            sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.x, ts: Date.now()});
         });
 
     }
 
     flash(colorin, colorout, time) {
-        let that = this
+        let that = this;
         this.stroke(colorin)
         setTimeout(function() {
             that.stroke(colorout)
@@ -368,6 +425,13 @@ class Touchscreen extends Konva.Rect {
     add_to_layer(layer) {
         this.layer = layer;
         layer.add(this);
+    }
+
+    getRelativePointerCoordinates() {
+        return {
+            x: this.layer.getRelativePointerPosition().x - this.x(), 
+            y: this.layer.getRelativePointerPosition().y - this.y()
+        }
     }
 
     save() {
@@ -393,7 +457,7 @@ class Slider extends Konva.Rect {
 
         let corner_radius = 0
         if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options.corner_radius == undefined ? 0 : config.options.corner_radius)
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
         }
 
         super({

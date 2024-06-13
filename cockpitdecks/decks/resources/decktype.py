@@ -293,11 +293,7 @@ class DeckType(Config):
             return self._special_displays
         self._special_displays = []
         for b in self.store.get(DECK_KW.BUTTONS.value, []):
-            if (
-                DECK_KW.REPEAT.value not in b
-                and DECK_FEEDBACK.IMAGE.value in b.get(DECK_KW.FEEDBACK.value, "")
-                and b.get(DECK_KW.DIMENSION.value) is not None
-            ):
+            if DECK_KW.REPEAT.value not in b and DECK_FEEDBACK.IMAGE.value in b.get(DECK_KW.FEEDBACK.value, "") and b.get(DECK_KW.DIMENSION.value) is not None:
                 n = b.get(DECK_KW.NAME.value)
                 if n is not None:
                     self._special_displays.append(n)
