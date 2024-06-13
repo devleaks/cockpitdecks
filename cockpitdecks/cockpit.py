@@ -931,6 +931,7 @@ class Cockpit(DatarefListener, CockpitBase):
         (code, event, deck_length, key_length), payload = struct.unpack("IIII", data[:16]), data[16:]
         deck_name = payload[:deck_length].decode("utf-8")
         key = payload[deck_length : deck_length + key_length].decode("utf-8")
+        print("<<<<< handle_event", code, event, deck_length, key_length, deck_name, key)
         if code != 0:
             self.handle_code(code, deck_name)
             return
@@ -1101,6 +1102,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.info(f"..virtual deck listener started..")
                 # threading.Thread(target=lambda: app.run(host=APP_HOST[0], port=APP_HOST[1], debug=True, use_reloader=False), name="Flask").start()
                 # logger.info(f"..web deck proxy server started..")
+                self.broadcast_code(1)
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")

@@ -19,7 +19,7 @@ FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.DEBUG)
 
 
 SOCKET_TIMEOUT = 5
@@ -107,6 +107,7 @@ class CDProxy:
         deck_name = bytes(deck, "utf-8")
         key_name = bytes(str(key), "utf-8")
         payload = struct.pack(f"IIII{len(deck_name)}s{len(key_name)}s", code, event, len(deck_name), len(key_name), deck_name, key_name)
+        print(">>>>> sending to Cockpitdecks", code, event, len(deck_name), len(key_name), deck, key)
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -165,7 +166,7 @@ class CDProxy:
                 with conn:
                     while True:
                         data = conn.recv(BUFFER_SIZE)
-                        logger.debug("got event from web deck")
+                        logger.debug("got event from Cockpitdecks")
                         if not data:
                             break
                         buff = buff + data
@@ -269,12 +270,6 @@ def cockpit():
             elif code == 0:
                 deck = data.get("deck")
                 key = data.get("key")
-                if type(key) is str:
-                    try:
-                        key = int(key)
-                    except:
-                        app.logger.warning(f"invalid key '{key}', using 0")
-                        key = 0
                 cdproxy.send_event(deck, key, int(data.get("z")))
                 app.logger.debug(f"event sent deck={deck}, value={int(data.get('z'))}")
 
