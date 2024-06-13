@@ -20,8 +20,9 @@ body {
 //
 // Konva layout set up and initialisation
 //
-// create and add <div id="deck"></div> with proper styling
+// create and add <div id="deck"></div> with proper styling, add to document
 DECK_ELEMID = "deck"
+
 var deck_elem = document.createElement("div");
 deck_elem.setAttribute("id", DECK_ELEMID);
 deck_elem.setAttribute("width", "inherit");
@@ -31,7 +32,7 @@ deck_elem.setAttribute("padding", 0);
 deck_elem.setAttribute("marging", 0);
 document.getElementsByTagName("body")[0].appendChild(deck_elem)
 
-// create state
+// create stage
 var stage = new Konva.Stage({
     container: DECK_ELEMID,
     width: window.innerWidth,
@@ -52,12 +53,12 @@ stage.add(interaction_layer);
 //
 // Deck creation & installation
 //
-// Transfer from Cockpitdecks through Jinja2
+// Transfer from Cockpitdecks through Jinja2, nice output
 const DECK = {{ deck|tojson(indent=2) }};
 
 deck = new Deck(DECK, deck_elem);  // we need to pass the div element to style it (cursor)
-deck.add_background_image(background_layer, stage);
-deck.add_interaction_to_layer(interaction_layer);
+deck.set_background_layer(background_layer, stage);
+deck.set_interaction_layer(interaction_layer);
 
 //
 //

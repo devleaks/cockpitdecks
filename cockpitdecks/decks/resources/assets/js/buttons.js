@@ -467,10 +467,10 @@ class Deck {
                 this.add(new Encoder(button, this.container))
             } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
                 if (button.dimension.constructor == Array) {
-                    console.log("key", button)
+                    // console.log("key", button)
                     this.add(new Key(button, this.container))
                 } else {
-                    console.log("keyround", button)
+                    // console.log("keyround", button)
                     this.add(new KeyRound(button, this.container))
                 }
             } else if (button.actions.indexOf("swipe") > -1) {
@@ -481,17 +481,29 @@ class Deck {
         // console.log("build", this.buttons)
     }
 
-    add_background_image(layer, stage) {
+    set_background_layer(layer, stage) {
         // Add bacground image and resize deck around it.
         // Resize window as well. Cannot get rid of top bar... (adds 24px)
         const TITLE_BAR_HEIGHT = 24
         const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
 
+        function set_default_size(container, sizes, color) {
+            container.style["border"] = "1px solid "+color;
+            const width = sizes == undefined ? 100 : sizes[0]
+            const height = sizes == undefined ? 100 : sizes[1]
+            stage.width(width);
+            stage.height(height);
+            window.resizeTo(width,height + extra_space);
+        }
+
         const background = this.deck_type.background
         if (background == undefined || background == null) {
             console.log("no background", this.deck_type)
+            set_default_size(this.container, 100, 100, "red")
             return;
         }
+
+        const sizes = background.size
 
         const bgcolor = background.color
         if (bgcolor != undefined) {
@@ -500,19 +512,14 @@ class Deck {
 
         const background_image = background.image;
         if (background_image == undefined || background_image == null) {
+            console.log("no background image", this.deck_type)
+            set_default_size(this.container, sizes, "orange")
             return;
         }
 
         let deckImage = new Image();
         deckImage.onerror = function() {
-            this.container.style["border"] = "1px solid red";
-
-            let width = 2 * this.offset_horiz + this.icon_width  * this.numkeys_horiz + this.keyspc_horiz * (vnumkeys_horiz - 1);
-            let height = 2 * this.offset_vert + this.icon_height * this.numkeys_vert  + this.keyspc_vert  * (this.numkeys_vert - 1);
-
-            stage.width(width);
-            stage.height(height);
-            window.resizeTo(width,height + extra_space);
+            set_default_size(this.container, sizes, "red")
         }
         deckImage.onload = function () {
             let deckbg = new Konva.Image({
@@ -526,15 +533,16 @@ class Deck {
             layer.add(deckbg);
         };
         deckImage.src = DECK_BACKGROUND_IMAGE_PATH + background_image;
+        // console.log("set_background_layer", this.buttons)
     }
 
-    add_interaction_to_layer(layer) {
+    set_interaction_layer(layer) {
         for (let name in this.buttons) {
             if(this.buttons.hasOwnProperty(name)) {
                 this.buttons[name].add_to_layer(layer);
             }
         }
-        // console.log("add_interaction_to_layer", this.buttons)
+        // console.log("set_interaction_layer", this.buttons)
     }
 
     save() {
@@ -543,6 +551,7 @@ class Deck {
     }
 
     set_key_image(key, image, layer) {
+        console.log(key, image.length)
         let coords = this.get_xy(key);
         let buttonImage = new Image();
         buttonImage.onload = function () {

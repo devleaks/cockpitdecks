@@ -194,29 +194,29 @@ class VirtualDeck(DeckWithIcons):
             im.putalpha(alpha)
             return im
 
-        def map_key(k):
-            try:
-                d = int(k)
-                return d
-            except:
-                deckbutton = self.deck_type.get_button_definition(k)
-                logger.warning(f"temporary map string key name to integer: {k} -> {deckbutton.name_int}")
-                return deckbutton.name_int
-
         if not self.has_clients():
             logger.warning(f"deck {self.name} has no client")
             return
 
         image = add_corners(image, int(image.width / 8))
-        key = map_key(key)
         width, height = image.size
         img_byte_arr = io.BytesIO()
         # transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
         image.save(img_byte_arr, format="PNG")
         content = img_byte_arr.getvalue()
         code = 0
-        content2 = bytes(self.name, "utf-8")
-        payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), int(key), width, height, len(content2), len(content), content2, content)
+        deck_name = bytes(self.name, "utf-8")
+        key_name = bytes(str(key), "utf-8")
+        payload = struct.pack(
+            f"IIII{len(deck_name)}s{len(key_name)}s{len(content)}s",
+            int(code),
+            len(deck_name),
+            len(key_name),
+            len(content),
+            deck_name,
+            key_name,
+            content,
+        )  # Unpacked in proxy server handle_event() to send through websockets
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.proxy_address, self.proxy_port))

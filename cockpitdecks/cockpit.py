@@ -900,10 +900,12 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.debug(f"{name} closed")
         elif code == 3:  # web decks ask for initialisation (list of decks)
             webdeck_list = self.get_web_decks()
-            vdecks = json.dumps(webdeck_list)
-            content = bytes(vdecks, "utf-8")
-            content2 = bytes(__NAME__, "utf-8")
-            payload = struct.pack(f"IIIIII{len(content2)}s{len(content)}s", int(code), 0, 0, 0, len(content2), len(content), content2, content)
+            webdeck_json = json.dumps(webdeck_list)
+            webdeck_desc = bytes(webdeck_json, "utf-8")
+            origin_name = bytes(__NAME__, "utf-8")  # deck=__NAME__
+            payload = struct.pack(f"IIII{len(origin_name)}s{len(webdeck_desc)}s", int(code), len(origin_name), 0, len(webdeck_desc), origin_name, webdeck_desc)
+            # unpacked in proxy server handle_event() to forward to websocket
+            # (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.connect((PROXY_HOST[0], PROXY_HOST[1]))
@@ -914,16 +916,18 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
 
     def handle_event(self, data: bytes):
-        # need to try/except unpack for wrong data
-        (code, key, event), name = struct.unpack("III", data[:12]), data[12:]
-        name = name.decode("utf-8")
+        # packed in proxy server as received from websocket
+        # payload = struct.pack(f"IIII{len(deck_name)}s{len(key_name)}s", code, event, len(deck_name), len(key_name), deck_name, key_name)
+        (code, event, deck_length, key_length), payload = struct.unpack("IIII", data[:16]), data[16:]
+        deck_name = payload[:deck_length].decode("utf-8")
+        key = payload[deck_length : deck_length + key_length].decode("utf-8")
         if code != 0:
-            self.handle_code(code, name)
+            self.handle_code(code, deck_name)
             return
-        deck = self.cockpit.get(name)
-        logger.debug(f"received {name}: key={key}, event={event}")
+        deck = self.cockpit.get(deck_name)
+        logger.debug(f"received {deck_name}: key={key}, event={event}")
         if deck is None:
-            logger.warning(f"handle event: deck {name} not found")
+            logger.warning(f"handle event: deck {deck_name} not found")
             return
         deck.key_change_callback(deck=deck, key=key, state=event)
 

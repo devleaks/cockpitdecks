@@ -332,7 +332,7 @@ class Icon(Representation):
             )  # frame_position + (frame_position[0]+frame_content[0],frame_position[1]+frame_content[1])
             logger.debug(f"button {this_button}: {self.icon}, {frame}, {image}, {inside}, {box}")
             image.paste(inside, box)
-            image = deck.scale_icon_for_key(self.button, image)
+            image = deck.scale_icon_for_key(self.button.index, image)
             return image
         return inside
 

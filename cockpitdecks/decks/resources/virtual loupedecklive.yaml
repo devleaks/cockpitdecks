@@ -40,7 +40,7 @@ buttons:
       spacing: [43, 0]
   - name: left
     name_int: 2001
-    action: swipe
+    action: [push, swipe]
     feedback: image
     dimension: [52, 270]
     layout:
@@ -48,7 +48,7 @@ buttons:
     options: corner_radius=4
   - name: right
     name_int: 2003
-    action: swipe
+    action: [push, swipe]
     feedback: image
     dimension: [42, 270]
     layout:
@@ -56,7 +56,7 @@ buttons:
     options: corner_radius=4
   # - name: center
   #   name_int: 2002
-  #   action: swipe
+  #   action: [push, swipe]
   #   feedback: image
   #   dimension: [344, 270]
   #   layout:
