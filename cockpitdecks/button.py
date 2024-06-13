@@ -25,7 +25,7 @@ from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 VARIABLE_PREFIX = ["button", "state"]

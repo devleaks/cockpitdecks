@@ -8,11 +8,19 @@
 //
 //
 const HIGHLIGHT = "#ffffff80"  // white, opacity 80/FF
+
 const FLASH = "#00ffff"  // cyan, opacity 50%
 const FLASH_DURATION = 100
+
 const EDITOR_MODE = false
+
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
+
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
+
+const DEFAULT_WIDTH = 200
+const DEFAULT_HEIGHT = 100
+const TITLE_BAR_HEIGHT = 24
 
 // does not work...
 const CURSOR_ROTATE_CLOCKWISE = `data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -484,13 +492,12 @@ class Deck {
     set_background_layer(layer, stage) {
         // Add bacground image and resize deck around it.
         // Resize window as well. Cannot get rid of top bar... (adds 24px)
-        const TITLE_BAR_HEIGHT = 24
         const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
 
         function set_default_size(container, sizes, color) {
             container.style["border"] = "1px solid "+color;
-            const width = sizes == undefined ? 100 : sizes[0]
-            const height = sizes == undefined ? 100 : sizes[1]
+            const width = sizes == undefined ? DEFAULT_WIDTH : sizes[0]
+            const height = sizes == undefined ? DEFAULT_HEIGHT : sizes[1]
             stage.width(width);
             stage.height(height);
             window.resizeTo(width,height + extra_space);

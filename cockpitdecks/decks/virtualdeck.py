@@ -8,6 +8,7 @@ import struct
 import threading
 import logging
 import io
+import random
 
 from PIL import Image, ImageDraw, ImageOps
 
@@ -195,7 +196,7 @@ class VirtualDeck(DeckWithIcons):
             return im
 
         if not self.has_clients():
-            logger.warning(f"deck {self.name} has no client")
+            logger.debug(f"deck {self.name} has no client")
             return
 
         image = add_corners(image, int(image.width / 8))
@@ -236,9 +237,15 @@ class VirtualDeck(DeckWithIcons):
             return
 
         image = button.get_representation()
+
         if image is None:
             logger.warning("button returned no image, using default")
-            image = self.icons[self.get_attribute("default-icon-name")]
+            default_icon_name = self.get_attribute("default-icon-name")
+            image = self.get_icon_image(default_icon_name)
+
+        if image is None:
+            logger.warning(f"no image for default icon {default_icon_name}")
+            return
 
         image = self.to_native_key_format(image, display=str(button.index))
 

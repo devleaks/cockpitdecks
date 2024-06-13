@@ -28,7 +28,7 @@ from cockpitdecks import (
 )
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
 from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST, APP_HOST
-from cockpitdecks.resources.color import convert_color, has_ext
+from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
@@ -742,6 +742,16 @@ class Cockpit(DatarefListener, CockpitBase):
                     logger.info(f"{len(self.icons)} icons cached")
                 else:
                     logger.info(f"{len(self.icons)} icons loaded")
+
+    def get_icon(self, candidate_icon):
+        icon = None
+        for ext in [".png", ".jpg", ".jpeg"]:
+            fn = add_ext(candidate_icon, ext)
+            if icon is None and fn in self.icons.keys():
+                logger.info(f"Cockpit: icon {fn} found")
+                return fn
+        logger.warning(f"Cockpit: icon not found {candidate_icon}, available={self.icons.keys()}")
+        return None
 
     def load_fonts(self):
         # Loading fonts.

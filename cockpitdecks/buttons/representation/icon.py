@@ -16,7 +16,7 @@ from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK
 from .representation import Representation
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
@@ -58,15 +58,10 @@ class Icon(Representation):
 
         self.icon = None
         deck = self.button.deck
+
         candidate_icon = config.get("icon")
         if candidate_icon is not None:
-            for ext in [".png", ".jpg", ".jpeg"]:
-                fn = add_ext(candidate_icon, ext)
-                if self.icon is None and fn in deck.icons.keys():
-                    self.icon = fn
-                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} found")
-            if self.icon is None:
-                logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {candidate_icon}")
+            self.icon = deck.get_icon(candidate_icon)
 
         if self.icon is None:
             self.make_icon()
@@ -87,9 +82,10 @@ class Icon(Representation):
         if super().is_valid():  # so there is a button...
             if self.icon is not None:
                 if self.icon not in self.button.deck.icons.keys():
-                    logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
-                    print(self.button.deck.icons.keys())
-                    return False
+                    dummy = self.button.deck.get_icon(self.icon)
+                    if dummy is None:
+                        logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
+                        return False
                 return True
             if self.icon_color is not None:
                 return True
