@@ -100,7 +100,7 @@ class CDProxy:
             logger.warning(f"{deck}: problem sending event to {(self.cd_address, self.cd_port)}", exc_info=True)
         return False
 
-    def send_event(self, deck: str, key, event, data = None) -> bool:
+    def send_event(self, deck: str, key, event, data=None) -> bool:
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
@@ -108,7 +108,17 @@ class CDProxy:
         deck_name = bytes(deck, "utf-8")
         key_name = bytes(str(key), "utf-8")
         data_bytes = bytes(json.dumps(data), "utf-8")
-        payload = struct.pack(f"IIIII{len(deck_name)}s{len(key_name)}s{len(data_bytes)}s", code, event, len(deck_name), len(key_name), len(data_bytes), deck_name, key_name, data_bytes)
+        payload = struct.pack(
+            f"IIIII{len(deck_name)}s{len(key_name)}s{len(data_bytes)}s",
+            code,
+            event,
+            len(deck_name),
+            len(key_name),
+            len(data_bytes),
+            deck_name,
+            key_name,
+            data_bytes,
+        )
         print(">>>>> sending event to Cockpitdecks", code, event, len(deck_name), len(key_name), deck, key, data)
         # unpack in Cockpit.receive_event()
         try:
@@ -137,8 +147,8 @@ class CDProxy:
         # payload = struct.pack(f"IIII{len(key_name)}s{len(deck_name)}s{len(content)}s", int(code), len(deck_name), len(key_name), len(content), deck_name, key_name, content)
         (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
         deck = payload[:deck_length].decode("utf-8")
-        key =       payload[deck_length:deck_length+key_length].decode("utf-8")
-        image =     payload[deck_length+key_length:]  # this is a stream of bytes that represent the file content as PNG image.
+        key = payload[deck_length : deck_length + key_length].decode("utf-8")
+        image = payload[deck_length + key_length :]  # this is a stream of bytes that represent the file content as PNG image.
         if code != 0:
             self.handle_code(deck=deck, code=code, data=image)
             return
