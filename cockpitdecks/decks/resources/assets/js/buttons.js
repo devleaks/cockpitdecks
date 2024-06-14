@@ -472,6 +472,7 @@ class SliderHandle extends Konva.Rect {
         });
 
         this.config = config
+        this.name = config.name
         this.container = container
 
         this.horizontal = config.dimension[0] > config.dimension[1]

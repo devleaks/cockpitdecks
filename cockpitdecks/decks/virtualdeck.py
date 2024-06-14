@@ -282,13 +282,21 @@ class VirtualDeck(DeckWithIcons):
     def key_change_callback(self, deck, key, state, data: dict | None = None):
         """
         This is the function that is called when a key is pressed.
+        For virtual decks, this function is quite complex
+        since it has to take the "shape" of any "real physical deck" it virtualize
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
+        print("===== handle_event", deck.name, key, state, data)
         if state in [0, 1, 4]:
             PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
         if state in [2, 3]:
             EncoderEvent(deck=self, button=key, clockwise=state == 2)
+        if state in [9]:
+            if data is not None and "value" in data:
+                SlideEvent(deck=self, button=key, value=int(data.get("value")))
+            else:
+                logger.warning(f"deck {deck.name}: SliderEvent has no value ({data})")
 
     def start(self):
         pass
