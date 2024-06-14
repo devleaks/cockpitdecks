@@ -1,0 +1,52 @@
+# This is the description of a deck's capabilities for a virtual deck
+#
+---
+name: Virtual X-Touch Mini
+driver: virtualdeck
+buttons:
+  # Encoders
+  - name: 0
+    prefix: e
+    action: [encoder, push]
+    dimension: 20
+    repeat: [8, 1]
+    layout:
+      offset: [100, 100]
+      spacing: [75, 0]
+  # Two rows of 8 LED push button
+  - name: 0
+    action: push
+    feedback: led
+    repeat: [8, 2]
+    dimension: [48, 36]
+    layout:
+      offset: [74, 186]
+      spacing: [68, 40]
+    options: corner_radius=4
+  # A and B page keys
+  - name: a
+    action: push
+    feedback: led
+    dimension: [44, 36]
+    layout:
+      offset: [1106, 186]
+    options: corner_radius=4
+  - name: b
+    action: push
+    feedback: led
+    dimension: [44, 36]
+    layout:
+      offset: [1106, 262]
+    options: corner_radius=4
+  # Vertical cursor
+  - name: slider
+    action: cursor
+    range: [-8192, 8100]
+    dimension: [10, 254]
+    handle: [52, 60]
+    layout:
+      offset: [1024, 62]
+    options: corner_radius=5
+background:
+  color: black
+  image: xtouch.mini.png

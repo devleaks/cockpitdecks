@@ -43,6 +43,8 @@ class DeckButton:
         self.dimension = config.get(DECK_KW.DIMENSION.value)
 
         self.options = config.get(DECK_KW.OPTIONS.value)
+
+        self.handle = config.get(DECK_KW.HANDLE.value, [0, 0])  # for sliders
         self.range = config.get(DECK_KW.RANGE.value, [0, 0])  # for sliders
 
         self.init()
@@ -153,6 +155,7 @@ class DeckButton:
             "actions": self.actions,
             "feedbacks": self.feedbacks,
             "range": self.range,
+            "handle": self.handle,
             "position": self.position,
             "dimension": self.dimension,
             "options": self.options,
@@ -228,6 +231,7 @@ class DeckType(Config):
                         DECK_KW.INDEX.value: start,
                         DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
                         DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
+                        DECK_KW.HANDLE.value: button_block.get(DECK_KW.HANDLE.value),
                         DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
                         DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
                         DECK_KW.POSITION.value: offset,
@@ -258,6 +262,7 @@ class DeckType(Config):
                         DECK_KW.INDEX.value: idx,
                         DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
                         DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
+                        DECK_KW.HANDLE.value: button_block.get(DECK_KW.HANDLE.value),
                         DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
                         DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
                         DECK_KW.POSITION.value: position,

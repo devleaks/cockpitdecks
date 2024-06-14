@@ -366,7 +366,7 @@ class Touchscreen extends Konva.Rect {
                 this.sliding = true
                 this.container.style.cursor = "grabbing"
                 console.log("touchstart/pointermove", pos, Date.now());
-                sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.x, ts: Date.now()});
+                sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.y, ts: Date.now()});
             }
         });
 
@@ -376,13 +376,13 @@ class Touchscreen extends Konva.Rect {
                 const pos = this.getRelativePointerCoordinates();
                 this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
                 console.log("tap/pointerup", pos, Date.now());
-                sendEvent(DECK.name, this.name, 14, {x: pos.x, y: pos.x, ts: Date.now()});
+                sendEvent(DECK.name, this.name, 14, {x: pos.x, y: pos.y, ts: Date.now()});
             } else {
                 const pos = this.getRelativePointerCoordinates();
                 this.sliding = false
                 this.container.style.cursor = "pointer"
                 console.log("touchend/pointerdown", pos, Date.now());
-                sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.x, ts: Date.now()});
+                sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.y, ts: Date.now()});
             }
         });
 
@@ -391,7 +391,7 @@ class Touchscreen extends Konva.Rect {
             const pos = this.getRelativePointerCoordinates();
             this.flash(FLASH, HIGHLIGHT, FLASH_DURATION);
             console.log("tap", pos, Date.now());
-            sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.x, ts: Date.now()});
+            sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
         this.on("touchmove", function () {
@@ -402,14 +402,14 @@ class Touchscreen extends Konva.Rect {
             this.container.style.cursor = "grab";
             const pos = this.getRelativePointerCoordinates();
             console.log("touchstart", pos, Date.now());
-            sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.x, ts: Date.now()});
+            sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
         this.on("touchend", function () {
             this.container.style.cursor = "pointer";
             const pos = this.getRelativePointerCoordinates();
             console.log("touchend", pos, Date.now());
-            sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.x, ts: Date.now()});
+            sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
     }
@@ -451,6 +451,116 @@ class Touchscreen extends Konva.Rect {
 //
 //
 //
+class SliderHandle extends Konva.Rect {
+
+    constructor(config, container) {
+
+        const x = config.position[0] + config.dimension[0] / 2 - config.handle[0]/2
+        const y = config.position[1] + config.dimension[1] / 2 - config.handle[1]/2
+        super({
+            x: x,
+            y: y,
+            width: config.handle[0],
+            height: config.handle[1],
+            cornerRadius: config.handle[2] != undefined ? config.handle[2] : 4,
+            stroke: "white",
+            fill: "grey",
+            strokeWidth: 1,
+            draggable: true
+        });
+
+        this.config = config
+        this.container = container
+
+        this.horizontal = config.dimension[0] > config.dimension[1]
+        this.invert = true
+
+        const c = this.horizontal ? 0 : 1
+        const c2 = this.horizontal ? 1 : 0
+        this.cmin = config.position[c] + 2  // max pos of mouse
+        this.cmax = config.position[c] + config.dimension[c] - 2
+        this.pmin = config.position[c] - config.handle[c] / 2 + 1  // pos of handle at min or max
+        this.pmax = config.position[c] + config.dimension[c] - config.handle[c] / 2 - 1
+        this.crange = config.dimension[c]
+        this.range = config.range
+
+        this.middle = x
+        this.pressed = false
+
+        // Inside key
+        this.on("pointerover", function () {
+            this.container.style.cursor = "ns-resize"
+        });
+
+        this.on("pointerout", function () {
+            this.container.style.cursor = "auto"
+        });
+
+        // Slider drag events:
+        this.on("dragbegin", function () {
+            const pos = this.layer.getRelativePointerPosition();
+            this.constraint(pos)
+            // console.log("cursor/dragbegin", this.value(pos), Date.now());
+            sendEvent(DECK.name, this.name, 9, {x: pos.x, y: pos.y, value: this.value(pos), ts: Date.now()});
+        });
+
+        this.on("dragmove", function () {
+            const pos = this.layer.getRelativePointerPosition();
+            this.constraint(pos)
+            // console.log("cursor/dragmove", this.value(pos), Date.now());
+            // sendEvent(DECK.name, this.name, 9, {x: pos.x, y: pos.y, value: this.value(pos), ts: Date.now()});
+        });
+
+        this.on("dragend", function () {
+            this.pressed = false
+            this.container.style.cursor = "ns-resize"
+            const pos = this.layer.getRelativePointerPosition();
+            this.constraint(pos)
+            // console.log("cursor/dragend", this.value(pos), Date.now());
+            sendEvent(DECK.name, this.name, 9, {x: pos.x, y: pos.y, value: this.value(pos), ts: Date.now()});
+        });
+
+    }
+
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    value(pos) {
+        var value = this.horizontal ? pos.x : pos.y
+        value = value - this.cmin
+        if (value < 0) {
+            value = 0
+        } else if (value > this.crange) {
+            value = this.crange
+        }
+        if (this.invert) {
+            value = this.crange - value
+        }
+        const fraction = value / this.crange
+        const range = (this.range[1] - this.range[0])
+        const result = this.range[0] + Math.round( fraction * range )
+        return result
+    }
+
+    constraint(pos) {
+        if (this.horizontal) {
+            ;
+        } else {
+            this.x(this.middle)
+            if (pos.y < this.cmin) {
+                this.y(this.pmin)
+            }
+            if (pos.y > this.cmax) {
+                this.y(this.pmax)
+            }
+        }
+    } 
+
+}
+
+
 class Slider extends Konva.Rect {
 
     constructor(config, container) {
@@ -461,10 +571,10 @@ class Slider extends Konva.Rect {
         }
 
         super({
-            x: config.x,
-            y: config.y,
-            width: config.width,
-            height: config.height,
+            x: config.position[0],
+            y: config.position[1],
+            width: config.dimension[0],
+            height: config.dimension[1],
             cornerRadius: corner_radius,
             stroke: HIGHLIGHT,
             strokeWidth: 1,
@@ -475,15 +585,17 @@ class Slider extends Konva.Rect {
         this.name = config.name
         this.container = container
 
-        this.inside = false
+        this.handle = new SliderHandle(config, container)
     }
 
     add_to_layer(layer) {
         this.layer = layer;
         layer.add(this);
+        this.handle.add_to_layer(layer)
     }
 
     save() {
+        // to be corrected for handle
         const code = {
             type: "slider",
             name: this.name,
@@ -560,19 +672,22 @@ class Deck {
         this.deck_type.buttons.forEach((button) => {
             // decide which shape to use
             if (button.actions.indexOf("encoder") > -1) {
-                // console.log("encoder", button)
+                console.log("encoder", button)
                 this.add(new Encoder(button, this.container))
             } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
-                if (button.dimension.constructor == Array) {
-                    // console.log("key", button)
+                if (button.dimension != undefined && button.dimension.constructor == Array) {
+                    console.log("key", button)
                     this.add(new Key(button, this.container))
                 } else {
-                    // console.log("keyround", button)
+                    console.log("keyround", button)
                     this.add(new KeyRound(button, this.container))
                 }
             } else if (button.actions.indexOf("swipe") > -1) {
-                // console.log("touchscreen", button)
+                console.log("touchscreen", button)
                 this.add(new Touchscreen(button, this.container))
+            } else if (button.actions.indexOf("cursor") > -1) {
+                console.log("slider", button)
+                this.add(new Slider(button, this.container))
             }
         });
         // console.log("build", this.buttons)
