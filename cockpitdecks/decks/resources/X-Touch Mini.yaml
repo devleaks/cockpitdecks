@@ -22,4 +22,3 @@ buttons:
   - name: slider
     action: cursor
     range: [-8192, 8064]
-    feedback: none

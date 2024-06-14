@@ -36,8 +36,8 @@ class DeckButton:
         self.index = config.get(DECK_KW.INDEX.value)
         self.prefix = config.get(DECK_KW.PREFIX.value, "")
 
-        self.actions = config.get(DECK_KW.ACTION.value)
-        self.feedbacks = config.get(DECK_KW.FEEDBACK.value)
+        self.actions = config.get(DECK_KW.ACTION.value, "")
+        self.feedbacks = config.get(DECK_KW.FEEDBACK.value, "")
 
         self.position = config.get(DECK_KW.POSITION.value)  # for web decks drawing
         self.dimension = config.get(DECK_KW.DIMENSION.value)
@@ -53,12 +53,12 @@ class DeckButton:
         if self._inited:
             return
         if self.actions is None or (type(self.actions) is str and self.actions.lower() == DECK_KW.NONE.value):
-            self.actions = [DECK_KW.NONE.value]
+            self.actions = []
         elif type(self.actions) not in [list, tuple]:
             self.actions = [self.actions]
 
         if self.feedbacks is None or (type(self.feedbacks) is str and self.feedbacks.lower() == DECK_KW.NONE.value):
-            self.feedbacks = [DECK_KW.NONE.value]
+            self.feedbacks = []
         elif type(self.feedbacks) not in [list, tuple]:
             self.feedbacks = [self.feedbacks]
 
@@ -381,9 +381,9 @@ class DeckType(Config):
         for what, value in query.items():
             for button in self[DECK_KW.BUTTONS.value]:
                 if what == DECK_KW.ACTION.value:
-                    if value in button[what]:
+                    if what in button and value in button[what]:
                         res.append(button)
-                elif what == DECK_KW.FEEDBACK.value:
+                elif what in button and what == DECK_KW.FEEDBACK.value:
                     if value in button[what]:
                         res.append(button)
         # loggerDeckType.debug(f"filter {query} returns {res}")

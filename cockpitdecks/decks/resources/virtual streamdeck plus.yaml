@@ -16,7 +16,6 @@ buttons:
   - name: 0
     prefix: e
     action: [encoder, push]
-    feedback: none
     dimension: 30
     repeat: [4, 1]
     layout:

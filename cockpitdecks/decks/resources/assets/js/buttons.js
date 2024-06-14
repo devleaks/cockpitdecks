@@ -313,8 +313,8 @@ class Encoder extends Konva.Circle {
     }
 }
 
-//
-//
+// Touchscreen
+// Rectangular touch screen
 //
 class Touchscreen extends Konva.Rect {
 
@@ -448,8 +448,11 @@ class Touchscreen extends Konva.Rect {
     }
 }
 
-//
-//
+// Slider (Cursor)
+// Can be horizontal or vertical
+// Currently only send value on drag start and end
+// to limit the amount of events.
+// A Slider consists of a ramp (Slider) and a moving cursor (SliderHandle).
 //
 class SliderHandle extends Konva.Rect {
 
@@ -464,7 +467,6 @@ class SliderHandle extends Konva.Rect {
             height: config.handle[1],
             cornerRadius: config.handle[2] != undefined ? config.handle[2] : 4,
             stroke: "white",
-            fill: "grey",
             strokeWidth: 1,
             draggable: true
         });
@@ -612,6 +614,55 @@ class Slider extends Konva.Rect {
 //
 //
 //
+class LED extends Konva.Rect {
+    // Represent a simply rectangular led, no activation, just display
+
+    constructor(config, container) {
+
+        let corner_radius = 0
+        if (config.options != undefined && config.options != null) {
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
+        }
+
+        super({
+            x: config.position[0],
+            y: config.position[1],
+            width: config.dimension[0],
+            height: config.dimension[1],
+            cornerRadius: corner_radius,
+            stroke: HIGHLIGHT,
+            strokeWidth: 1,
+            draggable: EDITOR_MODE
+        });
+
+        this.config = config
+        this.name = config.name
+        this.container = container
+    }
+
+    add_to_layer(layer) {
+        this.layer = layer;
+        layer.add(this);
+    }
+
+    save() {
+        const code = {
+            type: "led",
+            name: this.name,
+            x: this.x(),
+            y: this.y(),
+            width: this.width(),
+            height: this.height(),
+            corner_radius: this.cornerRadius()
+        };
+        return code;
+    }
+}
+
+
+//
+//
+//
 class Overlay {  // later, idea: overlay text or image on top of background (logo, etc.)
 
     constructor(config, container) {
@@ -624,14 +675,6 @@ class Overlay {  // later, idea: overlay text or image on top of background (log
         layer.add(this);
     }
 
-}
-
-CONSTRUCTORS = {
-    "key": Key,
-    "keyr": KeyRound,
-    "encoder": Encoder,
-    "touchsreen": Touchscreen,
-    "slider": Slider
 }
 
 // D E C K
@@ -671,23 +714,34 @@ class Deck {
     build(layout) {
         this.deck_type.buttons.forEach((button) => {
             // decide which shape to use
+            // shape selected here will be an interactor only
+
             if (button.actions.indexOf("encoder") > -1) {
-                console.log("encoder", button)
+                //console.log("encoder", button)
                 this.add(new Encoder(button, this.container))
+
             } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
+
                 if (button.dimension != undefined && button.dimension.constructor == Array) {
-                    console.log("key", button)
+                    //console.log("key", button)
                     this.add(new Key(button, this.container))
+
                 } else {
-                    console.log("keyround", button)
+                    //console.log("keyround", button)
                     this.add(new KeyRound(button, this.container))
                 }
+
             } else if (button.actions.indexOf("swipe") > -1) {
-                console.log("touchscreen", button)
+                //console.log("touchscreen", button)
                 this.add(new Touchscreen(button, this.container))
+
             } else if (button.actions.indexOf("cursor") > -1) {
-                console.log("slider", button)
+                //console.log("slider", button)
                 this.add(new Slider(button, this.container))
+
+            } else if (button.actions.length == 0 && button.feedbacks.indexOf("led") > -1) {
+                console.log("led", button)
+                this.add(new LED(button, this.container))
             }
         });
         // console.log("build", this.buttons)

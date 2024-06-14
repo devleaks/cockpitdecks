@@ -928,10 +928,11 @@ class Cockpit(DatarefListener, CockpitBase):
     def handle_event(self, data: bytes):
         # packed in proxy server as received from websocket
         # payload = struct.pack(f"IIII{len(deck_name)}s{len(key_name)}s", code, event, len(deck_name), len(key_name), deck_name, key_name)
-        (code, event, deck_length, key_length), payload = struct.unpack("IIII", data[:16]), data[16:]
+        (code, event, deck_length, key_length, data_length), payload = struct.unpack("IIIII", data[:20]), data[20:]
         deck_name = payload[:deck_length].decode("utf-8")
         key = payload[deck_length : deck_length + key_length].decode("utf-8")
-        print("<<<<< handle_event", code, event, deck_length, key_length, deck_name, key)
+        data_str = payload[deck_length + key_length:].decode("utf-8")
+        print("<<<<< handle_event", code, event, deck_length, key_length, data_length, deck_name, key, data_str)
         if code != 0:
             self.handle_code(code, deck_name)
             return
@@ -940,7 +941,11 @@ class Cockpit(DatarefListener, CockpitBase):
         if deck is None:
             logger.warning(f"handle event: deck {deck_name} not found")
             return
-        deck.key_change_callback(deck=deck, key=key, state=event)
+        if deck.deck_type.is_virtual_deck():
+            data_dict = json.loads(data_str)
+            deck.key_change_callback(deck=deck, key=key, state=event, data=data_dict)
+        else:
+            deck.key_change_callback(deck=deck, key=key, state=event)
 
     def receive_events(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

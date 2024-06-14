@@ -8,11 +8,11 @@ buttons:
   - name: 0
     prefix: e
     action: [encoder, push]
-    dimension: 20
+    dimension: 21
     repeat: [8, 1]
     layout:
       offset: [100, 100]
-      spacing: [75, 0]
+      spacing: [74, 0]
   # Two rows of 8 LED push button
   - name: 0
     action: push
@@ -43,10 +43,17 @@ buttons:
     action: cursor
     range: [-8192, 8100]
     dimension: [10, 254]
-    handle: [52, 60]
+    handle: [30, 60]
     layout:
       offset: [1024, 62]
     options: corner_radius=5
+  # A and B page keys
+  - name: mc
+    feedback: led
+    dimension: [12, 4]
+    layout:
+      offset: [1123, 127]
+    options: corner_radius=2
 background:
   color: black
   image: xtouch.mini.png

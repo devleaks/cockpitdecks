@@ -12,7 +12,6 @@ buttons:
   - name: 0
     prefix: e
     action: [encoder, push]
-    feedback: none
     repeat: [4, 1]
   # touchscreen in streamdeck package vocabulary
   - name: touchscreen

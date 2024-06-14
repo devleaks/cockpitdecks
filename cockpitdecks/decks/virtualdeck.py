@@ -279,7 +279,7 @@ class VirtualDeck(DeckWithIcons):
         """
         return self.device
 
-    def key_change_callback(self, deck, key, state):
+    def key_change_callback(self, deck, key, state, data: dict | None = None):
         """
         This is the function that is called when a key is pressed.
         """

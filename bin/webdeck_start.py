@@ -88,7 +88,8 @@ class CDProxy:
 
     def send_code(self, deck: str, code: int) -> bool:
         deck_name = bytes(deck, "utf-8")
-        payload = struct.pack(f"IIII{len(deck_name)}s", code, 0, len(deck_name), 0, deck_name)
+        payload = struct.pack(f"IIIII{len(deck_name)}s", code, 0, len(deck_name), 0, 0, deck_name)
+        print(">>>>> sending code to Cockpitdecks", code, 0, len(deck_name), 0, 0, deck_name, "", "")
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -106,8 +107,9 @@ class CDProxy:
         code = 0
         deck_name = bytes(deck, "utf-8")
         key_name = bytes(str(key), "utf-8")
-        payload = struct.pack(f"IIII{len(deck_name)}s{len(key_name)}s", code, event, len(deck_name), len(key_name), deck_name, key_name)
-        print(">>>>> sending to Cockpitdecks", code, event, len(deck_name), len(key_name), deck, key)
+        data_bytes = bytes(json.dumps(data), "utf-8")
+        payload = struct.pack(f"IIIII{len(deck_name)}s{len(key_name)}s{len(data_bytes)}s", code, event, len(deck_name), len(key_name), len(data_bytes), deck_name, key_name, data_bytes)
+        print(">>>>> sending event to Cockpitdecks", code, event, len(deck_name), len(key_name), deck, key, data)
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

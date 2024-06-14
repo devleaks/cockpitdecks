@@ -41,7 +41,6 @@ buttons:
     layout:
       offset: [450, 10]
   - name: buzzer
-    action: none
     feedback: vibrate
   # Commented out, means center "image" is not accessible as a whole
   # only through its 12 constituing button...
