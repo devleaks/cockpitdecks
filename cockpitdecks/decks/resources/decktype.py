@@ -162,7 +162,7 @@ class DeckButton:
         Returns:
             dict: ButtonDeck description, simply flattened for web decks
         """
-        return {
+        return {  # @todo: should add only if not null
             "name": self.name,
             "index": self.index,
             "prefix": self.prefix,
@@ -172,6 +172,7 @@ class DeckButton:
             "handle": self.handle,
             "position": self.position,
             "dimension": self.dimension,
+            "layout": self.layout,
             "options": self.options,
         }
 

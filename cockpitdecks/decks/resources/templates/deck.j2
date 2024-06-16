@@ -21,6 +21,8 @@ body {
 // Konva layout set up and initialisation
 //
 // create and add <div id="deck"></div> with proper styling, add to document
+const DEBUG = false
+
 DECK_ELEMID = "deck"
 
 var deck_elem = document.createElement("div");
@@ -60,6 +62,14 @@ deck = new Deck(DECK, deck_elem);  // we need to pass the div element to style i
 deck.set_background_layer(background_layer, stage);
 deck.set_interaction_layer(interaction_layer);
 
+if (DEBUG) {
+    var debug_elem = document.createElement("div");
+    var code_elem = document.createElement("pre");
+    code_elem.textContent = JSON.stringify(DECK, null, 2)
+    debug_elem.setAttribute("id", "debug");
+    debug_elem.appendChild(code_elem)
+    document.getElementsByTagName("body")[0].appendChild(debug_elem)
+}
 //
 //
 // WebSocket initialisation and setup

@@ -42,6 +42,23 @@ const OPT_CORNER_RADIUS = "corner_radius"
 // function sendCode(deck, code)
 // sendEvent(deck, key, value, data)
 
+// https://stackoverflow.com/questions/2631001/test-for-existence-of-nested-javascript-object-key
+function checkNested(obj /*, level1, level2, ... levelN*/) {
+    var args = Array.prototype.slice.call(arguments, 1);
+
+    for (var i = 0; i < args.length; i++) {
+        if (!obj || !obj.hasOwnProperty(args[i])) {
+            return false;
+        }
+        obj = obj[args[i]];
+    }
+    return true;
+}
+
+function getNested(obj, ...args) {
+  return args.reduce((obj, level) => obj && obj[level], obj)
+}
+
 // B U T T O N S
 //
 // Key
@@ -53,8 +70,8 @@ class Key extends Konva.Rect {
     constructor(config, container) {
 
         let corner_radius = 0
-        if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
+        if (checkNested(config, "options", "corner_radius")) {
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
         }
 
         super({
@@ -816,13 +833,30 @@ class Deck {
         console.log(buttons);
     }
 
+    get_hardware_image_offset(key) {
+        // Empirically try to guess if this is a hardware image.
+        // If it is, and if its dimension is a scalar value (= radius)
+        // we have to offset the image since it is center.
+        const key_def = this.buttons[key];
+        if (key_def != undefined) {
+            if (checkNested(key_def.config, "layout", "hardware", "type")) {
+                const radius = key_def.radius()
+                return {x: -radius, y: -radius}
+            }
+        } else {
+            console.log("could not find key", key)
+        }
+        return {x: 0, y: 0}
+    }
+
     set_key_image(key, image, layer) {
         let coords = this.get_xy(key);
+        let offset = this.get_hardware_image_offset(key);
         let buttonImage = new Image();
         buttonImage.onload = function () {
             let button = new Konva.Image({
-                x: coords.x,
-                y: coords.y,
+                x: coords.x + offset.x,
+                y: coords.y + offset.y,
                 image: buttonImage
             });
             layer.add(button);
