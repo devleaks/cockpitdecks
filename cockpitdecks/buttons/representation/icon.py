@@ -28,6 +28,8 @@ DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 #
 #
 NO_ICON = "no-icon"
+
+
 class Icon(Representation):
 
     REPRESENTATION_NAME = "icon"

@@ -1034,6 +1034,8 @@ class EncoderPush(Push):
                     self._ccw = self._ccw + 1
             else:
                 self.command(self._commands[1])
+                self._turns = self._turns + 1
+                self._cw = self._cw + 1
         elif event.turned_clockwise:  # rotate counter-clockwise
             if self.longpush:
                 if self.is_pressed():
@@ -1046,6 +1048,8 @@ class EncoderPush(Push):
                     self._ccw = self._ccw + 1
             else:
                 self.command(self._commands[2])
+                self._turns = self._turns - 1
+                self._ccw = self._ccw + 1
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 

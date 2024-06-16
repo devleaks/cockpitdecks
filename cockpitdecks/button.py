@@ -877,6 +877,8 @@ class Button(DatarefListener, DatarefSetListener):
             self.render()
         else:
             logger.debug(f"button {self.name}: no change")
+            if self.deck.is_virtual_deck():  # representation has not changed, but hardware representation might have
+                self.render()
 
     def get_status(self):
         """ """

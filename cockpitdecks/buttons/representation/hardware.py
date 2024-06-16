@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 NO_ICON = "no-icon"
 
+
 # ####################################################
 #
 # SPECIAL VIRTUAL WEB DECKS REPRESENTATIONS
@@ -105,6 +106,7 @@ class VirtualXTMEncoderLED(Icon):
     def describe(self) -> str:
         return "The representation places a uniform color icon for X-Touch Mini Mackie mode."
 
+
 #
 # LOUPEDECKLIVE
 #
@@ -121,43 +123,38 @@ class VirtualLLColoredButton(Icon):
         config[NO_ICON] = True
         Icon.__init__(self, config=config, button=button)
         self.radius = self.button._def.dimension
-        self.number = 0
         self.knob_fill_color = "black"
         self.knob_stroke_color = "white"
         self.knob_stroke_width = 1
-        self.number_color = "deepskyblue"
+
+        self.number = int(self.button.num_index)  # static
+        self.number_color = self.button._representation.render()
 
     def get_image(self):
-        """
-        Helper function to get button image and overlay label on top of it.
-        Label may be updated at each activation since it can contain datarefs.
-        Also add a little marker on placeholder/invalid buttons that will do nothing.
-        """
         image = Image.new(mode="RGBA", size=(2 * self.radius, 2 * self.radius), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         # knob
         draw.ellipse(
-            [1, 1] + [2 * self.radius-1, 2 * self.radius-1],
+            [1, 1] + [2 * self.radius - 1, 2 * self.radius - 1],
             fill=self.knob_fill_color,
             outline=self.knob_stroke_color,
             width=self.knob_stroke_width,
         )
         # marker
-
-        if self.number == 0: # special marker for 0
-            size = int(self.radius*0.9)
+        self.number_color = self.button._representation.render()
+        if self.number == 0:  # special marker for 0
+            size = int(self.radius * 0.9)
             draw.ellipse(
-                [self.radius - int(size/2), self.radius - int(size/2)] + [self.radius + int(size/2), self.radius + int(size/2)],
+                [self.radius - int(size / 2), self.radius - int(size / 2)] + [self.radius + int(size / 2), self.radius + int(size / 2)],
                 outline=self.number_color,
-                width=2
+                width=2,
             )
             size = 4
             draw.ellipse(
-                [self.radius - int(size/2), self.radius - int(size/2)] + [self.radius + int(size/2), self.radius + int(size/2)],
-                fill=self.number_color
+                [self.radius - int(size / 2), self.radius - int(size / 2)] + [self.radius + int(size / 2), self.radius + int(size / 2)], fill=self.number_color
             )
         else:
-            font = self.get_font("DIN", int(self.radius)) # (standard font)
+            font = self.get_font("DIN", int(self.radius))  # (standard font)
             draw.text(
                 (self.radius, self.radius),
                 text=str(self.number),
@@ -170,6 +167,7 @@ class VirtualLLColoredButton(Icon):
 
     def describe(self) -> str:
         return "The representation places a color button with number for LoupedeckLive colored button."
+
 
 #
 # GENERIC
@@ -189,6 +187,7 @@ class VirtualEncoder(Icon):
         self.radius = self.button._def.dimension
         self.color = "white"
         self.rotation = 0
+        self.rotation_step = 10
         self.knob_fill_color = "black"
         self.knob_stroke_color = "peachpuff"
         self.knob_stroke_width = 2
@@ -212,10 +211,11 @@ class VirtualEncoder(Icon):
         # marker
         size = 4
         draw.ellipse(
-            [self.knob_stroke_width + int(size/2), self.radius - int(size/2)] + [self.knob_stroke_width + 3*int(size/2), self.radius + int(size/2)],
-            fill=self.mark_fill_color
+            [self.knob_stroke_width + int(size / 2), self.radius - int(size / 2)] + [self.knob_stroke_width + 3 * int(size / 2), self.radius + int(size / 2)],
+            fill=self.mark_fill_color,
         )
         # rotate
+        self.rotation = self.button._activation._turns * self.rotation_step
         return image.rotate(self.rotation)
 
     def describe(self) -> str:

@@ -357,14 +357,14 @@ class VirtualDeck(DeckWithIcons):
         if state in [0, 1, 4]:
             PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
-            return # no other possible handling
+            return  # no other possible handling
         if state in [2, 3]:
             EncoderEvent(deck=self, button=key, clockwise=state == 2)
-            return # no other possible handling
+            return  # no other possible handling
         if state in [9]:
             if data is not None and "value" in data:
                 SlideEvent(deck=self, button=key, value=int(data.get("value")))
-                return # no other possible handling
+                return  # no other possible handling
             else:
                 logger.warning(f"deck {deck.name}: SliderEvent has no value ({data})")
         logger.warning(f"deck {deck.name}: unhandled event ({deck}, {key}, {state}, {data})")

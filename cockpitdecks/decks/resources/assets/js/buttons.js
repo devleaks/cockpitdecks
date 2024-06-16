@@ -23,7 +23,9 @@ const DEFAULT_WIDTH = 200
 const DEFAULT_HEIGHT = 100
 const TITLE_BAR_HEIGHT = 24
 
+const OPTIONS = "options"
 const OPT_CORNER_RADIUS = "corner_radius"
+const OPT_PUSHPULL = "pushpull"
 
 // Event codes
 // 0 = Push/press RELEASE
@@ -70,7 +72,7 @@ class Key extends Konva.Rect {
     constructor(config, container) {
 
         let corner_radius = 0
-        if (checkNested(config, "options", "corner_radius")) {
+        if (checkNested(config, OPTIONS, OPT_CORNER_RADIUS)) {
             corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
         }
 
@@ -243,7 +245,9 @@ class Encoder extends Konva.Circle {
 
         // Encoder button has optional push/pull behavior like Airbus FCU. Wow.
         this.pushpull = false
-        if (config.options != undefined && config.options != null) {
+
+        let corner_radius = 0
+        if (checkNested(config, OPTIONS, OPT_PUSHPULL)) {
             this.pushpull = config.options.pushpull
         }
 
@@ -338,8 +342,8 @@ class Touchscreen extends Konva.Rect {
     constructor(config, container) {
 
         let corner_radius = 0
-        if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
+        if (checkNested(config, OPTIONS, OPT_CORNER_RADIUS)) {
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
         }
 
         super({
@@ -586,8 +590,8 @@ class Slider extends Konva.Rect {
     constructor(config, container) {
 
         let corner_radius = 0
-        if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
+        if (checkNested(config, OPTIONS, OPT_CORNER_RADIUS)) {
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
         }
 
         super({
@@ -638,8 +642,8 @@ class LED extends Konva.Rect {
     constructor(config, container) {
 
         let corner_radius = 0
-        if (config.options != undefined && config.options != null) {
-            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS] == undefined ? 0 : config.options[OPT_CORNER_RADIUS])
+        if (checkNested(config, OPTIONS, OPT_CORNER_RADIUS)) {
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
         }
 
         super({

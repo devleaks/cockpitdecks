@@ -47,9 +47,9 @@ class DeckButton:
         self.handle = config.get(DECK_KW.HANDLE.value, [0, 0])  # for sliders
         self.range = config.get(DECK_KW.RANGE.value, [0, 0])  # for sliders
 
-        self.layout : dict|None = config.get(DECK_KW.LAYOUT.value)
+        self.layout: dict | None = config.get(DECK_KW.LAYOUT.value)
 
-        self.hardware_representation: dict|None = None
+        self.hardware_representation: dict | None = None
         if self.layout is not None:
             self.hardware_representation = self.layout.get(DECK_KW.HARDWARE_REPRESENTATION.value)
 

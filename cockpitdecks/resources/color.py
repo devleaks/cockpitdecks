@@ -64,6 +64,7 @@ def convert_color_hsl(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
     return colorsys.rgb_to_hls(*convert_color(instr)[0:3])
 
+
 def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tuple[int, int, int]:
     # Darkens (or lighten) a color
     if type(color) not in [tuple, list]:
