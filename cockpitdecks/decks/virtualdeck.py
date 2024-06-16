@@ -231,6 +231,56 @@ class VirtualDeck(DeckWithIcons):
             if WEB_LOG:
                 logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
 
+    def _send_hardware_key_image_to_device(self, key, image):
+        def add_corners(im, rad):
+            circle = Image.new("L", (rad * 2, rad * 2), 0)
+            draw = ImageDraw.Draw(circle)
+            draw.ellipse((0, 0, rad * 2 - 1, rad * 2 - 1), fill=255)
+            alpha = Image.new("L", im.size, 255)
+            w, h = im.size
+            alpha.paste(circle.crop((0, 0, rad, rad)), (0, 0))
+            alpha.paste(circle.crop((0, rad, rad, rad * 2)), (0, h - rad))
+            alpha.paste(circle.crop((rad, 0, rad * 2, rad)), (w - rad, 0))
+            alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
+            im.putalpha(alpha)
+            return im
+
+        if not self.has_clients():
+            logger.debug(f"deck {self.name} has no client")
+            return
+
+        buttondef = self.deck_type.get_button_definition(key)
+        rc = buttondef.get_option("corner_radius")
+        # rc = int(image.width / 8)
+        if rc is not None:
+            image = add_corners(image, int(rc))
+        width, height = image.size
+        img_byte_arr = io.BytesIO()
+        # transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
+        image.save(img_byte_arr, format="PNG")
+        content = img_byte_arr.getvalue()
+        code = 0
+        deck_name = bytes(self.name, "utf-8")
+        key_name = bytes(str(key), "utf-8")
+        payload = struct.pack(
+            f"IIII{len(deck_name)}s{len(key_name)}s{len(content)}s",
+            int(code),
+            len(deck_name),
+            len(key_name),
+            len(content),
+            deck_name,
+            key_name,
+            content,
+        )  # Unpacked in proxy server handle_event() to send through websockets
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.proxy_address, self.proxy_port))
+                s.sendall(payload)
+                logger.debug(f"key: {key}: image sent to ({self.proxy_address}, {self.proxy_port})")
+        except:
+            if WEB_LOG:
+                logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
+
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
             logger.warning("no device")
@@ -255,6 +305,19 @@ class VirtualDeck(DeckWithIcons):
 
         self._send_key_image_to_device(button.index, image)
 
+    def _set_hardware_image(self, button: Button):  # idx: int, image: str, label: str = None):
+        if self.device is None:
+            logger.warning("no device")
+            return
+
+        representation = button._hardware_representation
+        image = button.get_hardware_representation()
+        if image is None:
+            logger.warning("button returned no hardware image")
+            return
+
+        self._send_hardware_key_image_to_device(button.index, image)
+
     def print_page(self, page: Page):
         """
         Ask each button to send its representation and create an image of the deck.
@@ -262,6 +325,7 @@ class VirtualDeck(DeckWithIcons):
         pass
 
     def render(self, button: Button):  # idx: int, image: str, label: str = None):
+        # Regular representation
         representation = button._representation
         if isinstance(representation, Icon):
             self._set_key_image(button)
@@ -269,6 +333,9 @@ class VirtualDeck(DeckWithIcons):
             logger.info(f"button: {button.name}: do nothing representation for {type(self).__name__}")
         else:
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
+        # "Hardware" representation
+        if button._hardware_representation is not None:
+            self._set_hardware_image(button)
 
     # #######################################
     # Deck Specific Functions : Device

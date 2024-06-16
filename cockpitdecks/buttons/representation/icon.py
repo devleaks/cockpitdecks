@@ -7,6 +7,7 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 
 from cockpitdecks.resources.color import (
+    TRANSPARENT_PNG_COLOR,
     convert_color,
     has_ext,
     add_ext,
@@ -26,6 +27,7 @@ DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 # ICON TYPE REPRESENTATION
 #
 #
+NO_ICON = "no-icon"
 class Icon(Representation):
 
     REPRESENTATION_NAME = "icon"
@@ -64,7 +66,10 @@ class Icon(Representation):
             self.icon = deck.get_icon(candidate_icon)
 
         if self.icon is None:
-            self.make_icon()
+            if not config.get(NO_ICON, False):
+                self.make_icon()
+            else:
+                logger.debug(f"button {self.button_name()}: requested to no do icon")
 
     def make_icon(self, force: bool = False):
         self.icon = self.button.get_id()
@@ -138,7 +143,7 @@ class Icon(Representation):
             dflt_text_position = self.button.get_attribute("default-label-position")
             if dflt_text_position is None:
                 logger.warning(f"button {self.button_name()}: no default label position, using cm")
-                dflt_text_position = "cm"  # middle of icon
+                dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
         text_position = config.get(f"{which_text}-position", dflt_text_position)
         if text_position[0] not in "lcr":
             text_position = DEFAULT_VALID_TEXT_POSITION
@@ -517,7 +522,7 @@ class VirtualXTMEncoderLED(IconColor):
 #
 # LOUPEDECKLIVE
 #
-class VirtualLLColoredButton(IconColor):
+class VirtualLLColoredButton(Icon):
     """Uniform color or texture icon
 
     Attributes:
@@ -527,13 +532,14 @@ class VirtualLLColoredButton(IconColor):
     REPRESENTATION_NAME = "virtual-ll-coloredbutton"
 
     def __init__(self, config: dict, button: "Button"):
-        IconColor.__init__(self, config=config, button=button)
+        config[NO_ICON] = True
+        Icon.__init__(self, config=config, button=button)
         self.radius = self.button._def.dimension
-        self.number = 4
+        self.number = 0
         self.knob_fill_color = "black"
-        self.knob_stroke_color = "peachpuff"
-        self.knob_stroke_width = 2
-        self.number_color = "white"
+        self.knob_stroke_color = "white"
+        self.knob_stroke_width = 1
+        self.number_color = "deepskyblue"
 
     def get_image(self):
         """
@@ -541,38 +547,40 @@ class VirtualLLColoredButton(IconColor):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image = Image.new(mode="RGBA", size=(2 * self.radius, 2 * self.radius), color=self.color)
+        image = Image.new(mode="RGBA", size=(2 * self.radius, 2 * self.radius), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         # knob
         draw.ellipse(
-            [0, 0] + [2 * self.radius, 2 * self.radius],
+            [1, 1] + [2 * self.radius-1, 2 * self.radius-1],
             fill=self.knob_fill_color,
             outline=self.knob_stroke_color,
             width=self.knob_stroke_width,
         )
         # marker
-        # special marker for 0
-        if self.number == 0:
-            size = 8
+
+        if self.number == 0: # special marker for 0
+            size = int(self.radius*0.9)
             draw.ellipse(
                 [self.radius - int(size/2), self.radius - int(size/2)] + [self.radius + int(size/2), self.radius + int(size/2)],
-                fill=self.number_color
+                outline=self.number_color,
+                width=2
             )
-            size = 2
+            size = 4
             draw.ellipse(
                 [self.radius - int(size/2), self.radius - int(size/2)] + [self.radius + int(size/2), self.radius + int(size/2)],
                 fill=self.number_color
             )
         else:
-            font = self.get_font("DIN", int(self.radius * 0.7)) # (standard font)
+            font = self.get_font("DIN", int(self.radius)) # (standard font)
             draw.text(
                 (self.radius, self.radius),
                 text=str(self.number),
                 fill=self.number_color,
                 font=font,
-                anchor="cm",
+                anchor="mm",
                 align="center",
             )
+        return image
 
     def describe(self) -> str:
         return "The representation places a color button with number for LoupedeckLive colored button."
@@ -580,7 +588,7 @@ class VirtualLLColoredButton(IconColor):
 #
 # GENERIC
 #
-class VirtualEncoder(IconColor):
+class VirtualEncoder(Icon):
     """Uniform color or texture icon
 
     Attributes:
@@ -590,7 +598,8 @@ class VirtualEncoder(IconColor):
     REPRESENTATION_NAME = "virtual-encoder"
 
     def __init__(self, config: dict, button: "Button"):
-        IconColor.__init__(self, config=config, button=button)
+        config[NO_ICON] = True
+        Icon.__init__(self, config=config, button=button)
         self.radius = self.button._def.dimension
         self.color = "white"
         self.rotation = 0
@@ -605,7 +614,7 @@ class VirtualEncoder(IconColor):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image = Image.new(mode="RGBA", size=(2 * self.radius, 2 * self.radius), color=self.color)
+        image = Image.new(mode="RGBA", size=(2 * self.radius, 2 * self.radius), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         # knob
         draw.ellipse(

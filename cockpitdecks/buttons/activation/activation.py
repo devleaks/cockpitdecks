@@ -73,11 +73,13 @@ class Activation:
         # Vibrate on press
         self.vibrate = config.get("vibrate", button.get_attribute("default-vibrate", silence=True))
 
+        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
+            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
+
         self.init()
 
     def init(self):  # ~ABC
-        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
-            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
+        pass
 
     def can_handle(self, event) -> bool:
         if event.action not in self.get_required_capability():

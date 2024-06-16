@@ -47,7 +47,11 @@ class DeckButton:
         self.handle = config.get(DECK_KW.HANDLE.value, [0, 0])  # for sliders
         self.range = config.get(DECK_KW.RANGE.value, [0, 0])  # for sliders
 
-        self.hardware_representation: dict|None = config.get(DECK_KW.HARDWARE_REPRESENTATION.value)
+        self.layout : dict|None = config.get(DECK_KW.LAYOUT.value)
+
+        self.hardware_representation: dict|None = None
+        if self.layout is not None:
+            self.hardware_representation = self.layout.get(DECK_KW.HARDWARE_REPRESENTATION.value)
 
         self.init()
 
@@ -246,6 +250,7 @@ class DeckType(Config):
                         DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
                         DECK_KW.POSITION.value: offset,
                         DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value, [0, 0]),
+                        DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     }
                 )
@@ -277,6 +282,7 @@ class DeckType(Config):
                         DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
                         DECK_KW.POSITION.value: position,
                         DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value),
+                        DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     }
                 )

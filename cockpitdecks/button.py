@@ -25,7 +25,7 @@ from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 VARIABLE_PREFIX = ["button", "state"]
@@ -109,15 +109,16 @@ class Button(DatarefListener, DatarefSetListener):
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
-            if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
-                rtype = self._def.get_hardware_representation()
-                if rtype is not None and rtype in REPRESENTATIONS:
-                    self._representation = REPRESENTATIONS[rtype](config, self)
-                    logger.info(f"button {self.name} has hardware representation")
-
-        if self._representation is None:
             logger.info(f"button {self.name} has no representation defined, using default")
             self._representation = REPRESENTATIONS["none"](config, self)
+
+        self._hardware_representation = None
+        if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
+            rtype = self._def.get_hardware_representation()
+            if rtype is not None and rtype in REPRESENTATIONS:
+                logger.info(f"button {self.name} has hardware representation {rtype}")
+                self._hardware_representation = REPRESENTATIONS[rtype](config, self)
+                logger.info(f"button {self.name} has hardware representation")
 
         #### Datarefs
         #
@@ -901,6 +902,16 @@ class Button(DatarefListener, DatarefSetListener):
             return None
         self._repres = self._repres + 1
         return self._representation.render()
+
+    def get_hardware_representation(self):
+        """
+        Called from deck to get what's necessary for displaying this button on the deck.
+        It can be an image, a color, a binary value on/off...
+        """
+        if not self._hardware_representation.is_valid():
+            logger.warning(f"button {self.name}: hardware representation is not valid")
+            return None
+        return self._hardware_representation.render()
 
     def get_vibration(self):
         return self.get_representation().get_vibration()

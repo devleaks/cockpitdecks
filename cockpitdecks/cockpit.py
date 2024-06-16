@@ -578,16 +578,19 @@ class Cockpit(DatarefListener, CockpitBase):
 
         logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
 
-        deck_count_by_type = {}
-        for deck_type in self.deck_types.values():
-            ty = deck_type.get(CONFIG_KW.TYPE.value)
-            if ty is not None:
-                if ty not in deck_count_by_type:
-                    deck_count_by_type[ty] = 0
+        # init
+        deck_count_by_type = {ty.get(CONFIG_KW.NAME.value): 0 for ty in self.deck_types.values()}
+        # tally
+        for deck in decks:
+            ty = deck.get(CONFIG_KW.TYPE.value)
+            if ty in deck_count_by_type:
                 deck_count_by_type[ty] = deck_count_by_type[ty] + 1
+            else:
+                deck_count_by_type[ty] = 1
 
         cnt = 0
         self.virtual_deck_list = {}
+
         for deck_config in decks:
             name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
 
