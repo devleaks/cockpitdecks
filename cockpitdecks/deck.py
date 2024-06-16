@@ -104,6 +104,9 @@ class Deck(ABC):
         l = self.layout if self.layout is not None else "-nolayout-"
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
+    def is_virtual_deck(self) -> bool:
+        return self.deck_type.is_virtual_deck()
+
     def get_deck_button_definition(self, idx):
         """Returns a deck's button definition from the deck type.
 
@@ -527,7 +530,7 @@ class DeckWithIcons(Deck):
         inside this deck's specific format.
         (We could build a set per deck model rather than deck instance.)
         """
-        if self.deck_type.is_virtual_deck():
+        if self.is_virtual_deck():
             return
         cache_icon = self.get_attribute("cache-icon")
         logger.info(f"deck {self.name}: use cache {cache_icon}")

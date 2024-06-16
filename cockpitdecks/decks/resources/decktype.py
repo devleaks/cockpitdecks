@@ -47,6 +47,8 @@ class DeckButton:
         self.handle = config.get(DECK_KW.HANDLE.value, [0, 0])  # for sliders
         self.range = config.get(DECK_KW.RANGE.value, [0, 0])  # for sliders
 
+        self.hardware_representation: dict|None = config.get(DECK_KW.HARDWARE_REPRESENTATION.value)
+
         self.init()
 
     def init(self):
@@ -88,6 +90,14 @@ class DeckButton:
 
     def has_drawing(self):
         return self.position is not None and self.dimension is not None
+
+    def has_hardware_representation(self):
+        return self.hardware_representation is not None and len(self.hardware_representation) > 0
+
+    def get_hardware_representation(self):
+        if self.has_hardware_representation():
+            return self.hardware_representation.get("type")
+        return None
 
     def has_icon(self) -> bool:
         return self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.dimension is not None

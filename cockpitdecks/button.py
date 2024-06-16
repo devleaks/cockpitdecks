@@ -77,7 +77,8 @@ class Button(DatarefListener, DatarefSetListener):
         self.current_value = None
         self.previous_value = None
 
-        # Options
+        #### Options
+        #
         self.options = []
         new = config.get("options")
         if new is not None:  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
@@ -87,7 +88,8 @@ class Button(DatarefListener, DatarefSetListener):
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
             self.options = [a.strip() for a in new.split(",")]
 
-        # What it will do and how it will appear
+        #### Activation
+        #
         self._activation = None
         atype = Button.guess_activation_type(config)
         if atype is not None and atype in ACTIVATIONS:
@@ -97,6 +99,8 @@ class Button(DatarefListener, DatarefSetListener):
             logger.info(f"button {self.name} has no activation defined, using default")
             self._activation = ACTIVATIONS["none"](config, self)
 
+        #### Representation
+        #
         self._representation = None
 
         idx = Button.guess_index(config)
@@ -105,10 +109,18 @@ class Button(DatarefListener, DatarefSetListener):
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
+            if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
+                rtype = self._def.get_hardware_representation()
+                if rtype is not None and rtype in REPRESENTATIONS:
+                    self._representation = REPRESENTATIONS[rtype](config, self)
+                    logger.info(f"button {self.name} has hardware representation")
+
+        if self._representation is None:
             logger.info(f"button {self.name} has no representation defined, using default")
             self._representation = REPRESENTATIONS["none"](config, self)
 
-        # Datarefs
+        #### Datarefs
+        #
         self.dataref = config.get(CONFIG_KW.DATAREF.value)
         self.dataref_rpn = config.get(CONFIG_KW.FORMULA.value)
         self.managed = None

@@ -126,6 +126,7 @@ class DECK_KW(Enum):
     DRIVER = "driver"
     FEEDBACK = "feedback"
     HANDLE = "handle"
+    HARDWARE_REPRESENTATION = "hardware"
     IMAGE = "image"
     INDEX = "index"
     INT_NAME = "_intname"
