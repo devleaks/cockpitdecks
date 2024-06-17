@@ -89,7 +89,7 @@ class CDProxy:
     def send_code(self, deck: str, code: int) -> bool:
         deck_name = bytes(deck, "utf-8")
         payload = struct.pack(f"IIIII{len(deck_name)}s", code, 0, len(deck_name), 0, 0, deck_name)
-        print(">>>>> sending code to Cockpitdecks", code, 0, len(deck_name), 0, 0, deck_name, "", "")
+        print(">>>>> send_code", code, 0, len(deck_name), 0, 0, deck_name, "", "")
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -119,7 +119,7 @@ class CDProxy:
             key_name,
             data_bytes,
         )
-        print(">>>>> sending event to Cockpitdecks", code, event, len(deck_name), len(key_name), deck, key, data)
+        print(">>>>> send_event", code, event, len(deck_name), len(key_name), deck, key, data)
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -145,14 +145,17 @@ class CDProxy:
     def handle_event(self, data: bytes):
         # packed in Cockpit handle_code() (code!=0) or virtual deck _send_key_image_to_device() (code=0)
         # payload = struct.pack(f"IIII{len(key_name)}s{len(deck_name)}s{len(content)}s", int(code), len(deck_name), len(key_name), len(content), deck_name, key_name, content)
-        (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
+        (code, deck_length, key_length, image_length, meta_length), payload = struct.unpack("IIIII", data[:20]), data[20:]
+        # print("<<--- received from Cockpitdecks", code, deck_length, key_length, image_length, meta_length)
         deck = payload[:deck_length].decode("utf-8")
         key = payload[deck_length : deck_length + key_length].decode("utf-8")
-        image = payload[deck_length + key_length :]  # this is a stream of bytes that represent the file content as PNG image.
+        image = payload[deck_length + key_length :deck_length + key_length + image_length]  # this is a stream of bytes that represent the file content as PNG image.
+        meta = json.loads(payload[deck_length + key_length + image_length:].decode("utf-8"))
+        # print("<<--- received from Cockpitdecks", code, deck_length, key_length, image_length, meta_length, deck, key, "<content>", meta)
         if code != 0:
             self.handle_code(deck=deck, code=code, data=image)
             return
-        response = {"code": 0, "deck": deck, "key": key, "image": base64.encodebytes(image).decode("ascii")}
+        response = {"code": 0, "deck": deck, "key": key, "image": base64.encodebytes(image).decode("ascii"), "meta": meta}
         client_list = self.vd_ws_conn.get(deck)
         closed_ws = []
         if client_list is not None:

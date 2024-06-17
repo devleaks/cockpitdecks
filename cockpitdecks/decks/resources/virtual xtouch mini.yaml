@@ -8,6 +8,7 @@ buttons:
   - name: 0
     prefix: e
     action: [encoder, push]
+    feedback: [encoder-leds]
     dimension: 21
     repeat: [8, 1]
     layout:

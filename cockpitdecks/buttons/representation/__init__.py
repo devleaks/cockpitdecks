@@ -8,7 +8,7 @@ from .representation import Representation
 
 # Image/icon based
 from .icon import Icon, IconText, MultiTexts, MultiIcons
-from .hardware import *
+from .hardware import VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED, VirtualXTMEncoderLED
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import DataIcon, Switch, CircularSwitch, PushSwitch, Knob, Decor
 from .animation import IconAnimation, DrawAnimationFTG

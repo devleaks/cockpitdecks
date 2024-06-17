@@ -10,6 +10,7 @@ import socket
 import struct
 import weakref
 import pkg_resources
+from datetime import datetime
 from queue import Queue
 
 from PIL import Image, ImageFont
@@ -912,11 +913,27 @@ class Cockpit(DatarefListener, CockpitBase):
             deck.remove_client()
             logger.debug(f"{name} closed")
         elif code == 3:  # web decks ask for initialisation (list of decks)
+            deck_name = bytes(__NAME__, "utf-8")
+            key_name = bytes("", "utf-8")
             webdeck_list = self.get_web_decks()
             webdeck_json = json.dumps(webdeck_list)
-            webdeck_desc = bytes(webdeck_json, "utf-8")
-            origin_name = bytes(__NAME__, "utf-8")  # deck=__NAME__
-            payload = struct.pack(f"IIII{len(origin_name)}s{len(webdeck_desc)}s", int(code), len(origin_name), 0, len(webdeck_desc), origin_name, webdeck_desc)
+            content = bytes(webdeck_json, "utf-8")
+            meta_list = {"ts": datetime.now().timestamp()} # dummy
+            meta_json = json.dumps(meta_list)
+            meta_bytes = bytes(meta_json, "utf-8")
+            payload = struct.pack(
+                f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
+                int(code),
+                len(deck_name),
+                len(key_name),
+                len(content),
+                len(meta_bytes),
+                deck_name,
+                key_name,
+                content,
+                meta_bytes
+            )
+            # print("C-->> handle_code", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
             # unpacked in proxy server handle_event() to forward to websocket
             # (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
             try:

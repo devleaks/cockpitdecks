@@ -1264,12 +1264,12 @@ class EncoderValue(OnOff):
         if event.turned_counter_clockwise:  # rotate left
             x = max(self.value_min, x - self.step)
             ok = True
-            self._turns = self._turns - 1
+            self._turns = self._turns + 1
             self._cw = self._cw + 1
         elif event.turned_clockwise:  # rotate right
             x = min(self.value_max, x + self.step)
             ok = True
-            self._turns = self._turns + 1
+            self._turns = self._turns - 1
             self._ccw = self._ccw + 1
         else:
             logger.warning(f"{type(self).__name__} invalid event {event}")

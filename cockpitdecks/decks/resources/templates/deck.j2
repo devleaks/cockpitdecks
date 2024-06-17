@@ -43,11 +43,13 @@ var stage = new Konva.Stage({
 
 // create layers to cleanly separate content by function
 var background_layer = new Konva.Layer();   // Background image or iniform color
+var hardware_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
 var interaction_layer = new Konva.Layer();  // Shapes with events attached to it
 var image_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
 
 // add the layer to the stage
 stage.add(background_layer);
+stage.add(hardware_layer);
 stage.add(image_layer);
 stage.add(interaction_layer);
 
@@ -61,6 +63,7 @@ const DECK = {{ deck|tojson(indent=2) }};
 deck = new Deck(DECK, deck_elem);  // we need to pass the div element to style it (cursor)
 deck.set_background_layer(background_layer, stage);
 deck.set_interaction_layer(interaction_layer);
+deck.set_hardware_image_layer(hardware_layer);
 
 if (DEBUG) {
     var debug_elem = document.createElement("div");

@@ -111,13 +111,15 @@ class Key extends Konva.Rect {
         this.on("pointerdown", function () {
             this.down = true
             this.stroke(FLASH)
-            sendEvent(DECK.name, this.name, 1, {x: 0, y: 0})
+            const pos = this.getRelativePointerCoordinates();
+            sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()})
         });
 
         this.on("pointerup", function () {
             this.down = false
             this.stroke(HIGHLIGHT)
-            sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
+            const pos = this.getRelativePointerCoordinates();
+            sendEvent(DECK.name, this.name, 0, {x: pos.x, y: pos.y, ts: Date.now()})
         });
 
     }
@@ -147,6 +149,14 @@ class Key extends Konva.Rect {
         };
         return code;
     }
+
+    getRelativePointerCoordinates() {
+        return {
+            x: this.layer.getRelativePointerPosition().x - this.x(), 
+            y: this.layer.getRelativePointerPosition().y - this.y()
+        }
+    }
+
 }
 
 // KeyRound
@@ -189,13 +199,15 @@ class KeyRound extends Konva.Circle {
         this.on("pointerdown", function () {
             this.down = true
             this.stroke(FLASH)
-            sendEvent(DECK.name, this.name, 1, {x: 0, y: 0})
+            const pos = this.getRelativePointerCoordinates();
+            sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()})
         });
 
         this.on("pointerup", function () {
             this.down = false
             this.stroke(HIGHLIGHT)
-            sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
+            const pos = this.getRelativePointerCoordinates();
+            sendEvent(DECK.name, this.name, 0, {x: pos.x, y: pos.y, ts: Date.now()})
         });
 
     }
@@ -222,6 +234,13 @@ class KeyRound extends Konva.Circle {
         };
         return code;
     }
+
+    getRelativePointerCoordinates() {
+        return {
+            x: this.layer.getRelativePointerPosition().x - this.x(), 
+            y: this.layer.getRelativePointerPosition().y - this.y()
+        }
+    }
 }
 
 // Encoder
@@ -239,14 +258,14 @@ class Encoder extends Konva.Circle {
             draggable: EDITOR_MODE
         });
 
+        console.log("install", config.position, config.dimension)
+
         this.config = config
         this.name = config.name
         this.container = container
 
         // Encoder button has optional push/pull behavior like Airbus FCU. Wow.
         this.pushpull = false
-
-        let corner_radius = 0
         if (checkNested(config, OPTIONS, OPT_PUSHPULL)) {
             this.pushpull = config.options.pushpull
         }
@@ -284,7 +303,9 @@ class Encoder extends Konva.Circle {
         this.on("pointerdown", function () {
             this.down = true
             this.stroke(FLASH)
-            sendEvent(DECK.name, this.name, this.value(), {x: 0, y: 0})
+            const pos = this.getRelativePointerCoordinates();
+            console.log(DECK.name, this.name, this.layer.getRelativePointerPosition(), pos);
+            sendEvent(DECK.name, this.name, this.value(), {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
         this.on("pointerup", function () {
@@ -309,6 +330,21 @@ class Encoder extends Konva.Circle {
         }
     }
 
+    value2(pos) {
+        // How encoder was turned, pressed, or optionally pulled. Wow.
+        const parts = 4
+        const w = Math.floor(this.width() / parts)
+        if ( pos.x < -w) {
+            return 2
+        } else if ( pos.x > w) {
+            return 3
+        } else if ( this.pushpull && pos.y < 0) {
+            return 4
+        } else {
+            return 1
+        }
+    }
+
     flash(colorin, colorout, time) {
         let that = this
         this.stroke(colorin)
@@ -319,6 +355,22 @@ class Encoder extends Konva.Circle {
 
     add_to_layer(layer) {
         this.layer = layer;
+        // layer.add(new Konva.Rect({
+        //     x: 0,
+        //     y: 0,
+        //     width: 10,
+        //     height: 10,
+        //     stroke: "yellow",
+        //     strokeWidth: 1,
+        // }));
+        // layer.add(new Konva.Rect({
+        //     x: this.config.position[0],
+        //     y: this.config.position[1],
+        //     width: 10,
+        //     height: 10,
+        //     stroke: "red",
+        //     strokeWidth: 1,
+        // }));
         layer.add(this);
     }
 
@@ -331,6 +383,13 @@ class Encoder extends Konva.Circle {
             radius: this.radius()
         };
         return code;
+    }
+
+    getRelativePointerCoordinates() {
+        return {
+            x: this.layer.getRelativePointerPosition().x - this.x(),
+            y: this.layer.getRelativePointerPosition().y - this.y()
+        }
     }
 }
 
@@ -823,6 +882,11 @@ class Deck {
         // console.log("set_background_layer", this.buttons)
     }
 
+    set_hardware_image_layer(layer) {
+        this.hardware_images = layer
+        // console.log("set_hardware_image_layer", this.buttons)
+    }
+
     set_interaction_layer(layer) {
         for (let name in this.buttons) {
             if(this.buttons.hasOwnProperty(name)) {
@@ -844,8 +908,10 @@ class Deck {
         const key_def = this.buttons[key];
         if (key_def != undefined) {
             if (checkNested(key_def.config, "layout", "hardware", "type")) {
-                const radius = key_def.radius()
-                return {x: -radius, y: -radius}
+                if (key_def.config.dimension != undefined && key_def.config.dimension.constructor == Number) {
+                    const radius = key_def.radius()
+                    return {x: -radius, y: -radius}
+                }
             }
         } else {
             console.log("could not find key", key)

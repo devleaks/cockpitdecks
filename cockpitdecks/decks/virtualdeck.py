@@ -8,7 +8,8 @@ import struct
 import threading
 import logging
 import io
-import random
+import json
+from datetime import datetime
 
 from PIL import Image, ImageDraw, ImageOps
 
@@ -145,7 +146,7 @@ class VirtualDeck(DeckWithIcons):
                 self.icons[name] = image
         return image
 
-    def scale_icon_for_key(self, index, image, name: str = None):
+    def scale_icon_for_key(self, index, image, name: str | None = None):
         if name is not None and name in self.icons.keys():
             return self.icons.get(name)
 
@@ -169,7 +170,11 @@ class VirtualDeck(DeckWithIcons):
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
         content = bytes(self.name, "utf-8")
-        payload = struct.pack(f"IIIII{len(content)}s", int(code), 0, 0, 0, len(content), content)
+        meta_list = {"ts": datetime.now().timestamp()} # dummy
+        meta_json = json.dumps(meta_list)
+        meta_bytes = bytes(meta_json, "utf-8")
+        payload = struct.pack(f"IIIII{len(content)}s{len(meta_bytes)}s", int(code), 0, 0, len(content), len(meta_bytes), content, meta_bytes)
+        # print(">>>>> send_code", code, 0, 0, len(content), len(meta_bytes), "", "", "<content>", meta_list)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.proxy_address, self.proxy_port))
@@ -212,16 +217,23 @@ class VirtualDeck(DeckWithIcons):
         code = 0
         deck_name = bytes(self.name, "utf-8")
         key_name = bytes(str(key), "utf-8")
+        meta_list = {"ts": datetime.now().timestamp()} # dummy
+        meta_json = json.dumps(meta_list)
+        meta_bytes = bytes(meta_json, "utf-8")
         payload = struct.pack(
-            f"IIII{len(deck_name)}s{len(key_name)}s{len(content)}s",
+            f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
             int(code),
             len(deck_name),
             len(key_name),
             len(content),
+            len(meta_bytes),
             deck_name,
             key_name,
             content,
+            meta_bytes
         )  # Unpacked in proxy server handle_event() to send through websockets
+        # print(">>>>> _send_key_image_to_device", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
+        # (code, deck_length, key_length, image_length, meta_length), payload = struct.unpack("IIIII", data[:20]), data[20:]
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.proxy_address, self.proxy_port))
@@ -262,16 +274,22 @@ class VirtualDeck(DeckWithIcons):
         code = 0
         deck_name = bytes(self.name, "utf-8")
         key_name = bytes(str(key), "utf-8")
+        meta_list = {"ts": datetime.now().timestamp()} # dummy
+        meta_json = json.dumps(meta_list)
+        meta_bytes = bytes(meta_json, "utf-8")
         payload = struct.pack(
-            f"IIII{len(deck_name)}s{len(key_name)}s{len(content)}s",
+            f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
             int(code),
             len(deck_name),
             len(key_name),
             len(content),
+            len(meta_bytes),
             deck_name,
             key_name,
             content,
+            meta_bytes
         )  # Unpacked in proxy server handle_event() to send through websockets
+        # print(">>>>> _send_hardware_key_image_to_device", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.proxy_address, self.proxy_port))
