@@ -88,6 +88,9 @@ class Button(DatarefListener, DatarefSetListener):
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
             self.options = [a.strip() for a in new.split(",")]
 
+        self.managed = None
+        self.guarded = None
+
         #### Activation
         #
         self._activation = None
@@ -124,14 +127,12 @@ class Button(DatarefListener, DatarefSetListener):
         #
         self.dataref = config.get(CONFIG_KW.DATAREF.value)
         self.dataref_rpn = config.get(CONFIG_KW.FORMULA.value)
-        self.managed = None
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
             self.managed = self.manager.get(CONFIG_KW.DATAREF.value)
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
-        self.guarded = None
         self.guard = config.get(CONFIG_KW.GUARD.value)
         if self.guard is not None:
             self.guarded = self.guard.get(CONFIG_KW.DATAREF.value)

@@ -47,9 +47,10 @@ class VirtualEncoder(Icon):
         self.rotation = 0
         self.rotation_step = 10
         self.knob_fill_color = "black"
-        self.knob_stroke_color = "peachpuff"
-        self.knob_stroke_width = 2
-        self.mark_fill_color = "white"
+        self.knob_stroke_color = "silver"
+        self.knob_stroke_width = 1
+        self.mark_fill_color = "silver"
+        self.mark_size = [8, 3]
 
     def get_image(self):
         """
@@ -67,11 +68,16 @@ class VirtualEncoder(Icon):
             width=self.knob_stroke_width,
         )
         # marker
-        size = 4
-        draw.ellipse(
-            [self.knob_stroke_width + int(size / 2), self.radius - int(size / 2)] + [self.knob_stroke_width + 3 * int(size / 2), self.radius + int(size / 2)],
-            fill=self.mark_fill_color,
-        )
+        if type(self.mark_size) is int:
+            draw.ellipse(
+                [self.knob_stroke_width + int(self.mark_size / 2), self.radius - int(self.mark_size / 2)] + [self.knob_stroke_width + 3 * int(self.mark_size / 2), self.radius + int(self.mark_size / 2)],
+                fill=self.mark_fill_color,
+            )
+        else:
+            draw.ellipse(
+                [self.knob_stroke_width + int(self.mark_size[0] / 2), self.radius - int(self.mark_size[1] / 2)] + [self.knob_stroke_width + 3 * int(self.mark_size[0] / 2), self.radius + int(self.mark_size[1] / 2)],
+                fill=self.mark_fill_color,
+            )
         # rotate
         self.rotation = self.button._activation._turns * self.rotation_step
         return image.rotate(self.rotation)
@@ -97,8 +103,8 @@ class VirtualXTMLED(Icon):
         Icon.__init__(self, config=config, button=button)
         self.width = self.button._def.dimension[0]
         self.height = self.button._def.dimension[1]
-        self.color = "lightgoldenrodyellow"
-        self.off_color = "black"
+        self.color = (207, 229, 149)
+        self.off_color = "ghostwhite"
 
     def get_image(self):
         """

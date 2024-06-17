@@ -85,7 +85,7 @@ class ColoredLED(Representation):
             logger.warning(f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
         color_rgb = colorsys.hsv_to_rgb((int(hue) % 360) / 360, 1, 1)
-        self.color = [int(255 * i) for i in color_rgb]  # type: ignore
+        self.color = tuple([int(255 * i) for i in color_rgb])  # type: ignore
         logger.debug(f"{color_str}, {hue}, {[(int(hue) % 360)/360,1,1]}, {color_rgb}, {self.color}")
         return self.color
 

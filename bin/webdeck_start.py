@@ -34,6 +34,7 @@ class CDProxy:
 
     def __init__(self) -> None:
         self.inited = False
+        self._requested = False
         self.web_decks = {}
         self.vd_ws_conn = {}
 
@@ -53,13 +54,8 @@ class CDProxy:
         self.init()
 
     def init(self):
-        self.send_code(deck=__NAME__, code=3)  # request initialisation
-
-    def ready(self) -> bool:
-        if self.inited:
-            return True
-        self.init()
-        return False
+        if not self.inited:
+            self.send_code(deck=__NAME__, code=3)  # request initialisation
 
     def register_deck(self, deck: str, websocket):
         if deck not in self.vd_ws_conn:
@@ -132,11 +128,24 @@ class CDProxy:
 
     def handle_code(self, deck: str, code: int, data: bytes):
         logger.debug(f"deck {deck} handling code {code}")
-        if deck == __NAME__ and code == 3:  # initialisation
+
+        # print("<<<<< handle_code", code, deck)
+        if deck == __NAME__ and code == 4:  # Cockpitdecks started, we request initialisation
+            logger.info(f"Cockpitdecks started, requesting deck list..")
+            self._requested = True
+            self.send_code(deck=__NAME__, code=3)  # request initialisation
+        if deck == __NAME__ and code == 5:  # Cockpitdecks started, we request initialisation
+            logger.info(f"Cockpitdecks terminated")
+            self.inited = False
+            ##
+        if deck == __NAME__ and code == 3:  # receive initialisation, install web decks
             datastr = data.decode("utf-8")
             self.web_decks = json.loads(datastr)
             # logger.debug(self.web_decks)
             self.inited = True
+            if self._requested:
+                self._requested = False
+                logger.info(f".. got deck list")
             logger.info(f"inited: {(len(self.web_decks))} web decks received")
 
     def is_closed(self, ws):
@@ -243,7 +252,7 @@ app.logger.setLevel(logging.INFO)
 
 @app.route("/")
 def index():
-    dummy = cdproxy.ready()  # provoque deck request
+    cdproxy.init()  # provoque deck request
     return render_template("index.j2", virtual_decks=cdproxy.web_decks)
 
 

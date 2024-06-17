@@ -304,7 +304,7 @@ class Encoder extends Konva.Circle {
             this.down = true
             this.stroke(FLASH)
             const pos = this.getRelativePointerCoordinates();
-            console.log(DECK.name, this.name, this.layer.getRelativePointerPosition(), pos);
+            // const pos2 = this.layer.getRelativePointerPosition() // , mx: pos2.x, my: pos2.y, cx: this.x(), cy: this.y()
             sendEvent(DECK.name, this.name, this.value(), {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
@@ -318,7 +318,7 @@ class Encoder extends Konva.Circle {
 
     value() {
         // How encoder was turned, pressed, or optionally pulled. Wow.
-        const w = Math.floor(this.width() / 4)
+        const w = Math.floor(this.radius() / 2)
         if ( this.layer.getRelativePointerPosition().x < (this.x()-w)) {
             return 2
         } else if ( this.layer.getRelativePointerPosition().x > (this.x()+w)) {
@@ -332,16 +332,15 @@ class Encoder extends Konva.Circle {
 
     value2(pos) {
         // How encoder was turned, pressed, or optionally pulled. Wow.
-        const parts = 4
-        const w = Math.floor(this.width() / parts)
+        const w = Math.floor(this.radius() / 2)
         if ( pos.x < -w) {
-            return 2
+            return 2 // rotate CW
         } else if ( pos.x > w) {
-            return 3
+            return 3 // rotate CCW
         } else if ( this.pushpull && pos.y < 0) {
-            return 4
+            return 4 // pulled, if capable
         } else {
-            return 1
+            return 1 // pushed, pressed
         }
     }
 

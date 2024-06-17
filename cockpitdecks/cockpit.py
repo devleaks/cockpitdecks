@@ -880,12 +880,6 @@ class Cockpit(DatarefListener, CockpitBase):
                 return True
         return False
 
-    def broadcast_code(self, code):
-        for deck in self.cockpit.values():
-            if type(deck).__name__ == "VirtualDeck":
-                deck.send_code(code)
-                logger.debug(f"sent code {deck.name}:{code}")
-
     def get_web_decks(self):
         # Not all virtual decks are web decks
         webdeck_list = {}
@@ -918,7 +912,7 @@ class Cockpit(DatarefListener, CockpitBase):
             webdeck_list = self.get_web_decks()
             webdeck_json = json.dumps(webdeck_list)
             content = bytes(webdeck_json, "utf-8")
-            meta_list = {"ts": datetime.now().timestamp()} # dummy
+            meta_list = {"ts": datetime.now().timestamp()}  # dummy
             meta_json = json.dumps(meta_list)
             meta_bytes = bytes(meta_json, "utf-8")
             payload = struct.pack(
@@ -931,7 +925,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 deck_name,
                 key_name,
                 content,
-                meta_bytes
+                meta_bytes,
             )
             # print("C-->> handle_code", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
             # unpacked in proxy server handle_event() to forward to websocket
@@ -944,6 +938,36 @@ class Cockpit(DatarefListener, CockpitBase):
                     logger.info(f"Web decks sent ({len(webdeck_list)})")
             except:
                 logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
+        elif code in [4, 5]:
+            deck_name = bytes(__NAME__, "utf-8")
+            key_name = bytes("", "utf-8")
+            content = bytes("", "utf-8")
+            meta_list = {"ts": datetime.now().timestamp()}  # dummy
+            meta_json = json.dumps(meta_list)
+            meta_bytes = bytes(meta_json, "utf-8")
+            payload = struct.pack(
+                f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
+                int(code),
+                len(deck_name),
+                len(key_name),
+                len(content),
+                len(meta_bytes),
+                deck_name,
+                key_name,
+                content,
+                meta_bytes,
+            )
+            # print("I-->> handle_code", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
+            # unpacked in proxy server handle_event() to forward to websocket
+            # (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.connect((PROXY_HOST[0], PROXY_HOST[1]))
+                    s.sendall(payload)
+                    logger.info(f"Code {code}: sent data to ({PROXY_HOST})")
+                    logger.info(f"Proxy notified of {name}")
+            except:
+                logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
 
     def handle_event(self, data: bytes):
         # packed in proxy server as received from websocket
@@ -952,7 +976,7 @@ class Cockpit(DatarefListener, CockpitBase):
         deck_name = payload[:deck_length].decode("utf-8")
         key = payload[deck_length : deck_length + key_length].decode("utf-8")
         data_str = payload[deck_length + key_length :].decode("utf-8")
-        print("<<<<< handle_event", code, event, deck_length, key_length, data_length, deck_name, key, data_str)
+        # print("<<<<< handle_event", code, event, deck_length, key_length, data_length, deck_name, key, data_str)
         if code != 0:
             self.handle_code(code, deck_name)
             return
@@ -1015,7 +1039,7 @@ class Cockpit(DatarefListener, CockpitBase):
         else:
             logger.debug("virtual deck event listener not running")
         # Now send last message to tell no longer listening
-        self.broadcast_code(code=2)  # terminate listening
+        self.handle_code(code=5, name="terminate")  # wake up proxy
 
     # #########################################################
     # Other
@@ -1127,7 +1151,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.info(f"..virtual deck listener started..")
                 # threading.Thread(target=lambda: app.run(host=APP_HOST[0], port=APP_HOST[1], debug=True, use_reloader=False), name="Flask").start()
                 # logger.info(f"..web deck proxy server started..")
-                self.broadcast_code(1)
+                self.handle_code(code=4, name="init")  # wake up proxy
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")

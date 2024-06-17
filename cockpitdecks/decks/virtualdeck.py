@@ -170,7 +170,7 @@ class VirtualDeck(DeckWithIcons):
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
         content = bytes(self.name, "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()} # dummy
+        meta_list = {"ts": datetime.now().timestamp()}  # dummy
         meta_json = json.dumps(meta_list)
         meta_bytes = bytes(meta_json, "utf-8")
         payload = struct.pack(f"IIIII{len(content)}s{len(meta_bytes)}s", int(code), 0, 0, len(content), len(meta_bytes), content, meta_bytes)
@@ -217,7 +217,7 @@ class VirtualDeck(DeckWithIcons):
         code = 0
         deck_name = bytes(self.name, "utf-8")
         key_name = bytes(str(key), "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()} # dummy
+        meta_list = {"ts": datetime.now().timestamp()}  # dummy
         meta_json = json.dumps(meta_list)
         meta_bytes = bytes(meta_json, "utf-8")
         payload = struct.pack(
@@ -230,7 +230,7 @@ class VirtualDeck(DeckWithIcons):
             deck_name,
             key_name,
             content,
-            meta_bytes
+            meta_bytes,
         )  # Unpacked in proxy server handle_event() to send through websockets
         # print(">>>>> _send_key_image_to_device", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
         # (code, deck_length, key_length, image_length, meta_length), payload = struct.unpack("IIIII", data[:20]), data[20:]
@@ -274,7 +274,7 @@ class VirtualDeck(DeckWithIcons):
         code = 0
         deck_name = bytes(self.name, "utf-8")
         key_name = bytes(str(key), "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()} # dummy
+        meta_list = {"ts": datetime.now().timestamp()}  # dummy
         meta_json = json.dumps(meta_list)
         meta_bytes = bytes(meta_json, "utf-8")
         payload = struct.pack(
@@ -287,7 +287,7 @@ class VirtualDeck(DeckWithIcons):
             deck_name,
             key_name,
             content,
-            meta_bytes
+            meta_bytes,
         )  # Unpacked in proxy server handle_event() to send through websockets
         # print(">>>>> _send_hardware_key_image_to_device", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
         try:
@@ -371,7 +371,7 @@ class VirtualDeck(DeckWithIcons):
         since it has to take the "shape" of any "real physical deck" it virtualize
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        print("===== handle_event", deck.name, key, state, data)
+        # print("===== handle_event", deck.name, key, state, data)
         if state in [0, 1, 4]:
             PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")

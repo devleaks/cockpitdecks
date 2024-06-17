@@ -110,6 +110,17 @@ ws.onmessage = (event) => {
     }
 };
 
+// OTHER HANDLERS
+//
+ws.close = (event) => {
+    sendCode(DECK.name, 2); // tries at least...
+    console.log("connection closed");
+};
+
+ws.error = (event) => {
+    console.log("WebSocket error", event);
+};
+
 // SEND functions (global, to be used by decks, etc.)
 //
 // Send code to Cockpitdecks
