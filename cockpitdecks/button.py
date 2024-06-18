@@ -77,7 +77,8 @@ class Button(DatarefListener, DatarefSetListener):
         self.current_value = None
         self.previous_value = None
 
-        # Options
+        #### Options
+        #
         self.options = []
         new = config.get("options")
         if new is not None:  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
@@ -87,7 +88,11 @@ class Button(DatarefListener, DatarefSetListener):
                 new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
             self.options = [a.strip() for a in new.split(",")]
 
-        # What it will do and how it will appear
+        self.managed = None
+        self.guarded = None
+
+        #### Activation
+        #
         self._activation = None
         atype = Button.guess_activation_type(config)
         if atype is not None and atype in ACTIVATIONS:
@@ -97,6 +102,8 @@ class Button(DatarefListener, DatarefSetListener):
             logger.info(f"button {self.name} has no activation defined, using default")
             self._activation = ACTIVATIONS["none"](config, self)
 
+        #### Representation
+        #
         self._representation = None
 
         idx = Button.guess_index(config)
@@ -108,17 +115,24 @@ class Button(DatarefListener, DatarefSetListener):
             logger.info(f"button {self.name} has no representation defined, using default")
             self._representation = REPRESENTATIONS["none"](config, self)
 
-        # Datarefs
+        self._hardware_representation = None
+        if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
+            rtype = self._def.get_hardware_representation()
+            if rtype is not None and rtype in REPRESENTATIONS:
+                logger.info(f"button {self.name} has hardware representation {rtype}")
+                self._hardware_representation = REPRESENTATIONS[rtype](config, self)
+                logger.info(f"button {self.name} has hardware representation")
+
+        #### Datarefs
+        #
         self.dataref = config.get(CONFIG_KW.DATAREF.value)
         self.dataref_rpn = config.get(CONFIG_KW.FORMULA.value)
-        self.managed = None
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
             self.managed = self.manager.get(CONFIG_KW.DATAREF.value)
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
-        self.guarded = None
         self.guard = config.get(CONFIG_KW.GUARD.value)
         if self.guard is not None:
             self.guarded = self.guard.get(CONFIG_KW.DATAREF.value)
@@ -864,6 +878,8 @@ class Button(DatarefListener, DatarefSetListener):
             self.render()
         else:
             logger.debug(f"button {self.name}: no change")
+            if self.deck.is_virtual_deck():  # representation has not changed, but hardware representation might have
+                self.render()
 
     def get_status(self):
         """ """
@@ -889,6 +905,16 @@ class Button(DatarefListener, DatarefSetListener):
             return None
         self._repres = self._repres + 1
         return self._representation.render()
+
+    def get_hardware_representation(self):
+        """
+        Called from deck to get what's necessary for displaying this button on the deck.
+        It can be an image, a color, a binary value on/off...
+        """
+        if not self._hardware_representation.is_valid():
+            logger.warning(f"button {self.name}: hardware representation is not valid")
+            return None
+        return self._hardware_representation.render()
 
     def get_vibration(self):
         return self.get_representation().get_vibration()

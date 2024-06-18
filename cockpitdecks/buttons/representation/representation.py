@@ -53,11 +53,13 @@ class Representation:
 
         self.button.deck.cockpit.set_logging_level(__name__)
 
+        if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
+            self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
+
         self.init()
 
     def init(self):  # ~ABC
-        if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
-            self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
+        pass
 
     def can_render(self) -> bool:
         button_cap = self.button._def[DECK_KW.FEEDBACK.value]

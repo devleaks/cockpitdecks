@@ -1,0 +1,79 @@
+# This is the description of a deck's capabilities for a virtual deck
+#
+---
+name: Virtual LoupedeckLive
+driver: virtualdeck
+buttons:
+  - name: 0
+    repeat: [4, 3]
+    action: push
+    feedback: image
+    dimension: [86, 86]
+    layout:
+      offset: [152, 78]
+      spacing: [4, 4]
+    options: corner_radius=8
+  - name: 0
+    prefix: e
+    repeat: [1, 3]
+    action: [encoder, push]
+    dimension: 27
+    layout:
+      offset: [45, 115]
+      spacing: [0, 41]
+      hardware:
+        type: virtual-encoder
+  - name: 3
+    prefix: e
+    repeat: [1, 3]
+    action: [encoder, push]
+    dimension: 27
+    layout:
+      offset: [624, 115]
+      spacing: [0, 41]
+  - name: 0
+    prefix: b
+    repeat: [8, 1]
+    action: push
+    dimension: 20
+    feedback: colored-led
+    layout:
+      offset: [45, 398]
+      spacing: [43, 0]
+      hardware:
+        type: virtual-ll-coloredbutton
+  - name: left
+    name_int: 2001
+    action: [push, swipe]
+    feedback: image
+    dimension: [52, 270]
+    layout:
+      offset: [96, 78]
+    options: corner_radius=4
+  - name: right
+    name_int: 2003
+    action: [push, swipe]
+    feedback: image
+    dimension: [42, 270]
+    layout:
+      offset: [524, 78]
+    options: corner_radius=4
+  # - name: center
+  #   name_int: 2002
+  #   action: [push, swipe]
+  #   feedback: image
+  #   dimension: [344, 270]
+  #   layout:
+  #     offset: [150, 78]
+  #   options: corner_radius=4
+background:
+  color: "#222"
+  image: loupedeck.live.png
+  overlays:
+    - text: LoupedeckLive
+      font: museo-sans
+      size: 20
+      color: white
+      position: [840, 40]
+    - image: loupedecklive-logo-transparent.png
+      position: [840, 40]

@@ -1,0 +1,34 @@
+# This is the description of a deck's capabilities for a virtual deck
+#
+---
+name: Streamdeck +
+driver: virtualdeck
+buttons:
+  - name: 0
+    action: push
+    feedback: image
+    dimension: [96, 96]
+    repeat: [4, 2]
+    layout:
+      offset: [48, 85]
+      spacing: [43, 22]
+    options: corner_radius=8
+  - name: 0
+    prefix: e
+    action: [encoder, push]
+    dimension: 30
+    repeat: [4, 1]
+    layout:
+      offset: [93, 502]
+      spacing: [81, 0]
+  # touchscreen in streamdeck package vocabulary
+  - name: touchscreen
+    name_int: 1001
+    action: [press, longpress, swipe]
+    feedback: image
+    dimension: [548, 95]
+    layout:
+      offset: [31, 330]
+background:
+  color: black
+  image: streamdeck.plus.png

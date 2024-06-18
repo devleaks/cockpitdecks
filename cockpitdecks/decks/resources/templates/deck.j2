@@ -3,239 +3,146 @@
 <head>
     <title>Cockpitdecks - {{ deck.name }} </title>
 <style type="text/css">
-/* everything is centerd in browser window */
 body {
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: black; /* should be white for light themes */
     font-family: sans-serif;
-}
-#deck {
-    width: inherit;
-    height: inherit;
-    margin: 0;
-    padding: 0;
-    display: block;
 }
 </style>
 </head>
-<!-- Structure of deck as received:
-{
-  "address": "127.0.0.1",
-  "deck-type-desc": {
-    "__filename__": "/Users/pierre/Developer/fs/cockpitdecks/bin/../cockpitdecks/decks/resources/development deck.yaml",
-    "buttons": [
-      {
-        "_intname": "NO_NAME_0",
-        "action": "push",
-        "feedback": "image",
-        "image": [
-          128,
-          128
-        ],
-        "layout": [
-          2,
-          1
-        ],
-        "name": 0
-      }
-    ],
-    "driver": "virtualdeck",
-    "type": "Virtual Deck for Development"
-  },
-  "decor": {
-    "background": "devdeck.png",
-    "spacing": [8, 8]
-  },
-  "disabled": false,
-  "layout": "virtualdevdeck",
-  "name": "Virtual deck for development",
-  "port": 7775,
-  "serial": "127.0.0.1:7775",
-  "type": "Virtual Deck for Development"
-}
--->
 <body>
-    <div>
-        <canvas id="deck" width="800" height="600">
-            Sorry, your browser does not support canvas.
-        </canvas>
-    </div>
 <script src="/assets/js/konva.js" type="text/javascript"></script>
+<script src="/assets/js/buttons.js" type="text/javascript"></script>
 <script type="text/javascript">
-// Transfer from Cockpitdecks through Jinja2
-const DECK = {{ deck|tojson }}
+//
+//
+// Konva layout set up and initialisation
+//
+// create and add <div id="deck"></div> with proper styling, add to document
+const DEBUG = false
 
-// Canvas setup
-const canvas = document.getElementById("deck");
-const ctx = canvas.getContext("2d");
+DECK_ELEMID = "deck"
 
-const icon_width = DECK["deck-type-desc"]["buttons"][0]["image"][0]
-const icon_height = DECK["deck-type-desc"]["buttons"][0]["image"][1]
+var deck_elem = document.createElement("div");
+deck_elem.setAttribute("id", DECK_ELEMID);
+deck_elem.setAttribute("width", "inherit");
+deck_elem.setAttribute("height", "inherit");
+deck_elem.setAttribute("display", "block");
+deck_elem.setAttribute("padding", 0);
+deck_elem.setAttribute("marging", 0);
+document.getElementsByTagName("body")[0].appendChild(deck_elem)
 
-const numkeys_horiz = DECK["deck-type-desc"]["buttons"][0]["layout"][0]
-const numkeys_vert = DECK["deck-type-desc"]["buttons"][0]["layout"][1]
+// create stage
+var stage = new Konva.Stage({
+    container: DECK_ELEMID,
+    width: window.innerWidth,
+    height: window.innerHeight,
+});
 
-const keyspc_horiz = DECK["decor"]["spacing"][0]
-const keyspc_vert = DECK["decor"]["spacing"][1]
+// create layers to cleanly separate content by function
+var background_layer = new Konva.Layer();   // Background image or iniform color
+var hardware_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
+var interaction_layer = new Konva.Layer();  // Shapes with events attached to it
+var image_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
 
-const offset_horiz = DECK["decor"]["offset"][0]
-const offset_vert = DECK["decor"]["offset"][1]
+// add the layer to the stage
+stage.add(background_layer);
+stage.add(hardware_layer);
+stage.add(image_layer);
+stage.add(interaction_layer);
 
-const background_image = "{{deck["decor"]["background"]}}"
+//
+//
+// Deck creation & installation
+//
+// Transfer from Cockpitdecks through Jinja2, nice output
+const DECK = {{ deck|tojson(indent=2) }};
 
-// Canvas functions & preparation
-function required_size() {
-    width = 2 * offset_horiz + icon_width  * numkeys_horiz + keyspc_horiz * (numkeys_horiz - 1)
-    height = 2 * offset_vert + icon_height * numkeys_vert  + keyspc_vert  * (numkeys_vert - 1)
-    return [width, height]
+deck = new Deck(DECK, deck_elem);  // we need to pass the div element to style it (cursor)
+deck.set_background_layer(background_layer, stage);
+deck.set_interaction_layer(interaction_layer);
+deck.set_hardware_image_layer(hardware_layer);
+
+if (DEBUG) {
+    var debug_elem = document.createElement("div");
+    var code_elem = document.createElement("pre");
+    code_elem.textContent = JSON.stringify(DECK, null, 2)
+    debug_elem.setAttribute("id", "debug");
+    debug_elem.appendChild(code_elem)
+    document.getElementsByTagName("body")[0].appendChild(debug_elem)
 }
-
-function resize_canvas(sizes) {
-    const TITLE_BAR_HEIGHT = 24
-    ctx.canvas.width = sizes[0]
-    ctx.canvas.height = sizes[1]
-    window.resizeTo(sizes[0],sizes[1] + TITLE_BAR_HEIGHT)
-}
-
-function set_deck_bg_image(url) {
-    // Loads a deck background picture (with dark bacground color)
-    // or draws a border around the whole canvas if no image.
-    if (url != null && url != "" && url.toLowerCase() != "none" && url.toLowerCase() != "null") {
-        var image = new Image();
-        image.onerror = function() {
-            canvas.style["border"] = "1px solid red"
-        }
-        image.onload = function() {
-            // if there is a background image, we resize the canvas around it.
-            // DO NOT allow buttons to be displayed outside the background image size!
-            resize_canvas([image.naturalWidth, image.naturalHeight])
-            ctx.drawImage(image, 0, 0);
-        };
-        image.src = "/assets/decks/images/" + url;
-    } else { // add CSS frame around deck limits
-        canvas.style["border"] = "1px solid grey"
-    }
-}
-
-function relative_mouse_coordinates(event){
-    var totalOffsetX = 0;
-    var totalOffsetY = 0;
-    var canvasX = 0;
-    var canvasY = 0;
-    var currentElement = this;
-
-    do{
-        totalOffsetX += currentElement.offsetLeft - currentElement.scrollLeft;
-        totalOffsetY += currentElement.offsetTop - currentElement.scrollTop;
-    }
-    while(currentElement = currentElement.offsetParent)
-
-    canvasX = event.pageX - totalOffsetX;
-    canvasY = event.pageY - totalOffsetY;
-
-    return {x:canvasX, y:canvasY}
-}
-HTMLCanvasElement.prototype.relative_mouse_coordinates = relative_mouse_coordinates;
-
-canvas.addEventListener("mousedown", function(e) {
-    coords = canvas.relative_mouse_coordinates(event);
-    sendEvent(DECK.name, coords, 1)
-})
-
-canvas.addEventListener("mouseup", function(e) {
-    coords = canvas.relative_mouse_coordinates(event);
-    canvasX = coords.x;
-    canvasY = coords.y;
-    sendEvent(DECK.name, coords, 0)
-})
-
-resize_canvas(required_size())
-set_deck_bg_image(background_image)
-
-// Internal kitchen functions
-function get_xy(key) {
-    var x = offset_horiz + (icon_width + keyspc_horiz) * (key % numkeys_horiz)
-    var y = offset_vert  + (icon_height + keyspc_vert) * Math.floor(key/numkeys_horiz)
-    // console.log("get_xy", key, x, y);
-    return [x, y]
-}
-
-function get_key(x, y) {
-    // needs to be fixed for when user click between keys
-    // should return -1 in these cases
-    var w2 = icon_width + keyspc_vert
-    var h2 = icon_height + keyspc_horiz
-    var x2 = (x - offset_horiz)
-    var y2 = (y - offset_vert)
-    var key = -1
-    if (x2 >= 0 && y2 >= 0) {
-        var h = Math.floor(x2 / w2)
-        var v = Math.floor(y2 / h2)
-        // now check tht we are not between keys, in the spacing
-        var xlim = icon_width * (h+1) + keyspc_horiz * h
-        var ylim = icon_height * (v+1) + keyspc_vert * v
-        if (x2 <= xlim && y2 <= ylim) { // if not, ok
-            key = v * numkeys_horiz + h
-        }
-    }
-    // console.log("get_key", key);
-    return key
-}
-
+//
+//
 // WebSocket initialisation and setup
-ws_url = DECK.ws_url
+//
+ws_url = DECK.ws_url;
+
+if (ws_url == undefined) {
+    alert("No WebSocket address. Please start Cockpitdecks first.")
+}
+
 var ws = new WebSocket(ws_url);
 
 ws.onopen = (event) => {
-    console.log(ws_url, "connection opened");
+    console.log("connection opened", ws_url);
     // sends its name on new connection to help identify
-    sendCode(1, DECK.name)  // filled by jinja templating engine
+    sendCode(DECK.name, 1);
 };
 
+// RECEIVE function
+//
+// Receives messages from Cockpitdecks and take action on this deck
 ws.onmessage = (event) => {
     // console.log("data received");
-    var data = JSON.parse(event.data)
+    var data = JSON.parse(event.data);
     // console.log("code received", data.code);
     if (data.code == 0) {
-        // console.log("loading image (key)..", data.key)
-        coords = get_xy(data.key)
-        var image = new Image();
-        image.onload = function() {
-            ctx.drawImage(image, coords[0], coords[1]);
-            // console.log("drawing at", coords[0], coords[1])
-        };
-        image.src = "data:image/jpeg;base64,"+data.image;
+        // console.log("loading image (key)..", data.key);
+        deck.set_key_image(data.key, data.image, image_layer);
         // console.log("..done")
+    } else if (data.code == 1) {
+        console.log("received initialisation code", data.code);
+        // init here, later if necessary
     } else {
-        console.log("non zero code received, uninterpreted", data.code);
+        console.log("unhandled code received, uninterpreted", data.code);
     }
 };
 
-// Send functions
+// OTHER HANDLERS
 //
-function sendCode(code, deck) {
-    payload = {"code": code, "deck": deck}
-    var message = JSON.stringify(payload)
+ws.close = (event) => {
+    sendCode(DECK.name, 2); // tries at least...
+    console.log("connection closed");
+};
+
+ws.error = (event) => {
+    console.log("WebSocket error", event);
+};
+
+// SEND functions (global, to be used by decks, etc.)
+//
+// Send code to Cockpitdecks
+function sendCode(deck, code) {
+    payload = {"code": code, "deck": deck};
+    var message = JSON.stringify(payload);
     ws.send(message);
     console.log("sent code", deck, code);
 }
 
-function sendEvent(deck, c, z) {
-    //console.log(deck, c.x, c.y, z)
-    key = get_key(c.x, c.y)
+//
+// Send event to Cockpitdecks
+function sendEvent(deck, key, value, data) {
     if (key == -1) {
         console.log("probably not clicked on a key");
     } else {
-        payload = {"code": 0, "deck": deck, "key": key, "x": c.x, "y": c.y, "z": z}
-        var message = JSON.stringify(payload)
+        payload = {"code": 0, "deck": deck, "key": key, "event": value, "data": data};
+        var message = JSON.stringify(payload);
         ws.send(message);
-        // console.log("sent event", message);
+        console.log("sent event", message);
     }
 }
-
 </script>
 </body>
 </html>

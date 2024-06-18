@@ -89,7 +89,6 @@ ID_SEP = "/"
 # Config.yaml
 #
 class CONFIG_KW(Enum):
-    ADDRESS = "address"  # could be host, hostname
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BUTTONS = "buttons"
@@ -110,7 +109,6 @@ class CONFIG_KW(Enum):
     MANAGED = "managed"
     NAME = "name"
     NONE = "none"
-    PORT = "port"
     SERIAL = "serial"
     STRING_DATAREFS = "string-datarefs"
     TYPE = "type"
@@ -122,17 +120,26 @@ class CONFIG_KW(Enum):
 #
 class DECK_KW(Enum):
     ACTION = "action"
+    BACKGROUND = "background"
     BUTTONS = "buttons"
+    DIMENSION = "dimension"
     DRIVER = "driver"
     FEEDBACK = "feedback"
+    HANDLE = "handle"
+    HARDWARE_REPRESENTATION = "hardware"
     IMAGE = "image"
+    INDEX = "index"
+    INT_NAME = "_intname"
     LAYOUT = "layout"
     NAME = "name"
     NONE = "none"
+    OFFSET = "offset"
+    OPTIONS = "options"
+    POSITION = "position"
     PREFIX = "prefix"
     RANGE = "range"
     REPEAT = "repeat"
-    TYPE = "type"
+    SPACING = "spacing"
 
 
 # ############################################################

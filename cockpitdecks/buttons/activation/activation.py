@@ -73,11 +73,13 @@ class Activation:
         # Vibrate on press
         self.vibrate = config.get("vibrate", button.get_attribute("default-vibrate", silence=True))
 
+        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
+            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
+
         self.init()
 
     def init(self):  # ~ABC
-        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
-            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
+        pass
 
     def can_handle(self, event) -> bool:
         if event.action not in self.get_required_capability():
@@ -1032,6 +1034,8 @@ class EncoderPush(Push):
                     self._ccw = self._ccw + 1
             else:
                 self.command(self._commands[1])
+                self._turns = self._turns + 1
+                self._cw = self._cw + 1
         elif event.turned_clockwise:  # rotate counter-clockwise
             if self.longpush:
                 if self.is_pressed():
@@ -1044,6 +1048,8 @@ class EncoderPush(Push):
                     self._ccw = self._ccw + 1
             else:
                 self.command(self._commands[2])
+                self._turns = self._turns - 1
+                self._ccw = self._ccw + 1
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
@@ -1258,12 +1264,12 @@ class EncoderValue(OnOff):
         if event.turned_counter_clockwise:  # rotate left
             x = max(self.value_min, x - self.step)
             ok = True
-            self._turns = self._turns - 1
+            self._turns = self._turns + 1
             self._cw = self._cw + 1
         elif event.turned_clockwise:  # rotate right
             x = min(self.value_max, x + self.step)
             ok = True
-            self._turns = self._turns + 1
+            self._turns = self._turns - 1
             self._ccw = self._ccw + 1
         else:
             logger.warning(f"{type(self).__name__} invalid event {event}")

@@ -1,11 +1,17 @@
 # This is the description of a deck's capabilities for a virtual deck
 #
+# This is an example of a regularly spaced deck
 ---
-type: Virtual XKeys 80
+name: Virtual XKeys 80
 driver: virtualdeck
 buttons:
   - name: 0
+    repeat: [10, 8]
     action: push
     feedback: image
-    image: [64, 64]
-    layout: [10, 8]
+    dimension: [64, 64]
+    layout:
+      offset: [20, 20]
+      spacing: [10, 10]
+background:
+  color: black

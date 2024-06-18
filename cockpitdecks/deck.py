@@ -13,7 +13,7 @@ from PIL import Image
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, DECK_FEEDBACK, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
 from cockpitdecks import Config
-from cockpitdecks.resources.color import convert_color
+from cockpitdecks.resources.color import convert_color, add_ext
 
 from .page import Page
 from .button import Button
@@ -103,6 +103,9 @@ class Deck(ABC):
         """
         l = self.layout if self.layout is not None else "-nolayout-"
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
+
+    def is_virtual_deck(self) -> bool:
+        return self.deck_type.is_virtual_deck()
 
     def get_deck_button_definition(self, idx):
         """Returns a deck's button definition from the deck type.
@@ -527,6 +530,8 @@ class DeckWithIcons(Deck):
         inside this deck's specific format.
         (We could build a set per deck model rather than deck instance.)
         """
+        if self.is_virtual_deck():
+            return
         cache_icon = self.get_attribute("cache-icon")
         logger.info(f"deck {self.name}: use cache {cache_icon}")
         dn = self.cockpit.icon_folder
@@ -552,6 +557,23 @@ class DeckWithIcons(Deck):
                     logger.info(f"deck {self.name}: {len(self.icons)} icons loaded")
         else:
             logger.warning(f"deck {self.name} has no device")
+
+    def get_icon(self, candidate_icon):
+        icon = None
+        for ext in [".png", ".jpg", ".jpeg"]:
+            fn = add_ext(candidate_icon, ext)
+            if icon is None and fn in self.icons.keys():
+                logger.debug(f"deck {self.name}: {type(self).__name__}: icon {fn} found")
+                return fn
+        # icon is still None
+        logger.warning(
+            f"deck {self.name}: {type(self).__name__}: icon not found {candidate_icon}, asking to cockpit..."
+        )  # , cockpit_icons={self.cockpit.icons.keys()}
+        return self.cockpit.get_icon(candidate_icon)
+
+    def get_icon_image(self, icon):
+        image = self.icons.get(icon)
+        return image if image is not None else self.cockpit.icons.get(icon)
 
     def get_icon_background(
         self,

@@ -1,11 +1,11 @@
 # This is the description of a deck's capabilities for a Elgato Streamdeck Mini device
 #
 ---
-type: Stream Deck Mini
+name: Stream Deck Mini
 driver: streamdeck
 buttons:
   - name: 0
     action: push
     feedback: image
-    image: [96, 96, 0, 0]
-    repeat: 6
+    dimension: [96, 96]
+    repeat: [3, 2]

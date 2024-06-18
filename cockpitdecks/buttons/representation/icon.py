@@ -4,9 +4,10 @@ All representations for Icon/image based.
 
 import logging
 
-from PIL import ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 from cockpitdecks.resources.color import (
+    TRANSPARENT_PNG_COLOR,
     convert_color,
     has_ext,
     add_ext,
@@ -26,6 +27,9 @@ DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 # ICON TYPE REPRESENTATION
 #
 #
+NO_ICON = "no-icon"
+
+
 class Icon(Representation):
 
     REPRESENTATION_NAME = "icon"
@@ -58,18 +62,16 @@ class Icon(Representation):
 
         self.icon = None
         deck = self.button.deck
+
         candidate_icon = config.get("icon")
         if candidate_icon is not None:
-            for ext in [".png", ".jpg", ".jpeg"]:
-                fn = add_ext(candidate_icon, ext)
-                if self.icon is None and fn in deck.icons.keys():
-                    self.icon = fn
-                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} found")
-            if self.icon is None:
-                logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {candidate_icon}")
+            self.icon = deck.get_icon(candidate_icon)
 
         if self.icon is None:
-            self.make_icon()
+            if not config.get(NO_ICON, False):
+                self.make_icon()
+            else:
+                logger.debug(f"button {self.button_name()}: requested to no do icon")
 
     def make_icon(self, force: bool = False):
         self.icon = self.button.get_id()
@@ -87,9 +89,10 @@ class Icon(Representation):
         if super().is_valid():  # so there is a button...
             if self.icon is not None:
                 if self.icon not in self.button.deck.icons.keys():
-                    logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
-                    print(self.button.deck.icons.keys())
-                    return False
+                    dummy = self.button.deck.get_icon(self.icon)
+                    if dummy is None:
+                        logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
+                        return False
                 return True
             if self.icon_color is not None:
                 return True
@@ -142,7 +145,7 @@ class Icon(Representation):
             dflt_text_position = self.button.get_attribute("default-label-position")
             if dflt_text_position is None:
                 logger.warning(f"button {self.button_name()}: no default label position, using cm")
-                dflt_text_position = "cm"  # middle of icon
+                dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
         text_position = config.get(f"{which_text}-position", dflt_text_position)
         if text_position[0] not in "lcr":
             text_position = DEFAULT_VALID_TEXT_POSITION
@@ -332,7 +335,7 @@ class Icon(Representation):
             )  # frame_position + (frame_position[0]+frame_content[0],frame_position[1]+frame_content[1])
             logger.debug(f"button {this_button}: {self.icon}, {frame}, {image}, {inside}, {box}")
             image.paste(inside, box)
-            image = deck.scale_icon_for_key(self.button, image)
+            image = deck.scale_icon_for_key(self.button.index, image)
             return image
         return inside
 
