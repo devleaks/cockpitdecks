@@ -13,10 +13,10 @@ buttons:
     action: [encoder, push]
     feedback: encoder-leds
     repeat: [8, 1]
-  - name: A
+  - name: a
     action: push
     feedback: led
-  - name: B
+  - name: b
     action: push
     feedback: led
   - name: slider
