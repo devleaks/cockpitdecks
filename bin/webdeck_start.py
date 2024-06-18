@@ -158,8 +158,10 @@ class CDProxy:
         # print("<<--- received from Cockpitdecks", code, deck_length, key_length, image_length, meta_length)
         deck = payload[:deck_length].decode("utf-8")
         key = payload[deck_length : deck_length + key_length].decode("utf-8")
-        image = payload[deck_length + key_length :deck_length + key_length + image_length]  # this is a stream of bytes that represent the file content as PNG image.
-        meta = json.loads(payload[deck_length + key_length + image_length:].decode("utf-8"))
+        image = payload[
+            deck_length + key_length : deck_length + key_length + image_length
+        ]  # this is a stream of bytes that represent the file content as PNG image.
+        meta = json.loads(payload[deck_length + key_length + image_length :].decode("utf-8"))
         # print("<<--- received from Cockpitdecks", code, deck_length, key_length, image_length, meta_length, deck, key, "<content>", meta)
         if code != 0:
             self.handle_code(deck=deck, code=code, data=image)
@@ -240,6 +242,8 @@ cdproxy.start()
 # ##################################
 # Flask Web Server (& WebSocket)
 #
+# Serves decks and their assets.
+# Proxy WebSockets to TCP Sockets
 #
 TEMPLATE_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "templates")
 ASSET_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "assets")
@@ -307,17 +311,4 @@ def cockpit():
     return ""
 
 
-try:
-    # threading.Thread(target=lambda: app.run(host=APP_HOST[0], port=APP_HOST[1], debug=True, use_reloader=False), name="Flask").start()
-    app.run(host=APP_HOST[0], port=APP_HOST[1])
-except KeyboardInterrupt:
-
-    def shutdown_server():
-        func = request.environ.get("werkzeug.server.shutdown")
-        if func is None:
-            raise RuntimeError("Not running with the Werkzeug Server")
-        func()
-
-    logger.warning("terminating (please wait)..")
-    cdproxy.stop()
-    shutdown_server()
+app.run(host=APP_HOST[0], port=APP_HOST[1])

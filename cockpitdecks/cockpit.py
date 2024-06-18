@@ -1162,7 +1162,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     t.join()
                 except RuntimeError:
                     pass
-            logger.info(f"terminated")
+            logger.info("terminated")
         else:
             logger.warning(f"no deck")
             if self.acpath is not None:
