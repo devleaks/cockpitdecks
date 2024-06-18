@@ -51,11 +51,16 @@ class CDProxy:
         self.rcv_event = None
         self.rcv_thread = None
 
+        self._err = []
+
         self.init()
 
     def init(self):
         if not self.inited:
             self.send_code(deck=__NAME__, code=3)  # request initialisation
+
+    def err_clear(self):
+        self._err = []
 
     def register_deck(self, deck: str, websocket):
         if deck not in self.vd_ws_conn:
@@ -85,7 +90,7 @@ class CDProxy:
     def send_code(self, deck: str, code: int) -> bool:
         deck_name = bytes(deck, "utf-8")
         payload = struct.pack(f"IIIII{len(deck_name)}s", code, 0, len(deck_name), 0, 0, deck_name)
-        print(">>>>> send_code", code, 0, len(deck_name), 0, 0, deck_name, "", "")
+        # print(">>>>> send_code", code, 0, len(deck_name), 0, 0, deck_name, "", "")
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -115,7 +120,7 @@ class CDProxy:
             key_name,
             data_bytes,
         )
-        print(">>>>> send_event", code, event, len(deck_name), len(key_name), deck, key, data)
+        # print(">>>>> send_event", code, event, len(deck_name), len(key_name), deck, key, data)
         # unpack in Cockpit.receive_event()
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -128,6 +133,7 @@ class CDProxy:
 
     def handle_code(self, deck: str, code: int, data: bytes):
         logger.debug(f"deck {deck} handling code {code}")
+        self.err_clear()
 
         # print("<<<<< handle_code", code, deck)
         if deck == __NAME__ and code == 4:  # Cockpitdecks started, we request initialisation
@@ -147,6 +153,26 @@ class CDProxy:
                 self._requested = False
                 logger.info(f".. got deck list")
             logger.info(f"inited: {(len(self.web_decks))} web decks received")
+            # We notify all decks. that there is a new definition
+            for deck in self.web_decks:
+                response = {"code": 1, "deck": deck, "meta": {}}
+                client_list = self.vd_ws_conn.get(deck)
+                closed_ws = []
+                if client_list is not None:
+                    for ws in client_list:  # send to each instance of this deck connected to this websocket server
+                        if self.is_closed(ws):
+                            closed_ws.append(ws)
+                            continue
+                        ws.send(json.dumps(response))
+                        logger.debug(f"sent for {deck}")
+                    if len(closed_ws) > 0:
+                        for ws in closed_ws:
+                            client_list.remove(ws)
+                else:
+                    if deck not in self._err:
+                        logger.warning(f"no client for {deck}")
+                        self._err.append(deck)
+            logger.info(f"inited: {(len(self.web_decks))}  decks notified")
 
     def is_closed(self, ws):
         return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # there must be a better way to do this...
@@ -180,7 +206,9 @@ class CDProxy:
                 for ws in closed_ws:
                     client_list.remove(ws)
         else:
-            logger.warning(f"no client for {deck}")
+            if deck not in self._err:
+                logger.warning(f"no client for {deck}")
+                self._err.append(deck)
 
     def receive_events(self):
         # Receives update events from Cockpitdecks
@@ -276,8 +304,16 @@ def deck(name: str):
     app.logger.debug(f"Starting deck {uname}")
     deck_desc = cdproxy.get_deck_description(uname)
     # Inject our contact address:
-    deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+    if type(deck_desc) is dict:
+        deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+    else:
+        app.logger.debug(f"deck desc is not a dict {deck_desc}")
     return render_template("deck.j2", deck=deck_desc)
+
+
+@app.route("/decktest")
+def deck_test():
+    return render_template("deck_test.j2")
 
 
 @app.route("/cockpit", websocket=True)  # How convenient...

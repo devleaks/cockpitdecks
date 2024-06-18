@@ -4,13 +4,13 @@
  * Capture interaction in the button and send it to Cockpitdecks.
  */
 
-// A   F E W   C O N S T A N T S
+// L O C A L   P A R A M E T E R S
 //
 // Conventions and codes
 //
-const HIGHLIGHT = "#ffffff80"  // white, opacity 80/FF
+const HIGHLIGHT = "#ffffff10"  //  white, opacity 40/FF
 
-const FLASH = "#00ffff"  // cyan, opacity 50%
+const FLASH = "#0f80ffb0"  // blue
 const FLASH_DURATION = 100
 
 const EDITOR_MODE = false
@@ -42,7 +42,7 @@ const OPT_PUSHPULL = "pushpull"
 
 // Uses:
 // function sendCode(deck, code)
-// sendEvent(deck, key, value, data)
+// sendEvent(deck, key, event, data)
 
 // https://stackoverflow.com/questions/2631001/test-for-existence-of-nested-javascript-object-key
 function checkNested(obj /*, level1, level2, ... levelN*/) {
@@ -258,8 +258,6 @@ class Encoder extends Konva.Circle {
             draggable: EDITOR_MODE
         });
 
-        console.log("install", config.position, config.dimension)
-
         this.config = config
         this.name = config.name
         this.container = container
@@ -436,7 +434,7 @@ class Touchscreen extends Konva.Rect {
             this.container.style.cursor = "grab"
             this.pressed = true
             const pos = this.getRelativePointerCoordinates();
-            console.log("pointerdown", pos, Date.now());
+            // console.log("pointerdown", pos, Date.now());
         });
 
         this.on("pointermove", function () {
@@ -444,7 +442,7 @@ class Touchscreen extends Konva.Rect {
                 const pos = this.getRelativePointerCoordinates();
                 this.sliding = true
                 this.container.style.cursor = "grabbing"
-                console.log("touchstart/pointermove", pos, Date.now());
+                // console.log("touchstart/pointermove", pos, Date.now());
                 sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.y, ts: Date.now()});
             }
         });
@@ -454,13 +452,13 @@ class Touchscreen extends Konva.Rect {
             if (! this.sliding) {
                 const pos = this.getRelativePointerCoordinates();
                 this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
-                console.log("tap/pointerup", pos, Date.now());
+                // console.log("tap/pointerup", pos, Date.now());
                 sendEvent(DECK.name, this.name, 14, {x: pos.x, y: pos.y, ts: Date.now()});
             } else {
                 const pos = this.getRelativePointerCoordinates();
                 this.sliding = false
                 this.container.style.cursor = "pointer"
-                console.log("touchend/pointerdown", pos, Date.now());
+                // console.log("touchend/pointerdown", pos, Date.now());
                 sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.y, ts: Date.now()});
             }
         });
@@ -469,7 +467,7 @@ class Touchscreen extends Konva.Rect {
         this.on("tap", function () {
             const pos = this.getRelativePointerCoordinates();
             this.flash(FLASH, HIGHLIGHT, FLASH_DURATION);
-            console.log("tap", pos, Date.now());
+            // console.log("tap", pos, Date.now());
             sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
@@ -480,14 +478,14 @@ class Touchscreen extends Konva.Rect {
         this.on("touchstart", function () {
             this.container.style.cursor = "grab";
             const pos = this.getRelativePointerCoordinates();
-            console.log("touchstart", pos, Date.now());
+            // console.log("touchstart", pos, Date.now());
             sendEvent(DECK.name, this.name, 10, {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
         this.on("touchend", function () {
             this.container.style.cursor = "pointer";
             const pos = this.getRelativePointerCoordinates();
-            console.log("touchend", pos, Date.now());
+            // console.log("touchend", pos, Date.now());
             sendEvent(DECK.name, this.name, 11, {x: pos.x, y: pos.y, ts: Date.now()});
         });
 
@@ -766,70 +764,24 @@ class Deck {
         this._config = config;
         this._stage = stage
 
+        this.deck_type = config[DECK_TYPE_DESCRIPTION];
+
         this.name = config.name;
         this.container = stage.container();
 
-        this.deck_type = config[DECK_TYPE_DESCRIPTION];
-        console.log("config", this.deck_type)
-
         this.buttons = {};
-        this.build(config);
+
+        this.build();
     }
 
-    add(button) {
-        this.buttons[button.name] = button
-    }
-
-    get_xy(key) {
-        const shape = this.buttons[key]
-        if (shape != undefined && shape != null) {
-            // console.log("get_xy", key, shape.x(), shape.y());
-            return {"x": shape.x(), "y": shape.y()}
-        }
-        console.log("get_xy", key, shape);
-        return {"x": 0, "y": 0};
-    }
-
-    build(layout) {
-        this.deck_type.buttons.forEach((button) => {
-            // decide which shape to use
-            // shape selected here will be an interactor only
-
-            if (button.actions.indexOf("encoder") > -1) {
-                //console.log("encoder", button)
-                this.add(new Encoder(button, this.container))
-
-            } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
-
-                if (button.dimension != undefined && button.dimension.constructor == Array) {
-                    //console.log("key", button)
-                    this.add(new Key(button, this.container))
-
-                } else {
-                    //console.log("keyround", button)
-                    this.add(new KeyRound(button, this.container))
-                }
-
-            } else if (button.actions.indexOf("swipe") > -1) {
-                //console.log("touchscreen", button)
-                this.add(new Touchscreen(button, this.container))
-
-            } else if (button.actions.indexOf("cursor") > -1) {
-                //console.log("slider", button)
-                this.add(new Slider(button, this.container))
-
-            } else if (button.actions.length == 0 && button.feedbacks.indexOf("led") > -1) {
-                console.log("led", button)
-                this.add(new LED(button, this.container))
-            }
-        });
-        // console.log("build", this.buttons)
-    }
-
-    set_background_layer(layer, stage) {
+    //
+    // Installation of layers
+    //
+    set_background_layer(layer) {
         // Add bacground image and resize deck around it.
         // Resize window as well. Cannot get rid of top bar... (adds 24px)
         const extra_space = EDITOR_MODE ? 2 * TITLE_BAR_HEIGHT : TITLE_BAR_HEIGHT;
+        var stage = this._stage;
 
         function set_default_size(container, sizes, color) {
             container.style["border"] = "1px solid "+color;
@@ -897,9 +849,63 @@ class Deck {
         // console.log("set_interaction_layer", this.buttons)
     }
 
-    save() {
-        const buttons = this.buttons.reduce((acc, val) => acc.push(val), Array());
-        console.log(buttons);
+    set_image_layer(layer) {
+        this.image_layer = layer
+        // console.log("set_image_layer", this.buttons)
+    }
+
+    //
+    // Building deck from buttons
+    //
+    build() {
+        this.deck_type.buttons.forEach((button) => {
+            // decide which shape to use
+            // shape selected here will be an interactor only
+
+            if (button.actions.indexOf("encoder") > -1) {
+                //console.log("encoder", button)
+                this.add(new Encoder(button, this.container))
+
+            } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
+
+                if (button.dimension != undefined && button.dimension.constructor == Array) {
+                    //console.log("key", button)
+                    this.add(new Key(button, this.container))
+
+                } else {
+                    //console.log("keyround", button)
+                    this.add(new KeyRound(button, this.container))
+                }
+
+            } else if (button.actions.indexOf("swipe") > -1) {
+                //console.log("touchscreen", button)
+                this.add(new Touchscreen(button, this.container))
+
+            } else if (button.actions.indexOf("cursor") > -1) {
+                //console.log("slider", button)
+                this.add(new Slider(button, this.container))
+
+            } else if (button.actions.length == 0 && button.feedbacks.indexOf("led") > -1) {
+                console.log("led", button)
+                this.add(new LED(button, this.container))
+            }
+        });
+        // console.log("build", this.buttons)
+    }
+
+    add(button) {
+        // button.addName(button.name)
+        this.buttons[button.name] = button
+    }
+
+    get_xy(key) {
+        const shape = this.buttons[key]
+        if (shape != undefined && shape != null) {
+            // console.log("get_xy", key, shape.x(), shape.y());
+            return {"x": shape.x(), "y": shape.y()}
+        }
+        console.log("get_xy no shape", key, shape);
+        return {"x": 0, "y": 0};
     }
 
     get_hardware_image_offset(key) {
@@ -917,22 +923,35 @@ class Deck {
         } else {
             console.log("could not find key", key)
         }
-        return {x: 0, y: 0}
+        return 
     }
 
     set_key_image(key, image, layer) {
-        let coords = this.get_xy(key);
-        let offset = this.get_hardware_image_offset(key);
+        var offset = {x: 0, y: 0}
+        const shape = this.buttons[key]
+        if (shape == undefined || shape == null) {
+            console.log("no shape", key);
+            return ;
+        }
+        if (checkNested(shape.config, "layout", "hardware", "type")) {
+            if (shape.config.dimension != undefined && shape.config.dimension.constructor == Number) {
+                offset = {x: -shape.radius(), y: -shape.radius()}
+            }
+        }
         let buttonImage = new Image();
         buttonImage.onload = function () {
             let button = new Konva.Image({
-                x: coords.x + offset.x,
-                y: coords.y + offset.y,
+                x: shape.x() + offset.x,
+                y: shape.y() + offset.y,
                 image: buttonImage
             });
             layer.add(button);
         };
-        buttonImage.src = "data:image/jpeg;base64,"+image;
+        buttonImage.src = "data:image/jpeg;base64," + image;
     }
 
+    save() {
+        const buttons = this.buttons.reduce((acc, val) => acc.push(val), Array());
+        console.log(buttons);
+    }
 }

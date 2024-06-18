@@ -916,6 +916,16 @@ class Button(DatarefListener, DatarefSetListener):
             return None
         return self._hardware_representation.render()
 
+    def get_hardware_metadata(self):
+        """
+        Called from deck to get what's necessary for displaying this button on the deck.
+        It can be an image, a color, a binary value on/off...
+        """
+        if not self._hardware_representation.is_valid():
+            logger.warning(f"button {self.name}: hardware representation is not valid")
+            return {}
+        return self._hardware_representation.get_meta()
+
     def get_vibration(self):
         return self.get_representation().get_vibration()
 

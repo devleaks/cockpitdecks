@@ -33,7 +33,46 @@ NO_ICON = "no-icon"
 #
 # GENERIC
 #
-class VirtualEncoder(Icon):
+class HardwareIcon(Icon):
+    """Uniform color or texture icon
+
+    Attributes:
+        REPRESENTATION_NAME: "virtual-encoder"
+    """
+
+    REPRESENTATION_NAME = "hardware-icon"
+
+    def __init__(self, config: dict, button: "Button"):
+        config[NO_ICON] = True
+        Icon.__init__(self, config=config, button=button)
+
+        self.hardware = self.button._def.hardware_representation
+        self.highlight_color = self.hardware.get("highlight-color", "#ffffff10")
+        self.flash_color = self.hardware.get("flash-color", "#0f80ffb0")
+        self.flash_duration = self.hardware.get("flash-duration", 100)  # msec
+
+        dimension = self.button._def.dimension
+        if type(dimension) in (int, float):
+            self.radius = dimension
+            self.width = 2 * dimension
+            self.height = 2 * dimension
+        else:
+            self.radius = 0
+            self.width = dimension[0]
+            self.height = dimension[1]
+
+
+    def get_meta(self):
+        return {
+            "name": self.REPRESENTATION_NAME,
+            "hardware": self.hardware,
+            "highlight-color": self.highlight_color,
+            "flash-color": self.flash_color,
+            "flash-duration": self.flash_duration,
+        }
+
+
+class VirtualEncoder(HardwareIcon):
     """Uniform color or texture icon
 
     Attributes:
@@ -43,17 +82,15 @@ class VirtualEncoder(Icon):
     REPRESENTATION_NAME = "virtual-encoder"
 
     def __init__(self, config: dict, button: "Button"):
-        config[NO_ICON] = True
-        Icon.__init__(self, config=config, button=button)
-        self.radius = self.button._def.dimension
-        self.color = "white"
-        self.rotation = 0
-        self.rotation_step = 10
-        self.knob_fill_color = "black"
-        self.knob_stroke_color = "silver"
-        self.knob_stroke_width = 1
-        self.mark_fill_color = "silver"
-        self.mark_size = [8, 3]
+        HardwareIcon.__init__(self, config=config, button=button)
+
+        self.rotation = self.hardware.get("rotation-start", 0)
+        self.rotation_step = self.hardware.get("rotation-step", 10)
+        self.knob_fill_color = self.hardware.get("knob-fill-color", "black")
+        self.knob_stroke_color = self.hardware.get("knob-stroke-color", "silver")
+        self.knob_stroke_width = self.hardware.get("knob-stroke-width", 1)
+        self.mark_fill_color = self.hardware.get("mark-fill-color", "silver")
+        self.mark_size = self.hardware.get("mark-size", 1)
 
     def get_image(self):
         """
@@ -94,7 +131,7 @@ class VirtualEncoder(Icon):
 #
 # X-TOUCH MINI
 #
-class VirtualXTMLED(Icon):
+class VirtualXTMLED(HardwareIcon):
     """Uniform color or texture icon, arbitrary size
 
     Attributes:
@@ -104,12 +141,10 @@ class VirtualXTMLED(Icon):
     REPRESENTATION_NAME = "virtual-xtm-led"
 
     def __init__(self, config: dict, button: "Button"):
-        config[NO_ICON] = True
-        Icon.__init__(self, config=config, button=button)
-        self.width = self.button._def.dimension[0]
-        self.height = self.button._def.dimension[1]
-        self.color = (207, 229, 149)
-        self.off_color = "ghostwhite"
+        HardwareIcon.__init__(self, config=config, button=button)
+
+        self.color = self.hardware.get("color", (207, 229, 149))
+        self.off_color = self.hardware.get("off-color", "ghostwhite")
 
     def get_image(self):
         """
@@ -136,7 +171,9 @@ class VirtualXTMMCLED(VirtualXTMLED):
 
     def __init__(self, config: dict, button: "Button"):
         VirtualXTMLED.__init__(self, config=config, button=button)
-        self.color = "green"
+
+        self.color = self.hardware.get("color", "green")
+        self.off_color = self.hardware.get("off-color", (30, 30, 30))
 
     def describe(self) -> str:
         return "The representation places a specific encoder led arragement for X-Touch Mini encoders."
@@ -153,18 +190,22 @@ class VirtualXTMEncoderLED(VirtualEncoder):
 
     def __init__(self, config: dict, button: "Button"):
         VirtualEncoder.__init__(self, config=config, button=button)
-        self.width = 2 * self.button._def.dimension  # final dimension, 2 x radius of circle
-        self.height = self.width
+
+        self.width = 2 * self.radius  # final dimension, 2 x radius of circle
+        self.height = self.width  # force final image to be a square icon with. circle in it
+
         self.ltot = int(ICON_SIZE / 2)  # button will be created in ICON_SIZE x ICON_SIZE
         self.lext = 120
         self.lint = 84
         self.lstart = -130  # angles
         self.lend = -self.lstart
-        self.color = "gold"
-        self.off_color = (30, 30, 30)
         self.lwidth = 12  # led
         self.lheight = 20
         self.rounded_corder = int(self.lwidth / 2)
+
+        self.color = self.hardware.get("color", "gold")
+        self.off_color = self.hardware.get("off-color", (30, 30, 30))
+
         self.led_count = 13
         self.mackie = True  # cannot change it for xtouchmini package (does not work otherwise)
 
@@ -245,7 +286,7 @@ class VirtualXTMEncoderLED(VirtualEncoder):
 #
 # LOUPEDECKLIVE
 #
-class VirtualLLColoredButton(Icon):
+class VirtualLLColoredButton(HardwareIcon):
     """Uniform color or texture icon
 
     Attributes:
@@ -255,12 +296,11 @@ class VirtualLLColoredButton(Icon):
     REPRESENTATION_NAME = "virtual-ll-coloredbutton"
 
     def __init__(self, config: dict, button: "Button"):
-        config[NO_ICON] = True
-        Icon.__init__(self, config=config, button=button)
-        self.radius = self.button._def.dimension
-        self.knob_fill_color = "black"
-        self.knob_stroke_color = "white"
-        self.knob_stroke_width = 1
+        HardwareIcon.__init__(self, config=config, button=button)
+
+        self.knob_fill_color = self.hardware.get("knob-fill-color", "#21211f")
+        self.knob_stroke_color = self.hardware.get("knob-stroke-color", "black")
+        self.knob_stroke_width = self.hardware.get("knob-stroke-width", 1)
 
         self.number = int(self.button.num_index)  # static
         self.number_color = self.button._representation.render()

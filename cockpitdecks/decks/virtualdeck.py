@@ -243,7 +243,7 @@ class VirtualDeck(DeckWithIcons):
             if WEB_LOG:
                 logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
 
-    def _send_hardware_key_image_to_device(self, key, image):
+    def _send_hardware_key_image_to_device(self, key, image, metadata):
         def add_corners(im, rad):
             circle = Image.new("L", (rad * 2, rad * 2), 0)
             draw = ImageDraw.Draw(circle)
@@ -274,7 +274,7 @@ class VirtualDeck(DeckWithIcons):
         code = 0
         deck_name = bytes(self.name, "utf-8")
         key_name = bytes(str(key), "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()}  # dummy
+        meta_list = {"ts": datetime.now().timestamp()} | metadata
         meta_json = json.dumps(meta_list)
         meta_bytes = bytes(meta_json, "utf-8")
         payload = struct.pack(
@@ -334,7 +334,9 @@ class VirtualDeck(DeckWithIcons):
             logger.warning("button returned no hardware image")
             return
 
-        self._send_hardware_key_image_to_device(button.index, image)
+        metadata = button.get_hardware_metadata()
+
+        self._send_hardware_key_image_to_device(button.index, image, metadata)
 
     def print_page(self, page: Page):
         """

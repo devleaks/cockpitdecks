@@ -42,10 +42,10 @@ var stage = new Konva.Stage({
 });
 
 // create layers to cleanly separate content by function
-var background_layer = new Konva.Layer();   // Background image or iniform color
-var hardware_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
-var interaction_layer = new Konva.Layer();  // Shapes with events attached to it
-var image_layer = new Konva.Layer();        // Where Cockpitdecks draws its icons/images
+var background_layer = new Konva.Layer({name: "background"});   // Background image or iniform color
+var hardware_layer = new Konva.Layer({name: "hardware"});       // Where Cockpitdecks draws its icons/images
+var interaction_layer = new Konva.Layer({name: "interaction"}); // Shapes with events attached to it
+var image_layer = new Konva.Layer({name: "image"});             // Where Cockpitdecks draws its icons/images
 
 // add the layer to the stage
 stage.add(background_layer);
@@ -61,9 +61,12 @@ stage.add(interaction_layer);
 const DECK = {{ deck|tojson(indent=2) }};
 
 deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
-deck.set_background_layer(background_layer, stage);
+
+// add the layer to the deck
+deck.set_background_layer(background_layer);
 deck.set_interaction_layer(interaction_layer);
 deck.set_hardware_image_layer(hardware_layer);
+deck.set_image_layer(image_layer);
 
 if (DEBUG) {
     var debug_elem = document.createElement("div");
@@ -77,16 +80,14 @@ if (DEBUG) {
 //
 // WebSocket initialisation and setup
 //
-ws_url = DECK.ws_url;
-
-if (ws_url == undefined) {
+if (DECK.ws_url == undefined) {
     alert("No WebSocket address. Please start Cockpitdecks first.")
 }
 
-var ws = new WebSocket(ws_url);
+var ws = new WebSocket(DECK.ws_url);
 
 ws.onopen = (event) => {
-    console.log("connection opened", ws_url);
+    console.log("connection opened", DECK.ws_url);
     // sends its name on new connection to help identify
     sendCode(DECK.name, 1);
 };
@@ -97,14 +98,12 @@ ws.onopen = (event) => {
 ws.onmessage = (event) => {
     // console.log("data received");
     var data = JSON.parse(event.data);
-    // console.log("code received", data.code);
+    console.log("code received", data.code, data.meta);
     if (data.code == 0) {
-        // console.log("loading image (key)..", data.key);
         deck.set_key_image(data.key, data.image, image_layer);
-        // console.log("..done")
     } else if (data.code == 1) {
-        console.log("received initialisation code", data.code);
-        // init here, later if necessary
+        console.log("received initialisation code, requesting page reload", data.code);
+        sendCode(DECK.name, 1);
     } else {
         console.log("unhandled code received, uninterpreted", data.code);
     }

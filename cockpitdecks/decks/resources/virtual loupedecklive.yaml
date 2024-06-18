@@ -10,8 +10,8 @@ buttons:
     feedback: image
     dimension: [90, 90]
     layout:
-      offset: [182, 61]
-      spacing: [0, 0]
+      offset: [181, 59]
+      spacing: [1, 1]
     options: corner_radius=8
   - name: 0
     prefix: e
@@ -48,7 +48,7 @@ buttons:
     feedback: image
     dimension: [60, 270]
     layout:
-      offset: [122, 61]
+      offset: [120, 59]
     options: corner_radius=4
   - name: right
     name_int: 2003
@@ -56,7 +56,7 @@ buttons:
     feedback: image
     dimension: [60, 270]
     layout:
-      offset: [542, 61]
+      offset: [546, 59]
     options: corner_radius=4
   # - name: center
   #   name_int: 2002
