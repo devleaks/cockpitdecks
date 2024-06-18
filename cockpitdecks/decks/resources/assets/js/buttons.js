@@ -365,8 +365,8 @@ class Encoder extends Konva.Circle {
         // layer.add(new Konva.Rect({
         //     x: this.config.position[0],
         //     y: this.config.position[1],
-        //     width: 10,
-        //     height: 10,
+        //     width: 48,
+        //     height: 48,
         //     stroke: "red",
         //     strokeWidth: 1,
         // }));
@@ -545,8 +545,7 @@ class SliderHandle extends Konva.Rect {
             width: config.handle[0],
             height: config.handle[1],
             cornerRadius: config.handle[2] != undefined ? config.handle[2] : 4,
-            stroke: "white",
-            strokeWidth: 1,
+            fill: "lightgrey",
             draggable: true
         });
 
@@ -638,8 +637,7 @@ class SliderHandle extends Konva.Rect {
                 this.y(this.pmax)
             }
         }
-    } 
-
+    }
 }
 
 

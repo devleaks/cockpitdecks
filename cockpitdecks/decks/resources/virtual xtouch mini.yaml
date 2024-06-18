@@ -9,11 +9,11 @@ buttons:
     prefix: e
     action: [encoder, push]
     feedback: [encoder-leds]
-    dimension: 21
+    dimension: 48
     repeat: [8, 1]
     layout:
       offset: [100, 100]
-      spacing: [74, 0]
+      spacing: [20, 0]
       hardware:
         type: virtual-xtm-encoderled
   # Two rows of 8 LED push button
