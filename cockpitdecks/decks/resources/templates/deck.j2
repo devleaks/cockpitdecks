@@ -60,7 +60,7 @@ stage.add(interaction_layer);
 // Transfer from Cockpitdecks through Jinja2, nice output
 const DECK = {{ deck|tojson(indent=2) }};
 
-deck = new Deck(DECK, deck_elem);  // we need to pass the div element to style it (cursor)
+deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
 deck.set_background_layer(background_layer, stage);
 deck.set_interaction_layer(interaction_layer);
 deck.set_hardware_image_layer(hardware_layer);

@@ -760,13 +760,14 @@ class Overlay {  // later, idea: overlay text or image on top of background (log
 //
 class Deck {
 
-    constructor(config, container) {
+    constructor(config, stage) {
         console.log(config)
 
         this._config = config;
+        this._stage = stage
 
         this.name = config.name;
-        this.container = container;
+        this.container = stage.container();
 
         this.deck_type = config[DECK_TYPE_DESCRIPTION];
         console.log("config", this.deck_type)
@@ -839,6 +840,8 @@ class Deck {
             window.resizeTo(width,height + extra_space);
         }
 
+        this.background_layer = layer
+
         const background = this.deck_type.background
         if (background == undefined || background == null) {
             console.log("no background", this.deck_type)
@@ -880,11 +883,12 @@ class Deck {
     }
 
     set_hardware_image_layer(layer) {
-        this.hardware_images = layer
+        this.hardware_layer = layer
         // console.log("set_hardware_image_layer", this.buttons)
     }
 
     set_interaction_layer(layer) {
+        this.interaction_layer = layer
         for (let name in this.buttons) {
             if(this.buttons.hasOwnProperty(name)) {
                 this.buttons[name].add_to_layer(layer);
