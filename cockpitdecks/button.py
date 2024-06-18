@@ -906,6 +906,9 @@ class Button(DatarefListener, DatarefSetListener):
         self._repres = self._repres + 1
         return self._representation.render()
 
+    def get_representation_metadata(self):
+        return {}
+
     def get_hardware_representation(self):
         """
         Called from deck to get what's necessary for displaying this button on the deck.
@@ -916,7 +919,7 @@ class Button(DatarefListener, DatarefSetListener):
             return None
         return self._hardware_representation.render()
 
-    def get_hardware_metadata(self):
+    def get_hardware_representation_metadata(self):
         """
         Called from deck to get what's necessary for displaying this button on the deck.
         It can be an image, a color, a binary value on/off...

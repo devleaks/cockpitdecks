@@ -334,7 +334,7 @@ class VirtualDeck(DeckWithIcons):
             logger.warning("button returned no hardware image")
             return
 
-        metadata = button.get_hardware_metadata()
+        metadata = button.get_hardware_representation_metadata()
 
         self._send_hardware_key_image_to_device(button.index, image, metadata)
 

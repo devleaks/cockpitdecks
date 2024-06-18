@@ -16,6 +16,7 @@ const FLASH_DURATION = 100
 const EDITOR_MODE = false
 
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
+const PRESENTATION_DEFAULTS = "presentation-default"
 
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
 
@@ -26,6 +27,13 @@ const TITLE_BAR_HEIGHT = 24
 const OPTIONS = "options"
 const OPT_CORNER_RADIUS = "corner_radius"
 const OPT_PUSHPULL = "pushpull"
+
+var DEFAULTS = {
+    hightlight: HIGHLIGHT,
+    flash:  FLASH,
+    flash_duration: FLASH_DURATION,
+    deck_bg_image_path: DECK_BACKGROUND_IMAGE_PATH
+}
 
 // Event codes
 // 0 = Push/press RELEASE
@@ -765,6 +773,8 @@ class Deck {
         this._stage = stage
 
         this.deck_type = config[DECK_TYPE_DESCRIPTION];
+        this.presentation_defaults = Object.assign({}, DEFAULTS, config[PRESENTATION_DEFAULTS]);
+        console.log("presentation defaults", this.presentation_defaults)
 
         this.name = config.name;
         this.container = stage.container();

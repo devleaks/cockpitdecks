@@ -98,7 +98,7 @@ ws.onopen = (event) => {
 ws.onmessage = (event) => {
     // console.log("data received");
     var data = JSON.parse(event.data);
-    console.log("code received", data.code, data.meta);
+    // console.log("code received", data.code, data.meta);
     if (data.code == 0) {
         deck.set_key_image(data.key, data.image, image_layer);
     } else if (data.code == 1) {
