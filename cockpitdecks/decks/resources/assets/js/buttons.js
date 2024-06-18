@@ -4,15 +4,10 @@
  * Capture interaction in the button and send it to Cockpitdecks.
  */
 
-// L O C A L   P A R A M E T E R S
+// P A R A M E T E R S
 //
-// Conventions and codes
+// LOCAL GLOBALS (should not be changed)
 //
-const HIGHLIGHT = "#ffffff10"  //  white, opacity 40/FF
-
-const FLASH = "#0f80ffb0"  // blue
-const FLASH_DURATION = 100
-
 const EDITOR_MODE = false
 
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
@@ -28,12 +23,16 @@ const OPTIONS = "options"
 const OPT_CORNER_RADIUS = "corner_radius"
 const OPT_PUSHPULL = "pushpull"
 
-var DEFAULTS = {
-    hightlight: HIGHLIGHT,
-    flash:  FLASH,
-    flash_duration: FLASH_DURATION,
-    deck_bg_image_path: DECK_BACKGROUND_IMAGE_PATH
+//
+// USER SETTABLE GLOBALS
+//
+const DEFAULT_USER_PREFERENCES = {
+    highlight: "#ffffff10",
+    flash:  "#0f80ffb0",
+    flash_duration: 100 
 }
+
+var USER_PREFERENCES = DEFAULT_USER_PREFERENCES
 
 // Event codes
 // 0 = Push/press RELEASE
@@ -90,7 +89,7 @@ class Key extends Konva.Rect {
             width: config.dimension[0],
             height: config.dimension[1],
             cornerRadius: corner_radius,
-            stroke: HIGHLIGHT,
+            stroke: USER_PREFERENCES.highlight,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -111,21 +110,21 @@ class Key extends Konva.Rect {
 
         this.on("pointerout", function () {
             this.down = false
-            this.stroke(HIGHLIGHT)
+            this.stroke(USER_PREFERENCES.highlight)
             this.container.style.cursor = "auto"
         });
 
         // Clicks
         this.on("pointerdown", function () {
             this.down = true
-            this.stroke(FLASH)
+            this.stroke(USER_PREFERENCES.flash)
             const pos = this.getRelativePointerCoordinates();
             sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()})
         });
 
         this.on("pointerup", function () {
             this.down = false
-            this.stroke(HIGHLIGHT)
+            this.stroke(USER_PREFERENCES.highlight)
             const pos = this.getRelativePointerCoordinates();
             sendEvent(DECK.name, this.name, 0, {x: pos.x, y: pos.y, ts: Date.now()})
         });
@@ -137,7 +136,7 @@ class Key extends Konva.Rect {
         this.stroke(colorin)
         setTimeout(function() {
             that.stroke(colorout)
-        }, FLASH_DURATION)
+        }, USER_PREFERENCES.flash_duration)
     }
 
     add_to_layer(layer) {
@@ -178,7 +177,7 @@ class KeyRound extends Konva.Circle {
             x: config.position[0],
             y: config.position[1],
             radius: config.dimension, // only one value
-            stroke: HIGHLIGHT,
+            stroke: USER_PREFERENCES.highlight,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -192,28 +191,28 @@ class KeyRound extends Konva.Circle {
         // Hover
         this.on("pointerover", function () {
             if (this.down) {
-                this.stroke(FLASH)
+                this.stroke(USER_PREFERENCES.flash)
             }
             this.container.style.cursor = "pointer"
         });
 
         this.on("pointerout", function () {
             this.down = false
-            this.stroke(HIGHLIGHT)
+            this.stroke(USER_PREFERENCES.highlight)
             this.container.style.cursor = "auto"
         });
 
         // Clicks
         this.on("pointerdown", function () {
             this.down = true
-            this.stroke(FLASH)
+            this.stroke(USER_PREFERENCES.flash)
             const pos = this.getRelativePointerCoordinates();
             sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()})
         });
 
         this.on("pointerup", function () {
             this.down = false
-            this.stroke(HIGHLIGHT)
+            this.stroke(USER_PREFERENCES.highlight)
             const pos = this.getRelativePointerCoordinates();
             sendEvent(DECK.name, this.name, 0, {x: pos.x, y: pos.y, ts: Date.now()})
         });
@@ -261,10 +260,12 @@ class Encoder extends Konva.Circle {
             x: config.position[0],
             y: config.position[1],
             radius: config.dimension, // only one value
-            stroke: HIGHLIGHT,
+            stroke: USER_PREFERENCES.highlight,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
+
+        console.log("user prefs", USER_PREFERENCES)
 
         this.config = config
         this.name = config.name
@@ -281,13 +282,13 @@ class Encoder extends Konva.Circle {
         // Hover
         this.on("pointerout", function () {
             this.down = false
-            this.stroke(HIGHLIGHT)
+            this.stroke(USER_PREFERENCES.highlight)
             this.container.style.cursor = "auto"
         });
 
         this.on("pointermove", function () {
             if (this.down) {
-                this.stroke(FLASH)
+                this.stroke(USER_PREFERENCES.flash)
             }
             switch (this.value()) { // SVG cursor origin is on middle top
             case 1:
@@ -308,7 +309,7 @@ class Encoder extends Konva.Circle {
         // Clicks
         this.on("pointerdown", function () {
             this.down = true
-            this.stroke(FLASH)
+            this.stroke(USER_PREFERENCES.flash)
             const pos = this.getRelativePointerCoordinates();
             // const pos2 = this.layer.getRelativePointerPosition() // , mx: pos2.x, my: pos2.y, cx: this.x(), cy: this.y()
             sendEvent(DECK.name, this.name, this.value(), {x: pos.x, y: pos.y, ts: Date.now()});
@@ -316,7 +317,7 @@ class Encoder extends Konva.Circle {
 
         this.on("pointerup", function () {
             this.down = false
-            this.stroke(HIGHLIGHT)
+            this.stroke(USER_PREFERENCES.highlight)
             // sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
         });
 
@@ -416,7 +417,7 @@ class Touchscreen extends Konva.Rect {
             width: config.dimension[0],
             height: config.dimension[1],
             cornerRadius: corner_radius,
-            stroke: HIGHLIGHT,
+            stroke: USER_PREFERENCES.highlight,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -459,7 +460,7 @@ class Touchscreen extends Konva.Rect {
             this.pressed = false
             if (! this.sliding) {
                 const pos = this.getRelativePointerCoordinates();
-                this.flash(FLASH, HIGHLIGHT, FLASH_DURATION)
+                this.flash(USER_PREFERENCES.flash, USER_PREFERENCES.highlight, USER_PREFERENCES.flash_duration)
                 // console.log("tap/pointerup", pos, Date.now());
                 sendEvent(DECK.name, this.name, 14, {x: pos.x, y: pos.y, ts: Date.now()});
             } else {
@@ -474,7 +475,7 @@ class Touchscreen extends Konva.Rect {
         // Touch events: touchstart, touchmove, touchend, tap
         this.on("tap", function () {
             const pos = this.getRelativePointerCoordinates();
-            this.flash(FLASH, HIGHLIGHT, FLASH_DURATION);
+            this.flash(USER_PREFERENCES.flash, USER_PREFERENCES.highlight, USER_PREFERENCES.flash_duration);
             // console.log("tap", pos, Date.now());
             sendEvent(DECK.name, this.name, 1, {x: pos.x, y: pos.y, ts: Date.now()});
         });
@@ -662,7 +663,7 @@ class Slider extends Konva.Rect {
             width: config.dimension[0],
             height: config.dimension[1],
             cornerRadius: corner_radius,
-            stroke: HIGHLIGHT,
+            stroke: USER_PREFERENCES.highlight,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -714,7 +715,7 @@ class LED extends Konva.Rect {
             width: config.dimension[0],
             height: config.dimension[1],
             cornerRadius: corner_radius,
-            stroke: HIGHLIGHT,
+            stroke: USER_PREFERENCES.highlight,
             strokeWidth: 1,
             draggable: EDITOR_MODE
         });
@@ -773,8 +774,8 @@ class Deck {
         this._stage = stage
 
         this.deck_type = config[DECK_TYPE_DESCRIPTION];
-        this.presentation_defaults = Object.assign({}, DEFAULTS, config[PRESENTATION_DEFAULTS]);
-        console.log("presentation defaults", this.presentation_defaults)
+        USER_PREFERENCES = Object.assign({}, DEFAULT_USER_PREFERENCES, config[PRESENTATION_DEFAULTS]);
+        console.log("user preferences", USER_PREFERENCES)
 
         this.name = config.name;
         this.container = stage.container();

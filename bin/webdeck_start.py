@@ -36,6 +36,7 @@ class CDProxy:
         self.inited = False
         self._requested = False
         self.web_decks = {}
+        self.defaults = {}
         self.vd_ws_conn = {}
 
         # Address and port of Flask communication channel
@@ -146,7 +147,9 @@ class CDProxy:
             ##
         if deck == __NAME__ and code == 3:  # receive initialisation, install web decks
             datastr = data.decode("utf-8")
-            self.web_decks = json.loads(datastr)
+            config = json.loads(datastr)
+            self.web_decks = config["webdecks"]
+            self.defaults = config["virtual-deck-defaults"]
             # logger.debug(self.web_decks)
             self.inited = True
             if self._requested:
@@ -306,14 +309,10 @@ def deck(name: str):
     # Inject our contact address:
     if type(deck_desc) is dict:
         deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+        deck_desc["presentation-default"] = cdproxy.defaults
     else:
         app.logger.debug(f"deck desc is not a dict {deck_desc}")
     return render_template("deck.j2", deck=deck_desc)
-
-
-@app.route("/decktest")
-def deck_test():
-    return render_template("deck_test.j2")
 
 
 @app.route("/cockpit", websocket=True)  # How convenient...

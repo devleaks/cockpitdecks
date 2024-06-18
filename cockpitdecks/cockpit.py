@@ -887,11 +887,10 @@ class Cockpit(DatarefListener, CockpitBase):
             if CONFIG_KW.LAYOUT.value in deck:  # has a decor, must be a web deck
                 webdeck_list[name] = deck
         # add default values
-        payload = {
+        return {
             "virtual-deck-defaults": self.get_attribute("virtual-deck-defaults"),
             "webdecks": webdeck_list
         }
-        return webdeck_list
 
     def handle_code(self, code: int, name: str):
         logger.debug(f"received code {name}:{code}")
