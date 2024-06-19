@@ -103,7 +103,8 @@ ws.onmessage = (event) => {
         deck.set_key_image(data.key, data.image, image_layer);
     } else if (data.code == 1) {
         console.log("received initialisation code, requesting page reload", data.code);
-        sendCode(DECK.name, 1);
+        window.location.reload()
+        // sendCode(DECK.name, 1);
     } else {
         console.log("unhandled code received, uninterpreted", data.code);
     }
@@ -124,23 +125,15 @@ ws.error = (event) => {
 //
 // Send code to Cockpitdecks
 function sendCode(deck, code) {
-    payload = {"code": code, "deck": deck};
-    var message = JSON.stringify(payload);
-    ws.send(message);
-    console.log("sent code", deck, code);
+    ws.send(JSON.stringify({"code": code, "deck": deck}));
+    // console.log("sent code", deck, code);
 }
 
 //
 // Send event to Cockpitdecks
 function sendEvent(deck, key, value, data) {
-    if (key == -1) {
-        console.log("probably not clicked on a key");
-    } else {
-        payload = {"code": 0, "deck": deck, "key": key, "event": value, "data": data};
-        var message = JSON.stringify(payload);
-        ws.send(message);
-        console.log("sent event", message);
-    }
+    ws.send(JSON.stringify({"code": 0, "deck": deck, "key": key, "event": value, "data": data}));
+    // console.log("sent event", message);
 }
 </script>
 </body>

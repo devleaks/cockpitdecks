@@ -1,7 +1,7 @@
 # This is the description of a deck's capabilities for a virtual deck
 #
 ---
-name: Streamdeck +
+name: Virtual Streamdeck +
 driver: virtualdeck
 buttons:
   - name: 0

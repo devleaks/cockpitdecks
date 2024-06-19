@@ -13,9 +13,6 @@ from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, ICON_SIZE
 from cockpitdecks.resources.color import (
     TRANSPARENT_PNG_COLOR,
     convert_color,
-    has_ext,
-    add_ext,
-    DEFAULT_COLOR,
 )
 from .icon import Icon
 
@@ -28,7 +25,7 @@ NO_ICON = "no-icon"
 
 # ####################################################
 #
-# SPECIAL VIRTUAL WEB DECKS REPRESENTATIONS
+# SPECIAL VIRTUAL WEB DECKS REPRESENTATIONS FOR «HARDWARE» PARTS (non images)
 #
 #
 # GENERIC
@@ -127,17 +124,14 @@ class VirtualEncoder(HardwareIcon):
         return "The representation places a rotating virtual enconder."
 
 
-#
-# X-TOUCH MINI
-#
-class VirtualXTMLED(HardwareIcon):
+class VirtualLED(HardwareIcon):
     """Uniform color or texture icon, arbitrary size
 
     Attributes:
         REPRESENTATION_NAME: "virtual-xtm-led"
     """
 
-    REPRESENTATION_NAME = "virtual-xtm-led"
+    REPRESENTATION_NAME = "virtual-led"
 
     def __init__(self, config: dict, button: "Button"):
         HardwareIcon.__init__(self, config=config, button=button)
@@ -156,10 +150,33 @@ class VirtualXTMLED(HardwareIcon):
         return image
 
     def describe(self) -> str:
+        return "The representation return a uniform color icon at the position of the hardware led on or off."
+
+
+# ####################################################
+#
+# X-TOUCH MINI
+#
+class VirtualXTMLED(VirtualLED):
+    """Uniform color or texture icon, arbitrary size
+
+    Attributes:
+        REPRESENTATION_NAME: "virtual-xtm-led"
+    """
+
+    REPRESENTATION_NAME = "virtual-xtm-led"
+
+    def __init__(self, config: dict, button: "Button"):
+        VirtualLED.__init__(self, config=config, button=button)
+
+        self.color = self.hardware.get("color", (207, 229, 149))
+        self.off_color = self.hardware.get("off-color", "ghostwhite")
+
+    def describe(self) -> str:
         return "The representation places a uniform color icon for X-Touch Mini buttons."
 
 
-class VirtualXTMMCLED(VirtualXTMLED):
+class VirtualXTMMCLED(VirtualLED):
     """Uniform color or texture icon, arbitrary size
 
     Attributes:
@@ -169,13 +186,13 @@ class VirtualXTMMCLED(VirtualXTMLED):
     REPRESENTATION_NAME = "virtual-xtm-mcled"
 
     def __init__(self, config: dict, button: "Button"):
-        VirtualXTMLED.__init__(self, config=config, button=button)
+        VirtualLED.__init__(self, config=config, button=button)
 
-        self.color = self.hardware.get("color", "green")
+        self.color = self.hardware.get("color", "gold")
         self.off_color = self.hardware.get("off-color", (30, 30, 30))
 
     def describe(self) -> str:
-        return "The representation places a specific encoder led arragement for X-Touch Mini encoders."
+        return "The representation places a specific Mackie Mode led for X-Touch Mini encoders."
 
 
 class VirtualXTMEncoderLED(VirtualEncoder):
@@ -282,6 +299,30 @@ class VirtualXTMEncoderLED(VirtualEncoder):
         return "The representation places a uniform color icon for X-Touch Mini Mackie mode."
 
 
+# ####################################################
+#
+# STREAMDECK
+#
+class VirtualSDNeoLED(VirtualLED):
+    """Uniform color or texture icon, arbitrary size
+
+    Attributes:
+        REPRESENTATION_NAME: "virtual-xtm-mcled"
+    """
+
+    REPRESENTATION_NAME = "virtual-sd-neoled"
+
+    def __init__(self, config: dict, button: "Button"):
+        VirtualLED.__init__(self, config=config, button=button)
+
+        self.color = self.hardware.get("color", "lime")
+        self.off_color = self.hardware.get("off-color", "silver")
+
+    def describe(self) -> str:
+        return "The representation places a specific led for Stream Deck Neo."
+
+
+# ####################################################
 #
 # LOUPEDECKLIVE
 #
