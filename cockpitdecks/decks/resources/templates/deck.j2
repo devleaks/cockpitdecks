@@ -81,59 +81,92 @@ if (DEBUG) {
 // WebSocket initialisation and setup
 //
 if (DECK.ws_url == undefined) {
-    alert("No WebSocket address. Please start Cockpitdecks first.")
+    console.error("No WebSocket address. Please start Cockpitdecks first.")
 }
 
-var ws = new WebSocket(DECK.ws_url);
+function connect() {
+    socket = new WebSocket(DECK.ws_url);
+    console.log("WebSocket trying...");
 
-ws.onopen = (event) => {
-    console.log("connection opened", DECK.ws_url);
-    // sends its name on new connection to help identify
-    sendCode(DECK.name, 1);
-};
+    socket.onopen = (event) => {
+        console.log("WebSocket opened", DECK.ws_url);
+        ws = socket;
+        try {
+            if (ws) {
+                sendCode(DECK.name, 1);
+                // sends its name on new connection to help identify
+            }
+        } catch (error) {
+            console.error("onopen", error)
+        }
+    };
 
-// RECEIVE function
-//
-// Receives messages from Cockpitdecks and take action on this deck
-ws.onmessage = (event) => {
-    // console.log("data received");
-    var data = JSON.parse(event.data);
-    // console.log("code received", data.code, data.meta);
-    if (data.code == 0) {
-        deck.set_key_image(data.key, data.image, image_layer);
-    } else if (data.code == 1) {
-        console.log("received initialisation code, requesting page reload", data.code);
-        window.location.reload()
-        // sendCode(DECK.name, 1);
-    } else {
-        console.log("unhandled code received, uninterpreted", data.code);
-    }
-};
+    socket.onmessage = (event) => {
+        // console.log("data received");
+        var data = JSON.parse(event.data);
+        // console.log("code received", data.code, data.meta);
+        if (data.code == 0) {
+            deck.set_key_image(data.key, data.image, image_layer);
+        } else if (data.code == 1) {
+            console.log("received initialisation code, requesting page reload", data.code);
+            window.location.reload()
+            // sendCode(DECK.name, 1);
+        } else {
+            console.log("unhandled code received, uninterpreted", data.code);
+        }
+    };
+
+    socket.close = (event) => {
+        console.log("WebSocket closed");
+        ws = False
+        setTimeout(function() {
+            connect();
+        }, 1000);
+    };
+
+    socket.error = (event) => {
+        console.error("WebSocket error", event);
+        socket.close()
+    };
+
+    console.log("start_websocket", Date.now())
+}
+
+var ws;
+connect();
 
 // OTHER HANDLERS
 //
-ws.close = (event) => {
-    sendCode(DECK.name, 2); // tries at least...
-    console.log("connection closed");
-};
-
-ws.error = (event) => {
-    console.log("WebSocket error", event);
-};
 
 // SEND functions (global, to be used by decks, etc.)
 //
 // Send code to Cockpitdecks
 function sendCode(deck, code) {
-    ws.send(JSON.stringify({"code": code, "deck": deck}));
-    // console.log("sent code", deck, code);
+    try {
+        if (ws) {
+            ws.send(JSON.stringify({"code": code, "deck": deck}));
+            // console.log("sent code", deck, code);
+        } else {
+            console.log("sendCode: no websocket");
+        }
+    } catch (error) {
+        console.error("sendCode", error)
+    }
 }
 
 //
 // Send event to Cockpitdecks
 function sendEvent(deck, key, value, data) {
-    ws.send(JSON.stringify({"code": 0, "deck": deck, "key": key, "event": value, "data": data}));
-    // console.log("sent event", message);
+    try {
+        if (ws) {
+            ws.send(JSON.stringify({"code": 0, "deck": deck, "key": key, "event": value, "data": data}));
+            // console.log("sent event", message);
+        } else {
+            console.log("sendEvent: no websocket");
+        }
+    } catch (error) {
+        console.error("sendEvent", error)
+    }
 }
 </script>
 </body>

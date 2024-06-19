@@ -48,7 +48,6 @@ var USER_PREFERENCES = DEFAULT_USER_PREFERENCES
 
 
 // Uses:
-// function sendCode(deck, code)
 // sendEvent(deck, key, event, data)
 
 // https://stackoverflow.com/questions/2631001/test-for-existence-of-nested-javascript-object-key

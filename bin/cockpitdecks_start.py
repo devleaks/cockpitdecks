@@ -118,7 +118,7 @@ try:
     cockpit.start_aircraft(ac, release=True)
     if cockpit.has_virtual_decks():
         logger.info(f"Starting application server, press CTRL-C ** twice ** to quit")
-        app.run(host=APP_HOST[0], port=APP_HOST[1])
+        app.run(host="0.0.0.0", port=APP_HOST[1])
     logger.info(f"..{ac_desc} terminated.")
 except KeyboardInterrupt:
 
