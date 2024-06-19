@@ -61,7 +61,6 @@ class HardwareIcon(Icon):
             self.width = dimension[0]
             self.height = dimension[1]
 
-
     def get_meta(self):
         return {
             "name": self.REPRESENTATION_NAME,

@@ -4,8 +4,13 @@ import sys
 import time
 import itertools
 import threading
+import json
+import urllib.parse
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
+
+from flask import Flask, render_template, send_from_directory, request
+from simple_websocket import Server, ConnectionClosed
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
@@ -24,13 +29,96 @@ if LOGFILE is not None:
 
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
-s = None
+
+APP_HOST = ["mac-studio-de-pierre.local", 7777]
+
+logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
+logger.info(f"Starting for {ac_desc}..")
+logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
+cockpit = Cockpit(XPlane)
+
+
+# ##################################
+# Flask Web Server (& WebSocket)
+#
+# Serves decks and their assets.
+# Proxy WebSockets to TCP Sockets
+#
+TEMPLATE_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "templates")
+ASSET_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "assets")
+
+app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
+
+app.logger.setLevel(logging.INFO)
+# app.config['EXPLAIN_TEMPLATE_LOADING'] = True
+
+
+@app.route("/")
+def index():
+    return render_template("index.j2", virtual_decks=cockpit.get_web_decks())
+
+
+@app.route("/favicon.ico")
+def send_favicon():
+    return send_from_directory(TEMPLATE_FOLDER, "favicon.ico")
+
+
+@app.route("/assets/<path:path>")
+def send_report(path):
+    return send_from_directory(ASSET_FOLDER, path)
+
+
+@app.route("/deck/<name>")
+def deck(name: str):
+    uname = urllib.parse.unquote(name)
+    app.logger.debug(f"Starting deck {uname}")
+    deck_desc = cockpit.get_web_deck_description(uname)
+    # Inject our contact address:
+    if type(deck_desc) is dict:
+        deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+        deck_desc["presentation-default"] = cockpit.get_web_deck_defaults()
+    else:
+        app.logger.debug(f"deck desc is not a dict {deck_desc}")
+    return render_template("deck.j2", deck=deck_desc)
+
+
+@app.route("/cockpit", websocket=True)  # How convenient...
+def cockpit_wshandler():
+    ws = Server.accept(request.environ)
+    try:
+        while True:
+            data = ws.receive()
+            app.logger.debug(f"received {data}")
+            data = json.loads(data)
+            code = data.get("code")
+            if code == 1:
+                deck = data.get("deck")
+                cockpit.register_deck(deck, ws)
+                app.logger.info(f"registered deck {deck}")
+                cockpit.handle_code(code, deck)
+                app.logger.debug(f"handled deck={deck}, code={code}")
+            elif code == 0:
+                deck = data.get("deck")
+                key = data.get("key")
+                event = data.get("event")
+                payload = data.get("data")
+                cockpit.process_event(deck_name=deck, key=key, event=event, data=payload)
+                app.logger.debug(f"event processed deck={deck}, event={event} data={payload}")
+    except ConnectionClosed:
+        app.logger.debug(f"connection closed")
+        cockpit.remove(ws)
+        app.logger.debug(f"client removed")
+    return ""
+
+
+# ##################################
+# MAIN
+#
 try:
-    logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
-    logger.info(f"Starting for {ac_desc}..")
-    logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
-    s = Cockpit(XPlane)
-    s.start_aircraft(ac)
+    cockpit.start_aircraft(ac, release=True)
+    if cockpit.has_virtual_decks():
+        logger.info(f"Starting application server, press CTRL-C ** twice ** to quit")
+        app.run(host=APP_HOST[0], port=APP_HOST[1])
     logger.info(f"..{ac_desc} terminated.")
 except KeyboardInterrupt:
 
@@ -45,6 +133,6 @@ except KeyboardInterrupt:
     thread.daemon = True
     thread.name = "spinner"
     thread.start()
-    if s is not None:
-        s.terminate_all(2)
+    if cockpit is not None:
+        cockpit.terminate_all(2)
     logger.info(f"..{ac_desc} terminated.")

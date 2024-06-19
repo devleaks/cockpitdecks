@@ -4,22 +4,16 @@ Does not perform any action. Just a wrapper for Cockpitdecks.
 Behaves like a "device driver".
 """
 
-import logging
-import struct
-import socket
-
-from cockpitdecks.constant import CONFIG_KW
-
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+from .decktype import DeckType
 
 
 class VirtualDeck:
+
     DECK_NAME = "virtualdeck"
 
-    def __init__(self, name: str, definition: "DeckType", config: dict):
+    def __init__(self, name: str, definition: DeckType, config: dict):
         self.name: str = name
-        self.virtual_deck_definition: dict = definition  # DeckType
+        self.virtual_deck_definition: DeckType = definition  # DeckType
         self.virtual_deck_config: dict = config  # Deck entry in deckconfig/config.yaml
         self.serial_number = None
 

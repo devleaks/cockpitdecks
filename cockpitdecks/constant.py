@@ -13,8 +13,6 @@ from datetime import datetime
 import ruamel
 from ruamel.yaml import YAML
 
-from .network import *
-
 
 # ##############################################################
 # A few constants and default values

@@ -6,9 +6,6 @@ import threading
 import logging
 import pickle
 import json
-import socket
-import struct
-import weakref
 import pkg_resources
 from datetime import datetime
 from queue import Queue
@@ -18,17 +15,8 @@ from cairosvg import svg2png
 
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
-from cockpitdecks import (
-    CONFIG_FOLDER,
-    CONFIG_FILE,
-    SECRET_FILE,
-    EXCLUDE_DECKS,
-    ICONS_FOLDER,
-    FONTS_FOLDER,
-    RESOURCES_FOLDER,
-)
-from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, DECKS_FOLDER
-from cockpitdecks import DECK_KW, VIRTUAL_DECK_DRIVER, COCKPITDECKS_HOST, PROXY_HOST, APP_HOST
+from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
+from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -45,10 +33,6 @@ if LOGFILE is not None:
     handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-# Device specific data
-SOCKET_TIMEOUT = 5  # seconds
-BUFFER_SIZE = 4096
 
 
 class CockpitBase:
@@ -116,6 +100,9 @@ class Cockpit(DatarefListener, CockpitBase):
         self.virtual_deck_types = {}
         self.virtual_deck_list = {}
         self.virtual_decks_added = False
+
+        self.vd_ws_conn = {}
+        self.vd_errs = []
 
         self.fonts = {}
 
@@ -342,12 +329,12 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.warning(f"deck {req_serial} not found")
         return None
 
-    def start_aircraft(self, acpath: str):
+    def start_aircraft(self, acpath: str, release: bool = False):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
         self.load_aircraft(acpath)
-        self.run()
+        self.run(release)
 
     def load_aircraft(self, acpath: str):
         """
@@ -887,10 +874,15 @@ class Cockpit(DatarefListener, CockpitBase):
             if CONFIG_KW.LAYOUT.value in deck:  # has a decor, must be a web deck
                 webdeck_list[name] = deck
         # add default values
-        return {
-            "virtual-deck-defaults": self.get_attribute("virtual-deck-defaults"),
-            "webdecks": webdeck_list
-        }
+        return webdeck_list
+
+    def get_web_deck_description(self, deck):
+        # Not all virtual decks are web decks
+        res = self.virtual_deck_list.get(deck)
+        return res if CONFIG_KW.LAYOUT.value in res else None
+
+    def get_web_deck_defaults(self):
+        return self.get_attribute("virtual-deck-defaults")
 
     def handle_code(self, code: int, name: str):
         logger.debug(f"received code {name}:{code}")
@@ -910,140 +902,20 @@ class Cockpit(DatarefListener, CockpitBase):
                 return
             deck.remove_client()
             logger.debug(f"{name} closed")
-        elif code == 3:  # web decks ask for initialisation (list of decks)
-            deck_name = bytes(__NAME__, "utf-8")
-            key_name = bytes("", "utf-8")
-            webdeck_list = self.get_web_decks()
-            webdeck_json = json.dumps(webdeck_list)
-            content = bytes(webdeck_json, "utf-8")
-            meta_list = {"ts": datetime.now().timestamp()}  # dummy
-            meta_json = json.dumps(meta_list)
-            meta_bytes = bytes(meta_json, "utf-8")
-            payload = struct.pack(
-                f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
-                int(code),
-                len(deck_name),
-                len(key_name),
-                len(content),
-                len(meta_bytes),
-                deck_name,
-                key_name,
-                content,
-                meta_bytes,
-            )
-            # print("C-->> handle_code", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
-            # unpacked in proxy server handle_event() to forward to websocket
-            # (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.connect((PROXY_HOST[0], PROXY_HOST[1]))
-                    s.sendall(payload)
-                    logger.debug(f"Code {code}: sent data to ({PROXY_HOST})")
-                    logger.info(f"Web decks sent ({len(webdeck_list)})")
-            except:
-                logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
         elif code in [4, 5]:
-            deck_name = bytes(__NAME__, "utf-8")
-            key_name = bytes("", "utf-8")
-            content = bytes("", "utf-8")
-            meta_list = {"ts": datetime.now().timestamp()}  # dummy
-            meta_json = json.dumps(meta_list)
-            meta_bytes = bytes(meta_json, "utf-8")
-            payload = struct.pack(
-                f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
-                int(code),
-                len(deck_name),
-                len(key_name),
-                len(content),
-                len(meta_bytes),
-                deck_name,
-                key_name,
-                content,
-                meta_bytes,
-            )
-            # print("I-->> handle_code", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
-            # unpacked in proxy server handle_event() to forward to websocket
-            # (code, deck_length, key_length, image_length), payload = struct.unpack("IIII", data[:16]), data[16:]
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.connect((PROXY_HOST[0], PROXY_HOST[1]))
-                    s.sendall(payload)
-                    logger.info(f"Code {code}: sent data to ({PROXY_HOST})")
-                    logger.info(f"Proxy notified of {name}")
-            except:
-                logger.warning(f"Code {code}: problem sending data to web", exc_info=True)
+            payload = {"code": code, "deck": name, "meta": {"ts": datetime.now().timestamp()}}
+            self.send(deck=self.name, payload=payload)
 
-    def handle_event(self, data: bytes):
-        # packed in proxy server as received from websocket
-        # payload = struct.pack(f"IIII{len(deck_name)}s{len(key_name)}s", code, event, len(deck_name), len(key_name), deck_name, key_name)
-        (code, event, deck_length, key_length, data_length), payload = struct.unpack("IIIII", data[:20]), data[20:]
-        deck_name = payload[:deck_length].decode("utf-8")
-        key = payload[deck_length : deck_length + key_length].decode("utf-8")
-        data_str = payload[deck_length + key_length :].decode("utf-8")
-        # print("<<<<< handle_event", code, event, deck_length, key_length, data_length, deck_name, key, data_str)
-        if code != 0:
-            self.handle_code(code, deck_name)
-            return
+    def process_event(self, deck_name, key, event, data):
         deck = self.cockpit.get(deck_name)
         logger.debug(f"received {deck_name}: key={key}, event={event}")
         if deck is None:
             logger.warning(f"handle event: deck {deck_name} not found")
             return
         if deck.deck_type.is_virtual_deck():
-            data_dict = json.loads(data_str)
-            deck.key_change_callback(deck=deck, key=key, state=event, data=data_dict)
+            deck.key_change_callback(deck=deck, key=key, state=event, data=data)
         else:
             deck.key_change_callback(deck=deck, key=key, state=event)
-
-    def receive_events(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((COCKPITDECKS_HOST[0], COCKPITDECKS_HOST[1]))
-            s.listen()
-            s.settimeout(SOCKET_TIMEOUT)
-            while self.rcv_event is not None and not self.rcv_event.is_set():
-                buff = bytes()
-                try:
-                    conn, addr = s.accept()
-                    with conn:
-                        while True:
-                            data = conn.recv(BUFFER_SIZE)
-                            if not data:
-                                break
-                            buff = buff + data
-                        self.handle_event(buff)
-                except TimeoutError:
-                    pass
-                    # logger.debug(f"receive event", exc_info=True)
-                except:
-                    logger.warning(f"receive events: abnormal exception", exc_info=True)
-
-    def start_vd_listener(self):
-        if not self.rcv_loop_run:
-            self.rcv_event = threading.Event()
-            self.rcv_loop_run = True
-            self.rcv_thread = threading.Thread(target=self.receive_events, name="Cockpit::virtdeckevntlsnr")
-            self.rcv_thread.start()
-            logger.info("virtual deck event listener started")
-        else:
-            logger.info("virtual deck event listener already running")
-
-    def stop_vd_listener(self):
-        if self.rcv_loop_run:
-            if self.rcv_event is not None:
-                self.rcv_event.set()
-                logger.debug("stopping virtual deck event listener..")
-                wait = SOCKET_TIMEOUT
-                logger.debug(f"..asked to stop virtual deck event listener (this may last {wait} secs. for accept to timeout)..")
-                self.rcv_thread.join(wait)
-                if self.rcv_thread.is_alive():
-                    logger.warning("..thread may hang in socket.accept()..")
-                self.rcv_loop_run = False
-                self.rcv_event = None
-                logger.debug("..virtual deck event listener stopped")
-        else:
-            logger.debug("virtual deck event listener not running")
-        # Now send last message to tell no longer listening
-        self.handle_code(code=5, name="terminate")  # wake up proxy
 
     # #########################################################
     # Other
@@ -1116,11 +988,6 @@ class Cockpit(DatarefListener, CockpitBase):
         if self.event_loop_run:
             self.stop_event_loop()
             logger.info(f"..event loop stopped..")
-        if self.rcv_loop_run:
-            # app.quit()
-            # logger.info(f"..web deck proxy server stopped..")
-            self.stop_vd_listener()
-            logger.info(f"..virtual deck listener stopped..")
         # Terminate decks
         self.terminate_aircraft()
         logger.info(f"..aircraft terminated..")
@@ -1141,7 +1008,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.error(f"{[t.name for t in threading.enumerate()]}")
         # logger.info(self._reqdfts)
 
-    def run(self):
+    def run(self, release: bool = False):
         if len(self.cockpit) > 0:
             # Each deck should have been started
             # Start reload loop
@@ -1151,23 +1018,67 @@ class Cockpit(DatarefListener, CockpitBase):
             self.start_event_loop()
             logger.info(f"..event loop started..")
             if self.has_virtual_decks():
-                self.start_vd_listener()
-                logger.info(f"..virtual deck listener started..")
-                # threading.Thread(target=lambda: app.run(host=APP_HOST[0], port=APP_HOST[1], debug=True, use_reloader=False), name="Flask").start()
-                # logger.info(f"..web deck proxy server started..")
                 self.handle_code(code=4, name="init")  # wake up proxy
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
             logger.info(f"..started")
-            logger.info(f"serving {self.name}")
-            for t in threading.enumerate():
-                try:
-                    t.join()
-                except RuntimeError:
-                    pass
-            logger.info("terminated")
+            if not release or not self.has_virtual_decks():
+                logger.info(f"serving {self.name}")
+                for t in threading.enumerate():
+                    try:
+                        t.join()
+                    except RuntimeError:
+                        pass
+                logger.info("terminated")
+            logger.info(f"serving {self.name} (released)")
         else:
             logger.warning(f"no deck")
             if self.acpath is not None:
                 self.terminate_all()
+
+    def err_clear(self):
+        self.vd_errs = []
+
+    def register_deck(self, deck: str, websocket):
+        if deck not in self.vd_ws_conn:
+            self.vd_ws_conn[deck] = []
+            logger.debug(f"{deck}: new registration")
+            self.handle_code(1, deck)
+        self.vd_ws_conn[deck].append(websocket)
+        logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
+
+    def is_closed(self, ws):
+        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # there must be a better way to do this...
+
+    def remove(self, websocket):
+        # we unfortunately have to scan all decks to find the ws to remove
+        #
+        for deck in self.vd_ws_conn:
+            remove = []
+            for ws in deck:
+                if ws == websocket:
+                    remove.append(websocket)
+            for ws in remove:
+                deck.remove(ws)
+        for deck in self.vd_ws_conn:
+            if len(self.vd_ws_conn[deck]) == 0:
+                self.handle_code(2, deck)
+
+    def send(self, deck, payload):
+        client_list = self.vd_ws_conn.get(deck)
+        closed_ws = []
+        if client_list is not None:
+            for ws in client_list:  # send to each instance of this deck connected to this websocket server
+                if self.is_closed(ws):
+                    closed_ws.append(ws)
+                    continue
+                ws.send(json.dumps(payload))
+                logger.debug(f"sent for {deck}")
+            if len(closed_ws) > 0:
+                for ws in closed_ws:
+                    client_list.remove(ws)
+        else:
+            if deck not in self.vd_errs:
+                logger.warning(f"no client for {deck}")
+                self.vd_errs.append(deck)

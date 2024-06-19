@@ -1,31 +1,22 @@
 """ Virtual Deck Manager.
 
-Discover, start, and stop virtual decks
+Discover virtual web decks
 """
 
 import os
-import glob
-import logging
-from typing import List, Dict
+from typing import Dict
 
 from cockpitdecks.constant import (
     CONFIG_FOLDER,
     CONFIG_FILE,
     SECRET_FILE,
-    EXCLUDE_DECKS,
-    RESOURCES_FOLDER,
     CONFIG_KW,
-    DECKS_FOLDER,
     DECK_KW,
-    VIRTUAL_DECK_DRIVER,
     Config,
 )
 
 from .virtualdeck import VirtualDeck
 from .decktype import DeckType
-
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
 
 
 class VirtualDeckManager:

@@ -4,16 +4,14 @@
 # Receives interactions from VirtualDeckUI
 #
 import socket
-import struct
-import threading
 import logging
 import io
-import json
+import base64
 from datetime import datetime
 
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw
 
-from cockpitdecks import DEFAULT_PAGE_NAME, COCKPITDECKS_HOST, PROXY_HOST
+from cockpitdecks import DEFAULT_PAGE_NAME
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
@@ -41,10 +39,6 @@ class VirtualDeck(DeckWithIcons):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.cockpit.set_logging_level(__name__)
-
-        # Address and port of web socket proxy
-        self.proxy_address = PROXY_HOST[0]
-        self.proxy_port = PROXY_HOST[1]
 
         self.pil_helper = self  # hum. wow.
 
@@ -169,19 +163,8 @@ class VirtualDeck(DeckWithIcons):
         # Send interaction event to Cockpitdecks virtual deck driver
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
-        content = bytes(self.name, "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()}  # dummy
-        meta_json = json.dumps(meta_list)
-        meta_bytes = bytes(meta_json, "utf-8")
-        payload = struct.pack(f"IIIII{len(content)}s{len(meta_bytes)}s", int(code), 0, 0, len(content), len(meta_bytes), content, meta_bytes)
-        # print(">>>>> send_code", code, 0, 0, len(content), len(meta_bytes), "", "", "<content>", meta_list)
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.proxy_address, self.proxy_port))
-                s.sendall(payload)
-        except:
-            if WEB_LOG:
-                logger.warning(f"{self.name}: problem sending code", exc_info=True)
+        payload = {"code": code, "deck": self.name, "meta": {"ts": datetime.now().timestamp()}}
+        self.cockpit.send(deck=self.name, payload=payload)
 
     def _send_key_image_to_device(self, key, image):
         # Sends the PIL Image bytes with a few meta to Flask for web display
@@ -214,34 +197,9 @@ class VirtualDeck(DeckWithIcons):
         # transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
         image.save(img_byte_arr, format="PNG")
         content = img_byte_arr.getvalue()
-        code = 0
-        deck_name = bytes(self.name, "utf-8")
-        key_name = bytes(str(key), "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()}  # dummy
-        meta_json = json.dumps(meta_list)
-        meta_bytes = bytes(meta_json, "utf-8")
-        payload = struct.pack(
-            f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
-            int(code),
-            len(deck_name),
-            len(key_name),
-            len(content),
-            len(meta_bytes),
-            deck_name,
-            key_name,
-            content,
-            meta_bytes,
-        )  # Unpacked in proxy server handle_event() to send through websockets
-        # print(">>>>> _send_key_image_to_device", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
-        # (code, deck_length, key_length, image_length, meta_length), payload = struct.unpack("IIIII", data[:20]), data[20:]
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.proxy_address, self.proxy_port))
-                s.sendall(payload)
-                logger.debug(f"key: {key}: image sent to ({self.proxy_address}, {self.proxy_port})")
-        except:
-            if WEB_LOG:
-                logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
+        meta = {"ts": datetime.now().timestamp()}  # dummy
+        payload = {"code": 0, "deck": self.name, "key": key, "image": base64.encodebytes(content).decode("ascii"), "meta": meta}
+        self.cockpit.send(deck=self.name, payload=payload)
 
     def _send_hardware_key_image_to_device(self, key, image, metadata):
         def add_corners(im, rad):
@@ -271,33 +229,9 @@ class VirtualDeck(DeckWithIcons):
         # transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
         image.save(img_byte_arr, format="PNG")
         content = img_byte_arr.getvalue()
-        code = 0
-        deck_name = bytes(self.name, "utf-8")
-        key_name = bytes(str(key), "utf-8")
-        meta_list = {"ts": datetime.now().timestamp()} | metadata
-        meta_json = json.dumps(meta_list)
-        meta_bytes = bytes(meta_json, "utf-8")
-        payload = struct.pack(
-            f"IIIII{len(deck_name)}s{len(key_name)}s{len(content)}s{len(meta_bytes)}s",
-            int(code),
-            len(deck_name),
-            len(key_name),
-            len(content),
-            len(meta_bytes),
-            deck_name,
-            key_name,
-            content,
-            meta_bytes,
-        )  # Unpacked in proxy server handle_event() to send through websockets
-        # print(">>>>> _send_hardware_key_image_to_device", code, len(deck_name), len(key_name), len(content), len(meta_bytes), deck_name, key_name, "<content>", meta_list)
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.proxy_address, self.proxy_port))
-                s.sendall(payload)
-                logger.debug(f"key: {key}: image sent to ({self.proxy_address}, {self.proxy_port})")
-        except:
-            if WEB_LOG:
-                logger.warning(f"key: {key}: problem sending image to web", exc_info=True)
+        meta = {"ts": datetime.now().timestamp()}  # dummy
+        payload = {"code": 0, "deck": self.name, "key": key, "image": base64.encodebytes(content).decode("ascii"), "meta": meta}
+        self.cockpit.send(deck=self.name, payload=payload)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
