@@ -81,17 +81,17 @@ class Icon(Representation):
     def cached_icon(self):
         return self._icon_cache
 
+    def has_cached_icon(self):
+        return self._icon_cache is not None
+
     def make_icon(self, force: bool = False):
-        self.icon = self.button.get_id()
-        if force and self.icon in self.button.deck.icons:
-            del self.button.deck.icons[self.icon]
         image = self.button.deck.create_icon_for_key(
             index=self.button.index,
             colors=self.icon_color,
             texture=self.icon_texture,
-            name=self.icon,
         )
-        logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}")
+        logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon")
+        self.cache_icon(image)
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
@@ -227,23 +227,15 @@ class Icon(Representation):
     def get_image_for_icon(self):
         deck = self.button.deck
         this_button = f"{self.button_name()}: {type(self).__name__}"
-        if self.icon in deck.icons.keys():
+        if self.has_cached_icon():
             logger.debug(f"button {this_button}: returning from cache ({self.icon})")
-            return deck.icons.get(self.icon)
-        # Else, search for it and cache it
+            return self.cached_icon()
+        # search for it and cache it
         image = None
         for ext in ["png", "jpg"]:
             if image is None:
                 fn = add_ext(self.icon, ext)
-                if fn in deck.icons.keys():  # look for properly sized image first...
-                    logger.debug(f"button {this_button}: found {fn} in deck")
-                    self.icon = fn
-                    image = deck.icons[self.icon]
-                elif fn in deck.cockpit.icons.keys():  # then icon, but need to resize it if necessary
-                    logger.debug(f"button {this_button}: found {fn} in cockpit")
-                    self.icon = fn
-                    image = deck.cockpit.icons[self.icon]
-                    image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
+                image = deck.get_icon_image(fn)
         if image is None:
             logger.warning(f"button {this_button}: {self.icon} not found")
         return image

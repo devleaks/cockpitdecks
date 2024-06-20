@@ -93,27 +93,6 @@ class VirtualDeck(DeckWithIcons):
         self.current_page = page0
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
-    def create_icon_for_key(self, index, colors, texture, name: str = None):
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        image = None
-        bg = self.create_image(deck=self.device, background=colors, display=str(index))
-        image = self.get_icon_background(
-            name=str(index),
-            width=bg.width,
-            height=bg.height,
-            texture_in=texture,
-            color_in=colors,
-            use_texture=True,
-            who="VirtualDeck",
-        )
-        if image is not None:
-            image = image.convert("RGB")
-            if name is not None:
-                self.icons[name] = image
-        return image
-
     # #######################################
     # Deck Specific Functions : Activation
     #

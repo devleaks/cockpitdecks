@@ -207,7 +207,7 @@ class Streamdeck(DeckWithIcons):
         if button.index not in self.get_deck_type().special_displays():
             if image is None:
                 logger.warning("button returned no image, using default")
-                image = self.icons[self.get_attribute("default-icon-name")]
+                image = self.get_icon_image(self.get_attribute("default-icon-name"))
             self._send_key_image_to_device(button.index, image)
         else:
             if image is None:
