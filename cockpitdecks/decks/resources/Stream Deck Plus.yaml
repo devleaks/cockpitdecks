@@ -7,7 +7,7 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [96, 96]
+    dimension: [120, 120]
     repeat: [4, 2]
   - name: 0
     prefix: e

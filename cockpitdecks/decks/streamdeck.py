@@ -175,57 +175,6 @@ class Streamdeck(DeckWithIcons):
         self.current_page = page0
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
-    def create_icon_for_key(self, index, colors, texture, name: str = None):
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        image = None
-        if index not in self.get_deck_type().special_displays():
-            if self.device is not None and self.pil_helper is not None:
-                bg = self.pil_helper.create_image(deck=self.device, background=colors)
-                image = self.get_icon_background(
-                    name=str(index),
-                    width=bg.width,
-                    height=bg.height,
-                    texture_in=texture,
-                    color_in=colors,
-                    use_texture=True,
-                    who="Deck",
-                )
-                if image is not None:
-                    image = image.convert("RGB")
-                    if name is not None:
-                        self.icons[name] = image
-        elif index == KW_TOUCHSCREEN:
-            if self.device is not None and self.pil_helper is not None:
-                bg = self.pil_helper.create_touchscreen_image(deck=self.device, background=colors)
-                image = self.get_icon_background(
-                    name=str(index),
-                    width=bg.width,
-                    height=bg.height,
-                    texture_in=texture,
-                    color_in=colors,
-                    use_texture=True,
-                    who="Deck",
-                )
-                if image is not None:
-                    image = image.convert("RGB")
-                    if name is not None:
-                        self.icons[name] = image
-        return image
-
-    def scale_icon_for_key(self, index, image, name: str = None):
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        if self.pil_helper is not None:
-            image = self.pil_helper.create_scaled_image(self.device, image, margins=[0, 0, 0, 0])
-            if image is not None:
-                image = image.convert("RGB")
-                if name is not None:
-                    self.icons[name] = image
-        return image
-
     # #######################################
     # Deck Specific Functions : Activation
     #

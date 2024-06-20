@@ -40,8 +40,6 @@ class VirtualDeck(DeckWithIcons):
 
         self.cockpit.set_logging_level(__name__)
 
-        self.pil_helper = self  # hum. wow.
-
         self.valid = True
         self.clients = 0
 
@@ -70,30 +68,6 @@ class VirtualDeck(DeckWithIcons):
 
     def create_image(self, deck, background="black", display=None):
         return Image.new("RGB", self.get_dimensions(display=display), background)
-
-    def create_scaled_image(self, deck, image, margins=[0, 0, 0, 0], background="black", display=None):
-        if len(margins) != 4:
-            raise ValueError("Margins should be given as an array of four integers.")
-
-        final_image = self.create_image(deck, background=background, display=display)
-
-        thumbnail_max_width = final_image.width - (margins[1] + margins[3])
-        thumbnail_max_height = final_image.height - (margins[0] + margins[2])
-
-        thumbnail = image.convert("RGBA")
-        thumbnail.thumbnail((thumbnail_max_width, thumbnail_max_height), Image.LANCZOS)
-
-        thumbnail_x = margins[3] + (thumbnail_max_width - thumbnail.width) // 2
-        thumbnail_y = margins[0] + (thumbnail_max_height - thumbnail.height) // 2
-
-        final_image.paste(thumbnail, (thumbnail_x, thumbnail_y), thumbnail)
-        return final_image
-
-    def to_native_key_format(self, image, display):
-        # Final resize of image
-        if image.size != self.get_dimensions(display=display):
-            image.thumbnail(self.get_dimensions(display=display))
-        return image
 
     # #######################################
     # Deck Specific Functions : Definition
@@ -134,17 +108,6 @@ class VirtualDeck(DeckWithIcons):
             use_texture=True,
             who="VirtualDeck",
         )
-        if image is not None:
-            image = image.convert("RGB")
-            if name is not None:
-                self.icons[name] = image
-        return image
-
-    def scale_icon_for_key(self, index, image, name: str | None = None):
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        image = self.create_scaled_image(self.device, image, margins=[0, 0, 0, 0], display=str(index))
         if image is not None:
             image = image.convert("RGB")
             if name is not None:
@@ -253,7 +216,8 @@ class VirtualDeck(DeckWithIcons):
             logger.warning(f"no image for default icon {default_icon_name}")
             return
 
-        image = self.to_native_key_format(image, display=str(button.index))
+        if image.size != self.get_dimensions(display=str(button.index)):
+            image.thumbnail(self.get_dimensions(display=str(button.index)))
 
         self._send_key_image_to_device(button.index, image)
 

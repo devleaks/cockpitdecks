@@ -485,7 +485,6 @@ class DeckWithIcons(Deck):
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
-        self.pil_helper = None
         self.icons: Dict[str, "PIL.Image"] = {}  # icons ready for this deck
 
     # #######################################
@@ -645,8 +644,29 @@ class DeckWithIcons(Deck):
         return image
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
-        """Scale an image for supplied key, cache it with supplied name, if any"""
-        return None
+
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
+        margins=[0, 0, 0, 0]
+        final_image = self.create_icon_for_key(index, colors=None, texture=None)
+
+        thumbnail_max_width = final_image.width - (margins[1] + margins[3])
+        thumbnail_max_height = final_image.height - (margins[0] + margins[2])
+
+        thumbnail = image.convert("RGBA")
+        thumbnail.thumbnail((thumbnail_max_width, thumbnail_max_height), Image.LANCZOS)
+
+        thumbnail_x = margins[3] + (thumbnail_max_width - thumbnail.width) // 2
+        thumbnail_y = margins[0] + (thumbnail_max_height - thumbnail.height) // 2
+
+        final_image.paste(thumbnail, (thumbnail_x, thumbnail_y), thumbnail)
+
+        if final_image is not None:
+            final_image = final_image.convert("RGB")
+            if final_image is not None:
+                self.icons[name] = final_image
+        return final_image
 
     def get_image_size(self, index):
         """Gets image size for deck button index"""

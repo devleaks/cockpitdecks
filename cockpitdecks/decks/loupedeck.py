@@ -4,7 +4,6 @@ import os
 import logging
 from PIL import Image, ImageOps
 
-from Loupedeck.ImageHelpers import PILHelper
 from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_FEEDBACK
@@ -39,8 +38,6 @@ class Loupedeck(DeckWithIcons):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.cockpit.set_logging_level(__name__)
-
-        self.pil_helper = PILHelper
 
         self.touches = {}
         self.monitoring_thread = None
@@ -337,42 +334,6 @@ class Loupedeck(DeckWithIcons):
         """
         return "button" if index not in self.get_deck_type().special_displays() else index
 
-    def create_icon_for_key(self, index, colors, texture, name: str = None):
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        image = None
-        if self.device is not None and self.pil_helper is not None:
-            display = self.get_display_for_pil(index)
-            bg = self.pil_helper.create_image(deck=self.device, background=convert_color(colors), display=display)
-            image = self.get_icon_background(
-                name=str(index),
-                width=bg.width,
-                height=bg.height,
-                texture_in=texture,
-                color_in=colors,
-                use_texture=(texture is not None),
-                who="Deck",
-            )
-            if image is not None:
-                image = image.convert("RGB")
-                if name is not None:
-                    self.icons[name] = image
-        return image
-
-    def scale_icon_for_key(self, index, image, name: str = None):
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        if self.pil_helper is not None:
-            display = self.get_display_for_pil(index)
-            image = self.pil_helper.create_scaled_image(deck=self.device, image=image, display=display)
-            if image is not None:
-                image = image.convert("RGB")
-                if name is not None:
-                    self.icons[name] = image
-        return image
-
     def _vibrate(self, pattern: str):
         self.device.vibrate(pattern)
 
@@ -401,10 +362,9 @@ class Loupedeck(DeckWithIcons):
                         mw = sizes[0]
                         mh = sizes[1]
                         if image.width > mw or image.height > mh:
-                            image = self.pil_helper.create_scaled_image(
-                                deck=self.device,
-                                image=image,
-                                display=self.get_display_for_pil(button.index),
+                            image = self.scale_icon_for_key(
+                                index=button.index,
+                                image=image
                             )
                     else:
                         logger.warning("cannot get device key image size")
