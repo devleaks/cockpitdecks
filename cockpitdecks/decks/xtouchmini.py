@@ -58,12 +58,6 @@ class XTouchMini(Deck):
         self.current_page = page0
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
-    def load_icons(self):
-        pass
-
-    def make_icon_for_device(self):
-        pass
-
     # #######################################
     # Deck Specific Functions : Activation
     #

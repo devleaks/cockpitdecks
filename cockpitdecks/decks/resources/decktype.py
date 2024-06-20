@@ -150,8 +150,11 @@ class DeckButton:
 
     def display_size(self, return_offset: bool = False):
         """Parses info from resources.decks.*.yaml"""
-        if self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.image is not None:
-            return self.image[0:2] if not return_offset else self.image[2:4]
+        if self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.dimension is not None:
+            sizes = self.dimension
+            if type(sizes) is int:  # just a radius
+                return (2*sizes, 2*sizes) if not return_offset else (sizes, sizes)
+            return self.dimension[0:2] if not return_offset else self.dimension[2:4]
         return None
 
     def desc(self):

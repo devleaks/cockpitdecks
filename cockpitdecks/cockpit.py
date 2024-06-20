@@ -739,7 +739,7 @@ class Cockpit(DatarefListener, CockpitBase):
         for ext in [".png", ".jpg", ".jpeg"]:
             fn = add_ext(candidate_icon, ext)
             if icon is None and fn in self.icons.keys():
-                logger.info(f"Cockpit: icon {fn} found")
+                logger.debug(f"Cockpit: icon {fn} found")
                 return fn
         logger.warning(f"Cockpit: icon not found {candidate_icon}, available={self.icons.keys()}")
         return None

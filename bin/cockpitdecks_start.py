@@ -115,11 +115,17 @@ def cockpit_wshandler():
 # MAIN
 #
 try:
+
     cockpit.start_aircraft(ac, release=True)
     if cockpit.has_virtual_decks():
-        logger.info(f"Starting application server, press CTRL-C ** twice ** to quit")
+        logger.info(f"Starting application server")  # , press CTRL-C ** twice ** to quit
         app.run(host="0.0.0.0", port=APP_HOST[1])
+
+    # If single CTRL-C pressed, will terminate here
+    logger.warning("terminating (please wait)..")
+    cockpit.terminate_all(2)
     logger.info(f"..{ac_desc} terminated.")
+
 except KeyboardInterrupt:
 
     def spin():
@@ -133,6 +139,7 @@ except KeyboardInterrupt:
     thread.daemon = True
     thread.name = "spinner"
     thread.start()
+
     if cockpit is not None:
         cockpit.terminate_all(2)
     logger.info(f"..{ac_desc} terminated.")

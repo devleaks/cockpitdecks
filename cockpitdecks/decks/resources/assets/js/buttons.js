@@ -767,7 +767,7 @@ class Overlay {  // later, idea: overlay text or image on top of background (log
 class Deck {
 
     constructor(config, stage) {
-        console.log(config)
+        console.log("deck config", config)
 
         this._config = config;
         this._stage = stage

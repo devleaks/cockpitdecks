@@ -505,7 +505,6 @@ class DeckWithIcons(Deck):
             logger.warning(f"deck {self.name}: is invalid")
             return
         self.set_deck_type()
-        self.load_icons()
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
 
@@ -523,41 +522,6 @@ class DeckWithIcons(Deck):
         logger.warning(f"deck {self.name}: no button index {index}")
         return None
 
-    def load_icons(self):
-        """
-        Each device model requires a different icon format (size).
-        This procedure loads all registered icons, converts and caches them
-        inside this deck's specific format.
-        (We could build a set per deck model rather than deck instance.)
-        """
-        if self.is_virtual_deck():
-            return
-        cache_icon = self.get_attribute("cache-icon")
-        logger.info(f"deck {self.name}: use cache {cache_icon}")
-        dn = self.cockpit.icon_folder
-        if dn is not None:
-            cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-            if os.path.exists(cache) and cache_icon:
-                with open(cache, "rb") as fp:
-                    icons_temp = pickle.load(fp)
-                    self.icons.update(icons_temp)
-                logger.info(f"deck {self.name}: {len(self.icons)} icons loaded from cache")
-                return
-
-        if self.device is not None:
-            for k, v in self.cockpit.icons.items():
-                self.icons[k] = self.pil_helper.create_scaled_image(self.device, v, margins=[0, 0, 0, 0])
-            if dn is not None:
-                cache = os.path.join(dn, f"{self.name}_icon_cache.pickle")
-                if cache_icon:
-                    with open(cache, "wb") as fp:
-                        pickle.dump(self.icons, fp)
-                    logger.info(f"deck {self.name}: {len(self.icons)} icons cached")
-                else:
-                    logger.info(f"deck {self.name}: {len(self.icons)} icons loaded")
-        else:
-            logger.warning(f"deck {self.name} has no device")
-
     def get_icon(self, candidate_icon):
         icon = None
         for ext in [".png", ".jpg", ".jpeg"]:
@@ -566,7 +530,7 @@ class DeckWithIcons(Deck):
                 logger.debug(f"deck {self.name}: {type(self).__name__}: icon {fn} found")
                 return fn
         # icon is still None
-        logger.warning(
+        logger.debug(
             f"deck {self.name}: {type(self).__name__}: icon not found {candidate_icon}, asking to cockpit..."
         )  # , cockpit_icons={self.cockpit.icons.keys()}
         return self.cockpit.get_icon(candidate_icon)
@@ -639,7 +603,7 @@ class DeckWithIcons(Deck):
             if texture in self.cockpit.icons.keys():
                 image = self.cockpit.icons[texture]
             else:
-                image = Image.open(texture)  # @todo: what is texture file not found?
+                image = Image.open(texture)  # @todo: what if texture file not found?
                 self.cockpit.icons[texture] = image
             # logger.debug(f"{who}: texture {texture_in} in {texture}")
 
@@ -658,7 +622,27 @@ class DeckWithIcons(Deck):
 
     def create_icon_for_key(self, index, colors, texture, name: str | None = None):
         """Create a default icon for supplied key"""
-        return None
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
+        image = None
+        width, height = self.get_image_size(index)
+        image = self.get_icon_background(
+            name=str(index),
+            width=width,
+            height=height,
+            texture_in=texture,
+            color_in=colors,
+            use_texture=True,
+            who=type(self).__name__,
+        )
+
+        if image is not None:
+            image = image.convert("RGB")
+            if name is not None:
+                self.icons[name] = image
+
+        return image
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
         """Scale an image for supplied key, cache it with supplied name, if any"""
@@ -666,8 +650,8 @@ class DeckWithIcons(Deck):
 
     def get_image_size(self, index):
         """Gets image size for deck button index"""
-        # Abstact
-        return (0, 0)
+        button = self.deck_type.get_button_definition(index)
+        return button.display_size()
 
     def fill_empty(self, key, clean: bool = False):
         """Fills all empty buttons with e defalut representation.

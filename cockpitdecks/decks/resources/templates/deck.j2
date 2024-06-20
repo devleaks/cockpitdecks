@@ -85,8 +85,8 @@ if (DECK.ws_url == undefined) {
 }
 
 function connect() {
-    socket = new WebSocket(DECK.ws_url);
     console.log("WebSocket trying...");
+    socket = new WebSocket(DECK.ws_url);
 
     socket.onopen = (event) => {
         console.log("WebSocket opened", DECK.ws_url);

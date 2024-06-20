@@ -119,9 +119,8 @@ class Button(DatarefListener, DatarefSetListener):
         if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
             rtype = self._def.get_hardware_representation()
             if rtype is not None and rtype in REPRESENTATIONS:
-                logger.info(f"button {self.name} has hardware representation {rtype}")
+                logger.debug(f"button {self.name} has hardware representation {rtype}")
                 self._hardware_representation = REPRESENTATIONS[rtype](config, self)
-                logger.info(f"button {self.name} has hardware representation")
 
         #### Datarefs
         #

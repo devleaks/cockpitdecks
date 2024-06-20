@@ -284,7 +284,7 @@ class VirtualDeck(DeckWithIcons):
         if isinstance(representation, Icon):
             self._set_key_image(button)
         elif isinstance(representation, Representation):
-            logger.info(f"button: {button.name}: do nothing representation for {type(self).__name__}")
+            logger.debug(f"button: {button.name}: do nothing representation for {type(self).__name__}")
         else:
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
         # "Hardware" representation

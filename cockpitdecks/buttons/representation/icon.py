@@ -73,6 +73,14 @@ class Icon(Representation):
             else:
                 logger.debug(f"button {self.button_name()}: requested to no do icon")
 
+        self._icon_cache = None
+
+    def cache_icon(self, icon):
+        self._icon_cache = icon
+
+    def cached_icon(self):
+        return self._icon_cache
+
     def make_icon(self, force: bool = False):
         self.icon = self.button.get_id()
         if force and self.icon in self.button.deck.icons:
