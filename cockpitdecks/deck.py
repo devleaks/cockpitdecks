@@ -13,7 +13,7 @@ from PIL import Image
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, DECK_FEEDBACK, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
 from cockpitdecks import Config
-from cockpitdecks.resources.color import convert_color, add_ext
+from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color, add_ext
 
 from .page import Page
 from .button import Button
@@ -618,6 +618,9 @@ class DeckWithIcons(Deck):
         image = Image.new(mode="RGBA", size=(width, height), color=color)
         logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
         return image
+
+    def create_empty_image_for_key(self, index):
+        return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
 
     def create_icon_for_key(self, index, colors, texture, name: str | None = None):
         """Create a default icon for supplied key"""

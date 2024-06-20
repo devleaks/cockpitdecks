@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from PIL import Image, ImageOps
 
-from StreamDeck.ImageHelpers import PILHelper
+from StreamDeck.ImageHelpers.PILHelper import to_native_format, to_native_key_format, to_native_touchscreen_format
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
 from cockpitdecks import DECK_FEEDBACK, RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS
@@ -47,8 +47,6 @@ class Streamdeck(DeckWithIcons):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
         self.cockpit.set_logging_level(__name__)
-
-        self.pil_helper = PILHelper
 
         self.monitoring_thread = None
         self.valid = True
@@ -137,10 +135,10 @@ class Streamdeck(DeckWithIcons):
 
             # Create a new key-sized image, and paste in the cropped section of the
             # larger image.
-            key_image = self.pil_helper.create_image(deck)
+            key_image = self.create_empty_image_for_key(key)
             key_image.paste(segment)
 
-            return self.pil_helper.to_native_format(deck, key_image)
+            return to_native_format(deck, key_image)
 
         logger.debug(f"loading default page {DEFAULT_PAGE_NAME} for {self.name}..")
         fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.wallpaper)
@@ -185,7 +183,7 @@ class Streamdeck(DeckWithIcons):
     #
     def _send_touchscreen_image_to_device(self, image):
         with self.device:
-            i = self.pil_helper.to_native_touchscreen_format(deck=self.device, image=image)
+            i = to_native_touchscreen_format(deck=self.device, image=image)
             self.device.set_touchscreen_image(i, width=image.width, height=image.height)
 
     def _send_key_image_to_device(self, key, image):
@@ -193,7 +191,7 @@ class Streamdeck(DeckWithIcons):
             self._send_touchscreen_image_to_device(image=image)
             return
         with self.device:
-            i = self.pil_helper.to_native_key_format(deck=self.device, image=image)
+            i = to_native_key_format(deck=self.device, image=image)
             self.device.set_key_image(int(key), i)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
