@@ -84,7 +84,7 @@ class Icon(Representation):
     def make_icon(self, force: bool = False):
         self.icon = self.button.get_id()
         if force and self.icon in self.button.deck.icons:
-            del self.button.deck.icons[self.icon]
+            del self.button.deck.get_icon_image(self.icon)
         image = self.button.deck.create_icon_for_key(
             index=self.button.index,
             colors=self.icon_color,
@@ -238,11 +238,11 @@ class Icon(Representation):
                 if fn in deck.icons.keys():  # look for properly sized image first...
                     logger.debug(f"button {this_button}: found {fn} in deck")
                     self.icon = fn
-                    image = deck.icons[self.icon]
+                    image = deck.get_icon_image(self.icon)
                 elif fn in deck.cockpit.icons.keys():  # then icon, but need to resize it if necessary
                     logger.debug(f"button {this_button}: found {fn} in cockpit")
                     self.icon = fn
-                    image = deck.cockpit.icons[self.icon]
+                    image = deck.cockpit.get_icon_image(self.icon)
                     image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
         if image is None:
             logger.warning(f"button {this_button}: {self.icon} not found")

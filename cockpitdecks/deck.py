@@ -600,11 +600,7 @@ class DeckWithIcons(Deck):
         if use_texture and texture is not None:
             texture = os.path.normpath(texture)
             if texture in self.cockpit.icons.keys():
-                image = self.cockpit.icons[texture]
-            else:
-                image = Image.open(texture)  # @todo: what if texture file not found?
-                self.cockpit.icons[texture] = image
-            # logger.debug(f"{who}: texture {texture_in} in {texture}")
+                image = self.cockpit.get_icon_image(texture)
 
         if image is not None:  # found a texture as requested
             logger.debug(f"{who}: use texture {texture}")
