@@ -599,7 +599,11 @@ class DeckWithIcons(Deck):
         texture = get_texture()
         if use_texture and texture is not None:
             texture = os.path.normpath(texture)
-            image = self.cockpit.get_icon_image(texture)
+            if texture in self.cockpit.icons.keys():
+                image = self.cockpit.icons[texture]
+            else:
+                image = Image.open(texture)  # @todo: what if texture file not found?
+                self.cockpit.icons[texture] = image
             # logger.debug(f"{who}: texture {texture_in} in {texture}")
 
         if image is not None:  # found a texture as requested
@@ -643,6 +647,10 @@ class DeckWithIcons(Deck):
         return image
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
+
+        if name is not None and name in self.icons.keys():
+            return self.icons.get(name)
+
         margins=[0, 0, 0, 0]
         final_image = self.create_icon_for_key(index, colors=None, texture=None)
 
@@ -656,6 +664,11 @@ class DeckWithIcons(Deck):
         thumbnail_y = margins[0] + (thumbnail_max_height - thumbnail.height) // 2
 
         final_image.paste(thumbnail, (thumbnail_x, thumbnail_y), thumbnail)
+
+        if final_image is not None:
+            final_image = final_image.convert("RGB")
+            if final_image is not None:
+                self.icons[name] = final_image
         return final_image
 
     def get_image_size(self, index):

@@ -744,11 +744,6 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.warning(f"Cockpit: icon not found {candidate_icon}, available={self.icons.keys()}")
         return None
 
-    def get_icon_image(self, icon):
-        if icon not in self.icons:
-            logger.warning(f"Cockpit: icon not found {icon}, available={self.icons.keys()}")
-        return self.icons.get(icon)
-
     def load_fonts(self):
         # Loading fonts.
         # For custom fonts (fonts found in the fonts config folder),
