@@ -68,35 +68,14 @@ class Icon(Representation):
             self.icon = deck.cockpit.get_icon(candidate_icon)
 
         if self.icon is None:
-            if not config.get(NO_ICON, False):
-                self.make_icon()
-            else:
+            if config.get(NO_ICON, False):
                 logger.debug(f"button {self.button_name()}: requested to no do icon")
 
         self._icon_cache = None
 
-    def cache_icon(self, icon):
-        self._icon_cache = icon
-
-    def cached_icon(self):
-        return self._icon_cache
-
-    def has_cached_icon(self):
-        return self.cached_icon() is not None
-
-    def make_icon(self):
-        self.icon = self.button.get_id()
-        image = self.button.deck.create_icon_for_key(
-            index=self.button.index,
-            colors=self.icon_color,
-            texture=self.icon_texture,
-        )
-        self.cache_icon(image)
-        logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}")
-
     def is_valid(self):
         if super().is_valid():  # so there is a button...
-            if self.icon is not None and self.has_cached_icon():
+            if self.icon is not None:
                 return True
             if self.icon_color is not None:
                 return True
@@ -221,9 +200,6 @@ class Icon(Representation):
         return ImageFont.load_default()
 
     def get_image_for_icon(self):
-        if self.has_cached_icon():
-            return self.cached_icon()
-
         deck = self.button.deck
         image = deck.cockpit.get_icon_image(self.icon)
         if image is None:
@@ -421,7 +397,6 @@ class IconColor(Icon):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        self.make_icon()
         image = super().get_image()
         return self.overlay_text(image, "label")
 
@@ -456,7 +431,6 @@ class IconText(Icon):
         bgtexture = self.text_config.get("text-bg-texture")
         if bgtexture is not None:
             self.icon_texture = bgtexture
-        self.make_icon()
         image = super().get_image()
         return self.overlay_text(image, "text")
 

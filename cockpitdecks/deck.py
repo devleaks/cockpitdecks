@@ -490,35 +490,15 @@ class DeckWithIcons(Deck):
     # Deck Specific Functions
     #
     # #######################################
-    # Deck Specific Functions : Installation
+    # Deck Specific Functions : Icon specific functions
     #
-    def init(self):
-        """Specific DeckIcon initialisation procedure.
+    def get_image_size(self, index):
+        """Gets image size for deck button index"""
+        button = self.deck_type.get_button_definition(index)
+        return button.display_size()
 
-        Add a step to prepare and cache deck icons.
-        Icons in proper format are cached locally for performance reasons.
-        New icons will be cached when created.
-        """
-        if not self.valid:
-            logger.warning(f"deck {self.name}: is invalid")
-            return
-        self.set_deck_type()
-        self.load()  # will load default page if no page found
-        self.start()  # Some system may need to start before we can load a page
-
-    def get_index_image_size(self, index):
-        """Returns the image size and offset for supplied deck index."""
-        b = self._buttons.get(index)
-        if b is not None:
-            return b.get(CONFIG_KW.IMAGE.value)
-        logger.warning(f"deck {self.name}: no button index {index}")
-        return None
-
-    # def get_icon(self, candidate_icon):
-    #     return self.cockpit.get_icon(candidate_icon)
-
-    # def get_icon_image(self, icon):
-    #     return self.cockpit.icons.get(icon)
+    def create_empty_image_for_key(self, index):
+        return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
 
     def get_icon_background(
         self,
@@ -596,11 +576,8 @@ class DeckWithIcons(Deck):
         logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
         return image
 
-    def create_empty_image_for_key(self, index):
-        return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
-
     def create_icon_for_key(self, index, colors, texture):
-        """Create a default icon for supplied key"""
+        """Create a default icon for supplied key with proper texture or color"""
         image = None
         width, height = self.get_image_size(index)
         image = self.get_icon_background(
@@ -635,11 +612,6 @@ class DeckWithIcons(Deck):
         if final_image is not None:
             final_image = final_image.convert("RGB")
         return final_image
-
-    def get_image_size(self, index):
-        """Gets image size for deck button index"""
-        button = self.deck_type.get_button_definition(index)
-        return button.display_size()
 
     def fill_empty(self, key, clean: bool = False):
         """Fills all empty buttons with e defalut representation.

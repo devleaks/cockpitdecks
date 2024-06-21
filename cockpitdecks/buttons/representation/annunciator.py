@@ -486,17 +486,17 @@ class Annunciator(DrawBase):
         Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
         """
         image = None
-        if use_texture and self.annun_texture is not None:
-            if self.button.deck.cockpit.get_icon(self.annun_texture) is not None:
-                image = self.button.deck.cockpit.get_icon_image(self.annun_texture)
-            logger.debug(f"using texture {self.annun_texture}")
-
-        if image is not None:  # found a texture as requested
-            image = image.resize((width, height))
-            return image
-
-        if use_texture and self.annun_texture is None:
-            logger.debug(f"should use texture but no texture found, using uniform color")
+        if use_texture:
+            if self.annun_texture is not None:
+                if self.button.deck.cockpit.get_icon(self.annun_texture) is not None:
+                    image = self.button.deck.cockpit.get_icon_image(self.annun_texture)
+                    logger.debug(f"using texture {self.annun_texture}")
+                    if image is not None:  # found a texture as requested
+                        image = image.resize((width, height))
+                        return image
+                logger.debug(f"proble with texture {self.annun_texture}, using uniform color")
+            else:
+                logger.debug(f"should use texture but no texture provided, using uniform color")
 
         image = Image.new(mode="RGBA", size=(width, height), color=self.annun_color)
         logger.debug(f"using uniform color {self.annun_color}")

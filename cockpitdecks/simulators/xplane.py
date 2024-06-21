@@ -429,7 +429,6 @@ class XPlane(Simulator, XPlaneBeacon):
                 return False
 
             idx = self.datarefidx
-            logger.debug(f">>>>>>>>>>>>>> {path} CREATING AT INDEX {idx}")
             self.datarefs[self.datarefidx] = path
             self.datarefidx += 1
 

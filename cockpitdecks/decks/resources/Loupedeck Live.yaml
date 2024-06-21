@@ -23,11 +23,11 @@ buttons:
     action: push
     feedback: colored-led
   - name: left
-    action: swipe
+    action: [push, swipe]
     feedback: image
     dimension: [60, 270]
   - name: right
-    action: swipe
+    action: [push, swipe]
     feedback: image
     dimension: [60, 270]
   - name: buzzer

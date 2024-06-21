@@ -342,26 +342,10 @@ class Loupedeck(DeckWithIcons):
         if not isinstance(representation, Icon):
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
             return
-
         image = button.get_representation()
         if image is not None:
-            if button.index in self.get_deck_type().special_displays():
-                self.device.set_key_image(button.index, image)
-            else:
-                sizes = self.device.key_image_format()
-                if sizes is not None:
-                    sizes = sizes.get("size")
-                    if sizes is not None:
-                        sizes = list(sizes)
-                        mw = sizes[0]
-                        mh = sizes[1]
-                        if image.width > mw or image.height > mh:
-                            image = self.scale_icon_for_key(index=button.index, image=image)
-                    else:
-                        logger.warning("cannot get device key image size")
-                else:
-                    logger.warning("cannot get device key image format")
-                self._send_key_image_to_device(button.index, image)
+            image = self.scale_icon_for_key(index=button.index, image=image)
+            self.device.set_key_image(button.index, image)
         else:
             logger.warning(f"no image for {button.name}")
 
