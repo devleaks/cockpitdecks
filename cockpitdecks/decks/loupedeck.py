@@ -331,7 +331,7 @@ class Loupedeck(DeckWithIcons):
     def _vibrate(self, pattern: str):
         self.device.vibrate(pattern)
 
-    def _send_key_image_to_device(self, key, image):
+    def set_key_icon(self, key, image):
         self.device.set_key_image(key, image)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):

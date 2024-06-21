@@ -133,7 +133,7 @@ class Streamdeck(DeckWithIcons):
 
             # Create a new key-sized image, and paste in the cropped section of the
             # larger image.
-            key_image = self.create_empty_image_for_key(key)
+            key_image = self.create_empty_icon_for_key(key)
             key_image.paste(segment)
 
             return to_native_format(deck, key_image)
@@ -241,7 +241,7 @@ class Streamdeck(DeckWithIcons):
             i = to_native_touchscreen_format(deck=self.device, image=image)
             self.device.set_touchscreen_image(i, width=image.width, height=image.height)
 
-    def _send_key_image_to_device(self, key, image):
+    def set_key_icon(self, key, image):
         if key in self.get_deck_type().special_displays():
             self._send_touchscreen_image_to_device(image=image)
             return
@@ -264,7 +264,7 @@ class Streamdeck(DeckWithIcons):
                 logger.warning("button returned no image, using default")
                 default_icon_name = self.get_attribute("default-icon-name")
                 image = self.cockpit.get_icon_image(default_icon_name)
-            self._send_key_image_to_device(button.index, image)
+            self.set_key_icon(button.index, image)
         else:
             if image is None:
                 logger.warning("button returned no image, no default for touch screen, ignoring")

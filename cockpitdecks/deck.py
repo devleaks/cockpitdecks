@@ -497,7 +497,7 @@ class DeckWithIcons(Deck):
         button = self.deck_type.get_button_definition(index)
         return button.display_size()
 
-    def create_empty_image_for_key(self, index):
+    def create_empty_icon_for_key(self, index):
         return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
 
     def get_icon_background(
@@ -613,7 +613,7 @@ class DeckWithIcons(Deck):
             final_image = final_image.convert("RGB")
         return final_image
 
-    def fill_empty(self, key, clean: bool = False):
+    def fill_empty(self, key):
         """Fills all empty buttons with e defalut representation.
 
         If clean is True, removes the reprensetation rather than install a default one.
@@ -633,18 +633,18 @@ class DeckWithIcons(Deck):
                 texture=self.get_attribute("cockpit-texture"),
             )
         if icon is not None:
-            self._send_key_image_to_device(key, icon)
+            self.set_key_icon(key, icon)
         else:
-            logger.warning(f"deck {self.name}: {key}: no fill icon{' cleaning' if clean else ''}")
+            logger.warning(f"deck {self.name}: {key}: no fill icon")
 
     def clean_empty(self, key):
         """Fills a button pointed by index with an empty representation."""
-        self.fill_empty(key, clean=True)
+        self.fill_empty(key)
 
     # #######################################
     # Deck Specific Functions : Rendering
     #
-    def _send_key_image_to_device(self, key, image):
+    def set_key_icon(self, key, image):
         """Access to lower level, raw function to install an image on a deck display
         pointed by th index key.
 

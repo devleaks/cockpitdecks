@@ -121,7 +121,7 @@ class VirtualDeck(DeckWithIcons):
         payload = {"code": code, "deck": self.name, "meta": {"ts": datetime.now().timestamp()}}
         self.cockpit.send(deck=self.name, payload=payload)
 
-    def _send_key_image_to_device(self, key, image):
+    def set_key_icon(self, key, image):
         # Sends the PIL Image bytes with a few meta to Flask for web display
         # Image is sent as a stream of bytes which is the file content of the image saved in PNG format
         # Need to supply deck name as well.
@@ -211,7 +211,7 @@ class VirtualDeck(DeckWithIcons):
         if image.size != self.get_image_size(button.index):
             image.thumbnail(self.get_image_size(button.index))
 
-        self._send_key_image_to_device(button.index, image)
+        self.set_key_icon(button.index, image)
 
     def _set_hardware_image(self, button: Button):  # idx: int, image: str, label: str = None):
         if self.device is None:
