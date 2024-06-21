@@ -358,17 +358,7 @@ class Icon(Representation):
         """
         Removes icon from deck
         """
-        # icon = self.get_default_icon()  # does not work for loupedeck left/right
-        icon = None
-        deck = self.button.deck
-        page = self.button.page
-        icon = deck.create_icon_for_key(
-            self.button.index, colors=self.button.get_attribute("cockpit-color"), texture=self.button.get_attribute("cockpit-texture")
-        )
-        if icon is not None:
-            deck._send_key_image_to_device(self.button._key, icon)
-        else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no clean icon")
+        self.button.deck.fill_empty(self.button.index)
 
     def describe(self) -> str:
         return "The representation places an icon with optional label overlay."

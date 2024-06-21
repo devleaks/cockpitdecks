@@ -58,7 +58,7 @@ app.logger.setLevel(logging.INFO)
 
 @app.route("/")
 def index():
-    return render_template("index.j2", virtual_decks=cockpit.get_web_decks())
+    return render_template("index.j2", virtual_decks=cockpit.get_virtual_decks())
 
 
 @app.route("/favicon.ico")
@@ -75,11 +75,11 @@ def send_report(path):
 def deck(name: str):
     uname = urllib.parse.unquote(name)
     app.logger.debug(f"Starting deck {uname}")
-    deck_desc = cockpit.get_web_deck_description(uname)
+    deck_desc = cockpit.get_virtual_deck_description(uname)
     # Inject our contact address:
     if type(deck_desc) is dict:
         deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
-        deck_desc["presentation-default"] = cockpit.get_web_deck_defaults()
+        deck_desc["presentation-default"] = cockpit.get_virtual_deck_defaults()
     else:
         app.logger.debug(f"deck desc is not a dict {deck_desc}")
     return render_template("deck.j2", deck=deck_desc)

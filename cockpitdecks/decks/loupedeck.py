@@ -48,9 +48,7 @@ class Loupedeck(DeckWithIcons):
         logger.debug(f"created encoder mapping {self.get_encoder_map()}")
 
     # #######################################
-    # Deck Specific Functions
     #
-    # #######################################
     # Deck Specific Functions : Definition
     #
     def get_encoder_map(self):
@@ -139,6 +137,7 @@ class Loupedeck(DeckWithIcons):
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     # #######################################
+    #
     # Deck Specific Functions : Activation
     #
     def key_change_callback(self, deck, msg):
@@ -326,6 +325,7 @@ class Loupedeck(DeckWithIcons):
                 logger.debug(f"unprocessed {msg}")
 
     # #######################################
+    #
     # Deck Specific Functions : Representation
     #
     def _vibrate(self, pattern: str):
@@ -445,7 +445,8 @@ class Loupedeck(DeckWithIcons):
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
-    # Deck Specific Functions : Device
+    #
+    # Deck Specific Functions : Operations
     #
     def start(self):
         if self.device is None:

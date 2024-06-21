@@ -735,13 +735,12 @@ class Cockpit(DatarefListener, CockpitBase):
                     logger.info(f"{len(self.icons)} icons loaded")
 
     def get_icon(self, candidate_icon):
-        icon = None
         for ext in ["", ".png", ".jpg", ".jpeg"]:
             fn = add_ext(candidate_icon, ext)
-            if icon is None and fn in self.icons.keys():
+            if fn in self.icons.keys():
                 logger.debug(f"Cockpit: icon {fn} found")
                 return fn
-        logger.warning(f"Cockpit: icon not found {candidate_icon}, available={self.icons.keys()}")
+        logger.warning(f"Cockpit: icon not found {candidate_icon}")  # , available={self.icons.keys()}
         return None
 
     def get_icon_image(self, icon):
@@ -870,7 +869,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 return True
         return False
 
-    def get_web_decks(self):
+    def get_virtual_decks(self):
         # Not all virtual decks are web decks
         webdeck_list = {}
         for name, deck in self.virtual_deck_list.items():
@@ -879,12 +878,12 @@ class Cockpit(DatarefListener, CockpitBase):
         # add default values
         return webdeck_list
 
-    def get_web_deck_description(self, deck):
+    def get_virtual_deck_description(self, deck):
         # Not all virtual decks are web decks
         res = self.virtual_deck_list.get(deck)
         return res if CONFIG_KW.LAYOUT.value in res else None
 
-    def get_web_deck_defaults(self):
+    def get_virtual_deck_defaults(self):
         return self.get_attribute("virtual-deck-defaults")
 
     def handle_code(self, code: int, name: str):

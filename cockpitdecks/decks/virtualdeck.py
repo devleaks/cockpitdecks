@@ -57,6 +57,7 @@ class VirtualDeck(DeckWithIcons):
         # return self.clients > 0
 
     # #######################################
+    #
     # Deck Specific Functions : Definition
     #
     def make_default_page(self):
@@ -81,11 +82,36 @@ class VirtualDeck(DeckWithIcons):
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     # #######################################
+    #
     # Deck Specific Functions : Activation
     #
-    # nothing...
+    def key_change_callback(self, deck, key, state, data: dict | None = None) -> Event | None:
+        """
+        This is the function that is called when a key is pressed.
+        For virtual decks, this function is quite complex
+        since it has to take the "shape" of any "real physical deck" it virtualize
+        """
+        # logger.debug(f"Deck {self.name} Key {key} = {state}")
+        # print("===== handle_event", deck.name, key, state, data)
+        if state in [0, 1, 4]:
+            PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
+            logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
+            return  # no other possible handling
+        if state in [2, 3]:
+            EncoderEvent(deck=self, button=key, clockwise=state == 2)
+            return  # no other possible handling
+        if state in [9]:
+            if data is not None and "value" in data:
+                SlideEvent(deck=self, button=key, value=int(data.get("value")))
+                return  # no other possible handling
+            else:
+                logger.warning(f"deck {deck.name}: SliderEvent has no value ({data})")
+        logger.warning(f"deck {deck.name}: unhandled event ({deck}, {key}, {state}, {data})")
+        return None
+
 
     # #######################################
+    #
     # Deck Specific Functions : Representation
     #
     def send_code(self, code):
@@ -222,32 +248,9 @@ class VirtualDeck(DeckWithIcons):
             self._set_hardware_image(button)
 
     # #######################################
-    # Deck Specific Functions : Device
     #
-    def key_change_callback(self, deck, key, state, data: dict | None = None) -> Event | None:
-        """
-        This is the function that is called when a key is pressed.
-        For virtual decks, this function is quite complex
-        since it has to take the "shape" of any "real physical deck" it virtualize
-        """
-        # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        # print("===== handle_event", deck.name, key, state, data)
-        if state in [0, 1, 4]:
-            PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
-            logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
-            return  # no other possible handling
-        if state in [2, 3]:
-            EncoderEvent(deck=self, button=key, clockwise=state == 2)
-            return  # no other possible handling
-        if state in [9]:
-            if data is not None and "value" in data:
-                SlideEvent(deck=self, button=key, value=int(data.get("value")))
-                return  # no other possible handling
-            else:
-                logger.warning(f"deck {deck.name}: SliderEvent has no value ({data})")
-        logger.warning(f"deck {deck.name}: unhandled event ({deck}, {key}, {state}, {data})")
-        return None
-
+    # Deck Specific Functions : Operations
+    #
     def start(self):
         pass
 

@@ -32,9 +32,7 @@ class XTouchMini(Deck):
         self.init()
 
     # #######################################
-    # Deck Specific Functions
     #
-    # #######################################
     # Deck Specific Functions : Definition
     #
     def make_default_page(self):
@@ -59,6 +57,7 @@ class XTouchMini(Deck):
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     # #######################################
+    #
     # Deck Specific Functions : Activation
     #
     def key_change_callback(self, deck, key, state):
@@ -102,6 +101,7 @@ class XTouchMini(Deck):
         event.run()
 
     # #######################################
+    #
     # Deck Specific Functions : Representation
     #
     def _set_encoder_led(self, button):
@@ -149,7 +149,8 @@ class XTouchMini(Deck):
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
-    # Deck Specific Functions : Device
+    #
+    # Deck Specific Functions : Operations
     #
     def start(self):
         if self.device is None:

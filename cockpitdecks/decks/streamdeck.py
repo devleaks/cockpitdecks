@@ -57,9 +57,7 @@ class Streamdeck(DeckWithIcons):
         self.init()
 
     # #######################################
-    # Deck Specific Functions
     #
-    # #######################################
     # Deck Specific Functions : Definition
     #
     def make_default_page(self):
@@ -174,11 +172,68 @@ class Streamdeck(DeckWithIcons):
         logger.debug(f"..loaded default page {DEFAULT_PAGE_NAME} for {self.name}, set as home page")
 
     # #######################################
+    #
     # Deck Specific Functions : Activation
     #
-    # nothing...
+    def key_change_callback(self, deck, key, state):
+        """
+        This is the function that is called when a key is pressed.
+        """
+        # print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
+        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
+
+    def dial_callback(self, deck, key, action, value):
+        """
+        This is the function that is called when a dial is rotated.
+        """
+        # print(f"DIAL: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
+        logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
+        bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
+        prefix = bdef[0].get(DECK_KW.PREFIX.value)
+        idx = f"{prefix}{key}"
+        if action == DialEventType.PUSH:
+            event = PushEvent(deck=self, button=idx, pressed=value)
+        elif action == DialEventType.TURN:
+            direction = 2 if value < 0 else 3
+            for i in range(abs(value)):
+                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2)
+        else:
+            logger.warning(f"deck {self.name}: invalid dial action {action}")
+
+    def touchscreen_callback(self, deck, action, value):
+        """
+        This is the function that is called when the touchscreen is touched swiped.
+        """
+        # print(f"TOUCHSCREEN: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
+        logger.debug(f"Deck {deck.id()} Action {action} = {value}")
+        NUMVIRTUALKEYS = 4  # number of "virtual" keys across touchscreen
+        KEY_SIZE = 800 / NUMVIRTUALKEYS
+
+        idx = KW_TOUCHSCREEN
+        logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
+        if action == TouchscreenEventType.SHORT:
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
+        elif action == TouchscreenEventType.LONG:
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
+        elif action == TouchscreenEventType.DRAG:
+            event = SwipeEvent(
+                deck=self,
+                button=idx,
+                start_pos_x=int(value["x"]),
+                start_pos_y=int(value["y"]),
+                start_ts=datetime.now().timestamp(),
+                end_pos_x=int(value["x_out"]),
+                end_pos_y=int(value["y_out"]),
+                end_ts=datetime.now().timestamp(),
+                autorun=True,
+            )
+        else:
+            logger.warning(f"deck {self.name}: invalid touchscreen action {action}")
+
 
     # #######################################
+    #
     # Deck Specific Functions : Representation
     #
     def _send_touchscreen_image_to_device(self, image):
@@ -274,64 +329,9 @@ class Streamdeck(DeckWithIcons):
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
 
     # #######################################
-    # Deck Specific Functions : Device
     #
-    def key_change_callback(self, deck, key, state):
-        """
-        This is the function that is called when a key is pressed.
-        """
-        # print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
-        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
-        PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
-
-    def dial_callback(self, deck, key, action, value):
-        """
-        This is the function that is called when a dial is rotated.
-        """
-        # print(f"DIAL: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
-        logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
-        bdef = self.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.ENCODER.value})
-        prefix = bdef[0].get(DECK_KW.PREFIX.value)
-        idx = f"{prefix}{key}"
-        if action == DialEventType.PUSH:
-            event = PushEvent(deck=self, button=idx, pressed=value)
-        elif action == DialEventType.TURN:
-            direction = 2 if value < 0 else 3
-            for i in range(abs(value)):
-                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2)
-        else:
-            logger.warning(f"deck {self.name}: invalid dial action {action}")
-
-    def touchscreen_callback(self, deck, action, value):
-        """
-        This is the function that is called when the touchscreen is touched swiped.
-        """
-        # print(f"TOUCHSCREEN: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
-        logger.debug(f"Deck {deck.id()} Action {action} = {value}")
-        NUMVIRTUALKEYS = 4  # number of "virtual" keys across touchscreen
-        KEY_SIZE = 800 / NUMVIRTUALKEYS
-
-        idx = KW_TOUCHSCREEN
-        logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
-        if action == TouchscreenEventType.SHORT:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
-        elif action == TouchscreenEventType.LONG:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
-        elif action == TouchscreenEventType.DRAG:
-            event = SwipeEvent(
-                deck=self,
-                button=idx,
-                start_pos_x=int(value["x"]),
-                start_pos_y=int(value["y"]),
-                start_ts=datetime.now().timestamp(),
-                end_pos_x=int(value["x_out"]),
-                end_pos_y=int(value["y_out"]),
-                end_ts=datetime.now().timestamp(),
-                autorun=True,
-            )
-        else:
-            logger.warning(f"deck {self.name}: invalid touchscreen action {action}")
-
+    # Deck Specific Functions : Operations
+    #
     def start(self):
         if self.device is None:
             logger.warning(f"deck {self.name}: no device")
