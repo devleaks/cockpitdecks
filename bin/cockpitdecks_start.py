@@ -32,7 +32,7 @@ ac = sys.argv[1] if len(sys.argv) > 1 else None
 ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 
 # https://stackoverflow.com/questions/64348889/how-to-get-local-ip-address-python
-localip = (socket.getfqdn(), socket.gethostbyname_ex(socket.getfqdn())[2][0])[1] # ouch.
+localip = (socket.getfqdn(), socket.gethostbyname_ex(socket.getfqdn())[2][0])[1]  # ouch.
 APP_HOST = [localip, 7777]
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")

@@ -195,7 +195,7 @@ class DrawAnimation(DrawBase):
             self.exit.set()
             self.thread.join(timeout=2 * self.speed)
             if self.thread.is_alive():
-                logger.warning(f"button {self.button.name}: animation did not terminate")
+                logger.warning(f"button {self.button.name}: animation did not terminate (timetout {2 * self.speed}secs.)")
             logger.debug(f"stopped")
         else:
             logger.debug(f"button {self.button.name}: already stopped")

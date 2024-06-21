@@ -17,6 +17,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_co
 
 from .page import Page
 from .button import Button
+from .event import Event
 from cockpitdecks.event import DeckEvent, PushEvent
 from cockpitdecks.decks.resources import DeckType
 
@@ -485,8 +486,6 @@ class DeckWithIcons(Deck):
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
-        self.icons: Dict[str, "PIL.Image"] = {}  # icons ready for this deck
-
     # #######################################
     # Deck Specific Functions
     #
@@ -507,12 +506,6 @@ class DeckWithIcons(Deck):
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
 
-    def get_display_for_pil(self, b: str | None = None):
-        """
-        Return device or device element to use for PIL.
-        """
-        return self.device
-
     def get_index_image_size(self, index):
         """Returns the image size and offset for supplied deck index."""
         b = self._buttons.get(index)
@@ -521,22 +514,11 @@ class DeckWithIcons(Deck):
         logger.warning(f"deck {self.name}: no button index {index}")
         return None
 
-    def get_icon(self, candidate_icon):
-        icon = None
-        for ext in [".png", ".jpg", ".jpeg"]:
-            fn = add_ext(candidate_icon, ext)
-            if icon is None and fn in self.icons.keys():
-                logger.debug(f"deck {self.name}: {type(self).__name__}: icon {fn} found")
-                return fn
-        # icon is still None
-        logger.debug(
-            f"deck {self.name}: {type(self).__name__}: icon not found {candidate_icon}, asking to cockpit..."
-        )  # , cockpit_icons={self.cockpit.icons.keys()}
-        return self.cockpit.get_icon(candidate_icon)
+    # def get_icon(self, candidate_icon):
+    #     return self.cockpit.get_icon(candidate_icon)
 
-    def get_icon_image(self, icon):
-        image = self.icons.get(icon)
-        return image if image is not None else self.cockpit.icons.get(icon)
+    # def get_icon_image(self, icon):
+    #     return self.cockpit.icons.get(icon)
 
     def get_icon_background(
         self,
@@ -599,8 +581,7 @@ class DeckWithIcons(Deck):
         texture = get_texture()
         if use_texture and texture is not None:
             texture = os.path.normpath(texture)
-            if texture in self.cockpit.icons.keys():
-                image = self.cockpit.get_icon_image(texture)
+            image = self.cockpit.get_icon_image(texture)
 
         if image is not None:  # found a texture as requested
             logger.debug(f"{who}: use texture {texture}")
@@ -618,11 +599,8 @@ class DeckWithIcons(Deck):
     def create_empty_image_for_key(self, index):
         return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
 
-    def create_icon_for_key(self, index, colors, texture, name: str | None = None):
+    def create_icon_for_key(self, index, colors, texture):
         """Create a default icon for supplied key"""
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
         image = None
         width, height = self.get_image_size(index)
         image = self.get_icon_background(
@@ -637,17 +615,10 @@ class DeckWithIcons(Deck):
 
         if image is not None:
             image = image.convert("RGB")
-            if name is not None:
-                self.icons[name] = image
-
         return image
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
-
-        if name is not None and name in self.icons.keys():
-            return self.icons.get(name)
-
-        margins=[0, 0, 0, 0]
+        margins = [0, 0, 0, 0]
         final_image = self.create_icon_for_key(index, colors=None, texture=None)
 
         thumbnail_max_width = final_image.width - (margins[1] + margins[3])
@@ -663,8 +634,6 @@ class DeckWithIcons(Deck):
 
         if final_image is not None:
             final_image = final_image.convert("RGB")
-            if final_image is not None:
-                self.icons[name] = final_image
         return final_image
 
     def get_image_size(self, index):
@@ -684,14 +653,12 @@ class DeckWithIcons(Deck):
                 key,
                 colors=convert_color(self.current_page.get_attribute("cockpit-color")),
                 texture=self.current_page.get_attribute("cockpit-texture"),
-                name=f"{self.name}:{self.current_page.name}:{key}",
             )
         else:
             icon = self.create_icon_for_key(
                 key,
                 colors=self.get_attribute("cockpit-color"),
                 texture=self.get_attribute("cockpit-texture"),
-                name=f"{self.name}:{key}",
             )
         if icon is not None:
             self._send_key_image_to_device(key, icon)

@@ -2,7 +2,7 @@ import os
 import logging
 import json
 import glob
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from functools import reduce
 
@@ -12,7 +12,7 @@ from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
 from cockpitdecks.buttons.representation.representation import Representation
-from cockpitdecks.constant import VIRTUAL_DECK_DRIVER
+from cockpitdecks.constant import ICON_SIZE, VIRTUAL_DECK_DRIVER
 
 loggerButtonType = logging.getLogger("ButtonType")
 # loggerButtonType.setLevel(logging.DEBUG)
@@ -148,13 +148,20 @@ class DeckButton:
     def can_represent(self, representation: str) -> bool:
         return representation in self.valid_representations()
 
-    def display_size(self, return_offset: bool = False):
+    def display_size(self, return_offset: bool = False) -> Tuple[int, int] | None:
         """Parses info from resources.decks.*.yaml"""
         if self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.dimension is not None:
             sizes = self.dimension
             if type(sizes) is int:  # just a radius
-                return (2*sizes, 2*sizes) if not return_offset else (sizes, sizes)
+                return (2 * sizes, 2 * sizes) if not return_offset else (sizes, sizes)
             return self.dimension[0:2] if not return_offset else self.dimension[2:4]
+        return None
+
+    def get_drawing_size(self, length: int = ICON_SIZE) -> Tuple[int, int] | None:
+        sizes = self.display_size()
+        if sizes is not None:
+            lmin = min(sizes)
+            return (int(length * sizes[0] / lmin), int(length * sizes[1] / lmin))
         return None
 
     def desc(self):

@@ -55,7 +55,7 @@ class DrawBase(Icon):
         """
         image = None
         # Try local texture
-        if use_texture and self.texture is not None and self.texture in self.button.deck.cockpit.icons.keys():
+        if use_texture and self.texture is not None and self.button.deck.cockpit.get_icon(self.texture) is not None:
             image = self.button.deck.cockpit.get_icon_image(self.texture)
             if image is not None:  # found a texture as requested
                 image = image.resize((width, height))
@@ -63,7 +63,7 @@ class DrawBase(Icon):
                 return image
 
         # Try deck cockpit_texture
-        if use_texture and self.cockpit_texture is not None and self.cockpit_texture in self.button.deck.cockpit.icons.keys():
+        if use_texture and self.cockpit_texture is not None and self.button.deck.cockpit.get_icon(self.cockpit_texture) is not None:
             image = self.button.deck.cockpit.get_icon_image(self.cockpit_texture)
             if image is not None:  # found cockpit texture
                 image = image.resize((width, height))

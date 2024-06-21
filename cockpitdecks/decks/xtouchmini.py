@@ -104,13 +104,6 @@ class XTouchMini(Deck):
     # #######################################
     # Deck Specific Functions : Representation
     #
-    def get_display_for_pil(self, b: str = None):
-        """
-        Return device or device element to use for PIL.
-        In this case, no image, no PIL
-        """
-        return None
-
     def _set_encoder_led(self, button):
         # logger.debug(f"button {button.name}: {'='*50}")
         # self.device.test()

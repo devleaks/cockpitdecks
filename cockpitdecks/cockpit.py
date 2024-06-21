@@ -736,13 +736,16 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def get_icon(self, candidate_icon):
         icon = None
-        for ext in [".png", ".jpg", ".jpeg"]:
+        for ext in ["", ".png", ".jpg", ".jpeg"]:
             fn = add_ext(candidate_icon, ext)
             if icon is None and fn in self.icons.keys():
                 logger.debug(f"Cockpit: icon {fn} found")
                 return fn
         logger.warning(f"Cockpit: icon not found {candidate_icon}, available={self.icons.keys()}")
         return None
+
+    def get_icon_image(self, icon):
+        return self.icons.get(icon)
 
     def load_fonts(self):
         # Loading fonts.
@@ -915,6 +918,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if deck.deck_type.is_virtual_deck():
             deck.key_change_callback(deck=deck, key=key, state=event, data=data)
         else:
+            logger.warning(f"handle event: deck {deck_name} is not virtual")
             deck.key_change_callback(deck=deck, key=key, state=event)
 
     # #########################################################

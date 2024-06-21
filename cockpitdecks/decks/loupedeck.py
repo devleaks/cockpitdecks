@@ -328,12 +328,6 @@ class Loupedeck(DeckWithIcons):
     # #######################################
     # Deck Specific Functions : Representation
     #
-    def get_display_for_pil(self, index: str = None):
-        """
-        Return device or device element to use for PIL.
-        """
-        return "button" if index not in self.get_deck_type().special_displays() else index
-
     def _vibrate(self, pattern: str):
         self.device.vibrate(pattern)
 
@@ -362,10 +356,7 @@ class Loupedeck(DeckWithIcons):
                         mw = sizes[0]
                         mh = sizes[1]
                         if image.width > mw or image.height > mh:
-                            image = self.scale_icon_for_key(
-                                index=button.index,
-                                image=image
-                            )
+                            image = self.scale_icon_for_key(index=button.index, image=image)
                     else:
                         logger.warning("cannot get device key image size")
                 else:

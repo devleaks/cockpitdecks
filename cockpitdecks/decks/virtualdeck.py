@@ -176,7 +176,7 @@ class VirtualDeck(DeckWithIcons):
         if image is None:
             logger.warning("button returned no image, using default")
             default_icon_name = self.get_attribute("default-icon-name")
-            image = self.get_icon_image(default_icon_name)
+            image = self.cockpit.get_icon_image(default_icon_name)
 
         if image is None:
             logger.warning(f"no image for default icon {default_icon_name}")
@@ -224,12 +224,6 @@ class VirtualDeck(DeckWithIcons):
     # #######################################
     # Deck Specific Functions : Device
     #
-    def get_display_for_pil(self, b: str = None):
-        """
-        Return device or device element to use for PIL.
-        """
-        return self.device
-
     def key_change_callback(self, deck, key, state, data: dict | None = None) -> Event | None:
         """
         This is the function that is called when a key is pressed.

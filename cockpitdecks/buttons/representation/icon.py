@@ -65,7 +65,7 @@ class Icon(Representation):
 
         candidate_icon = config.get("icon")
         if candidate_icon is not None:
-            self.icon = deck.get_icon(candidate_icon)
+            self.icon = deck.cockpit.get_icon(candidate_icon)
 
         if self.icon is None:
             if not config.get(NO_ICON, False):
@@ -81,26 +81,22 @@ class Icon(Representation):
     def cached_icon(self):
         return self._icon_cache
 
-    def make_icon(self, force: bool = False):
+    def has_cached_icon(self):
+        return self.cached_icon() is not None
+
+    def make_icon(self):
         self.icon = self.button.get_id()
-        if force and self.icon in self.button.deck.icons:
-            del self.button.deck.icons[self.icon]
         image = self.button.deck.create_icon_for_key(
             index=self.button.index,
             colors=self.icon_color,
             texture=self.icon_texture,
-            name=self.icon,
         )
+        self.cache_icon(image)
         logger.debug(f"button {self.button_name()}: {type(self).__name__}: created icon {self.icon}")
 
     def is_valid(self):
         if super().is_valid():  # so there is a button...
-            if self.icon is not None:
-                if self.icon not in self.button.deck.icons.keys():
-                    dummy = self.button.deck.get_icon(self.icon)
-                    if dummy is None:
-                        logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon {self.icon} not in deck")
-                        return False
+            if self.icon is not None and self.has_cached_icon():
                 return True
             if self.icon_color is not None:
                 return True
@@ -225,27 +221,15 @@ class Icon(Representation):
         return ImageFont.load_default()
 
     def get_image_for_icon(self):
+        if self.has_cached_icon():
+            return self.cached_icon()
+
         deck = self.button.deck
-        this_button = f"{self.button_name()}: {type(self).__name__}"
-        if self.icon in deck.icons.keys():
-            logger.debug(f"button {this_button}: returning from cache ({self.icon})")
-            return deck.icons.get(self.icon)
-        # Else, search for it and cache it
-        image = None
-        for ext in ["png", "jpg"]:
-            if image is None:
-                fn = add_ext(self.icon, ext)
-                if fn in deck.icons.keys():  # look for properly sized image first...
-                    logger.debug(f"button {this_button}: found {fn} in deck")
-                    self.icon = fn
-                    image = deck.icons[self.icon]
-                elif fn in deck.cockpit.icons.keys():  # then icon, but need to resize it if necessary
-                    logger.debug(f"button {this_button}: found {fn} in cockpit")
-                    self.icon = fn
-                    image = deck.cockpit.icons[self.icon]
-                    image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
+        image = deck.cockpit.get_icon_image(self.icon)
         if image is None:
-            logger.warning(f"button {this_button}: {self.icon} not found")
+            image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
+        else:
+            image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
         return image
 
     def get_image(self):
@@ -403,10 +387,7 @@ class Icon(Representation):
         deck = self.button.deck
         page = self.button.page
         icon = deck.create_icon_for_key(
-            self.button.index,
-            colors=self.button.get_attribute("cockpit-color"),
-            texture=self.button.get_attribute("cockpit-texture"),
-            name=f"{self.button_name()}:clean",
+            self.button.index, colors=self.button.get_attribute("cockpit-color"), texture=self.button.get_attribute("cockpit-texture")
         )
         if icon is not None:
             deck._send_key_image_to_device(self.button._key, icon)
@@ -440,7 +421,7 @@ class IconColor(Icon):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        self.make_icon(force=True)
+        self.make_icon()
         image = super().get_image()
         return self.overlay_text(image, "label")
 
@@ -475,7 +456,7 @@ class IconText(Icon):
         bgtexture = self.text_config.get("text-bg-texture")
         if bgtexture is not None:
             self.icon_texture = bgtexture
-        self.make_icon(force=True)
+        self.make_icon()
         image = super().get_image()
         return self.overlay_text(image, "text")
 
@@ -555,19 +536,23 @@ class MultiIcons(Icon):
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
 
         if len(self.multi_icons) > 0:
+            invalid = []
             for i in range(len(self.multi_icons)):
-                self.multi_icons[i] = add_ext(self.multi_icons[i], ".png")
-                if self.multi_icons[i] not in self.button.deck.icons.keys():
+                icon = self.button.deck.cockpit.get_icon(self.multi_icons[i])
+                if icon is not None:
+                    self.multi_icons[i] = icon
+                else:
                     logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
+                    invalid.append(i)
+            for i in invalid:
+                del self.multi_icons[i]
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
 
     def is_valid(self):
-        if self.multi_icons is None:
+        if self.multi_icons is None or len(self.multi_icons) == 0:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
             return False
-        if len(self.multi_icons) == 0:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
         return super().is_valid()
 
     def num_icons(self):

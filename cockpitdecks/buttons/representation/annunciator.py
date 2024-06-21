@@ -487,7 +487,7 @@ class Annunciator(DrawBase):
         """
         image = None
         if use_texture and self.annun_texture is not None:
-            if self.annun_texture in self.button.deck.cockpit.icons.keys():
+            if self.button.deck.cockpit.get_icon(self.annun_texture) is not None:
                 image = self.button.deck.cockpit.get_icon_image(self.annun_texture)
             logger.debug(f"using texture {self.annun_texture}")
 
