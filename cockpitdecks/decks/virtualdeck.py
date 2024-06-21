@@ -45,11 +45,6 @@ class VirtualDeck(DeckWithIcons):
 
         self.init()
 
-    # #######################################
-    # Deck Specific PILHelper (provided by self! What a Duck Typing!)
-    # These three functions are usually provided by PILHelper.
-    # For virtualdecks, they are included in here, inside the class.
-    #
     def add_client(self):
         self.clients = self.clients + 1
 
@@ -60,14 +55,6 @@ class VirtualDeck(DeckWithIcons):
     def has_clients(self) -> bool:
         return True
         # return self.clients > 0
-
-    def get_dimensions(self, display: str):
-        # works for now for all virtual decks, to be resized more formally later (display == button name)
-        b = self.deck_type.buttons[display]
-        return b.dimension if b is not None else [0, 0]
-
-    def create_image(self, deck, background="black", display=None):
-        return Image.new("RGB", self.get_dimensions(display=display), background)
 
     # #######################################
     # Deck Specific Functions : Definition
@@ -195,8 +182,8 @@ class VirtualDeck(DeckWithIcons):
             logger.warning(f"no image for default icon {default_icon_name}")
             return
 
-        if image.size != self.get_dimensions(display=str(button.index)):
-            image.thumbnail(self.get_dimensions(display=str(button.index)))
+        if image.size != self.get_image_size(button.index):
+            image.thumbnail(self.get_image_size(button.index))
 
         self._send_key_image_to_device(button.index, image)
 

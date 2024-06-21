@@ -6,6 +6,7 @@ import itertools
 import threading
 import json
 import urllib.parse
+import socket
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
 
@@ -30,7 +31,9 @@ if LOGFILE is not None:
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 
-APP_HOST = ["mac-studio-de-pierre.local", 7777]
+# https://stackoverflow.com/questions/64348889/how-to-get-local-ip-address-python
+localip = (socket.getfqdn(), socket.gethostbyname_ex(socket.getfqdn())[2][0])[1] # ouch.
+APP_HOST = [localip, 7777]
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
 logger.info(f"Starting for {ac_desc}..")
