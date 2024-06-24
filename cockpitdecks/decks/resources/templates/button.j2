@@ -14,20 +14,61 @@ body {
     width: 520px;
     height: 520px;
 }
+pre {
+    font-size: small;
+}
 </style>
 <script src="/assets/js/konva.js" type="text/javascript"></script>
+<script src="/assets/js/js-yaml.js" type="text/javascript"></script>
 </head>
 <body>
     <div id="render">
     </div>
     <div id="design">
         <form id="parameters">
+
+            <fieldset>
+                <legend>Deck</legend>
                 <label>Deck model</label>
                 <select name="deck">
-                {% for deck in decks %}
+                {% for deck in assets.decks %}
                     <option value="{{ deck.name }}">{{ deck.name }} ({{ deck.type }})</option>
                 {% endfor %}
                 </select>
+            </fieldset>
+
+            <fieldset>
+                <legend>Button</legend>
+                <label>Index</label>
+                <input type="text" name="index" size="10"/>
+                <label>Name</label>
+                <input type="text" name="index" size="40"/>
+            </fieldset>
+
+            <fieldset>
+                <legend>Activation</legend>
+                <label>Type</label>
+                <select id="activation-type" name="type" onchange="load_activation_parameters();">
+                {% for activation in assets.activations %}
+                    <option value="{{ activation }}">{{ activation }}</option>
+                {% endfor %}
+                </select>
+                <div><pre id="activation-details">Activation parameters</pre></div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Representation</legend>
+                <label>Type</label>
+                <select id="representation-type" name="type" onchange="load_representation_parameters();">
+                {% for representation in assets.representations %}
+                    <option value="{{ representation }}">{{ representation }}</option>
+                {% endfor %}
+                </select>
+                <div><pre id="representation-details">Representation parameters</pre></div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Code</legend>
                 <br/>
                 <textarea id="code" name="code" rows="40" cols="60">
 index: 0
@@ -52,9 +93,12 @@ view: SRS/X-Camera/Select_View_ID_1
 </textarea>
             <br/>
             <button id="run" onclick="render();">Render</button>
+            <button id="save" onclick="render();">Save</button>
+            <br/>
+            <textarea id="yaml" name="yaml" rows="40" cols="60" readonly=true></textarea>
         </form>
         <br>
-        <p id="status">Ok</p>
+        <p style="font-size: small;">Status: <span id="status">ok</span></p>
     </div>
 <script type="text/javascript">
 //
@@ -72,7 +116,6 @@ document.querySelector("#run").addEventListener(
   false,
 );
 
-
 // create stage
 var stage = new Konva.Stage({
     container: "render",
@@ -81,9 +124,14 @@ var stage = new Konva.Stage({
 });
 var image_layer = new Konva.Layer({name: "image"});
 stage.add(image_layer);
+var status_line = document.getElementById("status");
+var yaml_block = document.getElementById("yaml")
 
+// define function
+//
 // utility function
-function display_image(key, image) {
+//
+function display_image(image) {
     let buttonImage = new Image();
     buttonImage.onload = function () {
         let button = new Konva.Image({
@@ -96,24 +144,73 @@ function display_image(key, image) {
     buttonImage.src = "data:image/jpeg;base64," + image;
 }
 
-function render() {
-    var form = document.getElementById('parameters');
-    var formData = new FormData(form);
-    let data = Object.fromEntries(formData)
+function collect_form(form_name) {
+    let form = document.getElementById(form_name);
+    let formData = new FormData(form);
+    return Object.fromEntries(formData)
+}
 
-    console.log("data out", data)
+
+//
+// Event handler for form
+//
+function render() {
+    let data = collect_form("parameters");
+    generate_yaml();
 
     fetch("/button", {
       method: "POST",
-      headers: {'Content-Type': 'application/json'}, 
+      headers: {"Content-Type": "application/json"}, 
       body: JSON.stringify(data)
     })
     .then(r =>  r.json().then(image => {
-        console.log("data in", image)
-        display_image(0, image.image);
+        if (image.meta != undefined && image.meta.error != undefined) {
+            status_line.innerHTML = image.meta.error
+        }
+        if (image.image != "") {
+            display_image(image.image);
+            status_line.style["color"] = "#000000";
+        } else {
+            status_line.style["color"] = "#ff0000";
+        }
     }));
     return false;
 }
+
+
+function generate_yaml() {
+    let data = collect_form("parameters")
+
+    console.log("jsyaml", jsyaml)
+    yaml_block.innerHTML = data.code
+}
+
+
+let activation_elem = document.getElementById("activation-type");
+activation_elem.onchange = (e) => {
+    let activation = activation_elem.value
+
+    fetch("/activation?" + new URLSearchParams({name: activation}).toString())
+    .then(r =>  r.json().then(details => {
+        console.log(details);
+        let details_elem = document.getElementById("activation-details");
+        details_elem.innerHTML = JSON.stringify(details, null, 2);
+    }));
+    return false;
+};
+
+let representation_elem = document.getElementById("representation-type");
+representation_elem.onchange = (e) => {
+    let representation = representation_elem.value
+
+    fetch("/representation?" + new URLSearchParams({name: representation}).toString())
+    .then(r =>  r.json().then(details => {
+        console.log(details);
+        let details_elem = document.getElementById("representation-details");
+        details_elem.innerHTML = JSON.stringify(details, null, 2);
+    }));
+    return false;
+};
 </script>
 </body>
 </html>

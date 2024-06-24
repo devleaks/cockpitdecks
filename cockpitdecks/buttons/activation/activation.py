@@ -32,6 +32,11 @@ class Activation:
     REQUIRED_DECK_ACTIONS: DECK_ACTIONS | List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
     # One cannot request an activiation from a deck button that does not have the capability of the action
     # requested by the activation.
+    PARAMETERS = {}
+
+    @classmethod
+    def parameters(cls) -> dict:
+        return cls.PARAMETERS
 
     @classmethod
     def name(cls) -> str:
@@ -266,6 +271,19 @@ class LoadPage(Activation):
     ACTIVATION_NAME = "page"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    PARAMETERS = {
+        "page": {
+            "type": "string",
+            "prompt": "Page",
+            "default-value": "back"
+        },
+        "deck": {
+            "type": "string",
+            "prompt": "Remote deck",
+            "optional": True
+        }
+    }
+
     KW_BACKPAGE = "back"
 
     def __init__(self, config: dict, button: "Button"):
@@ -317,6 +335,8 @@ class Reload(Activation):
     ACTIVATION_NAME = "reload"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    PARAMETERS = {}
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
@@ -342,6 +362,13 @@ class ChangeTheme(Activation):
 
     ACTIVATION_NAME = "theme"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "theme": {
+            "type": "string",
+            "prompt": "Theme",
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -371,6 +398,14 @@ class Inspect(Activation):
 
     ACTIVATION_NAME = "inspect"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "what": {
+            "type": "string",
+            "prompt": "What to inspect",
+            "default-value": "status"
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -406,6 +441,8 @@ class Stop(Activation):
     ACTIVATION_NAME = "stop"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    PARAMETERS = {}
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
         self._has_no_value = True
@@ -437,6 +474,32 @@ class Push(Activation):
 
     ACTIVATION_NAME = "push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True
+        },
+        "auto-repeat": {
+            "type": "boolean",
+            "prompt": "Auto-repeat"
+        },
+        "auto-repeat-delay": {
+            "type": "float",
+            "prompt": "Auto-repeat delay",
+            "hint": "Delay after press before repeat"
+        },
+        "auto-repeat-speed": {
+            "type": "float",
+            "prompt": "Auto-repeat speed",
+            "hint": "Speed of repeat"
+        },
+        "initial-value": {
+            "type": "integer",
+            "prompt": "Initial value",
+        }
+    }
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds

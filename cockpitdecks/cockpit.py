@@ -23,6 +23,8 @@ from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
+from .buttons.activation import ACTIVATIONS
+from .buttons.representation import REPRESENTATIONS, get_representations_for
 
 # from cockpitdecks.webdeckproxyapp import app
 
@@ -1089,11 +1091,54 @@ class Cockpit(DatarefListener, CockpitBase):
                 self.vd_errs.append(deck)
 
 
-    def get_deck_list(self):
-        return [{"name": k, "type": v.deck_type.name} for k, v in self.cockpit.items()]
+    def get_assets(self):
+        """Collects all assets for button designer
+
+        Returns:
+            dict: Assets
+        """
+        decks = [{"name": k, "type": v.deck_type.name} for k, v in self.cockpit.items()]
+        return {
+            "decks": decks,
+            "fonts": self.fonts,
+            "icons": list(self.icons.keys()),
+            "activations": list(ACTIVATIONS.keys()),
+            "representations": list(REPRESENTATIONS.keys()),
+        }
+
+    def get_button_details(self, deck, index):
+        deck_name = data.get("deck")
+        if deck_name is None:
+            return {}
+        deck = self.cockpit.get(deck_name)
+        if deck is None:
+            return {}
+        return {
+            "deck": deck.name,
+            "deck_type": deck.deck_type.name,
+            "index": index,
+            "activations": deck.deck_type.valid_activations(index),
+            "representations": deck.deck_type.valid_representations(index),
+        }
+
+    def get_activation_details(self, name, index=None):
+        return ACTIVATIONS.get(name).parameters()
+
+    def get_representation_details(self, name, index=None):
+        return REPRESENTATIONS.get(name).parameters()
+
+    def get_deck_indice(self, name):
+        deck_name = data.get("deck")
+        if deck_name is None:
+            return {"index": []}
+        deck = self.cockpit.get(deck_name)
+        if deck is None:
+            return {"index": []}
+        return {"index": deck.deck_type.valid_indices(with_icons=True)}
 
     def render_button(self, data):
         # testing. returns random icon
+        # print(json.dumps(self.get_assets(), indent=2))
         deck_name = data.get("deck")
         if deck_name is None:
             return {"image": "", "meta": {"error": "no deck name"}}
@@ -1101,12 +1146,16 @@ class Cockpit(DatarefListener, CockpitBase):
         if deck is None:
             return {"image": "", "meta": {"error": f"deck {deck_name} not found"}}
         config = yaml.load(data["code"])
-        image = deck.render_button(config=config)
+        image = None
+        try:
+            image = deck.render_button(config=config)
+        except:
+            print("error generating image")
         if image is None:
             return {"image": "", "meta": {"error": "no image"}}
         width, height = image.size
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format="PNG")
         content = img_byte_arr.getvalue()
-        payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": {}}
+        payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": {"error": "ok"}}
         return payload

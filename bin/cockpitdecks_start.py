@@ -69,7 +69,19 @@ def send_favicon():
 def button():
     if request.method == "POST":
         return cockpit.render_button(request.json)
-    return render_template("button.j2", decks=cockpit.get_deck_list())
+    return render_template("button.j2", assets=cockpit.get_assets())
+
+
+@app.route("/activation", methods=("GET", "POST"))
+def activation_details():
+    name = request.args.get("name")
+    return cockpit.get_activation_details(name)
+
+
+@app.route("/representation", methods=("GET", "POST"))
+def representation_details():
+    name = request.args.get("name")
+    return cockpit.get_representation_details(name)
 
 
 @app.route("/assets/<path:path>")
