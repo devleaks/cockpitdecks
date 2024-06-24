@@ -231,7 +231,6 @@ class Streamdeck(DeckWithIcons):
         else:
             logger.warning(f"deck {self.name}: invalid touchscreen action {action}")
 
-
     # #######################################
     #
     # Deck Specific Functions : Representation

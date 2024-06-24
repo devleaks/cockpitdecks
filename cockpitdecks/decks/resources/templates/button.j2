@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Cockpitdecks Button Designer</title>
+<style type="text/css">
+body {
+    font-family: sans-serif;
+}
+#render, #design {
+    display: block;
+    float: left;
+}
+#render {
+    width: 520px;
+    height: 520px;
+}
+</style>
+<script src="/assets/js/konva.js" type="text/javascript"></script>
+</head>
+<body>
+    <div id="render">
+    </div>
+    <div id="design">
+        <form id="parameters">
+                <label>Deck model</label>
+                <select name="deck">
+                {% for deck in decks %}
+                    <option value="{{ deck.name }}">{{ deck.name }} ({{ deck.type }})</option>
+                {% endfor %}
+                </select>
+                <br/>
+                <textarea id="code" name="code" rows="40" cols="60">
+index: 0
+name: CSTR
+type: push
+annunciator:
+  size: small
+  model: B
+  parts:
+    B0:
+      color: lime
+      led: bars
+      dataref: AirbusFBW/OHPLightsATA31[16]
+      # formula: ${AirbusFBW/NDShowCSTRCapt}
+    B1:
+      text: CSTR
+      text-size: 40
+      text-font: DIN Bold
+      formula: "1"
+command: toliss_airbus/dispcommands/CaptCstrPushButton
+view: SRS/X-Camera/Select_View_ID_1
+</textarea>
+            <br/>
+            <button id="run" onclick="render();">Render</button>
+        </form>
+        <br>
+        <p id="status">Ok</p>
+    </div>
+<script type="text/javascript">
+//
+//
+// Konva layout set up and initialisation
+//
+const DEBUG = false
+
+// Prevent form submit
+document.querySelector("#run").addEventListener(
+  "click",
+  function (event) {
+    event.preventDefault();
+  },
+  false,
+);
+
+
+// create stage
+var stage = new Konva.Stage({
+    container: "render",
+    width: 512,
+    height: 512,
+});
+var image_layer = new Konva.Layer({name: "image"});
+stage.add(image_layer);
+
+// utility function
+function display_image(key, image) {
+    let buttonImage = new Image();
+    buttonImage.onload = function () {
+        let button = new Konva.Image({
+            x: 0,
+            y: 0,
+            image: buttonImage
+        });
+        image_layer.add(button);
+    };
+    buttonImage.src = "data:image/jpeg;base64," + image;
+}
+
+function render() {
+    var form = document.getElementById('parameters');
+    var formData = new FormData(form);
+    let data = Object.fromEntries(formData)
+
+    console.log("data out", data)
+
+    fetch("/button", {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'}, 
+      body: JSON.stringify(data)
+    })
+    .then(r =>  r.json().then(image => {
+        console.log("data in", image)
+        display_image(0, image.image);
+    }));
+    return false;
+}
+</script>
+</body>
+</html>

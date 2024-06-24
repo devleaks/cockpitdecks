@@ -1,12 +1,14 @@
 # Main container for all decks
 #
 import os
-import glob
+import io
+import base64
 import threading
 import logging
 import pickle
 import json
 import pkg_resources
+import random
 from datetime import datetime
 from queue import Queue
 
@@ -14,7 +16,7 @@ from PIL import Image, ImageFont
 from cairosvg import svg2png
 
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
-from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG
+from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
@@ -1085,3 +1087,26 @@ class Cockpit(DatarefListener, CockpitBase):
             if deck not in self.vd_errs:
                 logger.warning(f"no client for {deck}")
                 self.vd_errs.append(deck)
+
+
+    def get_deck_list(self):
+        return [{"name": k, "type": v.deck_type.name} for k, v in self.cockpit.items()]
+
+    def render_button(self, data):
+        # testing. returns random icon
+        deck_name = data.get("deck")
+        if deck_name is None:
+            return {"image": "", "meta": {"error": "no deck name"}}
+        deck = self.cockpit.get(deck_name)
+        if deck is None:
+            return {"image": "", "meta": {"error": f"deck {deck_name} not found"}}
+        config = yaml.load(data["code"])
+        image = deck.render_button(config=config)
+        if image is None:
+            return {"image": "", "meta": {"error": "no image"}}
+        width, height = image.size
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format="PNG")
+        content = img_byte_arr.getvalue()
+        payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": {}}
+        return payload

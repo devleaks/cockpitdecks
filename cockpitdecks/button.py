@@ -967,3 +967,33 @@ class Button(DatarefListener, DatarefSetListener):
         self._clean = self._clean + 1
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
+
+
+    @staticmethod
+    def mk_button(config, deck, page):
+        idx = Button.guess_index(config)
+        if idx is None:
+            logger.error(f"button has no index, ignoring {config}")
+            return None
+        if idx not in deck.valid_indices():
+            logger.error(f"button has invalid index '{idx}' (valid={deck.valid_indices()}), ignoring '{config}'")
+            return None
+
+        # How the button will behave, it is does something
+        aty = Button.guess_activation_type(config)
+        if aty is None or aty not in deck.valid_activations(idx):
+            logger.error(
+                f"button has invalid activation type {aty} not in {deck.valid_activations(idx)} for index {idx}, ignoring {config}"
+            )
+            return None
+
+        # How the button will be represented, if it is
+        rty = Button.guess_representation_type(config)
+        if rty not in deck.valid_representations(idx):
+            logger.error(f"button has invalid representation type {rty} for index {idx}, ignoring {config}")
+            return None
+        if rty == "none":
+            logger.debug(f"button has no representation but it is ok")
+
+        config[DECK_DEF] = deck.get_deck_button_definition(idx)
+        return Button(config=config, page=page)

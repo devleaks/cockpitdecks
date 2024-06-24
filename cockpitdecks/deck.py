@@ -20,6 +20,8 @@ from .button import Button
 from .event import Event
 from cockpitdecks.event import DeckEvent, PushEvent
 from cockpitdecks.decks.resources import DeckType
+from cockpitdecks.page import Page
+from cockpitdecks.buttons.representation import Icon
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -81,7 +83,7 @@ class Deck(ABC):
 
     # #######################################
     #
-    # Deck Common Functions
+    # Deck Specific Functions : Initialisation, description (capabilities)
     #
     def init(self):
         """Initialisation procedure
@@ -161,9 +163,53 @@ class Deck(ABC):
                 val = ld.get(attribute)
         return val if val is not None else self.cockpit.get_attribute(attribute, silence=silence)
 
+    def get_index_prefix(self, index):
+        """Returns the prefix of a button index for this deck."""
+        return self.deck_type.get_index_prefix(index=index)
+
+    def get_index_numeric(self, index):
+        """Returns the numeric part of the index of a button index for this deck."""
+        return self.deck_type.get_index_numeric(index=index)
+
+    def valid_indices(self, with_icon: bool = False):
+        """Returns the valid indices for this deck."""
+        return self.deck_type.valid_indices(with_icon=with_icon)
+
+    def valid_activations(self, index=None):
+        """Returns the valid activations for the button pointed by the index.
+        If None is given, returns all valid activations.
+        """
+        return self.deck_type.valid_activations(index=index)
+
+    def valid_representations(self, index=None):
+        """Returns the valid representations for the button pointed by the index.
+        If None is given, returns all valid representations.
+        """
+        return self.deck_type.valid_representations(index=index)
+
+    # #######################################
+    #
+    # Deck Specific Functions : Representation
+    #
+    def inspect(self, what: str | None = None):
+        """Triggered by the Inspect activation.
+
+        This function is called on all pages of this Deck.
+        """
+        logger.info(f"*" * 60)
+        logger.info(f"Deck {self.name} -- {what}")
+        for v in self.pages.values():
+            v.inspect(what)
+
+    def print_page(self, page: Page):
+        """Produces an image of the deck's layout in the current directory.
+        For testing and development purpose.
+        """
+        pass
+
     # ##################################################
     #
-    # Page manipulations
+    # Deck Specific Functions : Page manipulations
     #
     def load(self):
         """
@@ -186,6 +232,11 @@ class Deck(ABC):
             self._layout_config = Config(os.path.join(dn, CONFIG_FILE))
             if not self._layout_config.is_valid():
                 logger.debug(f"no layout config file")
+            else:
+                self.home_page_name = self.get_attribute("home-page-name")
+                self.logo = self.get_attribute("logo")
+                self.wallpaper = self.get_attribute("wallpaper")
+                # must put other as well
 
         for p in pages:
             if p == CONFIG_FILE:
@@ -347,7 +398,7 @@ class Deck(ABC):
 
     # ##################################################
     #
-    # Usage
+    # Deck Specific Functions : Usage
     #
     def get_button_value(self, name):
         """Get the value of a button from its internal identifier name
@@ -373,52 +424,8 @@ class Deck(ABC):
 
     # #######################################
     #
-    # Deck Specific Functions : Description (capabilities)
+    # Deck Specific Functions : Rendering
     #
-    def get_index_prefix(self, index):
-        """Returns the prefix of a button index for this deck."""
-        return self.deck_type.get_index_prefix(index=index)
-
-    def get_index_numeric(self, index):
-        """Returns the numeric part of the index of a button index for this deck."""
-        return self.deck_type.get_index_numeric(index=index)
-
-    def valid_indices(self, with_icon: bool = False):
-        """Returns the valid indices for this deck."""
-        return self.deck_type.valid_indices(with_icon=with_icon)
-
-    def valid_activations(self, index=None):
-        """Returns the valid activations for the button pointed by the index.
-        If None is given, returns all valid activations.
-        """
-        return self.deck_type.valid_activations(index=index)
-
-    def valid_representations(self, index=None):
-        """Returns the valid representations for the button pointed by the index.
-        If None is given, returns all valid representations.
-        """
-        return self.deck_type.valid_representations(index=index)
-
-    # #######################################
-    #
-    # Deck Specific Functions : Representation
-    #
-    def inspect(self, what: str | None = None):
-        """Triggered by the Inspect activation.
-
-        This function is called on all pages of this Deck.
-        """
-        logger.info(f"*" * 60)
-        logger.info(f"Deck {self.name} -- {what}")
-        for v in self.pages.values():
-            v.inspect(what)
-
-    def print_page(self, page: Page):
-        """Produces an image of the deck's layout in the current directory.
-        For testing and development purpose.
-        """
-        pass
-
     def fill_empty(self, key):
         """Procedure to fill keys that do not contain any feedback rendering.
         key ([str]): Key index to fill with empty/void feedback.
@@ -456,7 +463,7 @@ class Deck(ABC):
 
     # #######################################
     #
-    # Deck Specific Functions : Device
+    # Deck Specific Functions : Device and operations
     #
     @abstractmethod
     def start(self):
@@ -473,6 +480,12 @@ class Deck(ABC):
             p.terminate()
         self.pages = {}
 
+    # ##################################################
+    #
+    # Deck Specific Functions : Callbacks and activation
+    #
+    # There are highliy deck specific, no general function.
+
 
 class DeckWithIcons(Deck):
     """
@@ -487,9 +500,7 @@ class DeckWithIcons(Deck):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
     # #######################################
-    # Deck Specific Functions
     #
-    # #######################################
     # Deck Specific Functions : Icon specific functions
     #
     def get_image_size(self, index):
@@ -642,6 +653,7 @@ class DeckWithIcons(Deck):
         self.fill_empty(key)
 
     # #######################################
+    #
     # Deck Specific Functions : Rendering
     #
     def set_key_icon(self, key, image):
@@ -653,3 +665,14 @@ class DeckWithIcons(Deck):
             image ([type]): [description]
         """
         pass
+
+    def render_button(self, config):
+        # testing. returns random icon
+        page = Page(name="_webtestpage", config={}, deck=self)
+        page.load_buttons(buttons=[config])
+        button: Button = page.buttons[list(page.buttons.keys())[0]]
+        representation = button._representation
+        if not isinstance(representation, Icon):
+            logger.warning(f"button: representation is not an image")
+            return None
+        return button.get_representation()

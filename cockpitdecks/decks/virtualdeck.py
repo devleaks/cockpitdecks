@@ -109,7 +109,6 @@ class VirtualDeck(DeckWithIcons):
         logger.warning(f"deck {deck.name}: unhandled event ({deck}, {key}, {state}, {data})")
         return None
 
-
     # #######################################
     #
     # Deck Specific Functions : Representation

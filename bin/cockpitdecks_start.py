@@ -10,7 +10,7 @@ import socket
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
 
-from flask import Flask, render_template, send_from_directory, request
+from flask import Flask, render_template, send_from_directory, request, jsonify
 from simple_websocket import Server, ConnectionClosed
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
@@ -31,9 +31,8 @@ if LOGFILE is not None:
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 
-# https://stackoverflow.com/questions/64348889/how-to-get-local-ip-address-python
-localip = (socket.getfqdn(), socket.gethostbyname_ex(socket.getfqdn())[2][0])[1]  # ouch.
-APP_HOST = [localip, 7777]
+
+APP_HOST = ["192.168.1.139", 7777]
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
 logger.info(f"Starting for {ac_desc}..")
@@ -64,6 +63,13 @@ def index():
 @app.route("/favicon.ico")
 def send_favicon():
     return send_from_directory(TEMPLATE_FOLDER, "favicon.ico")
+
+
+@app.route('/button/', methods=("GET", "POST"))
+def button():
+    if request.method == "POST":
+        return cockpit.render_button(request.json)
+    return render_template("button.j2", decks=cockpit.get_deck_list())
 
 
 @app.route("/assets/<path:path>")
