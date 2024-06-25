@@ -15,7 +15,7 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
+from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT, button
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER
@@ -1108,6 +1108,12 @@ class Cockpit(DatarefListener, CockpitBase):
             "representations": list(REPRESENTATIONS.keys()),
         }
 
+    def get_deck_indices(self, name):
+        deck = self.cockpit.get(name)
+        if deck is None:
+            return {"index": []}
+        return {"indices": deck.deck_type.valid_indices(with_icon=True)}
+
     def get_button_details(self, deck, index):
         deck = self.cockpit.get(deck)
         if deck is None:
@@ -1120,17 +1126,11 @@ class Cockpit(DatarefListener, CockpitBase):
             "representations": list(deck.deck_type.valid_representations(index)),
         }
 
-    def get_activation_details(self, name, index=None):
+    def get_activation_parameters(self, name, index=None):
         return ACTIVATIONS.get(name).parameters()
 
-    def get_representation_details(self, name, index=None):
+    def get_representation_parameters(self, name, index=None):
         return REPRESENTATIONS.get(name).parameters()
-
-    def get_deck_indices(self, name):
-        deck = self.cockpit.get(name)
-        if deck is None:
-            return {"index": []}
-        return {"indices": deck.deck_type.valid_indices(with_icon=True)}
 
     def render_button(self, data):
         # testing. returns random icon
@@ -1143,15 +1143,25 @@ class Cockpit(DatarefListener, CockpitBase):
             return {"image": "", "meta": {"error": f"deck {deck_name} not found"}}
         config = yaml.load(data["code"])
         image = None
+        button = deck.make_button(config=config)
+        if button is None:
+            return {"image": "", "meta": {"error": f"button not created"}}
         try:
-            image = deck.render_button(config=config)
+            image = button.get_representation()
         except:
-            print("error generating image")
+            logger.warning("error generating image")
         if image is None:
             return {"image": "", "meta": {"error": "no image"}}
         width, height = image.size
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format="PNG")
         content = img_byte_arr.getvalue()
-        payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": {"error": "ok"}}
+        meta = {  # later: return also is_valid() and errors
+            "error": "ok",
+            "activation-valid": button._activation.is_valid(),
+            "representation-valid": button._representation.is_valid(),
+            "activation-desc": button._activation.describe(),
+            "representation-desc": button._representation.describe(),
+        }
+        payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": meta}
         return payload

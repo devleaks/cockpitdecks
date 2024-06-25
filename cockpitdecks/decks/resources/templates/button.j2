@@ -17,9 +17,14 @@ body {
 pre {
     font-size: small;
 }
+.maxwidth {
+    font-size: small;
+    max-width: 600px;
+}
 </style>
 <script src="/assets/js/konva.js" type="text/javascript"></script>
-<script src="/assets/js/js-yaml.js" type="text/javascript"></script>
+<script src="/assets/js/yaml.js" type="text/javascript"></script>
+<script src="/assets/js/button.js" type="text/javascript"></script>
 </head>
 <body>
     <div id="preview">
@@ -51,7 +56,7 @@ pre {
 
                 <label>Name</label>
                 <input type="text" name="button-name" size="40"/>
-                <div id="button-description">Button description (later...)</div>
+                <div id="button-description"></div>
             </fieldset>
 
             <fieldset>
@@ -62,20 +67,20 @@ pre {
                     <option value="{{ activation }}">{{ activation }}</option>
                 {% endfor %}
                 </select>
-                <div><pre id="activation-details">Activation parameters</pre></div>
-                <div id="activation-description">Activation description (later...)</div>
+                <div id="activation-details"></div>
+                <div class="maxwidth"><p id="activation-description"></p></div>
             </fieldset>
 
             <fieldset>
                 <legend>Representation</legend>
                 <label>Type</label>
-                <select id="representation-type" name="type">
+                <select id="representation-type" name="view">
                 {% for representation in assets.representations %}
                     <option value="{{ representation }}">{{ representation }}</option>
                 {% endfor %}
                 </select>
-                <div><pre id="representation-details">Representation parameters</pre></div>
-                <div id="representation-description">Representation description (later...)</div>
+                <div id="representation-details"></div>
+                <div class="maxwidth"><p id="representation-description"></p></div>
             </fieldset>
 
             <fieldset>
@@ -109,7 +114,9 @@ view: SRS/X-Camera/Select_View_ID_1
             <textarea id="yaml" name="yaml" rows="40" cols="60" readonly=true></textarea>
         </form>
         <br>
-        <p style="font-size: small;">Status: <span id="status">ok</span></p>
+        <div id="status-bar" style="border: 1px solid grey;">
+            <p style="font-size: small;">Status: <span id="status">ok</span></p>
+        </div>
     </div>
 <script type="text/javascript">
 //
@@ -117,6 +124,7 @@ view: SRS/X-Camera/Select_View_ID_1
 // Konva layout set up and initialisation
 //
 const DEBUG = false
+const ASSETS = {{ assets|tojson(indent=2) }};
 
 // create stage
 var stage = new Konva.Stage({
@@ -129,23 +137,11 @@ stage.add(image_layer);
 var status_line = document.getElementById("status");
 var yaml_block = document.getElementById("yaml")
 
-// define function
-//
-// utility function
-//
-function display_image(image) {
-    let buttonImage = new Image();
-    buttonImage.onload = function () {
-        let button = new Konva.Image({
-            x: 0,
-            y: 0,
-            image: buttonImage
-        });
-        image_layer.add(button);
-    };
-    buttonImage.src = "data:image/jpeg;base64," + image;
-}
+var activation_details; // global
+var representation_details; // global
 
+// Utility functions
+//
 function collectForm(form_name) {
     let form = document.getElementById(form_name);
     let formData = new FormData(form);
@@ -159,23 +155,12 @@ function removeOptions(selectElement) {
    }
 }
 
-// Yaml
-//
-function generateYaml() {
-    let data = collectForm("parameters")
-
-    console.log("jsyaml", jsyaml)
-    yaml_block.innerHTML = data.code
+function cleanElement(el) {
+    while(el.firstChild){
+        el.removeChild(el.firstChild);
+    }
 }
 
-// Form
-//
-function makeForm(form_elements, details_elem) {
-    details_elem.innerHTML = JSON.stringify(form_elements, null, 2);
-}
-
-
-//
 // Event handler for form
 //
 document.getElementById("run").addEventListener(
@@ -184,7 +169,7 @@ document.getElementById("run").addEventListener(
         // Prevent form submit
         event.preventDefault();
         let data = collectForm("parameters");
-        generateYaml();
+        generateYaml(data, yaml_block, activation_details, representation_details);
 
         fetch("/button", {
           method: "POST",
@@ -194,13 +179,25 @@ document.getElementById("run").addEventListener(
         .then(r =>  r.json().then(image => {
             if (image.meta != undefined && image.meta.error != undefined) {
                 status_line.innerHTML = image.meta.error
+                console.log("image", image.meta)
             }
             if (image.image != "") {
-                display_image(image.image);
+                let buttonImage = new Image();
+                buttonImage.onload = function () {
+                    let button = new Konva.Image({
+                        x: 0,
+                        y: 0,
+                        image: buttonImage
+                    });
+                    image_layer.add(button);
+                };
+                buttonImage.src = "data:image/jpeg;base64," + image.image;
                 status_line.style["color"] = "#000000";
             } else {
                 status_line.style["color"] = "#ff0000";
             }
+            document.getElementById("activation-description").innerHTML = image.meta["activation-desc"]
+            document.getElementById("representation-description").innerHTML = image.meta["representation-desc"]
         }));
     },
     false,
@@ -222,11 +219,12 @@ activation_elem.onchange = (e) => {
     .then(r =>  r.json().then(details => {
         let details_elem = document.getElementById("activation-details");
         // console.log(details);
-        makeForm(details, details_elem)
+        document.getElementById("activation-description").innerHTML = ""
+        activation_details = details
+        makeForm(activation_details, details_elem)
     }));
     return false;
 };
-
 
 let representation_elem = document.getElementById("representation-type");
 representation_elem.onchange = (e) => {
@@ -236,12 +234,12 @@ representation_elem.onchange = (e) => {
     .then(r =>  r.json().then(details => {
         let details_elem = document.getElementById("representation-details");
         // console.log(details);
+        document.getElementById("representation-description").innerHTML = ""
+        representation_details = details
         makeForm(details, details_elem)
     }));
     return false;
 };
-
-
 
 let deck_elem = document.getElementById("deck");
 let index_elem = document.getElementById("index");
@@ -256,25 +254,31 @@ index_elem.onchange = (e) => {
         removeOptions(activation_elem);
         // Add new options
         details.activations.forEach(i => {
-            var opt = document.createElement('option');
+            var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;
             activation_elem.appendChild(opt);
         });
-        // trigger it on start
-        activation_elem.dispatchEvent(new Event('change'));
+        if (activation_elem.value != "none") {
+            activation_elem.value = "none"
+        } else {
+            activation_elem.dispatchEvent(new Event("change"));
+        }
 
         // Activations
         removeOptions(representation_elem);
         // Add new options
         details.representations.forEach(i => {
-            var opt = document.createElement('option');
+            var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;
             representation_elem.appendChild(opt);
         });
-        // trigger it on start
-        representation_elem.dispatchEvent(new Event('change'));
+        if (representation_elem.value != "none") {
+            representation_elem.value = "none"
+        } else {
+            representation_elem.dispatchEvent(new Event("change"));
+        }
     }));
     return false;
 };
@@ -288,21 +292,21 @@ deck_elem.onchange = (e) => {
         removeOptions(index_elem);
         // Add new options
         details.indices.forEach(i => {
-            var opt = document.createElement('option');
+            var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;
             index_elem.appendChild(opt);
         });
         if (index_elem.options.length > 0) {
             index_elem.value = index_elem.options[0].value
-            index_elem.dispatchEvent(new Event('change'));
+            index_elem.dispatchEvent(new Event("change"));
         }
     }));
     return false;
 };
 
 // trigger it on start, will cascade to index, activation, and representation
-deck_elem.dispatchEvent(new Event('change'));
+deck_elem.dispatchEvent(new Event("change"));
 </script>
 </body>
 </html>

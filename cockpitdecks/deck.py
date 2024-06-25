@@ -666,13 +666,13 @@ class DeckWithIcons(Deck):
         """
         pass
 
-    def render_button(self, config):
+    def make_button(self, config):
         # testing. returns random icon
-        page = Page(name="_webtestpage", config={}, deck=self)
+        page = Page(name="_BUTTONDESIGNER", config={}, deck=self)
         page.load_buttons(buttons=[config])
         button: Button = page.buttons[list(page.buttons.keys())[0]]
         representation = button._representation
         if not isinstance(representation, Icon):
             logger.warning(f"button: representation is not an image")
             return None
-        return button.get_representation()
+        return button

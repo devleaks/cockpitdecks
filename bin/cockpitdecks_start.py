@@ -98,13 +98,13 @@ def button_details():
 @app.route("/activation", methods=("GET", "POST"))
 def activation_details():
     name = request.args.get("name")
-    return cockpit.get_activation_details(name)
+    return cockpit.get_activation_parameters(name)
 
 
 @app.route("/representation", methods=("GET", "POST"))
 def representation_details():
     name = request.args.get("name")
-    return cockpit.get_representation_details(name)
+    return cockpit.get_representation_parameters(name)
 
 
 # Deck runner

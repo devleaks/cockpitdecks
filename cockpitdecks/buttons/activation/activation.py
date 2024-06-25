@@ -401,9 +401,10 @@ class Inspect(Activation):
 
     PARAMETERS = {
         "what": {
-            "type": "string",
+            "type": "choice",
             "prompt": "What to inspect",
-            "default-value": "status"
+            "default-value": "status",
+            "choices": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"]
         }
     }
 
@@ -861,7 +862,7 @@ class UpDown(Activation):
     PARAMETERS = {
         "command": {
             "type": "string",
-            "prompt": "Command",
+            "prompts": ["Command up", "Command down"],
             "mandatory": True,
             "repeat": 2
         },
