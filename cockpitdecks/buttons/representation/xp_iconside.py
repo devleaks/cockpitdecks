@@ -20,38 +20,18 @@ class IconSide(Icon):  # modified Representation IconSide class
     REPRESENTATION_NAME = "side"
 
     PARAMETERS = {
-        "centers": {
-            "type": "integer",
-            "prompt": "Centers",
-            "repeat": 3
-        },
+        "centers": {"type": "integer", "prompt": "Centers", "repeat": 3},
         "side": {
             "type": "multi",
             "multi": {
-                "text": {
-                    "type": "string",
-                    "prompt": "Text"
-                },
-                "text-font": {
-                    "type": "font",
-                    "prompt": "Font"
-                },
-                "text-size": {
-                    "type": "integer",
-                    "prompt": "Size"
-                },
-                "text-color": {
-                    "type": "string",
-                    "prompt": "Color"
-                },
-                "text-position": {
-                    "type": "choice",
-                    "prompt": "Position",
-                    "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]
-                },
+                "text": {"type": "string", "prompt": "Text"},
+                "text-font": {"type": "font", "prompt": "Font"},
+                "text-size": {"type": "integer", "prompt": "Size"},
+                "text-color": {"type": "string", "prompt": "Color"},
+                "text-position": {"type": "choice", "prompt": "Position", "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
             },
-            "prompt": "Labels"
-        }
+            "prompt": "Labels",
+        },
     }
 
     def __init__(self, config: dict, button: "Button"):

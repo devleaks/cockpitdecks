@@ -273,18 +273,7 @@ class LoadPage(Activation):
 
     KW_BACKPAGE = "back"
 
-    PARAMETERS = {
-        "page": {
-            "type": "string",
-            "prompt": "Page",
-            "default-value": "back"
-        },
-        "deck": {
-            "type": "string",
-            "prompt": "Remote deck",
-            "optional": True
-        }
-    }
+    PARAMETERS = {"page": {"type": "string", "prompt": "Page", "default-value": "back"}, "deck": {"type": "string", "prompt": "Remote deck", "optional": True}}
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -404,7 +393,7 @@ class Inspect(Activation):
             "type": "choice",
             "prompt": "What to inspect",
             "default-value": "status",
-            "choices": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"]
+            "choices": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"],
         }
     }
 
@@ -477,29 +466,14 @@ class Push(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True
-        },
-        "auto-repeat": {
-            "type": "boolean",
-            "prompt": "Auto-repeat"
-        },
-        "auto-repeat-delay": {
-            "type": "float",
-            "prompt": "Auto-repeat delay",
-            "hint": "Delay after press before repeat"
-        },
-        "auto-repeat-speed": {
-            "type": "float",
-            "prompt": "Auto-repeat speed",
-            "hint": "Speed of repeat"
-        },
+        "command": {"type": "string", "prompt": "Command", "mandatory": True},
+        "auto-repeat": {"type": "boolean", "prompt": "Auto-repeat"},
+        "auto-repeat-delay": {"type": "float", "prompt": "Auto-repeat delay", "hint": "Delay after press before repeat"},
+        "auto-repeat-speed": {"type": "float", "prompt": "Auto-repeat speed", "hint": "Speed of repeat"},
         "initial-value": {
             "type": "integer",
             "prompt": "Initial value",
-        }
+        },
     }
 
     # Default values
@@ -657,13 +631,7 @@ class Longpress(Push):
     ACTIVATION_NAME = "long-press"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True
-        }
-    }
+    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -707,16 +675,11 @@ class OnOff(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompts": ["Command to turn on", "Command to turn off"],
-            "mandatory": True,
-            "repeat": 2
-        },
+        "command": {"type": "string", "prompts": ["Command to turn on", "Command to turn off"], "mandatory": True, "repeat": 2},
         "initial-value": {
             "type": "integer",
             "prompt": "Initial value",
-        }
+        },
     }
 
     def __init__(self, config: dict, button: "Button"):
@@ -860,21 +823,12 @@ class UpDown(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompts": ["Command up", "Command down"],
-            "mandatory": True,
-            "repeat": 2
-        },
-        "stops": {
-            "type": "integer",
-            "prompt": "Number of stops",
-            "default-value": 2
-        },
+        "command": {"type": "string", "prompts": ["Command up", "Command down"], "mandatory": True, "repeat": 2},
+        "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
         "initial-value": {
             "type": "integer",
             "prompt": "Initial value",
-        }
+        },
     }
 
     def __init__(self, config: dict, button: "Button"):
@@ -1019,14 +973,7 @@ class Encoder(Activation):
     ACTIVATION_NAME = "encoder"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
-    PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True,
-            "repeat": 2
-        }
-    }
+    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 2}}
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -1100,14 +1047,7 @@ class EncoderPush(Push):
     ACTIVATION_NAME = "encoder-push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True,
-            "repeat": 3
-        }
-    }
+    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 3}}
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -1225,14 +1165,7 @@ class EncoderOnOff(OnOff):
     ACTIVATION_NAME = "encoder-onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True,
-            "repeat": 4
-        }
-    }
+    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4}}
 
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
@@ -1339,16 +1272,11 @@ class EncoderValue(OnOff):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True,
-            "repeat": 4
-        },
+        "command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4},
         "initial-value": {
             "type": "integer",
             "prompt": "Initial value",
-        }
+        },
     }
 
     def __init__(self, config: dict, button: "Button"):
@@ -1474,10 +1402,7 @@ class EncoderValueExtended(OnOff):
             "type": "float",
             "prompt": "Large step value",
         },
-        "set-dataref": {
-            "type": "string",
-            "prompt": "Dataref"
-        }
+        "set-dataref": {"type": "string", "prompt": "Dataref"},
     }
 
     def __init__(self, config: dict, button: "Button"):
@@ -1640,10 +1565,7 @@ class Slider(Activation):  # Cursor?
             "type": "float",
             "prompt": "Step value",
         },
-        "set-dataref": {
-            "type": "string",
-            "prompt": "Dataref"
-        }
+        "set-dataref": {"type": "string", "prompt": "Dataref"},
     }
 
     def __init__(self, config: dict, button: "Button"):
@@ -1741,14 +1663,7 @@ class EncoderToggle(Activation):
     ACTIVATION_NAME = "encoder-toggle"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {
-            "type": "string",
-            "prompt": "Command",
-            "mandatory": True,
-            "repeat": 4
-        }
-    }
+    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4}}
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)

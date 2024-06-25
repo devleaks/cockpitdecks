@@ -1,0 +1,8 @@
+buttons:
+- icon: LIVERY_UP.png
+  index: 0
+  type: none
+- index: 1
+  knob:
+    icon: NONE.png
+  type: none

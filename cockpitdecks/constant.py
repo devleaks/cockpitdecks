@@ -171,7 +171,9 @@ class DECK_FEEDBACK(Enum):
 # Prevent aliasing
 # https://stackoverflow.com/questions/64716894/ruamel-yaml-disabling-alias-for-dumping
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
+
 yaml = YAML(typ="safe", pure=True)
+yaml.default_flow_style = False
 
 init_logger = logging.getLogger("init/common")
 

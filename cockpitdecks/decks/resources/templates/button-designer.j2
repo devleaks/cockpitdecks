@@ -86,9 +86,9 @@ body {
                     To generate image from textarea, press render.<br/>
                     Textarea can be edited but modification are <strong>not</strong> reported into form elements.
                 </p>
-                <button id="run"   name="action" value="render">Render</button>
-                <button id="clear" name="action" value="clear">Clear</button>
-                <button id="save"  name="action" value="save">Save</button>
+                <button id="run"   type="button" name="action" value="render">Render</button>
+                <button id="clear" type="button" name="action" value="clear">Clear</button>
+                <button id="save"  type="button" name="action" value="save">Save</button>
                 <br/>
                 <legend>Code</legend>
                 <br/>
@@ -104,7 +104,6 @@ body {
 //
 // Konva layout set up and initialisation
 //
-const DEBUG = false
 const ASSETS = {{ assets|tojson(indent=2) }};
 
 // create stage
@@ -115,7 +114,10 @@ var stage = new Konva.Stage({
 });
 var image_layer = new Konva.Layer({name: "image"});
 stage.add(image_layer);
+
+
 var status_line = document.getElementById("status");
+var code_elem = document.getElementById("code")
 
 var activation_details; // global
 var representation_details; // global
@@ -143,69 +145,68 @@ function cleanElement(el) {
 
 // Event handler for form
 //
-var code_elem = document.getElementById("code")
+function render(event) {
+    // Prevent form submit
+    event.preventDefault();
+    if (code_elem.innerHTML == "") {
+        let data = collectForm("parameters");
+        code_elem.innerHTML = generateYaml(data, activation_details, representation_details);
+    }
+    data = collectForm("parameters"); // to collect above
+
+    fetch("/button-designer", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"}, 
+      body: JSON.stringify(data)
+    })
+    .then(r =>  r.json().then(image => {
+        if (image.meta != undefined && image.meta.error != undefined) {
+            status_line.innerHTML = image.meta.error
+            console.log("image", image.meta)
+        }
+        if (image.image != "") {
+            let buttonImage = new Image();
+            buttonImage.onload = function () {
+                let button = new Konva.Image({
+                    x: 0,
+                    y: 0,
+                    image: buttonImage
+                });
+                image_layer.add(button);
+            };
+            buttonImage.src = "data:image/jpeg;base64," + image.image;
+            status_line.style["color"] = "#000000";
+        } else {
+            status_line.style["color"] = "#ff0000";
+        }
+        if (image.meta["representation-desc"] != undefined) {
+            document.getElementById("activation-description").innerHTML = image.meta["activation-desc"]
+        }
+        if (image.meta["activation-desc"] != undefined) {
+            document.getElementById("representation-description").innerHTML = image.meta["representation-desc"]
+        }
+    }));
+}
+
 document.getElementById("run").addEventListener(
     "click",
-    function (event) {
-        // Prevent form submit
-        event.preventDefault();
-        if (code_elem.innerHTML == "") {
-            let data = collectForm("parameters");
-            code_elem.innerHTML = generateYaml(data, activation_details, representation_details);
-        }
-        data = collectForm("parameters"); // to collect above
+    render,
+    false,
+);
 
-        fetch("/button-designer", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"}, 
-          body: JSON.stringify(data)
-        })
-        .then(r =>  r.json().then(image => {
-            if (image.meta != undefined && image.meta.error != undefined) {
-                status_line.innerHTML = image.meta.error
-                console.log("image", image.meta)
-            }
-            if (image.image != "") {
-                let buttonImage = new Image();
-                buttonImage.onload = function () {
-                    let button = new Konva.Image({
-                        x: 0,
-                        y: 0,
-                        image: buttonImage
-                    });
-                    image_layer.add(button);
-                };
-                buttonImage.src = "data:image/jpeg;base64," + image.image;
-                status_line.style["color"] = "#000000";
-            } else {
-                status_line.style["color"] = "#ff0000";
-            }
-            if (image.meta["representation-desc"] != undefined) {
-                document.getElementById("activation-description").innerHTML = image.meta["activation-desc"]
-            }
-            if (image.meta["activation-desc"] != undefined) {
-                document.getElementById("representation-description").innerHTML = image.meta["representation-desc"]
-            }
-        }));
-    },
+document.getElementById("save").addEventListener(
+    "click",
+    render,
     false,
 );
 
 document.getElementById("clear").addEventListener(
-  "click",
-  function (event) {
-    event.preventDefault();
-    code_elem.innerHTML = ""
-  },
-  false,
-);
-
-document.getElementById("save").addEventListener(
-  "click",
-  function (event) {
-    event.preventDefault();
-  },
-  false,
+    "click",
+    function (event) {
+        event.preventDefault();
+        code_elem.innerHTML = ""
+    },
+    false,
 );
 
 let activation_elem = document.getElementById("activation-type");

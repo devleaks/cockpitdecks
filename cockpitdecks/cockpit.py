@@ -1133,30 +1133,42 @@ class Cockpit(DatarefListener, CockpitBase):
         return REPRESENTATIONS.get(name).parameters()
 
     def save_button(self, data):
-        layout = data.get("layout", "default")
-        page = data.get("page", "index.yaml")
-        dn = os.path.join(CONFIG_FOLDER, layout)
-        if not os.path.isdir(dn):
+        deck = data.get("deck", "")
+        if deck == "":
+            deck = "deck"
+        layout = data.get("layout", "")
+        if layout == "":
+            layout = "default"
+        page = data.get("page", "")
+        if page == "":
+            page = "index.yaml"
+        dn = os.path.join(CONFIG_FOLDER, deck, layout)
+        if not os.path.exists(dn):
             os.makedirs(dn, exist_ok=True)
         fn = os.path.join(dn, page)
-        page_config = {
-            "buttons": []
-        }
+        page_config = None
         button_config = yaml.load(data["code"])
         if os.path.exists(fn):
-            page_config = Config(fn).store
-            page_config.buttons = list(filter(lambda b: b.index != button_config.index,  page_config.buttons))
-        page_config["buttons"].append(data.code)
+            with open(fn, "r") as fp:
+                page_config = yaml.load(fp)
+                if page_config is not None:
+                    if "buttons" in page_config:
+                        page_config["buttons"] = list(filter(lambda b: b["index"] != button_config["index"], page_config["buttons"]))
+                    else:
+                        page_config["buttons"] = []
+        if page_config is None:
+            page_config = {"buttons": [button_config]}
+        else:
+            page_config["buttons"].append(button_config)
         with open(fn, "w") as fp:
-            yaml.dump(fp, page_config)
+            yaml.dump(page_config, fp)
             logger.info(f"button saved ({fn})")
 
     def render_button(self, data):
         # testing. returns random icon
-        # print(json.dumps(self.get_assets(), indent=2))
-        action = data.get("action")
-        if action is not None and action == "save":
-            self.save_button(data)
+        action = data.get("action", "save")
+        # if action is not None and action == "save":
+        #     self.save_button(data)
         deck_name = data.get("deck")
         if deck_name is None:
             return {"image": "", "meta": {"error": "no deck name"}}

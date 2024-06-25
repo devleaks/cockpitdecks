@@ -269,14 +269,8 @@ class LiveWeatherIcon(DrawAnimation):
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
     PARAMETERS = {
-        "speed": {
-            "type": "integer",
-            "prompt": "Refresh weather (seconds)"
-        },
-        "Refresh location": {
-            "type": "integer",
-            "prompt": "Refresh location (seconds)"
-        }
+        "speed": {"type": "integer", "prompt": "Refresh weather (seconds)"},
+        "Refresh location": {"type": "integer", "prompt": "Refresh location (seconds)"},
     }
 
     def __init__(self, config: dict, button: "Button"):

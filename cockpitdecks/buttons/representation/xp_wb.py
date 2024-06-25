@@ -29,18 +29,9 @@ class XPWeatherBaseIcon(DrawBase):
     REPRESENTATION_NAME = "weather-base"
 
     PARAMETERS = {
-        "speed": {
-            "type": "integer",
-            "prompt": "Refresh weather (seconds)"
-        },
-        "Refresh location": {
-            "type": "integer",
-            "prompt": "Refresh location (seconds)"
-        },
-        "location": {
-            "type": "string",
-            "prompt": "Location"
-        },
+        "speed": {"type": "integer", "prompt": "Refresh weather (seconds)"},
+        "Refresh location": {"type": "integer", "prompt": "Refresh location (seconds)"},
+        "location": {"type": "string", "prompt": "Location"},
     }
 
     MIN_UPDATE = 600  # seconds between two station updates
