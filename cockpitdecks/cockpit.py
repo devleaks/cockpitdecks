@@ -1090,7 +1090,9 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"no client for {deck}")
                 self.vd_errs.append(deck)
 
-
+    # Button designer
+    #
+    #
     def get_assets(self):
         """Collects all assets for button designer
 
@@ -1107,18 +1109,15 @@ class Cockpit(DatarefListener, CockpitBase):
         }
 
     def get_button_details(self, deck, index):
-        deck_name = data.get("deck")
-        if deck_name is None:
-            return {}
-        deck = self.cockpit.get(deck_name)
+        deck = self.cockpit.get(deck)
         if deck is None:
             return {}
         return {
             "deck": deck.name,
             "deck_type": deck.deck_type.name,
             "index": index,
-            "activations": deck.deck_type.valid_activations(index),
-            "representations": deck.deck_type.valid_representations(index),
+            "activations": list(deck.deck_type.valid_activations(index)),
+            "representations": list(deck.deck_type.valid_representations(index)),
         }
 
     def get_activation_details(self, name, index=None):
@@ -1127,14 +1126,11 @@ class Cockpit(DatarefListener, CockpitBase):
     def get_representation_details(self, name, index=None):
         return REPRESENTATIONS.get(name).parameters()
 
-    def get_deck_indice(self, name):
-        deck_name = data.get("deck")
-        if deck_name is None:
-            return {"index": []}
-        deck = self.cockpit.get(deck_name)
+    def get_deck_indices(self, name):
+        deck = self.cockpit.get(name)
         if deck is None:
             return {"index": []}
-        return {"index": deck.deck_type.valid_indices(with_icons=True)}
+        return {"indices": deck.deck_type.valid_indices(with_icon=True)}
 
     def render_button(self, data):
         # testing. returns random icon

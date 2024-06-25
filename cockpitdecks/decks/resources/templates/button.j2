@@ -6,11 +6,11 @@
 body {
     font-family: sans-serif;
 }
-#render, #design {
+#preview, #design {
     display: block;
     float: left;
 }
-#render {
+#preview {
     width: 520px;
     height: 520px;
 }
@@ -22,7 +22,7 @@ pre {
 <script src="/assets/js/js-yaml.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="render">
+    <div id="preview">
     </div>
     <div id="design">
         <form id="parameters">
@@ -30,44 +30,58 @@ pre {
             <fieldset>
                 <legend>Deck</legend>
                 <label>Deck model</label>
-                <select name="deck">
+                <select id="deck" name="deck">
                 {% for deck in assets.decks %}
                     <option value="{{ deck.name }}">{{ deck.name }} ({{ deck.type }})</option>
                 {% endfor %}
                 </select>
+                <br/>
+                <label>Layout Name</label>
+                <input type="text" name="layout" size="20"/>
+                <br/>
+                <label>Page Name</label>
+                <input type="text" name="page" size="20"/>
             </fieldset>
 
             <fieldset>
                 <legend>Button</legend>
                 <label>Index</label>
-                <input type="text" name="index" size="10"/>
+                <select id="index" name="index">
+                </select>
+
                 <label>Name</label>
-                <input type="text" name="index" size="40"/>
+                <input type="text" name="button-name" size="40"/>
+                <div id="button-description">Button description (later...)</div>
             </fieldset>
 
             <fieldset>
                 <legend>Activation</legend>
                 <label>Type</label>
-                <select id="activation-type" name="type" onchange="load_activation_parameters();">
+                <select id="activation-type" name="type">
                 {% for activation in assets.activations %}
                     <option value="{{ activation }}">{{ activation }}</option>
                 {% endfor %}
                 </select>
                 <div><pre id="activation-details">Activation parameters</pre></div>
+                <div id="activation-description">Activation description (later...)</div>
             </fieldset>
 
             <fieldset>
                 <legend>Representation</legend>
                 <label>Type</label>
-                <select id="representation-type" name="type" onchange="load_representation_parameters();">
+                <select id="representation-type" name="type">
                 {% for representation in assets.representations %}
                     <option value="{{ representation }}">{{ representation }}</option>
                 {% endfor %}
                 </select>
                 <div><pre id="representation-details">Representation parameters</pre></div>
+                <div id="representation-description">Representation description (later...)</div>
             </fieldset>
 
             <fieldset>
+                <button id="run"  name="action" value="render">Render</button>
+                <button id="save" name="action" value="save">Save</button>
+                <br/>
                 <legend>Code</legend>
                 <br/>
                 <textarea id="code" name="code" rows="40" cols="60">
@@ -92,9 +106,6 @@ command: toliss_airbus/dispcommands/CaptCstrPushButton
 view: SRS/X-Camera/Select_View_ID_1
 </textarea>
             <br/>
-            <button id="run" onclick="render();">Render</button>
-            <button id="save" onclick="render();">Save</button>
-            <br/>
             <textarea id="yaml" name="yaml" rows="40" cols="60" readonly=true></textarea>
         </form>
         <br>
@@ -107,18 +118,9 @@ view: SRS/X-Camera/Select_View_ID_1
 //
 const DEBUG = false
 
-// Prevent form submit
-document.querySelector("#run").addEventListener(
-  "click",
-  function (event) {
-    event.preventDefault();
-  },
-  false,
-);
-
 // create stage
 var stage = new Konva.Stage({
-    container: "render",
+    container: "preview",
     width: 512,
     height: 512,
 });
@@ -144,47 +146,73 @@ function display_image(image) {
     buttonImage.src = "data:image/jpeg;base64," + image;
 }
 
-function collect_form(form_name) {
+function collectForm(form_name) {
     let form = document.getElementById(form_name);
     let formData = new FormData(form);
     return Object.fromEntries(formData)
+}
+
+function removeOptions(selectElement) {
+   var i, L = selectElement.options.length - 1;
+   for(i = L; i >= 0; i--) {
+      selectElement.remove(i);
+   }
+}
+
+// Yaml
+//
+function generateYaml() {
+    let data = collectForm("parameters")
+
+    console.log("jsyaml", jsyaml)
+    yaml_block.innerHTML = data.code
+}
+
+// Form
+//
+function makeForm(form_elements, details_elem) {
+    details_elem.innerHTML = JSON.stringify(form_elements, null, 2);
 }
 
 
 //
 // Event handler for form
 //
-function render() {
-    let data = collect_form("parameters");
-    generate_yaml();
+document.getElementById("run").addEventListener(
+    "click",
+    function (event) {
+        // Prevent form submit
+        event.preventDefault();
+        let data = collectForm("parameters");
+        generateYaml();
 
-    fetch("/button", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"}, 
-      body: JSON.stringify(data)
-    })
-    .then(r =>  r.json().then(image => {
-        if (image.meta != undefined && image.meta.error != undefined) {
-            status_line.innerHTML = image.meta.error
-        }
-        if (image.image != "") {
-            display_image(image.image);
-            status_line.style["color"] = "#000000";
-        } else {
-            status_line.style["color"] = "#ff0000";
-        }
-    }));
-    return false;
-}
+        fetch("/button", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"}, 
+          body: JSON.stringify(data)
+        })
+        .then(r =>  r.json().then(image => {
+            if (image.meta != undefined && image.meta.error != undefined) {
+                status_line.innerHTML = image.meta.error
+            }
+            if (image.image != "") {
+                display_image(image.image);
+                status_line.style["color"] = "#000000";
+            } else {
+                status_line.style["color"] = "#ff0000";
+            }
+        }));
+    },
+    false,
+);
 
-
-function generate_yaml() {
-    let data = collect_form("parameters")
-
-    console.log("jsyaml", jsyaml)
-    yaml_block.innerHTML = data.code
-}
-
+document.getElementById("save").addEventListener(
+  "click",
+  function (event) {
+    event.preventDefault();
+  },
+  false,
+);
 
 let activation_elem = document.getElementById("activation-type");
 activation_elem.onchange = (e) => {
@@ -192,12 +220,13 @@ activation_elem.onchange = (e) => {
 
     fetch("/activation?" + new URLSearchParams({name: activation}).toString())
     .then(r =>  r.json().then(details => {
-        console.log(details);
         let details_elem = document.getElementById("activation-details");
-        details_elem.innerHTML = JSON.stringify(details, null, 2);
+        // console.log(details);
+        makeForm(details, details_elem)
     }));
     return false;
 };
+
 
 let representation_elem = document.getElementById("representation-type");
 representation_elem.onchange = (e) => {
@@ -205,12 +234,75 @@ representation_elem.onchange = (e) => {
 
     fetch("/representation?" + new URLSearchParams({name: representation}).toString())
     .then(r =>  r.json().then(details => {
-        console.log(details);
         let details_elem = document.getElementById("representation-details");
-        details_elem.innerHTML = JSON.stringify(details, null, 2);
+        // console.log(details);
+        makeForm(details, details_elem)
     }));
     return false;
 };
+
+
+
+let deck_elem = document.getElementById("deck");
+let index_elem = document.getElementById("index");
+index_elem.onchange = (e) => {
+    let deck = deck_elem.value
+    let index = index_elem.value
+
+    fetch("/button_details?" + new URLSearchParams({deck: deck, index: index}).toString())
+    .then(r =>  r.json().then(details => {
+        // console.log("button details", details);
+        // Activations
+        removeOptions(activation_elem);
+        // Add new options
+        details.activations.forEach(i => {
+            var opt = document.createElement('option');
+            opt.value = i;
+            opt.innerHTML = i;
+            activation_elem.appendChild(opt);
+        });
+        // trigger it on start
+        activation_elem.dispatchEvent(new Event('change'));
+
+        // Activations
+        removeOptions(representation_elem);
+        // Add new options
+        details.representations.forEach(i => {
+            var opt = document.createElement('option');
+            opt.value = i;
+            opt.innerHTML = i;
+            representation_elem.appendChild(opt);
+        });
+        // trigger it on start
+        representation_elem.dispatchEvent(new Event('change'));
+    }));
+    return false;
+};
+
+deck_elem.onchange = (e) => {
+    let deck = deck_elem.value
+
+    fetch("/deck_indices?" + new URLSearchParams({name: deck}).toString())
+    .then(r =>  r.json().then(details => {
+        // console.log("deck indices", details);
+        removeOptions(index_elem);
+        // Add new options
+        details.indices.forEach(i => {
+            var opt = document.createElement('option');
+            opt.value = i;
+            opt.innerHTML = i;
+            index_elem.appendChild(opt);
+        });
+        if (index_elem.options.length > 0) {
+            index_elem.value = index_elem.options[0].value
+            index_elem.dispatchEvent(new Event('change'));
+        }
+    }));
+    return false;
+};
+
+// trigger it on start, will cascade to index, activation, and representation
+deck_elem.dispatchEvent(new Event('change'));
 </script>
 </body>
 </html>

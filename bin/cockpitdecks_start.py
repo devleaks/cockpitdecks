@@ -68,11 +68,31 @@ def send_favicon():
     return send_from_directory(TEMPLATE_FOLDER, "favicon.ico")
 
 
+@app.route("/assets/<path:path>")
+def send_report(path):
+    return send_from_directory(ASSET_FOLDER, path)
+
+
+# Button designer
+#
 @app.route('/button/', methods=("GET", "POST"))
 def button():
     if request.method == "POST":
         return cockpit.render_button(request.json)
     return render_template("button.j2", assets=cockpit.get_assets())
+
+
+@app.route("/deck_indices", methods=("GET", "POST"))
+def deck_indices():
+    name = request.args.get("name")
+    return cockpit.get_deck_indices(name)
+
+
+@app.route("/button_details", methods=("GET", "POST"))
+def button_details():
+    deck = request.args.get("deck")
+    index = request.args.get("index")
+    return cockpit.get_button_details(deck, index)
 
 
 @app.route("/activation", methods=("GET", "POST"))
@@ -87,11 +107,8 @@ def representation_details():
     return cockpit.get_representation_details(name)
 
 
-@app.route("/assets/<path:path>")
-def send_report(path):
-    return send_from_directory(ASSET_FOLDER, path)
-
-
+# Deck runner
+#
 @app.route("/deck/<name>")
 def deck(name: str):
     uname = urllib.parse.unquote(name)

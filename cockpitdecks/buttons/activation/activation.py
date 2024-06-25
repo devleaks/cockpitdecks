@@ -271,6 +271,8 @@ class LoadPage(Activation):
     ACTIVATION_NAME = "page"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    KW_BACKPAGE = "back"
+
     PARAMETERS = {
         "page": {
             "type": "string",
@@ -283,8 +285,6 @@ class LoadPage(Activation):
             "optional": True
         }
     }
-
-    KW_BACKPAGE = "back"
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -656,6 +656,14 @@ class Longpress(Push):
     ACTIVATION_NAME = "long-press"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
 
@@ -696,6 +704,19 @@ class OnOff(Activation):
 
     ACTIVATION_NAME = "onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompts": ["Command to turn on", "Command to turn off"],
+            "mandatory": True,
+            "repeat": 2
+        },
+        "initial-value": {
+            "type": "integer",
+            "prompt": "Initial value",
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         # Commands
@@ -837,6 +858,24 @@ class UpDown(Activation):
     ACTIVATION_NAME = "updown"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True,
+            "repeat": 2
+        },
+        "stops": {
+            "type": "integer",
+            "prompt": "Number of stops",
+            "default-value": 2
+        },
+        "initial-value": {
+            "type": "integer",
+            "prompt": "Initial value",
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         # Commands
         self._commands = [Command(path) for path in config.get("commands", [])]
@@ -880,7 +919,7 @@ class UpDown(Activation):
 
     def __str__(self):  # print its status
         return (
-            super()
+            super().__str__()
             + "\n"
             + ", ".join(
                 [
@@ -979,6 +1018,15 @@ class Encoder(Activation):
     ACTIVATION_NAME = "encoder"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True,
+            "repeat": 2
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
@@ -1050,6 +1098,15 @@ class EncoderPush(Push):
 
     ACTIVATION_NAME = "encoder-push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True,
+            "repeat": 3
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Push.__init__(self, config=config, button=button)
@@ -1167,6 +1224,15 @@ class EncoderOnOff(OnOff):
     ACTIVATION_NAME = "encoder-onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True,
+            "repeat": 4
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         OnOff.__init__(self, config=config, button=button)
 
@@ -1270,6 +1336,19 @@ class EncoderValue(OnOff):
 
     ACTIVATION_NAME = "encoder-value"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True,
+            "repeat": 4
+        },
+        "initial-value": {
+            "type": "integer",
+            "prompt": "Initial value",
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
@@ -1376,6 +1455,29 @@ class EncoderValueExtended(OnOff):
 
     ACTIVATION_NAME = "encoder-value-extended"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "value-min": {
+            "type": "float",
+            "prompt": "Minimum value",
+        },
+        "value-max": {
+            "type": "float",
+            "prompt": "Maximum value",
+        },
+        "step": {
+            "type": "float",
+            "prompt": "Step value",
+        },
+        "step-xl": {
+            "type": "float",
+            "prompt": "Large step value",
+        },
+        "set-dataref": {
+            "type": "string",
+            "prompt": "Dataref"
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         self.step = float(config.get("step", 1))
@@ -1524,6 +1626,25 @@ class Slider(Activation):  # Cursor?
     SLIDER_MAX = 100
     SLIDER_MIN = -100
 
+    PARAMETERS = {
+        "value-min": {
+            "type": "float",
+            "prompt": "Minimum value",
+        },
+        "value-max": {
+            "type": "float",
+            "prompt": "Maximum value",
+        },
+        "step": {
+            "type": "float",
+            "prompt": "Step value",
+        },
+        "set-dataref": {
+            "type": "string",
+            "prompt": "Dataref"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
 
@@ -1618,6 +1739,15 @@ class EncoderToggle(Activation):
 
     ACTIVATION_NAME = "encoder-toggle"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "command": {
+            "type": "string",
+            "prompt": "Command",
+            "mandatory": True,
+            "repeat": 4
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
