@@ -47,7 +47,7 @@ class IconSide(Icon):  # modified Representation IconSide class
                 "text-position": {
                     "type": "choice",
                     "prompt": "Position",
-                    "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+                    "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]
                 },
             },
             "prompt": "Labels"

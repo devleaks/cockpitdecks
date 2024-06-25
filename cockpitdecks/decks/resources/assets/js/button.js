@@ -1,6 +1,10 @@
 /* Button generator
  * 
  */
+DEFAULT_FONT = "DIN.ttf"
+DEFAULT_SIZE = 32
+DEFAULT_POSITION = "tm"
+
 LABEL_PARAMETERS = {
     "label": {
         "type": "string",
@@ -8,7 +12,8 @@ LABEL_PARAMETERS = {
     },
     "label-font": {
         "type": "font",
-        "prompt": "Font"
+        "prompt": "Font",
+        "default-value": "DIN.ttf"
     },
     "label-size": {
         "type": "integer",
@@ -21,7 +26,8 @@ LABEL_PARAMETERS = {
     "label-position": {
         "type": "choice",
         "prompt": "Position",
-        "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+        "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"],
+        "default-value": "ct"
     },
 }
 
@@ -36,7 +42,7 @@ function toTitleCase(str) {
   );
 }
 
-function add_elem(e, container) {
+function add_elem(name, e, container) {
     switch(e.type) {
     case "string":
         if (e.repeat != undefined) {
@@ -113,6 +119,9 @@ function add_elem(e, container) {
             opt.innerHTML = c;
             el.appendChild(opt);
         });
+        if (e.choices.indexOf(e["default-value"]) > 0) {
+            el.value = e["default-value"]
+        }
         container.appendChild(document.createElement("br"));
         break;
     case "font":
@@ -198,22 +207,100 @@ function makeForm(elements, container, add_label, first) {
         }
         let e = elements[name];
         console.log("e", name, e);
-        add_elem(e, container);
+        add_elem(name, e, container);
     }
 }
 
 // Yaml
 //
-function generateYaml(data, display, act_params, rep_params) {
-    var code = "" // YAML.stringify(data)
-    code += "index: " + data.index;
-    if (data.name != undefined) {
-        code += "\nname: " + data.name;
+function has_value(v) {
+    return v != undefined && v != ""
+}
+function add(name, value, indent) {
+    if (value != undefined && value != "") {
+        if (name == "font" && value==DEFAULT_FONT) {
+            return ""
+        }
+        if (name.endsWith("-size") && value==DEFAULT_SIZE) {
+            return ""
+        }
+        if (name.endsWith("-position") && value==DEFAULT_POSITION) {
+            return ""
+        }
+        return "\n" + Array(indent).fill("  ").join("") + name + ": " + value
+    } else {
+        return ""
     }
-    code += "\ntype: " + data.type;
+}
+function check_elem(name, elem, data, indent) {
+    console.log("c", name, elem, data, code, indent, data[name]);
+    if(data[name] != undefined) {
+        if (elem["default-value"] != undefined) {
+            if (data[name] != elem["default-value"] && data[name] != "") {
+                return add(name, data[name], indent);
+            }
+        } else if (data[name] != "") {
+            return add(name, data[name], indent);
+        }
+    }
+    return ""
+}
+
+function generateYaml(data, act_params, rep_params) {
+    function remaining(current, spaces) {
+        for (var name in rep_params) {
+            if ( ! rep_params.hasOwnProperty(name) || name == current) {
+                continue;
+            }
+            let e = rep_params[name];
+            console.log("r", name, e);
+            code += check_elem(name, e, data, spaces);
+        }
+    }
+    var code = ""
+    var indent = 0
+
+    code += add("index", data.index, indent);
+    code += add("name", data.name, indent);
+
+    // label
+    if (has_value(data.label)) {
+        for (var name in LABEL_PARAMETERS) {
+            if ( ! LABEL_PARAMETERS.hasOwnProperty(name) ) {
+                continue;
+            }
+            code += check_elem(name, LABEL_PARAMETERS[name], data, indent); // add(l, data[l], indent);
+        }
+    }
+
     // activation parameters
-    code += "\n" + data.view + ":";
+    code += add("type", data.type, indent);
+    for (var name in act_params) {
+        if ( ! act_params.hasOwnProperty(name) ) {
+            continue;
+        }
+        let e = act_params[name];
+        console.log("a", name, e);
+        code += check_elem(name, e, data, indent);
+    }
+
     // representation parameters
-    code += "\n\t" + data.view + ": true";
-    display.innerHTML = code;
+    switch(data.view) {
+    case "icon":
+    case "text":
+        code += add(data.view, data[data.view], indent)
+        remaining(data.view, indent)
+        break;
+    case "icon-color":
+        code += add(data.view, data["color"], indent)
+        remaining(data.view, indent)
+        break;
+    default:
+        code += "\n" + data.view + ":";
+        indent += 1
+        remaining(data.view, indent)
+        break;
+    }
+
+    return code.slice(1)
 }

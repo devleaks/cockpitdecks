@@ -54,10 +54,15 @@ class Icon(Representation):
         self.label_size = int(config.get("label-size", button.get_attribute("default-label-size")))
         self.label_color = config.get("label-color", button.get_attribute("default-label-color"))
         self.label_color = convert_color(self.label_color)
-        self.label_position = config.get("label-position", button.get_attribute("default-label-position"))
+        default_position = button.get_attribute("default-label-position")
+        self.label_position = config.get("label-position", default_position)
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
-            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default")
-            self.label_position = button.get_attribute("default-label-position")
+            if self.label_position[0] not in "lcr":
+                logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label horizontal position code {self.label_position[0]}")
+            if self.label_position[1] not in "tmb":
+                logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label vertical position code {self.label_position[1]}")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})")
+            self.label_position = default_position
 
         self.icon_color = config.get("icon-color", button.get_attribute("default-icon-color"))
         self.icon_color = convert_color(self.icon_color)
@@ -441,7 +446,7 @@ class IconText(Icon):
         "text-position": {
             "type": "choice",
             "prompt": "Position",
-            "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+            "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]
         },
     }
 
@@ -497,7 +502,7 @@ class MultiTexts(IconText):
                 "text-position": {
                     "type": "choice",
                     "prompt": "Position",
-                    "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+                    "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]
                 },
             },
             "prompt": "Text list"

@@ -25,7 +25,7 @@ body {
 </head>
 <body>
     <div id="preview">
-    </div>
+    </div><!--#preview-->
     <div id="design">
         <form id="parameters">
 
@@ -52,7 +52,7 @@ body {
                 </select>
 
                 <label>Name</label>
-                <input type="text" name="button-name" size="40"/>
+                <input type="text" name="name" size="40"/>
                 <div id="button-description"></div>
             </fieldset>
 
@@ -81,40 +81,19 @@ body {
             </fieldset>
 
             <fieldset>
-                <button id="run"  name="action" value="render">Render</button>
-                <button id="save" name="action" value="save">Save</button>
+                <button id="run"   name="action" value="render">Render</button>
+                <button id="clear" name="action" value="clear">Clear</button>
+                <button id="save"  name="action" value="save">Save</button>
                 <br/>
                 <legend>Code</legend>
                 <br/>
-                <textarea id="code" name="code" rows="40" cols="60">
-index: 0
-name: CSTR
-type: push
-annunciator:
-  size: small
-  model: B
-  parts:
-    B0:
-      color: lime
-      led: bars
-      dataref: AirbusFBW/OHPLightsATA31[16]
-      # formula: ${AirbusFBW/NDShowCSTRCapt}
-    B1:
-      text: CSTR
-      text-size: 40
-      text-font: DIN Bold
-      formula: "1"
-command: toliss_airbus/dispcommands/CaptCstrPushButton
-view: SRS/X-Camera/Select_View_ID_1
-</textarea>
-            <br/>
-            <textarea id="yaml" name="yaml" rows="40" cols="60" readonly=true></textarea>
+                <textarea id="code" name="code" rows="40" cols="60"></textarea>
+            </fieldset>
         </form>
-        <br>
         <div id="status-bar" style="border: 1px solid grey;">
             <p style="font-size: small;">Status: <span id="status">ok</span></p>
         </div>
-    </div>
+    </div><!--#design-->
 <script type="text/javascript">
 //
 //
@@ -132,7 +111,6 @@ var stage = new Konva.Stage({
 var image_layer = new Konva.Layer({name: "image"});
 stage.add(image_layer);
 var status_line = document.getElementById("status");
-var yaml_block = document.getElementById("yaml")
 
 var activation_details; // global
 var representation_details; // global
@@ -160,13 +138,17 @@ function cleanElement(el) {
 
 // Event handler for form
 //
+var code_elem = document.getElementById("code")
 document.getElementById("run").addEventListener(
     "click",
     function (event) {
         // Prevent form submit
         event.preventDefault();
-        let data = collectForm("parameters");
-        generateYaml(data, yaml_block, activation_details, representation_details);
+        if (code_elem.innerHTML == "") {
+            let data = collectForm("parameters");
+            code_elem.innerHTML = generateYaml(data, activation_details, representation_details);
+        }
+        data = collectForm("parameters"); // to collect above
 
         fetch("/button", {
           method: "POST",
@@ -193,11 +175,24 @@ document.getElementById("run").addEventListener(
             } else {
                 status_line.style["color"] = "#ff0000";
             }
-            document.getElementById("activation-description").innerHTML = image.meta["activation-desc"]
-            document.getElementById("representation-description").innerHTML = image.meta["representation-desc"]
+            if (image.meta["representation-desc"] != undefined) {
+                document.getElementById("activation-description").innerHTML = image.meta["activation-desc"]
+            }
+            if (image.meta["activation-desc"] != undefined) {
+                document.getElementById("representation-description").innerHTML = image.meta["representation-desc"]
+            }
         }));
     },
     false,
+);
+
+document.getElementById("clear").addEventListener(
+  "click",
+  function (event) {
+    event.preventDefault();
+    code_elem.innerHTML = ""
+  },
+  false,
 );
 
 document.getElementById("save").addEventListener(

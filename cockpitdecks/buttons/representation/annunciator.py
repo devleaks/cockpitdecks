@@ -406,7 +406,7 @@ class Annunciator(DrawBase):
                 "text-position": {
                     "type": "choice",
                     "prompt": "Position",
-                    "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+                    "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]
                 },
                 "framed": {
                     "type": "boolean",
