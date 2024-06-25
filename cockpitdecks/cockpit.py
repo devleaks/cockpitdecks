@@ -1102,7 +1102,7 @@ class Cockpit(DatarefListener, CockpitBase):
         decks = [{"name": k, "type": v.deck_type.name} for k, v in self.cockpit.items()]
         return {
             "decks": decks,
-            "fonts": self.fonts,
+            "fonts": list(self.fonts.keys()),
             "icons": list(self.icons.keys()),
             "activations": list(ACTIVATIONS.keys()),
             "representations": list(REPRESENTATIONS.keys()),

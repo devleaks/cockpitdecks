@@ -268,6 +268,17 @@ class LiveWeatherIcon(DrawAnimation):
     MIN_UPDATE = 600  # seconds between two station updates
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
+    PARAMETERS = {
+        "speed": {
+            "type": "integer",
+            "prompt": "Refresh weather (seconds)"
+        },
+        "Refresh location": {
+            "type": "integer",
+            "prompt": "Refresh location (seconds)"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         self._inited = False
         self._moved = False  # True if we get Metar for location at (lat, lon), False if Metar for default station

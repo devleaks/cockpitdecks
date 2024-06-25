@@ -35,6 +35,13 @@ class Icon(Representation):
     REPRESENTATION_NAME = "icon"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
+    PARAMETERS = {
+        "icon": {
+            "type": "icon",
+            "prompt": "Icon"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
 
@@ -373,6 +380,17 @@ class IconColor(Icon):
 
     REPRESENTATION_NAME = "icon-color"
 
+    PARAMETERS = {
+        "color": {
+            "type": "string",
+            "prompt": "Color"
+        },
+        "texture": {
+            "type": "icon",
+            "prompt": "Texture"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
@@ -403,6 +421,30 @@ class IconText(Icon):
 
     REPRESENTATION_NAME = "text"
 
+    PARAMETERS = {
+        "text": {
+            "type": "string",
+            "prompt": "Text"
+        },
+        "text-font": {
+            "type": "font",
+            "prompt": "Font"
+        },
+        "text-size": {
+            "type": "integer",
+            "prompt": "Size"
+        },
+        "text-color": {
+            "type": "string",
+            "prompt": "Color"
+        },
+        "text-position": {
+            "type": "choice",
+            "prompt": "Position",
+            "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+        },
+    }
+
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)
 
@@ -431,6 +473,36 @@ class IconText(Icon):
 class MultiTexts(IconText):
 
     REPRESENTATION_NAME = "multi-texts"
+
+    PARAMETERS = {
+        "multi-icon": {
+            "type": "multi",
+            "multi": {
+                "text": {
+                    "type": "string",
+                    "prompt": "Text"
+                },
+                "text-font": {
+                    "type": "font",
+                    "prompt": "Font"
+                },
+                "text-size": {
+                    "type": "integer",
+                    "prompt": "Size"
+                },
+                "text-color": {
+                    "type": "string",
+                    "prompt": "Color"
+                },
+                "text-position": {
+                    "type": "choice",
+                    "prompt": "Position",
+                    "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+                },
+            },
+            "prompt": "Text list"
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         IconText.__init__(self, config=config, button=button)
@@ -489,6 +561,19 @@ class MultiTexts(IconText):
 class MultiIcons(Icon):
 
     REPRESENTATION_NAME = "multi-icons"
+
+    PARAMETERS = {
+        "multi-icon": {
+            "type": "multi",
+            "multi": {
+                "texture": {
+                    "type": "icon",
+                    "prompt": "Icon"
+                }
+            },
+            "prompt": "Icon list"
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Icon.__init__(self, config=config, button=button)

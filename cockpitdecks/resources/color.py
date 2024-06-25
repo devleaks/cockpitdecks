@@ -30,7 +30,7 @@ def is_integer(s) -> bool:
 
 def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     # process either a color name or a color tuple as a string "(1, 2, 3)"
-    # and returns a tuple of 3 or 4 intergers in range [0,255].
+    # and returns a tuple of 3 or 4 integers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
     if instr is None:
         return None
@@ -60,7 +60,7 @@ def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
 
 def convert_color_hsl(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     # process either a color name or a color tuple as a string "(1, 2, 3)"
-    # and returns a tuple of 3 or 4 intergers in range [0,255].
+    # and returns a tuple of 3 or 4 integers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
     return colorsys.rgb_to_hls(*convert_color(instr)[0:3])
 

@@ -30,6 +30,8 @@ class Aircraft(IconText):
 
     REPRESENTATION_NAME = "aircraft"
 
+    PARAMETERS = {}
+
     def __init__(self, config: dict, button: "Button"):
         IconText.__init__(self, config=config, button=button)
         self.aircraft = config.get("aircraft")

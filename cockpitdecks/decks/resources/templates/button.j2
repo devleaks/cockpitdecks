@@ -14,9 +14,6 @@ body {
     width: 520px;
     height: 520px;
 }
-pre {
-    font-size: small;
-}
 .maxwidth {
     font-size: small;
     max-width: 600px;
@@ -221,7 +218,7 @@ activation_elem.onchange = (e) => {
         // console.log(details);
         document.getElementById("activation-description").innerHTML = ""
         activation_details = details
-        makeForm(activation_details, details_elem)
+        makeForm(activation_details, details_elem, false)
     }));
     return false;
 };
@@ -236,7 +233,7 @@ representation_elem.onchange = (e) => {
         // console.log(details);
         document.getElementById("representation-description").innerHTML = ""
         representation_details = details
-        makeForm(details, details_elem)
+        makeForm(details, details_elem, representation_elem.value)
     }));
     return false;
 };
@@ -253,7 +250,7 @@ index_elem.onchange = (e) => {
         // Activations
         removeOptions(activation_elem);
         // Add new options
-        details.activations.forEach(i => {
+        details.activations.sort().forEach(i => {
             var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;
@@ -268,7 +265,7 @@ index_elem.onchange = (e) => {
         // Activations
         removeOptions(representation_elem);
         // Add new options
-        details.representations.forEach(i => {
+        details.representations.sort().forEach(i => {
             var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;
@@ -291,7 +288,7 @@ deck_elem.onchange = (e) => {
         // console.log("deck indices", details);
         removeOptions(index_elem);
         // Add new options
-        details.indices.forEach(i => {
+        details.indices.sort().forEach(i => {
             var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;

@@ -18,6 +18,8 @@ class FCUIcon(DrawBase):
 
     REPRESENTATION_NAME = "fcu"
 
+    PARAMETERS = {}
+
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
         self.fcuconfig = config.get("fcu")

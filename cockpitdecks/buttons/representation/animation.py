@@ -29,6 +29,17 @@ class IconAnimation(MultiIcons):
 
     REPRESENTATION_NAME = "icon-animation"
 
+    PARAMETERS = {
+        "speed": {
+            "type": "integer",
+            "prompt": "Speed (seconds)"
+        },
+        "icon-off": {
+            "type": "icon",
+            "prompt": "Icon when off"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         MultiIcons.__init__(self, config=config, button=button)
 
@@ -134,6 +145,17 @@ class DrawAnimation(DrawBase):
 
     REPRESENTATION_NAME = "draw-animation"
 
+    PARAMETERS = {
+        "speed": {
+            "type": "integer",
+            "prompt": "Speed (seconds)"
+        },
+        "icon-off": {
+            "type": "icon",
+            "prompt": "Icon when off"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
 
@@ -230,6 +252,13 @@ class DrawAnimation(DrawBase):
 class DrawAnimationFTG(DrawAnimation):
 
     REPRESENTATION_NAME = "ftg"
+
+    PARAMETERS = {
+        "speed": {
+            "type": "integer",
+            "prompt": "Speed (seconds)"
+        }
+    }
 
     def __init__(self, config: dict, button: "Button"):
         DrawAnimation.__init__(self, config=config, button=button)

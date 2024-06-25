@@ -19,6 +19,41 @@ class IconSide(Icon):  # modified Representation IconSide class
 
     REPRESENTATION_NAME = "side"
 
+    PARAMETERS = {
+        "centers": {
+            "type": "integer",
+            "prompt": "Centers",
+            "repeat": 3
+        },
+        "side": {
+            "type": "multi",
+            "multi": {
+                "text": {
+                    "type": "string",
+                    "prompt": "Text"
+                },
+                "text-font": {
+                    "type": "font",
+                    "prompt": "Font"
+                },
+                "text-size": {
+                    "type": "integer",
+                    "prompt": "Size"
+                },
+                "text-color": {
+                    "type": "string",
+                    "prompt": "Color"
+                },
+                "text-position": {
+                    "type": "choice",
+                    "prompt": "Position",
+                    "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+                },
+            },
+            "prompt": "Labels"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         config["icon-color"] = config["side"].get("icon-color", button.get_attribute("default-icon-color"))
         Icon.__init__(self, config=config, button=button)

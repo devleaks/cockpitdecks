@@ -361,6 +361,62 @@ class Annunciator(DrawBase):
 
     REPRESENTATION_NAME = "annunciator"
 
+    PARAMETERS = {
+        "icon": {
+            "type": "icon",
+            "prompt": "Icon"
+        },
+        "type": {
+            "type": "choice",
+            "prompt": "Type",
+            "choices": ["A", "B", "C", "D", "E", "F"]
+        },
+        "style": {
+            "type": "choice",
+            "prompt": "Style",
+            "choices": ["Korry", "Vivisun"]
+        },
+        "color": {
+            "type": "string",
+            "prompt": "Background color"
+        },
+        "texture": {
+            "type": "icon",
+            "prompt": "Background texture"
+        },
+        "annunciator-parts": {
+            "type": "multi",
+            "multi": {
+                "led": {
+                    "type": "boolean",
+                    "prompt": "LED"
+                },
+                "text-font": {
+                    "type": "font",
+                    "prompt": "Font"
+                },
+                "text-size": {
+                    "type": "integer",
+                    "prompt": "Size"
+                },
+                "text-color": {
+                    "type": "string",
+                    "prompt": "Color"
+                },
+                "text-position": {
+                    "type": "choice",
+                    "prompt": "Position",
+                    "choices": ["tl", "tm", "tr", "ml", "mm", "mr", "bl", "bm", "br"]
+                },
+                "framed": {
+                    "type": "boolean",
+                    "prompt": "Frame"
+                },
+            },
+            "prompt": "Parts"
+        }
+    }
+
     def __init__(self, config: dict, button: "Button"):
         self.button = button  # we need the reference before we call Icon.__init__()...
         self.icon = config.get("icon")

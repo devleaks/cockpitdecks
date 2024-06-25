@@ -77,6 +77,8 @@ class FMAIcon(DrawBase):
 
     REPRESENTATION_NAME = "fma"
 
+    PARAMETERS = {}
+
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
 
