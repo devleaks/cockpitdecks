@@ -32,7 +32,10 @@ ac = sys.argv[1] if len(sys.argv) > 1 else None
 ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 
 
-APP_HOST = ["192.168.1.139", 7777]
+APP_HOST = [
+    os.getenv('APP_HOST', '127.0.0.1'),
+    int(os.getenv('APP_PORT', '7777'))
+]
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
 logger.info(f"Starting for {ac_desc}..")
