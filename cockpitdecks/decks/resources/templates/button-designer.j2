@@ -21,7 +21,7 @@ body {
 </style>
 <script src="/assets/js/konva.js" type="text/javascript"></script>
 <script src="/assets/js/yaml.js" type="text/javascript"></script>
-<script src="/assets/js/button.js" type="text/javascript"></script>
+<script src="/assets/js/button-designer.js" type="text/javascript"></script>
 </head>
 <body>
     <div id="preview">
@@ -81,6 +81,11 @@ body {
             </fieldset>
 
             <fieldset>
+                <p style="font-size: x-small;">
+                    To generate Yaml from above form, textarea needs to be clear, then press Render.<br/>
+                    To generate image from textarea, press render.<br/>
+                    Textarea can be edited but modification are <strong>not</strong> reported into form elements.
+                </p>
                 <button id="run"   name="action" value="render">Render</button>
                 <button id="clear" name="action" value="clear">Clear</button>
                 <button id="save"  name="action" value="save">Save</button>
@@ -150,7 +155,7 @@ document.getElementById("run").addEventListener(
         }
         data = collectForm("parameters"); // to collect above
 
-        fetch("/button", {
+        fetch("/button-designer", {
           method: "POST",
           headers: {"Content-Type": "application/json"}, 
           body: JSON.stringify(data)

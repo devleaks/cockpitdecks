@@ -75,11 +75,11 @@ def send_report(path):
 
 # Button designer
 #
-@app.route('/button/', methods=("GET", "POST"))
-def button():
+@app.route('/button-designer', methods=("GET", "POST"))
+def button_designer():
     if request.method == "POST":
         return cockpit.render_button(request.json)
-    return render_template("button.j2", assets=cockpit.get_assets())
+    return render_template("button-designer.j2", assets=cockpit.get_assets())
 
 
 @app.route("/deck_indices", methods=("GET", "POST"))
@@ -105,6 +105,13 @@ def activation_details():
 def representation_details():
     name = request.args.get("name")
     return cockpit.get_representation_parameters(name)
+
+
+# Deck designer
+#
+@app.route('/deck-designer')
+def deck_designer():
+    return render_template("deck-designer.j2")
 
 
 # Deck runner

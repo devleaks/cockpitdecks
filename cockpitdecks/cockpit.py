@@ -1132,9 +1132,31 @@ class Cockpit(DatarefListener, CockpitBase):
     def get_representation_parameters(self, name, index=None):
         return REPRESENTATIONS.get(name).parameters()
 
+    def save_button(self, data):
+        layout = data.get("layout", "default")
+        page = data.get("page", "index.yaml")
+        dn = os.path.join(CONFIG_FOLDER, layout)
+        if not os.path.isdir(dn):
+            os.makedirs(dn, exist_ok=True)
+        fn = os.path.join(dn, page)
+        page_config = {
+            "buttons": []
+        }
+        button_config = yaml.load(data["code"])
+        if os.path.exists(fn):
+            page_config = Config(fn).store
+            page_config.buttons = list(filter(lambda b: b.index != button_config.index,  page_config.buttons))
+        page_config["buttons"].append(data.code)
+        with open(fn, "w") as fp:
+            yaml.dump(fp, page_config)
+            logger.info(f"button saved ({fn})")
+
     def render_button(self, data):
         # testing. returns random icon
         # print(json.dumps(self.get_assets(), indent=2))
+        action = data.get("action")
+        if action is not None and action == "save":
+            self.save_button(data)
         deck_name = data.get("deck")
         if deck_name is None:
             return {"image": "", "meta": {"error": "no deck name"}}

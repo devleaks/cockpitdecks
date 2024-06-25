@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cockpitdecks - {{ deck.name }} </title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+<style type="text/css">
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+</style>
+</head>
+<body>
+<script src="/assets/js/konva.js" type="text/javascript"></script>
+<script src="/assets/js/deck-designer.js" type="text/javascript"></script>
+<script type="text/javascript">
+//
+//
+// Konva layout set up and initialisation
+//
+// create and add <div id="deck"></div> with proper styling, add to document
+const DEBUG = false
+
+var deck_elem = document.createElement("div");
+deck_elem.setAttribute("id", DECK_ELEMID);
+deck_elem.setAttribute("width", "inherit");
+deck_elem.setAttribute("height", "inherit");
+deck_elem.setAttribute("display", "block");
+deck_elem.setAttribute("padding", 0);
+deck_elem.setAttribute("marging", 0);
+document.getElementsByTagName("body")[0].appendChild(deck_elem)
+
+// create stage
+var stage = new Konva.Stage({
+    container: DECK_ELEMID,
+    width: window.innerWidth,
+    height: window.innerHeight,
+});
+
+// create layers to cleanly separate content by function
+var background_layer = new Konva.Layer({name: "background"});   // Background image or iniform color
+var hardware_layer = new Konva.Layer({name: "hardware"});       // Where Cockpitdecks draws its icons/images
+var interaction_layer = new Konva.Layer({name: "interaction"}); // Shapes with events attached to it
+
+// add the layer to the stage
+stage.add(background_layer);
+stage.add(hardware_layer);
+stage.add(interaction_layer);
+
+</script>
+</body>
+</html>
