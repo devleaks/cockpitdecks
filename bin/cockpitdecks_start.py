@@ -7,6 +7,13 @@ import threading
 import json
 import urllib.parse
 import socket
+import ruamel
+from ruamel.yaml import YAML
+
+ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
+yaml = YAML(typ="safe", pure=True)
+yaml.default_flow_style = False
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
 
@@ -117,9 +124,13 @@ def deck_designer():
 def button_designer_io():
     FILENAME = "decklayout.json"
     if request.method == "POST":
+        data = request.json
         with open(FILENAME, "w") as fp:
-            json.dump(request.json, fp, indent=2)
-            return {"status": "ok"}
+            json.dump(data["code"], fp, indent=2)
+        fn = FILENAME.replace(".json", ".yaml")
+        with open(fn, "w") as fp:
+            yaml.dump(data["deckconfig"], fp)
+        return {"status": "ok"}
     with open(FILENAME, "r") as fp:
         code = json.load(fp)
     return code

@@ -23,7 +23,6 @@ buttons:
       spacing: [81, 0]
   # touchscreen in streamdeck package vocabulary
   - name: touchscreen
-    name_int: 1001
     action: [press, longpress, swipe]
     feedback: image
     dimension: [548, 95]

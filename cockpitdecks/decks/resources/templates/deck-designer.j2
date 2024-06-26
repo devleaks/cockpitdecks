@@ -52,12 +52,10 @@ var stage = new Konva.Stage({
 
 // create layers to cleanly separate content by function
 var background_layer = new Konva.Layer({name: "background"});   // Background image or iniform color
-var hardware_layer = new Konva.Layer({name: "hardware"});       // Where Cockpitdecks draws its icons/images
 var interaction_layer = new Konva.Layer({name: "interaction"}); // Shapes with events attached to it
 
 // add the layer to the stage
 stage.add(background_layer);
-stage.add(hardware_layer);
 stage.add(interaction_layer);
 
 var transformer;
@@ -120,25 +118,9 @@ function cleanElement(el) {
 add_background()
 add_transformer()
 
-deck_elem.tabIndex = 1;
-deck_elem.focus();
-deck_elem.addEventListener("keydown", function (e) {
-    if (e.key == "Delete") {
-        s = transformer.nodes()  // handles don't disappear?
-        if (s.length > 0) {
-            s.forEach( (x) => { x.getParent().destroy() });
-        }
-        transformer.nodes([]);
-    }
-});
-
 //
 // Interactors
 //
-const SIZE = 50
-const INITIAL_POSITION = {x: 100, y: 100}
-const LABEL_SIZE = 12
-
 function label_editor(that_stage, label) {
     // https://konvajs.org/docs/sandbox/Editable_Text.html
 
@@ -175,63 +157,199 @@ function label_editor(that_stage, label) {
         // hide on enter
         if (e.key == "Enter") {
             label.text(textarea.value);
-            // shape.name(textarea.value);
-            // group.name(textarea.value);
+            label.getParent().name(textarea.value);
             document.body.removeChild(textarea);
         }
     });
 }
 
 
-function add_label(shape) {
-    const INIT_TEXT = "shape name";
-    let x = shape.x();
-    let y = shape.y();
-    if (shape instanceof Konva.Circle) {
-        x -= shape.radius()
-        y -= shape.radius()
-    }
-    let label = new Konva.Text({
-        x: x,
-        y: y - LABEL_SIZE - 2,
-        text: INIT_TEXT,
-        fontSize: LABEL_SIZE,
-        fontFamily: "Helvetica",
-        fill: "white",
-      });
+// https://stackoverflow.com/questions/4361242/extract-rotation-scale-values-from-2d-transformation-matrix
+function decompose_2d_matrix(mat) {
+  var a = mat[0];
+  var b = mat[1];
+  var c = mat[2];
+  var d = mat[3];
+  var e = mat[4];
+  var f = mat[5];
 
-    let group = new Konva.Group({name: INIT_TEXT, draggable: true})
-    group.add(shape);
-    group.add(label);
+  var delta = a * d - b * c;
 
-    shape.on("dblclick", function () {
-        transformer.nodes([shape]);
-    });
+  let result = {
+    translation: [e, f],
+    rotation: 0,
+    scale: [0, 0],
+    skew: [0, 0],
+  };
 
-    label.on("dblclick dbltap", () => {
-        label_editor(stage, label);
-    });
-    return group;
+  // Apply the QR-like decomposition.
+  if (a != 0 || b != 0) {
+    var r = Math.sqrt(a * a + b * b);
+    result.rotation = b > 0 ? Math.acos(a / r) : -Math.acos(a / r);
+    result.scale = [r, delta / r];
+    result.skew = [Math.atan((a * c + b * d) / (r * r)), 0];
+  } else if (c != 0 || d != 0) {
+    var s = Math.sqrt(c * c + d * d);
+    result.rotation =
+      Math.PI / 2 - (d > 0 ? Math.acos(-c / s) : -Math.acos(c / s));
+    result.scale = [delta / s, s];
+    result.skew = [0, Math.atan((a * c + b * d) / (s * s))];
+  } else {
+    // a = b = c = d = 0
+  }
+
+  return result;
 }
+
+
+function reset_transforms() {
+    let output = [];
+    stage.getLayers().forEach( (layer) => {
+        // console.log("layer", layer)
+        if (layer.name() == "background") {
+            // console.log("reset_transforms skipping ", layer.name())
+            return;
+        }
+        layer.getChildren().forEach( (group) => {
+            // console.log("group", group)
+            if (group instanceof Konva.Transformer) {
+                // console.log("reset_transforms skipping transformer", group.name())
+                return;
+            }
+            if (group instanceof Konva.Group) {
+                group.getChildren().forEach( (shape) => {
+                    // console.log("shape", shape)
+                    if (["Rect", "Circle"].indexOf(shape.className) > -1) {
+                        let transform = shape.getAbsoluteTransform();
+                        let matrix = transform.getMatrix();
+                        let summary = decompose_2d_matrix(matrix)
+                        console.log("installed transformer", group.name(), shape.name(), summary)
+
+                        let button;
+                        if (shape.className == "Rect") {
+                            button = {
+                                name: group.name(),
+                                action: ["push"],
+                                dimension: [Math.round(shape.attrs.width * summary.scale[0]), Math.round(shape.attrs.height * summary.scale[1])],
+                                layout: {
+                                    offset: [Math.round(summary.translation[0]), Math.round(summary.translation[1])]
+                                }
+                            };
+                            if (shape.attrs.name == "hardware") {
+                                button.layout.hardware = "hardware";
+                            }
+                        } else if (shape.className == "Circle") {
+                            radius = shape.attrs.radius;
+                            button = {
+                                name: group.name(),
+                                action: ["encoder", "push"],
+                                dimension: Math.round(radius * summary.scale[0]),
+                                layout: {
+                                    offset: [Math.round(summary.translation[0]), Math.round(summary.translation[1])]
+                                }
+                            };
+                        }
+                        output.push(button);
+                    }
+                });
+            } else {
+                ; // console.log("not a group", group.className)   
+            }
+        });
+    });
+    return output;
+}
+
+
+class Interactor extends Konva.Group {
+
+    constructor(what, color) {
+
+        let name = what;
+        if (name.startsWith("but")) {
+            name = "button"
+        }
+        const INIT_TEXT = name+ " name";
+        const SIZE = 50
+        const INITIAL_POSITION = {x: 100, y: 100}
+        const LABEL_SIZE = 12
+        const LABEL_FONT = "Helvetica"
+        const LABEL_COLOR = "white"
+
+        super({name: INIT_TEXT, draggable: true});
+
+        let shape;
+        if (["butrect", "hardware"].indexOf(what) > -1) {
+            shape = new Konva.Rect({
+                x: INITIAL_POSITION.x,
+                y: INITIAL_POSITION.y,
+                width: SIZE,
+                height: SIZE,
+                cornerRadius: what == "hardware" ? 0 : 4,
+                stroke: color,
+                strokeWidth: 1,
+                strokeScaleEnabled: false,
+                name: what, 
+            });
+        } else {
+            shape = new Konva.Circle({
+                x: INITIAL_POSITION.x,
+                y: INITIAL_POSITION.y,
+                radius: Math.floor(SIZE / 2),
+                stroke: color,
+                strokeWidth: 1,
+                strokeScaleEnabled: false,
+                name: what,
+            });
+        }     
+
+        shape.on("dblclick dbltap", function () {
+            transformer.nodes([shape]);
+        });
+
+        this.add(shape);
+
+        let x = shape.x();
+        let y = shape.y();
+        if (shape instanceof Konva.Circle) {
+            x -= shape.radius()
+            y -= shape.radius()
+        }
+        let label = new Konva.Text({
+            x: x,
+            y: y - LABEL_SIZE - 2,
+            text: INIT_TEXT,
+            fontFamily: LABEL_FONT,
+            fontSize: LABEL_SIZE,
+            fill: LABEL_COLOR,
+          });
+
+        label.on("dblclick dbltap", () => {
+            label_editor(stage, label);
+        });
+
+        this.add(label);
+    }
+}
+
+deck_elem.tabIndex = 1;
+deck_elem.focus();
+deck_elem.addEventListener("keydown", function (e) {
+    if (e.key == "Delete") {
+        s = transformer.nodes()
+        if (s.length > 0) {
+            s.forEach( (x) => { x.getParent().destroy() });
+        }
+        transformer.nodes([]);
+    }
+});
+
 
 document.getElementById("hardware").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-
-        let shape = new Konva.Rect({
-            x: INITIAL_POSITION.x,
-            y: INITIAL_POSITION.y,
-            width: SIZE,
-            height: SIZE,
-            cornerRadius: 0,
-            stroke: "#0000ff",
-            strokeWidth: 1,
-            strokeScaleEnabled: false,
-            name: "hardware"
-        });
-
-        hardware_layer.add(add_label(shape));
+        interaction_layer.add(new Interactor("hardware", "#0000ff"));
     },
     false,
 );
@@ -240,23 +358,7 @@ document.getElementById("butrect").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        let shape = new Konva.Rect({
-            x: INITIAL_POSITION.x,
-            y: INITIAL_POSITION.y,
-            width: SIZE,
-            height: SIZE,
-            cornerRadius: 4,
-            stroke: "#00ff00",
-            strokeWidth: 1,
-            strokeScaleEnabled: false,
-            name: "button"
-        });
-
-        shape.on("dblclick", function () {
-            transformer.nodes([shape]);
-        });
-
-        interaction_layer.add(add_label(shape));
+        interaction_layer.add(new Interactor("butrect", "#00ff00"));
     },
     false,
 );
@@ -265,21 +367,7 @@ document.getElementById("butround").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        let shape = new Konva.Circle({
-            x: INITIAL_POSITION.x,
-            y: INITIAL_POSITION.y,
-            radius: Math.floor(SIZE / 2),
-            stroke: "#00ff00",
-            strokeWidth: 1,
-            strokeScaleEnabled: false,
-            name: "button"
-        });
-
-        shape.on("dblclick", function () {
-            transformer.nodes([shape]);
-        });
-
-        interaction_layer.add(add_label(shape));
+        interaction_layer.add(new Interactor("butround", "#00ff00"));
     },
     false,
 );
@@ -288,21 +376,7 @@ document.getElementById("encoder").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        let shape = new Konva.Circle({
-            x: INITIAL_POSITION.x,
-            y: INITIAL_POSITION.y,
-            radius: Math.floor(SIZE / 2),
-            stroke: "yellow",
-            strokeWidth: 1,
-            strokeScaleEnabled: false,
-            name: "encoder"
-        });
-
-        shape.on("dblclick", function () {
-            transformer.nodes([shape]);
-        });
-
-        interaction_layer.add(add_label(shape));
+        interaction_layer.add(new Interactor("encoder", "yellow"));
     },
     false,
 );
@@ -311,13 +385,17 @@ document.getElementById("save").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        code = stage.toJSON()
-        console.log("saving code", code)
+        code = stage.toJSON();
+        yaml = reset_transforms();
+        console.log("saving code", code, yaml)
+        out = {code: JSON.parse(code), deckconfig: yaml}
+
+        reset_transforms()
 
         fetch("/deck-designer-io", {
           method: "POST",
           headers: {"Content-Type": "application/json"}, 
-          body: code
+          body: JSON.stringify(out)
         })
         .then(r =>  r.json().then(status => {
             console.log("status", status)
@@ -326,6 +404,7 @@ document.getElementById("save").addEventListener(
     },
     false,
 );
+
 
 document.getElementById("load").addEventListener(
     "click",
@@ -347,10 +426,6 @@ document.getElementById("load").addEventListener(
                     background_layer = layer;
                     console.log("background set", layer)
                     break;
-                case "hardware":
-                    hardware_layer = layer;
-                    console.log("hardware set", layer, layer.getChildren())
-                    break;
                 case "interaction":
                     interaction_layer = layer;
                     console.log("interaction set", layer, layer.getChildren())
@@ -360,31 +435,32 @@ document.getElementById("load").addEventListener(
             add_background();
             add_transformer();
             // reinstall event handlers for each object
+            // label_editor for text, simple transform for rectangles and circles.
             stage.getLayers().forEach( (layer) => {
-                console.log("layer", layer)
+                // console.log("layer", layer)
                 if (layer.name() == "background") {
                     console.log("skipping ", layer.name())
                     return;
                 }
                 layer.getChildren().forEach( (group) => {
-                    console.log("group", group)
+                    // console.log("group", group)
                     if (group instanceof Konva.Transformer) {
-                        console.log("skipping transformer", group.name())
+                        // console.log("skipping transformer", group.name())
                         return;
                     }
                     if (group instanceof Konva.Group) {
                         group.getChildren().forEach( (shape) => {
-                            console.log("shape", shape)
+                            // console.log("shape", shape)
                             if (["Rect", "Circle"].indexOf(shape.className) > -1) {
                                 shape.on("dblclick", function () {
                                     transformer.nodes([shape]);
                                 });
-                                console.log("installed transformer", shape.name())
+                                // console.log("installed transformer", shape.name())
                             } else if (["Text"].indexOf(shape.className) > -1) {
                                 shape.on("dblclick", function () {
                                     label_editor(stage, shape);
                                 });
-                                console.log("installed label_editor", shape.name())
+                                // console.log("installed label_editor", shape.name())
                             }
                         });
                     } else {
@@ -397,31 +473,6 @@ document.getElementById("load").addEventListener(
     },
     false,
 );
-
-
-class MyLabel extends Konva.Text {
-    // Represent a simply rectangular key
-
-    constructor(config, container) {
-
-        let corner_radius = 0
-        if (checkNested(config, OPTIONS, OPT_CORNER_RADIUS)) {
-            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
-        }
-
-        super({
-            x: config.position[0],
-            y: config.position[1],
-            width: config.dimension[0],
-            height: config.dimension[1],
-            cornerRadius: corner_radius,
-            stroke: USER_PREFERENCES.highlight,
-            strokeWidth: 1,
-            draggable: EDITOR_MODE
-        });
-    }
-}
-
 </script>
 </body>
 </html>
