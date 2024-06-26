@@ -165,3 +165,5 @@ aircrafts/
 .vscode/*
 vdecks.json
 cockpitdecks/network.py
+decklayout.yaml
+decklayout.json
