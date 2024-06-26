@@ -115,11 +115,12 @@ def deck_designer():
 
 @app.route('/deck-designer-io', methods=("GET", "POST"))
 def button_designer_io():
+    FILENAME = "decklayout.json"
     if request.method == "POST":
-        with open("temp.json", "w") as fp:
+        with open(FILENAME, "w") as fp:
             json.dump(request.json, fp, indent=2)
             return {"status": "ok"}
-    with open("temp.json", "r") as fp:
+    with open(FILENAME, "r") as fp:
         code = json.load(fp)
     return code
 

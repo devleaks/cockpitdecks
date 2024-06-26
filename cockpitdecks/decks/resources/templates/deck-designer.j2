@@ -42,13 +42,6 @@ const DECK_ELEMID = "deck"
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
 
 var deck_elem = document.getElementById(DECK_ELEMID);
-// deck_elem.setAttribute("id", DECK_ELEMID);
-// deck_elem.setAttribute("width", "inherit");
-// deck_elem.setAttribute("height", "inherit");
-// deck_elem.setAttribute("display", "block");
-// deck_elem.setAttribute("padding", 0);
-// deck_elem.setAttribute("marging", 0);
-// document.getElementsByTagName("body")[0].appendChild(deck_elem)
 
 // create stage
 var stage = new Konva.Stage({
@@ -104,7 +97,7 @@ function add_background() {
             height: deckImage.naturalHeight,
             name: "background"
         });
-        background_interactor.on('click', function () {
+        background_interactor.on("click", function () {
             transformer.nodes([]);
         });
         background_layer.add(background_interactor);
@@ -129,13 +122,14 @@ add_transformer()
 
 deck_elem.tabIndex = 1;
 deck_elem.focus();
-deck_elem.addEventListener('keydown', function (e) {
+deck_elem.addEventListener("keydown", function (e) {
     if (e.key == "Delete") {
-        s = transformer.nodes()
+        s = transformer.nodes()  // handles don't disappear?
         if (s.length > 0) {
             s.forEach( (x) => { x.destroy() });
         }
-        transformer.nodes([])
+        transformer.nodes([]);
+        transformer.hide();
     }
 });
 
@@ -144,11 +138,88 @@ deck_elem.addEventListener('keydown', function (e) {
 //
 const SIZE = 50
 const INITIAL_POSITION = {x: 100, y: 100}
+const LABEL_SIZE = 14
+
+function label_editor(that_stage, label) {
+    // https://konvajs.org/docs/sandbox/Editable_Text.html
+
+    // create textarea over canvas with absolute position
+
+    // first we need to find position for textarea
+    // how to find it?
+
+    // at first lets find position of text node relative to the stage:
+    let textPosition = label.getAbsolutePosition();
+
+    // then lets find position of stage container on the page:
+    let stageBox = that_stage.container().getBoundingClientRect();
+
+    // so position of textarea will be the sum of positions above:
+    let areaPosition = {
+      x: stageBox.left + textPosition.x,
+      y: stageBox.top + textPosition.y,
+    };
+
+    // create textarea and style it
+    let textarea = document.createElement("textarea");
+    document.body.appendChild(textarea);
+
+    textarea.value = label.text();
+    textarea.style.position = "absolute";
+    textarea.style.top = areaPosition.y + "px";
+    textarea.style.left = areaPosition.x + "px";
+    textarea.style.width = label.width();
+
+    textarea.focus();
+
+    textarea.addEventListener("keydown", function (e) {
+        // hide on enter
+        if (e.key == "Enter") {
+            label.text(textarea.value);
+            // shape.name(textarea.value);
+            // group.name(textarea.value);
+            document.body.removeChild(textarea);
+        }
+    });
+}
+
+
+function add_label(shape) {
+    const INIT_TEXT = "shape name";
+    let x = shape.x();
+    let y = shape.y();
+    if (shape instanceof Konva.Circle) {
+        x -= shape.radius()
+        y -= shape.radius()
+    }
+    let label = new Konva.Text({
+        x: x,
+        y: y - LABEL_SIZE - 2,
+        text: INIT_TEXT,
+        fontSize: LABEL_SIZE,
+        fontFamily: "Helvetica",
+        fill: "white",
+      });
+
+    let group = new Konva.Group({name: INIT_TEXT, draggable: true})
+    group.add(shape);
+    group.add(label);
+
+    shape.on("dblclick", function () {
+        transformer.nodes([shape]);
+    });
+
+    label.on("dblclick dbltap", () => {
+        label_editor(stage, label);
+    });
+    return group;
+}
 
 document.getElementById("hardware").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
+
         let shape = new Konva.Rect({
             x: INITIAL_POSITION.x,
             y: INITIAL_POSITION.y,
@@ -158,19 +229,10 @@ document.getElementById("hardware").addEventListener(
             stroke: "#0000ff",
             strokeWidth: 1,
             strokeScaleEnabled: false,
-            draggable: true,
             name: "hardware"
         });
-        hardware_layer.add(shape);
 
-        shape.on('dblclick', function () {
-            transformer.nodes([shape]);
-        });
-        shape.on('transform', function () {
-            console.log()
-            shape.strokeWidth(1);
-        });
-
+        hardware_layer.add(add_label(shape));
     },
     false,
 );
@@ -188,15 +250,14 @@ document.getElementById("butrect").addEventListener(
             stroke: "#00ff00",
             strokeWidth: 1,
             strokeScaleEnabled: false,
-            draggable: true,
             name: "button"
         });
-        interaction_layer.add(shape);
 
-        shape.on('dblclick', function () {
+        shape.on("dblclick", function () {
             transformer.nodes([shape]);
         });
 
+        interaction_layer.add(add_label(shape));
     },
     false,
 );
@@ -212,15 +273,14 @@ document.getElementById("butround").addEventListener(
             stroke: "#00ff00",
             strokeWidth: 1,
             strokeScaleEnabled: false,
-            draggable: true,
             name: "button"
         });
-        interaction_layer.add(shape);
 
-        shape.on('dblclick', function () {
+        shape.on("dblclick", function () {
             transformer.nodes([shape]);
         });
 
+        interaction_layer.add(add_label(shape));
     },
     false,
 );
@@ -236,15 +296,14 @@ document.getElementById("encoder").addEventListener(
             stroke: "yellow",
             strokeWidth: 1,
             strokeScaleEnabled: false,
-            draggable: true,
             name: "encoder"
         });
-        interaction_layer.add(shape);
 
-        shape.on('dblclick', function () {
+        shape.on("dblclick", function () {
             transformer.nodes([shape]);
         });
 
+        interaction_layer.add(add_label(shape));
     },
     false,
 );
@@ -301,18 +360,68 @@ document.getElementById("load").addEventListener(
             });
             add_background();
             add_transformer();
+            // reinstall event handlers for each object
             stage.getLayers().forEach( (layer) => {
-                layer.getChildren().forEach( (shape) => {
-                    shape.on('dblclick', function () {
-                        transformer.nodes([shape]);
-                    });
-                })
+                console.log("layer", layer)
+                if (layer.name() == "background") {
+                    console.log("skipping ", layer.name())
+                    return;
+                }
+                layer.getChildren().forEach( (group) => {
+                    console.log("group", group)
+                    if (group instanceof Konva.Transformer) {
+                        console.log("skipping transformer", group.name())
+                        return;
+                    }
+                    if (group instanceof Konva.Group) {
+                        group.getChildren().forEach( (shape) => {
+                            console.log("shape", shape)
+                            if (["Rect", "Circle"].indexOf(shape.className) > -1) {
+                                shape.on("dblclick", function () {
+                                    transformer.nodes([shape]);
+                                });
+                                console.log("installed transformer", shape.name())
+                            } else if (["Text"].indexOf(shape.className) > -1) {
+                                shape.on("dblclick", function () {
+                                    label_editor(stage, shape);
+                                });
+                                console.log("installed label_editor", shape.name())
+                            }
+                        });
+                    } else {
+                        console.log("not a group", group.className)   
+                    }
+                });
             });
         }));
         return false;
     },
     false,
 );
+
+
+class MyLabel extends Konva.Text {
+    // Represent a simply rectangular key
+
+    constructor(config, container) {
+
+        let corner_radius = 0
+        if (checkNested(config, OPTIONS, OPT_CORNER_RADIUS)) {
+            corner_radius = parseInt(config.options[OPT_CORNER_RADIUS])
+        }
+
+        super({
+            x: config.position[0],
+            y: config.position[1],
+            width: config.dimension[0],
+            height: config.dimension[1],
+            cornerRadius: corner_radius,
+            stroke: USER_PREFERENCES.highlight,
+            strokeWidth: 1,
+            draggable: EDITOR_MODE
+        });
+    }
+}
 
 </script>
 </body>
