@@ -58,28 +58,23 @@ var stage = new Konva.Stage({
 });
 
 // create layers to cleanly separate content by function
-var background_layer = new Konva.Layer({name: "background"});   // Background image or iniform color
 var hardware_layer = new Konva.Layer({name: "hardware"});       // Where Cockpitdecks draws its icons/images
 var interaction_layer = new Konva.Layer({name: "interaction"}); // Shapes with events attached to it
 
 // add the layer to the stage
-stage.add(background_layer);
 stage.add(hardware_layer);
 stage.add(interaction_layer);
 
-var transformer;
-//
-// Utility function
-//
-function add_transformer() {
-    transformer = new Konva.Transformer({rotateEnabled: false, ignoreStroke: true});
-    interaction_layer.add(transformer);
-    console.log("transformer added")
-}
+var transformer = new Konva.Transformer({rotateEnabled: false, ignoreStroke: true});
+interaction_layer.add(transformer);
 
-// Add background image and resize deck around it.
+// Add bacground image and resize deck around it.
 // Resize window as well. Cannot get rid of top bar... (adds 24px)
 function add_background() {
+    let background_layer = new Konva.Layer({name: "background"});   // Background image or iniform color
+    stage.add(background_layer);
+    background_layer.moveToBottom();
+
     const extra_space = 150;
 
     let deckImage = new Image();
@@ -108,40 +103,13 @@ function add_background() {
             transformer.nodes([]);
         });
         background_layer.add(background_interactor);
-        background_layer.moveToBottom();
     };
 
-    deckImage.src = DECK_BACKGROUND_IMAGE_PATH + "{{background_image}}";
-    console.log("background added")
+    deckImage.src = DECK_BACKGROUND_IMAGE_PATH + "a321neo.overhead.png";
 }
 
-function cleanElement(el) {
-    while(el.firstChild){
-        el.removeChild(el.firstChild);
-    }
-}
-
-//
-// Main
-//
 add_background()
-add_transformer()
 
-deck_elem.tabIndex = 1;
-deck_elem.focus();
-deck_elem.addEventListener('keydown', function (e) {
-    if (e.key == "Delete") {
-        s = transformer.nodes()
-        if (s.length > 0) {
-            s.forEach( (x) => { x.destroy() });
-        }
-        transformer.nodes([])
-    }
-});
-
-//
-// Interactors
-//
 const SIZE = 50
 const INITIAL_POSITION = {x: 100, y: 100}
 
@@ -155,7 +123,7 @@ document.getElementById("hardware").addEventListener(
             width: SIZE,
             height: SIZE,
             cornerRadius: 0,
-            stroke: "#0000ff",
+            stroke: "#00ff00",
             strokeWidth: 1,
             strokeScaleEnabled: false,
             draggable: true,
@@ -185,7 +153,7 @@ document.getElementById("butrect").addEventListener(
             width: SIZE,
             height: SIZE,
             cornerRadius: 4,
-            stroke: "#00ff00",
+            stroke: "blue",
             strokeWidth: 1,
             strokeScaleEnabled: false,
             draggable: true,
@@ -209,7 +177,7 @@ document.getElementById("butround").addEventListener(
             x: INITIAL_POSITION.x,
             y: INITIAL_POSITION.y,
             radius: Math.floor(SIZE / 2),
-            stroke: "#00ff00",
+            stroke: "blue",
             strokeWidth: 1,
             strokeScaleEnabled: false,
             draggable: true,
@@ -253,13 +221,12 @@ document.getElementById("save").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        code = stage.toJSON()
-        console.log("saving code", code)
+        console.log(stage.toJSON())
 
         fetch("/deck-designer-io", {
           method: "POST",
           headers: {"Content-Type": "application/json"}, 
-          body: code
+          body: stage.toJSON()
         })
         .then(r =>  r.json().then(status => {
             console.log("status", status)
@@ -269,45 +236,25 @@ document.getElementById("save").addEventListener(
     false,
 );
 
+function cleanElement(el) {
+    while(el.firstChild){
+        el.removeChild(el.firstChild);
+    }
+}
+
 document.getElementById("load").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
+        console.log(stage.toJSON())
 
         fetch("/deck-designer-io")
         .then(r =>  r.json().then(code => {
-            console.log("loaded code", code)
-            // remove old canvas
+            console.log("code", code)
             cleanElement(DECK_ELEMID)
-            // load stage
             stage = Konva.Node.create(JSON.stringify(code), DECK_ELEMID);
             console.log("layers", stage.getLayers())
-            // restore layers
-            stage.getLayers().forEach( (layer) => {
-                switch(layer.name()) {
-                case "background":
-                    background_layer = layer;
-                    console.log("background set", layer)
-                    break;
-                case "hardware":
-                    hardware_layer = layer;
-                    console.log("hardware set", layer, layer.getChildren())
-                    break;
-                case "interaction":
-                    interaction_layer = layer;
-                    console.log("interaction set", layer, layer.getChildren())
-                    break;
-                }
-            });
-            add_background();
-            add_transformer();
-            stage.getLayers().forEach( (layer) => {
-                layer.getChildren().forEach( (shape) => {
-                    shape.on('dblclick', function () {
-                        transformer.nodes([shape]);
-                    });
-                })
-            });
+            add_background()
         }));
         return false;
     },

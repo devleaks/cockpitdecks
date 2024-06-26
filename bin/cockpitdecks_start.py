@@ -111,8 +111,17 @@ def representation_details():
 #
 @app.route('/deck-designer')
 def deck_designer():
-    return render_template("deck-designer.j2")
+    return render_template("deck-designer.j2", background_image="a321neo.overhead.png")
 
+@app.route('/deck-designer-io', methods=("GET", "POST"))
+def button_designer_io():
+    if request.method == "POST":
+        with open("temp.json", "w") as fp:
+            json.dump(request.json, fp, indent=2)
+            return {"status": "ok"}
+    with open("temp.json", "r") as fp:
+        code = json.load(fp)
+    return code
 
 # Deck runner
 #

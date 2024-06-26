@@ -371,6 +371,7 @@ class Annunciator(DrawBase):
             "type": "multi",
             "multi": {
                 "led": {"type": "boolean", "prompt": "LED"},
+                "text": {"type": "string", "prompt": "Text"},
                 "text-font": {"type": "font", "prompt": "Font"},
                 "text-size": {"type": "integer", "prompt": "Size"},
                 "text-color": {"type": "string", "prompt": "Color"},
@@ -687,6 +688,8 @@ class AnnunciatorAnimate(Annunciator):
     """ """
 
     REPRESENTATION_NAME = "annunciator-animate"
+
+    PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
     def __init__(self, config: dict, button: "Button"):
         config["annunciator"] = config.get("annunciator-animate")

@@ -281,6 +281,12 @@ function check_elem(name, elem, data, indent) {
     return ""
 }
 
+function parseCode(code, form_elem) {
+    // one day, we'll do a function that populates form elements
+    // from yaml button definition code
+    // may be. one day.
+}
+
 function generateYaml(data, act_params, rep_params) {
     function remaining(current, spaces) {
         for (var name in rep_params) {
@@ -327,42 +333,68 @@ function generateYaml(data, act_params, rep_params) {
     if (has_value(data.view) && data.view != "" && data.view != NONE) {
 
         switch(data.view) {
-        // icon
-        // text
+        //
+        // COMPLETED
+        //
         case "icon":
         case "text":
             code += add(data.view, data[data.view], indent)
             remaining(data.view, indent)
             break;
-        // icon-color
         case "icon-color":
             code += add(data.view, data["color"], indent)
             remaining(data.view, indent)
             break;
-        // aircraft
-        // annunciator
-        // annunciator-animate
-        // circular-switch
-        // colored-led
-        // data
-        // decor
-        // draw-animation
-        // draw-base
-        // encoder-leds
-        // fcu
-        // fma
-        // ftg
+        case "annunciator-animate":
+        case "draw-animation":
+        case "ftg":
+        case "icon-animation":
+            if (has_value(data.speed) || has_value(data.off_icon)) {
+                code += add(data.view, data[data.view], indent)
+                code += "\n" + data.view + ":";
+                indent += 1
+                remaining(data.view, indent)
+                indent -= 1
+            } else {
+                code += add(data.view, data[data.view], indent)
+            }
+            break;
+        case "data":
+            code += add(data.view, data[data.view], indent)
+            code += "\n" + data.view + ":";
+            indent += 1
+            remaining(data.view, indent)
+            indent -= 1
+            break;
+        //
+        // TO DO
+        //
+        case "annunciator":
+        case "circular-switch":
+        case "data":
+        case "decorv":
+        case "knob":
+        case "multi-icons":
+        case "multi-texts":
+        case "push-switch":
+        case "side":
+        case "switch":
+        case "weather-metar":
+        case "weather-real":
+        case "weather-xp":
+        case "simple":
+            code += add(data.view, data[data.view], indent)
+            console.log("code generation to be done", data.view)
+            // code += "\n" + data.view + ":";
+            // indent += 1
+            // remaining(data.view, indent)
+            break;
+        //
+        // NO DESIGNER REPRESENTATION
+        //
+        // VIRTUAL DECK SPECIFIC
+        //
         // hardware-icon
-        // icon-animation
-        // knob
-        // led
-        // multi-icons
-        // multi-texts
-        // none
-        // push-switch
-        // side
-        // switch
-        // switch-base
         // virtual-encoder
         // virtual-led
         // virtual-ll-coloredbutton
@@ -370,15 +402,28 @@ function generateYaml(data, act_params, rep_params) {
         // virtual-xtm-encoderled
         // virtual-xtm-led
         // virtual-xtm-mcled
+        //
+        // NO IMAGE REPRESENTATION
+        //
+        // colored-led
+        // encoder-leds
+        // led
+        //
+        // NOT USABLE DIRECTLY
+        //
+        // draw-base
+        // switch-base
         // weather-base
-        // weather-metar
-        // weather-real
-        // weather-xp
+        //
+        // NO PARAMETERS
+        //
+        // aircraft
+        // fcu
+        // fma
+        // none
+        //
         default:
-            code += add(data.view, data[data.view], indent)
-            // code += "\n" + data.view + ":";
-            // indent += 1
-            // remaining(data.view, indent)
+            console.log("no designer image", data.view)
             break;
         }
 
@@ -386,5 +431,5 @@ function generateYaml(data, act_params, rep_params) {
         code += add("representation", false, indent) // that's ok
     }
 
-    return code.slice(1)
+    return code.slice(1) // remove first \n
 }
