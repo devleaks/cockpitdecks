@@ -41,7 +41,10 @@ const DEBUG = false
 const DECK_ELEMID = "deck"
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
 const DECK_BACKGROUND_IMAGE = "{{background_image}}"
+
 var deck_elem = document.getElementById(DECK_ELEMID);
+deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE_PATH+DECK_BACKGROUND_IMAGE+")";
+deck_elem.style.backgroundRepeat = "no-repeat";
 
 // create stage
 var stage = new Konva.Stage({
@@ -68,8 +71,8 @@ function add_transformer() {
     console.log("transformer added")
 }
 
-// Add background image and resize deck around it.
-// Resize window as well. Cannot get rid of top bar... (adds 24px)
+// Load background image and resize deck around it.
+// Resize window as well.
 function add_background() {
     const extra_space = 150;
 
@@ -78,15 +81,15 @@ function add_background() {
         console.log("cannot load background image");
     }
     deckImage.onload = function () {
-        let deckbg = new Konva.Image({
-            x: 0,
-            y: 0,
-            image: deckImage
-        });
+        // let deckbg = new Konva.Image({
+        //     x: 0,
+        //     y: 0,
+        //     image: deckImage
+        // });
         stage.width(deckImage.naturalWidth);
         stage.height(deckImage.naturalHeight);
         window.resizeTo(deckImage.naturalWidth, deckImage.naturalHeight + extra_space);
-        background_layer.add(deckbg);
+        // background_layer.add(deckbg);
 
         let background_interactor = new Konva.Rect({
             x: 0,
@@ -163,7 +166,6 @@ function label_editor(that_stage, label) {
     });
 }
 
-
 // https://stackoverflow.com/questions/4361242/extract-rotation-scale-values-from-2d-transformation-matrix
 function decompose_2d_matrix(mat) {
   var a = mat[0];
@@ -200,7 +202,6 @@ function decompose_2d_matrix(mat) {
 
   return result;
 }
-
 
 function reset_transforms() {
     let output = [];
@@ -267,6 +268,8 @@ function reset_transforms() {
 
 
 class Interactor extends Konva.Group {
+    // This is a combination of a rect or circle that can be transformed
+    // and a text "label" or name that can be edited.
 
     constructor(what, color) {
 
@@ -349,7 +352,6 @@ deck_elem.addEventListener("keydown", function (e) {
     }
 });
 
-
 document.getElementById("hardware").addEventListener(
     "click",
     function (event) {
@@ -409,7 +411,6 @@ document.getElementById("save").addEventListener(
     },
     false,
 );
-
 
 document.getElementById("load").addEventListener(
     "click",
