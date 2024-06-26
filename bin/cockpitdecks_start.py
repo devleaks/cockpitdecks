@@ -118,7 +118,8 @@ def representation_details():
 #
 @app.route('/deck-designer')
 def deck_designer():
-    return render_template("deck-designer.j2", background_image="a321neo.overhead.png")
+    background_image = request.args.get('background_image', default='a321neo.overhead.png')
+    return render_template("deck-designer.j2", background_image=background_image)
 
 @app.route('/deck-designer-io', methods=("GET", "POST"))
 def button_designer_io():

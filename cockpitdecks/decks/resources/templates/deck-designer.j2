@@ -40,7 +40,7 @@ body {
 const DEBUG = false
 const DECK_ELEMID = "deck"
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
-
+const DECK_BACKGROUND_IMAGE = "{{background_image}}"
 var deck_elem = document.getElementById(DECK_ELEMID);
 
 // create stage
@@ -102,7 +102,7 @@ function add_background() {
         background_layer.moveToBottom();
     };
 
-    deckImage.src = DECK_BACKGROUND_IMAGE_PATH + "{{background_image}}";
+    deckImage.src = DECK_BACKGROUND_IMAGE_PATH + DECK_BACKGROUND_IMAGE;
     console.log("background added")
 }
 
@@ -257,7 +257,12 @@ function reset_transforms() {
             }
         });
     });
-    return output;
+    return {
+        buttons: output,
+        background: {
+            image: DECK_BACKGROUND_IMAGE
+        }
+    };
 }
 
 
