@@ -273,7 +273,7 @@ class LoadPage(Activation):
 
     KW_BACKPAGE = "back"
 
-    PARAMETERS = {"page": {"type": "string", "prompt": "Page", "default-value": "back"}, "deck": {"type": "string", "prompt": "Remote deck", "optional": True}}
+    PARAMETERS = {"page": {"type": "string", "prompt": "Page", "default-value": "back", "mandatory": True}, "deck": {"type": "string", "prompt": "Remote deck", "optional": True}}
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)

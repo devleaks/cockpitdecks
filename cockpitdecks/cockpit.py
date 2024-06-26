@@ -1166,24 +1166,29 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def render_button(self, data):
         # testing. returns random icon
-        action = data.get("action", "save")
-        # if action is not None and action == "save":
-        #     self.save_button(data)
+        action = data.get("action")
+        if action is not None and action == "save":
+            self.save_button(data)
         deck_name = data.get("deck")
-        if deck_name is None:
+        if deck_name is None or deck_name == "":
             return {"image": "", "meta": {"error": "no deck name"}}
         deck = self.cockpit.get(deck_name)
         if deck is None:
             return {"image": "", "meta": {"error": f"deck {deck_name} not found"}}
         config = yaml.load(data["code"])
+        if config is None or len(config) == 0:
+            return {"image": "", "meta": {"error": "no button configuration"}}
+        button = None
         image = None
-        button = deck.make_button(config=config)
-        if button is None:
-            return {"image": "", "meta": {"error": f"button not created"}}
         try:
+            button = deck.make_button(config=config)
+            if button is None:
+                return {"image": "", "meta": {"error": "button not created"}}
             image = button.get_representation()
         except:
-            logger.warning("error generating image")
+            logger.warning(f"error generating button or image\ndata: {data}\nconfig: {config}", exc_info=True)
+        if button is None:
+            return {"image": "", "meta": {"error": "no button"}}
         if image is None:
             return {"image": "", "meta": {"error": "no image"}}
         width, height = image.size

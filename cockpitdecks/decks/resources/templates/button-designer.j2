@@ -24,12 +24,15 @@ body {
 <script src="/assets/js/button-designer.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="preview">
+
+    <div id="preview"><!--CANVAS-->
     </div><!--#preview-->
+
     <div id="design">
+
         <form id="parameters">
 
-            <fieldset>
+            <fieldset><!-- DECK -->
                 <legend>Deck</legend>
                 <label>Deck model</label>
                 <select id="deck" name="deck">
@@ -45,7 +48,7 @@ body {
                 <input type="text" name="page" size="20"/>
             </fieldset>
 
-            <fieldset>
+            <fieldset><!-- BUTTON -->
                 <legend>Button</legend>
                 <label>Index</label>
                 <select id="index" name="index">
@@ -56,7 +59,7 @@ body {
                 <div id="button-description"></div>
             </fieldset>
 
-            <fieldset>
+            <fieldset><!-- ACTIVATION -->
                 <legend>Activation</legend>
                 <label>Type</label>
                 <select id="activation-type" name="type">
@@ -68,7 +71,7 @@ body {
                 <div class="maxwidth"><p id="activation-description"></p></div>
             </fieldset>
 
-            <fieldset>
+            <fieldset><!-- REPRESENTATION -->
                 <legend>Representation</legend>
                 <label>Type</label>
                 <select id="representation-type" name="view">
@@ -80,7 +83,7 @@ body {
                 <div class="maxwidth"><p id="representation-description"></p></div>
             </fieldset>
 
-            <fieldset>
+            <fieldset><!-- OUTPUT -->
                 <p style="font-size: x-small;">
                     To generate Yaml from above form, textarea needs to be clear, then press Render.<br/>
                     To generate image from textarea, press render.<br/>
@@ -94,11 +97,14 @@ body {
                 <br/>
                 <textarea id="code" name="code" rows="40" cols="60"></textarea>
             </fieldset>
-        </form>
+        </form><!--#parameters-->
+
         <div id="status-bar" style="border: 1px solid grey;">
             <p style="font-size: small;">Status: <span id="status">ok</span></p>
-        </div>
+        </div><!--#status-bar-->
+
     </div><!--#design-->
+
 <script type="text/javascript">
 //
 //
@@ -118,6 +124,7 @@ stage.add(image_layer);
 
 var status_line = document.getElementById("status");
 var code_elem = document.getElementById("code")
+var deck_elem = document.getElementById("deck");
 
 var activation_details; // global
 var representation_details; // global
@@ -148,11 +155,23 @@ function cleanElement(el) {
 function render(event) {
     // Prevent form submit
     event.preventDefault();
-    if (code_elem.innerHTML == "") {
-        let data = collectForm("parameters");
-        code_elem.innerHTML = generateYaml(data, activation_details, representation_details);
+    let data = collectForm("parameters");
+    if (code_elem.innerHTML == undefined || code_elem.innerHTML == "") {
+        var code = generateYaml(data, activation_details, representation_details);
+        // console.log("code", code)
+        code_elem.innerHTML = code
     }
-    data = collectForm("parameters"); // to collect above
+    if (data.code == undefined || data.code == "") {
+        data.code = code_elem.innerHTML
+    }
+    if (data.code == "") {
+        console.log("no button definition")
+    }
+    if (data.deck == undefined || data.deck == "") {// sometimes not collected by collect form...
+        console.log("added deck", data.deck, deck_elem.value)
+        data.deck = deck_elem.value
+    }
+    console.log("data out", data, deck_elem.value)
 
     fetch("/button-designer", {
       method: "POST",
@@ -212,11 +231,12 @@ document.getElementById("clear").addEventListener(
 let activation_elem = document.getElementById("activation-type");
 activation_elem.onchange = (e) => {
     let activation = activation_elem.value
+    // console.log("activation out", activation)
 
     fetch("/activation?" + new URLSearchParams({name: activation}).toString())
     .then(r =>  r.json().then(details => {
         let details_elem = document.getElementById("activation-details");
-        // console.log(details);
+        // console.log("activation in", details);
         document.getElementById("activation-description").innerHTML = ""
         activation_details = details
         makeForm(activation_details, details_elem, false)
@@ -227,27 +247,27 @@ activation_elem.onchange = (e) => {
 let representation_elem = document.getElementById("representation-type");
 representation_elem.onchange = (e) => {
     let representation = representation_elem.value
+    // console.log("representation out", representation)
 
     fetch("/representation?" + new URLSearchParams({name: representation}).toString())
     .then(r =>  r.json().then(details => {
         let details_elem = document.getElementById("representation-details");
-        // console.log(details);
+        // console.log("representation in", details);
         document.getElementById("representation-description").innerHTML = ""
         representation_details = details
-        makeForm(details, details_elem, representation_elem.value)
+        makeForm(representation_details, details_elem, representation_elem.value)
     }));
     return false;
 };
 
-let deck_elem = document.getElementById("deck");
-let index_elem = document.getElementById("index");
+var index_elem = document.getElementById("index");
 index_elem.onchange = (e) => {
     let deck = deck_elem.value
     let index = index_elem.value
 
     fetch("/button_details?" + new URLSearchParams({deck: deck, index: index}).toString())
     .then(r =>  r.json().then(details => {
-        // console.log("button details", details);
+        // console.log("button details in", details);
         // Activations
         removeOptions(activation_elem);
         // Add new options
@@ -257,11 +277,8 @@ index_elem.onchange = (e) => {
             opt.innerHTML = i;
             activation_elem.appendChild(opt);
         });
-        if (activation_elem.value != "none") {
-            activation_elem.value = "none"
-        } else {
-            activation_elem.dispatchEvent(new Event("change"));
-        }
+        activation_elem.value = "none"
+        activation_elem.dispatchEvent(new Event("change"));
 
         // Activations
         removeOptions(representation_elem);
@@ -272,11 +289,8 @@ index_elem.onchange = (e) => {
             opt.innerHTML = i;
             representation_elem.appendChild(opt);
         });
-        if (representation_elem.value != "none") {
-            representation_elem.value = "none"
-        } else {
-            representation_elem.dispatchEvent(new Event("change"));
-        }
+        representation_elem.value = "none"
+        representation_elem.dispatchEvent(new Event("change"));
     }));
     return false;
 };
@@ -305,6 +319,7 @@ deck_elem.onchange = (e) => {
 
 // trigger it on start, will cascade to index, activation, and representation
 deck_elem.dispatchEvent(new Event("change"));
+console.log("Cockpitdecks button designer ready")
 </script>
 </body>
 </html>

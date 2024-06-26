@@ -1,9 +1,12 @@
 /* Button generator
  * 
  */
+DEFAULT_ICON = "NONE.png"
 DEFAULT_FONT = "DIN.ttf"
 DEFAULT_SIZE = 32
 DEFAULT_POSITION = "tm"
+
+NONE = "none"  // keyword
 
 LABEL_PARAMETERS = {
     "label": {
@@ -13,7 +16,7 @@ LABEL_PARAMETERS = {
     "label-font": {
         "type": "font",
         "prompt": "Font",
-        "default-value": "DIN.ttf"
+        "default-value": DEFAULT_FONT
     },
     "label-size": {
         "type": "integer",
@@ -25,13 +28,11 @@ LABEL_PARAMETERS = {
     },
     "label-position": {
         "type": "choice",
-        "prompt": "Position",
+        "prompt": "Position",  // left, center, right, top, middle, botton
         "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"],
         "default-value": "ct"
     },
 }
-
-var annunciator_parts;
 
 // Form
 //
@@ -42,6 +43,7 @@ function toTitleCase(str) {
   );
 }
 
+// document.getElementById("edName").attributes["required"] = "";
 function add_elem(name, e, container) {
     switch(e.type) {
     case "string":
@@ -59,6 +61,10 @@ function add_elem(name, e, container) {
                 el.name = name+"["+i+"]"
                 el.type = "text";
                 el.size = 40;
+                if (e.mandatory == true) {
+                    console.log("required", el.name)
+                    el.attributes["required"] = "";
+                }
                 container.appendChild(el);
                 container.appendChild(document.createElement("br"));
             }
@@ -70,6 +76,10 @@ function add_elem(name, e, container) {
             el.name = name;
             el.type = "text";
             el.size = 40;
+            if (e.mandatory == true) {
+                console.log("required", el.name)
+                el.attributes["required"] = "";
+            }
             container.appendChild(el);
             container.appendChild(document.createElement("br"));
         }
@@ -82,6 +92,10 @@ function add_elem(name, e, container) {
         el.name = name;
         el.type = "text";
         el.size = 10;
+        if (e.mandatory == true) {
+            console.log("required", el.name)
+            el.attributes["required"] = "";
+        }
         container.appendChild(el);
         container.appendChild(document.createElement("br"));
         break;
@@ -93,6 +107,10 @@ function add_elem(name, e, container) {
         el.name = name;
         el.type = "text";
         el.size = 16;
+        if (e.mandatory == true) {
+            console.log("required", el.name)
+            el.attributes["required"] = "";
+        }
         container.appendChild(el);
         container.appendChild(document.createElement("br"));
         break;
@@ -103,6 +121,10 @@ function add_elem(name, e, container) {
         var el = document.createElement("input");
         el.name = name;
         el.type = "checkbox";
+        if (e.mandatory == true) {
+            console.log("required", el.name)
+            el.attributes["required"] = "";
+        }
         container.appendChild(el);
         container.appendChild(document.createElement("br"));
         break;
@@ -122,6 +144,10 @@ function add_elem(name, e, container) {
         if (e.choices.indexOf(e["default-value"]) > 0) {
             el.value = e["default-value"]
         }
+        if (e.mandatory == true) {
+            console.log("required", el.name)
+            el.attributes["required"] = "";
+        }
         container.appendChild(document.createElement("br"));
         break;
     case "font":
@@ -137,7 +163,7 @@ function add_elem(name, e, container) {
             opt.innerHTML = c;
             el.appendChild(opt);
         });
-        el.value = "DIN.ttf"
+        el.value = DEFAULT_FONT
         container.appendChild(document.createElement("br"));
         break;
     case "icon":
@@ -153,7 +179,7 @@ function add_elem(name, e, container) {
             opt.innerHTML = c;
             el.appendChild(opt);
         });
-        el.value = "NONE.png"
+        el.value = DEFAULT_ICON
         container.appendChild(document.createElement("br"));
         break;
     case "multi":
@@ -179,8 +205,14 @@ function add_elem(name, e, container) {
 }
 
 function makeForm(elements, container, add_label, first) {
+    if (add_label === false && first == undefined) {
+        cleanElement(container);
+    }
     if (add_label !== false && first == undefined) { // make labels (always)
         cleanElement(container);
+        if (add_label == "none") {
+            return;
+        }
 
         // Label, almost always present, framed in fieldset
         var lbl = document.createElement("fieldset");
@@ -206,18 +238,21 @@ function makeForm(elements, container, add_label, first) {
             continue;
         }
         let e = elements[name];
-        console.log("e", name, e);
+        // console.log("e", name, e);
         add_elem(name, e, container);
     }
 }
 
 // Yaml
 //
+// Utility functions
+//
 function has_value(v) {
     return v != undefined && v != ""
 }
+
 function add(name, value, indent) {
-    if (value != undefined && value != "") {
+    if (value != undefined && value !== "") {
         if (name == "font" && value==DEFAULT_FONT) {
             return ""
         }
@@ -232,8 +267,8 @@ function add(name, value, indent) {
         return ""
     }
 }
+
 function check_elem(name, elem, data, indent) {
-    console.log("c", name, elem, data, code, indent, data[name]);
     if(data[name] != undefined) {
         if (elem["default-value"] != undefined) {
             if (data[name] != elem["default-value"] && data[name] != "") {
@@ -253,7 +288,7 @@ function generateYaml(data, act_params, rep_params) {
                 continue;
             }
             let e = rep_params[name];
-            console.log("r", name, e);
+            // console.log("r", name, e);
             code += check_elem(name, e, data, spaces);
         }
     }
@@ -264,42 +299,91 @@ function generateYaml(data, act_params, rep_params) {
     code += add("name", data.name, indent);
 
     // label
-    if (has_value(data.label)) {
-        for (var name in LABEL_PARAMETERS) {
-            if ( ! LABEL_PARAMETERS.hasOwnProperty(name) ) {
-                continue;
+    if (has_value(data.view) && data.view != NONE) {
+        if (has_value(data.label)) {
+            for (var name in LABEL_PARAMETERS) {
+                if ( ! LABEL_PARAMETERS.hasOwnProperty(name) ) {
+                    continue;
+                }
+                code += check_elem(name, LABEL_PARAMETERS[name], data, indent); // add(l, data[l], indent);
             }
-            code += check_elem(name, LABEL_PARAMETERS[name], data, indent); // add(l, data[l], indent);
         }
     }
 
     // activation parameters
     code += add("type", data.type, indent);
-    for (var name in act_params) {
-        if ( ! act_params.hasOwnProperty(name) ) {
-            continue;
+    if (has_value(data.type) && data.type != NONE) {
+        for (var name in act_params) {
+            if ( ! act_params.hasOwnProperty(name) ) {
+                continue;
+            }
+            let e = act_params[name];
+            // console.log("a", name, e);
+            code += check_elem(name, e, data, indent);
         }
-        let e = act_params[name];
-        console.log("a", name, e);
-        code += check_elem(name, e, data, indent);
     }
 
     // representation parameters
-    switch(data.view) {
-    case "icon":
-    case "text":
-        code += add(data.view, data[data.view], indent)
-        remaining(data.view, indent)
-        break;
-    case "icon-color":
-        code += add(data.view, data["color"], indent)
-        remaining(data.view, indent)
-        break;
-    default:
-        code += "\n" + data.view + ":";
-        indent += 1
-        remaining(data.view, indent)
-        break;
+    if (has_value(data.view) && data.view != "" && data.view != NONE) {
+
+        switch(data.view) {
+        // icon
+        // text
+        case "icon":
+        case "text":
+            code += add(data.view, data[data.view], indent)
+            remaining(data.view, indent)
+            break;
+        // icon-color
+        case "icon-color":
+            code += add(data.view, data["color"], indent)
+            remaining(data.view, indent)
+            break;
+        // aircraft
+        // annunciator
+        // annunciator-animate
+        // circular-switch
+        // colored-led
+        // data
+        // decor
+        // draw-animation
+        // draw-base
+        // encoder-leds
+        // fcu
+        // fma
+        // ftg
+        // hardware-icon
+        // icon-animation
+        // knob
+        // led
+        // multi-icons
+        // multi-texts
+        // none
+        // push-switch
+        // side
+        // switch
+        // switch-base
+        // virtual-encoder
+        // virtual-led
+        // virtual-ll-coloredbutton
+        // virtual-sd-neoled
+        // virtual-xtm-encoderled
+        // virtual-xtm-led
+        // virtual-xtm-mcled
+        // weather-base
+        // weather-metar
+        // weather-real
+        // weather-xp
+        default:
+            code += add(data.view, data[data.view], indent)
+            // code += "\n" + data.view + ":";
+            // indent += 1
+            // remaining(data.view, indent)
+            break;
+        }
+
+    } else {
+        code += add("representation", false, indent) // that's ok
     }
 
     return code.slice(1)
