@@ -126,10 +126,9 @@ deck_elem.addEventListener("keydown", function (e) {
     if (e.key == "Delete") {
         s = transformer.nodes()  // handles don't disappear?
         if (s.length > 0) {
-            s.forEach( (x) => { x.destroy() });
+            s.forEach( (x) => { x.getParent().destroy() });
         }
         transformer.nodes([]);
-        transformer.hide();
     }
 });
 
