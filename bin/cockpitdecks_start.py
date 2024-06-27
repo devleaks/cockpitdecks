@@ -9,6 +9,10 @@ import threading
 import json
 import urllib.parse
 import socket
+
+from flask import Flask, render_template, send_from_directory, request, jsonify
+from simple_websocket import Server, ConnectionClosed
+
 import ruamel
 from ruamel.yaml import YAML
 
@@ -16,11 +20,9 @@ ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
+COCKPITDECKS_HOME = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(COCKPITDECKS_HOME)  # we assume we're in subdir "bin/"
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
-
-from flask import Flask, render_template, send_from_directory, request, jsonify
-from simple_websocket import Server, ConnectionClosed
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
@@ -38,13 +40,12 @@ if LOGFILE is not None:
     logger.addHandler(handler)
 
 ac = sys.argv[1] if len(sys.argv) > 1 else None
-ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 
-
-APP_HOST = [
-    os.getenv("APP_HOST", "127.0.0.1"),
-    int(os.getenv("APP_PORT", "7777"))
-]
+ac_desc = "(no aircraft folder)"
+AIRCRAFT_HOME = ""
+if ac is not None:
+    ac_desc = os.path.basename(ac)
+    AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
 logger.info(f"Starting for {ac_desc}..")
@@ -58,9 +59,15 @@ cockpit = Cockpit(XPlane)
 # Serves decks and their assets.
 # Proxy WebSockets to TCP Sockets
 #
-TEMPLATE_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "templates")
-ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", "decks", "resources", "assets"))
-AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(ac, "deckconfig", "resources"))
+TEMPLATE_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", "decks", "resources", "templates")
+ASSET_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", "decks", "resources", "assets")
+
+AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, "deckconfig", "resources")
+
+APP_HOST = [
+    os.getenv("APP_HOST", "127.0.0.1"),
+    int(os.getenv("APP_PORT", "7777"))
+]
 
 app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 

@@ -332,6 +332,7 @@ class Loupedeck(DeckWithIcons):
         self.device.vibrate(pattern)
 
     def set_key_icon(self, key, image):
+        image = image.convert("RGB")
         self.device.set_key_image(key, image)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
@@ -345,7 +346,7 @@ class Loupedeck(DeckWithIcons):
         image = button.get_representation()
         if image is not None:
             image = self.scale_icon_for_key(index=button.index, image=image)
-            self.device.set_key_image(button.index, image)
+            self.set_key_icon(button.index, image)
         else:
             logger.warning(f"no image for {button.name}")
 

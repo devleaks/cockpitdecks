@@ -22,6 +22,8 @@ from ruamel.yaml import YAML
 # Values that might need adjustments are isolated in network.py file.
 #
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
+COCKPITDECKS_HOME = os.path.abspath(os.path.dirname(__file__))
+
 ROOT_DEBUG = ""
 EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Streadecks
 

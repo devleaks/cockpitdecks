@@ -236,16 +236,18 @@ class Streamdeck(DeckWithIcons):
     # Deck Specific Functions : Representation
     #
     def _send_touchscreen_image_to_device(self, image):
+        image = image.convert("RGB")
+        i = to_native_touchscreen_format(deck=self.device, image=image)
         with self.device:
-            i = to_native_touchscreen_format(deck=self.device, image=image)
             self.device.set_touchscreen_image(i, width=image.width, height=image.height)
 
     def set_key_icon(self, key, image):
         if key in self.get_deck_type().special_displays():
             self._send_touchscreen_image_to_device(image=image)
             return
+        image = image.convert("RGB")
+        i = to_native_key_format(deck=self.device, image=image)
         with self.device:
-            i = to_native_key_format(deck=self.device, image=image)
             self.device.set_key_image(int(key), i)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
