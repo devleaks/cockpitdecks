@@ -38,11 +38,13 @@ body {
 // Konva layout set up and initialisation
 //
 // create and add <div id="deck"></div> with proper styling, add to document
-const DEBUG = false
-const DECK_ELEMID = "deck"
-const DECK_BACKGROUND_IMAGE_PATH = ""
-const DECK_BACKGROUND_IMAGE = "{{background_image}}"
+const DEBUG = false;
+const DECK_ELEMID = "deck";
+const DECK_BACKGROUND_IMAGE_PATH = "";
+const DECK_BACKGROUND_IMAGE = "{{background_image}}";
+const OPTIONS = {{ designer_config|tojson(indent=2) }};
 
+// try to install background image as CSS background image (more efficient)
 var deck_elem = document.getElementById(DECK_ELEMID);
 deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE_PATH+DECK_BACKGROUND_IMAGE+")";
 deck_elem.style.backgroundRepeat = "no-repeat";
@@ -66,6 +68,30 @@ var transformer;
 //
 // Utility function
 //
+function get_option(dict, path, dflt) {
+    let path_arr = path
+    if (! (path_arr instanceof Array)) {
+        path_arr = path.split(".");
+    }
+    console.log("testing", dict, path, path_arr);
+    if (path_arr.length == 1) {
+        console.log("1", dict, path_arr[0]);
+        if (dict[path_arr[0]] == undefined) {
+            console.log("returning default", dflt);
+            return dflt
+        } else {
+            console.log("returning value", path_arr[0], dict[path_arr[0]]);
+            return dict[path_arr[0]];
+        }
+    }
+    if (dict[path_arr[0]] != undefined) {
+        console.log("keep searching", dict[path_arr[0]], path_arr.slice(1));
+        return get_option(dict[path_arr[0]], path_arr.slice(1), dflt);
+    }
+    console.log("returning default", dflt);
+    return dflt;
+}
+
 function add_transformer() {
     transformer = new Konva.Transformer({rotateEnabled: false, ignoreStroke: true});
     interaction_layer.add(transformer);
@@ -288,12 +314,15 @@ class Interactor extends Konva.Group {
         if (name.startsWith("but")) {
             name = "button"
         }
-        const INIT_TEXT = name+ " name";
-        const SIZE = 40
-        const INITIAL_POSITION = {x: 100, y: 100}
-        const LABEL_SIZE = 10
-        const LABEL_FONT = "D-DIN" // "Helvetica"
-        const LABEL_COLOR = "white"
+
+        const INIT_TEXT = get_option(OPTIONS, what+".label", get_option(OPTIONS, "label.text", name+ " name"));
+
+        const LABEL_SIZE = get_option(OPTIONS, "label.size", 10);
+        const LABEL_FONT = get_option(OPTIONS, "label.font", "Helvetica");
+        const LABEL_COLOR = get_option(OPTIONS, "label.color", "white");
+
+        const SIZE = get_option(OPTIONS, what+".size", 50);
+        const INITIAL_POSITION = {x: 100, y: 100} // get_option(OPTIONS, "initial-position", {x: 100, y: 100});
 
         super({name: INIT_TEXT, draggable: true});
 
@@ -305,8 +334,8 @@ class Interactor extends Konva.Group {
                 width: SIZE,
                 height: SIZE,
                 cornerRadius: what == "hardware" ? 0 : 4,
-                fill: fillColor == undefined ? "#ffffff20" : fillColor,
-                stroke: color,
+                fill: get_option(OPTIONS, what+".fill-color", fillColor != undefined ? fillColor : "#ffffff20"),
+                stroke: get_option(OPTIONS, what+".stroke-color", color),
                 strokeWidth: 1,
                 strokeScaleEnabled: false,
                 name: what, 
@@ -315,9 +344,9 @@ class Interactor extends Konva.Group {
             shape = new Konva.Circle({
                 x: INITIAL_POSITION.x,
                 y: INITIAL_POSITION.y,
-                radius: Math.floor(SIZE / 2),
-                fill: fillColor == undefined ? "#ffffff20" : fillColor,
-                stroke: color,
+                radius: get_option(OPTIONS, what+".radius", Math.floor(SIZE / 2)),
+                fill: get_option(OPTIONS, what+".fill-color", fillColor != undefined ? fillColor : "#ffffff20"),
+                stroke: get_option(OPTIONS, what+".stroke-color", color),
                 strokeWidth: 1,
                 strokeScaleEnabled: false,
                 name: what,
@@ -342,9 +371,9 @@ class Interactor extends Konva.Group {
             text: INIT_TEXT,
             align: "center",
             fontFamily: LABEL_FONT,
-            fontStyle: "bold",
+            fontStyle: get_option(OPTIONS, "label.style", "normal"),
             fontSize: LABEL_SIZE,
-            fill: LABEL_COLOR,
+            fill: get_option(OPTIONS, what+".label-color", LABEL_COLOR),
           });
 
         // center label over shape on start at least

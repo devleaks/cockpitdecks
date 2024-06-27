@@ -695,6 +695,9 @@ class Cockpit(DatarefListener, CockpitBase):
         aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
         added = []
         for deck_type in DeckType.list(aircraft_deck_types):
+            b = os.path.basename(deck_type)
+            if b in [CONFIG_FILE, "designer.yaml"]:
+                continue
             data = DeckType(deck_type)
             data._custom = True # mark as non-system deck type
             self.deck_types[data.name] = data

@@ -132,7 +132,12 @@ def representation_details():
 @app.route("/deck-designer")
 def deck_designer():
     background_image = request.args.get("background_image", default="a321neo.overhead.png")
-    return render_template("deck-designer.j2", background_image=background_image)
+    config_file = os.path.abspath(os.path.join(ac, "deckconfig", "resources", "decks", "designer.yaml"))
+    designer_config = {}
+    if os.path.exists(config_file):
+        with open(config_file, "r") as fp:
+            designer_config = yaml.load(fp)
+    return render_template("deck-designer.j2", background_image=background_image, designer_config=designer_config)
 
 @app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
