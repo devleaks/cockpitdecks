@@ -1,5 +1,7 @@
 import os
+import glob
 import logging
+from os.path import basename
 import sys
 import time
 import itertools
@@ -24,7 +26,7 @@ from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
 from cockpitdecks import LOGFILE, FORMAT
 
-# logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode='a')
+# logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode="a")
 
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
@@ -40,8 +42,8 @@ ac_desc = os.path.basename(ac) if ac is not None else "(no aircraft folder)"
 
 
 APP_HOST = [
-    os.getenv('APP_HOST', '127.0.0.1'),
-    int(os.getenv('APP_PORT', '7777'))
+    os.getenv("APP_HOST", "127.0.0.1"),
+    int(os.getenv("APP_PORT", "7777"))
 ]
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
@@ -57,12 +59,13 @@ cockpit = Cockpit(XPlane)
 # Proxy WebSockets to TCP Sockets
 #
 TEMPLATE_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "templates")
-ASSET_FOLDER = os.path.join("..", "cockpitdecks", "decks", "resources", "assets")
+ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", "decks", "resources", "assets"))
+AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(ac, "deckconfig", "resources"))
 
 app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 
 app.logger.setLevel(logging.INFO)
-# app.config['EXPLAIN_TEMPLATE_LOADING'] = True
+# app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 
 
 @app.route("/")
@@ -76,13 +79,23 @@ def send_favicon():
 
 
 @app.route("/assets/<path:path>")
-def send_report(path):
+def send_asset(path):
     return send_from_directory(ASSET_FOLDER, path)
 
+@app.route("/aircraft/<path:path>")
+def send_aircraft_asset(path):
+    return send_from_directory(AIRCRAFT_ASSET_FOLDER, path)
+
+
+# Designers
+#
+@app.route("/designer")
+def designer():
+    return render_template("designer.j2", image_list=cockpit.get_deck_background_images())
 
 # Button designer
 #
-@app.route('/button-designer', methods=("GET", "POST"))
+@app.route("/button-designer", methods=("GET", "POST"))
 def button_designer():
     if request.method == "POST":
         return cockpit.render_button(request.json)
@@ -116,12 +129,12 @@ def representation_details():
 
 # Deck designer
 #
-@app.route('/deck-designer')
+@app.route("/deck-designer")
 def deck_designer():
-    background_image = request.args.get('background_image', default='a321neo.overhead.png')
+    background_image = request.args.get("background_image", default="a321neo.overhead.png")
     return render_template("deck-designer.j2", background_image=background_image)
 
-@app.route('/deck-designer-io', methods=("GET", "POST"))
+@app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
     FILENAME = "decklayout.json"
     if request.method == "POST":

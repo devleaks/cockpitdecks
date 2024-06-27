@@ -2,6 +2,7 @@
 #
 import os
 import io
+import glob
 import base64
 import threading
 import logging
@@ -18,7 +19,7 @@ from cairosvg import svg2png
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT, button
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
-from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER
+from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -362,6 +363,8 @@ class Cockpit(DatarefListener, CockpitBase):
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
+
+            self.load_aircraft_deck_types()
             self.scan_virtual_decks()
 
             if len(self.devices) == 0:
@@ -687,6 +690,18 @@ class Cockpit(DatarefListener, CockpitBase):
             if data.is_virtual_deck():
                 self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
         logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
+
+    def load_aircraft_deck_types(self):
+        aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
+        added = []
+        for deck_type in DeckType.list(aircraft_deck_types):
+            data = DeckType(deck_type)
+            data._custom = True # mark as non-system deck type
+            self.deck_types[data.name] = data
+            if data.is_virtual_deck():
+                self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+            added.append(data.name)
+        logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
@@ -1204,3 +1219,24 @@ class Cockpit(DatarefListener, CockpitBase):
         }
         payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": meta}
         return payload
+
+    def get_deck_background_images(self):
+        ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "assets"))
+        AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+        deckimages = {}
+        for base in [AIRCRAFT_ASSET_FOLDER, ASSET_FOLDER]:
+            dn = os.path.join(base, DECKS_FOLDER, DECK_IMAGES)
+            if os.path.isdir(dn):
+                files = []
+                for ext in ["png", "jpg"]:
+                    files = files + glob.glob(os.path.join(dn, f"*.{ext}"))
+                for f in files:
+                    fn = os.path.basename(f)
+                    if fn in deckimages:
+                        logger.warning(f"duplicate deck background image {fn}, ignoring {f}")
+                    else:
+                        if base == AIRCRAFT_ASSET_FOLDER:
+                            deckimages[fn] = f"/aircraft/decks/images/{fn}"
+                        else:
+                            deckimages[fn] = f"/assets/decks/images/{fn}"
+        return deckimages

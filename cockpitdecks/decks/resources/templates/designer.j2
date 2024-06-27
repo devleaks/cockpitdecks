@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Cockpitdecks Web Decks Designer</title>
+<style type="text/css">
+body {
+    font-family: sans-serif;
+}
+</style>
+</head>
+<body>
+
+    <h2>Welcome to Cockpitdecks Web Decks Designers</h2>
+
+    <h3>Deck Designer</h3>
+
+    {% if image_list|length > 0 %}
+        <p>Available web decks background images:</p>
+        <ul id="deckdesignerlist">
+        {% for name, path in image_list.items() %}
+            <li>
+                <a href="/deck-designer?background_image={{ path|e }}" target="_blank">{{ name }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+        <p>Deck Desiger will start in a new window.</p>
+    {% else %}
+        <p>No deck background image found</p>
+    {% endif %}
+
+    <h3>Button Designer</h3>
+
+        <p><a href="/button-designer" target="_blank">Button Designer</a></p>
+        <p>Button Desiger will start in a new window.</p>
+
+</body>
+</html>

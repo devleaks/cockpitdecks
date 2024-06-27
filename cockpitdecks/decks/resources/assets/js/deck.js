@@ -14,6 +14,7 @@ const DECK_TYPE_DESCRIPTION = "deck-type-flat"
 const PRESENTATION_DEFAULTS = "presentation-default"
 
 const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
+const AIRCRAFT_BACKGROUND_IMAGE_PATH = "/aircraft/decks/images/"
 
 const DEFAULT_WIDTH = 200
 const DEFAULT_HEIGHT = 100
@@ -840,8 +841,9 @@ class Deck {
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
             layer.add(deckbg);
         };
-        deckImage.src = DECK_BACKGROUND_IMAGE_PATH + background_image;
-        // console.log("set_background_layer", this.buttons)
+        let image_path = (DECK[DECK_TYPE_DESCRIPTION].custom ? AIRCRAFT_BACKGROUND_IMAGE_PATH : DECK_BACKGROUND_IMAGE_PATH) + background_image;
+        deckImage.src = image_path;
+        // console.log("set_background_layer", DECK[DECK_TYPE_DESCRIPTION], image_path)
     }
 
     set_hardware_image_layer(layer) {

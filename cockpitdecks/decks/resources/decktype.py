@@ -204,11 +204,12 @@ class DeckType(Config):
         self.background = self.store.get(DECK_KW.BACKGROUND.value)
         self._special_displays = None  # cache
         self.count = 0
+        self._custom = False
         self.init()
 
     @staticmethod
-    def list():
-        return glob.glob(os.path.join(DECK_TYPE_LOCATION, DECK_TYPE_GLOB))
+    def list(path: str = DECK_TYPE_LOCATION):
+        return glob.glob(os.path.join(path, DECK_TYPE_GLOB))
 
     def init(self):
         """Parses a deck definition file and build a list of what's available.
@@ -425,4 +426,4 @@ class DeckType(Config):
             dict: Deck description (DeckType), simply flattened for web decks
         """
         buttons = [b.desc() for b in self.buttons.values()]
-        return {"name": self.name, "driver": self.driver, "buttons": buttons, "background": self.background}
+        return {"name": self.name, "driver": self.driver, "background": self.background, "custom": self._custom, "buttons": buttons}

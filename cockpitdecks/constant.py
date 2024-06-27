@@ -37,6 +37,8 @@ RESOURCES_FOLDER = "resources"
 FONTS_FOLDER = "fonts"
 ICONS_FOLDER = "icons"
 DECKS_FOLDER = "decks"
+DECK_TYPES = "types"
+DECK_IMAGES = "images"
 
 ICON_SIZE = 256  # px
 
