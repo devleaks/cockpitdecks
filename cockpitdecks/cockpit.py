@@ -1221,6 +1221,8 @@ class Cockpit(DatarefListener, CockpitBase):
         return payload
 
     def get_deck_background_images(self):
+        # Located either in cockpitdecks/decks/resources/assets/decks/images
+        # or <aircraft>/deckconfig/resources/decks/images.
         ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "assets"))
         AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
         deckimages = {}

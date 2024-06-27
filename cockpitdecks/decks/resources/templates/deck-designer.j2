@@ -3,6 +3,7 @@
 <head>
     <title>Cockpitdecks - Deck Designer</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <link href="/assets/fonts/d-din.css" rel="stylesheet" />
 <style type="text/css">
 body {
     width: 100%;
@@ -11,8 +12,7 @@ body {
     padding: 0;
     font-family: sans-serif;
 }
-
-.deck {
+#deck {
     width: inherit;
     height: inherit;
     display: block;
@@ -22,11 +22,12 @@ body {
 </style>
 </head>
 <body>
-    <div id="deck" class="deck"></div>
-    <button id="butrect">Button (rect)</button>
+    <div id="deck"></div>
+    <button id="butrect">Button (rectangular)</button>
     <button id="butround">Button (round)</button>
     <button id="encoder">Encoder</button>
     <button id="hardware">Hardware</button>
+    <button id="label">Show/Hide Label</button>
     <button id="save">Save</button>
     <button id="load">Load</button>
 <script src="/assets/js/konva.js" type="text/javascript"></script>
@@ -124,7 +125,7 @@ add_transformer()
 //
 // Interactors
 //
-function label_editor(that_stage, label) {
+function label_editor(that_stage, label, shape) {
     // https://konvajs.org/docs/sandbox/Editable_Text.html
 
     // create textarea over canvas with absolute position
@@ -162,6 +163,16 @@ function label_editor(that_stage, label) {
             label.text(textarea.value);
             label.getParent().name(textarea.value);
             document.body.removeChild(textarea);
+
+            // tries to center label over shape
+            if (shape !== false && shape != undefined) {
+                let transform = shape.getAbsoluteTransform();
+                let matrix = transform.getMatrix();
+                label.x(shape.x() + (shape.width() * matrix[0] - label.width()) / 2)
+            } else {
+                console.log("no shape")
+            }
+
         }
     });
 }
@@ -271,17 +282,17 @@ class Interactor extends Konva.Group {
     // This is a combination of a rect or circle that can be transformed
     // and a text "label" or name that can be edited.
 
-    constructor(what, color) {
+    constructor(what, color, fillColor) {
 
         let name = what;
         if (name.startsWith("but")) {
             name = "button"
         }
         const INIT_TEXT = name+ " name";
-        const SIZE = 50
+        const SIZE = 40
         const INITIAL_POSITION = {x: 100, y: 100}
-        const LABEL_SIZE = 12
-        const LABEL_FONT = "Helvetica"
+        const LABEL_SIZE = 10
+        const LABEL_FONT = "D-DIN" // "Helvetica"
         const LABEL_COLOR = "white"
 
         super({name: INIT_TEXT, draggable: true});
@@ -294,6 +305,7 @@ class Interactor extends Konva.Group {
                 width: SIZE,
                 height: SIZE,
                 cornerRadius: what == "hardware" ? 0 : 4,
+                fill: fillColor == undefined ? "#ffffff20" : fillColor,
                 stroke: color,
                 strokeWidth: 1,
                 strokeScaleEnabled: false,
@@ -304,6 +316,7 @@ class Interactor extends Konva.Group {
                 x: INITIAL_POSITION.x,
                 y: INITIAL_POSITION.y,
                 radius: Math.floor(SIZE / 2),
+                fill: fillColor == undefined ? "#ffffff20" : fillColor,
                 stroke: color,
                 strokeWidth: 1,
                 strokeScaleEnabled: false,
@@ -327,13 +340,25 @@ class Interactor extends Konva.Group {
             x: x,
             y: y - LABEL_SIZE - 2,
             text: INIT_TEXT,
+            align: "center",
             fontFamily: LABEL_FONT,
+            fontStyle: "bold",
             fontSize: LABEL_SIZE,
             fill: LABEL_COLOR,
           });
 
+        // center label over shape on start at least
+        label.x(x + (shape.width() - label.width()) / 2)
+
+        // attempt to keep label centered...
+        shape.on("transformend", function () {
+            let transform = shape.getAbsoluteTransform();
+            let matrix = transform.getMatrix();
+            label.x(x + (shape.width() * matrix[0] - label.width()) / 2)
+        });
+
         label.on("dblclick dbltap", () => {
-            label_editor(stage, label);
+            label_editor(stage, label, shape);
         });
 
         this.add(label);
@@ -356,7 +381,7 @@ document.getElementById("hardware").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        interaction_layer.add(new Interactor("hardware", "#0000ff"));
+        interaction_layer.add(new Interactor("hardware", "#0000ff", "#0000ff30"));
     },
     false,
 );
@@ -365,7 +390,7 @@ document.getElementById("butrect").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        interaction_layer.add(new Interactor("butrect", "#00ff00"));
+        interaction_layer.add(new Interactor("butrect", "#00ff00", "#00ff0030"));
     },
     false,
 );
@@ -374,7 +399,7 @@ document.getElementById("butround").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        interaction_layer.add(new Interactor("butround", "#00ff00"));
+        interaction_layer.add(new Interactor("butround", "#00ff00", "#00ff0030"));
     },
     false,
 );
@@ -383,7 +408,21 @@ document.getElementById("encoder").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        interaction_layer.add(new Interactor("encoder", "yellow"));
+        interaction_layer.add(new Interactor("encoder", "yellow", "#ffff0030"));
+    },
+    false,
+);
+
+document.getElementById("label").addEventListener(
+    "click",
+    function (event) {
+        event.preventDefault();
+        var shapes = stage.find('Text');
+        if (shapes.length > 0) {
+            visible = shapes[0].visible()
+            visible = ! visible
+            shapes.forEach( (s) => s.visible(visible))
+        }
     },
     false,
 );
@@ -455,16 +494,27 @@ document.getElementById("load").addEventListener(
                         return;
                     }
                     if (group instanceof Konva.Group) {
+                        let this_shape = false;
                         group.getChildren().forEach( (shape) => {
                             // console.log("shape", shape)
                             if (["Rect", "Circle"].indexOf(shape.className) > -1) {
+                                this_shape = shape
+                            }
+                        });
+                        if (this_shape === false) {
+                            console.log("cannot find shape Rect or Circle in group")
+                        }
+                        group.getChildren().forEach( (shape) => {
+                            // console.log("shape", shape)
+                            if (["Rect", "Circle"].indexOf(shape.className) > -1) {
+                                this_shape = shape
                                 shape.on("dblclick", function () {
                                     transformer.nodes([shape]);
                                 });
                                 // console.log("installed transformer", shape.name())
                             } else if (["Text"].indexOf(shape.className) > -1) {
                                 shape.on("dblclick", function () {
-                                    label_editor(stage, shape);
+                                    label_editor(stage, shape, this_shape);
                                 });
                                 // console.log("installed label_editor", shape.name())
                             }
