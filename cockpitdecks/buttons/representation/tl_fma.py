@@ -286,7 +286,7 @@ class FMAIcon(DrawBase):
             who="FMA",
         )
         bg.alpha_composite(image)
-        self._cached = bg.convert("RGB")
+        self._cached = bg
         return self._cached
 
     def get_image_for_icon(self):
@@ -369,7 +369,7 @@ class FMAIcon(DrawBase):
                 who="FMA",
             )
             bg.alpha_composite(image)
-            self._cached = bg.convert("RGB")
+            self._cached = bg
             self.previous_text = self.text
             logger.debug("texts updated")
             return self._cached
@@ -473,7 +473,7 @@ class FMAIcon(DrawBase):
             who="FMA",
         )
         bg.alpha_composite(image)
-        self._cached = bg.convert("RGB")
+        self._cached = bg
         self.previous_text = self.text
         logger.debug("texts updated")
 

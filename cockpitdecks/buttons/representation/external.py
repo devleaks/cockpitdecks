@@ -594,7 +594,7 @@ class LiveWeatherIcon(DrawAnimation):
             who="Weather",
         )
         bg.alpha_composite(image)
-        self._cache = bg.convert("RGB")
+        self._cache = bg
         return self._cache
 
     def has_metar(self, what: str = "raw"):

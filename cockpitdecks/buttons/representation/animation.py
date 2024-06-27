@@ -333,4 +333,4 @@ class DrawAnimationFTG(DrawAnimation):
                 fill="lime",
             )
 
-        return image.convert("RGB")
+        return image

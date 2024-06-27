@@ -146,7 +146,7 @@ class XPWeatherBaseIcon(DrawBase):
             who="Weather",
         )
         bg.alpha_composite(image)
-        self._cache = bg.convert("RGB")
+        self._cache = bg
         return self._cache
 
     def get_lines(self) -> list:

@@ -591,7 +591,7 @@ class DeckWithIcons(Deck):
         """Create a default icon for supplied key with proper texture or color"""
         image = None
         width, height = self.get_image_size(index)
-        image = self.get_icon_background(
+        return self.get_icon_background(
             name=str(index),
             width=width,
             height=height,
@@ -600,10 +600,6 @@ class DeckWithIcons(Deck):
             use_texture=True,
             who=type(self).__name__,
         )
-
-        if image is not None:
-            image = image.convert("RGB")
-        return image
 
     def scale_icon_for_key(self, index, image, name: str | None = None):
         margins = [0, 0, 0, 0]
@@ -619,9 +615,6 @@ class DeckWithIcons(Deck):
         thumbnail_y = margins[0] + (thumbnail_max_height - thumbnail.height) // 2
 
         final_image.paste(thumbnail, (thumbnail_x, thumbnail_y), thumbnail)
-
-        if final_image is not None:
-            final_image = final_image.convert("RGB")
         return final_image
 
     def fill_empty(self, key):

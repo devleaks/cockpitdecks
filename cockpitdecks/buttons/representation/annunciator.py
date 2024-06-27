@@ -662,7 +662,7 @@ class Annunciator(DrawBase):
 
         # PART 5: Label
         # Label will be added in Icon.get_image()
-        return image.convert("RGB")
+        return image
 
     def all_lit(self, on: bool):
         if self.annunciator_parts is not None:

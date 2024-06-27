@@ -112,7 +112,7 @@ class DrawBase(Icon):
             who="Annunciator",
         )
         bg.alpha_composite(image)
-        return bg.convert("RGB")
+        return bg
 
     def graphic_default(self, attribute, default=None):
         dflt = self.button.deck.cockpit.defaults_prefix()
@@ -315,7 +315,7 @@ class DataIcon(DrawBase):
             who="Data",
         )
         bg.alpha_composite(image)
-        return bg.convert("RGB")
+        return bg
 
 
 #

@@ -223,7 +223,7 @@ class FCUIcon(DrawBase):
                 who="FMA",
             )
             bg.alpha_composite(image)
-            self._cached = bg.convert("RGB")
+            self._cached = bg
             return self._cached
 
         # values
@@ -376,7 +376,7 @@ class FCUIcon(DrawBase):
             who="FCU",
         )
         bg.alpha_composite(image)
-        self._cached = bg.convert("RGB")
+        self._cached = bg
         return self._cached
 
     def get_image_for_icon_vertical_left(self):
@@ -439,7 +439,7 @@ class FCUIcon(DrawBase):
             )
             bg.alpha_composite(image)
             bg = self.button.deck.scale_icon_for_key(self.button.index, bg)
-            self._cached = bg.convert("RGB")
+            self._cached = bg
             return self._cached
 
         # values
@@ -560,7 +560,7 @@ class FCUIcon(DrawBase):
         )
         bg.alpha_composite(image)
         bg = self.button.deck.scale_icon_for_key(self.button.index, bg)
-        self._cached = bg.convert("RGB")
+        self._cached = bg
         return self._cached
 
     def get_image_for_icon_vertical_right(self):
@@ -614,7 +614,7 @@ class FCUIcon(DrawBase):
             )
             bg.alpha_composite(image)
             bg = self.button.deck.scale_icon_for_key(self.button.index, bg)
-            self._cached = bg.convert("RGB")
+            self._cached = bg
             return self._cached
 
         # values
@@ -696,5 +696,5 @@ class FCUIcon(DrawBase):
         )
         bg.alpha_composite(image)
         bg = self.button.deck.scale_icon_for_key(self.button.index, bg)
-        self._cached = bg.convert("RGB")
+        self._cached = bg
         return self._cached
