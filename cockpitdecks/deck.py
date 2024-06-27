@@ -233,10 +233,15 @@ class Deck(ABC):
             if not self._layout_config.is_valid():
                 logger.debug(f"no layout config file")
             else:
-                self.home_page_name = self.get_attribute("home-page-name")
-                self.logo = self.get_attribute("logo")
-                self.wallpaper = self.get_attribute("wallpaper")
-                # must put other as well
+                tempvar = self.get_attribute("home-page-name")
+                if tempvar is not None:
+                    self.home_page_name = tempvar
+                tempvar = self.get_attribute("logo")
+                if tempvar is not None:
+                    self.logo = tempvar
+                tempvar = self.get_attribute("wallpaper")
+                if tempvar is not None:
+                    self.wallpaper = tempvar
 
         for p in pages:
             if p == CONFIG_FILE:
