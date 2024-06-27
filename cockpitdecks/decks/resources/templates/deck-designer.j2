@@ -241,6 +241,9 @@ function decompose_2d_matrix(mat) {
 }
 
 function reset_transforms() {
+    function basename(path) {
+        return path.split('/').reverse()[0];
+    }
     let output = [];
     stage.getLayers().forEach( (layer) => {
         // console.log("layer", layer)
@@ -268,6 +271,7 @@ function reset_transforms() {
                             button = {
                                 name: group.name(),
                                 action: ["push"],
+                                feedback: "image",
                                 dimension: [Math.round(shape.attrs.width * summary.scale[0]), Math.round(shape.attrs.height * summary.scale[1])],
                                 layout: {
                                     offset: [Math.round(summary.translation[0]), Math.round(summary.translation[1])]
@@ -286,6 +290,9 @@ function reset_transforms() {
                                     offset: [Math.round(summary.translation[0]), Math.round(summary.translation[1])]
                                 }
                             };
+                            if (shape.attrs.name == "button") {
+                                button.feedback = "image";
+                            }
                         }
                         output.push(button);
                     }
@@ -295,11 +302,14 @@ function reset_transforms() {
             }
         });
     });
+    name = basename(DECK_BACKGROUND_IMAGE)
     return {
-        buttons: output,
+        name: name.replace(/\.[^/.]+$/, ""),
+        driver: "virtualdeck",
         background: {
-            image: DECK_BACKGROUND_IMAGE
-        }
+            image: name
+        },
+        buttons: output
     };
 }
 
