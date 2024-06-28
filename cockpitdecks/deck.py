@@ -146,7 +146,7 @@ class Deck(ABC):
 
         # Is there such an attribute in the layout definition?
         if self._layout_config is not None:
-            value = self._config.get(attribute)
+            value = self._layout_config.get(attribute)
 
         if value is not None: # found!
             if silence:
@@ -154,6 +154,9 @@ class Deck(ABC):
             else:
                 logger.info(f"deck {self.name} returning {attribute}={value} (from layout)")
             return value
+
+        if not silence:
+            logger.info(f"deck {self.name} no value in layout {self.layout} ({self._layout_config.get('__filename__')})")
 
         # Is there such an attribute in the deck definition?
         if self._config is not None:
@@ -165,6 +168,9 @@ class Deck(ABC):
             else:
                 logger.info(f"deck {self.name} returning {attribute}={value} (from deck)")
             return value
+
+        if not silence:
+            logger.info(f"deck {self.name} no value in config")
 
         if propagate:
             if not silence:

@@ -192,10 +192,7 @@ class IconBase(Representation):
         return ImageFont.load_default()
 
     def get_image_for_icon(self):
-        cockpit_color = self.get_attribute("cockpit-color")
-        cockpit_texture = self.get_attribute("cockpit-texture")
-        image = self.button.deck.create_icon_for_key(index=self.button.index, colors=cockpit_color, texture=cockpit_texture)
-        return image
+        return self.button.deck.create_icon_for_key(index=self.button.index, colors=self.cockpit_color, texture=self.cockpit_texture)
 
     def get_image(self):
         """
@@ -478,8 +475,7 @@ class IconColor(IconBase):
         self.icon_texture = self.get_attribute("icon-texture")
 
     def get_image_for_icon(self):
-        image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
-        return image
+        return self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
 
     def describe(self) -> str:
         return "The representation places a uniform color or textured icon."
