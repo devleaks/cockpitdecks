@@ -136,6 +136,9 @@ def representation_details():
 
 # Deck designer
 #
+DECK_LAYOUT_FILENAME = "deckcurrentlayout.json"
+AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, "decks", "types")
+
 @app.route("/deck-designer")
 def deck_designer():
     background_image = request.args.get("background_image", default="a321neo.overhead.png")
@@ -148,14 +151,20 @@ def deck_designer():
 
 @app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
-    FILENAME = "decklayout.json"
+    FILENAME = os.path.join(AIRCRAFT_DECK_TYPES, DECK_LAYOUT_FILENAME)
     if request.method == "POST":
         data = request.json
         with open(FILENAME, "w") as fp:
             json.dump(data["code"], fp, indent=2)
-        fn = FILENAME.replace(".json", ".yaml")
-        with open(fn, "w") as fp:
+            print("saved", FILENAME)
+        layout_name = data["deckconfig"].get("name")
+        if layout_name is None:
+            layout_name = FILENAME.replace(".json", ".yaml")
+        else:
+            layout_name = os.path.join(AIRCRAFT_DECK_TYPES, layout_name+".yaml")
+        with open(layout_name, "w") as fp:
             yaml.dump(data["deckconfig"], fp)
+            print("saved", layout_name)
         return {"status": "ok"}
     with open(FILENAME, "r") as fp:
         code = json.load(fp)

@@ -1,0 +1,374 @@
+{
+  "angular-step": {
+    "type": "float",
+    "prompt": "Angular Step"
+  },
+  "base-fill-color": {
+    "type": "text",
+    "prompt": "Base Fill Color"
+  },
+  "base-size": {
+    "type": "integer",
+    "prompt": "Base Size"
+  },
+  "base-stroke-color": {
+    "type": "text",
+    "prompt": "Base Stroke Color"
+  },
+  "base-stroke-width": {
+    "type": "integer",
+    "prompt": "Base Stroke Width"
+  },
+  "base-underline-color": {
+    "type": "text",
+    "prompt": "Base Underline Color"
+  },
+  "base-underline-width": {
+    "type": "integer",
+    "prompt": "Base Underline Width"
+  },
+  "bgcolor": {
+    "type": "text",
+    "prompt": "Bgcolor"
+  },
+  "button-dent": {
+    "type": "text",
+    "prompt": "Button Dent"
+  },
+  "button-dent-extension": {
+    "type": "text",
+    "prompt": "Button Dent Extension"
+  },
+  "button-dent-size": {
+    "type": "integer",
+    "prompt": "Button Dent Size"
+  },
+  "button-dents": {
+    "type": "text",
+    "prompt": "Button Dents"
+  },
+  "button-fill-color": {
+    "type": "text",
+    "prompt": "Button Fill Color"
+  },
+  "button-size": {
+    "type": "integer",
+    "prompt": "Button Size"
+  },
+  "button-stroke-color": {
+    "type": "text",
+    "prompt": "Button Stroke Color"
+  },
+  "button-stroke-width": {
+    "type": "integer",
+    "prompt": "Button Stroke Width"
+  },
+  "button-underline-color": {
+    "type": "text",
+    "prompt": "Button Underline Color"
+  },
+  "button-underline-width": {
+    "type": "integer",
+    "prompt": "Button Underline Width"
+  },
+  "cockpit-color": {
+    "type": "text",
+    "prompt": "Cockpit Color"
+  },
+  "cockpit-texture": {
+    "type": "text",
+    "prompt": "Cockpit Texture"
+  },
+  "code": {
+    "type": "text",
+    "prompt": "Code"
+  },
+  "datarefs": {
+    "type": "text",
+    "prompt": "Datarefs"
+  },
+  "decor": {
+    "type": "text",
+    "prompt": "Decor"
+  },
+  "decor-color": {
+    "type": "text",
+    "prompt": "Decor Color"
+  },
+  "decor-width-horz": {
+    "type": "integer",
+    "prompt": "Decor Width Horz"
+  },
+  "decor-width-vert": {
+    "type": "text",
+    "prompt": "Decor Width Vert"
+  },
+  "draw-left": {
+    "type": "text",
+    "prompt": "Draw Left"
+  },
+  "draw-scale": {
+    "type": "text",
+    "prompt": "Draw Scale"
+  },
+  "draw-up": {
+    "type": "text",
+    "prompt": "Draw Up"
+  },
+  "handle-base-fill-color": {
+    "type": "text",
+    "prompt": "Handle Base Fill Color"
+  },
+  "handle-dot-color": {
+    "type": "text",
+    "prompt": "Handle Dot Color"
+  },
+  "handle-fill-color": {
+    "type": "text",
+    "prompt": "Handle Fill Color"
+  },
+  "handle-off-fill-color": {
+    "type": "text",
+    "prompt": "Handle Off Fill Color"
+  },
+  "handle-off-stroke-color": {
+    "type": "text",
+    "prompt": "Handle Off Stroke Color"
+  },
+  "handle-off-stroke-width": {
+    "type": "integer",
+    "prompt": "Handle Off Stroke Width"
+  },
+  "handle-size": {
+    "type": "integer",
+    "prompt": "Handle Size"
+  },
+  "handle-stroke-color": {
+    "type": "text",
+    "prompt": "Handle Stroke Color"
+  },
+  "handle-stroke-width": {
+    "type": "integer",
+    "prompt": "Handle Stroke Width"
+  },
+  "handle-tip-fill-color": {
+    "type": "text",
+    "prompt": "Handle Tip Fill Color"
+  },
+  "hexabase": {
+    "type": "boolean",
+    "prompt": "Hexabase"
+  },
+  "icon-color": {
+    "type": "text",
+    "prompt": "Icon Color"
+  },
+  "invert": {
+    "type": "boolean",
+    "prompt": "Invert"
+  },
+  "knob-mark": {
+    "type": "text",
+    "prompt": "Knob Mark"
+  },
+  "knob-type": {
+    "type": "text",
+    "prompt": "Knob Type"
+  },
+  "label-opposite": {
+    "type": "text",
+    "prompt": "Label Opposite"
+  },
+  "mark-fill-color": {
+    "type": "text",
+    "prompt": "Mark Fill Color"
+  },
+  "mark-off-fill-color": {
+    "type": "text",
+    "prompt": "Mark Off Fill Color"
+  },
+  "mark-off-stroke-color": {
+    "type": "text",
+    "prompt": "Mark Off Stroke Color"
+  },
+  "mark-off-stroke-width": {
+    "type": "integer",
+    "prompt": "Mark Off Stroke Width"
+  },
+  "mark-size": {
+    "type": "integer",
+    "prompt": "Mark Size"
+  },
+  "mark-stroke-color": {
+    "type": "text",
+    "prompt": "Mark Stroke Color"
+  },
+  "mark-stroke-width": {
+    "type": "integer",
+    "prompt": "Mark Stroke Width"
+  },
+  "mark-underline-color": {
+    "type": "text",
+    "prompt": "Mark Underline Color"
+  },
+  "mark-underline-outer": {
+    "type": "text",
+    "prompt": "Mark Underline Outer"
+  },
+  "mark-underline-width": {
+    "type": "integer",
+    "prompt": "Mark Underline Width"
+  },
+  "marker-color": {
+    "type": "text",
+    "prompt": "Marker Color"
+  },
+  "needle-color": {
+    "type": "text",
+    "prompt": "Needle Color"
+  },
+  "needle-length": {
+    "type": "integer",
+    "prompt": "Needle Length"
+  },
+  "needle-start": {
+    "type": "text",
+    "prompt": "Needle Start"
+  },
+  "needle-tip": {
+    "type": "text",
+    "prompt": "Needle Tip"
+  },
+  "needle-tip-size": {
+    "type": "integer",
+    "prompt": "Needle Tip Size"
+  },
+  "needle-underline-color": {
+    "type": "text",
+    "prompt": "Needle Underline Color"
+  },
+  "needle-underline-width": {
+    "type": "integer",
+    "prompt": "Needle Underline Width"
+  },
+  "needle-width": {
+    "type": "integer",
+    "prompt": "Needle Width"
+  },
+  "rotation": {
+    "type": "float",
+    "prompt": "Rotation"
+  },
+  "screw-rot": {
+    "type": "float",
+    "prompt": "Screw Rot"
+  },
+  "switch": {
+    "type": "text",
+    "prompt": "Switch"
+  },
+  "switch-length": {
+    "type": "integer",
+    "prompt": "Switch Length"
+  },
+  "switch-style": {
+    "type": "text",
+    "prompt": "Switch Style"
+  },
+  "switch-style:str|None": {
+    "type": "text",
+    "prompt": "Switch Style:Str|None"
+  },
+  "switch-type:str|None": {
+    "type": "text",
+    "prompt": "Switch Type:Str|None"
+  },
+  "switch-width": {
+    "type": "integer",
+    "prompt": "Switch Width"
+  },
+  "texture": {
+    "type": "text",
+    "prompt": "Texture"
+  },
+  "three-way": {
+    "type": "text",
+    "prompt": "Three Way"
+  },
+  "tick-color": {
+    "type": "text",
+    "prompt": "Tick Color"
+  },
+  "tick-from": {
+    "type": "float",
+    "prompt": "Tick From"
+  },
+  "tick-label-color": {
+    "type": "text",
+    "prompt": "Tick Label Color"
+  },
+  "tick-label-font": {
+    "type": "text",
+    "prompt": "Tick Label Font"
+  },
+  "tick-label-size": {
+    "type": "integer",
+    "prompt": "Tick Label Size"
+  },
+  "tick-label-space": {
+    "type": "text",
+    "prompt": "Tick Label Space"
+  },
+  "tick-labels": {
+    "type": "text",
+    "prompt": "Tick Labels"
+  },
+  "tick-length": {
+    "type": "integer",
+    "prompt": "Tick Length"
+  },
+  "tick-space": {
+    "type": "integer",
+    "prompt": "Tick Space"
+  },
+  "tick-steps": {
+    "type": "integer",
+    "prompt": "Tick Steps"
+  },
+  "tick-to": {
+    "type": "float",
+    "prompt": "Tick To"
+  },
+  "tick-underline-color": {
+    "type": "text",
+    "prompt": "Tick Underline Color"
+  },
+  "tick-underline-width": {
+    "type": "integer",
+    "prompt": "Tick Underline Width"
+  },
+  "tick-width": {
+    "type": "integer",
+    "prompt": "Tick Width"
+  },
+  "top-fill-color": {
+    "type": "text",
+    "prompt": "Top Fill Color"
+  },
+  "top-stroke-color": {
+    "type": "text",
+    "prompt": "Top Stroke Color"
+  },
+  "top-stroke-width": {
+    "type": "integer",
+    "prompt": "Top Stroke Width"
+  },
+  "type": {
+    "type": "text",
+    "prompt": "Type"
+  },
+  "vertical": {
+    "type": "text",
+    "prompt": "Vertical"
+  }
+}
