@@ -269,6 +269,9 @@ class Deck(ABC):
             elif not (p.lower().endswith(".yaml") or p.lower().endswith(".yml")):  # not a yaml file
                 logger.debug(f"{dn}: ignoring file {p}")
                 continue
+            elif p.lower().endswith(".inc.yaml"):  # a special include file
+                logger.debug(f"{dn}: file {p} is an include")
+                continue
 
             fn = os.path.join(dn, p)
             # if os.path.exists(fn):  # we know the file should exists...
@@ -306,7 +309,18 @@ class Deck(ABC):
                 logger.debug(f"deck {self.name}: page {page_name} includes {includes}..")
                 ipb = 0
                 for inc in includes:
-                    fni = os.path.join(dn, inc + ".yaml")
+                    if inc.endswith(".inc") or "." not in inc:  # no extension
+                        fni = os.path.join(dn, inc + ".yaml")
+                    # if not os.path.exists(fni):
+                    #     fni = os.path.join(dn, inc + ".yml")
+                    # if not os.path.exists(fni):
+                    #     fni = os.path.join(dn, inc + ".txt")
+                    # if not os.path.exists(fni):
+                    #     logger.warning(f"includes: {inc}: file {os.path.join(dn, inc + '.{yaml|yml|txt}')} not found")
+                    #     continue
+                    if not os.path.exists(fni):
+                        logger.warning(f"includes: {inc}: file {os.path.join(dn, inc + '.{yaml|yml|txt}')} not found")
+                        continue
                     inc_config = Config(fni)
                     if inc_config.is_valid():
                         this_page.merge_attributes(inc_config.store)  # merges attributes first since can have things for buttons....
