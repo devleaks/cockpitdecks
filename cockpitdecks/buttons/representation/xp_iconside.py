@@ -35,7 +35,7 @@ class IconSide(Icon):  # modified Representation IconSide class
     }
 
     def __init__(self, config: dict, button: "Button"):
-        config["icon-color"] = config["side"].get("icon-color", button.get_attribute("default-icon-color"))
+        config["icon-color"] = config["side"].get("icon-color", button.get_attribute("icon-color"))
         Icon.__init__(self, config=config, button=button)
 
         self.side = config.get("side")  # multi-labels
