@@ -834,6 +834,57 @@ class OnOff(Activation):
         return "\n\r".join(a)
 
 
+class ShortOrLongpress(Activation):
+    """
+    Execute beginCommand while the key is pressed and endCommand when the key is released.
+    """
+
+    ACTIVATION_NAME = "short-or-long-press"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {"command short": {"type": "string", "prompt": "Command", "mandatory": True},"command long": {"type": "string", "prompt": "Command", "mandatory": True}}
+
+    def __init__(self, config: dict, button: "Button"):
+        Activation.__init__(self, config=config, button=button)
+
+        # Commands
+        self._commands = [Command(path) for path in config.get("commands", [])]
+
+        self.long_time = config.get("long-time", 2)
+
+    def activate(self, event):
+        if not self.can_handle(event):
+            return
+        super().activate(event)
+        if not event.pressed:
+            if self.num_commands() > 1:
+                if self.duration < self.long_time:
+                    self.command(self._commands[0])
+                    print("SHORT", self.duration, self.long_time)
+                else:
+                    self.command(self._commands[1])
+                    print("LOOOOOOONG", self.duration, self.long_time)
+
+    def num_commands(self):
+        return len(self._commands) if self._commands is not None else 0
+
+    def inspect(self, what: str | None = None):
+        if what is not None and "activation" in what:
+            super().inspect(what=what)
+
+    def describe(self) -> str:
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join(
+            [
+                f"The button executes {self._command[0]} when it is activated shortly (pressed).",
+                f"The button ends command {self._command[1]} when it is de-activated after a long press (released after more than {self.long_time}secs.).",
+                f"(Begin and end command is a special terminology (phase of execution of a command) of X-Plane.)",
+            ]
+        )
+
+
 class UpDown(Activation):
     """
     Defines a button activation for a button that runs back and forth

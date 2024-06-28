@@ -27,6 +27,7 @@ sys.path.append(COCKPITDECKS_HOME)  # we assume we're in subdir "bin/"
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
 from cockpitdecks import LOGFILE, FORMAT
+from cockpitdecks import CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES
 
 # logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode="a")
 
@@ -59,10 +60,10 @@ cockpit = Cockpit(XPlane)
 # Serves decks and their assets.
 # Proxy WebSockets to TCP Sockets
 #
-TEMPLATE_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", "decks", "resources", "templates")
-ASSET_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", "decks", "resources", "assets")
+TEMPLATE_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "templates")
+ASSET_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "assets")
 
-AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, "deckconfig", "resources")
+AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER)
 
 APP_HOST = [
     os.getenv("APP_HOST", "127.0.0.1"),
@@ -137,12 +138,12 @@ def representation_details():
 # Deck designer
 #
 DECK_LAYOUT_FILENAME = "deckcurrentlayout.json"
-AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, "decks", "types")
+AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
 
 @app.route("/deck-designer")
 def deck_designer():
     background_image = request.args.get("background_image", default="a321neo.overhead.png")
-    config_file = os.path.abspath(os.path.join(ac, "deckconfig", "resources", "decks", "designer.yaml"))
+    config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, "designer.yaml"))
     designer_config = {}
     if os.path.exists(config_file):
         with open(config_file, "r") as fp:
@@ -151,22 +152,30 @@ def deck_designer():
 
 @app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
-    FILENAME = os.path.join(AIRCRAFT_DECK_TYPES, DECK_LAYOUT_FILENAME)
+    fn = os.path.join(AIRCRAFT_DECK_TYPES, DECK_LAYOUT_FILENAME)
+
     if request.method == "POST":
+
         data = request.json
-        with open(FILENAME, "w") as fp:
+
+        if "code" not in data:
+            return {"status": "no code"}
+        with open(fn, "w") as fp:
             json.dump(data["code"], fp, indent=2)
-            print("saved", FILENAME)
+
+        if "deckconfig" not in data:
+            return {"status": "no deckconfig"}
         layout_name = data["deckconfig"].get("name")
         if layout_name is None:
-            layout_name = FILENAME.replace(".json", ".yaml")
+            layout_name = fn.replace(".json", ".yaml")
         else:
             layout_name = os.path.join(AIRCRAFT_DECK_TYPES, layout_name+".yaml")
         with open(layout_name, "w") as fp:
             yaml.dump(data["deckconfig"], fp)
-            print("saved", layout_name)
+
         return {"status": "ok"}
-    with open(FILENAME, "r") as fp:
+
+    with open(fn, "r") as fp:
         code = json.load(fp)
     return code
 
