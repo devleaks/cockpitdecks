@@ -12,7 +12,7 @@ from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
-from .icon import Icon  # explicit Icon from file to avoid circular import
+from .icon import IconBase  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 # DRAWN REPRESENTATION (using Pillow)
 #
 #
-class DrawBase(Icon):
+class DrawBase(IconBase):
 
     REPRESENTATION_NAME = "draw-base"
 
     def __init__(self, config: dict, button: "Button"):
-        Icon.__init__(self, config=config, button=button)
+        IconBase.__init__(self, config=config, button=button)
 
         self.texture = None
         self.bgcolor = None

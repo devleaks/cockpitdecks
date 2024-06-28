@@ -14,7 +14,7 @@ from cockpitdecks.resources.color import (
     TRANSPARENT_PNG_COLOR,
     convert_color,
 )
-from .icon import Icon
+from .icon import IconBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -30,7 +30,7 @@ NO_ICON = "no-icon"
 #
 # GENERIC
 #
-class HardwareIcon(Icon):
+class HardwareIcon(IconBase):
     """Uniform color or texture icon
 
     Attributes:
@@ -41,7 +41,7 @@ class HardwareIcon(Icon):
 
     def __init__(self, config: dict, button: "Button"):
         config[NO_ICON] = True
-        Icon.__init__(self, config=config, button=button)
+        IconBase.__init__(self, config=config, button=button)
 
         self.hardware = self.button._def.hardware_representation
         self.highlight_color = self.hardware.get("highlight-color", "#ffffff10")
