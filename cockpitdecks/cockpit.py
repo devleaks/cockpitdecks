@@ -547,8 +547,9 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"virtual decks already added")
             return
         cnt = 0
+        virtual_deck_types = {d.name: d for d in filter(lambda d: d.is_virtual_deck(), self.deck_types.values())}
         builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
-        decks = builder[1]().enumerate(acpath=self.acpath)
+        decks = builder[1]().enumerate(acpath=self.acpath, virtual_deck_types=virtual_deck_types)
         logger.info(f"found {len(decks)} virtual deck(s)")
         for name, device in decks.items():
             serial = device.get_serial_number()

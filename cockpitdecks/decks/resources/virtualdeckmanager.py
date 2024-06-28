@@ -4,6 +4,7 @@ Discover virtual web decks
 """
 
 import os
+from pickle import NONE
 from typing import Dict
 
 from cockpitdecks.constant import (
@@ -40,14 +41,15 @@ class VirtualDeckManager:
         return {d.name: d for d in virtual_deck_types}
 
     @staticmethod
-    def enumerate(acpath: str) -> Dict[str, VirtualDeck]:
+    def enumerate(acpath: str, virtual_deck_types = None) -> Dict[str, VirtualDeck]:
         """Returns all the virtual devices available to Cockpitdecks.
 
         Virtual devices are discovered in the cockpit currently in use.
         Therefore, it is necesary to supply the path to the cockpit configuration.
         At creation time, Virtual Decks require to know the IP addresse where they report their activity.
         """
-        virtual_deck_types = VirtualDeckManager.virtual_deck_types(acpath=acpath)
+        if virtual_deck_types is None:
+            virtual_deck_types = VirtualDeckManager.virtual_deck_types(acpath=acpath)
         fn = os.path.join(acpath, CONFIG_FOLDER, CONFIG_FILE)
         config = Config(fn)
         fn = os.path.join(acpath, CONFIG_FOLDER, SECRET_FILE)
