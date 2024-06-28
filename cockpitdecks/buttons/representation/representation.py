@@ -17,7 +17,7 @@ from cockpitdecks.resources.color import (
     add_ext,
     DEFAULT_COLOR,
 )
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -54,7 +54,7 @@ class Representation:
     def __init__(self, config: dict, button: "Button"):
         self._config = config
         self.button = button
-        self._sound = config.get("vibrate")
+        self._sound = self.get_attribute("vibrate")
         self.datarefs = None
 
         self.button.deck.cockpit.set_logging_level(__name__)
@@ -76,6 +76,29 @@ class Representation:
 
     def button_name(self):
         return self.button.name if self.button is not None else "no button"
+
+    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+        # Is there such an attribute directly in the button defintion?
+        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"button {self.button_name()}: representation fetched default attribute {attribute}")
+
+        value = self._config.get(attribute)
+        if value is not None: # found!
+            if silence:
+                logger.debug(f"button {self.button_name()} representation returning {attribute}={value}")
+            else:
+                logger.info(f"button {self.button_name()} representation returning {attribute}={value}")
+            return value
+
+        if propagate: # we just look at the button. level, not above.
+            if not silence:
+                logger.info(f"button {self.button_name()} representation propagate to button for {attribute}")
+            return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)
+
+        if not silence:
+            logger.warning(f"button {self.button_name()}: representation attribute not found {attribute}, returning default ({default})")
+
+        return default
 
     def inspect(self, what: str | None = None):
         logger.info(f"{type(self).__name__}:")

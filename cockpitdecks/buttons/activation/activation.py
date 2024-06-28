@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.event import PushEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -76,7 +76,7 @@ class Activation:
         self.initial_value = config.get("initial-value")
 
         # Vibrate on press
-        self.vibrate = config.get("vibrate", button.get_attribute("default-vibrate", silence=True))
+        self.vibrate = self.get_attribute("vibrate")
 
         if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
@@ -96,6 +96,29 @@ class Activation:
 
     def button_name(self) -> str:
         return self.button.name if self.button is not None else "no button"
+
+    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+        # Is there such an attribute directly in the button defintion?
+        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"button {self.button_name()}: activation fetched default attribute {attribute}")
+
+        value = self._config.get(attribute)
+        if value is not None: # found!
+            if silence:
+                logger.debug(f"button {self.button_name()} activation returning {attribute}={value}")
+            else:
+                logger.info(f"button {self.button_name()} activation returning {attribute}={value}")
+            return value
+
+        if propagate: # we just look at the button. level, not above.
+            if not silence:
+                logger.info(f"button {self.button_name()} activation propagate to button for {attribute}")
+            return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)
+
+        if not silence:
+            logger.warning(f"button {self.button_name()}: activation attribute not found {attribute}, returning default ({default})")
+
+        return default
 
     def activate(self, event):
         """
