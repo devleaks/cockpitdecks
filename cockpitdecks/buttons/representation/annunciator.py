@@ -100,6 +100,29 @@ class AnnunciatorPart:
             self.datarefs = self.annunciator.button.scan_datarefs(base=self._config)
         return self.datarefs
 
+    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+        # Is there such an attribute directly in the button defintion?
+        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"annunciator part fetched default attribute {attribute}")
+
+        value = self._config.get(attribute)
+        if value is not None: # found!
+            if silence:
+                logger.debug(f"annunciator part returning {attribute}={value}")
+            else:
+                logger.info(f"annunciator part returning {attribute}={value}")
+            return value
+
+        if propagate: # we just look at the button. level, not above.
+            if not silence:
+                logger.info(f"annunciator part propagate to annunciator for {attribute}")
+            return self.annunciator.get_attribute(attribute, default=default, propagate=False, silence=silence)
+
+        if not silence:
+            logger.warning(f"annunciator part attribute not found {attribute}, returning default ({default})")
+
+        return default
+
     def get_current_value(self):
         def is_number(n):
             try:
@@ -156,7 +179,7 @@ class AnnunciatorPart:
             color = text_color
             logger.debug(f"button {self.annunciator.button.name}: color not set but text-color set, using color {color}")
         elif color is None:
-            color = self.annunciator.button.get_attribute("default-text-color")
+            color = self.annunciator.button.get_attribute("text-color")
             if color is not None:
                 logger.debug(f"button {self.annunciator.button.name}: no color found, using default text color")
             else:
@@ -166,7 +189,7 @@ class AnnunciatorPart:
         before = color
         if not self.is_lit():
             try:
-                lux = self.annunciator.button.get_attribute("default-light-off-intensity")
+                lux = self.annunciator.button.get_attribute("light-off-intensity")
                 dimmed = light_off(color, lightness=lux / 100)
                 color = self._config.get("off-color")
                 if color is None:
@@ -180,7 +203,7 @@ class AnnunciatorPart:
         #     f">>>> {self.annunciator.button.get_id()}",
         #     self._config.get("color"),
         #     text_color,
-        #     self.annunciator.button.get_attribute("default-text-color"),
+        #     self.annunciator.button.get_attribute("text-color"),
         #     color,
         # )
 
@@ -386,12 +409,12 @@ class Annunciator(DrawBase):
         self.button = button  # we need the reference before we call Icon.__init__()...
         self.icon = config.get("icon")
         self.annunciator = config.get("annunciator")  # keep raw
-        self.annunciator_style = config.get("annunciator-style", button.get_attribute("default-annunciator-style"))
+        self.annunciator_style = config.get("annunciator-style", button.get_attribute("annunciator-style"))
         self.model = None
 
-        self.annun_color = config.get("annunciator-color", button.get_attribute("default-annunciator-color"))
+        self.annun_color = config.get("annunciator-color", button.get_attribute("annunciator-color"))
         self.annun_color = convert_color(self.annun_color)
-        self.annun_texture = config.get("annunciator-texture", button.get_attribute("default-annunciator-texture"))
+        self.annun_texture = config.get("annunciator-texture", button.get_attribute("annunciator-texture"))
 
         # Normalize annunciator parts in parts attribute if not present
         if self.annunciator is None:

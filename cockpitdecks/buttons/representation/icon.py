@@ -45,12 +45,11 @@ class Icon(Representation):
         # from hierarchy.
         self.label = config.get("label")
         self.label_format = config.get("label-format")
-        self.label_font = config.get("label-font", button.get_attribute("default-label-font"))
-        self.label_size = int(config.get("label-size", button.get_attribute("default-label-size")))
-        self.label_color = config.get("label-color", button.get_attribute("default-label-color"))
+        self.label_font = button.get_attribute("label-font")
+        self.label_size = int(button.get_attribute("label-size"))
+        self.label_color = button.get_attribute("label-color")
         self.label_color = convert_color(self.label_color)
-        default_position = button.get_attribute("default-label-position")
-        self.label_position = config.get("label-position", default_position)
+        self.label_position = button.get_attribute("label-position")
         if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
             if self.label_position[0] not in "lcr":
                 logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label horizontal position code {self.label_position[0]}")
@@ -59,11 +58,10 @@ class Icon(Representation):
             logger.warning(
                 f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})"
             )
-            self.label_position = default_position
 
-        self.icon_color = config.get("icon-color", button.get_attribute("default-icon-color"))
+        self.icon_color = button.get_attribute("icon-color")
         self.icon_color = convert_color(self.icon_color)
-        self.icon_texture = config.get("icon-texture", button.get_attribute("default-icon-texture"))
+        self.icon_texture = button.get_attribute("icon-texture")
 
         self.text_config = config  # where to get text from
 
@@ -102,39 +100,39 @@ class Icon(Representation):
         text_format = config.get(f"{which_text}-format")
         page = self.button.page
 
-        dflt_system_font = self.button.get_attribute(f"default-system-font")
+        dflt_system_font = self.button.get_attribute(f"system-font")
         if dflt_system_font is None:
             logger.error(f"button {self.button_name()}: no system font")
 
-        dflt_text_font = self.button.get_attribute(f"default-{which_text}-font")
+        dflt_text_font = self.button.get_attribute(f"{which_text}-font")
         if dflt_text_font is None:
-            dflt_text_font = self.button.get_attribute("default-label-font")
+            dflt_text_font = self.button.get_attribute("label-font")
             if dflt_text_font is None:
                 logger.warning(f"button {self.button_name()}: no default label font, using system font")
                 dflt_text_font = dflt_system_font
 
         text_font = config.get(f"{which_text}-font", dflt_text_font)
 
-        dflt_text_size = self.button.get_attribute(f"default-{which_text}-size")
+        dflt_text_size = self.button.get_attribute(f"{which_text}-size")
         if dflt_text_size is None:
-            dflt_text_size = self.button.get_attribute("default-label-size")
+            dflt_text_size = self.button.get_attribute("label-size")
             if dflt_text_size is None:
                 logger.warning(f"button {self.button_name()}: no default label size, using 10")
                 dflt_text_size = 16
         text_size = config.get(f"{which_text}-size", dflt_text_size)
 
-        dflt_text_color = self.button.get_attribute(f"default-{which_text}-color")
+        dflt_text_color = self.button.get_attribute(f"{which_text}-color")
         if dflt_text_color is None:
-            dflt_text_color = self.button.get_attribute("default-label-color")
+            dflt_text_color = self.button.get_attribute("label-color")
             if dflt_text_color is None:
                 logger.warning(f"button {self.button_name()}: no default label color, using {DEFAULT_COLOR}")
                 dflt_text_color = DEFAULT_COLOR
         text_color = config.get(f"{which_text}-color", dflt_text_color)
         text_color = convert_color(text_color)
 
-        dflt_text_position = self.button.get_attribute(f"default-{which_text}-position")
+        dflt_text_position = self.button.get_attribute(f"{which_text}-position")
         if dflt_text_position is None:
-            dflt_text_position = self.button.get_attribute("default-label-position")
+            dflt_text_position = self.button.get_attribute("label-position")
             if dflt_text_position is None:
                 logger.warning(f"button {self.button_name()}: no default label position, using cm")
                 dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
@@ -185,7 +183,7 @@ class Icon(Representation):
             return ImageFont.truetype(f, fontsize)
 
         # 2. Tries default fonts
-        default_font = self.button.get_attribute("default-label-font")
+        default_font = self.button.get_attribute("label-font")
         if default_font is not None:
             f = try_ext(default_font)
             if f is not None:
