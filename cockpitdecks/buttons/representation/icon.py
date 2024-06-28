@@ -30,12 +30,16 @@ DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 NO_ICON = "no-icon"
 
 
-class Icon(Representation):
+class IconBase(Representation):
+    """Abstract icon class
 
-    REPRESENTATION_NAME = "icon"
+    This is a container class
+    """
+
+    REPRESENTATION_NAME = "icon-base-do-not-use"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
-    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}}
+    PARAMETERS = {}
 
     def __init__(self, config: dict, button: "Button"):
         Representation.__init__(self, config=config, button=button)
@@ -59,35 +63,12 @@ class Icon(Representation):
                 f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})"
             )
 
-        self.icon_color = button.get_attribute("icon-color")
-        self.icon_color = convert_color(self.icon_color)
-        self.icon_texture = button.get_attribute("icon-texture")
-
         self.text_config = config  # where to get text from
-
-        self.frame = config.get(CONFIG_KW.FRAME.value)
-
-        self.icon = None
-        deck = self.button.deck
-
-        candidate_icon = config.get("icon")
-        if candidate_icon is not None:
-            self.icon = deck.cockpit.get_icon(candidate_icon)
-
-        if self.icon is None:
-            if config.get(NO_ICON, False):
-                logger.debug(f"button {self.button_name()}: requested to no do icon")
 
         self._icon_cache = None
 
     def is_valid(self):
-        if super().is_valid():  # so there is a button...
-            if self.icon is not None:
-                return True
-            if self.icon_color is not None:
-                return True
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon and no icon color")
-        return False
+        return super().is_valid()
 
     def render(self):
         return self.get_image()
@@ -207,6 +188,167 @@ class Icon(Representation):
         return ImageFont.load_default()
 
     def get_image_for_icon(self):
+        cockpit_color = self.get_attribute("cockpit-color")
+        cockpit_texture = self.get_attribute("cockpit-texture")
+        image = self.button.deck.create_icon_for_key(index=self.button.index, colors=cockpit_color, texture=cockpit_texture)
+        return image
+
+    def get_image(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        image = self.get_image_for_icon()
+
+        if image is None:
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} no image")
+            return None
+
+        if self.button.has_option("placeholder"):
+            # Add little blue check mark if placeholder
+            image = image.copy()  # we will add text over it
+            draw = ImageDraw.Draw(image)
+            c = round(0.97 * image.width)  # % from edge
+            s = round(0.10 * image.width)  # size
+            pologon = ((c, c), (c, c - s), (c - s, c), (c, c))  # lower right corner
+            draw.polygon(pologon, fill="deepskyblue")
+        else:
+            # Button is invalid, add a little red mark
+            # if not self.button.is_valid():
+            #     image = image.copy()  # we will add text over it
+            #     draw = ImageDraw.Draw(image)
+            #     c = round(0.97 * image.width)  # % from edge
+            #     s = round(0.10 * image.width)  # size
+            #     pologon = ( (c, c), (c, c-s), (c-s, c), (c, c) )  # lower right corner
+            #     draw.polygon(pologon, fill="red", outline="white")
+
+            # Representation is invalid, add a little orange mark
+            if not self.is_valid():
+                image = image.copy()  # we will add text over it
+                draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.15 * image.width)  # size
+                pologon = ((c, c), (c, c - s), (c - s, c), (c, c))  # lower right corner
+                draw.polygon(pologon, fill="orange")
+
+            # Activation is invalid, add a little red mark (may be on top of above mark...)
+            if self.button._activation is not None and not self.button._activation.is_valid():
+                image = image.copy()  # we will add text over it
+                draw = ImageDraw.Draw(image)
+                c = round(0.97 * image.width)  # % from edge
+                s = round(0.08 * image.width)  # size
+                pologon = ((c, c), (c, c - s), (c - s, c), (c, c))  # lower right corner
+                draw.polygon(pologon, fill="red", outline="white")
+
+        # Add little check mark if not valid/fake
+        # if self.button._config.get("type", "none") == "none":
+        #     image = image.copy()  # we will add text over it
+        #     draw = ImageDraw.Draw(image)
+        #     c1 = round(0.03 * image.width)  # % from edge
+        #     s = round(0.1 * image.width)   # size
+        #     pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
+        #     draw.polygon(pologon, fill="orange", outline="white")
+
+        return self.overlay_text(image, "label")
+
+    def overlay_text(self, image, which_text):  # which_text = {label|text}
+        draw = None
+        # Add label if any
+
+        text_dict = self._config
+        if which_text == "text":  # hum.
+            text_dict = self.text_config
+
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
+
+        logger.debug(f"button {self.button_name()}: text is from {which_text}: {text}")
+
+        if which_text == "label":
+            text_size = int(text_size * image.width / 72)
+
+        if text is None:
+            return image
+
+        if self.button.is_managed() and which_text == "text":
+            txtmod = self.button.manager.get(f"text-modifier", "dot").lower()
+            if txtmod in ["std", "standard"]:  # QNH Std
+                text_font = "AirbusFCU"  # hardcoded
+
+        font = self.get_font(text_font, text_size)
+        image = image.copy()  # we will add text over it
+        draw = ImageDraw.Draw(image)
+        inside = round(0.04 * image.width + 0.5)
+        w = image.width / 2
+        p = "m"
+        a = "center"
+        if text_position[0] == "l":
+            w = inside
+            p = "l"
+            a = "left"
+        elif text_position[0] == "r":
+            w = image.width - inside
+            p = "r"
+            a = "right"
+        h = image.height / 2
+        if text_position[1] == "t":
+            h = inside + text_size / 2
+        elif text_position[1] == "b":
+            h = image.height - inside - text_size / 2
+        # logger.debug(f"position {(w, h)}")
+        draw.multiline_text((w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color)  # (image.width / 2, 15)
+        return image
+
+    def clean(self):
+        """
+        Removes icon from deck
+        """
+        self.button.deck.fill_empty(self.button.index)
+
+    def describe(self) -> str:
+        return "The representation creates an empty icon for other image display."
+
+
+class Icon(IconBase):
+
+    REPRESENTATION_NAME = "icon"
+    REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
+
+    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}}
+
+    def __init__(self, config: dict, button: "Button"):
+        IconBase.__init__(self, config=config, button=button)
+
+
+        self.icon_color = button.get_attribute("icon-color")
+        self.icon_color = convert_color(self.icon_color)
+        self.icon_texture = button.get_attribute("icon-texture")
+
+        self.frame = config.get(CONFIG_KW.FRAME.value)
+
+        self.icon = None
+        deck = self.button.deck
+
+        candidate_icon = config.get("icon")
+        if candidate_icon is not None:
+            self.icon = deck.cockpit.get_icon(candidate_icon)
+
+        if self.icon is None:
+            if config.get(NO_ICON, False):
+                logger.debug(f"button {self.button_name()}: requested to no do icon")
+
+        self._icon_cache = None
+
+    def is_valid(self):
+        if super().is_valid():  # so there is a button...
+            if self.icon is not None:
+                return True
+            if self.icon_color is not None:
+                return True
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon and no icon color")
+        return False
+
+    def get_image_for_icon(self):
         deck = self.button.deck
         image = deck.cockpit.get_icon_image(self.icon)
         if image is None:
@@ -314,64 +456,11 @@ class Icon(Representation):
             return image
         return inside
 
-    def overlay_text(self, image, which_text):  # which_text = {label|text}
-        draw = None
-        # Add label if any
-
-        text_dict = self._config
-        if which_text == "text":  # hum.
-            text_dict = self.text_config
-
-        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
-
-        logger.debug(f"button {self.button_name()}: text is from {which_text}: {text}")
-
-        if which_text == "label":
-            text_size = int(text_size * image.width / 72)
-
-        if text is None:
-            return image
-
-        if self.button.is_managed() and which_text == "text":
-            txtmod = self.button.manager.get(f"text-modifier", "dot").lower()
-            if txtmod in ["std", "standard"]:  # QNH Std
-                text_font = "AirbusFCU"  # hardcoded
-
-        font = self.get_font(text_font, text_size)
-        image = image.copy()  # we will add text over it
-        draw = ImageDraw.Draw(image)
-        inside = round(0.04 * image.width + 0.5)
-        w = image.width / 2
-        p = "m"
-        a = "center"
-        if text_position[0] == "l":
-            w = inside
-            p = "l"
-            a = "left"
-        elif text_position[0] == "r":
-            w = image.width - inside
-            p = "r"
-            a = "right"
-        h = image.height / 2
-        if text_position[1] == "t":
-            h = inside + text_size / 2
-        elif text_position[1] == "b":
-            h = image.height - inside - text_size / 2
-        # logger.debug(f"position {(w, h)}")
-        draw.multiline_text((w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color)  # (image.width / 2, 15)
-        return image
-
-    def clean(self):
-        """
-        Removes icon from deck
-        """
-        self.button.deck.fill_empty(self.button.index)
-
     def describe(self) -> str:
         return "The representation places an icon with optional label overlay."
 
 
-class IconColor(Icon):
+class IconColor(IconBase):
     """Uniform color or texture icon
 
     Attributes:
@@ -383,21 +472,15 @@ class IconColor(Icon):
     PARAMETERS = {"color": {"type": "string", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
 
     def __init__(self, config: dict, button: "Button"):
-        Icon.__init__(self, config=config, button=button)
+        IconBase.__init__(self, config=config, button=button)
 
-        self.icon = None
-        self.icon_color = config.get("icon-color", self.icon_color)
+        self.icon_color = self.get_attribute("icon-color")
         self.icon_color = convert_color(self.icon_color)
-        self.icon_texture = config.get("icon-texture", self.icon_texture)
+        self.icon_texture = self.get_attribute("icon-texture")
 
-    def get_image(self):
-        """
-        Helper function to get button image and overlay label on top of it.
-        Label may be updated at each activation since it can contain datarefs.
-        Also add a little marker on placeholder/invalid buttons that will do nothing.
-        """
-        image = super().get_image()
-        return self.overlay_text(image, "label")
+    def get_image_for_icon(self):
+        image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
+        return image
 
     def describe(self) -> str:
         return "The representation places a uniform color or textured icon."
@@ -425,6 +508,7 @@ class IconText(Icon):
 
         self.text = str(config.get("text"))
         self.icon_color = config.get("text-bg-color", self.icon_color)
+        self.icon_texture = config.get("text-bg-texture", self.icon_texture)
 
     def get_image(self):
         """
