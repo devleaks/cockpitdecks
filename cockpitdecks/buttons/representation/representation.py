@@ -53,6 +53,9 @@ class Representation:
 
     def __init__(self, config: dict, button: "Button"):
         self._config = config
+        self._representation_config = config.get(self.name(), {})
+        if type(self._representation_config) is not dict:  # repres: something -> {"repres": something}
+            self._representation_config = {self.name(): self._representation_config}
         self.button = button
         self._sound = self.get_attribute("vibrate")
         self.datarefs = None
@@ -61,6 +64,7 @@ class Representation:
 
         if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
             self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
+
 
         self.init()
 
@@ -82,7 +86,7 @@ class Representation:
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
             logger.warning(f"button {self.button_name()}: representation fetched default attribute {attribute}")
 
-        value = self._config.get(attribute)
+        value = self._representation_config.get(attribute)
         if value is not None: # found!
             if silence:
                 logger.debug(f"button {self.button_name()} representation returning {attribute}={value}")
@@ -90,7 +94,7 @@ class Representation:
                 logger.info(f"button {self.button_name()} representation returning {attribute}={value}")
             return value
 
-        if propagate: # we just look at the button. level, not above.
+        if propagate: # we just look at the button level if allowed, not above.
             if not silence:
                 logger.info(f"button {self.button_name()} representation propagate to button for {attribute}")
             return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)
