@@ -285,7 +285,7 @@ class DrawAnimationFTG(DrawAnimation):
             draw.ellipse(tl + br, fill=color)
 
         # Text AVAIL (=off) or framed ON (=on)
-        font = self.get_font(self.button.get_attribute("default-label-font"), 80)
+        font = self.get_font(self.button.get_attribute("label-font"), 80)
         inside = ICON_SIZE / 16
         cx = ICON_SIZE / 2
         cy = int(3 * ICON_SIZE / 4)
@@ -323,7 +323,7 @@ class DrawAnimationFTG(DrawAnimation):
             # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
             draw.rectangle(frame, outline="deepskyblue", width=thick)
         else:
-            font = self.get_font(self.button.get_attribute("default-label-font"), 60)
+            font = self.get_font(self.button.get_attribute("label-font"), 60)
             draw.multiline_text(
                 (cx, cy),
                 text="AVAIL",

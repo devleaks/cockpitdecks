@@ -117,7 +117,7 @@ class DrawBase(Icon):
     def graphic_default(self, attribute, default=None):
         dflt = self.button.deck.cockpit.defaults_prefix()
         attrname = f"{dflt}{attribute}"
-        value = self.button.get_attribute(attrname, silence=True)
+        value = self.button.get_attribute(attrname)
         if value is None:
             logger.debug(f"no default value {attrname}, using hardcoded default")
         return value if value is not None else default
@@ -444,11 +444,6 @@ class SwitchBase(DrawBase):
             self.draw_scale = 1
         self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
         self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
-
-    def get_attribute(self, attribute, default):
-        # should only be used when global defaults are acceptable
-        return self.switch.get(attribute, self.graphic_default(attribute, default))
-
 
 class CircularSwitch(SwitchBase):
 
