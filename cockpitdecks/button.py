@@ -21,7 +21,7 @@ from .simulator import (
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml
+from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml, DEFAULT_ATTRIBUTE_PREFIX
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -57,7 +57,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         self.name = config.get("name", str(self.index))
         self.num_index = None
-        if type(self.index) == str:
+        if type(self.index) is str:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
             if len(idxnum) > 0:
                 self.num_index = idxnum[0]
@@ -99,7 +99,7 @@ class Button(DatarefListener, DatarefSetListener):
             self._activation = ACTIVATIONS[atype](config, self)
             logger.debug(f"button {self.name} activation {atype}")
         else:
-            logger.info(f"button {self.name} has no activation defined, using default")
+            logger.info(f"button {self.name} has no activation defined, using default activation 'none'")
             self._activation = ACTIVATIONS["none"](config, self)
 
         #### Representation
@@ -112,7 +112,7 @@ class Button(DatarefListener, DatarefSetListener):
             self._representation = REPRESENTATIONS[rtype](config, self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
-            logger.info(f"button {self.name} has no representation defined, using default")
+            logger.info(f"button {self.name} has no representation defined, using default representation 'none'")
             self._representation = REPRESENTATIONS["none"](config, self)
 
         self._hardware_representation = None
@@ -253,14 +253,31 @@ class Button(DatarefListener, DatarefSetListener):
     def describe(self) -> str:
         return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
-    def get_attribute(self, attribute: str, silence: bool = False):
-        ATTRNAME = "_defaults"
-        val = None
-        if hasattr(self, ATTRNAME):
-            ld = getattr(self, ATTRNAME)
-            if isinstance(ld, dict):
-                val = ld.get(attribute)
-        return val if val is not None else self.page.get_attribute(attribute, silence=silence)
+    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+        # Is there such an attribute directly in the button defintion?
+        default_attribute = attribute
+        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"button {self.button_name()} fetched default attribute {attribute}")
+        else:
+            default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
+
+        value = self._config.get(attribute)
+        if value is not None: # found!
+            if silence:
+                logger.debug(f"button {self.button_name()} returning {attribute}={value}")
+            else:
+                logger.info(f"button {self.button_name()} returning {attribute}={value}")
+            return value
+
+        if propagate:
+            if not silence:
+                logger.info(f"button {self.button_name()} propagate {default_attribute} to page for {attribute}")
+            return self.page.get_attribute(default_attribute, default=default, propagate=propagate, silence=silence)
+
+        if not silence:
+            logger.warning(f"button {self.button_name()}: attribute not found {attribute}, returning default ({default})")
+
+        return default
 
     def on_current_page(self):
         """
@@ -708,7 +725,7 @@ class Button(DatarefListener, DatarefSetListener):
             return None
 
         # HACK 1: Special icon font substitution
-        default_font = self.get_attribute("default-label-font")
+        default_font = self.get_attribute("label-font")
         if default_font is None:
             logger.warning("no default font")
         text_font = base.get(root + "-font", default_font)

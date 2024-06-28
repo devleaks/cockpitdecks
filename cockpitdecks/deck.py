@@ -38,48 +38,41 @@ class Deck(ABC):
     DECK_NAME = "none"
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
-        self._config = config
-        self.name = name
+        self._config = config  # content of aircraft/deckconfig/config.yaml decks attributes for this deck
         self.cockpit = cockpit
-        self.device = device
-        self.deck_type: DeckType = {}
-
         self.cockpit.set_logging_level(__name__)
 
-        self._layout_config: Dict[str, str | int | float | bool | Dict] = {}
+        self.deck_type: DeckType = {}
+
+        self.name = name
+        self.device = device
+
+        self.serial = config.get("serial")
+        if self.serial is None:
+            logger.warning(f"{self.name}: has no serial number")
+
+        self.valid = False
+        self.running = False
+
+        # Layout
+        self.layout = config.get(CONFIG_KW.LAYOUT.value)
+        self._layout_config: Dict[str, str | int | float | bool | Dict] = {} # content of aircraft/deckconfig/layout/config.yaml
+
+        # Pages
         self.pages: Dict[str, Page] = {}
         self.home_page: Page | None = None
         self.current_page: Page | None = None
         self.previous_page: Page | None = None
         self.page_history: List[str] = []
 
-        self.valid = False
-        self.running = False
-
-        self.previous_key_values: Dict[str, Any] = {}
-        self.current_key_values: Dict[str, Any] = {}
-
-        if "serial" in config:
-            self.serial = config["serial"]
-        else:
-            self.valid = False
-            logger.error(f"{self.name}: has no serial number, cannot use")
-
-        self.brightness = 100
-        if "brightness" in config:
-            self.brightness = int(config["brightness"])
-            self.set_brightness(self.brightness)
-
-        self.layout = config.get(CONFIG_KW.LAYOUT.value)
-        # if self.layout is None:
-        #     self.layout = DEFAULT_LAYOUT
-        #     logger.warning(f"deck has no layout, using default")
+        self.brightness = int(config.get("brightness", 100))
 
         self.home_page_name = config.get("home-page-name", self.get_attribute("default-home-page-name"))
         self.logo = config.get("logo", self.get_attribute("default-logo"))
         self.wallpaper = config.get("wallpaper", self.get_attribute("default-wallpaper"))
 
-        self.valid = True
+        if self.layout is not None:
+            self.valid = True
 
     # #######################################
     #
@@ -94,6 +87,7 @@ class Deck(ABC):
         if not self.valid:
             logger.warning(f"deck {self.name}: is invalid")
             return
+        self.set_brightness(self.brightness)
         self.set_deck_type()
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
@@ -136,7 +130,7 @@ class Deck(ABC):
         """
         return self.deck_type
 
-    def get_attribute(self, attribute: str, silence: bool = False):
+    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
         """Returns the default attribute value
 
         ..if avaialble at the deck level.
@@ -149,19 +143,39 @@ class Deck(ABC):
         Returns:
             [type]: [description]
         """
-        val = self._config.get(attribute)
-        if val is not None:
-            return val
-        val = self._layout_config.get(attribute)
-        if val is not None:
-            return val
-        ATTRNAME = "_defaults"
-        val = None
-        if hasattr(self, ATTRNAME):
-            ld = getattr(self, ATTRNAME)
-            if isinstance(ld, dict):
-                val = ld.get(attribute)
-        return val if val is not None else self.cockpit.get_attribute(attribute, silence=silence)
+
+        # Is there such an attribute in the layout definition?
+        if self._layout_config is not None:
+            value = self._config.get(attribute)
+
+        if value is not None: # found!
+            if silence:
+                logger.debug(f"deck {self.name} returning {attribute}={value} (from layout)")
+            else:
+                logger.info(f"deck {self.name} returning {attribute}={value} (from layout)")
+            return value
+
+        # Is there such an attribute in the deck definition?
+        if self._config is not None:
+            value = self._config.get(attribute)
+
+        if value is not None: # found!
+            if silence:
+                logger.debug(f"deck {self.name} returning {attribute}={value} (from deck)")
+            else:
+                logger.info(f"deck {self.name} returning {attribute}={value} (from deck)")
+            return value
+
+        if propagate:
+            if not silence:
+                logger.info(f"deck {self.name} propagate to cockpit for {attribute}")
+            return self.cockpit.get_attribute(attribute, default=default, silence=silence)
+
+        if not silence:
+            logger.warning(f"deck {self.name}: attribute not found {attribute}, returning default ({default})")
+
+        return default
+
 
     def get_index_prefix(self, index):
         """Returns the prefix of a button index for this deck."""
@@ -534,9 +548,9 @@ class DeckWithIcons(Deck):
             tarr = []
             if texture_in is not None:
                 tarr.append(texture_in)
-            default_icon_texture = self.get_attribute("default-icon-texture")
-            if default_icon_texture is not None:
-                tarr.append(default_icon_texture)
+            # default_icon_texture = self.get_attribute("default-icon-texture")
+            # if default_icon_texture is not None:
+            #     tarr.append(default_icon_texture)
             cockpit_texture = self.get_attribute("cockpit-texture")
             if cockpit_texture is not None:
                 tarr.append(cockpit_texture)
@@ -565,7 +579,7 @@ class DeckWithIcons(Deck):
         def get_color():
             for t in [
                 color_in,
-                self.get_attribute("default-icon-color"),
+                # self.get_attribute("default-icon-color"),
                 self.get_attribute("cockpit-color"),
             ]:
                 if t is not None:

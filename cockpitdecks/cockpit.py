@@ -70,35 +70,21 @@ class Cockpit(DatarefListener, CockpitBase):
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)
 
+        # Defaults and config
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
-        self._reqdfts = set()
-        self._config = {}  # content of aircraft/deckconfig/config.yaml
         self._resources_config = {}  # content of resources/config.yaml
-        self.theme = None
-        self._dark = False
-
-        self.name = "Cockpitdecks"  # "Aircraft" name or model...
-        self.icao = "ZZZZ"
+        self._config = {}  # content of aircraft/deckconfig/config.yaml
+        self._secret = {}  # content of aircraft/deckconfig/secret.yaml
+        self._reqdfts = set()
 
         self.sim = simulator(self)
 
-        self.disabled = False
-        self.default_pages = None  # for debugging
-
-        # Main event look
-        self.event_loop_run = False
-        self.event_loop_thread = None
-        self.event_queue = Queue()
-        self._stats = {}
-
-        # Virtual deck
-        self.rcv_loop_run = False
-        self.rcv_event = None
-        self.rcv_thread = None
-
-        self.devices = []
-
+        # "Aircraft" name or model...
         self.acpath = None
+        self.name = "Cockpitdecks"
+        self.icao = "ZZZZ"
+
+        # Decks
         self.cockpit = {}  # all decks: { deckname: deck }
         self.deck_types = {}
         self.deck_types_new = {}
@@ -106,18 +92,30 @@ class Cockpit(DatarefListener, CockpitBase):
         self.virtual_deck_list = {}
         self.virtual_decks_added = False
 
+        self.devices = []
+
         self.vd_ws_conn = {}
         self.vd_errs = []
 
+        # Content
         self.fonts = {}
 
         self.icon_folder = None
         self.icons = {}
-        self.default_icon_name = None
 
-        self.fill_empty_keys = True
-
+        # Internal variables
         self.busy_reloading = False
+        self.disabled = False
+        self.default_pages = None  # current pages on decks when reloading
+        self.theme = None
+        self._dark = False
+
+
+        # Main event look
+        self.event_loop_run = False
+        self.event_loop_thread = None
+        self.event_queue = Queue()
+        self._stats = {}
 
         self.init()
 
@@ -143,46 +141,71 @@ class Cockpit(DatarefListener, CockpitBase):
     def defaults_prefix(self):
         return "dark-default-" if self._dark else "default-"
 
-    def is_color_attribute(self, attribute, value):
-        # will need refinements
-        if "color" in attribute:
-            # logger.debug(f"converted color attribute {attribute}")
-            return convert_color(value)
-        return value
-
-    def get_attribute(self, attribute: str, silence: bool = False):
+    def get_attribute(self, attribute: str, default = None, silence: bool = True):
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
+        def is_color_attribute(a):
+            return "color" in a
+
         def theme_only(a: str) -> bool:
-            return a.endswith("color") or a.endswith("texture")
+            # Returns whether an attribute can be themed
+            # Currently, only color, texture, and fonts
+            return a.endswith("color") or a.endswith("texture") or "font" in a
+
+        self._reqdfts.add(attribute)  # internal stats
 
         if attribute.startswith("default-") or attribute.startswith("cockpit-"):
-            prefix = self._config.get("cockpit-theme")  # prefix = "dark-"  #
-            if prefix is not None and prefix not in ["default", "cockpit"] and not attribute.startswith(prefix):
-                newattr = "-".join([prefix, attribute])
-                val = self.get_attribute(attribute=newattr, silence=silence)
-                if val is not None:
-                    logger.debug(f"{attribute}, {newattr}, {val}")
-                    return self.is_color_attribute(attribute=attribute, value=val)
+            theme_prefix = self._config.get("cockpit-theme", "")  # prefix = "dark", or nothing
+            if theme_prefix is not None and theme_prefix not in ["", "default", "cockpit"] and not attribute.startswith(theme_prefix):
+                newattr = "-".join([theme_prefix, attribute])  # dark-default-color
+                value = self.get_attribute(attribute=newattr, default=default, silence=silence)
+
+                if value is not None: # found!
+                    if silence:
+                        logger.debug(f"cockpit returning {attribute}={value} (from {newattr})")
+                    else:
+                        logger.info(f"cockpit returning {attribute}={value} (from {newattr})")
+                    return convert_color(value) if is_color_attribute(attribute) else value
+
                 if theme_only(attribute):  # a theme exist, do not try without theme
                     if not silence:
-                        logger.debug(f"themed attribute {newattr} not found, cannot try without theme")
-                    return None
-                # else, no attribute named by newattr, just try plain attr name
-        # Normal ops
-        self._reqdfts.add(attribute)  # internal stats
-        if attribute in self._config.keys():
-            return self.is_color_attribute(attribute=attribute, value=self._config.get(attribute))
-        if attribute in self._resources_config.keys():
-            return self.is_color_attribute(attribute=attribute, value=self._resources_config.get(attribute))
+                        logger.info(f"cockpit themed attribute {newattr} not found, cannot try without theme {theme_prefix}, returning default ({default})")
+                    return convert_color(default) if is_color_attribute(attribute) else default
+
+        value = self._config.get(attribute)
+        if value is not None:
+            if silence:
+                logger.debug(f"cockpit returning {attribute}={value} (from config)")
+            else:
+                logger.info(f"cockpit returning {attribute}={value} (from config)")
+            return convert_color(value) if is_color_attribute(attribute) else value
+
+        value = self._resources_config.get(attribute)
+        if value is not None:
+            if silence:
+                logger.debug(f"cockpit returning {attribute}={value} (from resources)")
+            else:
+                logger.info(f"cockpit returning {attribute}={value} (from resources)")
+            return convert_color(value) if is_color_attribute(attribute) else value
+
         ATTRNAME = "_defaults"
         if hasattr(self, ATTRNAME):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
-                if attribute in ld.keys():
-                    return self.is_color_attribute(attribute=attribute, value=ld.get(attribute))
+                value = ld.get(attribute)
+                if value is not None:
+                    if silence:
+                        logger.debug(f"cockpit returning {attribute}={value} (from internal default)")
+                    else:
+                        logger.info(f"cockpit returning {attribute}={value} (from internal default)")
+                    return convert_color(value) if is_color_attribute(attribute) else value
+
         if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position", "texture"]:
             logger.warning(f"no attribute {attribute}")
-        return None
+
+        if not silence:
+            logger.info(f"cockpit attribute {attribute} not found, returning default ({default})")
+
+        return default
 
     def is_dark(self):
         # Could also determine this from simulator time...
@@ -565,6 +588,7 @@ class Cockpit(DatarefListener, CockpitBase):
             return
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
+        self._secret = serial_numbers
 
         decks = self._config.get("decks")
         if decks is None:

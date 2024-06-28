@@ -47,44 +47,42 @@ ICON_SIZE = 256  # px
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 
-
+# internals
+ID_SEP = "/"
+DEFAULT_ATTRIBUTE_PREFIX = "default-"
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
     VIVISUN = "v"  # v(ivisun): bright, sharp.
 
-
+# System default values
 COCKPITDECKS_DEFAULT_VALUES = {
     "cache-icon": True,
     "cockpit-color": "cornflowerblue",
     "cockpit-texture": None,
     "cockpit-theme": "light",
-    "default-annunciator-color": "black",
-    "default-annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
-    "default-annunciator-texture": None,
-    "default-home-page-name": "index",
-    "default-icon-color": "cornflowerblue",
-    "default-icon-name": "1.png",
-    "default-icon-texture": None,
-    "default-interface-bg-color": "black",
-    "default-interface-fg-color": "white",
-    "default-label-color": "white",
-    "default-label-font": "DIN.ttf",
-    "default-label-position": "ct",
-    "default-label-size": 10,
-    "default-light-off-intensity": 10,
-    "default-logo": "logo.png",
-    "default-system-font": "Monaco.ttf",
-    "default-text-color": "white",
-    "default-text-font": "DIN.ttf",
-    "default-text-position": "cm",
-    "default-text-size": 32,
-    "default-wallpaper": "wallpaper.png",
     "system-font": "Monaco.ttf",  # alias
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
+    DEFAULT_ATTRIBUTE_PREFIX + "home-page-name": "index",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-color": "cornflowerblue",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "1.png",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-texture": None,
+    DEFAULT_ATTRIBUTE_PREFIX + "interface-bg-color": "black",
+    DEFAULT_ATTRIBUTE_PREFIX + "interface-fg-color": "white",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-color": "white",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-font": "DIN.ttf",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-position": "ct",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-size": 10,
+    DEFAULT_ATTRIBUTE_PREFIX + "light-off-intensity": 10,
+    DEFAULT_ATTRIBUTE_PREFIX + "logo": "logo.png",
+    DEFAULT_ATTRIBUTE_PREFIX + "system-font": "Monaco.ttf",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-color": "white",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-font": "DIN.ttf",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-position": "cm",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-size": 32,
+    DEFAULT_ATTRIBUTE_PREFIX + "wallpaper": "wallpaper.png",
 }
-
-# internals
-ID_SEP = "/"
-
 
 # deckconfig attribute keywords
 #
