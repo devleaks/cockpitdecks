@@ -533,14 +533,18 @@ class LiveWeatherIcon(DrawAnimation):
         inside = round(0.04 * image.width + 0.5)
         w = image.width / 2
         h = image.height / 2
-        logger.debug(f"icon: {self.weather_icon}")
+        logger.debug(f"weather icon: {self.weather_icon}")
         icon_text = WEATHER_ICONS.get(self.weather_icon)
+        final_icon = self.weather_icon
         if icon_text is None:
-            logger.warning(f"icon: {self.weather_icon} not found, using default")
+            logger.warning(f"weather icon '{self.weather_icon}' not found, using default ({DEFAULT_WEATHER_ICON})")
             icon_text = WEATHER_ICONS.get(DEFAULT_WEATHER_ICON)
+            final_icon = DEFAULT_WEATHER_ICON
             if icon_text is None:
-                logger.warning(f"default icon not found, using default")
+                logger.warning(f"default weather icon {DEFAULT_WEATHER_ICON} not found, using hardcoded default (wi_day_sunny)")
+                final_icon = "wi_day_sunny"
                 icon_text = "\uf00d"
+        logger.info(f"weather icon: {final_icon}")
         draw.text(
             (w, h),
             text=icon_text,
