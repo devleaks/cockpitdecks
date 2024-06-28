@@ -592,8 +592,8 @@ class LiveWeatherIcon(DrawAnimation):
             name=self.button_name(),
             width=ICON_SIZE,
             height=ICON_SIZE,
-            texture_in=self.icon_texture,
-            color_in=self.icon_color,
+            texture_in=self.cockpit_texture,
+            color_in=self.cockpit_color,
             use_texture=True,
             who="Weather",
         )

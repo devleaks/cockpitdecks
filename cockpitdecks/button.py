@@ -259,7 +259,8 @@ class Button(DatarefListener, DatarefSetListener):
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
             logger.warning(f"button {self.button_name()} fetched default attribute {attribute}")
         else:
-            default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
+            if not attribute.startswith("cockpit-"):  # no "default" for global cockpit-* attirbutes
+                default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
 
         value = self._config.get(attribute)
         if value is not None: # found!

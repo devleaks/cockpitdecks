@@ -16,7 +16,7 @@ from cockpitdecks.page import Page
 from cockpitdecks.button import Button
 from cockpitdecks.buttons.representation import (
     Representation,
-    Icon,
+    IconBase,
 )  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
@@ -255,7 +255,7 @@ class Streamdeck(DeckWithIcons):
             logger.warning("no device")
             return
         representation = button._representation
-        if not isinstance(representation, Icon):
+        if not isinstance(representation, IconBase):
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
             return
 
@@ -322,7 +322,7 @@ class Streamdeck(DeckWithIcons):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation
-        if isinstance(representation, Icon):
+        if isinstance(representation, IconBase):
             self._set_key_image(button)
         elif isinstance(representation, Representation):
             logger.info(f"button: {button.name}: do nothing representation for {type(self).__name__}")

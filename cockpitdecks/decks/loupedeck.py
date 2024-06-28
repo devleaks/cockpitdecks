@@ -11,7 +11,7 @@ from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button
 from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
-from cockpitdecks.buttons.representation import Representation, Icon, ColoredLED
+from cockpitdecks.buttons.representation import Representation, IconBase, ColoredLED
 from cockpitdecks.resources.color import (
     convert_color,
 )  # valid representations for this type of deck
@@ -340,7 +340,7 @@ class Loupedeck(DeckWithIcons):
             logger.warning("no device")
             return
         representation = button._representation
-        if not isinstance(representation, Icon):
+        if not isinstance(representation, IconBase):
             logger.warning(f"button: {button.name}: not a valid representation type {type(representation).__name__} for {type(self).__name__}")
             return
         image = button.get_representation()
@@ -436,7 +436,7 @@ class Loupedeck(DeckWithIcons):
             logger.debug(f"button type {button.index} has no representation")
             return
         representation = button._representation
-        if isinstance(representation, Icon):
+        if isinstance(representation, IconBase):
             self._set_key_image(button)
         elif isinstance(representation, ColoredLED):
             self._set_button_color(button)

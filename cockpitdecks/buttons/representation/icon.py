@@ -65,6 +65,10 @@ class IconBase(Representation):
 
         self.text_config = config  # where to get text from
 
+        self.cockpit_color = button.get_attribute("cockpit-color")
+        self.cockpit_color = convert_color(self.cockpit_color)
+        self.cockpit_texture = button.get_attribute("cockpit-texture")
+
         self._icon_cache = None
 
     def is_valid(self):
@@ -314,15 +318,10 @@ class Icon(IconBase):
     REPRESENTATION_NAME = "icon"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
-    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}}
+    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
 
     def __init__(self, config: dict, button: "Button"):
         IconBase.__init__(self, config=config, button=button)
-
-
-        self.icon_color = button.get_attribute("icon-color")
-        self.icon_color = convert_color(self.icon_color)
-        self.icon_texture = button.get_attribute("icon-texture")
 
         self.frame = config.get(CONFIG_KW.FRAME.value)
 
@@ -343,7 +342,7 @@ class Icon(IconBase):
         if super().is_valid():  # so there is a button...
             if self.icon is not None:
                 return True
-            if self.icon_color is not None:
+            if self.cockpit_color is not None:
                 return True
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon and no icon color")
         return False
@@ -352,7 +351,7 @@ class Icon(IconBase):
         deck = self.button.deck
         image = deck.cockpit.get_icon_image(self.icon)
         if image is None:
-            image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.icon_color, texture=self.icon_texture)
+            image = self.button.deck.create_icon_for_key(index=self.button.index, colors=self.cockpit_color, texture=self.cockpit_texture)
         else:
             image = deck.scale_icon_for_key(self.button.index, image, name=self.icon)  # this will cache it in the deck as well
         return image
@@ -438,7 +437,7 @@ class Icon(IconBase):
                 width=frame_size[0],
                 height=frame_size[1],
                 texture_in=frame,
-                color_in=self.icon_color,
+                color_in=self.cockpit_color,
                 use_texture=True,
                 who="Frame",
             )
@@ -486,7 +485,7 @@ class IconColor(IconBase):
         return "The representation places a uniform color or textured icon."
 
 
-class IconText(Icon):
+class IconText(IconColor):
     """Uniform color or texture icon with text laid over.
 
     Attributes:
@@ -504,11 +503,12 @@ class IconText(Icon):
     }
 
     def __init__(self, config: dict, button: "Button"):
-        Icon.__init__(self, config=config, button=button)
+        IconColor.__init__(self, config=config, button=button)
 
         self.text = str(config.get("text"))
-        self.icon_color = config.get("text-bg-color", self.icon_color)
-        self.icon_texture = config.get("text-bg-texture", self.icon_texture)
+        # Overwrite icon-* with text-bg-*
+        self.icon_color = config.get("text-bg-color", self.cockpit_color)
+        self.icon_texture = config.get("text-bg-texture", self.cockpit_texture)
 
     def get_image(self):
         """
@@ -516,12 +516,6 @@ class IconText(Icon):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        bgcolor = self.text_config.get("text-bg-color")
-        if bgcolor is not None:
-            self.icon_color = convert_color(bgcolor)
-        bgtexture = self.text_config.get("text-bg-texture")
-        if bgtexture is not None:
-            self.icon_texture = bgtexture
         image = super().get_image()
         return self.overlay_text(image, "text")
 

@@ -106,8 +106,8 @@ class DrawBase(Icon):
             name=self.button_name(),
             width=ICON_SIZE,
             height=ICON_SIZE,
-            texture_in=self.icon_texture,
-            color_in=self.icon_color,
+            texture_in=self.cockpit_texture,
+            color_in=self.cockpit_color,
             use_texture=True,
             who="Annunciator",
         )
@@ -302,7 +302,9 @@ class DataIcon(DrawBase):
 
         # Get background colour or use default value
         # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
-        self.icon_color = self._config.get("data-bg-color", self.icon_color)
+        # Overwrite icon-* with data-bg-*
+        self.icon_color = self._config.get("data-bg-color", self.get_attribute("icon-color"))
+        self.icon_texture = self._config.get("data-bg-texture", self.get_attribute("icon-texture"))
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
