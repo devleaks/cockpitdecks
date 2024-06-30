@@ -155,26 +155,8 @@ function cleanElement(el) {
 
 // Event handler for form
 //
-function render(event) {
-    // Prevent form submit
-    event.preventDefault();
-    let data = collectForm("parameters");
-    if (code_elem.innerHTML == undefined || code_elem.innerHTML == "") {
-        var code = generateYaml(data, activation_details, representation_details);
-        // console.log("code", code)
-        code_elem.innerHTML = code
-    }
-    if (data.code == undefined || data.code == "") {
-        data.code = code_elem.innerHTML
-    }
-    if (data.code == "") {
-        console.log("no button definition")
-    }
-    if (data.deck == undefined || data.deck == "") {// sometimes not collected by collect form...
-        console.log("added deck", data.deck, deck_elem.value)
-        data.deck = deck_elem.value
-    }
-    console.log("data out", data, deck_elem.value)
+function send(data) {
+    console.log("data out", data)
 
     fetch("/button-designer", {
       method: "POST",
@@ -212,13 +194,57 @@ function render(event) {
 
 document.getElementById("run").addEventListener(
     "click",
-    render,
+    function (event) {
+        event.preventDefault();
+        code_elem.innerHTML = ""
+        let data = collectForm("parameters");
+        if (code_elem.innerHTML == undefined || code_elem.innerHTML == "") {
+            var code = generateYaml(data, activation_details, representation_details);
+            // console.log("code", code)
+            code_elem.innerHTML = code
+        }
+        if (data.code == undefined || data.code == "") {
+            data.code = code_elem.innerHTML
+        }
+        if (data.code == "") {
+            console.log("no button definition")
+        }
+        if (data.deck == undefined || data.deck == "") {// sometimes not collected by collect form...
+            console.log("added deck", data.deck, deck_elem.value)
+            data.deck = deck_elem.value
+        }
+        data["action"] = "render"
+        console.log("data out", data, deck_elem.value)
+        send(data)
+    },
     false,
 );
 
 document.getElementById("save").addEventListener(
     "click",
-    render,
+    function (event) {
+        event.preventDefault();
+        code_elem.innerHTML = ""
+        let data = collectForm("parameters");
+        if (code_elem.innerHTML == undefined || code_elem.innerHTML == "") {
+            var code = generateYaml(data, activation_details, representation_details);
+            // console.log("code", code)
+            code_elem.innerHTML = code
+        }
+        if (data.code == undefined || data.code == "") {
+            data.code = code_elem.innerHTML
+        }
+        if (data.code == "") {
+            console.log("no button definition")
+        }
+        if (data.deck == undefined || data.deck == "") {// sometimes not collected by collect form...
+            console.log("added deck", data.deck, deck_elem.value)
+            data.deck = deck_elem.value
+        }
+        data["action"] = "save"
+        console.log("data out", data, deck_elem.value)
+        send(data)
+    },
     false,
 );
 

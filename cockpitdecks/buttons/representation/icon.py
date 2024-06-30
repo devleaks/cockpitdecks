@@ -315,7 +315,8 @@ class Icon(IconBase):
     REPRESENTATION_NAME = "icon"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
-    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
+    # PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
+    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}}
 
     def __init__(self, config: dict, button: "Button"):
         IconBase.__init__(self, config=config, button=button)

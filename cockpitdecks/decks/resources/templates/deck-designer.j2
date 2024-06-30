@@ -41,8 +41,10 @@ body {
 const DEBUG = false;
 const DECK_ELEMID = "deck";
 const DECK_BACKGROUND_IMAGE_PATH = "";
-const DECK_BACKGROUND_IMAGE = "{{background_image}}";
 const OPTIONS = {{ designer_config|tojson(indent=2) }};
+const DECK_TYPE_DESCRIPTION = "deck-type-flat";
+const DECK = {{ deck|tojson(indent=2) }};
+const DECK_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image;
 
 // try to install background image as CSS background image (more efficient)
 var deck_elem = document.getElementById(DECK_ELEMID);
@@ -472,8 +474,8 @@ document.getElementById("save").addEventListener(
         event.preventDefault();
         code = stage.toJSON();
         yaml = reset_transforms();
-        console.log("saving code", code, yaml)
         out = {code: JSON.parse(code), deckconfig: yaml}
+        console.log("saving code", out)
 
         reset_transforms()
 

@@ -1175,17 +1175,49 @@ class Cockpit(DatarefListener, CockpitBase):
     def get_representation_parameters(self, name, index=None):
         return REPRESENTATIONS.get(name).parameters()
 
+    def save_deck(self, deck):
+        fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
+        current_config = Config(fn)
+        decks = current_config[CONFIG_KW.DECKS.value]
+        found = False
+        i = 0
+        while not found and i < len(decks):
+            found = decks[i][CONFIG_KW.NAME.value] == deck
+            i = i + 1
+        if not found:
+            # create it, save it
+            decks[deck] = {
+                "name": deck,
+                "layout": deck,
+                "type": deck
+            }
+            with open(fn, "w") as fp:
+                yaml.dump(current_config.store, fp)
+            # create/save serial as well
+            sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
+            serial_numbers = Config(sn)
+            if not deck in serial_numbers.store:
+                serial_numbers.store["deck"] = deck
+            with open(sn, "w") as fp:
+                yaml.dump(serial_numbers.store, fp)
+            logger.info(f"added deck {deck} to config file")
+        else:
+            logger.debug(f"deck {deck} already exists in config file")
+
     def save_button(self, data):
+        acpath = self.acpath
+        if acpath is None:
+            acpath = "output"
         deck = data.get("deck", "")
-        if deck == "":
-            deck = "deck"
+        if deck != "":
+            self.save_deck(deck)
         layout = data.get("layout", "")
         if layout == "":
             layout = "default"
         page = data.get("page", "")
         if page == "":
             page = "index.yaml"
-        dn = os.path.join(CONFIG_FOLDER, deck, layout)
+        dn = os.path.join(acpath, CONFIG_FOLDER, layout)
         if not os.path.exists(dn):
             os.makedirs(dn, exist_ok=True)
         fn = os.path.join(dn, page)

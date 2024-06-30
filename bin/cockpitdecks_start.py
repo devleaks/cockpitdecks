@@ -53,6 +53,8 @@ logger.info(f"Starting for {ac_desc}..")
 logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
 cockpit = Cockpit(XPlane)
 
+DESIGNER_CONFIG_FILE = "designer.yaml"
+
 
 # ##################################
 # Flask Web Server (& WebSocket)
@@ -142,13 +144,20 @@ AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYP
 
 @app.route("/deck-designer")
 def deck_designer():
-    background_image = request.args.get("background_image", default="a321neo.overhead.png")
-    config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, "designer.yaml"))
+    background_image = request.args.get("background_image", default="background.png")
+    config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
+    deck_config = {
+        "deck-type-flat": {
+            "background": {
+                "image": background_image
+            }
+        }
+    }
     designer_config = {}
     if os.path.exists(config_file):
         with open(config_file, "r") as fp:
             designer_config = yaml.load(fp)
-    return render_template("deck-designer.j2", background_image=background_image, designer_config=designer_config)
+    return render_template("deck-designer.j2", deck=deck_config, designer_config=designer_config)
 
 @app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
