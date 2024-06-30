@@ -801,6 +801,7 @@ class OnOff(Activation):
                     self.command(self._commands[1])
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
+            self.button.set_current_value(self.onoff_current_value)  # update internal state
             self.write_dataref(self.onoff_current_value)
             self.view()
 
