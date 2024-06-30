@@ -167,3 +167,5 @@ vdecks.json
 cockpitdecks/network.py
 decklayout.yaml
 decklayout.json
+cockpitdecks/resources/decks/types
+cockpitdecks/resources/decks/images
