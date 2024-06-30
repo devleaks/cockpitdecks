@@ -80,7 +80,7 @@ app.logger.setLevel(logging.INFO)
 
 @app.route("/")
 def index():
-    return render_template("index.j2", virtual_decks=cockpit.get_virtual_decks())
+    return render_template("index.j2", virtual_decks=cockpit.get_web_decks())
 
 
 @app.route("/favicon.ico")
@@ -239,7 +239,7 @@ def cockpit_wshandler():
 try:
 
     cockpit.start_aircraft(ac, release=True)
-    if cockpit.has_virtual_decks():
+    if cockpit.has_web_decks():
         logger.info(f"Starting application server")  # , press CTRL-C ** twice ** to quit
         app.run(host="0.0.0.0", port=APP_HOST[1])
 

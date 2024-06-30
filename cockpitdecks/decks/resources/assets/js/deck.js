@@ -841,7 +841,7 @@ class Deck {
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
             layer.add(deckbg);
         };
-        let image_path = (DECK[DECK_TYPE_DESCRIPTION].custom ? AIRCRAFT_BACKGROUND_IMAGE_PATH : DECK_BACKGROUND_IMAGE_PATH) + background_image;
+        let image_path = (DECK[DECK_TYPE_DESCRIPTION].aircraft ? AIRCRAFT_BACKGROUND_IMAGE_PATH : DECK_BACKGROUND_IMAGE_PATH) + background_image;
         deckImage.src = image_path;
         // console.log("set_background_layer", DECK[DECK_TYPE_DESCRIPTION], image_path)
     }

@@ -204,7 +204,7 @@ class DeckType(Config):
         self.background = self.store.get(DECK_KW.BACKGROUND.value)
         self._special_displays = None  # cache
         self.count = 0
-        self._custom = False
+        self._aircraft = False
         self.init()
 
     @staticmethod
@@ -426,4 +426,4 @@ class DeckType(Config):
             dict: Deck description (DeckType), simply flattened for web decks
         """
         buttons = [b.desc() for b in self.buttons.values()]
-        return {"name": self.name, "driver": self.driver, "background": self.background, "custom": self._custom, "buttons": buttons}
+        return {"name": self.name, "driver": self.driver, "background": self.background, "aircraft": self._aircraft, "buttons": buttons}

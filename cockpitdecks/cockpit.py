@@ -388,7 +388,7 @@ class Cockpit(DatarefListener, CockpitBase):
             self.acpath = acpath
 
             self.load_aircraft_deck_types()
-            self.scan_virtual_decks()
+            self.scan_web_decks()
 
             if len(self.devices) == 0:
                 logger.warning(f"no device")
@@ -534,7 +534,7 @@ class Cockpit(DatarefListener, CockpitBase):
             f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
         )
 
-    def scan_virtual_decks(self):
+    def scan_web_decks(self):
         """Virtual decks are declared in the cockpit configuration
         Therefore it is necessary to have an aircraft folder.
 
@@ -568,7 +568,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.virtual_decks_added = True
         logger.debug(f"added {cnt} virtual decks")
 
-    def remove_virtual_decks(self):
+    def remove_web_decks(self):
         if not self.virtual_decks_added:
             logger.info(f"virtual decks not added")
             return
@@ -579,7 +579,7 @@ class Cockpit(DatarefListener, CockpitBase):
         for device in to_remove:
             self.devices.remove(device)
         self.virtual_decks_added = False
-        logger.debug(f"removed {len(to_remove)} virtual decks")
+        logger.info(f"removed {len(to_remove)} virtual decks")
 
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
@@ -724,7 +724,7 @@ class Cockpit(DatarefListener, CockpitBase):
             if b in [CONFIG_FILE, "designer.yaml"]:
                 continue
             data = DeckType(deck_type)
-            data._custom = True # mark as non-system deck type
+            data._aircraft = True # mark as non-system deck type
             self.deck_types[data.name] = data
             if data.is_virtual_deck():
                 self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
@@ -910,13 +910,13 @@ class Cockpit(DatarefListener, CockpitBase):
     # #########################################################
     # Cockpit start/stop/handle procedures for virtual decks
     #
-    def has_virtual_decks(self) -> bool:
+    def has_web_decks(self) -> bool:
         for device in self.devices:
             if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
                 return True
         return False
 
-    def get_virtual_decks(self):
+    def get_web_decks(self):
         # Not all virtual decks are web decks
         webdeck_list = {}
         for name, deck in self.virtual_deck_list.items():
@@ -931,7 +931,7 @@ class Cockpit(DatarefListener, CockpitBase):
         return res if CONFIG_KW.LAYOUT.value in res else None
 
     def get_virtual_deck_defaults(self):
-        return self.get_attribute("virtual-deck-defaults")
+        return self.get_attribute("web-deck-defaults")
 
     def handle_code(self, code: int, name: str):
         logger.debug(f"received code {name}:{code}")
@@ -1015,7 +1015,7 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"terminating..")
         for deck in self.cockpit.values():
             deck.terminate()
-        self.remove_virtual_decks()
+        self.remove_web_decks()
         self.cockpit = {}
         nt = len(threading.enumerate())
         if nt > 1:
@@ -1067,13 +1067,13 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"..connect to simulator loop started..")
             self.start_event_loop()
             logger.info(f"..event loop started..")
-            if self.has_virtual_decks():
+            if self.has_web_decks():
                 self.handle_code(code=4, name="init")  # wake up proxy
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
             logger.info(f"..started")
-            if not release or not self.has_virtual_decks():
+            if not release or not self.has_web_decks():
                 logger.info(f"serving {self.name}")
                 for t in threading.enumerate():
                     try:
@@ -1207,20 +1207,26 @@ class Cockpit(DatarefListener, CockpitBase):
     def save_button(self, data):
         acpath = self.acpath
         if acpath is None:
-            acpath = "output"
+            acpath = "output" # will save in current dir
+
         deck = data.get("deck", "")
         if deck != "":
             self.save_deck(deck)
+
         layout = data.get("layout", "")
         if layout == "":
             layout = "default"
-        page = data.get("page", "")
-        if page == "":
-            page = "index.yaml"
         dn = os.path.join(acpath, CONFIG_FOLDER, layout)
         if not os.path.exists(dn):
             os.makedirs(dn, exist_ok=True)
+
+        page = data.get("page", "")
+        if page == "":
+            page = "index.yaml"
+        if not page.endswith(".yaml"):
+            page = page + ".yaml"
         fn = os.path.join(dn, page)
+
         page_config = None
         button_config = yaml.load(data["code"])
         if os.path.exists(fn):
