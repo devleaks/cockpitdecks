@@ -41,7 +41,7 @@ class VirtualDeckManager:
         return {d.name: d for d in virtual_deck_types}
 
     @staticmethod
-    def enumerate(acpath: str, virtual_deck_types = None) -> Dict[str, VirtualDeck]:
+    def enumerate(acpath: str, virtual_deck_types=None) -> Dict[str, VirtualDeck]:
         """Returns all the virtual devices available to Cockpitdecks.
 
         Virtual devices are discovered in the cockpit currently in use.

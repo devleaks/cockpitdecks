@@ -53,8 +53,9 @@ logger.info(f"Starting for {ac_desc}..")
 logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
 cockpit = Cockpit(XPlane)
 
+# local key words and defaults
 DESIGNER_CONFIG_FILE = "designer.yaml"
-
+CODE = "code"
 
 # ##################################
 # Flask Web Server (& WebSocket)
@@ -139,57 +140,82 @@ def representation_details():
 
 # Deck designer
 #
-DECK_LAYOUT_FILENAME = "deckcurrentlayout.json"
 AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
 
 @app.route("/deck-designer")
 def deck_designer():
     background_image = request.args.get("background_image", default="background.png")
-    config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
     deck_config = {
         "deck-type-flat": {
             "background": {
                 "image": background_image
-            }
+            },
+            "aircraft": background_image.startswith("/aircraft")
         }
     }
+
     designer_config = {}
+    config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
     if os.path.exists(config_file):
         with open(config_file, "r") as fp:
             designer_config = yaml.load(fp)
+
     return render_template("deck-designer.j2", deck=deck_config, designer_config=designer_config)
 
 @app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
-    fn = os.path.join(AIRCRAFT_DECK_TYPES, DECK_LAYOUT_FILENAME)
-
     if request.method == "POST":
 
         data = request.json
-
-        if "code" not in data:
-            return {"status": "no code"}
-        with open(fn, "w") as fp:
-            json.dump(data["code"], fp, indent=2)
-
-        if "deckconfig" not in data:
+        if CONFIG_FOLDER not in data:
             return {"status": "no deckconfig"}
-        layout_name = data["deckconfig"].get("name")
-        if layout_name is None:
-            layout_name = fn.replace(".json", ".yaml")
-        else:
-            layout_name = os.path.join(AIRCRAFT_DECK_TYPES, layout_name+".yaml")
-        with open(layout_name, "w") as fp:
-            yaml.dump(data["deckconfig"], fp)
+        if CODE not in data:
+            return {"status": "no code"}
+        if "name" not in data[CONFIG_FOLDER]:
+            return {"status": "no name"}
+
+        fn = os.path.join(AIRCRAFT_DECK_TYPES, data[CONFIG_FOLDER].get("name") + ".json")
+        with open(fn, "w") as fp:
+            json.dump(data[CODE], fp, indent=2)
+            logger.info(f"Konva saved ({fn})")
+
+        ln = fn.replace(".json", ".yaml")
+        with open(ln, "w") as fp:
+            yaml.dump(data[CONFIG_FOLDER], fp)
+            logger.info(f"layout saved ({ln})")
 
         return {"status": "ok"}
 
-    with open(fn, "r") as fp:
-        code = json.load(fp)
+    code = {}
+    args = request.args
+    name = args.get("name")
+    if name is not None:
+        if "." in name:
+            name = os.path.splitext(os.path.basename(name))[0]
+        fn = os.path.join(AIRCRAFT_DECK_TYPES, name + ".json")
+        logger.info(f"loading Konva ({fn})", args)
+        with open(fn, "r") as fp:
+            code = json.load(fp)
+    else:
+        return {"status": "no name"}
     return code
 
 # Deck runner
 #
+@app.route("/deck2/<name>")
+def deck2(name: str):
+    uname = urllib.parse.unquote(name)
+    app.logger.debug(f"Starting deck {uname}")
+    deck_desc = cockpit.get_virtual_deck_description(uname)
+    # Inject our contact address:
+    if type(deck_desc) is dict:
+        deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+        deck_desc["presentation-default"] = cockpit.get_virtual_deck_defaults()
+    else:
+        app.logger.debug(f"deck desc is not a dict {deck_desc}")
+    return render_template("deck2.j2", deck=deck_desc)
+
+
 @app.route("/deck/<name>")
 def deck(name: str):
     uname = urllib.parse.unquote(name)
@@ -212,7 +238,7 @@ def cockpit_wshandler():
             data = ws.receive()
             app.logger.debug(f"received {data}")
             data = json.loads(data)
-            code = data.get("code")
+            code = data.get(CODE)
             if code == 1:
                 deck = data.get("deck")
                 cockpit.register_deck(deck, ws)

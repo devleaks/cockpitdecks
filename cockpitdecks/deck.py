@@ -56,7 +56,7 @@ class Deck(ABC):
 
         # Layout
         self.layout = config.get(CONFIG_KW.LAYOUT.value)
-        self._layout_config: Dict[str, str | int | float | bool | Dict] = {} # content of aircraft/deckconfig/layout/config.yaml
+        self._layout_config: Dict[str, str | int | float | bool | Dict] = {}  # content of aircraft/deckconfig/layout/config.yaml
 
         # Pages
         self.pages: Dict[str, Page] = {}
@@ -130,7 +130,7 @@ class Deck(ABC):
         """
         return self.deck_type
 
-    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         """Returns the default attribute value
 
         ..if avaialble at the deck level.
@@ -148,7 +148,7 @@ class Deck(ABC):
         if self._layout_config is not None:
             value = self._layout_config.get(attribute)
 
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"deck {self.name} returning {attribute}={value} (from layout)")
             else:
@@ -162,7 +162,7 @@ class Deck(ABC):
         if self._config is not None:
             value = self._config.get(attribute)
 
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"deck {self.name} returning {attribute}={value} (from deck)")
             else:
@@ -181,7 +181,6 @@ class Deck(ABC):
             logger.warning(f"deck {self.name}: attribute not found {attribute}, returning default ({default})")
 
         return default
-
 
     def get_index_prefix(self, index):
         """Returns the prefix of a button index for this deck."""

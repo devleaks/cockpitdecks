@@ -447,6 +447,7 @@ class SwitchBase(DrawBase):
         self.draw_left = self.switch.get("left", 0) - self.switch.get("right", 0)
         self.draw_up = self.switch.get("up", 0) - self.switch.get("down", 0)
 
+
 class CircularSwitch(SwitchBase):
 
     REPRESENTATION_NAME = "circular-switch"

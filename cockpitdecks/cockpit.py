@@ -19,7 +19,7 @@ from cairosvg import svg2png
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT, button
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
-from cockpitdecks import Config, CONFIG_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
+from cockpitdecks import Config, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -110,7 +110,6 @@ class Cockpit(DatarefListener, CockpitBase):
         self.theme = None
         self._dark = False
 
-
         # Main event look
         self.event_loop_run = False
         self.event_loop_thread = None
@@ -141,7 +140,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def defaults_prefix(self):
         return "dark-default-" if self._dark else "default-"
 
-    def get_attribute(self, attribute: str, default = None, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, silence: bool = True):
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
         def is_color_attribute(a):
             return "color" in a
@@ -159,7 +158,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 newattr = "-".join([theme_prefix, attribute])  # dark-default-color
                 value = self.get_attribute(attribute=newattr, default=default, silence=silence)
 
-                if value is not None: # found!
+                if value is not None:  # found!
                     if silence:
                         logger.debug(f"cockpit returning {attribute}={value} (from {newattr})")
                     else:
@@ -655,15 +654,17 @@ class Cockpit(DatarefListener, CockpitBase):
                 if name not in self.cockpit.keys():
                     self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
+                        deck_flat = self.deck_types.get(deck_type).desc()
+                        if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
+                            background = deck_flat[DECK_KW.BACKGROUND.value]
+                            if self.deck_types.get(deck_type)._aircraft:
+                                background[DECK_KW.IMAGE.value] = "/aircraft/decks/images/" + background[DECK_KW.IMAGE.value]
+                            else:
+                                background[DECK_KW.IMAGE.value] = "/assets/decks/images/" + background[DECK_KW.IMAGE.value]
                         self.virtual_deck_list[name] = deck_config | {
                             "deck-type-desc": self.deck_types.get(deck_type).store,
-                            "deck-type-flat": self.deck_types.get(deck_type).desc(),
+                            "deck-type-flat": deck_flat,
                         }
-                        # web decks need to have a decor
-                        # decor = deck_config.get(CONFIG_KW.DECOR.value)
-                        # if decor is None:
-                        #     deck_config = deck_config | {CONFIG_KW.DECOR.value: {"background": "", "offset": [0, 0], "spacing": [0, 0]}}
-                        #     logger.debug(f"deck {name} added neutral decor")
                     cnt = cnt + 1
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
                 else:
@@ -724,7 +725,7 @@ class Cockpit(DatarefListener, CockpitBase):
             if b in [CONFIG_FILE, "designer.yaml"]:
                 continue
             data = DeckType(deck_type)
-            data._aircraft = True # mark as non-system deck type
+            data._aircraft = True  # mark as non-system deck type
             self.deck_types[data.name] = data
             if data.is_virtual_deck():
                 self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
@@ -1186,11 +1187,7 @@ class Cockpit(DatarefListener, CockpitBase):
             i = i + 1
         if not found:
             # create it, save it
-            decks[deck] = {
-                "name": deck,
-                "layout": deck,
-                "type": deck
-            }
+            decks[deck] = {"name": deck, "layout": deck, "type": deck}
             with open(fn, "w") as fp:
                 yaml.dump(current_config.store, fp)
             # create/save serial as well
@@ -1207,7 +1204,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def save_button(self, data):
         acpath = self.acpath
         if acpath is None:
-            acpath = "output" # will save in current dir
+            acpath = "output"  # will save in current dir
 
         deck = data.get("deck", "")
         if deck != "":

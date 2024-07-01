@@ -41,13 +41,11 @@ class Page:
         """
         return self.deck.current_page == self
 
-
-
-    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         # Is there such an attribute in the page defintion?
         value = self._config.get(attribute)
 
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"page {self.name} returning {attribute}={value}")
             else:

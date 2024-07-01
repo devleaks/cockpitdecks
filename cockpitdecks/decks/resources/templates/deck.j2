@@ -60,6 +60,14 @@ stage.add(interaction_layer);
 //
 // Transfer from Cockpitdecks through Jinja2, nice output
 const DECK = {{ deck|tojson(indent=2) }};
+const DECK_TYPE_DESCRIPTION = "deck-type-flat"
+
+console.log("deck", DECK)
+
+const DECK_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image
+deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE+")";
+deck_elem.style.backgroundRepeat = "no-repeat";
+
 
 deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
 

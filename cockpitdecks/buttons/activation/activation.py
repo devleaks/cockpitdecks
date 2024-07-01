@@ -97,20 +97,20 @@ class Activation:
     def button_name(self) -> str:
         return self.button.name if self.button is not None else "no button"
 
-    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
             logger.warning(f"button {self.button_name()}: activation fetched default attribute {attribute}")
 
         value = self._config.get(attribute)
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"button {self.button_name()} activation returning {attribute}={value}")
             else:
                 logger.info(f"button {self.button_name()} activation returning {attribute}={value}")
             return value
 
-        if propagate: # we just look at the button. level, not above.
+        if propagate:  # we just look at the button. level, not above.
             if not silence:
                 logger.info(f"button {self.button_name()} activation propagate to button for {attribute}")
             return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)
@@ -296,7 +296,10 @@ class LoadPage(Activation):
 
     KW_BACKPAGE = "back"
 
-    PARAMETERS = {"page": {"type": "string", "prompt": "Page", "default-value": "back", "mandatory": True}, "deck": {"type": "string", "prompt": "Remote deck", "optional": True}}
+    PARAMETERS = {
+        "page": {"type": "string", "prompt": "Page", "default-value": "back", "mandatory": True},
+        "deck": {"type": "string", "prompt": "Remote deck", "optional": True},
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)
@@ -843,7 +846,10 @@ class ShortOrLongpress(Activation):
     ACTIVATION_NAME = "short-or-long-press"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {"command short": {"type": "string", "prompt": "Command", "mandatory": True},"command long": {"type": "string", "prompt": "Command", "mandatory": True}}
+    PARAMETERS = {
+        "command short": {"type": "string", "prompt": "Command", "mandatory": True},
+        "command long": {"type": "string", "prompt": "Command", "mandatory": True},
+    }
 
     def __init__(self, config: dict, button: "Button"):
         Activation.__init__(self, config=config, button=button)

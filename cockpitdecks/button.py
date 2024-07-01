@@ -253,7 +253,7 @@ class Button(DatarefListener, DatarefSetListener):
     def describe(self) -> str:
         return "\n\r".join([self._activation.describe(), self._representation.describe()])
 
-    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         default_attribute = attribute
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
@@ -263,7 +263,7 @@ class Button(DatarefListener, DatarefSetListener):
                 default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
 
         value = self._config.get(attribute)
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"button {self.button_name()} returning {attribute}={value}")
             else:

@@ -65,7 +65,6 @@ class Representation:
         if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
             self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
 
-
         self.init()
 
     def init(self):  # ~ABC
@@ -81,20 +80,20 @@ class Representation:
     def button_name(self):
         return self.button.name if self.button is not None else "no button"
 
-    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
             logger.warning(f"button {self.button_name()}: representation fetched default attribute {attribute}")
 
         value = self._representation_config.get(attribute)
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"button {self.button_name()} representation returning {attribute}={value}")
             else:
                 logger.info(f"button {self.button_name()} representation returning {attribute}={value}")
             return value
 
-        if propagate: # we just look at the button level if allowed, not above.
+        if propagate:  # we just look at the button level if allowed, not above.
             if not silence:
                 logger.info(f"button {self.button_name()} representation propagate to button for {attribute}")
             return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)

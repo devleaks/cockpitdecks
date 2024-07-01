@@ -100,20 +100,20 @@ class AnnunciatorPart:
             self.datarefs = self.annunciator.button.scan_datarefs(base=self._config)
         return self.datarefs
 
-    def get_attribute(self, attribute: str, default = None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
             logger.warning(f"annunciator part fetched default attribute {attribute}")
 
         value = self._config.get(attribute)
-        if value is not None: # found!
+        if value is not None:  # found!
             if silence:
                 logger.debug(f"annunciator part returning {attribute}={value}")
             else:
                 logger.info(f"annunciator part returning {attribute}={value}")
             return value
 
-        if propagate: # we just look at the button. level, not above.
+        if propagate:  # we just look at the button. level, not above.
             if not silence:
                 logger.info(f"annunciator part propagate to annunciator for {attribute}")
             return self.annunciator.get_attribute(attribute, default=default, propagate=False, silence=silence)

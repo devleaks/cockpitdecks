@@ -19,7 +19,7 @@ body {
         <ul id="deckdesignerlist">
         {% for name, path in image_list.items() %}
             <li>
-                <a href="/deck-designer?background_image={{ path|e }}" target="_blank">{{ name }}</a>
+                <a href="/deck-designer?edit=1&background_image={{ path|e }}" target="_blank">{{ name }}</a>
             </li>
         {% endfor %}
         </ul>

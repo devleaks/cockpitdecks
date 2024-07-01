@@ -10,11 +10,8 @@
 //
 const EDITOR_MODE = false
 
-const DECK_TYPE_DESCRIPTION = "deck-type-flat"
 const PRESENTATION_DEFAULTS = "presentation-default"
-
-const DECK_BACKGROUND_IMAGE_PATH = "/assets/decks/images/"
-const AIRCRAFT_BACKGROUND_IMAGE_PATH = "/aircraft/decks/images/"
+const ASSET_IMAGE_PATH = "/assets/images/"
 
 const DEFAULT_WIDTH = 200
 const DEFAULT_HEIGHT = 100
@@ -292,16 +289,16 @@ class Encoder extends Konva.Circle {
             }
             switch (this.value()) { // SVG cursor origin is on middle top
             case 1:
-                this.container.style.cursor = "url('/assets/images/push.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"push.svg') 12 0, pointer";
                 break;
             case 4:
-                this.container.style.cursor = "url('/assets/images/pull.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"pull.svg') 12 0, pointer";
                 break;
             case 2:
-                this.container.style.cursor = "url('/assets/images/clockwise.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"clockwise.svg') 12 0, pointer";
                 break;
             case 3:
-                this.container.style.cursor = "url('/assets/images/counter-clockwise.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"counter-clockwise.svg') 12 0, pointer";
                 break;
             }
         });
@@ -839,9 +836,9 @@ class Deck {
             stage.width(deckImage.naturalWidth);
             stage.height(deckImage.naturalHeight);
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
-            layer.add(deckbg);
+            // layer.add(deckbg);
         };
-        let image_path = (DECK[DECK_TYPE_DESCRIPTION].aircraft ? AIRCRAFT_BACKGROUND_IMAGE_PATH : DECK_BACKGROUND_IMAGE_PATH) + background_image;
+        let image_path = background_image;
         deckImage.src = image_path;
         // console.log("set_background_layer", DECK[DECK_TYPE_DESCRIPTION], image_path)
     }
