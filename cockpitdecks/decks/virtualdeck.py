@@ -15,7 +15,7 @@ from cockpitdecks import DEFAULT_PAGE_NAME
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
-from cockpitdecks.button import Button
+from cockpitdecks.button import Button, DECK_DEF
 from cockpitdecks.buttons.representation import (
     Representation,
     IconBase,
@@ -65,17 +65,24 @@ class VirtualDeck(DeckWithIcons):
         #
         # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
         page0 = Page(name=DEFAULT_PAGE_NAME, config={"name": DEFAULT_PAGE_NAME}, deck=self)
-        button0 = Button(
-            config={
-                "index": "0",
-                "name": "X-Plane Map (default page)",
-                "type": "push",
-                "command": "sim/map/show_current",
-                "text": "MAP",
-            },
-            page=page0,
-        )
-        page0.add_button(button0.index, button0)
+        indices = self.deck_type.valid_indices()
+        if len(indices) > 0:
+            first_index = indices[0]
+            logger.debug(f"..first button is {first_index}..")
+            button0 = Button(
+                config={
+                    "index": first_index,
+                    "name": "Reload",
+                    # "name": "X-Plane Map (default page)",
+                    # "type": "push",
+                    # "command": "sim/map/show_current",
+                    # "text": "MAP",
+                    "type": "reload",
+                    DECK_DEF: self.deck_type.get_button_definition(first_index)
+                },
+                page=page0,
+            )
+            page0.add_button(button0.index, button0)
         self.pages = {DEFAULT_PAGE_NAME: page0}
         self.home_page = page0
         self.current_page = page0

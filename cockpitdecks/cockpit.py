@@ -19,7 +19,7 @@ from cairosvg import svg2png
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT, button
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
-from cockpitdecks import Config, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
+from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -77,6 +77,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self._secret = {}  # content of aircraft/deckconfig/secret.yaml
         self._reqdfts = set()
 
+        self._simulator = simulator
         self.sim = simulator(self)
 
         # "Aircraft" name or model...
@@ -376,6 +377,10 @@ class Cockpit(DatarefListener, CockpitBase):
             self.sim.clean_datarefs_to_monitor()
             logger.warning(f"{os.path.basename(self.acpath)} unloaded")
 
+        if self.sim is None:
+            logger.info(f"..starting simulator..")
+            self.sim = self._simulator(self)
+
         self.cockpit = {}
         self.icons = {}
         # self.fonts = {}
@@ -473,8 +478,9 @@ class Cockpit(DatarefListener, CockpitBase):
         self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
         self.set_logging_level(__name__)
 
-        self.sim.set_roundings(self._resources_config.get("dataref-roundings", {}))
-        self.sim.set_dataref_frequencies(self._resources_config.get("dataref-fetch-frequencies", {}))
+        if self.sim is not None:
+            self.sim.set_roundings(self._resources_config.get("dataref-roundings", {}))
+            self.sim.set_dataref_frequencies(self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # 1. Load global icons
         #   (They are never cached when loaded without aircraft.)
@@ -918,18 +924,10 @@ class Cockpit(DatarefListener, CockpitBase):
         return False
 
     def get_web_decks(self):
-        # Not all virtual decks are web decks
-        webdeck_list = {}
-        for name, deck in self.virtual_deck_list.items():
-            if CONFIG_KW.LAYOUT.value in deck:  # has a decor, must be a web deck
-                webdeck_list[name] = deck
-        # add default values
-        return webdeck_list
+        return self.virtual_deck_list
 
     def get_virtual_deck_description(self, deck):
-        # Not all virtual decks are web decks
-        res = self.virtual_deck_list.get(deck)
-        return res if CONFIG_KW.LAYOUT.value in res else None
+        return self.virtual_deck_list.get(deck)
 
     def get_virtual_deck_defaults(self):
         return self.get_attribute("web-deck-defaults")
@@ -1187,17 +1185,26 @@ class Cockpit(DatarefListener, CockpitBase):
             i = i + 1
         if not found:
             # create it, save it
-            decks[deck] = {"name": deck, "layout": deck, "type": deck}
+            decks.append({"name": deck, "type": deck})  # default layout will be 'default'
             with open(fn, "w") as fp:
                 yaml.dump(current_config.store, fp)
+                logger.info(f"added deck {deck} to config file")
             # create/save serial as well
             sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
             serial_numbers = Config(sn)
             if not deck in serial_numbers.store:
-                serial_numbers.store["deck"] = deck
+                serial_numbers.store[deck] = deck
             with open(sn, "w") as fp:
+                del serial_numbers.store[CONFIG_FILENAME]
                 yaml.dump(serial_numbers.store, fp)
-            logger.info(f"added deck {deck} to config file")
+                logger.info(f"added deck {deck} to secret file")
+
+            if self.event_loop_run:
+                logger.info(f"reloading decks..")
+                self.reload_decks()
+            else:
+                logger.info(f"starting..")
+                self.start_aircraft(self.acpath)
         else:
             logger.debug(f"deck {deck} already exists in config file")
 
@@ -1207,8 +1214,8 @@ class Cockpit(DatarefListener, CockpitBase):
             acpath = "output"  # will save in current dir
 
         deck = data.get("deck", "")
-        if deck != "":
-            self.save_deck(deck)
+        # if deck != "":
+        #     self.save_deck(deck)
 
         layout = data.get("layout", "")
         if layout == "":
@@ -1288,8 +1295,12 @@ class Cockpit(DatarefListener, CockpitBase):
         # or <aircraft>/deckconfig/resources/decks/images.
         ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "assets"))
         AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+        INTERNAL_DESIGN = False
+        folders = [AIRCRAFT_ASSET_FOLDER]
+        if INTERNAL_DESIGN:
+            folders.append(ASSET_FOLDER)
         deckimages = {}
-        for base in [AIRCRAFT_ASSET_FOLDER, ASSET_FOLDER]:
+        for base in folders:
             dn = os.path.join(base, DECKS_FOLDER, DECK_IMAGES)
             if os.path.isdir(dn):
                 files = []

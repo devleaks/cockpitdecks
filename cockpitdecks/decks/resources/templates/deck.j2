@@ -115,7 +115,7 @@ function connect() {
         var data = JSON.parse(event.data);
         // console.log("code received", data.code, data.meta);
         if (data.code == 0) {
-            deck.set_key_image(data.key, data.image, image_layer);
+            deck.set_key_image(data.key, data.image);
         } else if (data.code == 1) {
             console.log("received initialisation code, requesting page reload", data.code);
             window.location.reload()

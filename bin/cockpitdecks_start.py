@@ -55,6 +55,7 @@ cockpit = Cockpit(XPlane)
 
 # local key words and defaults
 DESIGNER_CONFIG_FILE = "designer.yaml"
+DESIGNER = True
 CODE = "code"
 
 # ##################################
@@ -68,10 +69,7 @@ ASSET_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", DECKS_FOLDER, RES
 
 AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER)
 
-APP_HOST = [
-    os.getenv("APP_HOST", "127.0.0.1"),
-    int(os.getenv("APP_PORT", "7777"))
-]
+APP_HOST = [os.getenv("APP_HOST", "127.0.0.1"), int(os.getenv("APP_PORT", "7777"))]
 
 app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 
@@ -93,6 +91,7 @@ def send_favicon():
 def send_asset(path):
     return send_from_directory(ASSET_FOLDER, path)
 
+
 @app.route("/aircraft/<path:path>")
 def send_aircraft_asset(path):
     return send_from_directory(AIRCRAFT_ASSET_FOLDER, path)
@@ -103,6 +102,7 @@ def send_aircraft_asset(path):
 @app.route("/designer")
 def designer():
     return render_template("designer.j2", image_list=cockpit.get_deck_background_images())
+
 
 # Button designer
 #
@@ -142,17 +142,11 @@ def representation_details():
 #
 AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
 
+
 @app.route("/deck-designer")
 def deck_designer():
     background_image = request.args.get("background_image", default="background.png")
-    deck_config = {
-        "deck-type-flat": {
-            "background": {
-                "image": background_image
-            },
-            "aircraft": background_image.startswith("/aircraft")
-        }
-    }
+    deck_config = {"deck-type-flat": {"background": {"image": background_image}, "aircraft": background_image.startswith("/aircraft")}}
 
     designer_config = {}
     config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
@@ -161,6 +155,7 @@ def deck_designer():
             designer_config = yaml.load(fp)
 
     return render_template("deck-designer.j2", deck=deck_config, designer_config=designer_config)
+
 
 @app.route("/deck-designer-io", methods=("GET", "POST"))
 def button_designer_io():
@@ -174,15 +169,21 @@ def button_designer_io():
         if "name" not in data[CONFIG_FOLDER]:
             return {"status": "no name"}
 
-        fn = os.path.join(AIRCRAFT_DECK_TYPES, data[CONFIG_FOLDER].get("name") + ".json")
+        if not os.path.exists(AIRCRAFT_DECK_TYPES):
+            os.makedirs(AIRCRAFT_DECK_TYPES, exist_ok=True)
+
+        name = data[CONFIG_FOLDER].get("name")
+        fn = os.path.join(AIRCRAFT_DECK_TYPES, name + ".json")
         with open(fn, "w") as fp:
             json.dump(data[CODE], fp, indent=2)
             logger.info(f"Konva saved ({fn})")
 
-        ln = fn.replace(".json", ".yaml")
+        ln = os.path.join(AIRCRAFT_DECK_TYPES, name + ".yaml")
         with open(ln, "w") as fp:
             yaml.dump(data[CONFIG_FOLDER], fp)
             logger.info(f"layout saved ({ln})")
+
+        cockpit.save_deck(name)
 
         return {"status": "ok"}
 
@@ -199,6 +200,7 @@ def button_designer_io():
     else:
         return {"status": "no name"}
     return code
+
 
 # Deck runner
 #
@@ -251,7 +253,9 @@ def cockpit_wshandler():
 try:
 
     cockpit.start_aircraft(ac, release=True)
-    if cockpit.has_web_decks():
+    if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
+        if not cockpit.has_web_decks():
+            logger.warning(f"no web deck, start for designer")  # , press CTRL-C ** twice ** to quit
         logger.info(f"Starting application server")  # , press CTRL-C ** twice ** to quit
         app.run(host="0.0.0.0", port=APP_HOST[1])
 

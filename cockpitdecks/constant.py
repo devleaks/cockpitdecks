@@ -33,7 +33,7 @@ CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 
 DEFAULT_LAYOUT = "default"
-DEFAULT_PAGE_NAME = "X-Plane"
+DEFAULT_PAGE_NAME = "Default Cockpitdecks Page"
 
 RESOURCES_FOLDER = "resources"
 FONTS_FOLDER = "fonts"
@@ -50,9 +50,12 @@ VIRTUAL_DECK_DRIVER = "virtualdeck"
 # internals
 ID_SEP = "/"
 DEFAULT_ATTRIBUTE_PREFIX = "default-"
+
+
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
     VIVISUN = "v"  # v(ivisun): bright, sharp.
+
 
 # System default values
 COCKPITDECKS_DEFAULT_VALUES = {
@@ -62,7 +65,7 @@ COCKPITDECKS_DEFAULT_VALUES = {
     "cockpit-theme": "light",
     "system-font": "Monaco.ttf",  # alias
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
-    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.VIVISUN,
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.KORRY,
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
     DEFAULT_ATTRIBUTE_PREFIX + "home-page-name": "index",
     DEFAULT_ATTRIBUTE_PREFIX + "icon-color": "cornflowerblue",
@@ -83,6 +86,7 @@ COCKPITDECKS_DEFAULT_VALUES = {
     DEFAULT_ATTRIBUTE_PREFIX + "text-size": 32,
     DEFAULT_ATTRIBUTE_PREFIX + "wallpaper": "wallpaper.png",
 }
+
 
 # deckconfig attribute keywords
 #
@@ -183,6 +187,7 @@ init_logger = logging.getLogger("init/common")
 #
 #  Yaml config file reader
 #
+CONFIG_FILENAME = "__filename__"
 class Config(MutableMapping):
     """
     A dictionary that loads from a yaml config file.
@@ -194,7 +199,7 @@ class Config(MutableMapping):
             filename = os.path.abspath(filename)
             with open(filename, "r") as fp:
                 self.store = yaml.load(fp)
-                self.store["__filename__"] = filename
+                self.store[CONFIG_FILENAME] = filename
                 dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
                 init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
         else:

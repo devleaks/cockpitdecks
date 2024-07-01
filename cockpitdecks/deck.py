@@ -55,7 +55,7 @@ class Deck(ABC):
         self.running = False
 
         # Layout
-        self.layout = config.get(CONFIG_KW.LAYOUT.value)
+        self.layout = config.get(CONFIG_KW.LAYOUT.value, DEFAULT_LAYOUT)
         self._layout_config: Dict[str, str | int | float | bool | Dict] = {}  # content of aircraft/deckconfig/layout/config.yaml
 
         # Pages

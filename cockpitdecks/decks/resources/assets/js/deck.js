@@ -778,6 +778,7 @@ class Deck {
         this.container = stage.container();
 
         this.buttons = {};
+        this.key_images = {};
 
         this.build();
     }
@@ -935,7 +936,7 @@ class Deck {
         return 
     }
 
-    set_key_image(key, image, layer) {
+    set_key_image(key, image) {
         var offset = {x: 0, y: 0}
         const shape = this.buttons[key]
         if (shape == undefined || shape == null) {
@@ -947,6 +948,7 @@ class Deck {
                 offset = {x: -shape.radius(), y: -shape.radius()}
             }
         }
+        var that = this
         let buttonImage = new Image();
         buttonImage.onload = function () {
             let button = new Konva.Image({
@@ -954,7 +956,11 @@ class Deck {
                 y: shape.y() + offset.y,
                 image: buttonImage
             });
-            layer.add(button);
+            if (that.key_images[key] != undefined) { // remove old version
+                that.key_images[key].destroy()
+            }
+            that.image_layer.add(button);
+            that.key_images[key] = button
         };
         buttonImage.src = "data:image/jpeg;base64," + image;
     }

@@ -378,7 +378,7 @@ class SwitchBase(DrawBase):
 
         # Base and handle
         self.button_size = self.switch.get("button-size", int(2 * ICON_SIZE / 4))
-        self.button_fill_color = self.get_attribute("button-fill-color", SWITCH_BASE_FILL_COLOR)
+        self.button_fill_color = self.get_attribute("button-fill-color", SWITCH_BASE_FILL_COLOR, silence=False)
         self.button_fill_color = convert_color(self.button_fill_color)
         self.button_stroke_color = self.get_attribute("button-stroke-color", SWITCH_BASE_STROKE_COLOR)
         self.button_stroke_color = convert_color(self.button_stroke_color)
@@ -416,7 +416,7 @@ class SwitchBase(DrawBase):
         self.tick_underline_width = self.get_attribute("tick-underline-width", 4)
 
         # Labels
-        self.tick_labels = self.switch.get("tick-labels")
+        self.tick_labels = self.switch.get("tick-labels", {})
         self.tick_label_space = self.get_attribute("tick-label-space", 10)
         self.tick_label_font = self.get_attribute("tick-label-font", "DIN")
         self.tick_label_size = self.get_attribute("tick-label-size", 50)
@@ -458,8 +458,6 @@ class CircularSwitch(SwitchBase):
         if self.switch is None:
             logger.warning("no switch configuration")
             return
-
-        self.button_fill_color = grey(190)
 
         self.tick_from = self.switch.get("tick-from", 90)
         self.tick_to = self.switch.get("tick-to", 270)
@@ -508,20 +506,21 @@ class CircularSwitch(SwitchBase):
         # Ticks
         tick_start = self.button_size / 2 + self.tick_space
         tick_end = tick_start + self.tick_length
-        tick_lbl = tick_end + self.tick_label_space
+        if self.tick_width > 0:
+            tick_lbl = tick_end + self.tick_label_space
 
-        label_anchors = []
-        for i in range(self.tick_steps):
-            a = red(self.tick_from + i * self.angular_step)
-            x0 = center[0] - tick_start * math.sin(math.radians(a))
-            y0 = center[1] + tick_start * math.cos(math.radians(a))
-            x1 = center[0] - tick_end * math.sin(math.radians(a))
-            y1 = center[1] + tick_end * math.cos(math.radians(a))
-            x2 = center[0] - tick_lbl * math.sin(math.radians(a))
-            y2 = center[1] + tick_lbl * math.cos(math.radians(a))
-            # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
-            label_anchors.append([a, x2, y2])
-            draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
+            label_anchors = []
+            for i in range(self.tick_steps):
+                a = red(self.tick_from + i * self.angular_step)
+                x0 = center[0] - tick_start * math.sin(math.radians(a))
+                y0 = center[1] + tick_start * math.cos(math.radians(a))
+                x1 = center[0] - tick_end * math.sin(math.radians(a))
+                y1 = center[1] + tick_end * math.cos(math.radians(a))
+                x2 = center[0] - tick_lbl * math.sin(math.radians(a))
+                y2 = center[1] + tick_lbl * math.cos(math.radians(a))
+                # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
+                label_anchors.append([a, x2, y2])
+                draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
 
         # Tick run mark
         if self.tick_underline_width > 0:
@@ -537,28 +536,29 @@ class CircularSwitch(SwitchBase):
 
         # Labels
         # print("-<-<", label_anchors)
-        font = self.get_font(self.tick_label_font, int(self.tick_label_size))
-        for i in range(self.tick_steps):
-            angle = int(label_anchors[i][0])
-            tolerence = 30
-            if angle > tolerence and angle < 180 - tolerence:
-                anchor = "rs"
-                align = "right"
-            elif angle > 180 + tolerence and angle < 360 - tolerence:
-                anchor = "ls"
-                align = "left"
-            else:  # 0, 180, 360
-                anchor = "ms"
-                align = "center"
-            # print(self.tick_labels[i], label_anchors[i], label_anchors[i][1:3], anchor, align)
-            draw.text(
-                label_anchors[i][1:3],
-                text=self.tick_labels[i],
-                font=font,
-                anchor=anchor,
-                align=align,
-                fill=self.tick_label_color,
-            )
+        if len(self.tick_labels) >= self.tick_steps:
+            font = self.get_font(self.tick_label_font, int(self.tick_label_size))
+            for i in range(self.tick_steps):
+                angle = int(label_anchors[i][0])
+                tolerence = 30
+                if angle > tolerence and angle < 180 - tolerence:
+                    anchor = "rs"
+                    align = "right"
+                elif angle > 180 + tolerence and angle < 360 - tolerence:
+                    anchor = "ls"
+                    align = "left"
+                else:  # 0, 180, 360
+                    anchor = "ms"
+                    align = "center"
+                # print(self.tick_labels[i], label_anchors[i], label_anchors[i][1:3], anchor, align)
+                draw.text(
+                    label_anchors[i][1:3],
+                    text=self.tick_labels[i],
+                    font=font,
+                    anchor=anchor,
+                    align=align,
+                    fill=self.tick_label_color,
+                )
 
         # Needle
         value = self.button.get_current_value()
