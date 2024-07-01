@@ -130,6 +130,13 @@ Select your deck in the list.
 
 Test the reload button to test it.
 
+## Automation
+
+USing nodemon (nodejs), it is possible to reload the decks automatically when a deck type or layout file has changed. 
+
+```
+$ nodemon -w aircrafts/*/deckconfig/resources/decks/types -e yaml --exec curl "http://127.0.0.1:7777/reload-decks"
+```
 
 # Moving on from there
 

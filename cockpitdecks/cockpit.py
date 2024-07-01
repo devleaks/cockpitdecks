@@ -1205,6 +1205,7 @@ class Cockpit(DatarefListener, CockpitBase):
             else:
                 logger.info(f"starting..")
                 self.start_aircraft(self.acpath)
+                self.refresh_all_decks()
         else:
             logger.debug(f"deck {deck} already exists in config file")
 
@@ -1316,3 +1317,12 @@ class Cockpit(DatarefListener, CockpitBase):
                         else:
                             deckimages[fn] = f"/assets/decks/images/{fn}"
         return deckimages
+
+    def refresh_deck(self, deck):
+        payload = {"code": 1, "deck": name, "meta": {"ts": datetime.now().timestamp()}}
+        self.send(deck=name, payload=payload)
+
+    def refresh_all_decks(self):
+        for name in self.get_web_decks():
+            payload = {"code": 1, "deck": name, "meta": {"ts": datetime.now().timestamp()}}
+            self.send(deck=name, payload=payload)

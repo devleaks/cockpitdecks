@@ -202,6 +202,11 @@ def button_designer_io():
     return code
 
 
+@app.route("/reload-decks")
+def reload():
+    cockpit.reload_decks();
+    return {"status": "ok"}
+
 # Deck runner
 #
 @app.route("/deck/<name>")
