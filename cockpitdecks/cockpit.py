@@ -663,10 +663,13 @@ class Cockpit(DatarefListener, CockpitBase):
                         deck_flat = self.deck_types.get(deck_type).desc()
                         if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
                             background = deck_flat[DECK_KW.BACKGROUND.value]
+                            fn = background[DECK_KW.IMAGE.value]
                             if self.deck_types.get(deck_type)._aircraft:
-                                background[DECK_KW.IMAGE.value] = "/aircraft/decks/images/" + background[DECK_KW.IMAGE.value]
+                                if not fn.startswith("/aircraft/decks/images/"):
+                                    background[DECK_KW.IMAGE.value] = "/aircraft/decks/images/" + fn
                             else:
-                                background[DECK_KW.IMAGE.value] = "/assets/decks/images/" + background[DECK_KW.IMAGE.value]
+                                if not fn.startswith("/assets/decks/images/"):
+                                    background[DECK_KW.IMAGE.value] = "/assets/decks/images/" + fn
                         self.virtual_deck_list[name] = deck_config | {
                             "deck-type-desc": self.deck_types.get(deck_type).store,
                             "deck-type-flat": deck_flat,
@@ -1312,6 +1315,8 @@ class Cockpit(DatarefListener, CockpitBase):
                     if fn in deckimages:
                         logger.warning(f"duplicate deck background image {fn}, ignoring {f}")
                     else:
+                        if fn.startswith("/"):
+                            fn = fn[1:]
                         if base == AIRCRAFT_ASSET_FOLDER:
                             deckimages[fn] = f"/aircraft/decks/images/{fn}"
                         else:
