@@ -76,7 +76,7 @@ class Activation:
         self.initial_value = config.get("initial-value")
 
         # Vibrate on press
-        self.vibrate = self.get_attribute("vibrate")
+        self.vibrate = self.get_attribute("vibrate", silence=False)
 
         if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
@@ -97,7 +97,7 @@ class Activation:
     def button_name(self) -> str:
         return self.button.name if self.button is not None else "no button"
 
-    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = False, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
             logger.warning(f"button {self.button_name()}: activation fetched default attribute {attribute}")
@@ -113,7 +113,7 @@ class Activation:
         if propagate:  # we just look at the button. level, not above.
             if not silence:
                 logger.info(f"button {self.button_name()} activation propagate to button for {attribute}")
-            return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)
+            return self.button.get_attribute(attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
             logger.warning(f"button {self.button_name()}: activation attribute not found {attribute}, returning default ({default})")
@@ -867,10 +867,10 @@ class ShortOrLongpress(Activation):
             if self.num_commands() > 1:
                 if self.duration < self.long_time:
                     self.command(self._commands[0])
-                    print("SHORT", self.duration, self.long_time)
+                    logger.debug(f"short {self.duration}, {self.long_time}")
                 else:
                     self.command(self._commands[1])
-                    print("LOOOOOOONG", self.duration, self.long_time)
+                    logger.debug(f"looooong {self.duration}, {self.long_time}")
 
     def num_commands(self):
         return len(self._commands) if self._commands is not None else 0

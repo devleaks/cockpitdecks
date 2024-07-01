@@ -96,7 +96,7 @@ class Representation:
         if propagate:  # we just look at the button level if allowed, not above.
             if not silence:
                 logger.info(f"button {self.button_name()} representation propagate to button for {attribute}")
-            return self.button.get_attribute(attribute, default=default, propagate=False, silence=silence)
+            return self.button.get_attribute(attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
             logger.warning(f"button {self.button_name()}: representation attribute not found {attribute}, returning default ({default})")
