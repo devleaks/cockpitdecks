@@ -332,6 +332,7 @@ def grey(i: int):
 class SWITCH_STYLE(Enum):
     ROUND = "round"
     FLAT = "rect"
+    RECT = "rect"
     DOT3 = "3dot"
 
 
@@ -728,6 +729,8 @@ class Switch(SwitchBase):
 
         # Alternate defaults
         self.switch_style = self.get_attribute("switch-style", "round")
+        if self.switch_style is not None and self.switch_style == "flat":
+            self.switch_style = "rect"  # synonym
         self.button_size = self.switch.get("button-size", int(ICON_SIZE / 5))
 
         # Handle
@@ -1246,18 +1249,18 @@ class Switch(SwitchBase):
         switch, switch_draw = self.double_icon()
         if pos == 0:  # middle position
             if self.switch_style == SWITCH_STYLE.ROUND.value:
-                self.draw_round_switch_from_top(switch_draw)
+                self.draw_round_switch_from_top(switch_draw, self.switch_width)
             elif self.switch_style == SWITCH_STYLE.FLAT.value:
-                self.draw_flat_switch_from_top(switch_draw)
+                self.draw_flat_switch_from_top(switch_draw, self.switch_width)
             else:
-                self.draw_3dot_switch_from_top(switch_draw)
+                self.draw_3dot_switch_from_top(switch_draw, self.switch_width)
         else:
             if self.switch_style == SWITCH_STYLE.ROUND.value:
-                self.draw_round_switch(switch_draw)
+                self.draw_round_switch(switch_draw, self.switch_width)
             elif self.switch_style == SWITCH_STYLE.FLAT.value:
-                self.draw_flat_switch(switch_draw)
+                self.draw_flat_switch(switch_draw, self.switch_width)
             else:
-                self.draw_3dot_switch(switch_draw)
+                self.draw_3dot_switch(switch_draw, self.switch_width)
         if pos < 0:
             switch = switch.transpose(method=Image.Transpose.FLIP_TOP_BOTTOM)
         if not self.vertical:
