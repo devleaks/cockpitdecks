@@ -73,22 +73,22 @@ function get_option(dict, path, dflt) {
     if (! (path_arr instanceof Array)) {
         path_arr = path.split(".");
     }
-    console.log("testing", dict, path, path_arr);
+   //console.log("testing", dict, path, path_arr);
     if (path_arr.length == 1) {
-        console.log("1", dict, path_arr[0]);
+        //console.log("1", dict, path_arr[0]);
         if (dict[path_arr[0]] == undefined) {
-            console.log("returning default", dflt);
+            //console.log("returning default", dflt);
             return dflt
         } else {
-            console.log("returning value", path_arr[0], dict[path_arr[0]]);
+            //console.log("returning value", path_arr[0], dict[path_arr[0]]);
             return dict[path_arr[0]];
         }
     }
     if (dict[path_arr[0]] != undefined) {
-        console.log("keep searching", dict[path_arr[0]], path_arr.slice(1));
+        //console.log("keep searching", dict[path_arr[0]], path_arr.slice(1));
         return get_option(dict[path_arr[0]], path_arr.slice(1), dflt);
     }
-    console.log("returning default", dflt);
+    //console.log("returning default", dflt);
     return dflt;
 }
 
@@ -185,6 +185,7 @@ function label_editor(that_stage, label, shape) {
 
     textarea.addEventListener("keydown", function (e) {
         // hide on enter
+        const DELTA = 4;
         if (e.key == "Enter") {
             label.text(textarea.value);
             label.getParent().name(textarea.value);
@@ -194,11 +195,10 @@ function label_editor(that_stage, label, shape) {
             if (shape !== false && shape != undefined) {
                 let transform = shape.getAbsoluteTransform();
                 let matrix = transform.getMatrix();
-                label.x(shape.x() + (shape.width() * matrix[0] - label.width()) / 2)
+                label.x(shape.x() + (shape.width() * matrix[0] - label.width()) / 2);
             } else {
                 console.log("no shape")
             }
-
         }
     });
 }
@@ -263,8 +263,8 @@ function reset_transforms() {
                     if (["Rect", "Circle"].indexOf(shape.className) > -1) {
                         let transform = shape.getAbsoluteTransform();
                         let matrix = transform.getMatrix();
-                        let summary = decompose_2d_matrix(matrix)
-                        console.log("installed transformer", group.name(), shape.name(), summary)
+                        let summary = decompose_2d_matrix(matrix);
+                        console.log("installed transformer", group.name(), shape.name(), summary);
 
                         let button;
                         if (shape.className == "Rect") {
@@ -318,7 +318,7 @@ class Interactor extends Konva.Group {
     // This is a combination of a rect or circle that can be transformed
     // and a text "label" or name that can be edited.
 
-    constructor(what, color, fillColor) {
+    constructor(what, color, fillColor, positions) {
 
         let name = what;
         if (name.startsWith("but")) {
@@ -331,10 +331,20 @@ class Interactor extends Konva.Group {
         const LABEL_FONT = get_option(OPTIONS, "label.font", "Helvetica");
         const LABEL_COLOR = get_option(OPTIONS, "label.color", "white");
 
-        const SIZE = get_option(OPTIONS, what+".size", 50);
-        const INITIAL_POSITION = {x: 100, y: 100} // get_option(OPTIONS, "initial-position", {x: 100, y: 100});
+        let SIZE = get_option(OPTIONS, what+".size", 50);
+        let INITIAL_POSITION = {x: 100, y: 100} // get_option(OPTIONS, "initial-position", {x: 100, y: 100});
+
+        if (positions != undefined) {
+            INITIAL_POSITION.x = positions[0];
+            INITIAL_POSITION.y = positions[1];
+            SIZE = positions[2];
+        }
 
         super({name: INIT_TEXT, draggable: true});
+
+        this.what = what
+        this.color = color
+        this.fillColor = fillColor
 
         let shape;
         if (["butrect", "hardware"].indexOf(what) > -1) {
@@ -402,6 +412,24 @@ class Interactor extends Konva.Group {
 
         this.add(label);
     }
+
+    clone() { // needs redoing, here simply add new similar shape, not a "copy"
+        const SHIFT = {x: 10, y: 10};
+        let positions;
+        this.getChildren().forEach( (shape) => {
+            if (["Rect", "Circle"].indexOf(shape.className) > -1) {
+                let transform = shape.getAbsoluteTransform();
+                let matrix = transform.getMatrix();
+                let summary = decompose_2d_matrix(matrix);
+                positions = [Math.round(summary.translation[0]), Math.round(summary.translation[1]), Math.round(shape.attrs.width * summary.scale[0])];
+                positions[0] = positions[0] + SHIFT.x;
+                positions[1] = positions[1] + SHIFT.y;
+                // console.log("pos", positions, positions == undefined)
+            }
+        });
+        let clone = new Interactor(this.what, this.color, this.fillColor, positions);
+        return clone;
+    }
 }
 
 deck_elem.tabIndex = 1;
@@ -413,7 +441,33 @@ deck_elem.addEventListener("keydown", function (e) {
             s.forEach( (x) => { x.getParent().destroy() });
         }
         transformer.nodes([]);
+    } else {
+        s = transformer.nodes()
+        if (s.length > 0) {
+            s.forEach( (y) => {
+                x = y.getParent();
+                const DELTA = e.shiftKey ? 8 : 1;
+                if (e.key === "ArrowLeft") {
+                  x.x(x.x() - DELTA);
+                } else if (e.key === "ArrowUp") {
+                  x.y(x.y() - DELTA);
+                } else if (e.key === "ArrowRight") {
+                  x.x(x.x() + DELTA);
+                } else if (e.key === "ArrowDown") {
+                  x.y(x.y() + DELTA);
+                } else if (e.ctrlKey && e.key === "d") {
+                    const clone = x.clone();
+                    const layer = x.getLayer()
+                    console.log("adding...", layer)
+                    layer.add(clone)
+                    layer.draw()
+                } else {
+                    return;
+                }
+            });
+        }
     }
+    e.preventDefault();
 });
 
 document.getElementById("hardware").addEventListener(
