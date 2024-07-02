@@ -302,6 +302,7 @@ class LiveWeatherIcon(DrawAnimation):
         LiveWeatherIcon.MIN_UPDATE = int(updated) * 60
 
         # Working variables
+        self.icon_color = self._representation_config.get("icon-color", "powderblue")
         self.station: Station | None = None
         self.metar: Metar | None = None
         self.weather_icon: str | None = None
@@ -528,7 +529,7 @@ class LiveWeatherIcon(DrawAnimation):
         # Weather Icon
         icon_font = self._config.get("icon-font", WEATHER_ICON_FONT)
         icon_size = int(image.width / 2)
-        icon_color = "white"
+        icon_color = self.icon_color
         font = self.get_font(icon_font, icon_size)
         inside = round(0.04 * image.width + 0.5)
         w = image.width / 2
@@ -565,8 +566,11 @@ class LiveWeatherIcon(DrawAnimation):
             # logger.warning(f"get_image_for_icon: Metar has no summary", exc_info=True)
 
         if lines is not None:
-            text_font = self._config.get("weather-font", self.label_font)
-            text_size = int(image.width / 10)
+            text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._representation_config, "weather")
+            if text_font is None:
+                text_font = self.label_font
+            if text_size is None:
+                text_size = int(image.width / 10)
             font = self.get_font(text_font, text_size)
             w = inside
             p = "l"

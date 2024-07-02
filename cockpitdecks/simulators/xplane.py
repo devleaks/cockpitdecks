@@ -52,7 +52,7 @@ REPLAY_DATAREFS = [
     "sim/time/sim_speed",
     "sim/time/sim_speed_actual",
 ]
-
+CONNECTION_STATUS_DATAREF = Dataref.mk_internal_dataref("_connection_status")
 
 # XPlaneBeacon
 # Beacon-specific error classes
@@ -288,6 +288,8 @@ class XPlane(Simulator, XPlaneBeacon):
 
         self.socket_strdref = None
 
+        self.status_dataref = self.get_dataref(CONNECTION_STATUS_DATAREF)
+
         self.init()
 
     def init(self):
@@ -454,6 +456,7 @@ class XPlane(Simulator, XPlaneBeacon):
         total_values = 0
         last_read_ts = datetime.now()
         total_read_time = 0.0
+        self.status_dataref.update_value(3, cascade=True)
         while self.udp_event is not None and not self.udp_event.is_set():
             if len(self.datarefs) > 0:
                 try:
@@ -509,6 +512,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         if self.udp_event is not None and not self.udp_event.is_set():
                             self.udp_event.set()
         self.udp_event = None
+        self.status_dataref.update_value(2, cascade=True)
         logger.debug("..dataref listener terminated")
 
     def strdref_enqueue(self):
@@ -522,6 +526,7 @@ class XPlane(Simulator, XPlaneBeacon):
         src_cnt = 0
         src_tot = 0
 
+        self.status_dataref.update_value(4, cascade=True)
         while self.dref_event is not None and not self.dref_event.is_set():
             try:
                 self.socket_strdref.settimeout(frequency)
@@ -578,6 +583,7 @@ class XPlane(Simulator, XPlaneBeacon):
         # self.socket_strdref.shutdown()
         # self.socket_strdref.close()
         # logger.info("..strdref socket closed..")
+        self.status_dataref.update_value(3, cascade=True)
         logger.debug("..string dataref listener terminated")
 
     # ################################

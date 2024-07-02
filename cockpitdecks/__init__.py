@@ -4,6 +4,7 @@
 # Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit.
 #
 #
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)
 import os
 import logging
 from typing import List
@@ -12,11 +13,11 @@ from enum import Enum
 from datetime import datetime
 
 __NAME__ = "cockpitdecks"
-__DESCRIPTION__ = "Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit"
+__DESCRIPTION__ = "Decks and web decks to X-Plane Cockpit"
 __LICENSE__ = "MIT"
 __LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "11.10.2"
+__version__ = "11.11.0"
 __version_info__ = tuple(map(int, __version__.split(".")))
 __version_name__ = "production"
 __authorurl__ = "https://github.com/devleaks/cockpitdecks"

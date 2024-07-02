@@ -178,7 +178,7 @@ class IconBase(Representation):
         if len(fonts_available) > 0:
             f = all_fonts[fonts_available[0]]
             logger.warning(
-                f"button {this_button} cockpit default label font not found in {fonts_available}, tried {page.default_label_font}, {deck.default_label_font}, {cockpit.default_label_font}. Returning first font found ({f})"
+                f"button {this_button} cockpit default label font not found in {fonts_available}. Returning first font found ({f})"
             )
             return ImageFont.truetype(f, fontsize)
 

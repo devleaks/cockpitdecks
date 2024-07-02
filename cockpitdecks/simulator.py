@@ -454,6 +454,10 @@ class SimulatorEvent(Event):
         else:
             logger.warning("no simulator")
 
+# To enable DatarefSet and Collector, uncomment the following lines.
+# Use at your own risk.
+# It does work, but not very reliably.
+#
 
 from .collector import (
     MAX_COLLECTION_SIZE,
