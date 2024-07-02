@@ -78,7 +78,7 @@ class VirtualDeck(DeckWithIcons):
                     # "command": "sim/map/show_current",
                     # "text": "MAP",
                     "type": "reload",
-                    DECK_DEF: self.deck_type.get_button_definition(first_index)
+                    DECK_DEF: self.deck_type.get_button_definition(first_index),
                 },
                 page=page0,
             )

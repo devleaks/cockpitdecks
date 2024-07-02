@@ -76,7 +76,7 @@ class Activation:
         self.initial_value = config.get("initial-value")
 
         # Vibrate on press
-        self.vibrate = self.get_attribute("vibrate", silence=False)
+        self.vibrate = self.get_attribute("vibrate")
 
         if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]

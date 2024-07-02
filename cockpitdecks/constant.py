@@ -43,19 +43,21 @@ DECK_TYPES = "types"
 DECK_IMAGES = "images"
 
 ICON_SIZE = 256  # px
+DEFAULT_FONT = "D-DIN"  # provided in dist
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
-
-# internals
-ID_SEP = "/"
-DEFAULT_ATTRIBUTE_PREFIX = "default-"
-
+AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"
+COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
     VIVISUN = "v"  # v(ivisun): bright, sharp.
 
+
+# internals
+ID_SEP = "/"
+DEFAULT_ATTRIBUTE_PREFIX = "default-"
 
 # System default values
 COCKPITDECKS_DEFAULT_VALUES = {
@@ -69,7 +71,7 @@ COCKPITDECKS_DEFAULT_VALUES = {
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
     DEFAULT_ATTRIBUTE_PREFIX + "home-page-name": "index",
     DEFAULT_ATTRIBUTE_PREFIX + "icon-color": "cornflowerblue",
-    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "1.png",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "unamed-icon.png",
     DEFAULT_ATTRIBUTE_PREFIX + "icon-texture": None,
     DEFAULT_ATTRIBUTE_PREFIX + "interface-bg-color": "black",
     DEFAULT_ATTRIBUTE_PREFIX + "interface-fg-color": "white",
@@ -188,6 +190,8 @@ init_logger = logging.getLogger("init/common")
 #  Yaml config file reader
 #
 CONFIG_FILENAME = "__filename__"
+
+
 class Config(MutableMapping):
     """
     A dictionary that loads from a yaml config file.

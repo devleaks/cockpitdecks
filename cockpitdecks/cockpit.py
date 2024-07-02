@@ -20,6 +20,7 @@ from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT, button
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
+from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
@@ -27,7 +28,6 @@ from cockpitdecks.decks.resources import DeckType
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, get_representations_for
 
-# from cockpitdecks.webdeckproxyapp import app
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -665,11 +665,11 @@ class Cockpit(DatarefListener, CockpitBase):
                             background = deck_flat[DECK_KW.BACKGROUND.value]
                             fn = background[DECK_KW.IMAGE.value]
                             if self.deck_types.get(deck_type)._aircraft:
-                                if not fn.startswith("/aircraft/decks/images/"):
-                                    background[DECK_KW.IMAGE.value] = "/aircraft/decks/images/" + fn
+                                if not fn.startswith(AIRCRAFT_ASSET_PATH):
+                                    background[DECK_KW.IMAGE.value] = AIRCRAFT_ASSET_PATH + fn
                             else:
-                                if not fn.startswith("/assets/decks/images/"):
-                                    background[DECK_KW.IMAGE.value] = "/assets/decks/images/" + fn
+                                if not fn.startswith(COCKPITDECKS_ASSET_PATH):
+                                    background[DECK_KW.IMAGE.value] = COCKPITDECKS_ASSET_PATH + fn
                         self.virtual_deck_list[name] = deck_config | {
                             "deck-type-desc": self.deck_types.get(deck_type).store,
                             "deck-type-flat": deck_flat,
@@ -1190,6 +1190,8 @@ class Cockpit(DatarefListener, CockpitBase):
             # create it, save it
             decks.append({"name": deck, "type": deck})  # default layout will be 'default'
             with open(fn, "w") as fp:
+                if CONFIG_FILENAME in current_config.store:
+                    del current_config.store[CONFIG_FILENAME]
                 yaml.dump(current_config.store, fp)
                 logger.info(f"added deck {deck} to config file")
             # create/save serial as well
@@ -1198,7 +1200,8 @@ class Cockpit(DatarefListener, CockpitBase):
             if not deck in serial_numbers.store:
                 serial_numbers.store[deck] = deck
             with open(sn, "w") as fp:
-                del serial_numbers.store[CONFIG_FILENAME]
+                if CONFIG_FILENAME in serial_numbers.store:
+                    del serial_numbers.store[CONFIG_FILENAME]
                 yaml.dump(serial_numbers.store, fp)
                 logger.info(f"added deck {deck} to secret file")
 
@@ -1318,9 +1321,9 @@ class Cockpit(DatarefListener, CockpitBase):
                         if fn.startswith("/"):
                             fn = fn[1:]
                         if base == AIRCRAFT_ASSET_FOLDER:
-                            deckimages[fn] = f"/aircraft/decks/images/{fn}"
+                            deckimages[fn] = AIRCRAFT_ASSET_PATH + fn
                         else:
-                            deckimages[fn] = f"/assets/decks/images/{fn}"
+                            deckimages[fn] = COCKPITDECKS_ASSET_PATH + fn
         return deckimages
 
     def refresh_deck(self, deck):

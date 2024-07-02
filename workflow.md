@@ -11,13 +11,14 @@ Place it in
 Start cockpitdecks for that aircraft:
 
 ```sh
-$ python bon/cocckpitdecks_start.py <Aircraft>
+$ python bon/cockpitdecks_start.py <Aircraft>
 ```
 
 If there are no deck available to the aircraft, Cockpitdecks will terminate.
 
 To prevent that, and use the Deck Designer, set the constant DESIGNER to True in cockpitdecks_start.py.
-Cockpitdecks will start the application server and Deck Designer will be available.
+Cockpitdecks will start the application server and Deck Designer will be available
+if there are images in the above folder.
 
 
 # Deck Designer
@@ -51,7 +52,7 @@ Save the deck layout. The deck layout is now saved in
 There should be two files
 
 ```
-<image-name>.json     <-- Don't touch this one
+<image-name>.json     <-- Never touch this one, you would loose your layout
 <image-name>.yaml
 ```
 

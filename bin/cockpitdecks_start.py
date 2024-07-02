@@ -28,6 +28,7 @@ from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
 from cockpitdecks import LOGFILE, FORMAT
 from cockpitdecks import CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES
+from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH
 
 # logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode="a")
 
@@ -204,8 +205,9 @@ def button_designer_io():
 
 @app.route("/reload-decks")
 def reload():
-    cockpit.reload_decks();
+    cockpit.reload_decks()
     return {"status": "ok"}
+
 
 # Deck runner
 #
