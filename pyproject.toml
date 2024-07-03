@@ -4,7 +4,6 @@
 #
 [project]
 name = "cockpitdecks"
-version = "1.0.0"
 
 authors = [
   { name="Pierre M.", email="pierre@devleaks.be" },
@@ -33,14 +32,23 @@ dependencies = [
    "simple-websocket~=1.0.0"
 ]
 
+dynamic = [
+    "version"
+]
+
 [project.optional-dependencies]
 streamdeck = ["streamdeck~=0.9.5"]
 loupedeck = ["loupedeck @ git+https://github.com/devleaks/python-loupedeck-live.git"]
 xtouchmini = ["xtouchmini @ git+https://github.com/devleaks/python-berhinger-xtouchmini.git"]
 
 [project.urls]
-Homepage = "https://github.com/devleaks/cockpitdecks"
+Homepage = "https://devleaks.github.io/cockpitdecks-docs/"
+Documentation = "https://devleaks.github.io/cockpitdecks-docs/"
 Issues = "https://github.com/devleaks/cockpitdecks/issues"
+Source = "https://github.com/devleaks/cockpitdecks"
+
+[project.scripts]
+cockpitdecks_start = "cockpitdecks:start.main"
 
 # ###########################################
 #
@@ -66,6 +74,9 @@ line-length = 160
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "cockpitdecks/__init__.py"
 
 [tool.hatch.metadata]
 allow-direct-references = true

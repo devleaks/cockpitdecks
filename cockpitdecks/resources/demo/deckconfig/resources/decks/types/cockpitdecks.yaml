@@ -1,0 +1,67 @@
+background:
+  image: cockpitdecks.png
+buttons:
+- action:
+  - push
+  dimension:
+  - 109
+  - 109
+  feedback: image
+  layout:
+    offset:
+    - 375
+    - 98
+  name: '2'
+- action:
+  - encoder
+  - push
+  dimension: 35
+  layout:
+    offset:
+    - 111
+    - 573
+  name: e0
+- action:
+  - encoder
+  - push
+  dimension: 36
+  layout:
+    offset:
+    - 270
+    - 574
+  name: e1
+- action:
+  - push
+  dimension:
+  - 110
+  - 110
+  feedback: image
+  layout:
+    offset:
+    - 215
+    - 99
+  name: '1'
+- action:
+  - push
+  dimension:
+  - 109
+  - 109
+  feedback: image
+  layout:
+    offset:
+    - 56
+    - 234
+  name: '4'
+- action:
+  - push
+  dimension:
+  - 109
+  - 109
+  feedback: image
+  layout:
+    offset:
+    - 54
+    - 99
+  name: '0'
+driver: virtualdeck
+name: cockpitdecks

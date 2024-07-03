@@ -1,0 +1,291 @@
+{
+  "attrs": {
+    "height": 699,
+    "width": 700
+  },
+  "className": "Stage",
+  "children": [
+    {
+      "attrs": {
+        "name": "background"
+      },
+      "className": "Layer",
+      "children": [
+        {
+          "attrs": {
+            "height": 699,
+            "name": "background",
+            "width": 700
+          },
+          "className": "Rect"
+        },
+        {
+          "attrs": {
+            "width": 700,
+            "height": 699,
+            "name": "background"
+          },
+          "className": "Rect"
+        }
+      ]
+    },
+    {
+      "attrs": {
+        "name": "interaction"
+      },
+      "className": "Layer",
+      "children": [
+        {
+          "attrs": {
+            "ignoreStroke": true,
+            "rotateEnabled": false
+          },
+          "className": "Transformer"
+        },
+        {
+          "attrs": {
+            "draggable": true,
+            "name": "2",
+            "x": 275,
+            "y": -2
+          },
+          "className": "Group",
+          "children": [
+            {
+              "attrs": {
+                "cornerRadius": 4,
+                "fill": "#00ff0030",
+                "height": 50,
+                "name": "butrect",
+                "scaleX": 2.1705759604307806,
+                "scaleY": 2.170575960430781,
+                "stroke": "#00ff00",
+                "strokeScaleEnabled": false,
+                "strokeWidth": 1,
+                "width": 50,
+                "x": 99.99999999999994,
+                "y": 99.99999999999987
+              },
+              "className": "Rect"
+            },
+            {
+              "attrs": {
+                "align": "center",
+                "fill": "white",
+                "fontFamily": "Helvetica",
+                "fontSize": 10,
+                "text": "2",
+                "x": 151.48363729201947,
+                "y": 88
+              },
+              "className": "Text"
+            }
+          ]
+        },
+        {
+          "attrs": {
+            "draggable": true,
+            "name": "e0",
+            "x": 1,
+            "y": 463
+          },
+          "className": "Group",
+          "children": [
+            {
+              "attrs": {
+                "fill": "#ffff0030",
+                "name": "encoder",
+                "radius": 25,
+                "scaleX": 1.4013037319865669,
+                "scaleY": 1.4013037319865664,
+                "stroke": "yellow",
+                "strokeScaleEnabled": false,
+                "strokeWidth": 1,
+                "x": 110.03259329966421,
+                "y": 110.03259329966372
+              },
+              "className": "Circle"
+            },
+            {
+              "attrs": {
+                "align": "center",
+                "fill": "white",
+                "fontFamily": "Helvetica",
+                "fontSize": 10,
+                "text": "e0",
+                "x": 104.47106986216417,
+                "y": 63
+              },
+              "className": "Text"
+            }
+          ]
+        },
+        {
+          "attrs": {
+            "draggable": true,
+            "name": "e1",
+            "x": 159,
+            "y": 463
+          },
+          "className": "Group",
+          "children": [
+            {
+              "attrs": {
+                "fill": "#ffff0030",
+                "name": "encoder",
+                "radius": 25,
+                "scaleX": 1.4207040508142474,
+                "scaleY": 1.420704050814247,
+                "stroke": "yellow",
+                "strokeScaleEnabled": false,
+                "strokeWidth": 1,
+                "x": 110.51760127035584,
+                "y": 110.5176012703561
+              },
+              "className": "Circle"
+            },
+            {
+              "attrs": {
+                "align": "center",
+                "fill": "white",
+                "fontFamily": "Helvetica",
+                "fontSize": 10,
+                "text": "e1",
+                "x": 104.95607783285618,
+                "y": 63
+              },
+              "className": "Text"
+            }
+          ]
+        },
+        {
+          "attrs": {
+            "draggable": true,
+            "name": "1",
+            "x": 115,
+            "y": -1
+          },
+          "className": "Group",
+          "children": [
+            {
+              "attrs": {
+                "cornerRadius": 4,
+                "fill": "#00ff0030",
+                "height": 50,
+                "name": "butrect",
+                "scaleX": 2.1900228309312215,
+                "scaleY": 2.190022830931222,
+                "stroke": "#00ff00",
+                "strokeScaleEnabled": false,
+                "strokeWidth": 1,
+                "width": 50,
+                "x": 99.99999999999989,
+                "y": 99.99999999999994
+              },
+              "className": "Rect"
+            },
+            {
+              "attrs": {
+                "align": "center",
+                "fill": "white",
+                "fontFamily": "Helvetica",
+                "fontSize": 10,
+                "text": "1",
+                "x": 151.96980905453043,
+                "y": 88
+              },
+              "className": "Text"
+            }
+          ]
+        },
+        {
+          "attrs": {
+            "draggable": true,
+            "name": "4",
+            "x": -44,
+            "y": 134
+          },
+          "className": "Group",
+          "children": [
+            {
+              "attrs": {
+                "cornerRadius": 4,
+                "fill": "#00ff0030",
+                "height": 50,
+                "name": "butrect",
+                "scaleX": 2.181467396043312,
+                "scaleY": 2.1814673960433124,
+                "stroke": "#00ff00",
+                "strokeScaleEnabled": false,
+                "strokeWidth": 1,
+                "width": 50,
+                "x": 100.00000000000013,
+                "y": 100.00000000000016
+              },
+              "className": "Rect"
+            },
+            {
+              "attrs": {
+                "align": "center",
+                "fill": "white",
+                "fontFamily": "Helvetica",
+                "fontSize": 10,
+                "text": "4",
+                "x": 151.75592318233294,
+                "y": 88
+              },
+              "className": "Text"
+            }
+          ]
+        },
+        {
+          "attrs": {
+            "rotateEnabled": false,
+            "ignoreStroke": true
+          },
+          "className": "Transformer"
+        },
+        {
+          "attrs": {
+            "draggable": true,
+            "name": "0",
+            "x": -46,
+            "y": -1
+          },
+          "className": "Group",
+          "children": [
+            {
+              "attrs": {
+                "cornerRadius": 4,
+                "fill": "#00ff0030",
+                "height": 50,
+                "name": "butrect",
+                "scaleX": 2.1705759604307806,
+                "scaleY": 2.170575960430781,
+                "stroke": "#00ff00",
+                "strokeScaleEnabled": false,
+                "strokeWidth": 1,
+                "width": 50,
+                "x": 99.99999999999994,
+                "y": 99.99999999999987
+              },
+              "className": "Rect"
+            },
+            {
+              "attrs": {
+                "align": "center",
+                "fill": "white",
+                "fontFamily": "Helvetica",
+                "fontSize": 10,
+                "text": "0",
+                "x": 151.48363729201952,
+                "y": 88
+              },
+              "className": "Text"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

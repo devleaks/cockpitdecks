@@ -1,0 +1,67 @@
+name: cockpitdecks-repeat
+driver: virtualdeck
+background:
+  image: cockpitdecks.png
+  color: black
+buttons:
+  - action:
+      - push
+    dimension:
+      - 109
+      - 109
+    feedback: image
+    layout:
+      offset:
+        - 56
+        - 98
+      spacing:
+        - 51
+        - 26
+    name: 0
+    repeat: [4, 3]
+    options: corner_radius=12
+  - action:
+      - encoder
+      - push
+    dimension: 35
+    layout:
+      offset:
+        - 111
+        - 573
+      spacing:
+        - 88
+        - 0
+    name: 0
+    prefix: e
+    repeat: 4
+  # - action:
+  #     - encoder
+  #     - push
+  #   dimension: 36
+  #   layout:
+  #     offset:
+  #       - 270
+  #       - 574
+  #   name: e1
+  # - action:
+  #     - push
+  #   dimension:
+  #     - 110
+  #     - 110
+  #   feedback: image
+  #   layout:
+  #     offset:
+  #       - 215
+  #       - 99
+  #   name: "1"
+  # - action:
+  #     - push
+  #   dimension:
+  #     - 109
+  #     - 109
+  #   feedback: image
+  #   layout:
+  #     offset:
+  #       - 56
+  #       - 234
+  #   name: "4"

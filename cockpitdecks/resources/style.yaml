@@ -1,8 +1,0 @@
-# This is at Cockpitdeck level, for all aircrafts
-# We define a global "style" for decks
-#
----
-default-label-color: white
-default-label-font: DIN.ttf
-default-label-size: 14
-default-icon-texture: TEXTURE_R.png

@@ -1,0 +1,5 @@
+aircraft: demo
+decks:
+  - layout: layout
+    name: Cockpitdecks Web Deck Demonstration
+    type: cockpitdecks-repeat
