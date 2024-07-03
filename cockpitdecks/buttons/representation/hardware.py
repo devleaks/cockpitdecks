@@ -302,8 +302,6 @@ class VirtualXTMMCLED(VirtualLED):
         return "The representation places a specific Mackie Mode led for X-Touch Mini encoders."
 
 
-
-
 # ####################################################
 #
 # STREAMDECK

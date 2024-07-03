@@ -7,6 +7,7 @@ name = "cockpitdecks"
 
 authors = [
   { name="Pierre M.", email="pierre@devleaks.be" },
+  { name="Duane Licudi", email="dlicudi@gmail.com" }
 ]
 
 description = "Decks and web decks to X-Plane Cockpit"
@@ -40,6 +41,13 @@ dynamic = [
 streamdeck = ["streamdeck~=0.9.5"]
 loupedeck = ["loupedeck @ git+https://github.com/devleaks/python-loupedeck-live.git"]
 xtouchmini = ["xtouchmini @ git+https://github.com/devleaks/python-berhinger-xtouchmini.git"]
+weather = [
+    "avwx-engine~=1.9.0",
+    "scipy",
+    "suntime",
+    "timezonefinder",
+    "metar~=1.11.0"
+]
 
 [project.urls]
 Homepage = "https://devleaks.github.io/cockpitdecks-docs/"
@@ -48,7 +56,7 @@ Issues = "https://github.com/devleaks/cockpitdecks/issues"
 Source = "https://github.com/devleaks/cockpitdecks"
 
 [project.scripts]
-cockpitdecks_start = "cockpitdecks:start.main"
+cockpitdecks-cli = "cockpitdecks:start.main"
 
 # ###########################################
 #

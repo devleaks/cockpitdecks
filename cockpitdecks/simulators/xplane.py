@@ -54,6 +54,7 @@ REPLAY_DATAREFS = [
 ]
 CONNECTION_STATUS_DATAREF = Dataref.mk_internal_dataref("_connection_status")
 
+
 # XPlaneBeacon
 # Beacon-specific error classes
 class XPlaneIpNotFound(Exception):

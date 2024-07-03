@@ -1,10 +1,10 @@
 #
 # C O C K P I T D E C K S
 #
-# Elgato Stream Decks, Loupedeck LoupedeckLive, and Berhinger X-Touch Mini to X-Plane Cockpit.
+# Decks and web decks to X-Plane Cockpit
 #
 #
-__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+__path__ = __import__("pkgutil").extend_path(__path__, __name__)  # Aum
 import os
 import logging
 from typing import List
@@ -13,24 +13,19 @@ from enum import Enum
 from datetime import datetime
 
 __NAME__ = "cockpitdecks"
-__DESCRIPTION__ = "Decks and web decks to X-Plane Cockpit"
-__LICENSE__ = "MIT"
-__LICENSEURL__ = "https://mit-license.org"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
-__version__ = "11.11.2"
-__version_info__ = tuple(map(int, __version__.split(".")))
-__version_name__ = "production"
-__authorurl__ = "https://github.com/devleaks/cockpitdecks"
-__documentation_url__ = "https://devleaks.github.io/cockpitdecks-docs/"
+
+__version__ = "11.11.4"
 #
 #
 # ##########################################################################
-
+# Logging
+#
 SPAM_LEVEL = 15
 SPAM = "SPAM"
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
-
+#
 # ##############################################################
 # References used throughout Cockpitdecks
 #

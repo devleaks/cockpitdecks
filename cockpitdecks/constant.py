@@ -51,6 +51,7 @@ COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
 
+
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
     VIVISUN = "v"  # v(ivisun): bright, sharp.
