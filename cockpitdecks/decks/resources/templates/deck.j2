@@ -118,8 +118,11 @@ function connect() {
             deck.set_key_image(data.key, data.image);
         } else if (data.code == 1) {
             console.log("received initialisation code, requesting page reload", data.code);
-            window.location.reload()
+            // window.location.reload()
             // sendCode(DECK.name, 1);
+        } else if (data.code == 99) {
+            // console.log("received ping", data.code);
+            ;
         } else {
             console.log("unhandled code received, uninterpreted", data.code);
         }
