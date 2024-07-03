@@ -1,3 +1,7 @@
+# ###########################################
+#
+# Project
+#
 [project]
 name = "cockpitdecks"
 version = "1.0.0"
@@ -10,7 +14,7 @@ description = "Decks and web decks to X-Plane Cockpit"
 
 readme = "README.md"
 
-requires-python = ">=3.10"
+license = {file = "LICENCE"}
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -18,25 +22,30 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+requires-python = ">=3.10"
+
 dependencies = [
-   "CairoSVG>=2.7.1",
-   "Flask>=3.0.3",
-   "pillow>=10.4.0",
-   "psutil>=6.0.0",
-   "ruamel.yaml>=0.18.6",
-   "simple-websocket>=1.0.0"
+   "CairoSVG~=2.7.1",
+   "Flask~=3.0.3",
+   "pillow~=10.4.0",
+   "psutil~=6.0.0",
+   "ruamel.yaml~=0.18.6",
+   "simple-websocket~=1.0.0"
 ]
 
-license = {text = "MIT License"}
+[project.optional-dependencies]
+streamdeck = ["streamdeck~=0.9.5"]
+loupedeck = ["loupedeck @ git+https://github.com/devleaks/python-loupedeck-live.git"]
+xtouchmini = ["xtouchmini @ git+https://github.com/devleaks/python-berhinger-xtouchmini.git"]
 
 [project.urls]
 Homepage = "https://github.com/devleaks/cockpitdecks"
 Issues = "https://github.com/devleaks/cockpitdecks/issues"
 
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
+# ###########################################
+#
+# Edit
+#
 [tool.ruff]
 line-length = 160
 docstring-code-format = true
@@ -49,3 +58,14 @@ ignore = []
 
 [tool.black]
 line-length = 160
+
+# ###########################################
+#
+# Build
+#
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
