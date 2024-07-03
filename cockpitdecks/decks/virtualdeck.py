@@ -23,6 +23,7 @@ from cockpitdecks.buttons.representation import (
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
+
 WEB_LOG = False
 
 
@@ -108,9 +109,11 @@ class VirtualDeck(DeckWithIcons):
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
             return  # no other possible handling
         if state in [2, 3]:
+            logger.debug(f"EncoderEvent deck {self.name} key {key} = {state}")
             EncoderEvent(deck=self, button=key, clockwise=state == 2)
             return  # no other possible handling
         if state in [9]:
+            logger.debug(f"SlideEvent deck {self.name} key {key} = {state}")
             if data is not None and "value" in data:
                 SlideEvent(deck=self, button=key, value=int(data.get("value")))
                 return  # no other possible handling

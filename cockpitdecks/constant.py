@@ -85,7 +85,7 @@ COCKPITDECKS_DEFAULT_VALUES = {
     DEFAULT_ATTRIBUTE_PREFIX + "logo": "logo.png",
     DEFAULT_ATTRIBUTE_PREFIX + "system-font": "Monaco.ttf",
     DEFAULT_ATTRIBUTE_PREFIX + "text-color": "white",
-    DEFAULT_ATTRIBUTE_PREFIX + "text-font": "D-DIN.ttf",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-font": "D-DIN.otf",
     DEFAULT_ATTRIBUTE_PREFIX + "text-position": "cm",
     DEFAULT_ATTRIBUTE_PREFIX + "text-size": 32,
     DEFAULT_ATTRIBUTE_PREFIX + "wallpaper": "wallpaper.png",

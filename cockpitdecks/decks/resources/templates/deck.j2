@@ -61,9 +61,6 @@ stage.add(interaction_layer);
 // Transfer from Cockpitdecks through Jinja2, nice output
 const DECK = {{ deck|tojson(indent=2) }};
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
-
-console.log("deck", DECK)
-
 const DECK_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image
 deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE+")";
 deck_elem.style.backgroundRepeat = "no-repeat";
@@ -172,7 +169,7 @@ function sendEvent(deck, key, value, data) {
     try {
         if (ws) {
             ws.send(JSON.stringify({"code": 0, "deck": deck, "key": key, "event": value, "data": data}));
-            // console.log("sent event", message);
+            //console.log("sent event", {"code": 0, "deck": deck, "key": key, "event": value, "data": data});
         } else {
             console.log("sendEvent: no websocket");
         }

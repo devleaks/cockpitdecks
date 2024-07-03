@@ -262,7 +262,7 @@ class Encoder extends Konva.Circle {
             draggable: EDITOR_MODE
         });
 
-        console.log("user prefs", USER_PREFERENCES)
+        // console.log("user prefs", USER_PREFERENCES)
 
         this.config = config
         this.name = config.name
