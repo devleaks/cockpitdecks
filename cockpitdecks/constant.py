@@ -22,8 +22,6 @@ from ruamel.yaml import YAML
 # Values that might need adjustments are isolated in network.py file.
 #
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
-COCKPITDECKS_HOME = os.path.abspath(os.path.dirname(__file__))
-
 ROOT_DEBUG = ""
 EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Streadecks
 
@@ -49,6 +47,9 @@ DEFAULT_FONT = "D-DIN"  # provided in dist
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"
+
+TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
+ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing

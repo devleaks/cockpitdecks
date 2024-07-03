@@ -1,8 +1,9 @@
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # we assume we're in subdir "bin/"
+
 import glob
 import logging
-from os.path import basename
-import sys
 import time
 import itertools
 import threading
@@ -20,18 +21,14 @@ ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
-COCKPITDECKS_HOME = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(COCKPITDECKS_HOME)  # we assume we're in subdir "bin/"
-
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
 from cockpitdecks import LOGFILE, FORMAT
 from cockpitdecks import CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES
-from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH
+from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
 
 # logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode="a")
-
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 logger = logging.getLogger(__name__)
@@ -43,35 +40,37 @@ if LOGFILE is not None:
 
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 
-ac_desc = "(no aircraft folder)"
 AIRCRAFT_HOME = ""
+ac_desc = "(no aircraft folder)"
 if ac is not None:
-    ac_desc = os.path.basename(ac)
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
+    ac_desc = os.path.basename(ac)
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
 logger.info(f"Starting for {ac_desc}..")
 logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
 cockpit = Cockpit(XPlane)
 
-# local key words and defaults
-DESIGNER_CONFIG_FILE = "designer.yaml"
-DESIGNER = True
-CODE = "code"
-
 # ##################################
-# Flask Web Server (& WebSocket)
+# Flask Web Server (& WebSocket Server)
 #
 # Serves decks and their assets.
 # Proxy WebSockets to TCP Sockets
 #
-TEMPLATE_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "templates")
-ASSET_FOLDER = os.path.join(COCKPITDECKS_HOME, "cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "assets")
-
+# Local key words and defaults
+#
 AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER)
-
+AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
+DESIGNER_CONFIG_FILE = "designer.yaml"
+DESIGNER = True
 APP_HOST = [os.getenv("APP_HOST", "127.0.0.1"), int(os.getenv("APP_PORT", "7777"))]
+CODE = "code"
+WEBDECK_DEFAULTS = "presentation-default"
+WEBDECK_WSURL = "ws_url"
 
+
+# Flask Web Server (& WebSocket Server)
+#
 app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 
 app.logger.setLevel(logging.INFO)
@@ -141,9 +140,6 @@ def representation_details():
 
 # Deck designer
 #
-AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
-
-
 @app.route("/deck-designer")
 def deck_designer():
     background_image = request.args.get("background_image", default="background.png")
@@ -218,8 +214,8 @@ def deck(name: str):
     deck_desc = cockpit.get_virtual_deck_description(uname)
     # Inject our contact address:
     if type(deck_desc) is dict:
-        deck_desc["ws_url"] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
-        deck_desc["presentation-default"] = cockpit.get_virtual_deck_defaults()
+        deck_desc[WEBDECK_WSURL] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
+        deck_desc[WEBDECK_DEFAULTS] = cockpit.get_virtual_deck_defaults()
     else:
         app.logger.debug(f"deck desc is not a dict {deck_desc}")
     return render_template("deck.j2", deck=deck_desc)
