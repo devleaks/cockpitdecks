@@ -9,7 +9,6 @@ from enum import Enum
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.constant import DEFAULT_FONT
 from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
@@ -420,7 +419,7 @@ class SwitchBase(DrawBase):
         # Labels
         self.tick_labels = self.switch.get("tick-labels", {})
         self.tick_label_space = self.get_attribute("tick-label-space", 10)
-        self.tick_label_font = self.get_attribute("tick-label-font", DEFAULT_FONT)
+        self.tick_label_font = self.get_attribute("tick-label-font", self.get_attribute("label-font"))
         self.tick_label_size = self.get_attribute("tick-label-size", 50)
         self.tick_label_color = self.get_attribute("tick-label-color", LABEL_COLOR)
         self.tick_label_color = convert_color(self.tick_label_color)

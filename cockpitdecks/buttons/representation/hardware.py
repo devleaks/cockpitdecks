@@ -116,7 +116,7 @@ try:
 except:
     pass
 
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, ICON_SIZE, DEFAULT_FONT
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, ICON_SIZE
 from cockpitdecks.resources.color import (
     TRANSPARENT_PNG_COLOR,
     convert_color,
@@ -372,7 +372,7 @@ class VirtualLLColoredButton(HardwareIcon):
                 [self.radius - int(size / 2), self.radius - int(size / 2)] + [self.radius + int(size / 2), self.radius + int(size / 2)], fill=self.number_color
             )
         else:
-            font = self.get_font(DEFAULT_FONT, int(self.radius))  # (standard font)
+            font = self.get_font(self.get_attribute("font"), int(self.radius))  # (standard font)
             draw.text(
                 (self.radius, self.radius),
                 text=str(self.number),

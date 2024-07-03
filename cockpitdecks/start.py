@@ -145,7 +145,7 @@ def deck_designer():
     deck_config = {"deck-type-flat": {"background": {"image": background_image}, "aircraft": background_image.startswith("/aircraft")}}
 
     designer_config = {}
-    config_file = os.path.abspath(os.path.join(ac, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
+    config_file = os.path.abspath(os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
     if os.path.exists(config_file):
         with open(config_file, "r") as fp:
             designer_config = yaml.load(fp)
@@ -252,6 +252,9 @@ def cockpit_wshandler():
 # ##################################
 # MAIN
 #
+# Wrapped in main function to make it accessible
+# from builder/installer
+#
 def main():
     try:
 
@@ -285,6 +288,6 @@ def main():
             cockpit.terminate_all(2)
         logger.info(f"..{AIRCRAFT_DESC} terminated.")
 
-
+# Run if unwrapped
 if __name__ == "__main__":
     main()

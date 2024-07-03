@@ -31,7 +31,7 @@ CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 
 DEFAULT_LAYOUT = "default"
-DEFAULT_PAGE_NAME = "Default Cockpitdecks Page"
+DEFAULT_PAGE_NAME = "Default Page"
 
 RESOURCES_FOLDER = "resources"
 FONTS_FOLDER = "fonts"
@@ -41,7 +41,6 @@ DECK_TYPES = "types"
 DECK_IMAGES = "images"
 
 ICON_SIZE = 256  # px
-DEFAULT_FONT = "D-DIN"  # provided in dist
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
@@ -71,14 +70,15 @@ COCKPITDECKS_DEFAULT_VALUES = {
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.KORRY,
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
+    DEFAULT_ATTRIBUTE_PREFIX + "font": "D-DIN",
     DEFAULT_ATTRIBUTE_PREFIX + "home-page-name": "index",
     DEFAULT_ATTRIBUTE_PREFIX + "icon-color": "cornflowerblue",
-    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "unamed-icon.png",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "inop.png",
     DEFAULT_ATTRIBUTE_PREFIX + "icon-texture": None,
     DEFAULT_ATTRIBUTE_PREFIX + "interface-bg-color": "black",
     DEFAULT_ATTRIBUTE_PREFIX + "interface-fg-color": "white",
     DEFAULT_ATTRIBUTE_PREFIX + "label-color": "white",
-    DEFAULT_ATTRIBUTE_PREFIX + "label-font": "DIN.ttf",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-font": "D-DIN",
     DEFAULT_ATTRIBUTE_PREFIX + "label-position": "ct",
     DEFAULT_ATTRIBUTE_PREFIX + "label-size": 10,
     DEFAULT_ATTRIBUTE_PREFIX + "light-off-intensity": 10,

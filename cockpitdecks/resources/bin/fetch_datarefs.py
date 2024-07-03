@@ -1,12 +1,13 @@
-import os
-import logging
 import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))  # we assume we're in subdir "bin/"
+
+import logging
 import time
 import itertools
 import threading
 from datetime import datetime
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # we assume we're in subdir "bin/"
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
 from cockpitdecks.simulator import DatarefListener, Dataref
