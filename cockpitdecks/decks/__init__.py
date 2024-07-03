@@ -13,13 +13,13 @@ except ImportError:
     pass
 
 
-# try:
-#     from Loupedeck import DeviceManager as LoupedeckDeviceManager
-#     from .loupedeck import Loupedeck
+try:
+    from Loupedeck import DeviceManager as LoupedeckDeviceManager
+    from .loupedeck import Loupedeck
 
-#     DECK_DRIVERS[Loupedeck.DECK_NAME] = [Loupedeck, LoupedeckDeviceManager]
-# except ImportError:
-#     pass
+    DECK_DRIVERS[Loupedeck.DECK_NAME] = [Loupedeck, LoupedeckDeviceManager]
+except ImportError:
+    pass
 
 
 try:

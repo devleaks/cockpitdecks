@@ -1,6 +1,6 @@
 ---
 aircraft: Demo
-description: Sample cockpidecks icon demo
+description: Sample cockpidecks icon demo - Index page
 version: 1.0.0
 buttons:
   - index: e0
@@ -161,7 +161,7 @@ buttons:
       icon-color: paleturquoise
   - index: 10
     type: reload
-    icon: RELOAD
+    icon: reload
     label: "RELOAD\n\nPAGE"
     label-position: cm
     label-color: red

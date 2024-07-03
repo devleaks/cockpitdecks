@@ -56,6 +56,9 @@ class VirtualDeck(DeckWithIcons):
         return True
         # return self.clients > 0
 
+    def is_connected(self) -> bool:
+        return self.cockpit.probe(self.name)
+
     # #######################################
     #
     # Deck Specific Functions : Definition
@@ -242,6 +245,10 @@ class VirtualDeck(DeckWithIcons):
 
     def render(self, button: Button):  # idx: int, image: str, label: str = None):
         # Regular representation
+        if not self.is_connected():
+            # If deck is not connected, we do not render. the button
+            logger.warning(f"button: {button.name}: virtual deck {self.name} not connected")
+            return
         representation = button._representation
         if isinstance(representation, IconBase):
             self._set_key_image(button)

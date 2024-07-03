@@ -273,8 +273,12 @@ class Cockpit(DatarefListener, CockpitBase):
         if len(DECK_DRIVERS) == 0:
             logger.error(f"no driver")
             return
+        driver_info = [f'{deck_driver} {pkg_resources.get_distribution(deck_driver).version}' for deck_driver in DECK_DRIVERS.keys() if deck_driver != VIRTUAL_DECK_DRIVER]
+        if len(driver_info) == 0:
+            logger.error(f"no driver for physical decks")
+            return
         logger.info(
-            f"drivers installed for {', '.join([f'{deck_driver} {pkg_resources.get_distribution(deck_driver).version}' for deck_driver in DECK_DRIVERS.keys() if deck_driver != VIRTUAL_DECK_DRIVER])}; scanning.."
+            f"drivers installed for {', '.join(driver_info)}; scanning.."
         )
         dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in DECK_DRIVERS.items() if k != VIRTUAL_DECK_DRIVER]
         logger.debug(f"dependencies: {dependencies}")
@@ -1117,7 +1121,8 @@ class Cockpit(DatarefListener, CockpitBase):
             if len(self.vd_ws_conn[deck]) == 0:
                 self.handle_code(2, deck)
 
-    def send(self, deck, payload):
+    def send(self, deck, payload) -> bool:
+        sent = False
         client_list = self.vd_ws_conn.get(deck)
         closed_ws = []
         if client_list is not None:
@@ -1127,6 +1132,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     continue
                 ws.send(json.dumps(payload))
                 logger.debug(f"sent for {deck}")
+                sent = True
             if len(closed_ws) > 0:
                 for ws in closed_ws:
                     client_list.remove(ws)
@@ -1134,6 +1140,10 @@ class Cockpit(DatarefListener, CockpitBase):
             if deck not in self.vd_errs:
                 logger.warning(f"no client for {deck}")
                 self.vd_errs.append(deck)
+        return sent
+
+    def probe(self, deck):
+        return self.send(deck=deck, payload={"code": 99, "deck": deck, "meta": {"ts": datetime.now().timestamp()}})
 
     # Button designer
     #

@@ -570,9 +570,9 @@ class CircularSwitch(SwitchBase):
             value = self.tick_steps - 1
         angle = red(self.tick_from + value * self.angular_step)
 
-        if self.switch_style in ["medium", "large", "xlarge"]:  # handle style
+        if self.switch_style in ["small", "medium", "large", "xlarge"]:  # handle style
             overlay, overlay_draw = self.double_icon()
-            inner = self.button_size
+            inner = self.button_size  # medium
 
             # Base circle
             tl = [center[0] - inner, center[1] - inner]
@@ -589,9 +589,11 @@ class CircularSwitch(SwitchBase):
             handle_width = int(2 * inner / 3)
             handle_height = int(2 * inner / 3)
 
-            if self.switch_style == "large":  # big handle style
+            if self.switch_style == "small":
+                handle_width = int(2 * inner / 3)
+            elif self.switch_style == "large":
                 handle_width = int(inner)
-            elif self.switch_style == "xlarge":  # big handle style
+            elif self.switch_style == "xlarge":
                 handle_width = int(4 * inner / 3)
 
             r = 10
@@ -617,6 +619,7 @@ class CircularSwitch(SwitchBase):
             overlay.alpha_composite(home)
             overlay = overlay.rotate(red(-angle))  # ;-)
             image.alpha_composite(overlay)
+
             # Overlay tick/line/needle mark on top of button
             start = self.needle_start
             # end = handle_height + side / 2 - r / 2
@@ -704,14 +707,14 @@ class CircularSwitch(SwitchBase):
                         center[1] + self.needle_tip_size / 2,
                     ]
                     tip_draw.ellipse(tl + br, fill=self.needle_color, outline="red", width=3)
-            tip_image = tip_image.rotate(
-                red(-angle),
-                translate=(
-                    -end * math.sin(math.radians(angle)),
-                    end * math.cos(math.radians(angle)),
-                ),
-            )  # ;-)
-            image.alpha_composite(tip_image)
+                tip_image = tip_image.rotate(
+                    red(-angle),
+                    translate=(
+                        -end * math.sin(math.radians(angle)),
+                        end * math.cos(math.radians(angle)),
+                    ),
+                )  # ;-)
+                image.alpha_composite(tip_image)
 
         return self.move_and_send(image)
 
