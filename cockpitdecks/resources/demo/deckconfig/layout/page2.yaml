@@ -11,152 +11,37 @@ buttons:
     formula: ${state:activation_count}
     set-dataref: data:encoder0
   - index: 0
-    label: "Enc 0 Activations"
-    label-size: 8
+    # label: "Connection Status"
+    # label-size: 8
     type: none
-    text: ${data:encoder0}
-    initial-value: 0
-  - index: 1
-    name: Simple Annunciator
-    type: push
-    label: PRESS ME
-    label-color: darkorange
-    label-size: 7
-    annunciator:
-      model: B
-      size: full
-      B0:
-        text: FAIL
+    multi-texts:
+      - text: "NOT CONNECTED\n\n"
+        text-color: red
+        text-size: 14
         text-font: D-DIN-Bold
-        color: darkorange
-        formula: ${state:activation_count} 2 mod 0 eq
-      B1:
-        text: "ON"
-        color: deepskyblue
+        text-position: cb
+      - text: "CONNECTING...\n\n"
+        text-size: 14
+        text-color: orange
         text-font: D-DIN-Bold
-        framed: true
-        formula: ${state:activation_count} 2 mod
-    command: none
-  - index: 2
-    name: Annunciator with LED
-    type: push
-    annunciator:
-      model: E
-      size: full
-      E0:
-        led: dot
-        color: white
-        formula: ${state:activation_count} 2 mod 0 eq
-      E1:
-        led: lgear
-        color: red
-        formula: ${state:activation_count} 2 mod 0 eq
-      E2:
-        led: bars
-        color: lime
-        formula: ${state:activation_count} 2 mod
-    command: none
-  - index: 3
-    type: none
-    data:
-      top-line-color: deepskyblue
-      top-line-width: 10
-      icon: "fa:gauge"
-      icon-size: 60
-      icon-color: deepskyblue
-      data: ${formula}
-      data-format: "{:03.0f}"
-      data-font: D-DINCondensed.otf
-      data-size: 80
-      data-color: white
-      formula: ${state:activation_count}
-      bottomline: Key Press
-      bottomline-size: 30
-      bottomline-color: red
-      mark: ${fa:arrow-right}
-      mark-size: 20
-      mark-font: fontawesome.otf
-      mark-color: red
-  - index: 4
-    name: STROBE
-    label: STROBE
-    type: updown
-    stops: 3
-    switch:
-      switch-style: rect
-      button-size: 60
-      switch-width: 18
-      button-fill-color: black
-      button-underline-width: 4
-      button-underline-color: coral
-      tick-labels:
-        - "ON"
-        - "AUTO"
-        - "OFF"
-      tick-space: 15
-      tick-label-size: 30
-      tick-label-space: -10
-      tick-label-font: D-DIN-Bold
-    options: 3way,invert,hexa
-    set-dataref: data:switches
-  - index: 5
-    name: BEACON
-    label: BEACON
-    type: onoff
-    switch:
-      button-fill-color: black
-      button-underline-width: 4
-      button-underline-color: coral
-      switch-width: 22
-      tick-labels:
-        - "ON"
-        - "OFF"
-      tick-space: 10
-      tick-label-space: 0
-      tick-label-size: 30
-      tick-label-font: D-DIN-Bold
-    options: horizontal
-    formula: ${state:activation_count} 2 mod
-    set-dataref: data:switches
-  - index: 6
-    name: LAND_L
-    label: LAND L
-    type: updown
-    stops: 3
-    switch:
-      switch-style: 3dot
-      switch-width: 18
-      button-fill-color: black
-      button-underline-width: 4
-      button-underline-color: coral
-      tick-labels:
-        - "ON"
-        - "OFF"
-        - "RETRACT"
-      tick-space: 10
-      tick-label-space: -10
-      tick-label-size: 30
-      tick-label-font: D-DIN-Bold
-    options: 3way,invert,hexa
-    set-dataref: data:switches
-  - index: 7
-    type: updown
-    stops: 3
-    initial-value: 0
-    set-dataref: data:switches
-    knob:
-      knob-style: round
-      button-dents: 8
-      button-dent-extension: 12
-      button-dent-size: 10
-      button-size: 80
-    options: 3way
-  - index: 8
-    name: METAR
-    type: none
-    label: "Weather"
-    weather-metar:
-      weather-font: D-DINCondensed
+        text-position: cb
+      - text: "CONNECTING...\n\n"
+        text-size: 14
+        text-color: orange
+        text-font: D-DIN-Bold
+        text-position: cb
+      - text: "CONNECTING...\n\n"
+        text-size: 14
+        text-color: orange
+        text-font: D-DIN-Bold
+        text-position: cb
+      - text: "CONNECTED\n\n"
+        text-color: lime
+        text-size: 14
+        text-font: D-DIN-Bold
+        text-position: cb
+    text-bg-texture: xplane-empty.png
+    formula: ${data:_connection_status}
   - index: 9
     type: reload
     icon: reload

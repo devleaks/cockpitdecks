@@ -21,9 +21,15 @@ buttons:
   - index: 0
     label: "Connection Status"
     label-size: 8
-    type: push
-    text: ${formula}
-    text-format: "{:02.0f}"
+    type: none
+    multi-icons:
+      - xpconnect0
+      - xpconnect1
+      - xpconnect2
+      - xpconnect3
+      - xpconnect4
+    # text: ${formula}
+    # text-format: "{:02.0f}"
     formula: ${data:_connection_status}
   - index: 1
     name: Simple Annunciator
@@ -49,9 +55,13 @@ buttons:
   - index: 2
     name: Annunciator with LED
     type: push
+    label: SHARP VIVISUN STYLE
+    label-size: 7
+    label-color: navy
     annunciator:
+      annunciator-style: v
       model: E
-      size: full
+      size: medium
       E0:
         led: dot
         color: white
@@ -165,24 +175,22 @@ buttons:
   - index: 8
     type: none
     data:
-      top-line-color: deepskyblue
+      formula: ${data:enc0}
+      top-line-color: darkblue
       top-line-width: 10
-      icon: "fa:gauge"
+      icon: "fa:arrows-rotate"
       icon-size: 60
-      icon-color: deepskyblue
+      icon-color: darkblue
       data: ${formula}
       data-format: "{:03.0f}"
       data-font: D-DINCondensed.otf
       data-size: 80
-      data-color: white
-      formula: ${data:enc0}
+      data-color: lime
+      data-unit: "HIT"
+      data-trend: true
       bottomline: Encoder Turns
       bottomline-size: 30
       bottomline-color: darkblue
-      mark: ${fa:arrow-right}
-      mark-size: 20
-      mark-font: fontawesome.otf
-      mark-color: red
   - index: 9
     name: METAR
     type: none
@@ -190,6 +198,16 @@ buttons:
       weather-font: D-DINCondensed.otf
       weather-size: 28
       icon-color: paleturquoise
+  - index: 10
+    name: FollowTheGreensAnimation
+    type: onoff
+    ftg: True
+    animation:
+      speed: 0.2
+    commands:
+      - none
+      - none
+    formula: ${state:activation_count} 2 mod
   - index: 11
     type: page
     page: page2

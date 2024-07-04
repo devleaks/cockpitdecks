@@ -409,7 +409,7 @@ class Annunciator(DrawBase):
         self.button = button  # we need the reference before we call Icon.__init__()...
         self.icon = config.get("icon")
         self.annunciator = config.get("annunciator")  # keep raw
-        self.annunciator_style = config.get("annunciator-style", button.get_attribute("annunciator-style"))
+        self.annunciator_style = self.annunciator.get("annunciator-style", button.get_attribute("annunciator-style"))
         self.model = None
 
         self.annun_color = config.get("annunciator-color", button.get_attribute("annunciator-color"))

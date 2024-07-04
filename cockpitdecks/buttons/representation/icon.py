@@ -523,7 +523,7 @@ class MultiTexts(IconText):
     REPRESENTATION_NAME = "multi-texts"
 
     PARAMETERS = {
-        "multi-icon": {
+        "multi-texts": {
             "type": "multi",
             "multi": {
                 "text": {"type": "string", "prompt": "Text"},
@@ -638,6 +638,7 @@ class MultiIcons(Icon):
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
             return None
+        print("*****", self.multi_icons, value)
         if self.num_icons() > 0:
             if value >= 0 and value < self.num_icons():
                 self.icon = self.multi_icons[value]

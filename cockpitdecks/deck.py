@@ -606,20 +606,24 @@ class DeckWithIcons(Deck):
             return convert_color(self.get_attribute("cockpit-color"))
 
         image = None
-
-        texture = get_texture()
-        if use_texture and texture is not None:
-            texture = os.path.normpath(texture)
-            image = self.cockpit.get_icon_image(texture)
-
+        if use_texture and texture_in is not None:
+            image = self.cockpit.get_icon_image(texture_in)
         if image is not None:  # found a texture as requested
-            logger.debug(f"{who}: use texture {texture}")
+            logger.debug(f"{who}: use texture {texture_in}")
             image = image.resize((width, height))
             return image
-
-        if use_texture and texture is None:
+        if use_texture and texture_in is None:
             logger.debug(f"{who}: should use texture but no texture found, using uniform color")
-
+        # texture = get_texture()
+        # if use_texture and texture is not None:
+        #     texture = os.path.normpath(texture)
+        #     image = self.cockpit.get_icon_image(texture)
+        # if image is not None:  # found a texture as requested
+        #     logger.debug(f"{who}: use texture {texture}")
+        #     image = image.resize((width, height))
+        #     return image
+        # if use_texture and texture is None:
+        #     logger.debug(f"{who}: should use texture but no texture found, using uniform color")
         color = get_color()
         image = Image.new(mode="RGBA", size=(width, height), color=color)
         logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
