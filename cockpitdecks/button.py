@@ -28,8 +28,9 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
+INTERNAL_STATE_PREFIX = "state:"
 VARIABLE_PREFIX = ["button", "state"]
-DECK_DEF = "_deck_def"
+DECK_BUTTON_DEFINITION = "_deck_def"
 
 
 class Button(DatarefListener, DatarefSetListener):
@@ -38,7 +39,7 @@ class Button(DatarefListener, DatarefSetListener):
         DatarefSetListener.__init__(self)
         # Definition and references
         self._config = config
-        self._def = config.get(DECK_DEF)
+        self._def = config.get(DECK_BUTTON_DEFINITION)
         self.page: "Page" = page
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
@@ -308,9 +309,10 @@ class Button(DatarefListener, DatarefSetListener):
         if self._first_value_not_saved:
             self._first_value = value
             self._first_value_not_saved = False
-        self.previous_value = self.current_value
-        self.current_value = value
-        logger.debug(f"button {self.name}: {self.current_value}")
+        if value != self.current_value:
+            self.previous_value = self.current_value
+            self.current_value = value
+            logger.debug(f"button {self.name}: {self.current_value}")
 
     def get_current_value(self):
         """
@@ -576,7 +578,7 @@ class Button(DatarefListener, DatarefSetListener):
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
 
-    def substitute_dataref_values(self, message: str, default: str = "0.0", formatting=None):
+    def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
@@ -629,12 +631,12 @@ class Button(DatarefListener, DatarefSetListener):
 
         return retmsg
 
-    def substitute_state_values(self, text, default: str = "0.0", formatting=None):
+    def substitute_state_values_rev(self, text, default: str = "0.0", formatting=None):
         status = self.get_status()
         txtcpy = text
         # more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         for k, v in status.items():
-            s = f"${{state:{k}}}"  # @todo: !!possible injection!!
+            s = f"${{{INTERNAL_STATE_PREFIX}{k}}}"  # @todo: !!possible injection!!
             if s in txtcpy:
                 if v is None:
                     logger.warning(f"button {self.name}: {k} has no value")
@@ -643,7 +645,32 @@ class Button(DatarefListener, DatarefSetListener):
                     v = str(v)  # @todo: later: use formatting
                 txtcpy = txtcpy.replace(s, v)
                 logger.debug(f"button {self.name}: replaced {s} by {str(v)}. ({k})")
-        more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
+        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        if len(more) > 0:
+            logger.warning(f"button {self.name}: unsubstituted status values {more}")
+        return txtcpy
+
+    def substitute_state_values(self, text, default: str = "0.0", formatting=None):
+        status = self.get_status()
+        txtcpy = text
+        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        for name in more:
+            s = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
+            if name in status:  #
+                v = str(status.get(name))
+                txtcpy = txtcpy.replace(s, v)
+                logger.debug(f"button {self.name}: replaced {s} by {str(v)}. (status {name})")
+            elif hasattr(self._activation, name):
+                v = str(getattr(self._activation, name))
+                txtcpy = txtcpy.replace(s, v)
+                logger.debug(f"button {self.name}: replaced {s} by {str(v)}. (activation {type(self._activation).__name__} attribute {name})")
+            elif hasattr(self, name):
+                v = str(getattr(self, name))
+                txtcpy = txtcpy.replace(s, v)
+                logger.debug(f"button {self.name}: replaced {s} by {str(v)}. (button attribute {name})")
+            else:
+                logger.debug(f"button {self.name}: attribute {name} not found")
+        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
         if len(more) > 0:
             logger.warning(f"button {self.name}: unsubstituted status values {more}")
         return txtcpy
@@ -664,24 +691,24 @@ class Button(DatarefListener, DatarefSetListener):
             logger.warning(f"button {self.name}: unsubstituted data values {more}")
         return txtcpy
 
-    # def substitute_button_values(self, text, default: str = "0.0", formatting = None):
-    #     txtcpy = text
-    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-    #     if len(more) > 0:
-    #         for m in more:
-    #             v = self.deck.cockpit.get_button_value(m)  # starts at the top
-    #             if v is None:
-    #                 logger.warning(f"button {self.name}: {m} has no value")
-    #                 v = str(default)
-    #             else:
-    #                 v = str(v)  # @todo: later: use formatting
-    #             m_str = f"${{button:{m}}}"   # "${formula}"
-    #             txtcpy = txtcpy.replace(m_str, v)
-    #             logger.debug(f"button {self.name}: replaced {m_str} by {str(v)}. ({m})")
-    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-    #     if len(more) > 0:
-    #         logger.warning(f"button {self.name}: unsubstituted button values {more}")
-    #     return txtcpy
+    def substitute_button_values(self, text, default: str = "0.0", formatting=None):
+        txtcpy = text
+        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+        if len(more) > 0:
+            for m in more:
+                v = self.deck.cockpit.get_button_value(m)  # starts at the top
+                if v is None:
+                    logger.warning(f"button {self.name}: {m} has no value")
+                    v = str(default)
+                else:
+                    v = str(v)  # @todo: later: use formatting
+                m_str = f"${{button:{m}}}"  # "${formula}"
+                txtcpy = txtcpy.replace(m_str, v)
+                logger.debug(f"button {self.name}: replaced {m_str} by {str(v)}. ({m})")
+        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+        if len(more) > 0:
+            logger.warning(f"button {self.name}: unsubstituted button values {more}")
+        return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
         if type(text) != str or "$" not in text:  # no ${..} to stubstitute
@@ -1010,5 +1037,5 @@ class Button(DatarefListener, DatarefSetListener):
         if rty == "none":
             logger.debug(f"button has no representation but it is ok")
 
-        config[DECK_DEF] = deck.get_deck_button_definition(idx)
+        config[DECK_BUTTON_DEFINITION] = deck.get_deck_button_definition(idx)
         return Button(config=config, page=page)

@@ -6,7 +6,7 @@ from typing import Dict
 
 from cockpitdecks import ID_SEP
 from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
-from .button import Button, DECK_DEF
+from .button import Button, DECK_BUTTON_DEFINITION
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -123,7 +123,7 @@ class Page:
             if rty == "none":
                 logger.debug(f"page {self.name}: button has no representation but it is ok")
 
-            button_config[DECK_DEF] = self.deck.get_deck_button_definition(idx)
+            button_config[DECK_BUTTON_DEFINITION] = self.deck.get_deck_button_definition(idx)
             button = Button(config=button_config, page=self)
             if button is not None:
                 self.add_button(idx, button)

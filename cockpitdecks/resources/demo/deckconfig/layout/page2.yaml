@@ -10,15 +10,6 @@ buttons:
       - none
     formula: ${state:activation_count}
     set-dataref: data:encoder0
-  - index: 11
-    type: page
-    page: back
-    text: ${fa:arrow-left}
-    text-font: fontawesome.otf
-    text-size: 60
-  - index: 10
-    type: stop
-    icon: STOP
   - index: 0
     label: "Enc 0 Activations"
     label-size: 8
@@ -113,10 +104,10 @@ buttons:
     label: BEACON
     type: onoff
     switch:
-      switch-width: 18
       button-fill-color: black
       button-underline-width: 4
       button-underline-color: coral
+      switch-width: 22
       tick-labels:
         - "ON"
         - "OFF"
@@ -166,6 +157,33 @@ buttons:
     label: "Weather"
     weather-metar:
       weather-font: D-DINCondensed
+  - index: 9
+    type: reload
+    icon: reload
+    label: "RELOAD\n\nPAGE"
+    label-position: cm
+    label-color: red
+    label-font: D-DIN-Bold.otf
+    label-size: 20
+    # label: RELOAD
+    # label-size: 14
+    # label-position: cm
+    # label-font: B612-Bold
+    # text: ${fa:rotate-left}
+    # text-font: fontawesome.otf
+    # text-color: lime
+    # text-size: 70
+    # text-position: cm
+    # text-bg-color: (94, 111, 130)
+  - index: 10
+    type: stop
+    icon: stop
+  - index: 11
+    type: page
+    page: back
+    text: ${fa:arrow-left}
+    text-font: fontawesome.otf
+    text-size: 60
 # Demos
 # Annunciators
 # 4 drawn buttons

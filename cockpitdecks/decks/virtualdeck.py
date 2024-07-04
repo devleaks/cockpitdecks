@@ -15,7 +15,7 @@ from cockpitdecks import DEFAULT_PAGE_NAME
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
-from cockpitdecks.button import Button, DECK_DEF
+from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
 from cockpitdecks.buttons.representation import (
     Representation,
     IconBase,
@@ -82,7 +82,7 @@ class VirtualDeck(DeckWithIcons):
                     # "command": "sim/map/show_current",
                     # "text": "MAP",
                     "type": "reload",
-                    DECK_DEF: self.deck_type.get_button_definition(first_index),
+                    DECK_BUTTON_DEFINITION: self.deck_type.get_button_definition(first_index),
                 },
                 page=page0,
             )
@@ -103,9 +103,9 @@ class VirtualDeck(DeckWithIcons):
         since it has to take the "shape" of any "real physical deck" it virtualize
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        # print("===== handle_event", deck.name, key, state, data)
+        print("===== handle_event", deck.name, key, state, data)
         if state in [0, 1, 4]:
-            PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
+            PushEvent(deck=self, button=key, pressed=(state != 0), pulled=(state == 4))  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
             return  # no other possible handling
         if state in [2, 3]:

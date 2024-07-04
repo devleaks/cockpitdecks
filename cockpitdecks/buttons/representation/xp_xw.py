@@ -53,7 +53,7 @@ class XPWeatherIcon(XPWeatherBaseIcon):
     def notify_weather_updated(self):
         if self.xpweather is not None and self.button._activation.writable_dataref is not None:
             self._wu_count = self._wu_count + 1
-            self.button._activation._write_dataref(self.button._activation.writable_dataref, float(self._wu_count))
+            self.button._activation.write_dataref(float(self._wu_count))
             logger.info(f"updated XP weather at {self._weather_last_updated.strftime('%H:%M:%S')} ({self._wu_count})")
 
     def collect_all_datarefs(self):

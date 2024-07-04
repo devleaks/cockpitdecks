@@ -33,7 +33,17 @@ buttons:
         - 0
     name: 0
     prefix: e
-    repeat: 4
+    repeat: 3
+  - action:
+      - encoder
+      - push
+    dimension: 35
+    layout:
+      offset:
+        - 590
+        - 573
+    name: e3
+    options: pushpull
   # - action:
   #     - encoder
   #     - push
