@@ -175,13 +175,14 @@ class PushEvent(DeckEvent):
 
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.PUSH
 
-    def __init__(self, deck: "Deck", button: str, pressed: bool, autorun: bool = True):
+    def __init__(self, deck: "Deck", button: str, pressed: bool, autorun: bool = True, pulled: bool = False):
         """Event for key press.
 
         Args:
             pressed (bool): Whether the key was pressed (true) or released (false)
         """
         self.pressed = pressed
+        self.pulled = pulled
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
@@ -194,6 +195,10 @@ class PushEvent(DeckEvent):
     @property
     def is_released(self) -> bool:
         return not self.is_pressed
+
+    @property
+    def is_pulled(self) -> bool:
+        return self.pulled
 
 
 class EncoderEvent(DeckEvent):
