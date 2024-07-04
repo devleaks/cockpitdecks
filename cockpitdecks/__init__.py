@@ -15,7 +15,8 @@ from datetime import datetime
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "11.11.6"
+__version__ = "11.11.7"
+
 #
 #
 # ##########################################################################
@@ -31,11 +32,10 @@ FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%
 #
 from .constant import *
 
+
+#
 #
 # ##########################################################################
-
-
-# ##############################################################
 # Utility functions
 # (mainly unit conversion functions)
 #

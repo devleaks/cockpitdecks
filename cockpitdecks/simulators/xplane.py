@@ -465,6 +465,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     self.socket.settimeout(SOCKET_TIMEOUT)
                     data, addr = self.socket.recvfrom(1472)  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
                     # Decode Packet
+                    self.status_dataref.update_value(3, cascade=True)
                     # Read the Header "RREF,".
                     total_to = 0
                     total_reads = total_reads + 1
@@ -507,11 +508,13 @@ class XPlane(Simulator, XPlaneBeacon):
                 except:  # socket timeout
                     total_to = total_to + 1
                     logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    self.status_dataref.update_value(2, cascade=True)
                     if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
                         self.beacon_data = {}
                         if self.udp_event is not None and not self.udp_event.is_set():
                             self.udp_event.set()
+                        self.status_dataref.update_value(1, cascade=True)
         self.udp_event = None
         self.status_dataref.update_value(2, cascade=True)
         logger.debug("..dataref listener terminated")

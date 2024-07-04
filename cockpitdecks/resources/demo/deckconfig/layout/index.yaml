@@ -19,7 +19,7 @@ buttons:
       - none
     set-dataref: data:enc3
   - index: 0
-    label: "Connection Status"
+    # label: "Connection Status"
     label-size: 8
     type: none
     multi-icons:
@@ -34,7 +34,7 @@ buttons:
   - index: 1
     name: Simple Annunciator
     type: push
-    label: PRESS ME
+    label: PUSH ME TO TEST
     label-color: darkorange
     label-size: 7
     annunciator:
@@ -203,7 +203,7 @@ buttons:
     type: onoff
     ftg: True
     animation:
-      speed: 0.2
+      speed: 0.1
     commands:
       - none
       - none

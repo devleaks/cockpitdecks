@@ -275,9 +275,10 @@ class DrawAnimationFTG(DrawAnimation):
         draw.line([(h0, h), (ICON_SIZE - h0, h)], fill="yellow", width=4)
 
         # Taxiway center lights, lit if animated
+        offset = -24
         cs = 2 * cs
         for i in range(lum):
-            w = h + i * s * 2 - s / 2
+            w = offset + h + i * s * 2 - s / 2
             w = ICON_SIZE - w
             tl = [w - cs, h - cs]
             br = [w + cs, h + cs]

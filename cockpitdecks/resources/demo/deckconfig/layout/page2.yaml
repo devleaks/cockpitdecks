@@ -15,7 +15,7 @@ buttons:
     # label-size: 8
     type: none
     multi-texts:
-      - text: "NOT CONNECTED\n\n"
+      - text: "NOT\nCONNECTED\n\n"
         text-color: red
         text-size: 14
         text-font: D-DIN-Bold
@@ -42,6 +42,28 @@ buttons:
         text-position: cb
     text-bg-texture: xplane-empty.png
     formula: ${data:_connection_status}
+  - index: 1
+    name: MASTER WARNING
+    type: push
+    command: none
+    annunciator-animate:
+      formula: ${state:activation_count} 2 mod 0 eq
+      text: "MASTER\nWARN"
+      text-color: firebrick
+      text-font: D-DIN-Bold.otf
+      text-size: 64
+      animation-speed: 2.0
+    annunciator-style: k
+  - index: 2
+    label: ICON IN ICON
+    label-size: 9
+    type: none
+    icon: isi
+    frame:
+      frame: annun-template.png
+      frame-size: [400, 400]
+      content-size: [222, 222]
+      content-offset: [90, 125]
   - index: 9
     type: reload
     icon: reload

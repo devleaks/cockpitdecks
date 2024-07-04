@@ -288,6 +288,7 @@ def main():
             cockpit.terminate_all(2)
         logger.info(f"..{AIRCRAFT_DESC} terminated.")
 
+
 # Run if unwrapped
 if __name__ == "__main__":
     main()
