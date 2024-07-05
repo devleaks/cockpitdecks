@@ -21,7 +21,7 @@ from .simulator import (
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml, DEFAULT_ATTRIBUTE_PREFIX
+from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -80,15 +80,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         #### Options
         #
-        self.options = []
-        new = config.get("options")
-        if new is not None:  # removes all spaces around = sign and ,. a = b, c, d=e -> a=b,c,d=e -> [a=b, c, d=e]
-            old = ""  # a, c, d are options, b, e are option values. c option value is boolean True.
-            while len(old) != len(new):
-                old = new
-                new = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
-            self.options = [a.strip() for a in new.split(",")]
-
+        self.options = parse_options(config.get("options"))
         self.managed = None
         self.guarded = None
 

@@ -17,7 +17,7 @@ from cockpitdecks.resources.color import (
     add_ext,
     DEFAULT_COLOR,
 )
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -61,6 +61,8 @@ class Representation:
         self.datarefs = None
 
         self.button.deck.cockpit.set_logging_level(__name__)
+
+        self.options = parse_options(config.get("options"))
 
         if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
             self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
@@ -112,6 +114,25 @@ class Representation:
             logger.warning(f"representation {type(self).__name__} has no button")
             return False
         return True
+
+    def has_option(self, option):
+        # Check whether a button has an option.
+        for opt in self.options:
+            if opt.split("=")[0].strip() == option:
+                return True
+        return False
+
+    def option_value(self, option, default=None):
+        # Return the value of an option or the supplied default value.
+        for opt in self.options:
+            opt = opt.split("=")
+            name = opt[0]
+            if name == option:
+                if len(opt) > 1:
+                    return opt[1]
+                else:  # found just the name, so it may be a boolean, True if present
+                    return True
+        return default
 
     def get_datarefs(self) -> list:
         return []

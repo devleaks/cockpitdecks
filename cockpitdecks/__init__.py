@@ -7,6 +7,7 @@
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)  # Aum
 import os
 import logging
+import re
 from typing import List
 from collections.abc import MutableMapping
 from enum import Enum
@@ -83,6 +84,29 @@ def all_subclasses(cls) -> list:
         except (TypeError, AttributeError):
             continue
     return list(subclasses)
+
+def parse_options(options: dict|None) -> list:
+    if options is None:
+        return []
+    # https://stackoverflow.com/questions/25250553/can-i-use-a-regex-to-remove-any-whitespace-that-is-not-between-quotes
+    # \s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)
+    rx = r"""(?x)
+        \s
+        (?=
+            (
+                " [^\'"]* "
+                |
+                [^\'"]
+            ) *
+            $
+        )
+    """
+    old = re.sub(rx, '', options)
+    # old = ""  # a, c, d are options, b, e are option values. c option value is boolean True.
+    while len(old) != len(options):
+        old = options
+        options = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
+    return  [a.strip() for a in options.split(",")]
 
 
 # ############################################################

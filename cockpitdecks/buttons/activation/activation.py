@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.event import EncoderEvent, PushEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -75,6 +75,8 @@ class Activation:
         self.pressed = False
         self.initial_value = config.get("initial-value")
 
+        self.options = parse_options(config.get("options"))
+
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
 
@@ -96,6 +98,25 @@ class Activation:
 
     def button_name(self) -> str:
         return self.button.name if self.button is not None else "no button"
+
+    def has_option(self, option):
+        # Check whether a button has an option.
+        for opt in self.options:
+            if opt.split("=")[0].strip() == option:
+                return True
+        return False
+
+    def option_value(self, option, default=None):
+        # Return the value of an option or the supplied default value.
+        for opt in self.options:
+            opt = opt.split("=")
+            name = opt[0]
+            if name == option:
+                if len(opt) > 1:
+                    return opt[1]
+                else:  # found just the name, so it may be a boolean, True if present
+                    return True
+        return default
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = False, silence: bool = True):
         # Is there such an attribute directly in the button defintion?

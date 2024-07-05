@@ -23,6 +23,243 @@ logger = logging.getLogger(__name__)
 # DRAWN REPRESENTATION (using Pillow, continued)
 #
 #
+#
+# ###############################
+# DRAWN REPRESENTATION (using Pillow, continued)
+#
+#
+class TapeIcon(DrawBase):
+
+    REPRESENTATION_NAME = "tape"
+
+    PARAMETERS = {
+        "top-line-color": {"type": "string", "prompt": "Top line color"},
+    }
+
+    def __init__(self, config: dict, button: "Button"):
+        DrawBase.__init__(self, config=config, button=button)
+        self.tape = self._config[self.REPRESENTATION_NAME]
+        self.vertical = self.option_value("vertical", False)
+        self.type = config.get("type", "tape")
+        self.value_min = config.get("minimum", 0)
+        self.value_max = config.get("maximum", 360)
+        self.scale = 1
+        self.offset = 0
+        self.step = 1
+        self._tape = None
+
+    def get_image_for_icon(self):
+        """
+        Helper function to get button image and overlay label on top of it.
+        Label may be updated at each activation since it can contain datarefs.
+        Also add a little marker on placeholder/invalid buttons that will do nothing.
+        """
+        def ticks(i):
+            tick_len = 5
+            tick_width = 1
+            if i % 10 == 0:
+                tick_len = 10
+                tick_width = 3
+            elif i % 5 == 0:
+                tick_len = 10
+                tick_width = 3
+            return (tick_len, tick_width)
+
+        inside = round(0.04 * ICON_SIZE + 0.5)
+
+        if self._tape is None: # Make tape
+            value_range = self.value_max - self.value_min
+            tape_width = math.ceil(value_range / 10)
+            tape_size = tape_width + 2  # 1 icon size before and after
+            numiconval = int(1.5 * (value_range / tape_size))
+            self.step = (tape_width * ICON_SIZE) / value_range
+            rule_color = "yellow"
+
+            tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.tape, "tick")
+
+            tick_color = "yellow"
+            tick_font = "D-DIN"
+            tick_size = 60
+            font = self.get_font(tick_font, tick_size)
+
+            if self.vertical:
+                image, draw = self.double_icon(width=ICON_SIZE, height=tape_size * ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+                # Rule along entire tape
+                draw.line(
+                    [(inside, 0), (inside, image.height)],
+                    width=2,
+                    fill=rule_color,
+                )
+
+                # before start value
+                before_start = int(self.value_max - numiconval)
+                for i in range(before_start, self.value_max):
+                    y = (i - before_start) * self.step
+                    tick_len, tick_width = ticks(i)
+                    draw.line(
+                        [(inside, y), (inside + tick_len, y)],
+                        width=tick_width,
+                        fill=rule_color,
+                    )
+
+                    if i % 5 == 0:
+                        draw.text(
+                            (inside + tick_len + 20, y),
+                            text=str(i),
+                            font=font,
+                            anchor="lm",
+                            align="center",
+                            fill=tick_color,
+                        )
+                # between start and end values
+                self.offset = numiconval * self.step
+                for i in range(self.value_min, self.value_max):
+                    y = self.offset + i * self.step
+                    tick_len, tick_width = ticks(i)
+                    draw.line(
+                        [(inside, y), (inside + tick_len, y)],
+                        width=tick_width,
+                        fill=rule_color,
+                    )
+
+                    if i % 5 == 0:
+                        draw.text(
+                            (inside + tick_len + 20, y),
+                            text=str(i),
+                            font=font,
+                            anchor="lm",
+                            align="center",
+                            fill=tick_color,
+                        )
+
+                # after end value
+                offset = (numiconval + value_range) * self.step
+                after_end = self.value_min + numiconval
+                for i in range(self.value_min, after_end):
+                    y = offset + i * self.step
+                    tick_len, tick_width = ticks(i)
+                    draw.line(
+                        [(inside, y), (inside + tick_len, y)],
+                        width=tick_width,
+                        fill=rule_color,
+                    )
+
+                    if i % 5 == 0:
+                        draw.text(
+                            (inside + tick_len + 20, y),
+                            text=str(i),
+                            font=font,
+                            anchor="lm",
+                            align="center",
+                            fill=tick_color,
+                        )
+            else:
+                image, draw = self.double_icon(width=tape_size * ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+                # Rule along entire tape
+                draw.line(
+                    [(0, image.height - inside), (image.width, image.height - inside)],
+                    width=2,
+                    fill=rule_color,
+                )
+
+                # before start value
+                before_start = int(self.value_max - numiconval)
+                for i in range(before_start, self.value_max):
+                    x = (i - before_start) * self.step
+                    tick_len, tick_width = ticks(i)
+                    draw.line(
+                        [(x, image.height - inside), (x, image.height - inside - tick_len)],
+                        width=tick_width,
+                        fill=rule_color,
+                    )
+
+                    if i % 5 == 0:
+                        draw.text(
+                            (x, image.height - inside - 20),
+                            text=str(i),
+                            font=font,
+                            anchor="mb",
+                            align="center",
+                            fill=tick_color,
+                        )
+                # between start and end values
+                self.offset = numiconval * self.step
+                for i in range(self.value_min, self.value_max):
+                    x = self.offset + i * self.step
+                    tick_len, tick_width = ticks(i)
+                    draw.line(
+                        [(x, image.height - inside), (x, image.height - inside - tick_len)],
+                        width=tick_width,
+                        fill=rule_color,
+                    )
+
+                    if i % 5 == 0:
+                        print(i, x)
+                        draw.text(
+                            (x, image.height - inside - 20),
+                            text=str(i),
+                            font=font,
+                            anchor="mb",
+                            align="center",
+                            fill=tick_color,
+                        )
+
+                # after end value
+                offset = (numiconval + value_range) * self.step
+                after_end = self.value_min + numiconval
+                for i in range(self.value_min, after_end):
+                    x = offset + i * self.step
+                    tick_len, tick_width = ticks(i)
+                    draw.line(
+                        [(x, image.height - inside), (x, image.height - inside - tick_len)],
+                        width=tick_width,
+                        fill=rule_color,
+                    )
+
+                    if i % 5 == 0:
+                        draw.text(
+                            (x, image.height - inside - 20),
+                            text=str(i),
+                            font=font,
+                            anchor="mb",
+                            align="center",
+                            fill=tick_color,
+                        )
+
+            self.icon_color = self._config.get("data-bg-color", self.cockpit_texture)
+            self.icon_texture = self._config.get("data-bg-texture", self.cockpit_color)
+            self._tape = image
+
+        # Use tape
+        # 2a. Move whole drawing around
+        value = self.button.get_current_value()
+        a = 1
+        b = 0
+        c = 0
+        d = 0
+        e = 1
+        f = 0
+        if self.vertical:
+            f = self.offset - ICON_SIZE / 2 + value * self.step
+        else:
+            c = self.offset - ICON_SIZE / 2 + value * self.step
+        print("AAAAAA", self.offset, self.step, self._tape.width, (a, b, c, d, e, f))
+        tape = self._tape.transform(self._tape.size, Image.AFFINE, (a, b, c, d, e, f))
+
+        # Paste image on cockpit background and return it.
+        bg = self.button.deck.get_icon_background(
+            name=self.button_name(),
+            width=ICON_SIZE,
+            height=ICON_SIZE,
+            texture_in=self.icon_color,
+            color_in=self.icon_texture,
+            use_texture=True,
+            who="Data",
+        )
+        bg.alpha_composite(tape)
+        return bg
+
+
 class GaugeIcon(DrawBase):
 
     REPRESENTATION_NAME = "gauge"
