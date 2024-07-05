@@ -16,13 +16,12 @@ except:
     pass
 
 from .annunciator import Annunciator, AnnunciatorAnimate
-from .draw import Switch, CircularSwitch, PushSwitch, Knob, Decor
-from .data import DataIcon, ChartIcon
-from .gauge import TapeIcon
-
-# from .gauge import GaugeIcon  # soon...
-
+from .draw import Decor
 from .animation import IconAnimation, DrawAnimationFTG
+from .switch import Switch, CircularSwitch, PushSwitch, Knob
+from .data import DataIcon, ChartIcon
+from .gauge import TapeIcon, GaugeIcon
+
 
 from cockpitdecks import DECK_FEEDBACK, all_subclasses
 

@@ -291,7 +291,6 @@ class ChartIcon(DrawBase):
         data_prefix = "line#"
         i = 0
         for d in self.lines:
-            print(d)
             n = d.get("name")
             if n is None:
                 d["name"] = data_prefix + str(i)
@@ -320,7 +319,7 @@ class ChartIcon(DrawBase):
 
         # Preprocess available data, there might not be a lot at the beginning...
         # For each data, get min, max, scaled min, scaled max, number to keep
-        stats = {d["name"]: d["name"].stats() for d in self.data}
+        stats = {d.name: d.get_stats() for d in self.data.values()}
 
         # Set graph
         graphmin = min([s[0] for s in stats.values()])

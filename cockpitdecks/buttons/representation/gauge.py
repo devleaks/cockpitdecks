@@ -5,6 +5,7 @@ import logging
 import math
 from random import randint
 from enum import Enum
+import random
 
 from PIL import Image, ImageDraw
 
@@ -231,7 +232,7 @@ class TapeIcon(DrawBase):
 
         # Use tape
         # 2a. Move whole drawing around
-        value = self.button.get_current_value()
+        value = random.randint(self.value_min, self.value_max) # self.button.get_current_value()
         a = 1
         b = 0
         c = 0
@@ -258,6 +259,16 @@ class TapeIcon(DrawBase):
         return bg
 
 
+def grey(i: int):
+    return (i, i, i)
+
+NEEDLE_COLOR = grey(255)
+NEEDLE_UNDERLINE_COLOR = grey(0)
+MARKER_COLOR = "lime"
+
+TICK_COLOR = grey(255)
+LABEL_COLOR = grey(255)
+
 class GaugeIcon(DrawBase):
 
     REPRESENTATION_NAME = "gauge"
@@ -269,12 +280,51 @@ class GaugeIcon(DrawBase):
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
         self.gauge = self._config[self.REPRESENTATION_NAME]
+        self.scale = 1
+        self.offset = 0
+        self.center = (int(ICON_SIZE/2), int(ICON_SIZE/2) + int(ICON_SIZE/4))
 
-    def get_datarefs(self):
-        if self.datarefs is None:
-            if self.data is not None:
-                self.datarefs = self.button.scan_datarefs(base=data)
-        return self.datarefs
+        self.gauge_size = self.get_attribute("gauge-size", int(ICON_SIZE/2))
+        self.num_ticks = self.gauge.get("ticks", 10)
+
+        # Ticks
+        self.tick_from = self.get_attribute("tick-from", -90)
+        self.tick_to = self.get_attribute("tick-to", 90)
+        self.angle = self.gauge.get("angle", self.tick_to - self.tick_from)
+
+        self.tick_space = self.get_attribute("tick-space", 10)
+        self.tick_length = self.get_attribute("tick-length", 16)
+        self.tick_width = self.get_attribute("tick-width", 4)
+        self.tick_color = self.get_attribute("tick-color", TICK_COLOR)
+        self.tick_color = convert_color(self.tick_color)
+        self.tick_underline_color = self.get_attribute("tick-underline-color", TICK_COLOR)
+        self.tick_underline_color = convert_color(self.tick_underline_color)
+        self.tick_underline_width = self.get_attribute("tick-underline-width", 4)
+
+        # Labels
+        self.tick_labels = self.gauge.get("tick-labels", {})
+        self.tick_label_space = self.get_attribute("tick-label-space", 10)
+        self.tick_label_font = self.get_attribute("tick-label-font", self.get_attribute("label-font"))
+        self.tick_label_size = self.get_attribute("tick-label-size", 50)
+        self.tick_label_color = self.get_attribute("tick-label-color", LABEL_COLOR)
+        self.tick_label_color = convert_color(self.tick_label_color)
+
+        # Handle needle
+        self.needle_width = self.get_attribute("needle-width", 8)
+        self.needle_start = self.get_attribute("needle-start", 10)  # from center of button
+        self.needle_length = self.get_attribute("needle-length", 50)  # end = start + length
+        self.needle_tip = self.gauge.get("needle-tip")  # arro, arri, ball
+        self.needle_tip_size = self.get_attribute("needle-tip-size", 5)
+        # self.needle_length = int(self.needle_length * self.button_size / 200)
+        self.needle_color = self.get_attribute("needle-color", NEEDLE_COLOR)
+        self.needle_color = convert_color(self.needle_color)
+        # Options
+        self.needle_underline_width = self.get_attribute("needle-underline-width", 4)
+        self.needle_underline_color = self.get_attribute("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
+        self.needle_underline_color = convert_color(self.needle_underline_color)
+
+        self._gauge = None
+        self._needle = None
 
     def get_image_for_icon(self):
         """
@@ -282,174 +332,110 @@ class GaugeIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
-        inside = round(0.04 * image.width + 0.5)
+        def red(a):
+            # reduce a to [0, 360[
+            if a >= 360:
+                return red(a - 360)
+            elif a < 0:
+                return red(a + 360)
+            return a
 
-        # Data
-        data = self._config.get("data")
-        if data is None:
-            logger.warning(f"button {self.button.name}: no data")
-            return image
+        if self._gauge is None:  # do backgroud image
+            image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+            inside = round(0.04 * image.width + 0.5)
+            gauge_size = ICON_SIZE/2
+            self.angular_step = int(self.angle / (self.num_ticks - 1))
 
-        # Top bar
-        topbar = data.get("top-line-color")
-        if topbar is not None:
-            topbarcolor = convert_color(topbar)
-            linewidth = data.get("top-line-width", 6)
-            draw.line(
-                [(0, int(linewidth / 2)), (image.width, int(linewidth / 2))],
-                fill=topbarcolor,
-                width=linewidth,
+            # Values on arc
+            tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.gauge, "tick")
+
+            tick_color = "yellow"
+            tick_font = "D-DIN"
+            tick_size = 60
+            font = self.get_font(tick_font, tick_size)
+
+            # Ticks
+            tick_start = self.gauge_size / 2 + self.tick_space
+            tick_end = tick_start + self.tick_length
+            label_anchors = []
+            if self.tick_width > 0:
+                tick_lbl = tick_end + self.tick_label_space
+
+                print(self.tick_color)
+                for i in range(self.num_ticks):
+                    a = red(180 + self.tick_from + i * self.angular_step)
+                    x0 = self.center[0] - tick_start * math.sin(math.radians(a))
+                    y0 = self.center[1] + tick_start * math.cos(math.radians(a))
+                    x1 = self.center[0] - tick_end * math.sin(math.radians(a))
+                    y1 = self.center[1] + tick_end * math.cos(math.radians(a))
+                    x2 = self.center[0] - tick_lbl * math.sin(math.radians(a))
+                    y2 = self.center[1] + tick_lbl * math.cos(math.radians(a))
+                    # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
+                    label_anchors.append([a, x2, y2])
+                    draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
+
+            # Tick run mark
+            if self.tick_underline_width > 0:
+                tl = [self.center[0] - tick_start, self.center[1] - tick_start]
+                br = [self.center[0] + tick_start, self.center[1] + tick_start]
+                draw.arc(
+                    tl + br,
+                    fill=self.tick_underline_color,
+                    start=self.tick_from - 90,
+                    end=self.tick_to - 90,
+                    width=self.tick_underline_width,
+                )
+
+            # Labels
+            print(len(self.tick_labels), self.num_ticks)
+            font = self.get_font(self.tick_label_font, int(self.tick_label_size))
+            for i in range(self.num_ticks):
+                angle = int(label_anchors[i][0])
+                tolerence = 30
+                if angle > tolerence and angle < 180 - tolerence:
+                    anchor = "rs"
+                    align = "right"
+                elif angle > 180 + tolerence and angle < 360 - tolerence:
+                    anchor = "ls"
+                    align = "left"
+                else:  # 0, 180, 360
+                    anchor = "ms"
+                    align = "center"
+                # print(self.tick_labels[i], label_anchors[i], label_anchors[i][1:3], anchor, align)
+                draw.text(
+                    label_anchors[i][1:3],
+                    text=str(i),
+                    font=font,
+                    anchor=anchor,
+                    align=align,
+                    fill=self.tick_label_color,
+                )
+
+            self.icon_color = self._config.get("data-bg-color", self.cockpit_texture)
+            self.icon_texture = self._config.get("data-bg-texture", self.cockpit_color)
+            self._gauge = self.button.deck.get_icon_background(
+                name=self.button_name(),
+                width=ICON_SIZE,
+                height=ICON_SIZE,
+                texture_in=self.icon_color,
+                color_in=self.icon_texture,
+                use_texture=True,
+                who="Data",
+            )
+            self._gauge.alpha_composite(image)
+
+            # Needle
+            self._needle, needle_drawing = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+            needle_drawing.line(
+                [self.center, (self.center[0], self.center[1]-self.needle_length)],
+                fill=self.needle_color,
+                width=self.needle_width,
             )
 
-        # Icon
-        icon, icon_format, icon_font, icon_color, icon_size, icon_position = self.get_text_detail(data, "icon")
-        icon_str = "*"
-        icon_arr = icon.split(":")
-        if len(icon_arr) == 0 or icon_arr[0] not in ICON_FONTS.keys():
-            logger.warning(f"button {self.button.name}: invalid icon {icon}")
-        else:
-            icon_name = ":".join(icon_arr[1:])
-            icon_str = ICON_FONTS[icon_arr[0]][1].get(icon_name, "*")
-        icon_font = data.get("icon-font", ICON_FONTS[icon_arr[0]][0])
-        font = self.get_font(icon_font, int(icon_size))
-        inside = round(0.04 * image.width + 0.5)
-        w = inside - 4
-        h = image.height / 2
-        draw.text((w, h), text=icon_str, font=font, anchor="lm", align="left", fill=icon_color)  # (image.width / 2, 15)
+        value = random.randint(self.tick_from, self.tick_to) # self.button.get_current_value()
+        rotation = self.offset + self.scale * value
+        rotated_needle = self._needle.rotate(rotation, resample=Image.Resampling.NEAREST, center=self.center)
 
-        # Trend
-        data_trend = data.get("data-trend")
-        trend, trend_format, trend_font, trend_color, trend_size, trend_position = self.get_text_detail(data, "trend")
-        trend_str = ICON_FONTS[icon_arr[0]][1].get("minus")
-        if self.button.previous_value is not None:
-            if self.button.previous_value > self.button.current_value:
-                trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-down")
-            elif self.button.previous_value < self.button.current_value:
-                trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-up")
-        font = self.get_font(icon_font, int(icon_size / 2))
-        if data_trend:
-            draw.text(
-                (w + icon_size + 4, h),
-                text=trend_str,
-                font=font,
-                anchor="lm",
-                align="center",
-                fill=icon_color,
-            )
-
-        # Value
-        DATA_UNIT_SEP = " "
-        data_value, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(data, "data")
-
-        if data_format is not None:
-            data_str = data_format.format(float(data_value))
-        else:
-            data_str = str(data_value)
-
-        # if data_unit is not None:
-        #    data_str = data_str + DATA_UNIT_SEP + data_unit
-
-        font = self.get_font(data_font, data_size)
-        font_unit = self.get_font(data_font, int(data_size * 0.50))
-        inside = round(0.04 * image.width + 0.5)
-        w = image.width - inside
-        h = image.height / 2 + data_size / 2 - inside
-        # if dataprogress is not None:
-        #    h = h - DATAPROGRESS_SPACE - DATAPROGRESS / 2
-        data_unit = data.get("data-unit")
-        if data_unit is not None:
-            w = w - draw.textlength(DATA_UNIT_SEP + data_unit, font=font_unit)
-        draw.text(
-            (w, h),
-            text=data_str,
-            font=font,
-            anchor="rs",
-            align="right",
-            fill=data_color,
-        )  # (image.width / 2, 15)
-
-        # Unit
-        if data_unit is not None:
-            w = image.width - inside
-            draw.text(
-                (w, h),
-                text=DATA_UNIT_SEP + data_unit,
-                font=font_unit,
-                anchor="rs",
-                align="right",
-                fill=data_color,
-            )  # (image.width / 2, 15)
-
-        # Progress bar
-        DATA_PROGRESS_SPACE = 8
-        DATA_PROGRESS = 6
-
-        data_progress = data.get("data-progress")
-        progress_color = data.get("progress-color")
-        if data_progress is not None:
-            w = icon_size + 4 * inside
-            h = 3 * image.height / 4 - 2 * DATA_PROGRESS
-            pct = float(data_value) / float(data_progress)
-            if pct > 1:
-                pct = 1
-            full_color = light_off(progress_color, 0.30)
-            l = w + pct * ((image.width - inside) - w)
-            draw.line(
-                [(w, h), (image.width - inside, h)],
-                fill=full_color,
-                width=DATA_PROGRESS,
-                joint="curve",
-            )  # 100%
-            draw.line([(w, h), (l, h)], fill=progress_color, width=DATA_PROGRESS, joint="curve")
-
-        # Bottomline (forced at CENTER BOTTOM line of icon)
-        bottom_line, botl_format, botl_font, botl_color, botl_size, botl_position = self.get_text_detail(data, "bottomline")
-
-        if bottom_line is not None:
-            font = self.get_font(botl_font, botl_size)
-            w = image.width / 2
-            h = image.height / 2
-            h = image.height - inside - botl_size / 2  # forces BOTTOM position
-            draw.multiline_text(
-                (w, h),
-                text=bottom_line,
-                font=font,
-                anchor="md",
-                align="center",
-                fill=botl_color,
-            )  # (image.width / 2, 15)
-
-        # Final mark
-        mark, mark_format, mark_font, mark_color, mark_size, mark_position = self.get_text_detail(data, "mark")
-        if mark is not None:
-            font = self.get_font(mark_font, mark_size)
-            w = image.width - 2 * inside
-            h = image.height - 2 * inside
-            draw.text(
-                (w, h),
-                text=mark,
-                font=font,
-                anchor="rb",
-                align="right",
-                fill=mark_color,
-            )
-
-        # Get background colour or use default value
-        # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
-        # Overwrite icon-* with data-bg-*
-        self.icon_color = self._config.get("data-bg-color", self.cockpit_texture)
-        self.icon_texture = self._config.get("data-bg-texture", self.cockpit_color)
-
-        # Paste image on cockpit background and return it.
-        bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
-            width=ICON_SIZE,
-            height=ICON_SIZE,
-            texture_in=self.icon_color,
-            color_in=self.icon_texture,
-            use_texture=True,
-            who="Data",
-        )
-        bg.alpha_composite(image)
+        bg = self._gauge.copy()
+        bg.alpha_composite(rotated_needle)
         return bg
