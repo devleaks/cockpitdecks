@@ -8,6 +8,7 @@ from .representation import Representation
 
 # Image/icon based
 from .icon import IconBase, Icon, IconText, MultiTexts, MultiIcons
+from .icon_animation import IconAnimation
 from .hardware import VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
 
 try:
@@ -17,7 +18,7 @@ except:
 
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import Decor
-from .animation import IconAnimation, DrawAnimationFTG
+from .draw_animation import DrawAnimation, DrawAnimationFTG
 from .switch import Switch, CircularSwitch, PushSwitch, Knob
 from .data import DataIcon, ChartIcon
 from .gauge import TapeIcon, GaugeIcon

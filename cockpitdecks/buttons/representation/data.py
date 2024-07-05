@@ -4,7 +4,7 @@
 import logging
 import math
 from random import randint
-from datetime import datetime
+from datetime import datetime, time
 from enum import Enum
 
 from PIL import Image, ImageDraw
@@ -14,7 +14,7 @@ from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
 from .draw import DrawBase  # explicit Icon from file to avoid circular import
-from .animation import DrawAnimation
+from .draw_animation import DrawAnimation
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -243,33 +243,55 @@ class DataIcon(DrawBase):
 
 class ChartData:
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, chart, config: dict) -> None:
+        self._config = config
+        self.chart = chart
         self.name = config.get("name")
-        self.data = [1]
-        self.keep = config.get("keep", 10)
+
+        self.datarefs = None
+        self.data = []
+        self.type = config.get("type", "tape")
+        self.value_min = config.get("minimum", 0)
+        self.value_max = config.get("maximum", 100)
+        self.keep = config.get("keep", 64)
         self.update = config.get("update", 1)
         self.scale = config.get("scale", 1)
         self.latest = datetime.now()
 
-    def get_stats(self):
-        count = len(self.data)
-        valmin = min(self.data)
-        sclmin = valmin * self.scale
-        valmax = max(self.data)
-        sclmax = valmax * self.scale
-        #       0      1       2       3       4       5          6            7
-        return (count, valmin, valmax, sclmin, sclmax, self.keep, self.update, self.duration)
+    def get_datarefs(self):
+        if self.datarefs is None:
+            if self.chart is not None:
+                self.datarefs = self.chart.button.scan_datarefs(base=self._config)
+        return self.datarefs
 
+    def get_stats(self):
+        if len(self.data) == 0:
+            return (0, 0, 0, 0, 0, self.keep, self.update, self.duration)
+
+        def v(idx):
+            return [v[idx] for v in self.data]
+
+        count = len(self.data)
+        valmin = min(v(0))
+        sclmin = valmin * self.scale
+        valmax = max(v(0))
+        sclmax = valmax * self.scale
+        tsmin = min(v(1))
+        tsmax = max(v(1))
+        #       0      1       2       3       4       5      6      7          8            9
+        return (count, valmin, valmax, sclmin, sclmax, tsmin, tsmax, self.keep, self.update, self.duration)
+
+    @property
     def duration(self):
         return self.update * self.keep
 
-    def add(self, value):
-        self.data.append(value)
+    def add(self, value, timestamp = None):
+        self.data.append((value, timestamp if timestamp is not None else datetime.now().timestamp()))
         while len(self.data) > self.keep:
             del self.data[0]
 
 
-class ChartIcon(DrawBase):
+class ChartIcon(DrawAnimation):
 
     REPRESENTATION_NAME = "chart"
 
@@ -285,7 +307,7 @@ class ChartIcon(DrawBase):
         self.lines = self.chart.get("data") # raw
         self.data = {} # same, but constructed
 
-        DrawBase.__init__(self, config=config, button=button)
+        DrawAnimation.__init__(self, config=config, button=button)
 
     def init(self):
         data_prefix = "line#"
@@ -295,7 +317,7 @@ class ChartIcon(DrawBase):
             if n is None:
                 d["name"] = data_prefix + str(i)
                 i = i + 1
-        self.data = {d["name"]: ChartData(config=d) for d in self.lines}
+        self.data = {d["name"]: ChartData(chart=self, config=d) for d in self.lines}
 
         # Set basic timing
         stats = {d.name: d.get_stats() for d in self.data.values()}
@@ -304,9 +326,18 @@ class ChartIcon(DrawBase):
 
     def get_datarefs(self):
         if self.datarefs is None:
-            if self.chart is not None:
-                self.datarefs = self.button.scan_datarefs(base=self.chart)
+            datarefs = []
+            for c in self.data.values():
+                datarefs = datarefs + c.get_datarefs()
+            self.datarefs = datarefs
         return self.datarefs
+
+    def should_run(self):
+        """
+        I.e. only works with onoff activations.
+        """
+        return True
+        return hasattr(self.button._activation, "is_on") and self.button._activation.is_on()
 
     def get_image_for_icon(self):
         """
@@ -314,18 +345,62 @@ class ChartIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
+
+        # DEMO
+        for c in self.data.values():
+            c.add(randint(c.value_min, c.value_max))
+
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Preprocess available data, there might not be a lot at the beginning...
         # For each data, get min, max, scaled min, scaled max, number to keep
         stats = {d.name: d.get_stats() for d in self.data.values()}
+        rule_color = "white"
+
+        # data, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(self.chart, "data")
+
+        data_color = "white"
+        data_font = "D-DIN"
+        data_size = 32
+        font = self.get_font(data_font, data_size)
+        draw.text(
+            (int(ICON_SIZE/2), int(ICON_SIZE/2)),
+            text=self.REPRESENTATION_NAME,
+            font=font,
+            anchor="mm",
+            align="center",
+            fill=data_color,
+        )
 
         # Set graph
         graphmin = min([s[0] for s in stats.values()])
         graphmax = max([s[0] for s in stats.values()])
+        tsmin = min([s[5] for s in stats.values()])
+        timewidth = max([s[9] for s in stats.values()])
+
+        # Horizontal axis
+        draw.line(
+            [(0, image.height - inside), (image.width, image.height - inside)],
+            width=2,
+            fill=rule_color,
+        )
 
         # Add data
+        timeslot = 10
+        for c in self.data.values():
+            plot = sorted(c.data, key=lambda v: v[1])  # sort by timestamp
+            points = []
+            for i in range(len(plot)):
+                x = inside + (plot[i][1] - tsmin) * timeslot
+                y = (ICON_SIZE / 8) + plot[i][0] * (ICON_SIZE * 4 / 5) / c.value_max
+                points.append((x, y))
+            draw.line(
+                points,
+                width=2,
+                fill=rule_color,
+            )
+
 
         # Get background colour or use default value
         # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
@@ -345,3 +420,4 @@ class ChartIcon(DrawBase):
         )
         bg.alpha_composite(image)
         return bg
+

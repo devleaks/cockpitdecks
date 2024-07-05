@@ -305,7 +305,7 @@ class GaugeIcon(DrawBase):
         self.tick_labels = self.gauge.get("tick-labels", {})
         self.tick_label_space = self.get_attribute("tick-label-space", 10)
         self.tick_label_font = self.get_attribute("tick-label-font", self.get_attribute("label-font"))
-        self.tick_label_size = self.get_attribute("tick-label-size", 50)
+        self.tick_label_size = self.get_attribute("tick-label-size", 32)
         self.tick_label_color = self.get_attribute("tick-label-color", LABEL_COLOR)
         self.tick_label_color = convert_color(self.tick_label_color)
 
@@ -361,7 +361,6 @@ class GaugeIcon(DrawBase):
             if self.tick_width > 0:
                 tick_lbl = tick_end + self.tick_label_space
 
-                print(self.tick_color)
                 for i in range(self.num_ticks):
                     a = red(180 + self.tick_from + i * self.angular_step)
                     x0 = self.center[0] - tick_start * math.sin(math.radians(a))
@@ -387,7 +386,6 @@ class GaugeIcon(DrawBase):
                 )
 
             # Labels
-            print(len(self.tick_labels), self.num_ticks)
             font = self.get_font(self.tick_label_font, int(self.tick_label_size))
             for i in range(self.num_ticks):
                 angle = int(label_anchors[i][0])
