@@ -12,25 +12,39 @@ from XPPython3 import xp
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
-# from decks.constant import CONFIG_DIR, CONFIG_FILE, DEFAULT_LAYOUT
-# Copied here to make this script independent
+# ###########################################################
+# C O C K P T D E C K S
+#
+RELEASE = "1.0.0"  # local version number
+#
+# Changelog:
+#
+# 05-JUL-2024: 1.0.0: Initial version, combination of cockpitdecks_helper and string_datarefs_udp
+#
+#
+# Where to find things
 CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
-
 #
+#
+#
+# ###########################################################
+# LONG PRESS COMMAND
 #
 # Commands extracted from these button types
 # will get a command/begin command/end helper command.
 NOTICABLE_BUTTON_TYPES = ["long-press", "longpress"]
 #
-#
-
 REF = "cmdref"
 FUN = "cmdfun"
 HDL = "cmdhdl"
-
-
+#
+#
+#
+# ###########################################################
+# STRING DATAREFS UDP
+#
 MCAST_GRP = "239.255.1.1"  # same as X-Plane 12
 MCAST_PORT = 49505  # 49707 for XPlane12
 MCAST_TTL = 2
@@ -44,14 +58,10 @@ DEFAULT_STRING_DATAREFS = [AIRCRAFT_DATAREF]  # dataref that gets updated if new
 
 CHECK_COUNT = [5, 20]
 
-RELEASE = "1.0.0"  # local version number
 
-# Changelog:
+# ###########################################################
+# PLUG IN PythonInterface
 #
-# 05-JUL-2024: 1.0.0: Initial version, combination of cockpitdecks_helper and string_datarefs_udp
-#
-
-
 class PythonInterface:
     def __init__(self):
         self.Name = "Cockpitdecks Helper"

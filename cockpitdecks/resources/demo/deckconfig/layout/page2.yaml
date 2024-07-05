@@ -64,6 +64,22 @@ buttons:
       frame-size: [400, 400]
       content-size: [222, 222]
       content-offset: [90, 125]
+  - index: 3
+    name: AIRCRAFT
+    label: AIRCRAFT
+    type: none
+    string-datarefs:
+      - sim/aircraft/view/acf_ICAO
+      - sim/aircraft/view/acf_tailnum
+      - sim/aircraft/view/acf_relative_path
+    text: "${sim/aircraft/view/acf_ICAO}\n${sim/aircraft/view/acf_tailnum}"
+    text-size: 18
+  - index: 8
+    name: INSPECT DATAREFS
+    label: Inspect Datarefs
+    type: inspect
+    what: datarefs
+    icon: reload
   - index: 9
     type: reload
     icon: reload
