@@ -387,7 +387,7 @@ class ChartIcon(DrawAnimation):
         )
 
         # Add data
-        timeslot = 10
+        timeslot = int((ICON_SIZE - 2 * inside) / timewidth)
         for c in self.data.values():
             plot = sorted(c.data, key=lambda v: v[1])  # sort by timestamp
             points = []

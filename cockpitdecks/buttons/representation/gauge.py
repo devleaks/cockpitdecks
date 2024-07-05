@@ -41,12 +41,15 @@ class TapeIcon(DrawBase):
         DrawBase.__init__(self, config=config, button=button)
         self.tape = self._config[self.REPRESENTATION_NAME]
         self.vertical = self.option_value("vertical", False)
-        self.type = config.get("type", "tape")
-        self.value_min = config.get("minimum", 0)
-        self.value_max = config.get("maximum", 360)
-        self.scale = 1
-        self.offset = 0
-        self.step = 1
+        self.type = self.tape.get("type", "tape")
+        self.value_min = self.tape.get("minimum", 0)
+        self.value_max = self.tape.get("maximum", 360)
+        self.scale = self.tape.get("scale", 1)
+        self.offset = self.tape.get("offset", 0)
+        self.step = self.tape.get("maximum", 0)
+        self.rule_color = self.tape.get("rule-color", "white")
+        self.rule_position = self.tape.get("rule-position", "center")
+        self.label_frequency = self.tape.get("label-frequency", 5)
         self._tape = None
 
     def get_image_for_icon(self):
@@ -61,7 +64,7 @@ class TapeIcon(DrawBase):
             if i % 10 == 0:
                 tick_len = 10
                 tick_width = 3
-            elif i % 5 == 0:
+            elif i % self.label_frequency == 0:
                 tick_len = 10
                 tick_width = 3
             return (tick_len, tick_width)
@@ -74,22 +77,30 @@ class TapeIcon(DrawBase):
             tape_size = tape_width + 2  # 1 icon size before and after
             numiconval = int(1.5 * (value_range / tape_size))
             self.step = (tape_width * ICON_SIZE) / value_range
-            rule_color = "yellow"
 
             tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.tape, "tick")
-
-            tick_color = "yellow"
-            tick_font = "D-DIN"
-            tick_size = 60
             font = self.get_font(tick_font, tick_size)
+
+            center_position = ICON_SIZE / 2
+            center_direction = -1
 
             if self.vertical:
                 image, draw = self.double_icon(width=ICON_SIZE, height=tape_size * ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+
+                anchor = "lm"
+                if self.rule_position == "left":
+                    center_position = inside
+                elif self.rule_position == "right":
+                    center_position = image.width - inside
+                    center_direction = 1
+                    anchor = "rm"
+                label_offset = int(center_direction * ICON_SIZE / 8)
+
                 # Rule along entire tape
                 draw.line(
-                    [(inside, 0), (inside, image.height)],
+                    [(center_position, 0), (center_position, image.height)],
                     width=2,
-                    fill=rule_color,
+                    fill=self.rule_color,
                 )
 
                 # before start value
@@ -98,17 +109,17 @@ class TapeIcon(DrawBase):
                     y = (i - before_start) * self.step
                     tick_len, tick_width = ticks(i)
                     draw.line(
-                        [(inside, y), (inside + tick_len, y)],
+                        [(center_position, y), (center_position - center_direction * tick_len, y)],
                         width=tick_width,
-                        fill=rule_color,
+                        fill=self.rule_color,
                     )
 
-                    if i % 5 == 0:
+                    if i % self.label_frequency == 0:
                         draw.text(
-                            (inside + tick_len + 20, y),
+                            (center_position - label_offset, y),
                             text=str(i),
                             font=font,
-                            anchor="lm",
+                            anchor=anchor,
                             align="center",
                             fill=tick_color,
                         )
@@ -118,17 +129,17 @@ class TapeIcon(DrawBase):
                     y = self.offset + i * self.step
                     tick_len, tick_width = ticks(i)
                     draw.line(
-                        [(inside, y), (inside + tick_len, y)],
+                        [(center_position, y), (center_position - center_direction * tick_len, y)],
                         width=tick_width,
-                        fill=rule_color,
+                        fill=self.rule_color,
                     )
 
-                    if i % 5 == 0:
+                    if i % self.label_frequency == 0:
                         draw.text(
-                            (inside + tick_len + 20, y),
+                            (center_position - label_offset, y),
                             text=str(i),
                             font=font,
-                            anchor="lm",
+                            anchor=anchor,
                             align="center",
                             fill=tick_color,
                         )
@@ -140,27 +151,38 @@ class TapeIcon(DrawBase):
                     y = offset + i * self.step
                     tick_len, tick_width = ticks(i)
                     draw.line(
-                        [(inside, y), (inside + tick_len, y)],
+                        [(center_position, y), (center_position - center_direction * tick_len, y)],
                         width=tick_width,
-                        fill=rule_color,
+                        fill=self.rule_color,
                     )
 
-                    if i % 5 == 0:
+                    if i % self.label_frequency == 0:
                         draw.text(
-                            (inside + tick_len + 20, y),
+                            (center_position - label_offset, y),
                             text=str(i),
                             font=font,
-                            anchor="lm",
+                            anchor=anchor,
                             align="center",
                             fill=tick_color,
                         )
             else:
                 image, draw = self.double_icon(width=tape_size * ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+
+                anchor = "mb"
+                if self.rule_position == "bottom":
+                    center_position = image.height - inside
+                elif self.rule_position == "top":
+                    center_position = inside
+                    center_direction = 1
+                    anchor = "mt"
+                label_offset = int(center_direction * ICON_SIZE / 8)
+
+
                 # Rule along entire tape
                 draw.line(
-                    [(0, image.height - inside), (image.width, image.height - inside)],
+                    [(0, center_position), (image.width, center_position)],
                     width=2,
-                    fill=rule_color,
+                    fill=self.rule_color,
                 )
 
                 # before start value
@@ -169,17 +191,17 @@ class TapeIcon(DrawBase):
                     x = (i - before_start) * self.step
                     tick_len, tick_width = ticks(i)
                     draw.line(
-                        [(x, image.height - inside), (x, image.height - inside - tick_len)],
+                        [(x, center_position), (x, center_position + center_direction * tick_len)],
                         width=tick_width,
-                        fill=rule_color,
+                        fill=self.rule_color,
                     )
 
-                    if i % 5 == 0:
+                    if i % self.label_frequency == 0:
                         draw.text(
-                            (x, image.height - inside - 20),
+                            (x, center_position + label_offset),
                             text=str(i),
                             font=font,
-                            anchor="mb",
+                            anchor=anchor,
                             align="center",
                             fill=tick_color,
                         )
@@ -189,17 +211,17 @@ class TapeIcon(DrawBase):
                     x = self.offset + i * self.step
                     tick_len, tick_width = ticks(i)
                     draw.line(
-                        [(x, image.height - inside), (x, image.height - inside - tick_len)],
+                        [(x, center_position), (x, center_position + center_direction * tick_len)],
                         width=tick_width,
-                        fill=rule_color,
+                        fill=self.rule_color,
                     )
 
-                    if i % 5 == 0:
+                    if i % self.label_frequency == 0:
                         draw.text(
-                            (x, image.height - inside - 20),
+                            (x, center_position + label_offset),
                             text=str(i),
                             font=font,
-                            anchor="mb",
+                            anchor=anchor,
                             align="center",
                             fill=tick_color,
                         )
@@ -211,17 +233,16 @@ class TapeIcon(DrawBase):
                     x = offset + i * self.step
                     tick_len, tick_width = ticks(i)
                     draw.line(
-                        [(x, image.height - inside), (x, image.height - inside - tick_len)],
+                        [(x, center_position), (x, center_position + center_direction * tick_len)],
                         width=tick_width,
-                        fill=rule_color,
+                        fill=self.rule_color,
                     )
-
-                    if i % 5 == 0:
+                    if i % self.label_frequency == 0:
                         draw.text(
-                            (x, image.height - inside - 20),
+                            (x, center_position + label_offset),
                             text=str(i),
                             font=font,
-                            anchor="mb",
+                            anchor=anchor,
                             align="center",
                             fill=tick_color,
                         )
@@ -246,6 +267,7 @@ class TapeIcon(DrawBase):
         tape = self._tape.transform(self._tape.size, Image.AFFINE, (a, b, c, d, e, f))
 
         # Paste image on cockpit background and return it.
+        # may be cahe it and take a bg = cached_bg.copy()
         bg = self.button.deck.get_icon_background(
             name=self.button_name(),
             width=ICON_SIZE,
