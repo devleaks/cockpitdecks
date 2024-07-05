@@ -285,7 +285,7 @@ class ChartData:
     def duration(self):
         return self.update * self.keep
 
-    def add(self, value, timestamp = None):
+    def add(self, value, timestamp=None):
         self.data.append((value, timestamp if timestamp is not None else datetime.now().timestamp()))
         while len(self.data) > self.keep:
             del self.data[0]
@@ -304,8 +304,8 @@ class ChartIcon(DrawAnimation):
     def __init__(self, config: dict, button: "Button"):
         self._config = config
         self.chart = self._config[self.REPRESENTATION_NAME]
-        self.lines = self.chart.get("data") # raw
-        self.data = {} # same, but constructed
+        self.lines = self.chart.get("data")  # raw
+        self.data = {}  # same, but constructed
 
         DrawAnimation.__init__(self, config=config, button=button)
 
@@ -365,7 +365,7 @@ class ChartIcon(DrawAnimation):
         data_size = 32
         font = self.get_font(data_font, data_size)
         draw.text(
-            (int(ICON_SIZE/2), int(ICON_SIZE/2)),
+            (int(ICON_SIZE / 2), int(ICON_SIZE / 2)),
             text=self.REPRESENTATION_NAME,
             font=font,
             anchor="mm",
@@ -401,7 +401,6 @@ class ChartIcon(DrawAnimation):
                 fill=rule_color,
             )
 
-
         # Get background colour or use default value
         # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
         # Overwrite icon-* with data-bg-*
@@ -420,4 +419,3 @@ class ChartIcon(DrawAnimation):
         )
         bg.alpha_composite(image)
         return bg
-

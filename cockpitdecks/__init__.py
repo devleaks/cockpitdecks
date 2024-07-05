@@ -85,7 +85,8 @@ def all_subclasses(cls) -> list:
             continue
     return list(subclasses)
 
-def parse_options(options: dict|None) -> list:
+
+def parse_options(options: dict | None) -> list:
     if options is None:
         return []
     # https://stackoverflow.com/questions/25250553/can-i-use-a-regex-to-remove-any-whitespace-that-is-not-between-quotes
@@ -101,12 +102,12 @@ def parse_options(options: dict|None) -> list:
             $
         )
     """
-    old = re.sub(rx, '', options)
+    old = re.sub(rx, "", options)
     # old = ""  # a, c, d are options, b, e are option values. c option value is boolean True.
     while len(old) != len(options):
         old = options
         options = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
-    return  [a.strip() for a in options.split(",")]
+    return [a.strip() for a in options.split(",")]
 
 
 # ############################################################

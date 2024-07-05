@@ -24,6 +24,19 @@ logger = logging.getLogger(__name__)
 # DRAWN REPRESENTATION (using Pillow, continued)
 #
 #
+def grey(i: int):
+    return (i, i, i)
+
+
+NEEDLE_COLOR = grey(255)
+NEEDLE_UNDERLINE_COLOR = grey(0)
+MARKER_COLOR = "lime"
+RULE_COLOR = grey(255)
+
+TICK_COLOR = grey(255)
+LABEL_COLOR = grey(255)
+
+
 #
 # ###############################
 # DRAWN REPRESENTATION (using Pillow, continued)
@@ -41,14 +54,14 @@ class TapeIcon(DrawBase):
         DrawBase.__init__(self, config=config, button=button)
         self.tape = self._config[self.REPRESENTATION_NAME]
         self.vertical = self.option_value("vertical", False)
-        self.type = self.tape.get("type", "tape")
         self.value_min = self.tape.get("minimum", 0)
-        self.value_max = self.tape.get("maximum", 360)
+        self.value_max = self.tape.get("maximum", 100)
         self.scale = self.tape.get("scale", 1)
         self.offset = self.tape.get("offset", 0)
         self.step = self.tape.get("maximum", 0)
-        self.rule_color = self.tape.get("rule-color", "white")
-        self.rule_position = self.tape.get("rule-position", "center")
+        self.tick_lengths = self.tape.get("tick-lengths", [(10, 1), (20, 2), (30, 4)])
+        self.rule_color = self.tape.get("rule-color", RULE_COLOR)
+        self.rule_position = self.tape.get("rule-position", "center")  # center is valid for both horiz and vert
         self.label_frequency = self.tape.get("label-frequency", 5)
         self._tape = None
 
@@ -58,20 +71,21 @@ class TapeIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
+
         def ticks(i):
-            tick_len = 5
-            tick_width = 1
+            tick_len = self.tick_lengths[0][0]
+            tick_width = self.tick_lengths[0][1]
             if i % 10 == 0:
-                tick_len = 10
-                tick_width = 3
+                tick_len = self.tick_lengths[2][0]
+                tick_width = self.tick_lengths[2][1]
             elif i % self.label_frequency == 0:
-                tick_len = 10
-                tick_width = 3
+                tick_len = self.tick_lengths[1][0]
+                tick_width = self.tick_lengths[1][1]
             return (tick_len, tick_width)
 
         inside = round(0.04 * ICON_SIZE + 0.5)
 
-        if self._tape is None: # Make tape
+        if self._tape is None:  # Make tape
             value_range = self.value_max - self.value_min
             tape_width = math.ceil(value_range / 10)
             tape_size = tape_width + 2  # 1 icon size before and after
@@ -177,7 +191,6 @@ class TapeIcon(DrawBase):
                     anchor = "mt"
                 label_offset = int(center_direction * ICON_SIZE / 8)
 
-
                 # Rule along entire tape
                 draw.line(
                     [(0, center_position), (image.width, center_position)],
@@ -253,7 +266,7 @@ class TapeIcon(DrawBase):
 
         # Use tape
         # 2a. Move whole drawing around
-        value = random.randint(self.value_min, self.value_max) # self.button.get_current_value()
+        value = random.randint(self.value_min, self.value_max)  # self.button.get_current_value()
         a = 1
         b = 0
         c = 0
@@ -281,16 +294,6 @@ class TapeIcon(DrawBase):
         return bg
 
 
-def grey(i: int):
-    return (i, i, i)
-
-NEEDLE_COLOR = grey(255)
-NEEDLE_UNDERLINE_COLOR = grey(0)
-MARKER_COLOR = "lime"
-
-TICK_COLOR = grey(255)
-LABEL_COLOR = grey(255)
-
 class GaugeIcon(DrawBase):
 
     REPRESENTATION_NAME = "gauge"
@@ -302,12 +305,14 @@ class GaugeIcon(DrawBase):
     def __init__(self, config: dict, button: "Button"):
         DrawBase.__init__(self, config=config, button=button)
         self.gauge = self._config[self.REPRESENTATION_NAME]
+
+        self.gauge_offset = self.gauge.get("gauge-offset", 0)
+        self.center = (int(ICON_SIZE / 2), int(ICON_SIZE / 2) + self.gauge_offset)
+
         self.scale = 1
         self.offset = 0
-        self.center = (int(ICON_SIZE/2), int(ICON_SIZE/2) + int(ICON_SIZE/4))
-
-        self.gauge_size = self.get_attribute("gauge-size", int(ICON_SIZE/2))
-        self.num_ticks = self.gauge.get("ticks", 10)
+        self.gauge_size = self.get_attribute("gauge-size", int(ICON_SIZE / 2))
+        self.num_ticks = self.gauge.get("ticks", 8)
 
         # Ticks
         self.tick_from = self.get_attribute("tick-from", -90)
@@ -354,6 +359,7 @@ class GaugeIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
+
         def red(a):
             # reduce a to [0, 360[
             if a >= 360:
@@ -365,8 +371,9 @@ class GaugeIcon(DrawBase):
         if self._gauge is None:  # do backgroud image
             image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
             inside = round(0.04 * image.width + 0.5)
-            gauge_size = ICON_SIZE/2
-            self.angular_step = int(self.angle / (self.num_ticks - 1))
+            gauge_size = ICON_SIZE / 2
+            num_ticks = self.num_ticks + 1
+            self.angular_step = int(self.angle / self.num_ticks)
 
             # Values on arc
             tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.gauge, "tick")
@@ -383,7 +390,7 @@ class GaugeIcon(DrawBase):
             if self.tick_width > 0:
                 tick_lbl = tick_end + self.tick_label_space
 
-                for i in range(self.num_ticks):
+                for i in range(num_ticks):
                     a = red(180 + self.tick_from + i * self.angular_step)
                     x0 = self.center[0] - tick_start * math.sin(math.radians(a))
                     y0 = self.center[1] + tick_start * math.cos(math.radians(a))
@@ -409,7 +416,7 @@ class GaugeIcon(DrawBase):
 
             # Labels
             font = self.get_font(self.tick_label_font, int(self.tick_label_size))
-            for i in range(self.num_ticks):
+            for i in range(num_ticks):
                 angle = int(label_anchors[i][0])
                 tolerence = 30
                 if angle > tolerence and angle < 180 - tolerence:
@@ -447,15 +454,32 @@ class GaugeIcon(DrawBase):
             # Needle
             self._needle, needle_drawing = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
             needle_drawing.line(
-                [self.center, (self.center[0], self.center[1]-self.needle_length)],
+                [self.center, (self.center[0], self.center[1] - self.needle_length)],
                 fill=self.needle_color,
                 width=self.needle_width,
             )
 
-        value = random.randint(self.tick_from, self.tick_to) # self.button.get_current_value()
+        value = random.randint(self.tick_from, self.tick_to)  # self.button.get_current_value()
         rotation = self.offset + self.scale * value
         rotated_needle = self._needle.rotate(rotation, resample=Image.Resampling.NEAREST, center=self.center)
 
         bg = self._gauge.copy()
         bg.alpha_composite(rotated_needle)
         return bg
+
+
+class CompassIcon(GaugeIcon):
+    """A Compass is a circular gauge (360°)"""
+
+    REPRESENTATION_NAME = "compass"
+
+    PARAMETERS = {
+        "compass-mode": {"type": "string", "prompt": "Compass Mode"},
+    }
+
+    def __init__(self, config: dict, button: "Button"):
+        self.compass = config.get(self.REPRESENTATION_NAME)
+        self.mode = self.compass.get("mode", "compass")
+        # Complement Gauge for compass
+        # ... to do
+        GaugeIcon.__init__(self, config=config, button=button)
