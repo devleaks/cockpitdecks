@@ -194,7 +194,6 @@ class TapeIcon(DrawBase):
                     )
 
                     if i % 5 == 0:
-                        print(i, x)
                         draw.text(
                             (x, image.height - inside - 20),
                             text=str(i),
@@ -243,7 +242,6 @@ class TapeIcon(DrawBase):
             f = self.offset - ICON_SIZE / 2 + value * self.step
         else:
             c = self.offset - ICON_SIZE / 2 + value * self.step
-        print("AAAAAA", self.offset, self.step, self._tape.width, (a, b, c, d, e, f))
         tape = self._tape.transform(self._tape.size, Image.AFFINE, (a, b, c, d, e, f))
 
         # Paste image on cockpit background and return it.
