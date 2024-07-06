@@ -34,14 +34,14 @@ class IconSide(Icon):  # modified Representation IconSide class
         },
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        config["icon-color"] = config["side"].get("icon-color", button.get_attribute("icon-color"))
-        Icon.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        button._config["icon-color"] = button._config["side"].get("icon-color", button.get_attribute("icon-color"))
+        Icon.__init__(self, button=button)
 
-        self.side = config.get("side")  # multi-labels
+        self.side = self._config.get("side")  # multi-labels
         self.centers = self.side.get("centers", [43, 150, 227])  # type: ignore
         self.labels: str | None = self.side.get("labels")  # type: ignore
-        self.label_position = config.get("label-position", "cm")  # "centered" on middle of side image
+        self.label_position = self._config.get("label-position", "cm")  # "centered" on middle of side image
 
     def get_datarefs(self):
         datarefs = []

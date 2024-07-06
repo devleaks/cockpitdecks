@@ -79,10 +79,10 @@ class FMAIcon(DrawBase):
 
     PARAMETERS = {}
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
 
-        self.fmaconfig = config.get("fma", {})  # should not be none, empty at most...
+        self.fmaconfig = button._config.get("fma", {})  # should not be none, empty at most...
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
         self.icon_color = "black"

@@ -36,7 +36,7 @@ class XPWeatherBaseIcon(DrawBase):
 
     MIN_UPDATE = 600  # seconds between two station updates
 
-    def __init__(self, config: dict, button: "Button"):
+    def __init__(self,  button: "Button"):
         self._inited = False
         self._moved = False  # True if we get Metar for location at (lat, lon), False if Metar for default station
         self._upd_calls = 0
@@ -45,7 +45,7 @@ class XPWeatherBaseIcon(DrawBase):
         self.weather = None
         self.weather_icon = None
 
-        DrawBase.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, button=button)
 
         self._weather_last_updated = None
         self._icon_last_updated = None

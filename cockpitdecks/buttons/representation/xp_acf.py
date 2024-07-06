@@ -32,9 +32,9 @@ class Aircraft(IconText):
 
     PARAMETERS = {}
 
-    def __init__(self, config: dict, button: "Button"):
-        IconText.__init__(self, config=config, button=button)
-        self.aircraft = config.get("aircraft")
+    def __init__(self, button: "Button"):
+        IconText.__init__(self, button=button)
+        self.aircraft = button._config.get("aircraft")
         self._current_aircraft = None
 
     def aircraft_changed(self) -> bool:

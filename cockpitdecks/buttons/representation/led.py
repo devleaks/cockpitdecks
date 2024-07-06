@@ -23,10 +23,10 @@ class LED(Representation):
     REPRESENTATION_NAME = "led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.LED
 
-    def __init__(self, config: dict, button: "Button"):
-        Representation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Representation.__init__(self, button=button)
 
-        self.mode = config.get("led", "single")  # unused
+        self.mode = self._config.get("led", "single")  # unused
 
     def render(self):
         value = self.get_current_value()
@@ -50,10 +50,10 @@ class ColoredLED(Representation):
     REPRESENTATION_NAME = "colored-led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.COLORED_LED
 
-    def __init__(self, config: dict, button: "Button"):
-        self._color = config.get(DECK_FEEDBACK.COLORED_LED.value, button.get_attribute("cockpit-color"))
+    def __init__(self, button: "Button"):
+        self._color = button._config.get(DECK_FEEDBACK.COLORED_LED.value, button.get_attribute("cockpit-color"))
         self.color = (128, 128, 256)
-        Representation.__init__(self, config=config, button=button)
+        Representation.__init__(self, button=button)
 
     def init(self):
         if type(self._color) == dict:  # @todo: does not currently work

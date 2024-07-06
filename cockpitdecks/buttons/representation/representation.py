@@ -51,9 +51,8 @@ class Representation:
         r = cls.REQUIRED_DECK_FEEDBACKS
         return r if type(r) in [list, tuple] else [r]
 
-    def __init__(self, config: dict, button: "Button"):
-        self._config = config
-        self._representation_config = config.get(self.name(), {})
+    def __init__(self, button: "Button"):
+        self._representation_config = button._config.get(self.name(), {})
         if type(self._representation_config) is not dict:  # repres: something -> {"repres": something}
             self._representation_config = {self.name(): self._representation_config}
         self.button = button
@@ -62,12 +61,16 @@ class Representation:
 
         self.button.deck.cockpit.set_logging_level(__name__)
 
-        self.options = parse_options(config.get("options"))
+        self.options = parse_options(button._config.get("options"))
 
         if type(self.REQUIRED_DECK_FEEDBACKS) not in [list, tuple]:
             self.REQUIRED_DECK_FEEDBACKS = [self.REQUIRED_DECK_FEEDBACKS]
 
         self.init()
+
+    @property
+    def _config(self):
+        return self.button._config
 
     def init(self):  # ~ABC
         pass

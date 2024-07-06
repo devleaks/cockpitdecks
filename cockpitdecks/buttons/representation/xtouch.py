@@ -36,10 +36,10 @@ class EncoderLEDs(Representation):
     REPRESENTATION_NAME = "encoder-leds"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.ENCODER_LEDS
 
-    def __init__(self, config: dict, button: "Button"):
-        Representation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Representation.__init__(self, button=button)
 
-        mode = config.get("encoder-leds", LED_MODE.SINGLE.name)
+        mode = self._config.get("encoder-leds", LED_MODE.SINGLE.name)
 
         self.mode = LED_MODE.SINGLE
         if is_integer(mode) and int(mode) in [l.value for l in LED_MODE]:

@@ -52,8 +52,8 @@ class DataIcon(DrawBase):
         "mark-color": {"type": "string", "prompt": "Mark color"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
         self.data = self._config[self.REPRESENTATION_NAME]
 
     def get_datarefs(self):
@@ -246,23 +246,28 @@ class ChartData:
     def __init__(self, chart, config: dict) -> None:
         self._config = config
         self.chart = chart
+
         self.name = config.get("name")
 
         self.datarefs = None
-        self.data = []
+
         self.type = config.get("type", "tape")
         self.value_min = config.get("minimum", 0)
         self.value_max = config.get("maximum", 100)
-        self.keep = config.get("keep", 64)
-        self.update = config.get("update", 1)
+        self.keep = config.get("keep", 10)
+        self.update = config.get("update")
         self.scale = config.get("scale", 1)
-        self.latest = datetime.now()
+
+        self.data = []
 
     def get_datarefs(self):
         if self.datarefs is None:
             if self.chart is not None:
                 self.datarefs = self.chart.button.scan_datarefs(base=self._config)
         return self.datarefs
+
+    def get_value(self):
+        return randint(self.value_min, self.value_max)
 
     def get_stats(self):
         if len(self.data) == 0:
@@ -283,7 +288,7 @@ class ChartData:
 
     @property
     def duration(self):
-        return self.update * self.keep
+        return 0 if self.update is None else self.update * self.keep
 
     def add(self, value, timestamp=None):
         self.data.append((value, timestamp if timestamp is not None else datetime.now().timestamp()))
@@ -301,15 +306,18 @@ class ChartIcon(DrawAnimation):
 
     MIN_COLLECT_TIME = 0.5  # sec
 
-    def __init__(self, config: dict, button: "Button"):
-        self._config = config
-        self.chart = self._config[self.REPRESENTATION_NAME]
-        self.lines = self.chart.get("data")  # raw
+    def __init__(self, button: "Button"):
+        self.chart = button._config[self.REPRESENTATION_NAME]
+        self.lines = self.chart.get("charts")  # raw
         self.data = {}  # same, but constructed
 
-        DrawAnimation.__init__(self, config=config, button=button)
+        DrawAnimation.__init__(self, button=button)
 
     def init(self):
+        # Prepare each chart.
+        # Compute time width of icon
+        # Make global scale of icon
+        # Rescale each chart so that it fits.
         data_prefix = "line#"
         i = 0
         for d in self.lines:
@@ -325,6 +333,7 @@ class ChartIcon(DrawAnimation):
         self.speed = max(fastest, self.MIN_COLLECT_TIME)  # cannot collect faster than MIN_COLLECT_TIME
 
     def get_datarefs(self):
+        # Collects datarefs in each chart
         if self.datarefs is None:
             datarefs = []
             for c in self.data.values():
@@ -337,7 +346,7 @@ class ChartIcon(DrawAnimation):
         I.e. only works with onoff activations.
         """
         return True
-        return hasattr(self.button._activation, "is_on") and self.button._activation.is_on()
+        return self.speed is not None
 
     def get_image_for_icon(self):
         """
@@ -348,7 +357,7 @@ class ChartIcon(DrawAnimation):
 
         # DEMO
         for c in self.data.values():
-            c.add(randint(c.value_min, c.value_max))
+            c.add(c.get_value())
 
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
@@ -364,14 +373,14 @@ class ChartIcon(DrawAnimation):
         data_font = "D-DIN"
         data_size = 32
         font = self.get_font(data_font, data_size)
-        draw.text(
-            (int(ICON_SIZE / 2), int(ICON_SIZE / 2)),
-            text=self.REPRESENTATION_NAME,
-            font=font,
-            anchor="mm",
-            align="center",
-            fill=data_color,
-        )
+        # draw.text(
+        #     (int(ICON_SIZE / 2), int(ICON_SIZE / 2)),
+        #     text=self.REPRESENTATION_NAME,
+        #     font=font,
+        #     anchor="mm",
+        #     align="center",
+        #     fill=data_color,
+        # )
 
         # Set graph
         graphmin = min([s[0] for s in stats.values()])

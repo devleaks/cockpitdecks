@@ -64,10 +64,10 @@ class SwitchBase(DrawBase):
 
     REPRESENTATION_NAME = "switch-base"
 
-    def __init__(self, config: dict, button: "Button", switch_type: str):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button", switch_type: str):
+        DrawBase.__init__(self, button=button)
 
-        self.switch = config.get(switch_type)
+        self.switch = self._config.get(switch_type)
         if self.switch is None:
             logger.warning("no switch configuration")
             return
@@ -151,8 +151,8 @@ class CircularSwitch(SwitchBase):
 
     REPRESENTATION_NAME = "circular-switch"
 
-    def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(self, config=config, button=button, switch_type="circular-switch")
+    def __init__(self, button: "Button"):
+        SwitchBase.__init__(self, button=button, switch_type="circular-switch")
 
         if self.switch is None:
             logger.warning("no switch configuration")
@@ -421,8 +421,8 @@ class Switch(SwitchBase):
 
     REPRESENTATION_NAME = "switch"
 
-    def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(self, config=config, button=button, switch_type="switch")
+    def __init__(self, button: "Button"):
+        SwitchBase.__init__(self, button=button, switch_type="switch")
 
         if self.switch is None:
             logger.warning("no switch configuration")
@@ -1006,8 +1006,8 @@ class PushSwitch(SwitchBase):
 
     REPRESENTATION_NAME = "push-switch"
 
-    def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(self, config=config, button=button, switch_type="push-switch")
+    def __init__(self, button: "Button"):
+        SwitchBase.__init__(self, button=button, switch_type="push-switch")
 
         # Alternate defaults
         self.button_size = self.get_attribute("button-size", 80)
@@ -1073,8 +1073,8 @@ class Knob(SwitchBase):
 
     REPRESENTATION_NAME = "knob"
 
-    def __init__(self, config: dict, button: "Button"):
-        SwitchBase.__init__(self, config=config, button=button, switch_type="knob")
+    def __init__(self, button: "Button"):
+        SwitchBase.__init__(self, button=button, switch_type="knob")
 
         if self.switch is None:
             logger.warning("no switch configuration")

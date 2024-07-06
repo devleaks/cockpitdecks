@@ -19,8 +19,8 @@ try:
 
         REPRESENTATION_NAME = "virtual-xtm-encoderled"
 
-        def __init__(self, config: dict, button: "Button"):
-            VirtualEncoder.__init__(self, config=config, button=button)
+        def __init__(self, button: "Button"):
+            VirtualEncoder.__init__(self, button=button)
 
             self.width = 2 * self.radius  # final dimension, 2 x radius of circle
             self.height = self.width  # force final image to be a square icon with. circle in it
@@ -146,9 +146,9 @@ class HardwareIcon(IconBase):
 
     REPRESENTATION_NAME = "hardware-icon"
 
-    def __init__(self, config: dict, button: "Button"):
-        config[NO_ICON] = True
-        IconBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        button._config[NO_ICON] = True
+        IconBase.__init__(self, button=button)
 
         self.hardware = self.button._def.hardware_representation
         self.highlight_color = self.hardware.get("highlight-color", "#ffffff10")
@@ -184,8 +184,8 @@ class VirtualEncoder(HardwareIcon):
 
     REPRESENTATION_NAME = "virtual-encoder"
 
-    def __init__(self, config: dict, button: "Button"):
-        HardwareIcon.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        HardwareIcon.__init__(self, button=button)
 
         self.rotation = self.hardware.get("rotation-start", 0)
         self.rotation_step = self.hardware.get("rotation-step", 10)
@@ -240,8 +240,8 @@ class VirtualLED(HardwareIcon):
 
     REPRESENTATION_NAME = "virtual-led"
 
-    def __init__(self, config: dict, button: "Button"):
-        HardwareIcon.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        HardwareIcon.__init__(self, button=button)
 
         self.color = self.hardware.get("color", (207, 229, 149))
         self.off_color = self.hardware.get("off-color", "ghostwhite")
@@ -273,8 +273,8 @@ class VirtualXTMLED(VirtualLED):
 
     REPRESENTATION_NAME = "virtual-xtm-led"
 
-    def __init__(self, config: dict, button: "Button"):
-        VirtualLED.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        VirtualLED.__init__(self, button=button)
 
         self.color = self.hardware.get("color", (207, 229, 149))
         self.off_color = self.hardware.get("off-color", "ghostwhite")
@@ -292,8 +292,8 @@ class VirtualXTMMCLED(VirtualLED):
 
     REPRESENTATION_NAME = "virtual-xtm-mcled"
 
-    def __init__(self, config: dict, button: "Button"):
-        VirtualLED.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        VirtualLED.__init__(self, button=button)
 
         self.color = self.hardware.get("color", "gold")
         self.off_color = self.hardware.get("off-color", (30, 30, 30))
@@ -315,8 +315,8 @@ class VirtualSDNeoLED(VirtualLED):
 
     REPRESENTATION_NAME = "virtual-sd-neoled"
 
-    def __init__(self, config: dict, button: "Button"):
-        VirtualLED.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        VirtualLED.__init__(self, button=button)
 
         self.color = self.hardware.get("color", "lime")
         self.off_color = self.hardware.get("off-color", "silver")
@@ -338,8 +338,8 @@ class VirtualLLColoredButton(HardwareIcon):
 
     REPRESENTATION_NAME = "virtual-ll-coloredbutton"
 
-    def __init__(self, config: dict, button: "Button"):
-        HardwareIcon.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        HardwareIcon.__init__(self, button=button)
 
         self.knob_fill_color = self.hardware.get("knob-fill-color", "#21211f")
         self.knob_stroke_color = self.hardware.get("knob-stroke-color", "black")

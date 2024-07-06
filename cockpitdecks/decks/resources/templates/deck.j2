@@ -136,6 +136,9 @@ function connect() {
     socket.error = (event) => {
         console.error("WebSocket error", event);
         socket.close()
+        setTimeout(function() {
+            connect();
+        }, 1000);
     };
 
     console.log("start_websocket", Date.now())

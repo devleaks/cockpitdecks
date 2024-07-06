@@ -50,8 +50,8 @@ class TapeIcon(DrawBase):
         "top-line-color": {"type": "string", "prompt": "Top line color"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
         self.tape = self._config[self.REPRESENTATION_NAME]
         self.vertical = self.option_value("vertical", False)
         self.value_min = self.tape.get("minimum", 0)
@@ -302,8 +302,8 @@ class GaugeIcon(DrawBase):
         "top-line-color": {"type": "string", "prompt": "Top line color"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
         self.gauge = self._config[self.REPRESENTATION_NAME]
 
         self.gauge_offset = self.gauge.get("gauge-offset", 0)
@@ -477,9 +477,9 @@ class CompassIcon(GaugeIcon):
         "compass-mode": {"type": "string", "prompt": "Compass Mode"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        self.compass = config.get(self.REPRESENTATION_NAME)
+    def __init__(self, button: "Button"):
+        self.compass = button._config.get(self.REPRESENTATION_NAME)
         self.mode = self.compass.get("mode", "compass")
         # Complement Gauge for compass
         # ... to do
-        GaugeIcon.__init__(self, config=config, button=button)
+        GaugeIcon.__init__(self, button=button)

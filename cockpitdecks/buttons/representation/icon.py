@@ -41,14 +41,14 @@ class IconBase(Representation):
 
     PARAMETERS = {}
 
-    def __init__(self, config: dict, button: "Button"):
-        Representation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Representation.__init__(self, button=button)
 
         # This is leaf node in hierarchy, so we have to be careful.
         # Button addresses "feature" and if it does not exist we return "default-feature"
         # from hierarchy.
-        self.label = config.get("label")
-        self.label_format = config.get("label-format")
+        self.label = self._config.get("label")
+        self.label_format = self._config.get("label-format")
         self.label_font = button.get_attribute("label-font")
         self.label_size = int(button.get_attribute("label-size"))
         self.label_color = button.get_attribute("label-color")
@@ -63,7 +63,7 @@ class IconBase(Representation):
                 f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})"
             )
 
-        self.text_config = config  # where to get text from
+        self.text_config = self._config  # where to get text from
 
         self.cockpit_color = button.get_attribute("cockpit-color")
         self.cockpit_color = convert_color(self.cockpit_color)
@@ -316,20 +316,20 @@ class Icon(IconBase):
     # PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
     PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        IconBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        IconBase.__init__(self, button=button)
 
-        self.frame = config.get(CONFIG_KW.FRAME.value)
+        self.frame = self._config.get(CONFIG_KW.FRAME.value)
 
         self.icon = None
         deck = self.button.deck
 
-        candidate_icon = config.get("icon")
+        candidate_icon = self._config.get("icon")
         if candidate_icon is not None:
             self.icon = deck.cockpit.get_icon(candidate_icon)
 
         if self.icon is None:
-            if config.get(NO_ICON, False):
+            if self._config.get(NO_ICON, False):
                 logger.debug(f"button {self.button_name()}: requested to no do icon")
 
         self._icon_cache = None
@@ -466,8 +466,8 @@ class IconColor(IconBase):
 
     PARAMETERS = {"color": {"type": "string", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        IconBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        IconBase.__init__(self, button=button)
 
         self.icon_color = self.get_attribute("icon-color")
         self.icon_color = convert_color(self.icon_color)
@@ -497,13 +497,13 @@ class IconText(IconColor):
         "text-position": {"type": "choice", "prompt": "Position", "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        IconColor.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        IconColor.__init__(self, button=button)
 
-        self.text = str(config.get("text"))
+        self.text = str(self._config.get("text"))
         # Overwrite icon-* with text-bg-*
-        self.icon_color = config.get("text-bg-color", self.cockpit_color)
-        self.icon_texture = config.get("text-bg-texture", self.cockpit_texture)
+        self.icon_color = self._config.get("text-bg-color", self.cockpit_color)
+        self.icon_texture = self._config.get("text-bg-texture", self.cockpit_texture)
 
     def get_image(self):
         """
@@ -536,12 +536,12 @@ class MultiTexts(IconText):
         }
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        IconText.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        IconText.__init__(self, button=button)
 
-        self.multi_texts = config.get("text-animate")
+        self.multi_texts = self._config.get("text-animate")
         if self.multi_texts is None:
-            self.multi_texts = config.get("multi-texts", [])
+            self.multi_texts = self._config.get("multi-texts", [])
         else:
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
 
@@ -596,12 +596,12 @@ class MultiIcons(Icon):
 
     PARAMETERS = {"multi-icon": {"type": "multi", "multi": {"texture": {"type": "icon", "prompt": "Icon"}}, "prompt": "Icon list"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        Icon.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Icon.__init__(self, button=button)
 
-        self.multi_icons = config.get("icon-animate", [])  # type: ignore
+        self.multi_icons = self._config.get("icon-animate", [])  # type: ignore
         if len(self.multi_icons) == 0:
-            self.multi_icons = config.get("multi-icons", [])
+            self.multi_icons = self._config.get("multi-icons", [])
         else:
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
 

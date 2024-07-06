@@ -405,16 +405,16 @@ class Annunciator(DrawBase):
         },
     }
 
-    def __init__(self, config: dict, button: "Button"):
+    def __init__(self, button: "Button"):
         self.button = button  # we need the reference before we call Icon.__init__()...
-        self.icon = config.get("icon")
-        self.annunciator = config.get("annunciator")  # keep raw
+        self.icon = button._config.get("icon")
+        self.annunciator = button._config.get("annunciator")  # keep raw
         self.annunciator_style = self.annunciator.get("annunciator-style", button.get_attribute("annunciator-style"))
         self.model = None
 
-        self.annun_color = config.get("annunciator-color", button.get_attribute("annunciator-color"))
+        self.annun_color = button._config.get("annunciator-color", button.get_attribute("annunciator-color"))
         self.annun_color = convert_color(self.annun_color)
-        self.annun_texture = config.get("annunciator-texture", button.get_attribute("annunciator-texture"))
+        self.annun_texture = button._config.get("annunciator-texture", button.get_attribute("annunciator-texture"))
 
         # Normalize annunciator parts in parts attribute if not present
         if self.annunciator is None:
@@ -455,7 +455,7 @@ class Annunciator(DrawBase):
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
         for a in [CONFIG_KW.DATAREF.value, CONFIG_KW.FORMULA.value]:
-            if a in config:
+            if a in button._config:
                 logger.warning(f"button {self.button.name}: annunciator parent button has property {a} which is ignored")
 
         if self.annunciator_parts is None:
@@ -467,7 +467,7 @@ class Annunciator(DrawBase):
         self.annunciator_datarefs: List[Dataref] | None = None
         self.annunciator_datarefs = self.get_datarefs()
 
-        DrawBase.__init__(self, config=config, button=button)
+        DrawBase.__init__(self, button=button)
 
     def is_valid(self):
         if self.button is None:
@@ -714,10 +714,10 @@ class AnnunciatorAnimate(Annunciator):
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        config["annunciator"] = config.get("annunciator-animate")
+    def __init__(self, button: "Button"):
+        button._config["annunciator"] = button._config.get("annunciator-animate")
 
-        Annunciator.__init__(self, config=config, button=button)
+        Annunciator.__init__(self, button=button)
 
         self.speed = float(self.annunciator.get("animation-speed", 0.5))  # type: ignore
 

@@ -25,8 +25,8 @@ class XPWeatherIcon(XPWeatherBaseIcon):
 
     MIN_UPDATE = 600  # seconds between two station updates
 
-    def __init__(self, config: dict, button: "Button"):
-        self.weather = config.get("xp-weather", {})
+    def __init__(self, button: "Button"):
+        self.weather = button._config.get("xp-weather", {})
         self.mode = self.weather.get("mode", "region")
 
         self.xpweather = None
@@ -37,7 +37,7 @@ class XPWeatherIcon(XPWeatherBaseIcon):
         self._cache_metar = None
         self._cache = None
 
-        XPWeatherBaseIcon.__init__(self, config=config, button=button)
+        XPWeatherBaseIcon.__init__(self, button=button)
 
         # Working variables
         self.collector = self.button.sim.collector  # shortcut

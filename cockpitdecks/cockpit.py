@@ -866,9 +866,6 @@ class Cockpit(DatarefListener, CockpitBase):
     # We do the reload from another thread, external to the callback,
     # that cleanly stops, initializes, and restarts the deck.
     #
-    # Note: Only started if has_reload is True. has_reload is set if a Reload button activation is configured.
-    #      (Otherwise there is no need to start the reload loop since nothing can provoke it.)
-    #
     def start_event_loop(self):
         if not self.event_loop_run:
             self.event_loop_thread = threading.Thread(target=self.event_loop, name=f"Cockpit::event_loop")

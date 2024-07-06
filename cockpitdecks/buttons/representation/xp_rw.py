@@ -24,11 +24,11 @@ class RealWeatherIcon(XPWeatherBaseIcon):
 
     MIN_UPDATE = 600  # seconds between two station updates
 
-    def __init__(self, config: dict, button: "Button"):
-        self.weather = config.get("real-weather", {})
+    def __init__(self, button: "Button"):
+        self.weather = button._config.get("real-weather", {})
         self.mode = self.weather.get("mode", "region")
 
-        XPWeatherBaseIcon.__init__(self, config=config, button=button)
+        XPWeatherBaseIcon.__init__(self, button=button)
 
         # Working variables
         self.display_datarefs = DISPLAY_DATAREFS_REGION if self.mode == "region" else DISPLAY_DATAREFS_AIRCRAFT

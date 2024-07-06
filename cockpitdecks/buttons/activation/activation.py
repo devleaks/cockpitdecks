@@ -3,7 +3,9 @@ Button action and activation abstraction
 """
 
 import logging
+import random
 import threading
+import random
 from typing import Dict, List
 
 from datetime import datetime
@@ -47,10 +49,8 @@ class Activation:
         r = cls.REQUIRED_DECK_ACTIONS
         return r if type(r) in [list, tuple] else [r]
 
-    def __init__(self, config: dict, button: "Button"):
-        self._config = config
+    def __init__(self, button: "Button"):
         self.button = button
-        self._has_no_value = False  # Marker that control whether activation has a feedback value
         self._inited = False
 
         self.button.deck.cockpit.set_logging_level(__name__)
@@ -58,11 +58,11 @@ class Activation:
         # Options
 
         # Commands
-        self._view = Command(path=config.get(CONFIG_KW.VIEW.value))  # Optional additional command, usually to set a view
+        self._view = Command(path=self._config.get(CONFIG_KW.VIEW.value))  # Optional additional command, usually to set a view
         # but could be anything.
-        self._long_press = Command(path=config.get("long-press"))  # Optional additional command
+        self._long_press = Command(path=self._config.get("long-press"))  # Optional additional command
         # Datarefs
-        self.writable_dataref = config.get("set-dataref")
+        self.writable_dataref = self._config.get("set-dataref")
 
         # Working variables, internal state
         self._last_event = None
@@ -73,9 +73,9 @@ class Activation:
         self.last_activated = 0
         self.duration = 0
         self.pressed = False
-        self.initial_value = config.get("initial-value")
+        self.initial_value = self._config.get("initial-value")
 
-        self.options = parse_options(config.get("options"))
+        self.options = parse_options(self._config.get("options"))
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
@@ -84,6 +84,11 @@ class Activation:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
 
         self.init()
+
+    @property
+    def _config(self):
+        # Activation._config = Button._config
+        return self.button._config
 
     def init(self):  # ~ABC
         pass
@@ -316,13 +321,12 @@ class LoadPage(Activation):
         "deck": {"type": "string", "prompt": "Remote deck", "optional": True},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
-        self._has_no_value = True
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
         # Commands
-        self.page = config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
-        self.remote_deck = config.get("deck")
+        self.page = self._config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
+        self.remote_deck = self._config.get("deck")
 
     def is_valid(self):
         if self.page is None:
@@ -367,10 +371,8 @@ class Reload(Activation):
 
     PARAMETERS = {}
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
-        self._has_no_value = True
-        self.button.deck.cockpit.has_reload = True  # this will ensure reload loop get started. Otherwise it is not started.
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -400,10 +402,9 @@ class ChangeTheme(Activation):
         }
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
-        self.theme = config.get("theme")
-        self.button.deck.cockpit.has_reload = True  # this will ensure reload loop get started. Otherwise it is not started.
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
+        self.theme = self._config.get("theme")
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -438,11 +439,10 @@ class Inspect(Activation):
         }
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
-        self._has_no_value = True
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
-        self.what = config.get("what", "status")
+        self.what = self._config.get("what", "status")
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -474,10 +474,8 @@ class Stop(Activation):
 
     PARAMETERS = {}
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
-        self._has_no_value = True
-        self.button.deck.cockpit.has_reload = True  # this will ensure reload loop get started. Otherwise it is not started.
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -490,6 +488,33 @@ class Stop(Activation):
         Describe what the button does in plain English
         """
         return "\n\r".join([f"The button stops Cockpitdecks and terminates gracefully."])
+
+
+class Random(Activation):
+    """
+    Set the value of the button to a float random number between 0 and 1..
+    """
+
+    ACTIVATION_NAME = "random"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH, DECK_ACTIONS.ENCODER]
+
+    PARAMETERS = {}
+
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
+
+    def activate(self, event):
+        if not self.can_handle(event):
+            return
+        if event.pressed:
+            self.button.set_current_value(random.random())
+
+    def describe(self) -> str:
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join([f"The button stops Cockpitdecks and terminates gracefully."])
+
 
 
 #
@@ -521,11 +546,11 @@ class Push(Activation):
     AUTO_REPEAT_DELAY = 1  # seconds
     AUTO_REPEAT_SPEED = 0.2  # seconds
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
         # Commands
-        self._command = Command(config.get("command"))
+        self._command = Command(button._config.get("command"))
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -538,7 +563,7 @@ class Push(Activation):
         self.set_auto_repeat()
 
         self.onoff_current_value = None
-        self.initial_value = config.get("initial-value")
+        self.initial_value = button._config.get("initial-value")
         if self.initial_value is not None:
             if type(self.initial_value) == bool:
                 self.onoff_current_value = self.initial_value
@@ -674,8 +699,8 @@ class Longpress(Push):
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
 
-    def __init__(self, config: dict, button: "Button"):
-        Push.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Push.__init__(self, button=button)
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -723,15 +748,15 @@ class OnOff(Activation):
         },
     }
 
-    def __init__(self, config: dict, button: "Button"):
+    def __init__(self, button: "Button"):
         # Commands
-        self._commands = [Command(path) for path in config.get("commands", [])]
+        self._commands = [Command(path) for path in button._config.get("commands", [])]
 
         # Internal variables
         self.onoff_current_value = None  # bool on or off, true = on
-        self.initial_value = config.get("initial-value")
+        self.initial_value = button._config.get("initial-value")
 
-        Activation.__init__(self, config=config, button=button)
+        Activation.__init__(self, button=button)
 
     def init(self):
         if self._inited:
@@ -866,13 +891,13 @@ class ShortOrLongpress(Activation):
         "command long": {"type": "string", "prompt": "Command", "mandatory": True},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get("commands", [])]
 
-        self.long_time = config.get("long-time", 2)
+        self.long_time = self._config.get("long-time", 2)
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -927,19 +952,19 @@ class UpDown(Activation):
         },
     }
 
-    def __init__(self, config: dict, button: "Button"):
+    def __init__(self, button: "Button"):
         # Commands
-        self._commands = [Command(path) for path in config.get("commands", [])]
+        self._commands = [Command(path) for path in button._config.get("commands", [])]
 
         # Internal status
         self.stops = 0
-        stops = config.get("stops", 2)
+        stops = button._config.get("stops", 2)
         if stops is not None:
             self.stops = int(stops)
         self.go_up = True
         self.stop_current_value: int | None = None
 
-        Activation.__init__(self, config=config, button=button)
+        Activation.__init__(self, button=button)
 
     def init(self):
         if self._inited:
@@ -1071,11 +1096,11 @@ class Encoder(Activation):
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 2}}
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get("commands", [])]
 
         # Internal status
         self._turns = 0
@@ -1146,11 +1171,11 @@ class EncoderPush(Push):
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 3}}
 
-    def __init__(self, config: dict, button: "Button"):
-        Push.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Push.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get("commands", [])]
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:
@@ -1273,8 +1298,8 @@ class EncoderOnOff(OnOff):
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4}}
 
-    def __init__(self, config: dict, button: "Button"):
-        OnOff.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        OnOff.__init__(self, button=button)
 
         self.dual = self.button.has_option("dual")
 
@@ -1393,11 +1418,11 @@ class EncoderValue(OnOff):
         },
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        self.step = float(config.get("step", 1))
-        self.stepxl = float(config.get("stepxl", 10))
-        self.value_min = float(config.get("value-min", 0))
-        self.value_max = float(config.get("value-max", 100))
+    def __init__(self, button: "Button"):
+        self.step = float(button._config.get("step", 1))
+        self.stepxl = float(button._config.get("stepxl", 10))
+        self.value_min = float(button._config.get("value-min", 0))
+        self.value_max = float(button._config.get("value-max", 100))
 
         # Internal status
         self._turns = 0
@@ -1405,7 +1430,7 @@ class EncoderValue(OnOff):
         self._ccw = 0
         self.encoder_current_value = 0
 
-        OnOff.__init__(self, config=config, button=button)
+        OnOff.__init__(self, button=button)
 
     def init(self):
         if self._inited:
@@ -1525,24 +1550,24 @@ class EncoderValueExtended(OnOff):
         "set-dataref": {"type": "string", "prompt": "Dataref"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        self.step = float(config.get("step", 1))
-        self.stepxl = float(config.get("stepxl", 10))
-        self.value_min = float(config.get("value-min", 0))
-        self.value_max = float(config.get("value-max", 100))
-        self.options = config.get("options", None)
+    def __init__(self, button: "Button"):
+        self.step = float(button._config.get("step", 1))
+        self.stepxl = float(button._config.get("stepxl", 10))
+        self.value_min = float(button._config.get("value-min", 0))
+        self.value_max = float(button._config.get("value-max", 100))
+        self.options = button._config.get("options", None)
 
         # Internal status
         self._turns = 0
         self._cw = 0
         self._ccw = 0
-        self.encoder_current_value = float(config.get("initial-value", 1))
+        self.encoder_current_value = float(button._config.get("initial-value", 1))
         self._step_mode = self.step
-        self._local_dataref = config.get("dataref", None)  # "local-dataref"
+        self._local_dataref = button._config.get("dataref", None)  # "local-dataref"
         if self._local_dataref is not None:
             self._local_dataref = "data:" + self._local_dataref  # local dataref to write to
 
-        OnOff.__init__(self, config=config, button=button)
+        OnOff.__init__(self, button=button)
 
     def init(self):
         if self._inited:
@@ -1688,12 +1713,12 @@ class Slider(Activation):  # Cursor?
         "set-dataref": {"type": "string", "prompt": "Dataref"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
-        self.value_min = float(config.get("value-min", 0))
-        self.value_max = float(config.get("value-max", 100))
-        self.value_step = float(config.get("value-step", 0))
+        self.value_min = float(self._config.get("value-min", 0))
+        self.value_max = float(self._config.get("value-max", 100))
+        self.value_step = float(self._config.get("value-step", 0))
         if self.value_min > self.value_max:
             temp = self.value_min
             self.value_min = self.value_max
@@ -1749,8 +1774,8 @@ class Swipe(Activation):
     ACTIVATION_NAME = "swipe"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
     def activate(self, event):
         if not self.can_handle(event):
@@ -1786,11 +1811,11 @@ class EncoderToggle(Activation):
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4}}
 
-    def __init__(self, config: dict, button: "Button"):
-        Activation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get("commands", [])]
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:

@@ -27,21 +27,21 @@ class DrawBase(IconBase):
 
     REPRESENTATION_NAME = "draw-base"
 
-    def __init__(self, config: dict, button: "Button"):
-        IconBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        IconBase.__init__(self, button=button)
 
         self.texture = None
         self.bgcolor = None
-        self.cockpit_texture = config.get("cockpit-texture", self.button.get_attribute("cockpit-texture"))
-        self.cockpit_color = config.get("cockpit-color", self.button.get_attribute("cockpit-color"))
+        self.cockpit_texture = self._config.get("cockpit-texture", self.button.get_attribute("cockpit-texture"))
+        self.cockpit_color = self._config.get("cockpit-color", self.button.get_attribute("cockpit-color"))
 
         # Reposition for move_and_send()
-        self.draw_scale = float(config.get("scale", 1))
+        self.draw_scale = float(self._config.get("scale", 1))
         if self.draw_scale < 0.5 or self.draw_scale > 2:
             logger.warning(f"button {self.button.name}: invalid scale {self.draw_scale}, must be in interval [0.5, 2]")
             self.draw_scale = 1
-        self.draw_left = config.get("left", 0) - config.get("right", 0)
-        self.draw_up = config.get("up", 0) - config.get("down", 0)
+        self.draw_left = self._config.get("left", 0) - self._config.get("right", 0)
+        self.draw_up = self._config.get("up", 0) - self._config.get("down", 0)
 
     def double_icon(self, width: int = ICON_SIZE * 2, height: int = ICON_SIZE * 2):
         """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
@@ -152,10 +152,10 @@ class Decor(DrawBase):
 
     REPRESENTATION_NAME = "decor"
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
 
-        self.decor = config.get("decor")
+        self.decor = self._config.get("decor")
 
         if self.decor is None:
             logger.warning("no decor configuration")

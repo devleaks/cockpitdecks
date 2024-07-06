@@ -273,7 +273,7 @@ class LiveWeatherIcon(DrawAnimation):
         "Refresh location": {"type": "integer", "prompt": "Refresh location (seconds)"},
     }
 
-    def __init__(self, config: dict, button: "Button"):
+    def __init__(self, button: "Button"):
         self._inited = False
         self._moved = False  # True if we get Metar for location at (lat, lon), False if Metar for default station
         self._upd_calls = 0
@@ -282,14 +282,14 @@ class LiveWeatherIcon(DrawAnimation):
         self.use_simulation = False  # If False, use current weather METAR/TAF, else use simulator METAR and date/time; no TAF.
         # This should be decide by a dataref in XPlane, use real weather, use real date/time.
 
-        self.weather = config.get("live-weather")
+        self.weather = button._config.get("live-weather")
         if self.weather is not None and isinstance(self.weather, dict):
-            config["animation"] = config.get("live-weather")
+            button._config["animation"] = button._config.get("live-weather")
         else:
-            config["animation"] = {}
+            button._config["animation"] = {}
             self.weather = {}
 
-        DrawAnimation.__init__(self, config=config, button=button)
+        DrawAnimation.__init__(self, button=button)
 
         self._last_updated: datetime | None = None
         self._cache = None

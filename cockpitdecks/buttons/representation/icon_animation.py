@@ -31,11 +31,11 @@ class IconAnimation(MultiIcons):
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        MultiIcons.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        MultiIcons.__init__(self, button=button)
 
-        self.speed = float(config.get("animation-speed", 1))
-        self.icon_off = config.get("icon-off")
+        self.speed = float(self._config.get("animation-speed", 1))
+        self.icon_off = self._config.get("icon-off")
 
         if self.icon_off is None and len(self.multi_icons) > 0:
             self.icon_off = self.multi_icons[0]

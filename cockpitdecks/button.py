@@ -89,11 +89,11 @@ class Button(DatarefListener, DatarefSetListener):
         self._activation = None
         atype = Button.guess_activation_type(config)
         if atype is not None and atype in ACTIVATIONS:
-            self._activation = ACTIVATIONS[atype](config, self)
+            self._activation = ACTIVATIONS[atype](self)
             logger.debug(f"button {self.name} activation {atype}")
         else:
             logger.info(f"button {self.name} has no activation defined, using default activation 'none'")
-            self._activation = ACTIVATIONS["none"](config, self)
+            self._activation = ACTIVATIONS["none"](self)
 
         #### Representation
         #
@@ -102,18 +102,18 @@ class Button(DatarefListener, DatarefSetListener):
         idx = Button.guess_index(config)
         rtype = Button.guess_representation_type(config)
         if rtype is not None and rtype in REPRESENTATIONS:
-            self._representation = REPRESENTATIONS[rtype](config, self)
+            self._representation = REPRESENTATIONS[rtype](self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
             logger.info(f"button {self.name} has no representation defined, using default representation 'none'")
-            self._representation = REPRESENTATIONS["none"](config, self)
+            self._representation = REPRESENTATIONS["none"](self)
 
         self._hardware_representation = None
         if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
             rtype = self._def.get_hardware_representation()
             if rtype is not None and rtype in REPRESENTATIONS:
                 logger.debug(f"button {self.name} has hardware representation {rtype}")
-                self._hardware_representation = REPRESENTATIONS[rtype](config, self)
+                self._hardware_representation = REPRESENTATIONS[rtype](self)
 
         #### Datarefs
         #

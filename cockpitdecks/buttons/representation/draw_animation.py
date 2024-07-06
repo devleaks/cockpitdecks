@@ -29,10 +29,10 @@ class DrawAnimation(DrawBase):
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawBase.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
 
-        self._animation = config.get("animation", {})
+        self._animation = self._config.get("animation", {})
 
         # Base definition
         self.speed = float(self._animation.get("speed", 1))
@@ -133,8 +133,8 @@ class DrawAnimationFTG(DrawAnimation):
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}}
 
-    def __init__(self, config: dict, button: "Button"):
-        DrawAnimation.__init__(self, config=config, button=button)
+    def __init__(self, button: "Button"):
+        DrawAnimation.__init__(self, button=button)
 
     def should_run(self):
         """
