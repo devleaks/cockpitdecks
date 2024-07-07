@@ -112,13 +112,13 @@ def button_designer():
     return render_template("button-designer.j2", assets=cockpit.get_assets())
 
 
-@app.route("/deck_indices", methods=("GET", "POST"))
+@app.route("/deck-indices", methods=("GET", "POST"))
 def deck_indices():
     name = request.args.get("name")
     return cockpit.get_deck_indices(name)
 
 
-@app.route("/button_details", methods=("GET", "POST"))
+@app.route("/button-details", methods=("GET", "POST"))
 def button_details():
     deck = request.args.get("deck")
     index = request.args.get("index")
@@ -136,6 +136,14 @@ def representation_details():
     name = request.args.get("name")
     return cockpit.get_representation_parameters(name)
 
+
+@app.route("/load-button", methods=("GET", "POST"))
+def button_definition():
+    deck = request.args.get("deck")
+    layout = request.args.get("layout")
+    page = request.args.get("page")
+    index = request.args.get("index")
+    return cockpit.load_button(deck, layout, page, index)
 
 # Deck designer
 #

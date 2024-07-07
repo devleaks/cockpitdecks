@@ -45,10 +45,10 @@ body {
                 </select>
                 <br/>
                 <label>Layout Name</label>
-                <input type="text" name="layout" size="20"/>
+                <input type="text" name="layout" size="20" id="layout" />
                 <br/>
                 <label>Page Name</label>
-                <input type="text" name="page" size="20"/>
+                <input type="text" name="page" size="20" id="page" />
             </fieldset>
 
             <fieldset><!-- BUTTON -->
@@ -95,6 +95,7 @@ body {
                 <button id="run"   type="button" name="action" value="render">Render</button>
                 <button id="clear" type="button" name="action" value="clear">Clear</button>
                 <button id="save"  type="button" name="action" value="save">Save</button>
+                <button id="load"  type="button" name="action" value="load">Load</button>
                 <br/>
                 <legend>Code</legend>
                 <br/>
@@ -126,7 +127,7 @@ stage.add(image_layer);
 
 
 var status_line = document.getElementById("status");
-var code_elem = document.getElementById("code")
+var code_elem = document.getElementById("code");
 var deck_elem = document.getElementById("deck");
 
 var activation_details; // global
@@ -248,6 +249,51 @@ document.getElementById("save").addEventListener(
     false,
 );
 
+document.getElementById("load").addEventListener(
+    "click",
+    function (event) {
+
+        event.preventDefault();
+        let layout_elem = document.getElementById("layout");
+        let page_elem = document.getElementById("page");
+        let index_elem = document.getElementById("index");
+        let data = collectForm("parameters");
+
+        let deck = data.deck
+        if (deck == undefined || deck == "") {// sometimes not collected by collect form...
+            console.log("added deck", data.deck, deck_elem.value)
+            deck = deck_elem.value
+        }
+        let layout = data.layout
+        if (layout == undefined || layout == "") {// sometimes not collected by collect form...
+            console.log("added layout", data.layout, layout_elem.value)
+            layout = layout_elem.value
+        }
+        let page = data.page
+        if (page == undefined || page == "") {// sometimes not collected by collect form...
+            console.log("added deck", data.page, page_elem.value)
+            page = page_elem.value
+        }
+        let index = data.index
+        if (index == undefined || index == "") {// sometimes not collected by collect form...
+            console.log("added index", data.index, index_elem.value)
+            index = index_elem.value
+        }
+
+        console.log("button details out", {deck: deck, layout: layout, page: page, index: index})
+
+        fetch("/load-button?" + new URLSearchParams({deck: deck, layout: layout, page: page, index: index}).toString())
+        .then(r =>  r.json().then(definition => {
+            console.log("button details in", definition);
+            if (definition.code != "") {
+                code_elem.innerHTML = definition.code
+            }
+        }));
+        return false;
+    },
+    false,
+);
+
 document.getElementById("clear").addEventListener(
     "click",
     function (event) {
@@ -294,7 +340,7 @@ index_elem.onchange = (e) => {
     let deck = deck_elem.value
     let index = index_elem.value
 
-    fetch("/button_details?" + new URLSearchParams({deck: deck, index: index}).toString())
+    fetch("/button-details?" + new URLSearchParams({deck: deck, index: index}).toString())
     .then(r =>  r.json().then(details => {
         // console.log("button details in", details);
         // Activations
@@ -327,7 +373,7 @@ index_elem.onchange = (e) => {
 deck_elem.onchange = (e) => {
     let deck = deck_elem.value
 
-    fetch("/deck_indices?" + new URLSearchParams({name: deck}).toString())
+    fetch("/deck-indices?" + new URLSearchParams({name: deck}).toString())
     .then(r =>  r.json().then(details => {
         // console.log("deck indices", details);
         removeOptions(index_elem);
