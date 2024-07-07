@@ -125,7 +125,7 @@ var stage = new Konva.Stage({
 var image_layer = new Konva.Layer({name: "image"});
 stage.add(image_layer);
 
-
+// "globals"
 var status_line = document.getElementById("status");
 var code_elem = document.getElementById("code");
 var deck_elem = document.getElementById("deck");
@@ -197,7 +197,6 @@ document.getElementById("run").addEventListener(
     "click",
     function (event) {
         event.preventDefault();
-        code_elem.innerHTML = ""
         let data = collectForm("parameters");
         if (code_elem.innerHTML == undefined || code_elem.innerHTML == "") {
             var code = generateYaml(data, activation_details, representation_details);
@@ -284,7 +283,7 @@ document.getElementById("load").addEventListener(
 
         fetch("/load-button?" + new URLSearchParams({deck: deck, layout: layout, page: page, index: index}).toString())
         .then(r =>  r.json().then(definition => {
-            console.log("button details in", definition);
+            // console.log("button details in", definition);
             if (definition.code != "") {
                 code_elem.innerHTML = definition.code
             }
