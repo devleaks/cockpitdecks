@@ -883,7 +883,7 @@ class Button(DatarefListener, DatarefSetListener):
     # External API
     #
     def use_internal_state(self) -> bool:
-        return len(self.all_datarefs if self.all_datarefs is not None else []) == 0 or (self._activation is not None and self._activation._has_no_value)
+        return self.all_datarefs is None or len(self.all_datarefs) == 0
 
     def dataref_changed(self, dataref: "Dataref"):
         """

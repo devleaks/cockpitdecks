@@ -316,6 +316,7 @@ class ChartData:
         while len(self.data) > self.keep:
             del self.data[0]
 
+
 class ChartIcon(DrawAnimation):
 
     REPRESENTATION_NAME = "chart"
@@ -425,7 +426,7 @@ class ChartIcon(DrawAnimation):
         rule_width = 2
         height = image.height * self.rule_height / 100
         chart.line(
-            [(0, image.height - height - int(rule_width/2)), (image.width, image.height - height - int(rule_width/2))],
+            [(0, image.height - height - int(rule_width / 2)), (image.width, image.height - height - int(rule_width / 2))],
             width=rule_width,
             fill=rule_color,
         )
@@ -455,7 +456,7 @@ class ChartIcon(DrawAnimation):
                     pt_value, pt_time = pt
                     x = (time_left - pt_time) * time_pix
                     y = image.height * pt_value / c.value_max
-                    bbox = [(x,image.height-y), (x+barwidth,image.height)] # ((int(x), int(y)))
+                    bbox = [(x, image.height - y), (x + barwidth, image.height)]  # ((int(x), int(y)))
                     chart.rectangle(
                         bbox,
                         fill=c.color,
