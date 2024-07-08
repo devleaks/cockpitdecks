@@ -74,7 +74,7 @@ function toDataUrl(url, callback) {
             callback(reader.result);
         }
         reader.readAsDataURL(xhr.response);
-        console.log(url, xhr.response)
+        // console.log(url, xhr.response)
     };
     xhr.open('GET', url);
     xhr.responseType = 'blob';

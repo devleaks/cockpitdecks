@@ -101,7 +101,7 @@ function connect() {
         try {
             if (ws) {
                 sendCode(DECK.name, 1);
-                console.log("sent code 1 to", DECK.name)
+                // console.log("sent code 1 to", DECK.name)
                 // sends its name on new connection to help identify
             }
         } catch (error) {
@@ -115,9 +115,9 @@ function connect() {
         // console.log("code received", data.code, data.meta);
         if (data.code == 0) {
             deck.set_key_image(data.key, data.image);
-        } else if (data.code == 1) {
+        } else if (data.code == 8) {
             console.log("received initialisation code, requesting page reload", data.code);
-            // window.location.reload()
+            window.location.reload()
             // sendCode(DECK.name, 1);
         } else if (data.code == 99) {
             // console.log("received ping", data.code);
