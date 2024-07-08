@@ -282,7 +282,7 @@ class Activation:
         logger.info(f"{self.duration}")
         logger.info(f"{self.pressed}")
 
-    def get_status(self) -> dict:
+    def get_state_variables(self) -> dict:
         return {
             "activation_type": type(self).__name__,
             "activation_count": self.activation_count,
@@ -450,8 +450,8 @@ class Inspect(Activation):
         if event.pressed:
             self.button.deck.cockpit.inspect(self.what)
 
-    def get_status(self):
-        s = super().get_status()
+    def get_state_variables(self):
+        s = super().get_state_variables()
         if s is None:
             s = {}
         s = s | {"what": self.what}
@@ -514,7 +514,6 @@ class Random(Activation):
         Describe what the button does in plain English
         """
         return "\n\r".join([f"The button stops Cockpitdecks and terminates gracefully."])
-
 
 
 #
@@ -848,8 +847,8 @@ class OnOff(Activation):
             self.view()
         self.write_dataref(self.onoff_current_value)
 
-    def get_status(self):
-        s = super().get_status()
+    def get_state_variables(self):
+        s = super().get_state_variables()
         if s is None:
             s = {}
         s = s | {"on": self.is_on()}
@@ -1049,8 +1048,8 @@ class UpDown(Activation):
             self.stop_current_value = nextval
             self.write_dataref(nextval)
 
-    def get_status(self):
-        s = super().get_status()
+    def get_state_variables(self):
+        s = super().get_state_variables()
         if s is None:
             s = {}
         s = s | {"stops": self.stops, "go_up": self.go_up}
@@ -1132,8 +1131,8 @@ class Encoder(Activation):
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
         self.write_dataref(self._turns)
 
-    def get_status(self):
-        a = super().get_status()
+    def get_state_variables(self):
+        a = super().get_state_variables()
         if a is None:
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
@@ -1245,8 +1244,8 @@ class EncoderPush(Push):
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
-    def get_status(self):
-        a = super().get_status()
+    def get_state_variables(self):
+        a = super().get_state_variables()
         if a is None:
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
@@ -1366,8 +1365,8 @@ class EncoderOnOff(OnOff):
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
-    def get_status(self):
-        a = super().get_status()
+    def get_state_variables(self):
+        a = super().get_state_variables()
         if a is None:
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
@@ -1494,8 +1493,8 @@ class EncoderValue(OnOff):
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
-    def get_status(self):
-        a = super().get_status()
+    def get_state_variables(self):
+        a = super().get_state_variables()
         if a is None:
             a = {}
         return a | {
@@ -1653,8 +1652,8 @@ class EncoderValueExtended(OnOff):
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
-    def get_status(self):
-        a = super().get_status()
+    def get_state_variables(self):
+        a = super().get_state_variables()
         if a is None:
             a = {}
         return a | {
@@ -1866,8 +1865,8 @@ class EncoderToggle(Activation):
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
-    def get_status(self):
-        a = super().get_status()
+    def get_state_variables(self):
+        a = super().get_state_variables()
         if a is None:
             a = {}
         return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}

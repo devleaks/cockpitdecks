@@ -2,31 +2,23 @@
 #
 import os
 import logging
-import pickle
 
-from typing import Dict, List, Any
+from typing import Dict, List
 from abc import ABC, abstractmethod
-from functools import reduce
 
 from PIL import Image
 
-from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, DECK_FEEDBACK, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
-from cockpitdecks import Config
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color, add_ext
+from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
+from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
+from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color
 
+from cockpitdecks.decks.resources import DeckType
+from cockpitdecks.buttons.representation import Icon
 from .page import Page
 from .button import Button
-from .event import Event
-from cockpitdecks.event import DeckEvent, PushEvent
-from cockpitdecks.decks.resources import DeckType
-from cockpitdecks.page import Page
-from cockpitdecks.buttons.representation import Icon
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-DECKS_FOLDER = "decks"
 
 
 class Deck(ABC):

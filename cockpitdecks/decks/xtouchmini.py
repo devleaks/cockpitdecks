@@ -4,7 +4,7 @@ import logging
 
 from XTouchMini.Devices.xtouchmini import LED_MODE, MAKIE_MAPPING
 
-from cockpitdecks import DECK_KW, DECK_ACTIONS, DECK_FEEDBACK, DEFAULT_PAGE_NAME
+from cockpitdecks import DECK_KW, DECK_ACTIONS, DEFAULT_PAGE_NAME
 from cockpitdecks.deck import Deck
 from cockpitdecks.page import Page
 from cockpitdecks.event import PushEvent, EncoderEvent, SlideEvent

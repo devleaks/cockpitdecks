@@ -28,8 +28,9 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
+
 INTERNAL_STATE_PREFIX = "state:"
-VARIABLE_PREFIX = ["button", "state"]
+BUTTON_VARIABLE_PREFIX = "button:"
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
@@ -192,7 +193,7 @@ class Button(DatarefListener, DatarefSetListener):
             return v
         a = name.split(":")
         if len(a) > 1:
-            s = self.get_status()
+            s = self.get_state_variables()
             if a[1] in s.keys():
                 return s[a[1]]
             else:
@@ -230,7 +231,7 @@ class Button(DatarefListener, DatarefSetListener):
                 self._representation.inspect(what)
             if "status" in what:
                 logger.info("")
-                logger.info(yaml.dump(self.get_status(), sys.stdout))
+                logger.info(yaml.dump(self.get_state_variables(), sys.stdout))
             if "valid" in what:
                 logger.info(f"-- {'is valid' if self.is_valid() else 'IS INVALID'}")
             if "desc" in what:
@@ -459,7 +460,7 @@ class Button(DatarefListener, DatarefSetListener):
 
         def is_dref(r):
             # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
-            PREFIX = list(ICON_FONTS.keys()) + VARIABLE_PREFIX
+            PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
             SEP = ":"
             for s in PREFIX:
                 if r.startswith(s + SEP):
@@ -623,8 +624,8 @@ class Button(DatarefListener, DatarefSetListener):
 
         return retmsg
 
-    def substitute_state_values_rev(self, text, default: str = "0.0", formatting=None):
-        status = self.get_status()
+    def substitute_state_values_orig(self, text, default: str = "0.0", formatting=None):
+        status = self.get_state_variables()
         txtcpy = text
         # more = re.findall("\\${status:([^\\}]+?)}", txtcpy)
         for k, v in status.items():
@@ -642,8 +643,26 @@ class Button(DatarefListener, DatarefSetListener):
             logger.warning(f"button {self.name}: unsubstituted status values {more}")
         return txtcpy
 
+    def get_state_value(self, name):
+        value = None
+        status = self.get_state_variables()
+        source = "all sources"
+        if name in status:  #
+            value = str(status.get(name))
+            source = "status"
+        elif hasattr(self._activation, name):
+            value = str(getattr(self._activation, name))
+            source = "activation attribute"
+        elif hasattr(self, name):
+            value = str(getattr(self, name))
+            source = "button attribute"
+        else:
+            logger.debug(f"button {self.name}: state {name} not found")
+        logger.debug(f"button {self.name}: state {name} = {value} (from {source})")
+        return value
+
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
-        status = self.get_status()
+        status = self.get_state_variables()
         txtcpy = text
         more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
         for name in more:
@@ -851,7 +870,7 @@ class Button(DatarefListener, DatarefSetListener):
         # 5. Value is based on activation state:
         if not self.use_internal_state():
             logger.warning(f"button {self.name}: use internal state")
-        self._last_activation_state = self._activation.get_status()
+        self._last_activation_state = self._activation.get_state_variables()
 
         if "current_value" in self._last_activation_state:
             logger.debug(f"button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
@@ -917,7 +936,7 @@ class Button(DatarefListener, DatarefSetListener):
             if self.deck.is_virtual_deck():  # representation has not changed, but hardware representation might have
                 self.render()
 
-    def get_status(self):
+    def get_state_variables(self):
         """ """
         a = {
             "render": self._render,
@@ -927,9 +946,9 @@ class Button(DatarefListener, DatarefSetListener):
             "managed": self.managed,
             "guarded": self.guarded,
         }
-        return self._activation.get_status() | a
+        return self._activation.get_state_variables() | a
         # if self._representation is not None:
-        #     return self._representation.get_status()
+        #     return self._representation.get_state_variables()
 
     def get_representation(self):
         """

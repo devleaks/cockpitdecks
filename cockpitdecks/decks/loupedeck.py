@@ -12,9 +12,6 @@ from cockpitdecks.page import Page
 from cockpitdecks.button import Button
 from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
 from cockpitdecks.buttons.representation import Representation, IconBase, ColoredLED
-from cockpitdecks.resources.color import (
-    convert_color,
-)  # valid representations for this type of deck
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

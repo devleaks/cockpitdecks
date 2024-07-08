@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL
-from cockpitdecks.simulator import Simulator, Dataref, Command, NOT_A_DATAREF, SimulatorEvent
+from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent
 from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
@@ -379,10 +379,6 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.warning(f"no connection ({path}={value})")
             return
 
-        if path in NOT_A_DATAREF:
-            logger.warning(f"not a dataref ({path})")
-            return
-
         cmd = b"DREF\x00"
         path = path + "\x00"
         string = path.ljust(500).encode()
@@ -411,10 +407,6 @@ class XPlane(Simulator, XPlaneBeacon):
 
         if not self.connected:
             logger.warning(f"no connection ({path}, {freq})")
-            return False
-
-        if path in NOT_A_DATAREF:
-            logger.warning(f"not a path ({path})")
             return False
 
         idx = -9999

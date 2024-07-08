@@ -76,28 +76,26 @@ buttons:
     text-size: 18
   - index: 8
     name: INSPECT DATAREFS
-    label: Inspect Datarefs
+    label: DATAREF VALUES
     type: inspect
     what: datarefs
-    icon: reload
+    text: "= ?"
+    text-color: lime
+    text-font: D-DIN-Bold
+    text-size: 60
+    text-position: cm
   - index: 9
     type: reload
-    icon: reload
     label: "RELOAD\n\nPAGE"
     label-position: cm
     label-color: red
     label-font: D-DIN-Bold.otf
     label-size: 20
-    # label: RELOAD
-    # label-size: 14
-    # label-position: cm
-    # label-font: B612-Bold
-    # text: ${fa:rotate-left}
-    # text-font: fontawesome.otf
-    # text-color: lime
-    # text-size: 70
-    # text-position: cm
-    # text-bg-color: (94, 111, 130)
+    text: ${fa:rotate-left}
+    text-font: fontawesome.otf
+    text-color: lime
+    text-size: 70
+    text-position: cm
   - index: 10
     type: stop
     icon: stop

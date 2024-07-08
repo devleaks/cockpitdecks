@@ -145,6 +145,7 @@ def button_definition():
     index = request.args.get("index")
     return cockpit.load_button(deck, layout, page, index)
 
+
 # Deck designer
 #
 @app.route("/deck-designer")

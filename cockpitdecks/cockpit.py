@@ -9,14 +9,13 @@ import logging
 import pickle
 import json
 import pkg_resources
-import random
 from datetime import datetime
 from queue import Queue
 
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT, button
+from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
@@ -26,7 +25,7 @@ from cockpitdecks.simulator import DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
 from .buttons.activation import ACTIVATIONS
-from .buttons.representation import REPRESENTATIONS, get_representations_for
+from .buttons.representation import REPRESENTATIONS
 
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
@@ -1262,6 +1261,37 @@ class Cockpit(DatarefListener, CockpitBase):
         with open(fn, "w") as fp:
             yaml.dump(page_config, fp)
             logger.info(f"button saved ({fn})")
+
+    def load_button(self, deck, layout, page, index):
+        deck_name = self.cockpit.get(deck)
+        if deck_name is None or deck_name == "":
+            return {"code": "", "meta": {"error": f"no deck {deck}"}}
+
+        if layout == "":
+            layout = "default"
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, layout)
+        if not os.path.exists(dn):
+            return {"code": "", "meta": {"error": f"no layout {layout}"}}
+
+        if page == "":  # page name cannot be in name: attribute0
+            page = "index"
+        fn = os.path.join(dn, page + ".yaml")
+        if not os.path.exists(dn):
+            return {"code": "", "meta": {"error": f"no page {page}"}}
+
+        this_page = Config(fn)
+        if CONFIG_KW.BUTTONS.value not in this_page.store:
+            return {"code": "", "meta": {"error": f"no buttons in {page}"}}
+
+        this_button = None
+        for b in this_page.store.get(CONFIG_KW.BUTTONS.value):
+            idx = b.get(CONFIG_KW.INDEX.value)
+            if idx is not None and ((idx == index) or (str(idx) == str(index))):
+                buf = io.BytesIO()
+                yaml.dump(b, buf)
+                ret = buf.getvalue().decode("utf-8")
+                return {"code": ret, "meta": {"error": f"no buttons in {page}"}}  # there might be yaml parser garbage in b
+        return {"code": "", "meta": {"error": f"no button index {index}"}}
 
     def render_button(self, data):
         # testing. returns random icon

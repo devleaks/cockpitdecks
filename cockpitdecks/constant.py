@@ -44,11 +44,13 @@ ICON_SIZE = 256  # px
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
-AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"
-COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"
+AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path
+COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
 
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
+
+COLLECTOR = False
 
 
 class ANNUNCIATOR_STYLES(Enum):
@@ -115,6 +117,7 @@ class CONFIG_KW(Enum):
     INDEX_NUMERIC = "_index"
     LAYOUT = "layout"
     MANAGED = "managed"
+    MULTI_DATAREFS = "multi-datarefs"
     NAME = "name"
     NONE = "none"
     SERIAL = "serial"

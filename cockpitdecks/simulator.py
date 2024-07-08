@@ -54,8 +54,8 @@ class Command:
 # ########################################
 # Dataref
 #
-INTERNAL_DATAREF_PREFIX = "data:"  # "internal" datarefs (not exported to X-Plane) start with that prefix
-NOT_A_DATAREF = ["DatarefPlaceholder"]
+# "internal" datarefs (not exported to X-Plane) start with that prefix
+INTERNAL_DATAREF_PREFIX = "data:"
 
 
 class Dataref:

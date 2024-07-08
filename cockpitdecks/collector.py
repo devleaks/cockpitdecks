@@ -12,7 +12,6 @@ Each layer is collected in a DatarefSet.
 """
 
 import logging
-import psutil
 import time
 import itertools
 import threading
@@ -456,9 +455,9 @@ class DatarefSetCollector:
                     logger.debug(f"collection {next_collection.name} no longer collectable")
             except Empty:
                 logger.debug(f"queue is empty")
-            logger.debug(
-                f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_must_stop.is_set()}"
-            )
+            # logger.debug(
+            #     f"uptime: {psutil.cpu_percent()}, {', '.join([f'{l:4.1f}' for l in psutil.getloadavg()])} ({self.candidates.qsize()} in queue), {self.collector_must_stop.is_set()}"
+            # )
             time.sleep(LOOP_DELAY)  # this is to give a chance to other thread to run...
         self.collector_must_stop = None
         logger.debug(f"..Collector loop terminated")

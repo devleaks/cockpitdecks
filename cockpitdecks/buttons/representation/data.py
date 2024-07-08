@@ -15,10 +15,10 @@ from cockpitdecks.resources.iconfonts import ICON_FONTS
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
 from .draw import DrawBase  # explicit Icon from file to avoid circular import
 from .draw_animation import DrawAnimation
+from cockpitdecks.value import Value
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-MIN_COLLECT_TIME = 0.5  # sec
+logger.setLevel(logging.DEBUG)
 
 
 #
@@ -258,6 +258,8 @@ class ChartData:
         self.update = config.get("update")
         self.scale = config.get("scale", 1)
 
+        self.value = Value(self.name, config=config, button=chart.button)
+
         self.data = []
 
     def get_datarefs(self):
@@ -267,6 +269,7 @@ class ChartData:
         return self.datarefs
 
     def get_value(self):
+        # return self.value.get_value()
         return randint(self.value_min, self.value_max)
 
     def get_stats(self):
@@ -304,39 +307,58 @@ class ChartIcon(DrawAnimation):
         "data": {"type": "string", "prompt": "Data"},
     }
 
-    MIN_COLLECT_TIME = 0.5  # sec
+    MIN_UPDATE_TIME = 0.5  # sec
+    DEFAULT_TIME_WIDTH = 60  # sec
 
     def __init__(self, button: "Button"):
         self.chart = button._config[self.REPRESENTATION_NAME]
-        self.lines = self.chart.get("charts")  # raw
-        self.data = {}  # same, but constructed
+        self.chart_configs = self.chart.get("charts")  # raw
+        self.charts = {}  # same, but constructed
+        self.time_width = self.chart.get("time-width")
+        self.rule_height = self.chart.get("rule-height", 0)
 
         DrawAnimation.__init__(self, button=button)
+        self.init()
 
     def init(self):
         # Prepare each chart.
-        # Compute time width of icon
-        # Make global scale of icon
-        # Rescale each chart so that it fits.
         data_prefix = "line#"
         i = 0
-        for d in self.lines:
-            n = d.get("name")
-            if n is None:
+        for d in self.chart_configs:
+            if d.get("name") is None:  # give a name if none
                 d["name"] = data_prefix + str(i)
                 i = i + 1
-        self.data = {d["name"]: ChartData(chart=self, config=d) for d in self.lines}
+        self.charts = {d["name"]: ChartData(chart=self, config=d) for d in self.chart_configs}
 
-        # Set basic timing
-        stats = {d.name: d.get_stats() for d in self.data.values()}
-        fastest = min(s[6] for s in stats.values())
-        self.speed = max(fastest, self.MIN_COLLECT_TIME)  # cannot collect faster than MIN_COLLECT_TIME
+        # Compute speed of update (the fastest)
+        speed = None
+        for c in self.charts.values():
+            if c.update is not None:
+                if speed is not None:
+                    speed = min(speed, c.update)
+                    speed = max(speed, self.MIN_UPDATE_TIME)
+                else:
+                    speed = max(c.update, self.MIN_UPDATE_TIME)
+        self.speed = speed
+        if speed is not None:
+            logger.debug(f"update speed: {speed} secs.")
+        else:
+            logger.debug(f"no animation, update when value changed")
+
+        # Compute time width of icon (width = ICON_SIZE - 2 * inside)
+        if self.time_width is None:
+            time_width = max([c.duration for c in self.charts.values()])
+            logger.debug(f"time width: {time_width} secs.")
+            if time_width == 0:
+                time_width = self.DEFAULT_TIME_WIDTH
+                logger.debug(f"time width set to {time_width} secs.")
+            self.time_width = time_width
 
     def get_datarefs(self):
         # Collects datarefs in each chart
         if self.datarefs is None:
             datarefs = []
-            for c in self.data.values():
+            for c in self.charts.values():
                 datarefs = datarefs + c.get_datarefs()
             self.datarefs = datarefs
         return self.datarefs
@@ -356,15 +378,20 @@ class ChartIcon(DrawAnimation):
         """
 
         # DEMO
-        for c in self.data.values():
+        for c in self.charts.values():
             c.add(c.get_value())
 
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
-        inside = round(0.04 * image.width + 0.5)
+        inside = round(0.04 * ICON_SIZE + 0.5)
+        image, chart = self.double_icon(width=int(ICON_SIZE - 2 * inside), height=int(ICON_SIZE * 7 / 8 - 2 * inside))
+
+        top_of_chart = int(ICON_SIZE / 8 + inside)
+
+        time_pix = image.width / self.time_width
+        time_left = datetime.now().timestamp()
 
         # Preprocess available data, there might not be a lot at the beginning...
         # For each data, get min, max, scaled min, scaled max, number to keep
-        stats = {d.name: d.get_stats() for d in self.data.values()}
+        stats = {d.name: d.get_stats() for d in self.charts.values()}
         rule_color = "white"
 
         # data, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(self.chart, "data")
@@ -373,38 +400,39 @@ class ChartIcon(DrawAnimation):
         data_font = "D-DIN"
         data_size = 32
         font = self.get_font(data_font, data_size)
-        # draw.text(
-        #     (int(ICON_SIZE / 2), int(ICON_SIZE / 2)),
-        #     text=self.REPRESENTATION_NAME,
-        #     font=font,
-        #     anchor="mm",
-        #     align="center",
-        #     fill=data_color,
-        # )
-
-        # Set graph
-        graphmin = min([s[0] for s in stats.values()])
-        graphmax = max([s[0] for s in stats.values()])
-        tsmin = min([s[5] for s in stats.values()])
-        timewidth = max([s[9] for s in stats.values()])
-
-        # Horizontal axis
-        draw.line(
-            [(0, image.height - inside), (image.width, image.height - inside)],
-            width=2,
-            fill=rule_color,
+        chart.text(
+            (int(image.width / 2), int(image.height / 2)),
+            text=self.REPRESENTATION_NAME,
+            font=font,
+            anchor="mm",
+            align="center",
+            fill=data_color,
         )
 
+        # Horizontal axis
+        rule_width = 2
+        height = image.height * self.rule_height / 100
+        chart.line(
+            [(0, image.height - height - int(rule_width/2)), (image.width, image.height - height - int(rule_width/2))],
+            width=rule_width,
+            fill=rule_color,
+        )
+        # Horiz ticks later
+
+        # No vertical axis
+        # Vert ticks later: 0-100?
+
         # Add data
-        timeslot = int((ICON_SIZE - 2 * inside) / timewidth)
-        for c in self.data.values():
+        for c in self.charts.values():
             plot = sorted(c.data, key=lambda v: v[1])  # sort by timestamp
             points = []
-            for i in range(len(plot)):
-                x = inside + (plot[i][1] - tsmin) * timeslot
-                y = (ICON_SIZE / 8) + plot[i][0] * (ICON_SIZE * 4 / 5) / c.value_max
-                points.append((x, y))
-            draw.line(
+            for pt in plot:
+                pt_time, pt_value = pt
+                print()
+                x = inside + (pt_time - time_left) * time_pix
+                y = image.height * pt_value / c.value_max
+                points.append((int(x), int(y)))
+            chart.line(
                 points,
                 width=2,
                 fill=rule_color,
@@ -427,4 +455,5 @@ class ChartIcon(DrawAnimation):
             who="Data",
         )
         bg.alpha_composite(image)
+
         return bg

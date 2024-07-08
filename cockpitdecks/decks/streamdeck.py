@@ -9,7 +9,7 @@ from PIL import Image, ImageOps
 from StreamDeck.ImageHelpers.PILHelper import to_native_format, to_native_key_format, to_native_touchscreen_format
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
-from cockpitdecks import DECK_FEEDBACK, RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS
+from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent, EncoderEvent, TouchEvent, SwipeEvent
 from cockpitdecks.page import Page

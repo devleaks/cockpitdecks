@@ -52,11 +52,12 @@ class Representation:
         return r if type(r) in [list, tuple] else [r]
 
     def __init__(self, button: "Button"):
+        self.button = button
         self._representation_config = button._config.get(self.name(), {})
         if type(self._representation_config) is not dict:  # repres: something -> {"repres": something}
             self._representation_config = {self.name(): self._representation_config}
-        self.button = button
-        self._sound = self.get_attribute("vibrate")
+
+        self._vibrate = self.get_attribute("vibrate")
         self.datarefs = None
 
         self.button.deck.cockpit.set_logging_level(__name__)
@@ -144,7 +145,7 @@ class Representation:
         return self.button.get_current_value()
 
     def get_status(self):
-        return {"representation_type": type(self).__name__, "sound": self._sound}
+        return {"representation_type": type(self).__name__, "sound": self._vibrate}
 
     def render(self):
         """
@@ -160,7 +161,7 @@ class Representation:
         return self.get_vibration()
 
     def get_vibration(self):
-        return self._sound
+        return self._vibrate
 
     def clean(self):
         # logger.warning(f"button {self.button_name()}: no cleaning")
