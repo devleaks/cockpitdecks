@@ -279,6 +279,69 @@ class Value:
         )
         return value
 
+    def get_text_detail(self, base: dict, root: str):
+        text = base.get(root)
+
+        if text is None:
+            logger.warning(f"value {self.name}: no {root}")
+            return None, None, None, None, None, None
+
+        text_format = base.get(f"{root}-format")
+        text_font = base.get(f"{root}-font", self._button.get_attribute("label-font"))
+        text_size = base.get(f"{root}-size", self._button.get_attribute("label-size"))
+        text_color = base.get(f"{root}-color", self._button.get_attribute("label-color"))
+        text_color = convert_color(text_color)
+        text_position = base.get(f"{root}-position", self._button.get_attribute("label-position"))
+        # print(f">>>> {self._button.get_id()}:{root}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
+
+        if not isinstance(text, str):
+            logger.warning(f"value {self.name}: converting text {text} to string (type {type(text)})")
+            text = str(text)
+
+        return text, text_format, text_font, text_color, text_size, text_position
+
+    def get_text(self, base: dict, root: str = "label"):  # root={label|text}
+        """
+        Extract label or text from base and perform formula and dataref values substitution if present.
+        (I.e. replaces ${formula} and ${dataref} with their values.)
+        """
+        text = base.get(root)
+        if text is None:
+            return None
+
+        # HACK 1: Special icon font substitution
+        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(base, root)
+
+        for k, v in ICON_FONTS.items():
+            if text_font.lower().startswith(v[0]):
+                s = "\\${%s:([^\\}]+?)}" % (k)
+                icons = re.findall(s, text)
+                for i in icons:
+                    if i in v[1].keys():
+                        text = text.replace(f"${{{k}:{i}}}", v[1][i])
+                        logger.debug(f"value {self.name}: substituing font icon {i}")
+
+        # Formula in text
+        KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
+        if KW_FORMULA_STR in str(text):
+            # If text contains ${formula}, it is replaced by the value of the formula calculation.
+            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
+            if dataref_rpn is not None:
+                res = self.execute_formula(formula=dataref_rpn)
+                if res != "":  # Format output if format present
+                    if text_format is not None:
+                        logger.debug(f"value {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        res = text_format.format(res)
+                    else:
+                        res = str(res)
+                text = text.replace(KW_FORMULA_STR, res)
+            else:
+                logger.warning(f"value {self.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+
+        text = self.substitute_values(text, formatting=text_format, default="---")
+
+        return text
+
     # ##################################
     # Value computation
     #
