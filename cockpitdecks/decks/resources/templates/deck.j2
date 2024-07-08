@@ -62,6 +62,7 @@ stage.add(interaction_layer);
 const DECK = {{ deck|tojson(indent=2) }};
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
 const DECK_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image
+const WS_CONNECT_RETRY_TIME = 5000
 deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE+")";
 deck_elem.style.backgroundRepeat = "no-repeat";
 
@@ -91,7 +92,7 @@ if (DECK.ws_url == undefined) {
 }
 
 function connect() {
-    console.log("WebSocket trying...");
+    console.log("WebSocket trying every " + Math.round(WS_CONNECT_RETRY_TIME/1000, 0) + " seconds...");
     socket = new WebSocket(DECK.ws_url);
 
     socket.onopen = (event) => {
@@ -100,6 +101,7 @@ function connect() {
         try {
             if (ws) {
                 sendCode(DECK.name, 1);
+                console.log("sent code 1 to", DECK.name)
                 // sends its name on new connection to help identify
             }
         } catch (error) {
@@ -125,23 +127,21 @@ function connect() {
         }
     };
 
-    socket.close = (event) => {
-        console.log("WebSocket closed");
-        ws = False
+    socket.onclose = (event) => {
+        // console.log("WebSocket closed");
+        ws = false;
         setTimeout(function() {
             connect();
-        }, 1000);
+        }, WS_CONNECT_RETRY_TIME);
     };
 
-    socket.error = (event) => {
-        console.error("WebSocket error", event);
-        socket.close()
-        setTimeout(function() {
-            connect();
-        }, 1000);
+    socket.onerror = (event) => {
+        // console.error("WebSocket error", event);
+        if (socket) {
+            // console.log("closing WebSocket..");
+            socket.close()
+        }
     };
-
-    console.log("start_websocket", Date.now())
 }
 
 var ws;

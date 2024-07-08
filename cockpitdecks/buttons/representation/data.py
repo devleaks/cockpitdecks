@@ -386,8 +386,9 @@ class ChartIcon(DrawAnimation):
 
         top_of_chart = int(ICON_SIZE / 8 + inside)
 
-        time_pix = image.width / self.time_width
+        time_pix = (image.width - 2 * inside) / self.time_width
         time_left = datetime.now().timestamp()
+        print(">>>>>>>", image.width - 2 * inside, self.time_width, time_pix)
 
         # Preprocess available data, there might not be a lot at the beginning...
         # For each data, get min, max, scaled min, scaled max, number to keep
@@ -427,16 +428,17 @@ class ChartIcon(DrawAnimation):
             plot = sorted(c.data, key=lambda v: v[1])  # sort by timestamp
             points = []
             for pt in plot:
-                pt_time, pt_value = pt
-                print()
-                x = inside + (pt_time - time_left) * time_pix
+                pt_value, pt_time = pt
+                x = inside + (time_left - pt_time) * time_pix
                 y = image.height * pt_value / c.value_max
+                print(x, y, time_left, time_pix, pt_time, pt_value, round(time_left - pt_time, 2))
                 points.append((int(x), int(y)))
             chart.line(
                 points,
                 width=2,
                 fill=rule_color,
             )
+        print("---------")
 
         # Get background colour or use default value
         # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
