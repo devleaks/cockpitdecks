@@ -65,6 +65,29 @@ function getNested(obj, ...args) {
   return args.reduce((obj, level) => obj && obj[level], obj)
 }
 
+// Cache small pointers
+function toDataUrl(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+            callback(reader.result);
+        }
+        reader.readAsDataURL(xhr.response);
+        console.log(url, xhr.response)
+    };
+    xhr.open('GET', url);
+    xhr.responseType = 'blob';
+    xhr.send();
+}
+
+var POINTERS = {};
+["push", "pull", "clockwise", "counter-clockwise"].forEach( (url) => {
+    toDataUrl(ASSET_IMAGE_PATH+url+".svg", function(base64url) {
+        POINTERS[url.replace("-", "")] = base64url;
+    });
+});
+
 // B U T T O N S
 //
 // Key
@@ -289,16 +312,16 @@ class Encoder extends Konva.Circle {
             }
             switch (this.value()) { // SVG cursor origin is on middle top
             case 1:
-                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"push.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+POINTERS.push+"') 12 0, pointer";
                 break;
             case 4:
-                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"pull.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+POINTERS.pull+"') 12 0, pointer";
                 break;
             case 2:
-                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"clockwise.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+POINTERS.clockwise+"') 12 0, pointer";
                 break;
             case 3:
-                this.container.style.cursor = "url('"+ASSET_IMAGE_PATH+"counter-clockwise.svg') 12 0, pointer";
+                this.container.style.cursor = "url('"+POINTERS.counterclockwise+"') 12 0, pointer";
                 break;
             }
         });
