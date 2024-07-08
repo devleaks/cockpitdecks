@@ -2,9 +2,10 @@
 # Buttons that are drawn on render()
 #
 import logging
-import math
+import traceback
+import threading
 from random import randint
-from datetime import datetime, time
+from datetime import datetime
 from enum import Enum
 
 from PIL import Image, ImageDraw
@@ -251,26 +252,42 @@ class ChartData:
 
         self.datarefs = None
 
-        self.type = config.get("type", "tape")
+        self.type = config.get("type", "line")
         self.value_min = config.get("minimum", 0)
         self.value_max = config.get("maximum", 100)
         self.keep = config.get("keep", 10)
         self.update = config.get("update")
         self.scale = config.get("scale", 1)
+        self.color = config.get("color", "grey")
+        self.color = convert_color(self.color)
 
         self.value = Value(self.name, config=config, button=chart.button)
 
         self.data = []
+        self.last_data = datetime.now().timestamp()
+
+        self.init()
+
+    def init(self):
+        if self.update is not None and self.update > 0:
+            self.stop = threading.Event()
+            self.thread = threading.Thread(target=self.start)
+            self.thread.start()
+
+    def start(self):
+        while not self.stop.wait(self.update):
+            self.add(self.get_value())
 
     def get_datarefs(self):
         if self.datarefs is None:
             if self.chart is not None:
                 self.datarefs = self.chart.button.scan_datarefs(base=self._config)
+        logger.debug(f"chart {self.name} return datarefs {self.datarefs}")
         return self.datarefs
 
     def get_value(self):
-        # return self.value.get_value()
-        return randint(self.value_min, self.value_max)
+        return self.value.get_value()
+        # return randint(self.value_min, self.value_max)
 
     def get_stats(self):
         if len(self.data) == 0:
@@ -294,10 +311,10 @@ class ChartData:
         return 0 if self.update is None else self.update * self.keep
 
     def add(self, value, timestamp=None):
-        self.data.append((value, timestamp if timestamp is not None else datetime.now().timestamp()))
+        self.last_data = timestamp if timestamp is not None else datetime.now().timestamp()
+        self.data.append((value, self.last_data))
         while len(self.data) > self.keep:
             del self.data[0]
-
 
 class ChartIcon(DrawAnimation):
 
@@ -376,19 +393,13 @@ class ChartIcon(DrawAnimation):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-
-        # DEMO
-        for c in self.charts.values():
-            c.add(c.get_value())
-
         inside = round(0.04 * ICON_SIZE + 0.5)
         image, chart = self.double_icon(width=int(ICON_SIZE - 2 * inside), height=int(ICON_SIZE * 7 / 8 - 2 * inside))
 
         top_of_chart = int(ICON_SIZE / 8 + inside)
 
-        time_pix = (image.width - 2 * inside) / self.time_width
+        time_pix = image.width / self.time_width
         time_left = datetime.now().timestamp()
-        print(">>>>>>>", image.width - 2 * inside, self.time_width, time_pix)
 
         # Preprocess available data, there might not be a lot at the beginning...
         # For each data, get min, max, scaled min, scaled max, number to keep
@@ -426,19 +437,29 @@ class ChartIcon(DrawAnimation):
         # Add data
         for c in self.charts.values():
             plot = sorted(c.data, key=lambda v: v[1])  # sort by timestamp
-            points = []
-            for pt in plot:
-                pt_value, pt_time = pt
-                x = inside + (time_left - pt_time) * time_pix
-                y = image.height * pt_value / c.value_max
-                print(x, y, time_left, time_pix, pt_time, pt_value, round(time_left - pt_time, 2))
-                points.append((int(x), int(y)))
-            chart.line(
-                points,
-                width=2,
-                fill=rule_color,
-            )
-        print("---------")
+            if c.type == "line":
+                points = []
+                for pt in plot:
+                    pt_value, pt_time = pt
+                    x = (time_left - pt_time) * time_pix
+                    y = image.height * pt_value / c.value_max
+                    points.append((int(x), int(y)))
+                chart.line(
+                    points,
+                    width=2,
+                    fill=c.color,
+                )
+            elif c.type == "bar":
+                barwidth = int(c.update * time_pix * 0.8)
+                for pt in plot:
+                    pt_value, pt_time = pt
+                    x = (time_left - pt_time) * time_pix
+                    y = image.height * pt_value / c.value_max
+                    bbox = [(x,image.height-y), (x+barwidth,image.height)] # ((int(x), int(y)))
+                    chart.rectangle(
+                        bbox,
+                        fill=c.color,
+                    )
 
         # Get background colour or use default value
         # Variables may need normalising as icon-color for data icons is for icon, in other cases its background of button?
@@ -456,6 +477,6 @@ class ChartIcon(DrawAnimation):
             use_texture=True,
             who="Data",
         )
-        bg.alpha_composite(image)
+        bg.alpha_composite(image, [inside, top_of_chart])
 
         return bg

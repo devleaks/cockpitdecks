@@ -67,7 +67,7 @@ class DrawAnimation(DrawBase):
         """
         self.tween = self.tween + 1
         # logger.debug(f"tick")
-        return super().render()
+        # return super().render()
 
     def anim_start(self):
         """

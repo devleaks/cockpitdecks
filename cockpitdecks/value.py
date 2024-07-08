@@ -1,8 +1,11 @@
 from __future__ import annotations
+
+import logging
+import re
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List
-import logging
 
 from cockpitdecks.constant import CONFIG_KW
 from .resources.rpc import RPC
@@ -21,8 +24,10 @@ DECK_BUTTON_DEFINITION = "_deck_def"
 INTERNAL_STATE_PREFIX = "state:"
 BUTTON_VARIABLE_PREFIX = "button:"
 
+# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
 # ${ ... }: dollar + anything between curly braces, but not start with state: or button: prefix
-PATTERN_DOLCB = f"\\${{(?!({INTERNAL_STATE_PREFIX}|{BUTTON_VARIABLE_PREFIX}))([^\\}}]+?)}}"
+# ?: does not return capturing group
+PATTERN_DOLCB = f"\\${{(?!(?:{INTERNAL_STATE_PREFIX}|{BUTTON_VARIABLE_PREFIX}))([^\\}}]+?)}}"
 
 
 class Value:
@@ -168,6 +173,7 @@ class Value:
         dataref_names = re.findall(PATTERN_DOLCB, message)
 
         if len(dataref_names) == 0:
+            logger.debug(f"value {self.name}:no dataref to substitute.")
             return message
 
         if formatting is not None:
@@ -203,7 +209,7 @@ class Value:
         return retmsg
 
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
-        status = self.get_state_variables()
+        status = self._button.get_state_variables()
         txtcpy = text
         more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
         for name in more:
@@ -240,16 +246,20 @@ class Value:
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
         if type(text) != str or "$" not in text:  # no ${..} to stubstitute
+            logger.debug(f"substitute_values: value has not variables ({text})")
             return text
         step1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != step1:
-            logger.log(SPAM_LEVEL, f"substitute_values: value {self.name}:{text} => {step1}")
+            logger.debug(f"substitute_values: value {self.name}:{text} => {step1}")
+        else:
+            logger.debug(f"substitute_values: has no state variable ({text})")
         # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
-        # logger.log(SPAM_LEVEL, f"substitute_values: value {self.name}:{step1} => {step2}")
         step2 = step1
         step3 = self.substitute_dataref_values(step2, default=default, formatting=formatting)
         if step3 != step2:
-            logger.log(SPAM_LEVEL, f"substitute_values: value {self.name}:{step2} => {step3}")
+            logger.debug(f"substitute_values: value {self.name}:{step2} => {step3}")
+        else:
+            logger.debug(f"substitute_values: has no dataref ({text})")
         return step3
 
     # ##################################
@@ -261,11 +271,10 @@ class Value:
         Returns formula result.
         """
         expr = self.substitute_values(text=formula, default=str(default))
-        # logger.debug(f"value {self.name}:{formula} => {expr}")
+        logger.debug(f"value {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
-        # print("FORMULA", formula, "=>", expr, "=", value)
-        logger.logger(
+        logger.debug(
             f"execute_formula: value {self.name}:{formula} => {expr}:  => {value}",
         )
         return value
@@ -280,13 +289,13 @@ class Value:
         """ """
         # 1. If there is a formula, value comes from it
         if self.formula is not None:
-            logger.debug(f"value {self.name}:formula without dataref")
+            logger.debug(f"value {self.name}: from formula")
             return self.execute_formula(formula=self.formula)
 
         # 3. One dataref
         if len(self._datarefs) == 1:
             # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            logger.debug(f"value {self.name}:single dataref {self._datarefs[0]}")
+            logger.debug(f"value {self.name}: from single dataref {self._datarefs[0]}")
             return self.get_dataref_value(self._datarefs[0])
 
         # 4. Multiple datarefs
