@@ -101,7 +101,6 @@ class AnnunciatorPart:
     def get_datarefs(self):
         if self.datarefs is None:
             self.datarefs = self._value.get_datarefs()
-            # self.datarefs = self.annunciator.button.scan_datarefs(base=self._config)
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
@@ -401,6 +400,7 @@ class Annunciator(DrawBase):
         self.icon = button._config.get("icon")
         self.annunciator = button._config.get("annunciator")  # keep raw
         self.annunciator_style = self.annunciator.get("annunciator-style", button.get_attribute("annunciator-style"))
+        self.annunciator_style = ANNUNCIATOR_STYLES(self.annunciator_style)
         self.model = None
 
         self.annun_color = button._config.get("annunciator-color", button.get_attribute("annunciator-color"))

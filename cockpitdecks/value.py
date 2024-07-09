@@ -23,7 +23,7 @@ class Value:
         self.name = name  # for debeging and information purpose
 
         # Used in "value"
-        self._datarefs = []
+        self._datarefs = None
         self._statevars = {}
 
     def init(self):
@@ -67,9 +67,9 @@ class Value:
             base = self._config
 
         r = self.scan_datarefs(base)
-        r = list(set(r))  # removes duplicates
+        self._datarefs = list(set(r))  # removes duplicates
         logger.debug(f"value {self.name}: found datarefs {r}")
-        return r
+        return self._datarefs
 
     def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
         """
@@ -323,9 +323,13 @@ class Value:
     def get_value(self):
         """ """
         # 1. If there is a formula, value comes from it
-        if self.formula is not None:
+        if self.formula is not None and self.formula != "":
             logger.debug(f"value {self.name}: from formula")
             return self.execute_formula(formula=self.formula)
+
+        if self._datarefs is None:
+            logger.debug(f"value {self.name}: no formula, no dataref")
+            return None
 
         # 3. One dataref
         if len(self._datarefs) == 1:
