@@ -185,11 +185,12 @@ class Value:
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         for name in more:
             state_string = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
-            value = self.button.get_state_value(name)
+            value = self._button.get_state_value(name)
+            logger.debug(f"value {state_string} = {value}")
             if value is not None:
-                txtcpy = txtcpy.replace(state_string, default)
-            else:
                 txtcpy = txtcpy.replace(state_string, value)
+            else:
+                txtcpy = txtcpy.replace(state_string, default)
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         if len(more) > 0:
             logger.warning(f"value {self.name}:unsubstituted status values {more}")
@@ -230,7 +231,7 @@ class Value:
         if step3 != step2:
             logger.debug(f"substitute_values: value {self.name}:{step2} => {step3}")
         else:
-            logger.debug(f"substitute_values: has no dataref ({text})")
+            logger.debug(f"substitute_values: has no dataref ({step3})")
         return step3
 
     # ##################################

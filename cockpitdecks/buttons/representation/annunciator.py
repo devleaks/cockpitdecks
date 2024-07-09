@@ -11,6 +11,7 @@ from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.simulator import Dataref
+from cockpitdecks.value import Value
 
 from .draw import DrawBase
 
@@ -65,6 +66,8 @@ class AnnunciatorPart:
         self.lit = False
         self.color = config.get("color")
 
+        self._value = Value(name, config=config, button=annunciator.button)
+
         self._width = None
         self._height = None
         self._center_w = None
@@ -97,7 +100,8 @@ class AnnunciatorPart:
 
     def get_datarefs(self):
         if self.datarefs is None:
-            self.datarefs = self.annunciator.button.scan_datarefs(base=self._config)
+            self.datarefs = self._value.get_datarefs()
+            # self.datarefs = self.annunciator.button.scan_datarefs(base=self._config)
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
@@ -131,22 +135,9 @@ class AnnunciatorPart:
                 return False
             return True
 
-        ret = None
-        if CONFIG_KW.FORMULA.value in self._config:
-            calc = self._config[CONFIG_KW.FORMULA.value]
-            expr = self.annunciator.button.substitute_values(calc)
-            rpc = RPC(expr)
-            ret = rpc.calculate()
-            logger.debug(f"button {self.annunciator.button.name}: {self.name}: {expr}={ret}")
-        elif CONFIG_KW.DATAREF.value in self._config:
-            dataref = self._config[CONFIG_KW.DATAREF.value]
-            ret = self.annunciator.button.get_dataref_value(dataref)
-            logger.debug(f"button {self.annunciator.button.name}: {self.name}: {dataref}={ret}")
-        else:
-            logger.debug(f"button {self.annunciator.button.name}: {self.name}: no dataref and no formula, set to {ret}")
-        self.lit = ret is not None and is_number(ret) and float(ret) > 0
-        logger.debug(f"button {self.annunciator.button.name}: {self.name}: {ret} ({self.lit})")
-        return ret
+        r = self._value.get_value()
+        self.lit = r is not None and is_number(r) and float(r) > 0
+        return r
 
     def is_lit(self):
         return self.lit
