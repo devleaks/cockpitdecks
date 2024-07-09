@@ -74,6 +74,89 @@ buttons:
       - sim/aircraft/view/acf_relative_path
     text: "${sim/aircraft/view/acf_ICAO}\n${sim/aircraft/view/acf_tailnum}"
     text-size: 18
+  - index: 4
+    type: none
+    dataref: sim/cockpit/autopilot/heading_mag
+    tape:
+      tick-color: lime
+      tick-font: D-DIN-Bold
+      tick-size: 60
+      rule-color: white
+      minimum: 0
+      maximum: 360
+      rule-position: bottom
+  - index: 5
+    type: none
+    gauge:
+      tick-from: -120
+      tick-to: 120
+      ticks: 8
+      gauge-offset: 20
+  - index: 6
+    type: onoff
+    label: LAST 60 SECONDS
+    label-size: 7
+    commands:
+      - none
+      - none
+    chart:
+      value-min: auto
+      value-max: auto
+      axis: 0
+      tick: 10
+      tick-format: "{:2.0f}"
+      tick-color: black
+      rule-height: 50
+      charts:
+        - name: Baro
+          type: line
+          keep: 20
+          color: lime
+          marker: square
+          formula: ${data:encoder0} 5 * 50 +
+        # - name: serie2
+        #   type: bar
+        #   update: 1
+        #   keep: 20
+        #   speed: 1
+        #   color: [255, 0, 0, 20]
+        #   formula: ${data:random}
+  - index: 7
+    name: ND RANGE
+    type: updown
+    stops: 6
+    initial-value: 3
+    circular-switch:
+      button-size: 50
+      button-fill-color: lightgrey
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 315
+      tick-space: 40
+      tick-width: 0
+      tick-underline-width: 0
+      tick-color: lightblue
+      tick-underline-color: white
+      needle-underline-width: 0
+      needle-color: lime
+      needle-start: 90
+      needle-length: 0
+      needle-tip: arri
+      needle-tip-size: 6
+      # arro, arri, ball
+      tick-label-size: 28
+      tick-labels:
+        - "10"
+        - "20"
+        - "40"
+        - "80"
+        - "160"
+        - "320"
+    commands:
+      - none
+      - none
+    formula: ${state:activation_count} 6 mod
   - index: 8
     name: INSPECT DATAREFS
     label: DATAREF VALUES
@@ -99,16 +182,17 @@ buttons:
   - index: 10
     type: stop
     icon: stop
+    label: "\n\n\nCOCKPITDECKS"
+    label-position: cm
+    label-size: 8
   - index: 11
     type: page
     page: back
+    label: PREVIOUS PAGE
+    label-size: 9
     text: ${fa:arrow-left}
     text-font: fontawesome.otf
     text-size: 60
 # Demos
-# Annunciators
-# 4 drawn buttons
-# Action in X-Plane (map? encoder?)
-# Possible connection status?
 # hardware image for encoder?
 default-label-font: D-DIN-Bold

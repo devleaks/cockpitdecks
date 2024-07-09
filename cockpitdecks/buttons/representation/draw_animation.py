@@ -73,7 +73,7 @@ class DrawAnimation(DrawBase):
         """
         Starts animation
         """
-        if not self.running:
+        if not self.running and self.speed is not None:
             self.running = True
             self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button.name})")
             self.thread.start()
@@ -88,7 +88,7 @@ class DrawAnimation(DrawBase):
         if self.running:
             self.running = False
             self.exit.set()
-            self.thread.join(timeout=2 * self.speed)
+            self.thread.join(timeout=2 * (self.speed if self.speed is not None else 5))
             if self.thread.is_alive():
                 logger.warning(f"button {self.button.name}: animation did not terminate (timetout {2 * self.speed}secs.)")
             logger.debug(f"stopped")

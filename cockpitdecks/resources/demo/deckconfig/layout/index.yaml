@@ -211,6 +211,8 @@ buttons:
   - index: 11
     type: page
     page: page2
+    label: NEXT PAGE
+    label-size: 9
     text: ${fa:arrow-right}
     text-font: fontawesome.otf
     text-size: 60

@@ -205,20 +205,20 @@ class CircularSwitch(SwitchBase):
         # Ticks
         tick_start = self.button_size / 2 + self.tick_space
         tick_end = tick_start + self.tick_length
-        if self.tick_width > 0:
-            tick_lbl = tick_end + self.tick_label_space
+        tick_lbl = tick_end + self.tick_label_space
 
-            label_anchors = []
-            for i in range(self.tick_steps):
-                a = red(self.tick_from + i * self.angular_step)
-                x0 = center[0] - tick_start * math.sin(math.radians(a))
-                y0 = center[1] + tick_start * math.cos(math.radians(a))
-                x1 = center[0] - tick_end * math.sin(math.radians(a))
-                y1 = center[1] + tick_end * math.cos(math.radians(a))
-                x2 = center[0] - tick_lbl * math.sin(math.radians(a))
-                y2 = center[1] + tick_lbl * math.cos(math.radians(a))
-                # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
-                label_anchors.append([a, x2, y2])
+        label_anchors = []
+        for i in range(self.tick_steps):
+            a = red(self.tick_from + i * self.angular_step)
+            x0 = center[0] - tick_start * math.sin(math.radians(a))
+            y0 = center[1] + tick_start * math.cos(math.radians(a))
+            x1 = center[0] - tick_end * math.sin(math.radians(a))
+            y1 = center[1] + tick_end * math.cos(math.radians(a))
+            x2 = center[0] - tick_lbl * math.sin(math.radians(a))
+            y2 = center[1] + tick_lbl * math.cos(math.radians(a))
+            # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
+            label_anchors.append([a, x2, y2])
+            if self.tick_width > 0:
                 draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
 
         # Tick run mark

@@ -3,7 +3,6 @@
 #
 import logging
 import math
-from random import randint
 from enum import Enum
 import random
 
@@ -144,7 +143,7 @@ class TapeIcon(DrawBase):
                         width=tick_width,
                         fill=self.rule_color,
                     )
-                    print(self.button_name(), "B", y, i, idx)
+                    # print(self.button_name(), "B", y, i, idx)
 
                     if idx % self.label_frequency == 0:
                         draw.text(
@@ -293,7 +292,9 @@ class TapeIcon(DrawBase):
 
         # Use tape
         # 2a. Move whole drawing around
-        r = random.randint(self.value_min, self.value_max)  # self.button.get_current_value()
+        r = self.button.get_current_value()
+        if r is None:
+            r = self.value_min
         value = r - self.value_min
         a = 1
         b = 0
@@ -307,7 +308,7 @@ class TapeIcon(DrawBase):
             c = self.offset - ICON_SIZE / 2 + value * self.step
         tape = self._tape.transform(self._tape.size, Image.AFFINE, (a, b, c, d, e, f))
 
-        print("RESULT", r, value, self.offset, a, b, c, d, e, f)
+        # print("RESULT", r, value, self.offset, a, b, c, d, e, f)
 
         # Paste image on cockpit background and return it.
         # may be cahe it and take a bg = cached_bg.copy()
@@ -489,7 +490,9 @@ class GaugeIcon(DrawBase):
                 width=self.needle_width,
             )
 
-        value = random.randint(self.tick_from, self.tick_to)  # self.button.get_current_value()
+        value = self.button.get_current_value()
+        if value is None:
+            value = 0
         rotation = self.offset + self.scale * value
         rotated_needle = self._needle.rotate(rotation, resample=Image.Resampling.NEAREST, center=self.center)
 

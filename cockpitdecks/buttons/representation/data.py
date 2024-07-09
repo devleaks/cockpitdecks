@@ -399,6 +399,10 @@ class ChartIcon(DrawAnimation):
 
         top_of_chart = int(ICON_SIZE / 8 + inside)
 
+        if self.speed is None:
+            for c in self.charts.values():
+                c.add(c.get_value())
+
         time_pix = image.width / self.time_width
         time_left = datetime.now().timestamp()
 
@@ -413,14 +417,15 @@ class ChartIcon(DrawAnimation):
         data_font = "D-DIN"
         data_size = 32
         font = self.get_font(data_font, data_size)
-        chart.text(
-            (int(image.width / 2), int(image.height / 2)),
-            text=self.REPRESENTATION_NAME,
-            font=font,
-            anchor="mm",
-            align="center",
-            fill=data_color,
-        )
+        # test: draw something
+        # chart.text(
+        #     (int(image.width / 2), int(image.height / 2)),
+        #     text=self.REPRESENTATION_NAME,
+        #     font=font,
+        #     anchor="mm",
+        #     align="center",
+        #     fill=data_color,
+        # )
 
         # Horizontal axis
         rule_width = 2
