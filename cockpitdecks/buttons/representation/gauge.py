@@ -95,7 +95,7 @@ class TapeIcon(DrawBase):
             tape_width = math.ceil(value_range / 10)
             tape_size = tape_width + 2  # 1 icon size before and after
             numiconval = int(1.5 * (value_range / tape_size))
-            self.step = (tape_width * ICON_SIZE) / value_range   # self.value_step unit in value = self.step pixels
+            self.step = (tape_width * ICON_SIZE) / value_range  # self.value_step unit in value = self.step pixels
 
             tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.tape, "tick")
             font = self.get_font(tick_font, tick_size)
@@ -244,7 +244,7 @@ class TapeIcon(DrawBase):
                 offset = numiconval * self.step
                 # print("offset 1", offset)
                 for i in range(tick_real_zero, tick_real_end):
-                    x =  i * self.step
+                    x = i * self.step
                     idx = self.value_min + (i - tick_real_zero)
                     tick_len, tick_width = ticks(idx)
                     draw.line(

@@ -2,18 +2,14 @@
 # Buttons that are drawn on render()
 #
 import logging
-import traceback
 import threading
-from random import randint
-from datetime import datetime
-from enum import Enum
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import ICON_SIZE
+from cockpitdecks import ICON_SIZE, now
 from cockpitdecks.resources.iconfonts import ICON_FONTS
 
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off
+from cockpitdecks.resources.color import convert_color, light_off
 from .draw import DrawBase  # explicit Icon from file to avoid circular import
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
@@ -264,14 +260,14 @@ class ChartData:
         self.value = Value(self.name, config=config, button=chart.button)
 
         self.data = []
-        self.last_data = datetime.now().timestamp()
+        self.last_data = now().timestamp()
 
         self.init()
 
     def init(self):
         if self.update is not None and self.update > 0:
             self.stop = threading.Event()
-            self.thread = threading.Thread(target=self.start)
+            self.thread = threading.Thread(target=self.start, name=f"ChartData:{self.name}")
             self.thread.start()
 
     def start(self):
@@ -311,7 +307,7 @@ class ChartData:
         return 0 if self.update is None else self.update * self.keep
 
     def add(self, value, timestamp=None):
-        self.last_data = timestamp if timestamp is not None else datetime.now().timestamp()
+        self.last_data = timestamp if timestamp is not None else now().timestamp()
         self.data.append((value, self.last_data))
         while len(self.data) > self.keep:
             del self.data[0]
@@ -404,7 +400,7 @@ class ChartIcon(DrawAnimation):
                 c.add(c.get_value())
 
         time_pix = image.width / self.time_width
-        time_left = datetime.now().timestamp()
+        time_left = now().timestamp()
 
         # Preprocess available data, there might not be a lot at the beginning...
         # For each data, get min, max, scaled min, scaled max, number to keep

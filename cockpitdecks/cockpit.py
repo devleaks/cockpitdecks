@@ -38,6 +38,11 @@ if LOGFILE is not None:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+# IMPORTANT: These are rendez-vous point for JavaScript code
+#
+DECK_TYPE_ORIGINAL = "deck-type-desc"
+DECK_TYPE_DESCRIPTION = "deck-type-flat"
+
 
 class CockpitBase:
     """As used in Simulator"""
@@ -674,8 +679,8 @@ class Cockpit(DatarefListener, CockpitBase):
                                 if not fn.startswith(COCKPITDECKS_ASSET_PATH):
                                     background[DECK_KW.IMAGE.value] = COCKPITDECKS_ASSET_PATH + fn
                         self.virtual_deck_list[name] = deck_config | {
-                            "deck-type-desc": self.deck_types.get(deck_type).store,
-                            "deck-type-flat": deck_flat,
+                            DECK_TYPE_ORIGINAL: self.deck_types.get(deck_type).store,
+                            DECK_TYPE_DESCRIPTION: deck_flat,
                         }
                     cnt = cnt + 1
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")

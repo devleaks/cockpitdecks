@@ -17,6 +17,10 @@ from .simulator import (
     DatarefListener,
     DatarefSetListener,
     INTERNAL_DATAREF_PREFIX,
+    INTERNAL_STATE_PREFIX,
+    PATTERN_DOLCB,
+    PATTERN_INTSTATE,
+    PATTERN_INTDREF,
 )
 from .resources.rpc import RPC
 from .resources.iconfonts import ICON_FONTS
@@ -27,10 +31,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
-
-INTERNAL_STATE_PREFIX = "state:"
-BUTTON_VARIABLE_PREFIX = "button:"
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
@@ -457,16 +457,6 @@ class Button(DatarefListener, DatarefSetListener):
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
-
-        def is_dref(r):
-            # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
-            PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
-            SEP = ":"
-            for s in PREFIX:
-                if r.startswith(s + SEP):
-                    return False
-            return r != CONFIG_KW.FORMULA.value
-
         r = []
 
         # Direct use of datarefs:
@@ -503,7 +493,7 @@ class Button(DatarefListener, DatarefSetListener):
         dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
         if dataref_rpn is not None and type(dataref_rpn) == str:
             datarefs = re.findall(PATTERN_DOLCB, dataref_rpn)
-            datarefs = list(filter(is_dref, datarefs))
+            datarefs = list(filter(Dataref.might_be_dataref, datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"button {self.name}: added label datarefs {datarefs}")
@@ -524,7 +514,7 @@ class Button(DatarefListener, DatarefSetListener):
         text = base.get("text")
         if text is not None and type(text) == str:
             datarefs = re.findall(PATTERN_DOLCB, text)
-            datarefs = list(filter(lambda x: is_dref(x), datarefs))
+            datarefs = list(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
             if len(datarefs) > 0:
                 r = r + datarefs
                 logger.debug(f"button {self.name}: added text datarefs {datarefs}")
@@ -638,7 +628,7 @@ class Button(DatarefListener, DatarefSetListener):
                     v = str(v)  # @todo: later: use formatting
                 txtcpy = txtcpy.replace(s, v)
                 logger.debug(f"button {self.name}: replaced {s} by {str(v)}. ({k})")
-        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        more = re.findall(PATTERN_INTSTATE, txtcpy)
         if len(more) > 0:
             logger.warning(f"button {self.name}: unsubstituted status values {more}")
         return txtcpy
@@ -664,7 +654,7 @@ class Button(DatarefListener, DatarefSetListener):
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
         status = self.get_state_variables()
         txtcpy = text
-        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        more = re.findall(PATTERN_INTSTATE, txtcpy)
         for name in more:
             s = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
             if name in status:  #
@@ -681,7 +671,7 @@ class Button(DatarefListener, DatarefSetListener):
                 logger.debug(f"button {self.name}: replaced {s} by {str(v)}. (button attribute {name})")
             else:
                 logger.debug(f"button {self.name}: attribute {name} not found")
-        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        more = re.findall(PATTERN_INTSTATE, txtcpy)
         if len(more) > 0:
             logger.warning(f"button {self.name}: unsubstituted status values {more}")
         return txtcpy
@@ -689,7 +679,7 @@ class Button(DatarefListener, DatarefSetListener):
     def substitute_data_values(self, text, default: str = "0.0", formatting=None):
         # !!!IMPORTANT!!! INTERNAL_DATAREF_PREFIX "data:" is hardcoded in regexp
         txtcpy = text
-        more = re.findall("\\${" + INTERNAL_DATAREF_PREFIX + "([^\\}]+?)}", txtcpy)
+        more = re.findall(PATTERN_INTDREF, txtcpy)
         for k in more:
             s = f"${{{INTERNAL_DATAREF_PREFIX}{k}}}"  # @todo: !!possible injection!!
             value = self.sim.get_data(k)
@@ -697,7 +687,7 @@ class Button(DatarefListener, DatarefSetListener):
                 txtcpy = txtcpy.replace(s, value)
             else:
                 txtcpy = txtcpy.replace(s, default)
-        more = re.findall("\\${" + INTERNAL_DATAREF_PREFIX + "([^\\}]+?)}", txtcpy)
+        more = re.findall(PATTERN_INTDREF, txtcpy)
         if len(more) > 0:
             logger.warning(f"button {self.name}: unsubstituted data values {more}")
         return txtcpy

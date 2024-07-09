@@ -6,8 +6,9 @@ from typing import List, Any
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 
-from cockpitdecks import SPAM_LEVEL, now
+from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW
 from cockpitdecks.event import Event
+from .resources.iconfonts import ICON_FONTS
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
@@ -56,7 +57,17 @@ class Command:
 #
 # "internal" datarefs (not exported to X-Plane) start with that prefix
 INTERNAL_DATAREF_PREFIX = "data:"
+INTERNAL_STATE_PREFIX = "state:"
+BUTTON_VARIABLE_PREFIX = "button:"
+PREFIX_SEP = ":"
 
+# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
+# ${ ... }: dollar + anything between curly braces, but not start with state: or button: prefix
+# ?: does not return capturing group
+PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
+PATTERN_INTDREF = f"\\${{{INTERNAL_DATAREF_PREFIX}([^\\}}]+?)}}"
+PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
+PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
 
 class Dataref:
     """
@@ -126,6 +137,16 @@ class Dataref:
     @staticmethod
     def mk_internal_dataref(path: str) -> str:
         return INTERNAL_DATAREF_PREFIX + path
+
+    @staticmethod
+    def might_be_dataref(path: str) -> bool:
+        # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
+        # Not sure it is a dataref, but sure non-datarefs are excluded ;-)
+        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
+        for start in PREFIX:
+            if path.startswith(start + PREFIX_SEP):
+                return False
+        return path != CONFIG_KW.FORMULA.value
 
     def is_string(self) -> bool:
         return self._is_string

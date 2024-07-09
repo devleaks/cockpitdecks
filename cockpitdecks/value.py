@@ -3,31 +3,12 @@ from __future__ import annotations
 import logging
 import re
 
-from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import List
-
 from cockpitdecks.constant import CONFIG_KW
+from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, BUTTON_VARIABLE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
 from .resources.rpc import RPC
-from .resources.iconfonts import ICON_FONTS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-DECK_BUTTON_DEFINITION = "_deck_def"
-
-
-# Dataref and local variable scanning
-# Note:
-# Local datarefs (data:...) are managed like regular datarefs.
-
-INTERNAL_STATE_PREFIX = "state:"
-BUTTON_VARIABLE_PREFIX = "button:"
-
-# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
-# ${ ... }: dollar + anything between curly braces, but not start with state: or button: prefix
-# ?: does not return capturing group
-PATTERN_DOLCB = f"\\${{(?!(?:{INTERNAL_STATE_PREFIX}|{BUTTON_VARIABLE_PREFIX}))([^\\}}]+?)}}"
 
 
 class Value:
@@ -95,23 +76,13 @@ class Value:
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
-
-        def is_dref(r):
-            # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
-            PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
-            SEP = ":"
-            for s in PREFIX:
-                if r.startswith(s + SEP):
-                    return False
-            return r != CONFIG_KW.FORMULA.value
-
         r = []
 
         # Direct use of datarefs:
         #
         # 1.1 Single
         dataref = base.get(CONFIG_KW.DATAREF.value)
-        if dataref is not None and is_dref(dataref):
+        if dataref is not None and Dataref.might_be_dataref(dataref):
             r.append(dataref)
             logger.debug(f"value {self.name}: added single dataref {dataref}")
         #
@@ -125,7 +96,7 @@ class Value:
         if datarefs is not None:
             a = []
             for d in datarefs:
-                if is_dref(d):
+                if Dataref.might_be_dataref(d):
                     r.append(d)
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
@@ -138,7 +109,7 @@ class Value:
             text = base.get(key)
             if text is not None and type(text) == str:
                 datarefs = re.findall(PATTERN_DOLCB, text)
-                datarefs = list(filter(lambda x: is_dref(x), datarefs))
+                datarefs = list(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
                 if len(datarefs) > 0:
                     r = r + datarefs
                     logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
@@ -211,7 +182,7 @@ class Value:
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
         status = self._button.get_state_variables()
         txtcpy = text
-        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        more = re.findall(PATTERN_INTSTATE, txtcpy)
         for name in more:
             state_string = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
             value = self.button.get_state_value(name)
@@ -219,7 +190,7 @@ class Value:
                 txtcpy = txtcpy.replace(state_string, default)
             else:
                 txtcpy = txtcpy.replace(state_string, value)
-        more = re.findall(f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}", txtcpy)
+        more = re.findall(PATTERN_INTSTATE, txtcpy)
         if len(more) > 0:
             logger.warning(f"value {self.name}:unsubstituted status values {more}")
         return txtcpy
