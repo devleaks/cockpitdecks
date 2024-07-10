@@ -59,6 +59,8 @@ class Activation:
 
         # Commands
         self._view = Command(path=self._config.get(CONFIG_KW.VIEW.value))  # Optional additional command, usually to set a view
+        self._view_if = self._config.get(CONFIG_KW.VIEW_IF.value)
+
         # but could be anything.
         self._long_press = Command(path=self._config.get("long-press"))  # Optional additional command
         # Datarefs
@@ -241,7 +243,7 @@ class Activation:
     def write_dataref(self, value: float):
         if self.writable_dataref is None:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
-        print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self.writable_dataref} => {value}")
+        logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self.writable_dataref} => {value}")
         self._write_dataref(self.writable_dataref, value)
 
     def __str__(self):  # print its status
@@ -255,6 +257,11 @@ class Activation:
 
     def view(self):
         if self._view is not None:
+            if self._view_if is None:
+                self.command(self._view)
+                return
+        doit = self.button.execute_formula(self._view_if)
+        if doit:
             self.command(self._view)
 
     def long_press(self, event):
