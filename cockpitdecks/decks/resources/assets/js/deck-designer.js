@@ -1,3 +1,0 @@
-/* Deck icon position generator
- * 
- */

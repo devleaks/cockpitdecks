@@ -11,9 +11,11 @@ import json
 from datetime import datetime, timedelta
 from queue import Queue
 
-from cockpitdecks import SPAM_LEVEL
-from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent
-from cockpitdecks.simulator import DatarefSetCollector
+from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR
+from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent, DEFAULT_REQ_FREQUENCY
+
+if USE_COLLECTOR:
+    from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
@@ -22,7 +24,6 @@ logger = logging.getLogger(__name__)
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
 # UDP sends at most ~40 to ~50 dataref values per packet.
-DEFAULT_REQ_FREQUENCY = 1  # if no frequency is supplied (or forced to None), this is used
 LOOP_ALIVE = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 SOCKET_TIMEOUT = 5  # seconds
@@ -285,7 +286,9 @@ class XPlane(Simulator, XPlaneBeacon):
         self.cockpit.set_logging_level(__name__)
 
         XPlaneBeacon.__init__(self)
-        self.collector = DatarefSetCollector(self)
+        self.collector = None
+        if USE_COLLECTOR:  # collector is started immediately in its init() upon creation
+            self.collector = DatarefSetCollector(self)
 
         self.socket_strdref = None
 
@@ -685,6 +688,8 @@ class XPlane(Simulator, XPlaneBeacon):
         #   logger.warning(f"no connection")
         #   logger.debug(f"would add collection {collections.keys()} to monitor")
         #   return
+        if not USE_COLLECTOR:
+            return
         for k, v in collections.items():
             self.collector.add_collection(v, start=False)
             logger.debug(f"added collection {k}")
@@ -695,6 +700,8 @@ class XPlane(Simulator, XPlaneBeacon):
         #   logger.warning(f"no connection")
         #   logger.debug(f"would remove collection {collections.keys()} from monitor")
         #   return
+        if not USE_COLLECTOR:
+            return
         for k, v in collections.items():
             self.collector.remove_collection(v, start=False)
             logger.debug(f"removed collection {k}")
@@ -705,6 +712,8 @@ class XPlane(Simulator, XPlaneBeacon):
         #   logger.warning(f"no connection")
         #   logger.debug(f"would remove all collections from monitor")
         #   return
+        if not USE_COLLECTOR:
+            return
         self.collector.remove_all_collections()
         logger.debug("removed all collections from monitor")
 

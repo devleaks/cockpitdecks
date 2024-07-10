@@ -69,6 +69,7 @@ PATTERN_INTDREF = f"\\${{{INTERNAL_DATAREF_PREFIX}([^\\}}]+?)}}"
 PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
 PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
 
+DEFAULT_REQ_FREQUENCY = 4  # if no frequency is supplied (or forced to None), this is used
 
 class Dataref:
     """
@@ -101,7 +102,7 @@ class Dataref:
         self.current_array: List[float] = []
         self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
         self._round = None
-        self.update_frequency = 1  # sent by the simulator that many times per second.
+        self.update_frequency = DEFAULT_REQ_FREQUENCY  # sent by the simulator that many times per second.
         self.expire = None
 
         self.data_type = "float"  # int, float, byte, UDP always returns a float...
@@ -162,7 +163,7 @@ class Dataref:
         if frequency is not None and type(frequency) in [int, float]:
             self.update_frequency = frequency
         else:
-            self.update_frequency = 1
+            self.update_frequency = DEFAULT_REQ_FREQUENCY
 
     def value(self):
         return self.current_value

@@ -55,6 +55,7 @@ buttons:
       animation-speed: 2.0
     annunciator-style: k
   - index: 2
+    name: FRAMED ICON
     label: ICON IN ICON
     label-size: 9
     type: none

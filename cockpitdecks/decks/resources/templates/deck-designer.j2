@@ -44,6 +44,8 @@ const DECK_TYPE_DESCRIPTION = "deck-type-flat";
 const DECK = {{ deck|tojson(indent=2) }};
 const DECK_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image;
 
+const LABEL_SIZE = get_option(OPTIONS, "label.size", 10);
+
 // try to install background image as CSS background image (more efficient)
 var deck_elem = document.getElementById(DECK_ELEMID);
 deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE+")";
@@ -196,6 +198,7 @@ function label_editor(that_stage, label, shape) {
                 let transform = shape.getAbsoluteTransform();
                 let matrix = transform.getMatrix();
                 label.x(shape.x() + (shape.width() * matrix[0] - label.width()) / 2);
+                label.y(shape.y() - LABEL_SIZE - 2);
             } else {
                 console.log("no shape")
             }
@@ -327,7 +330,6 @@ class Interactor extends Konva.Group {
 
         const INIT_TEXT = get_option(OPTIONS, what+".label", get_option(OPTIONS, "label.text", name+ " name"));
 
-        const LABEL_SIZE = get_option(OPTIONS, "label.size", 10);
         const LABEL_FONT = get_option(OPTIONS, "label.font", "Helvetica");
         const LABEL_COLOR = get_option(OPTIONS, "label.color", "white");
 
@@ -403,7 +405,8 @@ class Interactor extends Konva.Group {
         shape.on("transformend", function () {
             let transform = shape.getAbsoluteTransform();
             let matrix = transform.getMatrix();
-            label.x(x + (shape.width() * matrix[0] - label.width()) / 2)
+            label.x(shape.x() + (shape.width() * matrix[0] - label.width()) / 2);
+            label.y(shape.y() - LABEL_SIZE - 2);
         });
 
         label.on("dblclick dbltap", () => {
@@ -603,13 +606,20 @@ document.getElementById("load").addEventListener(
                             // console.log("shape", shape)
                             if (["Rect", "Circle"].indexOf(shape.className) > -1) {
                                 this_shape = shape
-                                shape.on("dblclick", function () {
+                                shape.on("dblclick dbltap", function () {
                                     transformer.nodes([shape]);
                                 });
                                 // console.log("installed transformer", shape.name())
                             } else if (["Text"].indexOf(shape.className) > -1) {
-                                shape.on("dblclick", function () {
-                                    label_editor(stage, shape, this_shape);
+                                let this_label = shape
+                                this_shape.on("transformend", function () {
+                                    let transform = this_shape.getAbsoluteTransform();
+                                    let matrix = transform.getMatrix();
+                                    this_label.x(this_shape.x() + (this_shape.width() * matrix[0] - this_label.width()) / 2);
+                                    this_label.y(this_shape.y() - LABEL_SIZE - 2);
+                                });
+                                this_label.on("dblclick dbltap", function () {
+                                    label_editor(stage, this_label, this_shape);
                                 });
                                 // console.log("installed label_editor", shape.name())
                             }
