@@ -24,10 +24,17 @@ class Value:
 
         # Used in "value"
         self._datarefs = None
+        self._string_datarefs = None
         self._statevars = {}
+        self.init()
 
     def init(self):
-        pass
+        self._string_datarefs = self.string_datarefs
+        if type(self._string_datarefs) is str:
+            if "," in self._string_datarefs:
+                self._string_datarefs = self._string_datarefs.replace(" ", "").split(",")
+            else:
+                self._string_datarefs = [self._string_datarefs]
 
     def get_dataref_value(self, dataref):
         return self._button.get_dataref_value(dataref)
@@ -55,7 +62,7 @@ class Value:
         # List of datarefs
         return self._config.get(CONFIG_KW.DATAREFS.value, [])
 
-    def get_datarefs(self, base: dict | None = None) -> list:
+    def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -66,30 +73,30 @@ class Value:
                 return self._datarefs
             base = self._config
 
-        r = self.scan_datarefs(base)
+        r = self.scan_datarefs(base, extra_keys=extra_keys)
         self._datarefs = list(set(r))  # removes duplicates
         logger.debug(f"value {self.name}: found datarefs {r}")
         return self._datarefs
+
+    def get_all_datarefs(self) -> list:
+        return self.get_datarefs() + self._string_datarefs
 
     def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
+        String datarefs are treated separately.
         """
         r = []
 
         # Direct use of datarefs:
         #
-        # 1.1 Single
-        dataref = base.get(CONFIG_KW.DATAREF.value)
-        if dataref is not None and Dataref.might_be_dataref(dataref):
-            r.append(dataref)
-            logger.debug(f"value {self.name}: added single dataref {dataref}")
-        #
-        # Note:
-        #
-        #    If button, we need to add managed and guarded datarefs
-        #
+        # 1.1 Single datarefs in attributes
+        for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
+            dataref = base.get(attribute)
+            if dataref is not None and Dataref.might_be_dataref(dataref):
+                r.append(dataref)
+                logger.debug(f"value {self.name}: added single dataref {dataref}")
 
         # 1.2 Multiple
         datarefs = base.get(CONFIG_KW.MULTI_DATAREFS.value)
@@ -101,11 +108,10 @@ class Value:
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
 
-        # 2. In string datarefs:
-        if CONFIG_KW.FORMULA.value not in extra_keys:
-            extra_keys.append(CONFIG_KW.FORMULA.value)
+        # 2. In string datarefs (formula, text, etc.)
+        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.VIEW_IF.value]
 
-        for key in extra_keys:
+        for key in set(extra_keys+allways_extra):
             text = base.get(key)
             if text is not None and type(text) == str:
                 datarefs = re.findall(PATTERN_DOLCB, text)
@@ -115,6 +121,7 @@ class Value:
                     logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
 
         # Clean up
+        # text: ${formula} replaces text with result of formula
         if CONFIG_KW.FORMULA.value in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
             r.remove(CONFIG_KW.FORMULA.value)
         if None in r:
@@ -340,7 +347,7 @@ class Value:
         # 4. Multiple datarefs
         if len(self._datarefs) > 1:
             r = {}
-            for d in self._datarefs:
+            for d in self.get_all_datarefs():
                 v = self.get_dataref_value(d)
                 r[d] = v
             logger.debug(f"value {self.name}:getting dict of datarefs")
