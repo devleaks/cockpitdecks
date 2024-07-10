@@ -120,9 +120,11 @@ class CONFIG_KW(Enum):
     NAME = "name"
     NONE = "none"
     SERIAL = "serial"
+    SET_DATAREF = "set-dataref"
     STRING_DATAREFS = "string-datarefs"
     TYPE = "type"
     VIEW = "view"
+    VIEW_IF = "view-if"
 
 
 #
