@@ -100,7 +100,7 @@ class AnnunciatorPart:
 
     def get_datarefs(self):
         if self.datarefs is None:
-            self.datarefs = self._value.get_datarefs()
+            self.datarefs = self._value.get_datarefs(extra_keys=["text"])
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
