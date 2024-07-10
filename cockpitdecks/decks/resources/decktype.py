@@ -12,7 +12,7 @@ from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
 from cockpitdecks.buttons.representation.representation import Representation
-from cockpitdecks.constant import ICON_SIZE, VIRTUAL_DECK_DRIVER
+from cockpitdecks import ICON_SIZE, VIRTUAL_DECK_DRIVER
 
 loggerButtonType = logging.getLogger("ButtonType")
 # loggerButtonType.setLevel(logging.DEBUG)

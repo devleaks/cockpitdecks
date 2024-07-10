@@ -25,8 +25,6 @@ from cockpitdecks.buttons.representation import Representation
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
-
 
 class EncoderLEDs(Representation):
     """

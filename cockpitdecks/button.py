@@ -10,22 +10,11 @@ import re
 import logging
 import sys
 
-from cockpitdecks.constant import USE_COLLECTOR
-
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
-from .simulator import (
-    Dataref,
-    DatarefListener,
-    DatarefSetListener,
-    INTERNAL_DATAREF_PREFIX,
-    INTERNAL_STATE_PREFIX,
-    PATTERN_DOLCB,
-    PATTERN_INTSTATE,
-    PATTERN_INTDREF,
-)
-from .resources.rpc import RPC
+from .simulator import Dataref, DatarefListener, DatarefSetListener
 from .resources.iconfonts import ICON_FONTS
+from .resources.color import DEFAULT_COLOR, convert_color
 from .value import Value
 
 from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml, DEFAULT_ATTRIBUTE_PREFIX, parse_options
@@ -541,6 +530,65 @@ class Button(DatarefListener, DatarefSetListener):
     # ##################################
     # Text(s)
     #
+    def get_text_detail(self, config, which_text):
+        DEFAULT_VALID_TEXT_POSITION = "cm"
+
+        text = self.get_text(config, which_text)
+        text_format = config.get(f"{which_text}-format")
+        page = self.page
+
+        dflt_system_font = self.get_attribute(f"system-font")
+        if dflt_system_font is None:
+            logger.error(f"button {self.button_name()}: no system font")
+
+        dflt_text_font = self.get_attribute(f"{which_text}-font")
+        if dflt_text_font is None:
+            dflt_text_font = self.get_attribute("label-font")
+            if dflt_text_font is None:
+                logger.warning(f"button {self.button_name()}: no default label font, using system font")
+                dflt_text_font = dflt_system_font
+
+        text_font = config.get(f"{which_text}-font", dflt_text_font)
+
+        dflt_text_size = self.get_attribute(f"{which_text}-size")
+        if dflt_text_size is None:
+            dflt_text_size = self.get_attribute("label-size")
+            if dflt_text_size is None:
+                logger.warning(f"button {self.button_name()}: no default label size, using 10")
+                dflt_text_size = 16
+        text_size = config.get(f"{which_text}-size", dflt_text_size)
+
+        dflt_text_color = self.get_attribute(f"{which_text}-color")
+        if dflt_text_color is None:
+            dflt_text_color = self.get_attribute("label-color")
+            if dflt_text_color is None:
+                logger.warning(f"button {self.button_name()}: no default label color, using {DEFAULT_COLOR}")
+                dflt_text_color = DEFAULT_COLOR
+        text_color = config.get(f"{which_text}-color", dflt_text_color)
+        text_color = convert_color(text_color)
+
+        dflt_text_position = self.get_attribute(f"{which_text}-position")
+        if dflt_text_position is None:
+            dflt_text_position = self.get_attribute("label-position")
+            if dflt_text_position is None:
+                logger.warning(f"button {self.button_name()}: no default label position, using cm")
+                dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
+        text_position = config.get(f"{which_text}-position", dflt_text_position)
+        if text_position[0] not in "lcr":
+            text_position = DEFAULT_VALID_TEXT_POSITION
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
+        if text_position[1] not in "tmb":
+            text_position = DEFAULT_VALID_TEXT_POSITION
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
+
+        # print(f">>>> {self.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
+
+        if text is not None and not isinstance(text, str):
+            logger.warning(f"button {self.button_name()}: converting text {text} to string (type {type(text)})")
+            text = str(text)
+
+        return text, text_format, text_font, text_color, text_size, text_position
+
     def get_text(self, base: dict, root: str = "label"):  # root={label|text}
         """
         Extract label or text from base and perform formula and dataref values substitution if present.

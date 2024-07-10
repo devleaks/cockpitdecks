@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 WEB_LOG = False
-
+NOT_CONNECTED_WARNING = False
 
 class VirtualDeck(DeckWithIcons):
     """
@@ -103,7 +103,7 @@ class VirtualDeck(DeckWithIcons):
         since it has to take the "shape" of any "real physical deck" it virtualize
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        print("===== handle_event", deck.name, key, state, data)
+        # print("===== handle_event", deck.name, key, state, data)
         if state in [0, 1, 4]:
             PushEvent(deck=self, button=key, pressed=(state != 0), pulled=(state == 4))  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
@@ -250,7 +250,8 @@ class VirtualDeck(DeckWithIcons):
         # Regular representation
         if not self.is_connected():
             # If deck is not connected, we do not render. the button
-            logger.warning(f"button: {button.name}: virtual deck {self.name} not connected")
+            if NOT_CONNECTED_WARNING:
+                logger.warning(f"button: {button.name}: virtual deck {self.name} not connected")
             return
         representation = button._representation
         if isinstance(representation, IconBase):

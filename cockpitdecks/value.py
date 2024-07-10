@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import re
 
-from cockpitdecks.constant import CONFIG_KW
-from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, BUTTON_VARIABLE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from cockpitdecks import CONFIG_KW
+from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
 from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,8 @@ class Value:
     """Value class.
 
     Defines a value used by Cockpitdecks which is based on datarefs and button state variables.
+    Value needs a pointer to the button to get the values of datarefs and state variables.
+    Values DOES not contain the value, only its définition and methods to compute it.
     """
 
     def __init__(self, name: str, config: dict, button: "Button"):

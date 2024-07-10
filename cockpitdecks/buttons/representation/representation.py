@@ -22,7 +22,6 @@ from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PR
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-DEFAULT_VALID_TEXT_POSITION = "cm"  # text centered on icon (center, middle)
 
 
 # ##########################################
@@ -108,6 +107,9 @@ class Representation:
             logger.warning(f"button {self.button_name()}: representation attribute not found {attribute}, returning default ({default})")
 
         return default
+
+    def get_text_detail(self, config, which_text):
+        return self.button.get_text_detail(config, which_text)
 
     def inspect(self, what: str | None = None):
         logger.info(f"{type(self).__name__}:")

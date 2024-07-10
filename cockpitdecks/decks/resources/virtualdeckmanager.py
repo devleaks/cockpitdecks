@@ -7,7 +7,7 @@ import os
 from pickle import NONE
 from typing import Dict
 
-from cockpitdecks.constant import (
+from cockpitdecks import (
     CONFIG_FOLDER,
     CONFIG_FILE,
     SECRET_FILE,
