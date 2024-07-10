@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR
-from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent
+from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent, DEFAULT_REQ_FREQUENCY
 
 if USE_COLLECTOR:
     from cockpitdecks.simulator import DatarefSetCollector
@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
 # UDP sends at most ~40 to ~50 dataref values per packet.
-DEFAULT_REQ_FREQUENCY = 2  # if no frequency is supplied (or forced to None), this is used
 LOOP_ALIVE = 100  # report loop activity every 1000 executions on DEBUG, set to None to suppress output
 RECONNECT_TIMEOUT = 10  # seconds
 SOCKET_TIMEOUT = 5  # seconds
