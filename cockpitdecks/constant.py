@@ -24,6 +24,7 @@ from ruamel.yaml import YAML
 # ROOT_DEBUG = "cockpitdecks.xplaneudp,cockpitdecks.xplane,cockpitdecks.button"
 ROOT_DEBUG = ""
 EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Streadecks
+USE_COLLECTOR = False
 
 # Files
 CONFIG_FOLDER = "deckconfig"
@@ -49,8 +50,6 @@ COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
 
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
-
-COLLECTOR = False
 
 
 class ANNUNCIATOR_STYLES(Enum):
