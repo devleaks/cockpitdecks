@@ -8,7 +8,7 @@ from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, BUTTON_VARIAB
 from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Value:
@@ -23,9 +23,8 @@ class Value:
         self.name = name  # for debeging and information purpose
 
         # Used in "value"
-        self._datarefs = []
+        self._datarefs = None
         self._statevars = {}
-        print(f"CREATED VALUE {self.name} for {self._button.button_name()} ({self._button.index})")
 
     def init(self):
         pass
@@ -68,9 +67,9 @@ class Value:
             base = self._config
 
         r = self.scan_datarefs(base)
-        r = list(set(r))  # removes duplicates
+        self._datarefs = list(set(r))  # removes duplicates
         logger.debug(f"value {self.name}: found datarefs {r}")
-        return r
+        return self._datarefs
 
     def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
         """
@@ -219,13 +218,13 @@ class Value:
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
         if type(text) != str or "$" not in text:  # no ${..} to stubstitute
-            logger.debug(f"substitute_values: value {self.name} ({self._button.button_name()}): value has no variable ({text})")
+            logger.debug(f"substitute_values: value has not variables ({text})")
             return text
         step1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != step1:
-            logger.debug(f"substitute_values: value {self.name} ({self._button.button_name()}): {text} => {step1}")
+            logger.debug(f"substitute_values: value {self.name}:{text} => {step1}")
         else:
-            logger.debug(f"substitute_values: value {self.name} ({self._button.button_name()}): has no state variable ({text})")
+            logger.debug(f"substitute_values: has no state variable ({text})")
         # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
         step2 = step1
         step3 = self.substitute_dataref_values(step2, default=default, formatting=formatting)
@@ -248,7 +247,7 @@ class Value:
         r = RPC(expr)
         value = r.calculate()
         logger.debug(
-            f"execute_formula: value {self.name} ({self._button.button_name()}):{formula} => {expr}:  => {value}",
+            f"execute_formula: value {self.name}:{formula} => {expr}:  => {value}",
         )
         return value
 
@@ -327,6 +326,10 @@ class Value:
         if self.formula is not None and self.formula != "":
             logger.debug(f"value {self.name}: from formula")
             return self.execute_formula(formula=self.formula)
+
+        if self._datarefs is None:
+            logger.debug(f"value {self.name}: no formula, no dataref")
+            return None
 
         # 3. One dataref
         if len(self._datarefs) == 1:
