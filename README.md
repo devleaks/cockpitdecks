@@ -21,3 +21,19 @@ You can find [numerous configurations for different aircrafts here](https://gith
 
 Fly safely.
 
+## Installation
+
+See [documentation](https://devleaks.github.io/cockpitdecks-docs/Installation/).
+
+Create python environment
+
+pip install git+https://github.com/devleaks/cockpitdecks.git
+
+pip install avwx-engine scipy suntime timezonefinder metar
+
+pip install streamdeck
+
+pip install git+https://github.com/devleaks/python-loupedeck-live.git
+
+pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
+
