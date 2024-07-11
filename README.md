@@ -1,8 +1,8 @@
 # Welcome to Cockpit Deck
 
-<p float="right">
+<div float="right">
 <img src="https://github.com/devleaks/cockpitdecks/raw/main/cockpitdecks/resources/icon.png" width="200" alt="Cockpitdecks icon"/>
-</p>
+</div>
 Cockpitdecks is a python software to interface
 
 - Elgato Stream Decks
