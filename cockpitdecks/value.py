@@ -86,6 +86,12 @@ class Value:
         # List of datarefs
         return self._config.get(CONFIG_KW.MULTI_DATAREFS.value, [])
 
+    def complement_datarefs(self, datarefs, reason:str|None = None):
+        if self._datarefs is None:
+            self._datarefs = []
+        self._datarefs = self._datarefs + datarefs
+        logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
+
     def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
@@ -249,18 +255,18 @@ class Value:
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
         if type(text) != str or "$" not in text:  # no ${..} to stubstitute
-            logger.debug(f"substitute_values: value has not variables ({text})")
+            logger.debug(f"substitute_values: value {text} has no variable ({text})")
             return text
         step1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != step1:
-            logger.debug(f"substitute_values: value {self.name}:{text} => {step1}")
+            logger.debug(f"substitute_values: value {self.name}: {text} => {step1}")
         else:
             logger.debug(f"substitute_values: has no state variable ({text})")
         # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
         step2 = step1
         step3 = self.substitute_dataref_values(step2, default=default, formatting=formatting)
         if step3 != step2:
-            logger.debug(f"substitute_values: value {self.name}:{step2} => {step3}")
+            logger.debug(f"substitute_values: value {self.name}: {step2} => {step3}")
         else:
             logger.debug(f"substitute_values: has no dataref ({step3})")
         return step3
@@ -278,7 +284,7 @@ class Value:
         r = RPC(expr)
         value = r.calculate()
         logger.debug(
-            f"execute_formula: value {self.name}:{formula} => {expr}:  => {value}",
+            f"execute_formula: value {self.name}: {formula} => {expr}: => {value}",
         )
         return value
 
@@ -359,6 +365,8 @@ class Value:
             logger.warning("no default font")
 
         text_font = base.get(root + "-font", default_font)
+
+        # Substituing icons in icon fonts
         for k, v in ICON_FONTS.items():
             if text_font.lower().startswith(v[0]):
                 s = "\\${%s:([^\\}]+?)}" % (k)
@@ -369,10 +377,10 @@ class Value:
                         logger.debug(f"button {self.button.button_name()}: substituing font icon {i}")
 
         # Formula in text
+        # If text contains ${formula}, it is replaced by the value of the formula calculation.
         text_format = base.get(f"{root}-format")
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
-            # If text contains ${formula}, it is replaced by the value of the formula calculation.
             dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
             if dataref_rpn is not None:
                 res = self.execute_formula(formula=dataref_rpn)
@@ -386,6 +394,7 @@ class Value:
             else:
                 logger.warning(f"button {self.button.button_name()}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
+        # Rest of text: substitution of ${}
         text = self.substitute_values(text, formatting=text_format, default="---")
         return text
 
@@ -399,8 +408,9 @@ class Value:
         """ """
         # 1. If there is a formula, value comes from it
         if self.formula is not None and self.formula != "":
-            logger.debug(f"value {self.name}: from formula")
-            return self.execute_formula(formula=self.formula)
+            ret = self.execute_formula(formula=self.formula)
+            logger.debug(f"value {self.name}: {ret} (from formula)")
+            return ret
 
         if self._datarefs is None:
             logger.debug(f"value {self.name}: no formula, no dataref")
@@ -409,16 +419,16 @@ class Value:
         # 3. One dataref
         if len(self._datarefs) == 1:
             # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            logger.debug(f"value {self.name}: from single dataref {self._datarefs[0]}")
-            return self.get_dataref_value(self._datarefs[0])
-
+            ret = self.get_dataref_value(self._datarefs[0])
+            logger.debug(f"value {self.name}: {ret} (from single dataref {self._datarefs[0]})")
+            return ret
         # 4. Multiple datarefs
         if len(self._datarefs) > 1:
             r = {}
             for d in self.get_all_datarefs():
                 v = self.get_dataref_value(d)
                 r[d] = v
-            logger.debug(f"value {self.name}:getting dict of datarefs")
+            logger.debug(f"value {self.name}: {r} (no formula)")
             return r
 
         return None

@@ -243,7 +243,9 @@ class Activation:
     def write_dataref(self, value: float):
         if self.writable_dataref is None:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
+            return
         logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self.writable_dataref} => {value}")
+        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self.writable_dataref} => {value}")
         self._write_dataref(self.writable_dataref, value)
 
     def __str__(self):  # print its status

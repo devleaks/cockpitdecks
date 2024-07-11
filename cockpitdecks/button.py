@@ -453,6 +453,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             datarefs = self._activation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
+                self._value.complement_datarefs(r, reason="activation")
                 logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
 
         # Representation datarefs
@@ -460,6 +461,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             datarefs = self._representation.get_datarefs()
             if datarefs is not None:
                 r = r + datarefs
+                self._value.complement_datarefs(r, reason="representation")
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
 
         return list(set(r))  # removes duplicates
@@ -676,6 +678,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
 
         # 2. Formula or dataref based
         if self.dataref_rpn is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
+            logger.debug(f"button {self.name}: has formula and/or datarefs")
             return self._value.get_value()
 
         # 3. Button state based
