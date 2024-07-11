@@ -1,5 +1,8 @@
 # Welcome to Cockpit Deck
 
+<p float="right">
+<img src="https://github.com/devleaks/cockpitdecks/raw/main/cockpitdecks/resources/icon.png" width="200" alt="Cockpitdecks icon"/>
+</p>
 Cockpitdecks is a python software to interface
 
 - Elgato Stream Decks
@@ -18,4 +21,3 @@ You can find [numerous configurations for different aircrafts here](https://gith
 
 Fly safely.
 
-<img src="https://github.com/devleaks/cockpitdecks/raw/main/cockpitdecks/resources/icon.png" width="200" alt="Cockpitdecks icon"/>
