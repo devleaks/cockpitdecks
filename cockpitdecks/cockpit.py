@@ -42,7 +42,12 @@ if LOGFILE is not None:
 #
 DECK_TYPE_ORIGINAL = "deck-type-desc"
 DECK_TYPE_DESCRIPTION = "deck-type-flat"
-AIRCRAFT = "_livery" # dataref name is data:_livery
+
+# Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
+# (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
+# but also the aircraft. So in 1 dataref, 2 data!
+AIRCRAFT = "_livery"  # dataref name is data:_livery
+
 
 class CockpitBase:
     """As used in Simulator"""
@@ -314,7 +319,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.debug(f"using {len(decks)} {deck_driver}")
         logger.debug(f"..scanned")
 
-    def get_device(self, req_serial: str, req_driver: str):
+    def get_device(self, req_driver: str, req_serial: str | None):
         """
         Get a hardware device for the supplied serial number.
         If found, the device is opened and reset and returned open.
@@ -654,7 +659,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 serial = serial_numbers.get(name)
 
             # if serial is not None:
-            device = self.get_device(req_serial=serial, req_driver=deck_driver)
+            device = self.get_device(req_driver=deck_driver, req_serial=serial)
             if device is not None:
                 #
                 if serial is None:

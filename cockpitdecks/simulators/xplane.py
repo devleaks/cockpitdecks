@@ -8,7 +8,7 @@ import threading
 import logging
 import time
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR, AIRCRAFT_CHANGE_MONITORING_DATAREF
@@ -43,7 +43,7 @@ SDL_SOCKET_TIMEOUT = SDL_UPDATE_FREQ + 1.0  # should be larger or equal to PI_st
 #
 DATETIME_DATAREFS = [
     "sim/time/local_date_days",
-    "sim/time/local_date_sec",
+    "sim/time/local_time_sec",
     "sim/time/zulu_time_sec",
     "sim/time/use_system_time",
 ]
@@ -52,6 +52,8 @@ REPLAY_DATAREFS = [
     "sim/time/sim_speed",
     "sim/time/sim_speed_actual",
 ]
+
+
 CONNECTION_STATUS_DATAREF = Dataref.mk_internal_dataref("_connection_status")
 
 
@@ -488,6 +490,10 @@ class XPlane(Simulator, XPlaneBeacon):
                                 if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
                                     value = 0.0
                                 v = value
+                                # if d == "sim/time/zulu_time_sec":
+                                #     now = datetime.now().astimezone(tz=timezone.utc)
+                                #     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+                                #     print(seconds_since_midnight-v)
                                 r = self.get_rounding(dataref_path=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)
@@ -724,6 +730,8 @@ class XPlane(Simulator, XPlaneBeacon):
         if not self.connected:
             logger.warning("no connection")
             return
+        # Add always monitored drefs
+        self.add_datetime_datarefs()
         # Add those to monitor
         prnt = []
         for path in self.datarefs_to_monitor.keys():

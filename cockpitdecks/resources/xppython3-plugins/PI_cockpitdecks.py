@@ -78,9 +78,7 @@ class PythonInterface:
         self.Desc = f"Cockpitdecks Helper plugin to circumvent some X-Plane UDP limitations (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
-        self.trace = (
-            True  # produces extra print/debugging in XPPython3.log for this class
-        )
+        self.trace = True  # produces extra print/debugging in XPPython3.log for this class
 
         self.acpath = ""
         self.datarefs = {}
@@ -114,13 +112,9 @@ class PythonInterface:
         if self.trace:
             print(self.Info, "XPluginEnable: flight loop registered")
         try:
-            ac = xp.getNthAircraftModel(
-                0
-            )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+            ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
-                acpath = os.path.split(
-                    ac[1]
-                )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                 print(self.Info, "XPluginEnable: trying " + acpath[0] + " ..")
                 self.load(acpath=acpath[0])
                 print(self.Info, "XPluginEnable: " + acpath[0] + " done.")
@@ -154,18 +148,12 @@ class PythonInterface:
         we try to load the aicraft deskconfig.
         If it does not exist, we default to a screen saver type of screen for the deck.
         """
-        if (
-            inMessage == xp.MSG_PLANE_LOADED and inParam == 0
-        ):  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
+        if inMessage == xp.MSG_PLANE_LOADED and inParam == 0:  # 0 is for the user aircraft, greater than zero will be for AI aircraft.
             print(self.Info, "XPluginReceiveMessage: user aircraft received")
             try:
-                ac = xp.getNthAircraftModel(
-                    0
-                )  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
+                ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
                 if len(ac) == 2:
-                    acpath = os.path.split(
-                        ac[1]
-                    )  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
+                    acpath = os.path.split(ac[1])  # ('/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP', 'Cessna_172SP.acf')
                     if self.trace:
                         print(
                             self.Info,
@@ -175,9 +163,7 @@ class PythonInterface:
                     if self.run_count > 0:
                         print(
                             self.Info,
-                            "XPluginReceiveMessage: old run count "
-                            + str(self.run_count)
-                            + ", run count reset",
+                            "XPluginReceiveMessage: old run count " + str(self.run_count) + ", run count reset",
                         )
                         self.run_count = 0
                     if self.trace:
@@ -203,9 +189,7 @@ class PythonInterface:
         if self.run_count % 100 == 0:
             print(self.Info, f"FlightLoopCallback: is alive ({self.run_count})")
         elif self.run_count in CHECK_COUNT:
-            if len(self.datarefs) < self.num_collected_drefs and (
-                self.acpath is not None and len(self.acpath) > 0
-            ):
+            if len(self.datarefs) < self.num_collected_drefs and (self.acpath is not None and len(self.acpath) > 0):
                 print(
                     self.Info,
                     f"FlightLoopCallback: is alive ({self.run_count}), missing string datarefs {len(self.datarefs)}/{self.num_collected_drefs} for {self.acpath}",
@@ -219,13 +203,9 @@ class PythonInterface:
         self.run_count = self.run_count + 1
         with self.RLock:  # add a meta data to sync effectively
             try:  # efficent method
-                drefvalues = {
-                    "meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}
-                } | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+                drefvalues = {"meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
             except:  # if one dataref does not work, try one by one, skip those in error
-                drefvalues = {
-                    "meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}
-                }
+                drefvalues = {"meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}}
                 for d in self.datarefs:
                     try:
                         v = xp.getDatas(self.datarefs[d])
@@ -235,9 +215,7 @@ class PythonInterface:
                             self.Info,
                             f"FlightLoopCallback: error fetching dataref string {d}, skipping",
                         )
-        fma_bytes = bytes(
-            json.dumps(drefvalues), "utf-8"
-        )  # no time to think. serialize as json
+        fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
         if len(fma_bytes) > 1472:
@@ -284,9 +262,7 @@ class PythonInterface:
         DECKS = "decks"  # keyword to list decks used for this aircraft
         LAYOUT = "layout"  # keyword to detect layout for above deck
         TYPE = "type"  # keyword to detect the action of the button (intend)
-        COMMAND = (
-            "command"  # keyword to detect (X-Plane) command in definition of the button
-        )
+        COMMAND = "command"  # keyword to detect (X-Plane) command in definition of the button
         MULTI_COMMANDS = "commands"  # same as above for multiple commands
 
         DEBUG = False
@@ -592,25 +568,17 @@ class PythonInterface:
                     cmd = command + "/begin"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "Begin " + cmd)
-                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(
-                        cmd, True
-                    )
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, True)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
-                    self.commands[cmd][HDL] = xp.registerCommandHandler(
-                        self.commands[cmd][REF], self.commands[cmd][FUN], 1, None
-                    )
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"load: added {cmd}")
                     cmd = command + "/end"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "End " + cmd)
-                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(
-                        cmd, False
-                    )
+                    self.commands[cmd][FUN] = lambda *args, cmd=command: self.command(cmd, False)
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
-                    self.commands[cmd][HDL] = xp.registerCommandHandler(
-                        self.commands[cmd][REF], self.commands[cmd][FUN], 1, None
-                    )
+                    self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
                         print(self.Info, f"load: added {cmd}")
                     # else:

@@ -12,11 +12,13 @@ from .resources.rpc import RPC
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+
 class DatarefValueProvider(ABC):
 
     @abstractmethod
     def get_dataref_value(name: str):
         pass
+
 
 class StateVariableProvider(ABC):
 
@@ -24,8 +26,10 @@ class StateVariableProvider(ABC):
     def get_state_value(name: str):
         pass
 
+
 class ValueProvider(DatarefValueProvider, StateVariableProvider):
     pass
+
 
 class Value:
     """Value class.
@@ -130,7 +134,7 @@ class Value:
 
         # 2. In string datarefs (formula, text, etc.)
         allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.VIEW_IF.value]
-        self._known_extras = set(extra_keys+allways_extra)
+        self._known_extras = set(extra_keys + allways_extra)
 
         for key in self._known_extras:
             text = base.get(key)

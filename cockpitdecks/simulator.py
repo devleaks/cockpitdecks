@@ -71,6 +71,7 @@ PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
 
 DEFAULT_REQ_FREQUENCY = 4  # if no frequency is supplied (or forced to None), this is used
 
+
 class Dataref:
     """
     A Dataref is an internal value of the simulation software made accessible to outside modules,

@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 WEB_LOG = False
 NOT_CONNECTED_WARNING = False
 
+
 class VirtualDeck(DeckWithIcons):
     """
     Loads the configuration of a virtual deck
