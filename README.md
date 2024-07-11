@@ -14,4 +14,4 @@ Please head to the [documentation](https://devleaks.github.io/cockpitdecks-docs/
 
 You can find [numerous configurations for different aircrafts here](https://github.com/dlicudi/cockpitdecks-configs).
 
-![Cockpitdecks Icon](cockpitdecks/resources/icon.png)
+![Cockpitdecks Icon|300](cockpitdecks/resources/icon.png)
