@@ -15,7 +15,7 @@ from .buttons.representation import REPRESENTATIONS, Annunciator
 from .simulator import Dataref, DatarefListener, DatarefSetListener
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import DEFAULT_COLOR, convert_color
-from .value import Value
+from .value import Value, ValueProvider
 
 from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
-class Button(DatarefListener, DatarefSetListener):
+class Button(DatarefListener, DatarefSetListener, ValueProvider):
     def __init__(self, config: dict, page: "Page"):
         DatarefListener.__init__(self)
         DatarefSetListener.__init__(self)
@@ -474,9 +474,6 @@ class Button(DatarefListener, DatarefSetListener):
     # ##################################
     # Dataref processing
     #
-    def get_dataref_value(self, dataref, default=None):
-        return self.page.get_dataref_value(dataref=dataref, default=default)
-
     def is_managed(self):
         if self.managed is None:
             logger.debug(f"button {self.name}: is managed is none.")
@@ -499,6 +496,12 @@ class Button(DatarefListener, DatarefSetListener):
         return False
         # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
 
+    # ##################################
+    # Value provider
+    #
+    def get_dataref_value(self, dataref, default=None):
+        return self.page.get_dataref_value(dataref=dataref, default=default)
+
     def get_state_value(self, name):
         value = None
         status = self.get_state_variables()
@@ -517,6 +520,9 @@ class Button(DatarefListener, DatarefSetListener):
         logger.debug(f"button {self.name}: state {name} = {value} (from {source})")
         return value
 
+    # ##################################
+    # Value substitution
+    #
     def substitute_values(self, text, default: str = "0.0", formatting=None):
         return self._value.substitute_values(text=text, default=default, formatting=formatting)
 

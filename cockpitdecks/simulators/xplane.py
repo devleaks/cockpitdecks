@@ -11,7 +11,7 @@ import json
 from datetime import datetime, timedelta
 from queue import Queue
 
-from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR
+from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR, AIRCRAFT_CHANGE_MONITORING_DATAREF
 from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent, DEFAULT_REQ_FREQUENCY
 
 if USE_COLLECTOR:
@@ -39,9 +39,8 @@ SDL_UPDATE_FREQ = 5.0  # same starting value as PI_string_datarefs_udp.FREQUENCY
 SDL_SOCKET_TIMEOUT = SDL_UPDATE_FREQ + 1.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY
 
 
-# When this (internal) dataref changes, the loaded aircraft has changed
+# When this dataref changes, the loaded aircraft has changed
 #
-AIRCRAFT_DATAREF_IPC = Dataref.mk_internal_dataref("_aircraft_icao")
 DATETIME_DATAREFS = [
     "sim/time/local_date_days",
     "sim/time/local_date_sec",
@@ -299,12 +298,15 @@ class XPlane(Simulator, XPlaneBeacon):
     def init(self):
         if self._inited:
             return
-        dref = Dataref(AIRCRAFT_DATAREF_IPC)
+
+        # Register special datarefs for internal monitoring
+        dref = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF, is_string=True)
         dref.add_listener(self.cockpit)  # Wow wow wow
-        self.register(dref)
-        logger.info(f"internal aircraft dataref is {AIRCRAFT_DATAREF_IPC}")
+        logger.info(f"aircraft dataref is {AIRCRAFT_CHANGE_MONITORING_DATAREF}")
+
         self.add_datetime_datarefs()
 
+        # Setup socket reception for string-datarefs
         self.socket_strdref = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         # Allow multiple sockets to use the same PORT number
         self.socket_strdref.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # SO_REUSEPORT
@@ -460,7 +462,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     self.socket.settimeout(SOCKET_TIMEOUT)
                     data, addr = self.socket.recvfrom(1472)  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
                     # Decode Packet
-                    self.status_dataref.update_value(3, cascade=True)
+                    self.status_dataref.update_value(4, cascade=True)
                     # Read the Header "RREF,".
                     total_to = 0
                     total_reads = total_reads + 1
@@ -525,11 +527,11 @@ class XPlane(Simulator, XPlaneBeacon):
         src_cnt = 0
         src_tot = 0
 
-        self.status_dataref.update_value(4, cascade=True)
         while self.dref_event is not None and not self.dref_event.is_set():
             try:
                 self.socket_strdref.settimeout(frequency)
                 data, addr = self.socket_strdref.recvfrom(1024)
+                self.status_dataref.update_value(4, cascade=True)
                 total_to = 0
                 total_reads = total_reads + 1
                 now = datetime.now()
@@ -575,6 +577,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     f"string dataref listener: socket timeout ({frequency} secs.) received ({total_to})",
                     exc_info=(logger.level == logging.DEBUG),
                 )
+                self.status_dataref.update_value(2, cascade=True)
                 frequency = frequency + 1
 
         self.dref_event = None
@@ -636,7 +639,7 @@ class XPlane(Simulator, XPlaneBeacon):
                 prnt.append(d.path)
 
         # Add aircraft
-        dref_ipc = self.get_dataref(AIRCRAFT_DATAREF_IPC)
+        dref_ipc = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF)
         if self.add_dataref_to_monitor(dref_ipc.path, freq=dref_ipc.update_frequency):
             prnt.append(dref_ipc.path)
             super().add_datarefs_to_monitor({dref_ipc.path: dref_ipc})
@@ -665,7 +668,7 @@ class XPlane(Simulator, XPlaneBeacon):
                 logger.debug(f"no need to remove {d.path}")
 
         # Add aircraft path
-        dref_ipc = self.get_dataref(AIRCRAFT_DATAREF_IPC)
+        dref_ipc = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF)
         if self.add_dataref_to_monitor(dref_ipc.path, freq=0):
             prnt.append(dref_ipc.path)
             super().remove_datarefs_to_monitor({dref_ipc.path: dref_ipc})

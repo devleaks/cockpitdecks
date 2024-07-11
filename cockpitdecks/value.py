@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 import logging
 import re
+from abc import ABC
 
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
@@ -10,6 +12,20 @@ from .resources.rpc import RPC
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+class DatarefValueProvider(ABC):
+
+    @abstractmethod
+    def get_dataref_value(name: str):
+        pass
+
+class StateVariableProvider(ABC):
+
+    @abstractmethod
+    def get_state_value(name: str):
+        pass
+
+class ValueProvider(DatarefValueProvider, StateVariableProvider):
+    pass
 
 class Value:
     """Value class.
@@ -19,7 +35,7 @@ class Value:
     Values DOES not contain the value, only its définition and methods to compute it.
     """
 
-    def __init__(self, name: str, config: dict, button: "Button"):
+    def __init__(self, name: str, config: dict, button: ValueProvider):
         self._config = config
         self._button = button
         self.name = name  # for debeging and information purpose
@@ -28,6 +44,8 @@ class Value:
         self._datarefs = None
         self._string_datarefs = None
         self._statevars = {}
+        self._known_extras = ()
+
         self.init()
 
     def init(self):
@@ -62,7 +80,7 @@ class Value:
     @property
     def datarefs(self) -> list:
         # List of datarefs
-        return self._config.get(CONFIG_KW.DATAREFS.value, [])
+        return self._config.get(CONFIG_KW.MULTI_DATAREFS.value, [])
 
     def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
         """
@@ -112,8 +130,9 @@ class Value:
 
         # 2. In string datarefs (formula, text, etc.)
         allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.VIEW_IF.value]
+        self._known_extras = set(extra_keys+allways_extra)
 
-        for key in set(extra_keys+allways_extra):
+        for key in self._known_extras:
             text = base.get(key)
             if text is not None and type(text) == str:
                 datarefs = re.findall(PATTERN_DOLCB, text)
@@ -189,7 +208,6 @@ class Value:
         return retmsg
 
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
-        status = self._button.get_state_variables()
         txtcpy = text
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         for name in more:
@@ -260,68 +278,112 @@ class Value:
         )
         return value
 
-    # def get_text_detail(self, base: dict, root: str):
-    #     text = base.get(root)
+    # ##################################
+    # Text substitution
+    #
+    def get_text_detail(self, config, which_text):
+        DEFAULT_VALID_TEXT_POSITION = "cm"
 
-    #     if text is None:
-    #         logger.warning(f"value {self.name}: no {root}")
-    #         return None, None, None, None, None, None
+        text = self.get_text(config, which_text)
+        text_format = config.get(f"{which_text}-format")
+        page = self.button.page
 
-    #     text_format = base.get(f"{root}-format")
-    #     text_font = base.get(f"{root}-font", self._button.get_attribute("label-font"))
-    #     text_size = base.get(f"{root}-size", self._button.get_attribute("label-size"))
-    #     text_color = base.get(f"{root}-color", self._button.get_attribute("label-color"))
-    #     text_color = convert_color(text_color)
-    #     text_position = base.get(f"{root}-position", self._button.get_attribute("label-position"))
-    #     # print(f">>>> {self._button.get_id()}:{root}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
+        dflt_system_font = self.button.get_attribute(f"system-font")
+        if dflt_system_font is None:
+            logger.error(f"button {self.button.button_name()}: no system font")
 
-    #     if not isinstance(text, str):
-    #         logger.warning(f"value {self.name}: converting text {text} to string (type {type(text)})")
-    #         text = str(text)
+        dflt_text_font = self.button.get_attribute(f"{which_text}-font")
+        if dflt_text_font is None:
+            dflt_text_font = self.button.get_attribute("label-font")
+            if dflt_text_font is None:
+                logger.warning(f"button {self.button.button_name()}: no default label font, using system font")
+                dflt_text_font = dflt_system_font
 
-    #     return text, text_format, text_font, text_color, text_size, text_position
+        text_font = config.get(f"{which_text}-font", dflt_text_font)
 
-    # def get_text(self, base: dict, root: str = "label"):  # root={label|text}
-    #     """
-    #     Extract label or text from base and perform formula and dataref values substitution if present.
-    #     (I.e. replaces ${formula} and ${dataref} with their values.)
-    #     """
-    #     text = base.get(root)
-    #     if text is None:
-    #         return None
+        dflt_text_size = self.button.get_attribute(f"{which_text}-size")
+        if dflt_text_size is None:
+            dflt_text_size = self.button.get_attribute("label-size")
+            if dflt_text_size is None:
+                logger.warning(f"button {self.button.button_name()}: no default label size, using 10")
+                dflt_text_size = 16
+        text_size = config.get(f"{which_text}-size", dflt_text_size)
 
-    #     # HACK 1: Special icon font substitution
-    #     text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(base, root)
+        dflt_text_color = self.button.get_attribute(f"{which_text}-color")
+        if dflt_text_color is None:
+            dflt_text_color = self.button.get_attribute("label-color")
+            if dflt_text_color is None:
+                logger.warning(f"button {self.button.button_name()}: no default label color, using {DEFAULT_COLOR}")
+                dflt_text_color = DEFAULT_COLOR
+        text_color = config.get(f"{which_text}-color", dflt_text_color)
+        text_color = convert_color(text_color)
 
-    #     for k, v in ICON_FONTS.items():
-    #         if text_font.lower().startswith(v[0]):
-    #             s = "\\${%s:([^\\}]+?)}" % (k)
-    #             icons = re.findall(s, text)
-    #             for i in icons:
-    #                 if i in v[1].keys():
-    #                     text = text.replace(f"${{{k}:{i}}}", v[1][i])
-    #                     logger.debug(f"value {self.name}: substituing font icon {i}")
+        dflt_text_position = self.button.get_attribute(f"{which_text}-position")
+        if dflt_text_position is None:
+            dflt_text_position = self.button.get_attribute("label-position")
+            if dflt_text_position is None:
+                logger.warning(f"button {self.button.button_name()}: no default label position, using cm")
+                dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
+        text_position = config.get(f"{which_text}-position", dflt_text_position)
+        if text_position[0] not in "lcr":
+            text_position = DEFAULT_VALID_TEXT_POSITION
+            logger.warning(f"button {self.button.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
+        if text_position[1] not in "tmb":
+            text_position = DEFAULT_VALID_TEXT_POSITION
+            logger.warning(f"button {self.button.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
 
-    #     # Formula in text
-    #     KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
-    #     if KW_FORMULA_STR in str(text):
-    #         # If text contains ${formula}, it is replaced by the value of the formula calculation.
-    #         dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
-    #         if dataref_rpn is not None:
-    #             res = self.execute_formula(formula=dataref_rpn)
-    #             if res != "":  # Format output if format present
-    #                 if text_format is not None:
-    #                     logger.debug(f"value {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
-    #                     res = text_format.format(res)
-    #                 else:
-    #                     res = str(res)
-    #             text = text.replace(KW_FORMULA_STR, res)
-    #         else:
-    #             logger.warning(f"value {self.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+        # print(f">>>> {self.button.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
 
-    #     text = self.substitute_values(text, formatting=text_format, default="---")
+        if text is not None and not isinstance(text, str):
+            logger.warning(f"button {self.button.button_name()}: converting text {text} to string (type {type(text)})")
+            text = str(text)
 
-    #     return text
+        return text, text_format, text_font, text_color, text_size, text_position
+
+    def get_text(self, base: dict, root: str = "label"):  # root={label|text}
+        """
+        Extract label or text from base and perform formula and dataref values substitution if present.
+        (I.e. replaces ${formula} and ${dataref} with their values.)
+        """
+        text = base.get(root)
+        if text is None:
+            return None
+
+        # HACK 1: Special icon font substitution
+        default_font = self.button.get_attribute("label-font")
+        if default_font is None:
+            logger.warning("no default font")
+
+        text_font = base.get(root + "-font", default_font)
+        for k, v in ICON_FONTS.items():
+            if text_font.lower().startswith(v[0]):
+                s = "\\${%s:([^\\}]+?)}" % (k)
+                icons = re.findall(s, text)
+                for i in icons:
+                    if i in v[1].keys():
+                        text = text.replace(f"${{{k}:{i}}}", v[1][i])
+                        logger.debug(f"button {self.button.button_name()}: substituing font icon {i}")
+
+        # Formula in text
+        text_format = base.get(f"{root}-format")
+        KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
+        if KW_FORMULA_STR in str(text):
+            # If text contains ${formula}, it is replaced by the value of the formula calculation.
+            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
+            if dataref_rpn is not None:
+                res = self.execute_formula(formula=dataref_rpn)
+                if res != "":  # Format output if format present
+                    if text_format is not None:
+                        logger.debug(f"button {self.button.button_name()}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        res = text_format.format(res)
+                    else:
+                        res = str(res)
+                text = text.replace(KW_FORMULA_STR, res)
+            else:
+                logger.warning(f"button {self.button.button_name()}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+
+        text = self.substitute_values(text, formatting=text_format, default="---")
+        return text
 
     # ##################################
     # Value computation

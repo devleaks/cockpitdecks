@@ -19,9 +19,9 @@ from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
-from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH
+from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, AIRCRAFT_CHANGE_MONITORING_DATAREF
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
-from cockpitdecks.simulator import DatarefListener
+from cockpitdecks.simulator import Dataref, DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
 from .buttons.activation import ACTIVATIONS
@@ -42,7 +42,7 @@ if LOGFILE is not None:
 #
 DECK_TYPE_ORIGINAL = "deck-type-desc"
 DECK_TYPE_DESCRIPTION = "deck-type-flat"
-
+AIRCRAFT = "_livery" # dataref name is data:_livery
 
 class CockpitBase:
     """As used in Simulator"""
@@ -114,6 +114,8 @@ class Cockpit(DatarefListener, CockpitBase):
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
         self._dark = False
+        self._livery_dataref = self.sim.get_dataref(Dataref.mk_internal_dataref(AIRCRAFT), is_string=True)
+        self._livery_dataref.update_value(new_value=None, cascade=False)  # init
 
         # Main event look
         self.event_loop_run = False
@@ -1010,13 +1012,21 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def dataref_changed(self, dataref):
         """
-        This gets called when dataref AIRCRAFT_DATAREF is changed, hence a new aircraft has been loaded.
+        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        v = dataref.value()
-        if v is not None and v == 1:
-            logger.info(f"current aircraft loaded {dataref.path}={dataref.value()}")
+        if type(dataref) is Dataref and dataref.path == AIRCRAFT_CHANGE_MONITORING_DATAREF:
+            value = dataref.value()
+            if value is not None and type(value) is str:
+                new_livery = os.path.basename(os.path.normpath(value))
+                old_livery = self._livery_dataref.value()
+                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+                if old_livery is None:
+                    logger.info(f"initial aircraft livery set to {new_livery}")
+                elif old_livery != new_livery:
+                    logger.info(f"new aircraft livery loaded {new_livery} (former was {old_livery})")
+                    self.reload_decks()
         else:
-            logger.info(f"new aircraft loaded {dataref.path}={dataref.value()}")
+            logger.warning(f"unhandled {dataref.path}={dataref.value()}")
 
     def terminate_aircraft(self):
         logger.info(f"terminating..")

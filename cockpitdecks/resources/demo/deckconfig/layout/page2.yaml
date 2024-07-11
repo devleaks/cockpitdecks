@@ -72,12 +72,12 @@ buttons:
     string-datarefs:
       - sim/aircraft/view/acf_ICAO
       - sim/aircraft/view/acf_tailnum
-      - sim/aircraft/view/acf_relative_path
-    text: "${sim/aircraft/view/acf_ICAO}\n${sim/aircraft/view/acf_tailnum}"
+      - data:_livery
+    text: "${sim/aircraft/view/acf_ICAO}\n${sim/aircraft/view/acf_tailnum}\n${data:_livery}"
     text-size: 18
   - index: 4
     type: none
-    dataref: sim/cockpit/autopilot/heading_mag
+    dataref: AirbusFBW/DDRMIHeadingAngle
     tape:
       tick-color: lime
       tick-font: D-DIN-Bold
