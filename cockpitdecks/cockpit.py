@@ -1335,7 +1335,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 return {"image": "", "meta": {"error": "button not created"}}
             image = button.get_representation()
         except:
-            logger.warning(f"error generating button or image\ndata: {data}\nconfig: {config}", exc_info=True)
+            logger.warning(f"error generating button or image\ndata: {data}\nconfig: {json.dumps(config, indent=2)}", exc_info=True)
         if button is None:
             return {"image": "", "meta": {"error": "no button"}}
         if image is None:
