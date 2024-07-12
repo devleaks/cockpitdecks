@@ -1,5 +1,6 @@
 """X-Plane Aircraft Information Icon
 """
+
 import os
 import logging
 
