@@ -511,8 +511,8 @@ class Annunciator(DrawBase):
         """
         There is a get_current_value value per annunciator part.
         """
-        v = dict([(k, v.get_current_value()) for k, v in self.annunciator_parts.items()])
-        l = dict([(k, v.is_lit()) for k, v in self.annunciator_parts.items()])
+        v = {k: v.get_current_value() for k, v in self.annunciator_parts.items()}
+        l = {k: v.is_lit() for k, v in self.annunciator_parts.items()}
         logger.debug(f"button {self.button.name}: {type(self).__name__}: {v} => {l}")
         return v
 

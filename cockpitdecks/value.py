@@ -89,7 +89,7 @@ class Value:
     def complement_datarefs(self, datarefs, reason: str | None = None):
         if self._datarefs is None:
             self._datarefs = []
-        self._datarefs = self._datarefs + datarefs
+        self._datarefs = list(set(self._datarefs + datarefs))  # removes duplicates
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
     def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
