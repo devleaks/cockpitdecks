@@ -86,7 +86,7 @@ class Value:
         # List of datarefs
         return self._config.get(CONFIG_KW.MULTI_DATAREFS.value, [])
 
-    def complement_datarefs(self, datarefs, reason:str|None = None):
+    def complement_datarefs(self, datarefs, reason: str | None = None):
         if self._datarefs is None:
             self._datarefs = []
         self._datarefs = self._datarefs + datarefs
