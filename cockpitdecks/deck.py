@@ -13,7 +13,7 @@ from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color
 
 from cockpitdecks.decks.resources import DeckType
-from cockpitdecks.buttons.representation import Icon
+from cockpitdecks.buttons.representation import IconBase
 from .page import Page
 from .button import Button
 
@@ -90,7 +90,7 @@ class Deck(ABC):
         Returns:
             [str]: Deck identifier string
         """
-        l = self.layout if self.layout is not None else "-nolayout-"
+        l = self.layout if self.layout is not None else DEFAULT_LAYOUT
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
     def is_virtual_deck(self) -> bool:
@@ -699,7 +699,7 @@ class DeckWithIcons(Deck):
         page.load_buttons(buttons=[config])
         button: Button = page.buttons[list(page.buttons.keys())[0]]
         representation = button._representation
-        if not isinstance(representation, Icon):
-            logger.warning(f"button: representation is not an image")
+        if not isinstance(representation, IconBase):
+            logger.warning(f"button: representation is not an image ({type(representation)})")
             return None
         return button
