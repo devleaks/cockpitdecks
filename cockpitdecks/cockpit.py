@@ -119,7 +119,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
         self._dark = False
-        self._livery_dataref = self.sim.get_dataref(Dataref.mk_internal_dataref(AIRCRAFT), is_string=True)
+        self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
 
         # Main event look
