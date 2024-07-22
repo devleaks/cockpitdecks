@@ -121,7 +121,7 @@ class Value:
 
         # Direct use of datarefs:
         #
-        # 1.1 Single datarefs in attributes
+        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
             dataref = base.get(attribute)
             if dataref is not None and Dataref.might_be_dataref(dataref):

@@ -121,6 +121,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self._dark = False
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
+        self._acname = ""
 
         # Main event look
         self.event_loop_run = False
@@ -139,6 +140,9 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def get_id(self):
         return self.name
+
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
         ATTRNAME = "_defaults"
@@ -1015,6 +1019,12 @@ class Cockpit(DatarefListener, CockpitBase):
             self.event_queue.put("stop")
             logger.debug(f"enqueued")
 
+    def get_livery(self, path: str) -> str:
+        return os.path.basename(os.path.normpath(path))
+
+    def get_aircraft(self, path: str) -> str:
+        return os.path.split(os.path.normpath(path))[0]
+
     def dataref_changed(self, dataref):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
@@ -1022,9 +1032,11 @@ class Cockpit(DatarefListener, CockpitBase):
         if type(dataref) is Dataref and dataref.path == AIRCRAFT_CHANGE_MONITORING_DATAREF:
             value = dataref.value()
             if value is not None and type(value) is str:
-                new_livery = os.path.basename(os.path.normpath(value))
+                new_livery = self.get_livery(value)
                 old_livery = self._livery_dataref.value()
                 self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+                self._acname = self.get_aircraft(value)
+                logger.info(f"aircraft name set to {self._acname}")
                 if old_livery is None:
                     logger.info(f"initial aircraft livery set to {new_livery}")
                 elif old_livery != new_livery:
@@ -1035,6 +1047,11 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def terminate_aircraft(self):
         logger.info(f"terminating..")
+
+        # Spit stats, should be on debug
+        drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal()
+        logger.info("local datarefs: " + json.dumps(drefs, indent=2))
+
         for deck in self.cockpit.values():
             deck.terminate()
         self.remove_web_decks()

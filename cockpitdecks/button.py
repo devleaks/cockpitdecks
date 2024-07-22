@@ -177,7 +177,10 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         return self.name
 
     def get_id(self):
-        return ID_SEP.join([self.page.get_id(), self.name])
+        return ID_SEP.join([self.page.get_id(), str(self.index)])
+
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def get_button_value(self, name):
         if name is None or len(name) == 0:
@@ -824,6 +827,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             if self.on_current_page():
                 self._render = self._render + 1
                 self.deck.render(self)
+                self.inc("render", cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")

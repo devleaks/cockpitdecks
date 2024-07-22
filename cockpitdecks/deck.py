@@ -32,6 +32,7 @@ class Deck(ABC):
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         self._config = config  # content of aircraft/deckconfig/config.yaml decks attributes for this deck
         self.cockpit = cockpit
+        self.sim = cockpit.sim
         self.cockpit.set_logging_level(__name__)
 
         self.deck_type: DeckType = {}
@@ -92,6 +93,9 @@ class Deck(ABC):
         """
         l = self.layout if self.layout is not None else DEFAULT_LAYOUT
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
+
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_virtual_deck(self) -> bool:
         return self.deck_type.is_virtual_deck()
@@ -396,6 +400,7 @@ class Deck(ABC):
         Please note that this may loead to unexpected results if page was
         too heavily modified or interaction with other pages occurred.
         """
+        self.inc("reload")
         self.change_page(self.current_page.name)
 
     def set_home_page(self):

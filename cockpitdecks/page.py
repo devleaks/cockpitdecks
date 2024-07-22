@@ -3,7 +3,7 @@
 import logging
 from typing import Dict
 
-from cockpitdecks import ID_SEP
+from cockpitdecks import ID_SEP, CONFIG_KW
 from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button, DECK_BUTTON_DEFINITION
 
@@ -33,6 +33,9 @@ class Page:
 
     def get_id(self):
         return ID_SEP.join([self.deck.get_id(), self.name])
+
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_current_page(self):
         """
@@ -203,7 +206,7 @@ class Page:
                 )
             dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
             dc.add_listener(button)
-            dc.set_set_dataref(colldesc.get("set-dataref"))
+            dc.set_set_dataref(colldesc.get(CONFIG_KW.SET_DATAREF.value))
             dc.set_expiration(colldesc.get("expire"))
             dc.set_collect_time(colldesc.get("collection-duration"))
             self.dataref_collections[name] = dc

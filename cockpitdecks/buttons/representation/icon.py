@@ -588,3 +588,27 @@ class MultiIcons(Icon):
 
     def describe(self) -> str:
         return "\n\r".join([f"The representation produces an icon selected from a list of {len(self.multi_icons)} icons."])
+
+
+class LargeIcon(Icon):
+    """A large icon is an icon that is split into several smaller icon
+
+    """
+
+    REPRESENTATION_NAME = "large-icon"
+
+    PARAMETERS = {}
+
+    def __init__(self, button: "Button"):
+        Icon.__init__(self, button=button)
+
+        self.large_icon = self._config.get(self.REPRESENTATION_NAME, {})
+        self.offset = self.large_icon.get("offset", (0, 0))
+        self.size = self.large_icon.get("offset", (0, 0))
+        self.buttons = self.large_icon.get("buttons", {})
+
+        def render(self):
+            """Renders each small icon onto the large icon
+
+            """
+            return None

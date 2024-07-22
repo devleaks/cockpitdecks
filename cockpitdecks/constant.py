@@ -116,17 +116,25 @@ class CONFIG_KW(Enum):
     INCLUDES = "includes"
     INDEX = "index"
     INDEX_NUMERIC = "_index"
+    INITIAL_VALUE = "initial-value"
     LAYOUT = "layout"
     MANAGED = "managed"
     MULTI_DATAREFS = "multi-datarefs"
     NAME = "name"
     NONE = "none"
+    OPTIONS = "options"
     SERIAL = "serial"
     SET_DATAREF = "set-dataref"
     STRING_DATAREFS = "string-datarefs"
     TYPE = "type"
     VIEW = "view"
     VIEW_IF = "view-if"
+
+
+class ACTIVATION_KW(Enum):
+    NO_ACTIVATION = "none"
+    LONG_PRESS = "long-press"
+    OPTIONS = "options"
 
 
 #

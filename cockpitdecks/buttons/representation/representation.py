@@ -17,7 +17,7 @@ from cockpitdecks.resources.color import (
     add_ext,
     DEFAULT_COLOR,
 )
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX, parse_options
+from cockpitdecks import ID_SEP, CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -80,6 +80,12 @@ class Representation:
             logger.warning(f"button {self.button_name()} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}.")
             return False
         return True
+
+    def get_id(self):
+        return ID_SEP.join([self.button.get_id(), type(self).__name__])
+
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+        self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def button_name(self):
         return self.button.name if self.button is not None else "no button"

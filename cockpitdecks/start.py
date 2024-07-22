@@ -20,13 +20,10 @@ yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
 
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
-from cockpitdecks.simulators import XPlane  # The simulator we talk to
-from cockpitdecks import LOGFILE, FORMAT
-from cockpitdecks import CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES
-from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
-
 # logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode="a")
+LOGFILE = "cockpitdecks.log"
+FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
+
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 logger = logging.getLogger(__name__)
@@ -35,6 +32,15 @@ if LOGFILE is not None:
     handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+#
+# COCKPITDECKS STARTS HERE
+#
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
+from cockpitdecks.simulators import XPlane  # The simulator we talk to
+from cockpitdecks import CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES
+from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
+
 
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 

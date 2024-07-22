@@ -366,6 +366,13 @@ class XPlane(Simulator, XPlaneBeacon):
         dref = self.get_dataref(path=Dataref.mk_internal_dataref(path))
         dref.update_value(new_value=value, cascade=cascade)
 
+    def inc_internal_dataref(self, path: str, amount: float, cascade: bool = True):
+        dref = self.get_dataref(path=Dataref.mk_internal_dataref(path))
+        curr = dref.value()
+        if curr is None:
+            curr = 0
+        dref.update_value(new_value=curr + amount, cascade=cascade)
+
     def execute_command(self, command: Command):
         if command is None:
             logger.warning(f"no command")
