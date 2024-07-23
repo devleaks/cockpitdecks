@@ -276,7 +276,9 @@ class Activation:
             if self._view_if is None:
                 self.command(self._view)
                 return
-        doit = self.button.execute_formula(self._view_if)
+        doit = True
+        if self._view_if is not None:
+            doit = self.button.execute_formula(self._view_if)
         if doit:
             self.command(self._view)
 
