@@ -1023,7 +1023,8 @@ class Cockpit(DatarefListener, CockpitBase):
         return os.path.basename(os.path.normpath(path))
 
     def get_aircraft(self, path: str) -> str:
-        return os.path.split(os.path.normpath(path))[0]
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
+        return os.path.split(os.path.normpath(os.path.join(path, "..", "..")))[1]
 
     def dataref_changed(self, dataref):
         """

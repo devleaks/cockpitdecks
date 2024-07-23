@@ -26,7 +26,6 @@ class FCUIcon(DrawBase):
         self.mode: str = self.fcuconfig.get("mode", "horizontal")  # type: ignore # horizontal, vertical-left, vertical-right
         self._cached = None
         self.icon_color = "#101010"
-        self.count = 0
 
     def describe(self) -> str:
         return "The representation is specific to Toliss Airbus and display the Flight Control Unit (FCU)."
@@ -64,8 +63,7 @@ class FCUIcon(DrawBase):
         FCU display on Streamdeck Plus touchscreen.
         (This is currently more or less hardcoded for Elgato Streamdeck Plus touchscreen.)
         """
-        self.count = self.count + 1
-        self.count = self.count + 1
+        self.inc("update")
         THIS_WIDTH = 8 * ICON_SIZE
         THIS_HEIGHT = ICON_SIZE
         image, draw = self.double_icon(width=THIS_WIDTH, height=THIS_HEIGHT)
@@ -381,7 +379,7 @@ class FCUIcon(DrawBase):
 
     def get_image_for_icon_vertical_left(self):
         """Speed, heading, QNH"""
-        self.count = self.count + 1
+        self.inc("update")
         THIS_WIDTH = int(2 * ICON_SIZE / 3)
         THIS_HEIGHT = 3 * ICON_SIZE
         image, draw = self.double_icon(width=THIS_WIDTH, height=THIS_HEIGHT)
@@ -565,7 +563,7 @@ class FCUIcon(DrawBase):
 
     def get_image_for_icon_vertical_right(self):
         """Altitude, vs"""
-        self.count = self.count + 1
+        self.inc("update")
         THIS_WIDTH = int(2 * ICON_SIZE / 3)
         THIS_HEIGHT = 3 * ICON_SIZE
         image, draw = self.double_icon(width=THIS_WIDTH, height=THIS_HEIGHT)

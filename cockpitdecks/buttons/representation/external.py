@@ -276,8 +276,6 @@ class LiveWeatherIcon(DrawAnimation):
     def __init__(self, button: "Button"):
         self._inited = False
         self._moved = False  # True if we get Metar for location at (lat, lon), False if Metar for default station
-        self._upd_calls = 0
-        self._upd_count = 0
 
         self.use_simulation = False  # If False, use current weather METAR/TAF, else use simulator METAR and date/time; no TAF.
         # This should be decide by a dataref in XPlane, use real weather, use real date/time.
@@ -397,7 +395,7 @@ class LiveWeatherIcon(DrawAnimation):
         :returns:   { description_of_the_return_value }
         :rtype:  bool
         """
-        self._upd_calls = self._upd_calls + 1
+        self.inc("update")
 
         updated = False
         if force:
@@ -505,7 +503,7 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.debug(f"no metar data for {self.station.icao}")
             self.weather_icon = self.select_weather_icon()
             logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
-            self._upd_count = self._upd_count + 1
+            self.inc("real update")
 
         return updated
 
@@ -520,7 +518,7 @@ class LiveWeatherIcon(DrawAnimation):
         if not self.update():
             self._cache
             logger.debug(f"..not updated, using cache..")
-        logger.debug(f"..updated ({self._upd_count}/{self._upd_calls})")
+        logger.debug(f"..updated")
 
         image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)

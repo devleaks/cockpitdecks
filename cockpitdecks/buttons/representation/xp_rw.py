@@ -50,7 +50,7 @@ class RealWeatherIcon(XPWeatherBaseIcon):
     def is_updated(self, force: bool = False) -> bool:
         # Updates weather icon and information every RealWeatherIcon.MIN_UPDATE seconds
         updated = False
-        self._upd_calls = self._upd_calls + 1
+        self.inc("update")
         if self._weather_last_updated is None:
             self.weather_icon = self.select_weather_icon()
             updated = True

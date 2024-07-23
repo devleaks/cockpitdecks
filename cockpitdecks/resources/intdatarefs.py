@@ -1,51 +1,37 @@
-# Internal datarefs (stats, performance)
-
-# Number of cockpitdecks reloads
-COCKPITDECK_RELOADS = "cockpitdecks/cockpit/reloads"
-
-# Number of page reloads
-DECK_RELOADS = "cockpitdecks/cockpit/deck"  # /<deck-name>
-
-# Number of page reloads
-PAGE_RELOADS = "cockpitdecks/cockpit/page"  # /<deck-name>/<page-name>
+from enum import Enum
 
 
-# Number of UDP packet received
-UDP_COUNT = "cockpitdecks/udp/count"
+class INTERNAL_DATAREF(Enum):
+    # Internal datarefs (stats, performance)
 
-# Average number of reads per seconds (last 100 reads)
-UDP_READS_PERSEC = "cockpitdecks/udp/persec"
+    # Number of cockpitdecks reloads
+    COCKPITDECK_RELOADS = "cockpitdecks/cockpit/reloads"
 
-# Time sice last read
-UDP_CYCLE = "cockpitdecks/udp/cycle"
+    # Number of page reloads
+    DECK_RELOADS = "cockpitdecks/cockpit/deck"  # /<deck-name>
 
-# Average number of dataref values recevied per seconds (last two minutes)
-UDP_DATAREFS_PERSEC = "cockpitdecks/udp/datarefs_persec"
-
-# Total number of dataref values recevied
-UDP_DATAREF_COUNT = "cockpitdecks/udp/dataref-count"
-
-ENQUEUE_CYCLE = "cockpitdecks/udp/enqueue/cycle"
-
-ENQUEUE_COUNT = "cockpitdecks/udp/enqueue/count"
-
-ENQUEUE_PERSEC = "cockpitdecks/udp/enqueue/persec"
+    # Number of page reloads
+    PAGE_RELOADS = "cockpitdecks/cockpit/page"  # /<deck-name>/<page-name>
 
 
-# class DatarefStat:
+    # Number of UDP packet received
+    UDP_COUNT = "cockpitdecks/udp/count"
 
-#     def __init__(self, sim) -> None:
-#         self.sim = sim
-#         self._udp_count = sim.get_internal_dataref("/upd/count")
+    # Average number of reads per seconds (last 100 reads)
+    UDP_READS_PERSEC = "cockpitdecks/udp/persec"
 
-#     @dataref("/upd/count").getter
-#     def udp_count(self):
-#         return self._udp_count
+    # Time sice last read
+    UDP_CYCLE = "cockpitdecks/udp/cycle"
 
-#     @dataref("/upd/count").setter
-#     def udp_count(self, value):
-#         self._udp_count = value
+    # Average number of dataref values recevied per seconds (last two minutes)
+    UDP_DATAREFS_PERSEC = "cockpitdecks/udp/datarefs_persec"
 
-#     @dataref("/upd/count").incer
-#     def udp_count(self, value: float = 1):
-#         self._udp_count = self._udp_count + value
+    # Total number of dataref values recevied
+    UDP_DATAREF_COUNT = "cockpitdecks/udp/dataref-count"
+
+    ENQUEUE_CYCLE = "cockpitdecks/udp/enqueue/cycle"
+
+    ENQUEUE_COUNT = "cockpitdecks/udp/enqueue/count"
+
+    ENQUEUE_PERSEC = "cockpitdecks/udp/enqueue/persec"
+

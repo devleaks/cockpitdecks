@@ -25,7 +25,7 @@ class Page:
         self.deck.cockpit.set_logging_level(__name__)
 
         self.buttons: Dict[str, Button] = {}
-        self.button_names = {}
+        self.button_names: Dict[str, Button] = {}
         self.datarefs: Dict[str, Dataref] = {}
         self.dataref_collections: Dict[str, DatarefSet] = {}
 

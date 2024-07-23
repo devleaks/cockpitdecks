@@ -36,11 +36,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         self.page: "Page" = page
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
-        # stats
-        self._render = 0
-        self._clean = 0
-        self._activs = 0
-        self._repres = 0
 
         self.deck.cockpit.set_logging_level(__name__)
 
@@ -735,7 +730,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return
-            self._activs = self._activs + 1
+            self.inc("activation", cascade=False)
             self._activation.activate(event)
         else:
             logger.debug(f"button {self.name}: no activation")
@@ -754,18 +749,26 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 self.render()
 
     def get_state_variables(self):
-        """ """
+        """Scan all datarefs and keep those created here
+        """
         a = {
-            "render": self._render,
-            "clean": self._clean,
-            "repres": self._repres,
-            "active": self._activs,
             "managed": self.managed,
             "guarded": self.guarded,
         }
-        return self._activation.get_state_variables() | a
+        drefs = {}
+        b = self.get_id()
+        b = Dataref.mk_internal_dataref(b)
+        for d, v in self.sim.all_datarefs.items():
+            if d.startswith(b):
+                k = d.replace(b, "")
+                if k in drefs:
+                    logger.warning(f"button {self.name}: duplicate state {k}")
+                drefs[k] = v.value()
+        state = a | drefs | self._activation.get_state_variables()
+        # logger.debug(f"button {self.name}: state {state}")
         # if self._representation is not None:
-        #     return self._representation.get_state_variables()
+        #     repstate self._representation.get_state_variables()
+        return state
 
     def get_representation(self):
         """
@@ -775,7 +778,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if not self._representation.is_valid():
             logger.warning(f"button {self.name}: representation is not valid")
             return None
-        self._repres = self._repres + 1
+        self.inc("representation", cascade=False)
         return self._representation.render()
 
     def get_representation_metadata(self):
@@ -810,7 +813,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         if self.deck is not None:
             if self.on_current_page():
-                self._render = self._render + 1
+                self.inc("render", cascade=False)
                 self.deck.vibrate(self)
                 # logger.debug(f"button {self.name} rendered")
             else:
@@ -825,7 +828,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         if self.deck is not None:
             if self.on_current_page():
-                self._render = self._render + 1
+                self.inc("render", cascade=False)
                 self.deck.render(self)
                 self.inc("render", cascade=False)
                 # logger.debug(f"button {self.name} rendered")
@@ -838,7 +841,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         Button removes itself from device
         """
-        self._clean = self._clean + 1
+        self.inc("clean", cascade=False)
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
 
