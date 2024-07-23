@@ -467,7 +467,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 self._value.complement_datarefs(r, reason="representation")
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
 
-        return set(r) # removes duplicates
+        return set(r)  # removes duplicates
 
     def scan_datarefs(self, base: dict) -> list:
         """
@@ -696,6 +696,14 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         logger.debug(f"button {self.name}: getting entire state ({self._last_activation_state})")
         return self._last_activation_state
 
+    def trend(self) -> int:
+        if self.current_value is not None and self.previous_value is not None:
+            if self.previous_value > self.current_value:
+                return -1
+            elif self.previous_value < self.current_value:
+                return 1
+        return 0
+
     # ##################################
     # External API
     #
@@ -754,8 +762,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 self.render()
 
     def get_state_variables(self):
-        """Scan all datarefs and keep those created here
-        """
+        """Scan all datarefs and keep those created here"""
         a = {
             "managed": self.managed,
             "guarded": self.guarded,

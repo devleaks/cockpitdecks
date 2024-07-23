@@ -143,7 +143,7 @@ class DatarefAccessor:
             name = f"{DATAREF[name]}[{self.__drefidx__}]"
         #       print("getting", name)
         dref = self.__datarefs__.get(name)
-        return dref.current_value if dref is not None else None
+        return dref.value() if dref is not None else None
 
 
 class WindLayer(DatarefAccessor):
@@ -512,7 +512,7 @@ if __name__ == "__main__":
             if len(line) > 2:
                 arr = line.split()
                 dref = Dataref(arr[0])
-                dref.current_value = float(arr[1])
+                dref.update_value(new_value=float(arr[1]))
                 drefs[arr[0]] = dref
             line = fp.readline()
 

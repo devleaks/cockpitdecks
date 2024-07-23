@@ -13,7 +13,6 @@ class INTERNAL_DATAREF(Enum):
     # Number of page reloads
     PAGE_RELOADS = "cockpitdecks/cockpit/page"  # /<deck-name>/<page-name>
 
-
     # Number of UDP packet received
     UDP_COUNT = "cockpitdecks/udp/count"
 
@@ -34,4 +33,3 @@ class INTERNAL_DATAREF(Enum):
     ENQUEUE_COUNT = "cockpitdecks/udp/enqueue/count"
 
     ENQUEUE_PERSEC = "cockpitdecks/udp/enqueue/persec"
-

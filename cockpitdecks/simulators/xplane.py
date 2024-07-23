@@ -390,7 +390,7 @@ class XPlane(Simulator, XPlaneBeacon):
         else:
             logger.warning("execute_command: no command")
 
-    def write_dataref(self, dataref, value, vtype="float"):
+    def write_dataref(self, dataref: str, value: float | int | bool, vtype: str = "float"):
         """
         Write Dataref to XPlane
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
@@ -419,7 +419,7 @@ class XPlane(Simulator, XPlaneBeacon):
             message = struct.pack("<5sI500s", cmd, int(value), string)
 
         assert len(message) == 509
-        logger.debug(f"({self.beacon_data['IP']}, {self.beacon_data['Port']}): {path}={value} ..")
+        logger.debug(f"sending ({self.beacon_data['IP']}, {self.beacon_data['Port']}): {path}={value} ..")
         logger.log(SPAM_LEVEL, f"write_dataref: {path}={value}")
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.debug(".. sent")

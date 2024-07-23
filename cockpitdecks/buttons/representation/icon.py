@@ -591,9 +591,7 @@ class MultiIcons(Icon):
 
 
 class LargeIcon(Icon):
-    """A large icon is an icon that is split into several smaller icon
-
-    """
+    """A large icon is an icon that is split into several smaller icon"""
 
     REPRESENTATION_NAME = "large-icon"
 
@@ -608,7 +606,5 @@ class LargeIcon(Icon):
         self.buttons = self.large_icon.get("buttons", {})
 
         def render(self):
-            """Renders each small icon onto the large icon
-
-            """
+            """Renders each small icon onto the large icon"""
             return None

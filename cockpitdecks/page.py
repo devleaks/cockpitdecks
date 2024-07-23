@@ -78,8 +78,8 @@ class Page:
         d = self.datarefs.get(dataref)
         if d is None:
             logger.warning(f"page {self.name}: {dataref} not found")
-            return None
-        return d.current_value if d.current_value is not None else default
+            return None  # should return default?
+        return d.value() if d.value() is not None else default
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)

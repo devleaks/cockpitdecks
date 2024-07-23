@@ -105,6 +105,7 @@ class Dataref:
         self._round = None
         self.update_frequency = DEFAULT_REQ_FREQUENCY  # sent by the simulator that many times per second.
         self.expire = None
+        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
 
         self.data_type = "float"  # int, float, byte, UDP always returns a float...
         if self.is_decimal:
@@ -274,6 +275,15 @@ class Dataref:
                 )
         # else:
         #    loggerDataref.error(f"dataref {self.path} not changed")
+
+    def set_writable(self):
+        self._writable = True
+
+    def save(self, simulator):
+        if self._writable:
+            simulator.write_dataref(dataref=self.path, value=self.value(), vtype=self.data_type)
+        else:
+            loggerDataref.warning(f"{self.dataref} not writable")
 
 
 class DatarefListener(ABC):

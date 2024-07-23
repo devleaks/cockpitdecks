@@ -105,11 +105,11 @@ class DataIcon(DrawBase):
         data_trend = data.get("data-trend")
         trend, trend_format, trend_font, trend_color, trend_size, trend_position = self.get_text_detail(data, "trend")
         trend_str = ICON_FONTS[icon_arr[0]][1].get("minus")
-        if self.button.previous_value is not None:
-            if self.button.previous_value > self.button.current_value:
-                trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-down")
-            elif self.button.previous_value < self.button.current_value:
-                trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-up")
+        trend_val = self.button.trend()
+        if trend_val == 1:
+            trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-up")
+        elif trend_val == -1:
+            trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-down")
         font = self.get_font(icon_font, int(icon_size / 2))
         if data_trend:
             draw.text(

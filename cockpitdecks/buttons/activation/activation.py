@@ -66,6 +66,9 @@ class Activation:
         self._long_press = Command(path=self._config.get("long-press"))  # Optional additional command
         # Datarefs
         self.writable_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
+        if self.writable_dataref is not None:
+            self._writable_dataref = self.button.sim.get_dataref(self.writable_dataref)
+            self._writable_dataref.set_writable()
 
         # Working variables, internal state
         self._last_event = None
