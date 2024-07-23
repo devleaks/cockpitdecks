@@ -120,21 +120,26 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             if self.guarded is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
 
-        self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, [])
+        # String datarefs
+        self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, set())
         if type(self.string_datarefs) is str:
             if "," in self.string_datarefs:
-                self.string_datarefs = self.string_datarefs.replace(" ", "").split(",")
+                self.string_datarefs = set(self.string_datarefs.replace(" ", "").split(","))
             else:
-                self.string_datarefs = [self.string_datarefs]
+                self.string_datarefs = set(self.string_datarefs)
+        self.string_datarefs = set(self.string_datarefs)
 
+        # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
         self.all_datarefs = self.get_datarefs()  # this does not add string datarefs
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
 
-        self.all_datarefs = self.all_datarefs + self.string_datarefs
+        # collection in single set
+        self.all_datarefs = self.all_datarefs | self.string_datarefs
 
+        # collection of datarefs (datarefsets)
         self.dataref_collections = None
         self.dataref_collections = self.get_dataref_collections()
         if len(self.dataref_collections) > 0:
@@ -414,7 +419,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
-    def get_datarefs(self, base: dict | None = None) -> list:
+    def get_datarefs(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -462,7 +467,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 self._value.complement_datarefs(r, reason="representation")
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
 
-        return list(set(r))  # removes duplicates
+        return set(r) # removes duplicates
 
     def scan_datarefs(self, base: dict) -> list:
         """
