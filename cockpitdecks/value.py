@@ -6,7 +6,12 @@ import re
 from abc import ABC
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from cockpitdecks.simulator import (
+    Dataref,
+    INTERNAL_STATE_PREFIX,
+    PATTERN_DOLCB,
+    PATTERN_INTSTATE,
+)
 from .resources.iconfonts import ICON_FONTS
 from .resources.rpc import RPC
 from .resources.color import convert_color
@@ -16,14 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 class DatarefValueProvider(ABC):
-
     @abstractmethod
     def get_dataref_value(name: str):
         pass
 
 
 class StateVariableProvider(ABC):
-
     @abstractmethod
     def get_state_value(name: str):
         pass
@@ -395,18 +398,23 @@ class Value:
         text_format = base.get(f"{root}-format")
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
-            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
-            if dataref_rpn is not None:
-                res = self.execute_formula(formula=dataref_rpn)
-                if res != "":  # Format output if format present
-                    if text_format is not None:
-                        logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
-                        res = text_format.format(res)
-                    else:
-                        res = str(res)
-                text = text.replace(KW_FORMULA_STR, res)
+            res = ""
+            if self.formula is not None and self.formula != "":  # kinda local formula (e.g. annunciator parts)
+                logger.warning(f"button {self._button.name}: executing local formula {self.formula}")
+                res = self.execute_formula(formula=self.formula)
+            elif self._button.dataref_rpn is not None:  # button level formula
+                logger.warning(f"button {self._button.name}: executing button formula {self._button.dataref_rpn}")
+                res = self.execute_formula(formula=self._button.dataref_rpn)
             else:
-                logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+                logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found in button")
+
+            if res != "":  # Format output if format present
+                if text_format is not None:
+                    logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                    res = text_format.format(res)
+                else:
+                    res = str(res)
+            text = text.replace(KW_FORMULA_STR, res)
 
         # Rest of text: substitution of ${}
         text = self.substitute_values(text, formatting=text_format, default="---")
@@ -415,9 +423,6 @@ class Value:
     # ##################################
     # Value computation
     #
-    def use_internal_state(self) -> bool:
-        return self.formula is not None and INTERNAL_STATE_PREFIX in self.formula
-
     def get_value(self):
         """ """
         # 1. If there is a formula, value comes from it

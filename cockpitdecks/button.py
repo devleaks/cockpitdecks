@@ -13,11 +13,16 @@ import sys
 from .buttons.activation import ACTIVATIONS
 from .buttons.representation import REPRESENTATIONS, Annunciator
 from .simulator import Dataref, DatarefListener, DatarefSetListener
-from .resources.iconfonts import ICON_FONTS
-from .resources.color import DEFAULT_COLOR, convert_color
 from .value import Value, ValueProvider
 
-from cockpitdecks import ID_SEP, SPAM_LEVEL, CONFIG_KW, yaml, DEFAULT_ATTRIBUTE_PREFIX, parse_options
+from cockpitdecks import (
+    ID_SEP,
+    SPAM_LEVEL,
+    CONFIG_KW,
+    yaml,
+    DEFAULT_ATTRIBUTE_PREFIX,
+    parse_options,
+)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
