@@ -158,15 +158,26 @@ buttons:
       - none
       - none
     formula: ${state:activation_count} 6 mod
+  # - index: 8
+  #   name: INSPECT DATAREFS
+  #   label: DATAREF VALUES
+  #   type: inspect
+  #   what: datarefs
+  #   text: "= ?"
+  #   text-color: lime
+  #   text-font: D-DIN-Bold
+  #   text-size: 60
+  #   text-position: cm
   - index: 8
-    name: INSPECT DATAREFS
-    label: DATAREF VALUES
-    type: inspect
-    what: datarefs
-    text: "= ?"
+    name: SECONDS
+    label: SECONDS
+    type: none
+    formula: ${sim/cockpit2/clock_timer/local_time_seconds} round
+    text: ${formula}
+    text-format: "{:02.0f}"
     text-color: lime
     text-font: D-DIN-Bold
-    text-size: 60
+    text-size: 32
     text-position: cm
   - index: 9
     type: reload
@@ -182,10 +193,25 @@ buttons:
     text-position: cm
   - index: 10
     type: stop
-    icon: stop
-    label: "\n\n\nCOCKPITDECKS"
-    label-position: cm
+    label: "GARDED!"
+    label-position: ct
     label-size: 8
+    annunciator:
+      type: A
+      size: large
+      A0:
+        text: "STOP"
+        text-size: 60
+        color: firebrick
+        framed: true
+        formula: 1
+    guard:
+      dataref: data:guard_open
+      model: grid
+      color: (255,0,0,255)
+  - index: e2
+    type: onoff
+    set-dataref: data:guard_open
   - index: 11
     type: page
     page: back
