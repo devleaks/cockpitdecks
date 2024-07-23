@@ -126,8 +126,12 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             if "," in self.string_datarefs:
                 self.string_datarefs = set(self.string_datarefs.replace(" ", "").split(","))
             else:
+                self.string_datarefs = {self.string_datarefs}
+        if type(self.string_datarefs) is not set:
+            if type(self.string_datarefs) is str:
+                self.string_datarefs = {self.string_datarefs}
+            else:
                 self.string_datarefs = set(self.string_datarefs)
-        self.string_datarefs = set(self.string_datarefs)
 
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
@@ -439,7 +443,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if managed_dict is not None:
             managed = managed_dict.get(CONFIG_KW.DATAREF.value)
         if managed is not None:
-            r.append(managed)
+            r.add(managed)
             logger.debug(f"button {self.name}: added managed dataref {managed}")
 
         # 1c. Guarded buttons
@@ -448,14 +452,14 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if guard_dict is not None:
             guarded = guard_dict.get(CONFIG_KW.DATAREF.value)
         if guarded is not None:
-            r.append(guarded)
+            r.add(guarded)
             logger.debug(f"button {self.name}: added guarding dataref {guarded}")
 
         # Activation datarefs
         if self._activation is not None:
             datarefs = self._activation.get_datarefs()
             if datarefs is not None:
-                r = r + datarefs
+                r = r | datarefs
                 self._value.complement_datarefs(r, reason="activation")
                 logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
 
@@ -463,11 +467,11 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if self._representation is not None:
             datarefs = self._representation.get_datarefs()
             if datarefs is not None:
-                r = r + datarefs
+                r = r | datarefs
                 self._value.complement_datarefs(r, reason="representation")
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
 
-        return set(r)  # removes duplicates
+        return r  # removes duplicates
 
     def scan_datarefs(self, base: dict) -> list:
         """

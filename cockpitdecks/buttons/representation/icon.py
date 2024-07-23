@@ -483,12 +483,12 @@ class MultiTexts(IconText):
         else:
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
 
-    def get_datarefs(self):
-        datarefs = []
+    def get_datarefs(self) -> set:
+        datarefs = set()
         for text in self.multi_texts:
             drefs = self.button.scan_datarefs(text)
             if len(drefs) > 0:
-                datarefs = datarefs + drefs
+                datarefs = datarefs | drefs
         return datarefs
 
     def is_valid(self):

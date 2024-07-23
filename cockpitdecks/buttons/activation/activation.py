@@ -244,10 +244,10 @@ class Activation:
     def fast(self, duration: float = 0.1) -> bool:
         return self._fast < duration
 
-    def get_datarefs(self) -> list:
+    def get_datarefs(self) -> set:
         if self.writable_dataref is not None:
-            return [self.writable_dataref]
-        return []
+            return {self.writable_dataref}
+        return set()
 
     def _write_dataref(self, dataref, value: float):
         if dataref is not None:

@@ -336,8 +336,8 @@ class LiveWeatherIcon(DrawAnimation):
         logger.debug(f"True")
         return True
 
-    def get_datarefs(self):
-        return [
+    def get_datarefs(self) -> set:
+        return {
             "sim/flightmodel/position/latitude",
             "sim/flightmodel/position/longitude",
             "sim/cockpit2/clock_timer/local_time_hours",
@@ -345,7 +345,7 @@ class LiveWeatherIcon(DrawAnimation):
             Dataref.mk_internal_dataref("weather:wind_speed"),
             Dataref.mk_internal_dataref("weather:temperature"),
             Dataref.mk_internal_dataref("weather:dew_point"),
-        ]
+        }
 
     def should_run(self) -> bool:
         """

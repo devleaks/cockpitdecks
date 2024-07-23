@@ -145,8 +145,8 @@ class Representation:
                     return True
         return default
 
-    def get_datarefs(self) -> list:
-        return []
+    def get_datarefs(self) -> set:
+        return set()
 
     def get_current_value(self):
         return self.button.get_current_value()

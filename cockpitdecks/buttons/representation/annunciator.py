@@ -3,7 +3,7 @@
 #
 import logging
 import threading
-from typing import Dict, List
+from typing import Dict, List, Set
 from enum import Enum
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -98,7 +98,7 @@ class AnnunciatorPart:
     def center_h(self):
         return self._center_h
 
-    def get_datarefs(self):
+    def get_datarefs(self) -> set:
         if self.datarefs is None:
             self.datarefs = self._value.get_datarefs(extra_keys=["text"])
         return self.datarefs
@@ -488,23 +488,23 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_datarefs(self) -> List[Dataref]:
+    def get_datarefs(self) -> Set[Dataref]:
         """
         Complement button datarefs with annunciator special lit datarefs
         """
         if self.annunciator_datarefs is not None:
             # logger.debug(f"button {self.button.name}: returned from cache")
             return self.annunciator_datarefs
-        r: List[Dataref] = []
+        r: Set[Dataref] = set()
         if self.annunciator_parts is not None:
             for k, v in self.annunciator_parts.items():
                 datarefs = v.get_datarefs()
                 if len(datarefs) > 0:
-                    r = r + datarefs
+                    r = r | datarefs
                     logger.debug(f"button {self.button.name}: added {k} datarefs {datarefs}")
         else:
             logger.warning("no annunciator parts to get datarefs from")
-        self.annunciator_datarefs = list(set(r))
+        self.annunciator_datarefs = r
         return self.annunciator_datarefs
 
     def get_current_values(self):

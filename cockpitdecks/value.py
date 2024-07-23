@@ -83,9 +83,9 @@ class Value:
         return self._config.get(CONFIG_KW.SET_DATAREF.value)
 
     @property
-    def string_datarefs(self) -> list:
+    def string_datarefs(self) -> set:
         # List of string datarefs
-        return self._config.get(CONFIG_KW.STRING_DATAREFS.value, [])
+        return set(self._config.get(CONFIG_KW.STRING_DATAREFS.value, set()))
 
     @property
     def datarefs(self) -> list:
@@ -97,15 +97,15 @@ class Value:
         # Formula
         return self._config.get(CONFIG_KW.FORMULA.value, "")
 
-    def complement_datarefs(self, datarefs, reason: str | None = None):
+    def complement_datarefs(self, datarefs: set, reason: str | None = None):
         # Add datarefs to the value for computation purpose
         # Used by activation and representation to add to button datarefs
         if self._datarefs is None:
-            self._datarefs = []
-        self._datarefs = list(set(self._datarefs + datarefs))  # removes duplicates
-        logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
+            self._datarefs = set()
+        self._datarefs = self._datarefs | datarefs
+        logger.info(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
-    def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
+    def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -116,21 +116,20 @@ class Value:
                 return self._datarefs
             base = self._config
 
-        r = self.scan_datarefs(base, extra_keys=extra_keys)
-        self._datarefs = list(set(r))  # removes duplicates
-        logger.debug(f"value {self.name}: found datarefs {r}")
+        self._datarefs = self.scan_datarefs(base, extra_keys=extra_keys)
+        logger.debug(f"value {self.name}: found datarefs {self._datarefs}")
         return self._datarefs
 
     def get_all_datarefs(self) -> list:
-        return self.get_datarefs() + self._string_datarefs
+        return self.get_datarefs() | self._string_datarefs
 
-    def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> list:
+    def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         String datarefs are treated separately.
         """
-        r = []
+        r = set()
 
         # Direct use of datarefs:
         #
@@ -138,7 +137,7 @@ class Value:
         for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
             dataref = base.get(attribute)
             if dataref is not None and Dataref.might_be_dataref(dataref):
-                r.append(dataref)
+                r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 
         # 1.2 Multiple
@@ -147,7 +146,7 @@ class Value:
             a = []
             for d in datarefs:
                 if Dataref.might_be_dataref(d):
-                    r.append(d)
+                    r.add(d)
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
 
@@ -159,9 +158,9 @@ class Value:
             text = base.get(key)
             if text is not None and type(text) == str:
                 datarefs = re.findall(PATTERN_DOLCB, text)
-                datarefs = list(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
+                datarefs = set(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
                 if len(datarefs) > 0:
-                    r = r + datarefs
+                    r = r | datarefs
                     logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
 
         # Clean up
@@ -171,7 +170,7 @@ class Value:
         if None in r:
             r.remove(None)
 
-        return list(set(r))  # removes duplicates
+        return r
 
     # ##################################
     # Formula value substitution
@@ -432,8 +431,8 @@ class Value:
         # 3. One dataref
         if len(self._datarefs) == 1:
             # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            ret = self.get_dataref_value(self._datarefs[0])
-            logger.debug(f"value {self.name}: {ret} (from single dataref {self._datarefs[0]})")
+            ret = self.get_dataref_value(list(self._datarefs)[0])
+            logger.debug(f"value {self.name}: {ret} (from single dataref {list(self._datarefs)[0]})")
             return ret
         # 4. Multiple datarefs
         if len(self._datarefs) > 1:
