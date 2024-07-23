@@ -44,6 +44,12 @@ class Value:
         self._button = button
         self.name = name  # for debeging and information purpose
 
+        self._set_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
+        self._set_dref = None
+        if self._set_dataref is not None:
+            self._set_dref = self._button.sim.get_dataref(self._set_dataref)
+            self._set_dref.set_writable()
+
         # Used in "value"
         self._datarefs = None
         self._string_datarefs = None
@@ -67,9 +73,14 @@ class Value:
         return self._button.get_state_value(state)
 
     @property
-    def formula(self) -> str:
-        # Formula
-        return self._config.get(CONFIG_KW.FORMULA.value, "")
+    def dataref(self) -> str|None:
+        # Single datatef
+        return self._config.get(CONFIG_KW.DATAREF.value)
+
+    @property
+    def set_dataref(self) -> str|None:
+        # Single datatef
+        return self._config.get(CONFIG_KW.SET_DATAREF.value)
 
     @property
     def string_datarefs(self) -> list:
@@ -77,16 +88,18 @@ class Value:
         return self._config.get(CONFIG_KW.STRING_DATAREFS.value, [])
 
     @property
-    def dataref(self) -> list:
-        # Single datatef
-        return self._config.get(CONFIG_KW.DATAREF.value, [])
-
-    @property
     def datarefs(self) -> list:
         # List of datarefs
         return self._config.get(CONFIG_KW.MULTI_DATAREFS.value, [])
 
+    @property
+    def formula(self) -> str:
+        # Formula
+        return self._config.get(CONFIG_KW.FORMULA.value, "")
+
     def complement_datarefs(self, datarefs, reason: str | None = None):
+        # Add datarefs to the value for computation purpose
+        # Used by activation and representation to add to button datarefs
         if self._datarefs is None:
             self._datarefs = []
         self._datarefs = list(set(self._datarefs + datarefs))  # removes duplicates
@@ -432,3 +445,9 @@ class Value:
             return r
 
         return None
+
+    def save(self, simulator):
+        if self._set_dref is not None:
+            self._set_dref.update_value(new_value=self.get_value(), cascade=False)
+            self._set_dref.save(simulator)
+
