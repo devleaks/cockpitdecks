@@ -22,6 +22,11 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
+class ButtonGuarded(Exception):
+    "Raised when the button is guarded"
+    pass
+
+
 # ##########################################
 # ACTIVATION
 #
@@ -75,7 +80,6 @@ class Activation:
         self._activate_start = None
 
         self.activation_count = 0
-        self.activations_count: Dict[str, int] = {}
         self.last_activated = 0
         self.duration = 0
         self.pressed = False
@@ -160,6 +164,12 @@ class Activation:
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
         self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
+    def is_guarded(self):
+        # Check this before activating in subclasses if necessary
+        # 1. call super().activate() up to the top
+        # 2. check this is_guarded()
+        return not self._guard_changed and not self.button.is_guarded()
+
     def activate(self, event):
         """
         Function that is executed when a button is activated (pressed, released, turned, etc.).
@@ -174,10 +184,6 @@ class Activation:
 
         # Stats keeping
         s = str(type(event).__name__)
-        if s in self.activations_count:
-            self.activations_count[s] = self.activations_count[s] + 1
-        else:
-            self.activations_count[s] = 1
         self.inc(ID_SEP.join([s, "activation_count"]))
 
         # Special handling of some events
@@ -187,6 +193,7 @@ class Activation:
         if event.pressed:
             self.pressed = True
             self.activation_count = self.activation_count + 1
+            self.inc("activation_count")
 
             now = datetime.now().timestamp()
             self.last_activated = now
@@ -204,6 +211,7 @@ class Activation:
         else:
             self.pressed = False
             self.duration = datetime.now().timestamp() - self.last_activated
+            self.inc("release_count")
 
             # Guard handling
             self._guard_changed = False
@@ -306,7 +314,6 @@ class Activation:
         logger.info(f"{self._last_event}")
 
         logger.info(f"{self.activation_count}")
-        logger.info(f"{self.activations_count}")
         logger.info(f"{self.last_activated}")
         logger.info(f"{self.duration}")
         logger.info(f"{self.pressed}")
@@ -315,8 +322,6 @@ class Activation:
         return {
             "activation_type": type(self).__name__,
             "activation_count": self.activation_count,
-            "current_value": self.activation_count,  # !
-            "all_activations": self.activations_count,
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
@@ -513,8 +518,7 @@ class Stop(Activation):
         # Guard handling
         super().activate(event)
 
-        if not self._guard_changed and not self.button.is_guarded():
-            self._guard_changed = False
+        if not self.is_guarded():
             if not event.pressed:  # trigger on button "release"
                 self.button.deck.cockpit.stop_decks()
 

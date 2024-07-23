@@ -117,7 +117,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         self.guard = config.get(CONFIG_KW.GUARD.value)
         if self.guard is not None:
             self.guarded = self.guard.get(CONFIG_KW.DATAREF.value)
-            print(">>>>>>>>>>>>>>>", self.guard, self.guarded)
             if self.guarded is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
 

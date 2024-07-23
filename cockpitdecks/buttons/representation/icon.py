@@ -61,7 +61,31 @@ class IconBase(Representation):
                 f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})"
             )
 
-        self.text_config = self._config  # where to get text from
+        # Handle this presentation structure (text indented)
+        # - index: 9
+        #   typ: push
+        #   name: ATCCLR
+        #   command: AirbusFBW/ATCCodeKeyCLR
+        #   text:
+        #     text: CLR
+        #     text-font: DIN Bold
+        #     text-color: white
+        #     text-size: 24
+        #     text-position: cm
+        self.text_config = self._config.get("text")  # where to get text from
+
+        if type(self.text_config) is not dict:
+            # Handle this presentation structure (legacy, text unindented)
+            # - index: 9
+            #   typ: push
+            #   name: ATCCLR
+            #   command: AirbusFBW/ATCCodeKeyCLR
+            #   text: CLR
+            #   text-font: DIN Bold
+            #   text-color: white
+            #   text-size: 24
+            #   text-position: cm
+            self.text_config = self._config
 
         self.cockpit_color = button.get_attribute("cockpit-color")
         self.cockpit_color = convert_color(self.cockpit_color)
@@ -516,7 +540,7 @@ class MultiTexts(IconText):
             if value >= 0 and value < self.num_texts():
                 self.text_config = self.multi_texts[value]
             else:
-                self.text_config = self.multi_texts[value % self.multi_texts()]
+                self.text_config = self.multi_texts[value % self.num_texts()]
             return super().render()
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts()}")
