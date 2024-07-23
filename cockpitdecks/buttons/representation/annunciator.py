@@ -126,7 +126,8 @@ class AnnunciatorPart:
 
         return default
 
-    def get_current_value(self):
+    @property
+    def value(self):
         def is_number(n):
             try:
                 float(n)
@@ -138,6 +139,7 @@ class AnnunciatorPart:
         self.lit = r is not None and is_number(r) and float(r) > 0
         return r
 
+    @property
     def is_lit(self):
         return self.lit
 
@@ -177,7 +179,7 @@ class AnnunciatorPart:
                 logger.warning(f"button {self.annunciator.button.name}: no color found, using default")
 
         before = color
-        if not self.is_lit():
+        if not self.is_lit:
             try:
                 lux = self.annunciator.button.get_attribute("light-off-intensity")
                 dimmed = light_off(color, lightness=lux / 100)
@@ -235,8 +237,8 @@ class AnnunciatorPart:
             fontsize = int(self._config.get("text-size", TEXT_SIZE))
             font = self.annunciator.get_font(fontname, fontsize)
 
-            if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
-                if self.is_lit() and self.is_invert():
+            if self.is_lit or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
+                if self.is_lit and self.is_invert():
                     frame = (
                         (
                             self.center_w() - self.width() / 2,
@@ -251,7 +253,7 @@ class AnnunciatorPart:
                     logger.debug(f"button {self.annunciator.button.name}: part {self.name}: lit reverse")
 
                 # logger.debug(f"button {self.button.name}: text '{text}' at ({self.center_w()}, {self.center_h()})")
-                if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
+                if not self.is_lit and type(self.annunciator) != AnnunciatorAnimate:
                     logger.debug(f"button {self.annunciator.button.name}: part {self.name}: not lit (Korry)")
                 draw.multiline_text(
                     (self.center_w(), self.center_h()),
@@ -300,7 +302,7 @@ class AnnunciatorPart:
                     # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
                     draw.rectangle(frame, outline=color, width=thick)
             else:
-                if not self.is_lit() and type(self.annunciator) != AnnunciatorAnimate:
+                if not self.is_lit and type(self.annunciator) != AnnunciatorAnimate:
                     logger.debug(f"button {self.annunciator.button.name}: part {self.name}: not lit (type vivisun)")
             return
 
@@ -309,7 +311,7 @@ class AnnunciatorPart:
             logger.warning(f"button {self.annunciator.button.name}: part {self.name}: no text, no led")
             return
 
-        if self.is_lit() or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
+        if self.is_lit or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
             ninside = 6
             if led in [ANNUNCIATOR_LED.BLOCK.value, ANNUNCIATOR_LED.LED.value]:
                 LED_BLOC_HEIGHT = int(self.height() / 2)
@@ -511,8 +513,8 @@ class Annunciator(DrawBase):
         """
         There is a get_current_value value per annunciator part.
         """
-        v = {k: v.get_current_value() for k, v in self.annunciator_parts.items()}
-        l = {k: v.is_lit() for k, v in self.annunciator_parts.items()}
+        v = {k: v.value for k, v in self.annunciator_parts.items()}
+        l = {k: v.is_lit for k, v in self.annunciator_parts.items()}
         logger.debug(f"button {self.button.name}: {type(self).__name__}: {v} => {l}")
         return v
 
@@ -731,7 +733,7 @@ class AnnunciatorAnimate(Annunciator):
         """
         Check conditions to animate the icon.
         """
-        value = self.get_current_value()
+        value = self.get_button_value()
         if type(value) == dict:
             value = value[list(value.keys())[0]]
         return value is not None and value != 0

@@ -116,7 +116,7 @@ class XTouchMini(Deck):
         self._set_control(key=i, value=value, mode=mode)
 
     def _set_button_led(self, button):
-        is_on = button.get_current_value()
+        is_on = button.value
         logger.debug(f"button {button.name}: {button.index} => on={is_on} (blink={button.has_option('blink')})")
         self._set_key(key=button.index, on=is_on, blink=button.has_option("blink"))
 

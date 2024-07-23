@@ -292,7 +292,7 @@ class TapeIcon(DrawBase):
 
         # Use tape
         # 2a. Move whole drawing around
-        r = self.button.get_current_value()
+        r = self.button.value
         if r is None:
             r = self.value_min
         value = r - self.value_min
@@ -490,7 +490,7 @@ class GaugeIcon(DrawBase):
                 width=self.needle_width,
             )
 
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is None:
             value = 0
         rotation = self.offset + self.scale * value

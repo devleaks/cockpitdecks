@@ -89,6 +89,8 @@ class Activation:
         if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
 
+        self._guard_changed = False
+
         self.init()
 
     @property
@@ -204,15 +206,17 @@ class Activation:
             self.duration = datetime.now().timestamp() - self.last_activated
 
             # Guard handling
-            if self.button.is_guarded():
-                if self.long_pressed():
-                    self._write_dataref(self.button.guarded, 1)  # just open it
-                    logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
+            self._guard_changed = False
+            if self.button.is_guarded() and self.long_pressed():
+                self._write_dataref(self.button.guarded, 1)  # just open it
+                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
+                self._guard_changed = True
                 return
 
             if self.button.guard is not None and not self.button.is_guarded() and self.long_pressed():
                 self._write_dataref(self.button.guarded, 0)  # close it
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
+                self._guard_changed = True
                 return
 
             # Long press handling
@@ -505,8 +509,14 @@ class Stop(Activation):
     def activate(self, event):
         if not self.can_handle(event):
             return
-        if not event.pressed:  # trigger on button "release"
-            self.button.deck.cockpit.stop_decks()
+
+        # Guard handling
+        super().activate(event)
+
+        if not self._guard_changed and not self.button.is_guarded():
+            self._guard_changed = False
+            if not event.pressed:  # trigger on button "release"
+                self.button.deck.cockpit.stop_decks()
 
     def describe(self) -> str:
         """
@@ -532,7 +542,7 @@ class Random(Activation):
         if not self.can_handle(event):
             return
         if event.pressed:
-            self.button.set_current_value(random.random())
+            self.button.value = random.random()
 
     def describe(self) -> str:
         """
@@ -624,7 +634,7 @@ class Push(Activation):
         logger.debug(f"{self.auto_repeat_delay}, {self.auto_repeat_speed}")
 
     def is_on(self):
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is not None:
             if type(value) in [dict, tuple]:  # gets its value from internal state
                 self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
@@ -785,7 +795,7 @@ class OnOff(Activation):
     def init(self):
         if self._inited:
             return
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is not None:
             if type(value) in [
                 dict,
@@ -832,7 +842,7 @@ class OnOff(Activation):
         return super().is_valid()
 
     def is_on(self):
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is not None:
             if type(value) in [dict, tuple]:  # gets its value from internal state
                 self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
@@ -868,7 +878,7 @@ class OnOff(Activation):
                     self.command(self._commands[1])
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
-            self.button.set_current_value(self.onoff_current_value)  # update internal state
+            self.button.value = self.onoff_current_value  # update internal state
             self.view()
         self.write_dataref(self.onoff_current_value)
 
@@ -993,7 +1003,7 @@ class UpDown(Activation):
     def init(self):
         if self._inited:
             return
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is not None:
             self.stop_current_value = value
             if self.stop_current_value >= (self.stops - 1):
@@ -1483,7 +1493,7 @@ class EncoderValue(OnOff):
     def init(self):
         if self._inited:
             return
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is not None:
             self.encoder_current_value = value
             logger.debug(f"button {self.button_name()} initialized on/off at {self.encoder_current_value}")
@@ -1624,7 +1634,7 @@ class EncoderValueExtended(OnOff):
     def init(self):
         if self._inited:
             return
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is not None:
             self.encoder_current_value = value
             logger.debug(f"button {self.button_name()} initialized on/off at {self.encoder_current_value}")

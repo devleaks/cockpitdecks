@@ -503,7 +503,7 @@ class MultiTexts(IconText):
         return len(self.multi_texts)
 
     def render(self):
-        value = self.get_current_value()
+        value = self.get_button_value()
         if value is None:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None
@@ -567,7 +567,7 @@ class MultiIcons(Icon):
         return len(self.multi_icons)
 
     def render(self):
-        value = self.get_current_value()
+        value = self.get_button_value()
         if value is None:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None

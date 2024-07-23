@@ -251,7 +251,7 @@ class VirtualLED(HardwareIcon):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        color = self.color if self.button.get_current_value() != 0 else self.off_color
+        color = self.color if self.button.value != 0 else self.off_color
         image = Image.new(mode="RGBA", size=(self.width, self.height), color=color)
         return image
 

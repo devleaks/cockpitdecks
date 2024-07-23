@@ -90,14 +90,6 @@ try:
 except ImportError:
     logger.warning(f"LiveWeatherIcon not installed")
 
-try:
-    from .external import LiveWeatherIcon
-
-    logger.info(f"LiveWeatherIcon installed")
-except ImportError:
-    logger.warning(f"LiveWeatherIcon not installed")
-
-
 REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
 
 

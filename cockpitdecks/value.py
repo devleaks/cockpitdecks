@@ -7,7 +7,9 @@ from abc import ABC
 
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.simulator import Dataref, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from .resources.iconfonts import ICON_FONTS
 from .resources.rpc import RPC
+from .resources.color import convert_color
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -73,12 +75,12 @@ class Value:
         return self._button.get_state_value(state)
 
     @property
-    def dataref(self) -> str|None:
+    def dataref(self) -> str | None:
         # Single datatef
         return self._config.get(CONFIG_KW.DATAREF.value)
 
     @property
-    def set_dataref(self) -> str|None:
+    def set_dataref(self) -> str | None:
         # Single datatef
         return self._config.get(CONFIG_KW.SET_DATAREF.value)
 
@@ -103,7 +105,7 @@ class Value:
         if self._datarefs is None:
             self._datarefs = set()
         self._datarefs = self._datarefs | datarefs
-        logger.info(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
+        logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
     def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
@@ -308,56 +310,56 @@ class Value:
 
         text = self.get_text(config, which_text)
         text_format = config.get(f"{which_text}-format")
-        page = self.button.page
+        page = self._button.page
 
-        dflt_system_font = self.button.get_attribute(f"system-font")
+        dflt_system_font = self._button.get_attribute(f"system-font")
         if dflt_system_font is None:
-            logger.error(f"button {self.button.button_name()}: no system font")
+            logger.error(f"button {self._button.name}: no system font")
 
-        dflt_text_font = self.button.get_attribute(f"{which_text}-font")
+        dflt_text_font = self._button.get_attribute(f"{which_text}-font")
         if dflt_text_font is None:
-            dflt_text_font = self.button.get_attribute("label-font")
+            dflt_text_font = self._button.get_attribute("label-font")
             if dflt_text_font is None:
-                logger.warning(f"button {self.button.button_name()}: no default label font, using system font")
+                logger.warning(f"button {self._button.name}: no default label font, using system font")
                 dflt_text_font = dflt_system_font
 
         text_font = config.get(f"{which_text}-font", dflt_text_font)
 
-        dflt_text_size = self.button.get_attribute(f"{which_text}-size")
+        dflt_text_size = self._button.get_attribute(f"{which_text}-size")
         if dflt_text_size is None:
-            dflt_text_size = self.button.get_attribute("label-size")
+            dflt_text_size = self._button.get_attribute("label-size")
             if dflt_text_size is None:
-                logger.warning(f"button {self.button.button_name()}: no default label size, using 10")
+                logger.warning(f"button {self._button.name}: no default label size, using 10")
                 dflt_text_size = 16
         text_size = config.get(f"{which_text}-size", dflt_text_size)
 
-        dflt_text_color = self.button.get_attribute(f"{which_text}-color")
+        dflt_text_color = self._button.get_attribute(f"{which_text}-color")
         if dflt_text_color is None:
-            dflt_text_color = self.button.get_attribute("label-color")
+            dflt_text_color = self._button.get_attribute("label-color")
             if dflt_text_color is None:
-                logger.warning(f"button {self.button.button_name()}: no default label color, using {DEFAULT_COLOR}")
+                logger.warning(f"button {self._button.name}: no default label color, using {DEFAULT_COLOR}")
                 dflt_text_color = DEFAULT_COLOR
         text_color = config.get(f"{which_text}-color", dflt_text_color)
         text_color = convert_color(text_color)
 
-        dflt_text_position = self.button.get_attribute(f"{which_text}-position")
+        dflt_text_position = self._button.get_attribute(f"{which_text}-position")
         if dflt_text_position is None:
-            dflt_text_position = self.button.get_attribute("label-position")
+            dflt_text_position = self._button.get_attribute("label-position")
             if dflt_text_position is None:
-                logger.warning(f"button {self.button.button_name()}: no default label position, using cm")
+                logger.warning(f"button {self._button.name}: no default label position, using cm")
                 dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
         text_position = config.get(f"{which_text}-position", dflt_text_position)
         if text_position[0] not in "lcr":
             text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(f"button {self.button.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
+            logger.warning(f"button {self._button.name}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
         if text_position[1] not in "tmb":
             text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(f"button {self.button.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
+            logger.warning(f"button {self._button.name}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
 
-        # print(f">>>> {self.button.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
+        # print(f">>>> {self._button.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
 
         if text is not None and not isinstance(text, str):
-            logger.warning(f"button {self.button.button_name()}: converting text {text} to string (type {type(text)})")
+            logger.warning(f"button {self._button.name}: converting text {text} to string (type {type(text)})")
             text = str(text)
 
         return text, text_format, text_font, text_color, text_size, text_position
@@ -372,7 +374,7 @@ class Value:
             return None
 
         # HACK 1: Special icon font substitution
-        default_font = self.button.get_attribute("label-font")
+        default_font = self._button.get_attribute("label-font")
         if default_font is None:
             logger.warning("no default font")
 
@@ -386,7 +388,7 @@ class Value:
                 for i in icons:
                     if i in v[1].keys():
                         text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"button {self.button.button_name()}: substituing font icon {i}")
+                        logger.debug(f"button {self._button.name}: substituing font icon {i}")
 
         # Formula in text
         # If text contains ${formula}, it is replaced by the value of the formula calculation.
@@ -398,13 +400,13 @@ class Value:
                 res = self.execute_formula(formula=dataref_rpn)
                 if res != "":  # Format output if format present
                     if text_format is not None:
-                        logger.debug(f"button {self.button.button_name()}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                         res = text_format.format(res)
                     else:
                         res = str(res)
                 text = text.replace(KW_FORMULA_STR, res)
             else:
-                logger.warning(f"button {self.button.button_name()}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+                logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
         # Rest of text: substitution of ${}
         text = self.substitute_values(text, formatting=text_format, default="---")
@@ -449,4 +451,3 @@ class Value:
         if self._set_dref is not None:
             self._set_dref.update_value(new_value=self.get_value(), cascade=False)
             self._set_dref.save(simulator)
-

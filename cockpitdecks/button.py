@@ -117,6 +117,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         self.guard = config.get(CONFIG_KW.GUARD.value)
         if self.guard is not None:
             self.guarded = self.guard.get(CONFIG_KW.DATAREF.value)
+            print(">>>>>>>>>>>>>>>", self.guard, self.guarded)
             if self.guarded is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
 
@@ -188,7 +189,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
 
     def get_button_value(self, name):
         if name is None or len(name) == 0:
-            v = self.get_current_value()
+            v = self.value
             if type(v) not in [int, float, str]:
                 logger.warning(f"value of {name} is {type(v)}")
             return v
@@ -200,7 +201,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             else:
                 logger.warning(f"so such variable {a[1]}")
         else:
-            v = self.get_current_value()
+            v = self.value
             if type(v) not in [int, float, str]:
                 logger.warning(f"value of {name} is {type(v)}")
             return v
@@ -252,7 +253,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         # Is there such an attribute directly in the button defintion?
         default_attribute = attribute
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
-            logger.warning(f"button {self.button_name()} fetched default attribute {attribute}")
+            logger.warning(f"button {self.name} fetched default attribute {attribute}")
         else:
             if not attribute.startswith("cockpit-"):  # no "default" for global cockpit-* attirbutes
                 default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
@@ -260,18 +261,18 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         value = self._config.get(attribute)
         if value is not None:  # found!
             if silence:
-                logger.debug(f"button {self.button_name()} returning {attribute}={value}")
+                logger.debug(f"button {self.name} returning {attribute}={value}")
             else:
-                logger.info(f"button {self.button_name()} returning {attribute}={value}")
+                logger.info(f"button {self.name} returning {attribute}={value}")
             return value
 
         if propagate:
             if not silence:
-                logger.info(f"button {self.button_name()} propagate {default_attribute} to page for {attribute}")
+                logger.info(f"button {self.name} propagate {default_attribute} to page for {attribute}")
             return self.page.get_attribute(default_attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
-            logger.warning(f"button {self.button_name()}: attribute not found {attribute}, returning default ({default})")
+            logger.warning(f"button {self.name}: attribute not found {attribute}, returning default ({default})")
 
         return default
 
@@ -290,23 +291,14 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             logger.debug(f"button {self.name} setting initial value..")
             if self.initial_value is not None:
                 logger.debug(f"button {self.name} .. from initial-value")
-                self.set_current_value(self.initial_value)
+                self.value = self.initial_value
             else:
                 logger.debug(f"button {self.name} .. from button_value")
-                self.set_current_value(self.button_value())
+                self.value = self.button_value()
             logger.debug(f"button {self.name}: ..has value {self.current_value}.")
         else:
             logger.debug(f"button {self.name}: already has a value ({self.current_value}), initial value ignored")
         # logger.debug(f"button {self.name}: {self.id()}")
-
-    def set_current_value(self, value):
-        if self._first_value_not_saved:
-            self._first_value = value
-            self._first_value_not_saved = False
-        if value != self.current_value:
-            self.previous_value = self.current_value
-            self.current_value = value
-            logger.debug(f"button {self.name}: {self.current_value}")
 
     def get_current_value(self):
         """
@@ -314,6 +306,24 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         logger.debug(f"button {self.name}: {self.current_value}")
         return self.current_value
+
+    @property
+    def value(self):
+        """
+        Gets the current value, but does not provoke a calculation, just returns the current value.
+        """
+        logger.debug(f"button {self.name}: {self.current_value}")
+        return self.current_value
+
+    @value.setter
+    def value(self, value):
+        if self._first_value_not_saved:
+            self._first_value = value
+            self._first_value_not_saved = False
+        if value != self.current_value:
+            self.previous_value = self.current_value
+            self.current_value = value
+            logger.debug(f"button {self.name}: {self.current_value}")
 
     def has_changed(self) -> bool:
         if self.previous_value is None and self.current_value is None:
@@ -546,126 +556,14 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     # Text(s)
     #
     def get_text_detail(self, config, which_text):
-        DEFAULT_VALID_TEXT_POSITION = "cm"
-
-        text = self.get_text(config, which_text)
-        text_format = config.get(f"{which_text}-format")
-        page = self.page
-
-        dflt_system_font = self.get_attribute(f"system-font")
-        if dflt_system_font is None:
-            logger.error(f"button {self.button_name()}: no system font")
-
-        dflt_text_font = self.get_attribute(f"{which_text}-font")
-        if dflt_text_font is None:
-            dflt_text_font = self.get_attribute("label-font")
-            if dflt_text_font is None:
-                logger.warning(f"button {self.button_name()}: no default label font, using system font")
-                dflt_text_font = dflt_system_font
-
-        text_font = config.get(f"{which_text}-font", dflt_text_font)
-
-        dflt_text_size = self.get_attribute(f"{which_text}-size")
-        if dflt_text_size is None:
-            dflt_text_size = self.get_attribute("label-size")
-            if dflt_text_size is None:
-                logger.warning(f"button {self.button_name()}: no default label size, using 10")
-                dflt_text_size = 16
-        text_size = config.get(f"{which_text}-size", dflt_text_size)
-
-        dflt_text_color = self.get_attribute(f"{which_text}-color")
-        if dflt_text_color is None:
-            dflt_text_color = self.get_attribute("label-color")
-            if dflt_text_color is None:
-                logger.warning(f"button {self.button_name()}: no default label color, using {DEFAULT_COLOR}")
-                dflt_text_color = DEFAULT_COLOR
-        text_color = config.get(f"{which_text}-color", dflt_text_color)
-        text_color = convert_color(text_color)
-
-        dflt_text_position = self.get_attribute(f"{which_text}-position")
-        if dflt_text_position is None:
-            dflt_text_position = self.get_attribute("label-position")
-            if dflt_text_position is None:
-                logger.warning(f"button {self.button_name()}: no default label position, using cm")
-                dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
-        text_position = config.get(f"{which_text}-position", dflt_text_position)
-        if text_position[0] not in "lcr":
-            text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
-        if text_position[1] not in "tmb":
-            text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
-
-        # print(f">>>> {self.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
-
-        if text is not None and not isinstance(text, str):
-            logger.warning(f"button {self.button_name()}: converting text {text} to string (type {type(text)})")
-            text = str(text)
-
-        return text, text_format, text_font, text_color, text_size, text_position
+        return self._value.get_text_detail(config=config, which_text=which_text)
 
     def get_text(self, base: dict, root: str = "label"):  # root={label|text}
         """
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
         """
-        text = base.get(root)
-        if text is None:
-            return None
-
-        # HACK 1: Special icon font substitution
-        default_font = self.get_attribute("label-font")
-        if default_font is None:
-            logger.warning("no default font")
-
-        text_font = base.get(root + "-font", default_font)
-        for k, v in ICON_FONTS.items():
-            if text_font.lower().startswith(v[0]):
-                s = "\\${%s:([^\\}]+?)}" % (k)
-                icons = re.findall(s, text)
-                for i in icons:
-                    if i in v[1].keys():
-                        text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"button {self.name}: substituing font icon {i}")
-
-        # Formula in text
-        text_format = base.get(f"{root}-format")
-        KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
-        if KW_FORMULA_STR in str(text):
-            # If text contains ${formula}, it is replaced by the value of the formula calculation.
-            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
-            if dataref_rpn is not None:
-                res = self.execute_formula(formula=dataref_rpn)
-                if res != "":  # Format output if format present
-                    if text_format is not None:
-                        logger.debug(f"button {self.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
-                        res = text_format.format(res)
-                    else:
-                        res = str(res)
-                text = text.replace(KW_FORMULA_STR, res)
-            else:
-                logger.warning(f"button {self.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
-
-        text = self.substitute_values(text, formatting=text_format, default="---")
-
-        # HACK 2: Change text if managed
-        # Note: we have to go through the whole text substitution before, because sometimes the text gets displayed anyway
-        if self.is_managed():  # managed
-            # • does not exist in all charsets, * is ok. I made my own font with b'\\u2022' (dec. 8226) set to "•"
-            DOT = "•"
-
-            txtmod = self.manager.get(f"{root}-modifier", "dot").lower()  # type: ignore
-            if txtmod == "dot":  # label
-                return text + DOT  # ---•
-            elif txtmod in ["std", "standard"]:  # QNH Std
-                return "Std"
-            elif txtmod == "dash":  # --- dash=4 or simply dash (defaults to dash=3)
-                n = self.option_value("dash", self.option_value("dashes", True))
-                if type(n) == bool:
-                    n = 3
-                return "-" * int(n) + " " + DOT
-
-        return text
+        return self._value.get_text(base=base, root=root)
 
     # ##################################
     # Value
@@ -721,8 +619,8 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if not isinstance(dataref, Dataref):
             logger.error(f"button {self.name}: not a dataref")
             return
-        logger.debug(f"{self.button_name()}: {dataref.path} changed")
-        self.set_current_value(self.button_value())
+        logger.debug(f"{self.name}: {dataref.path} changed")
+        self.value = self.button_value()
         if self.has_changed() or dataref.has_changed():
             logger.log(
                 SPAM_LEVEL,
@@ -753,7 +651,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             logger.debug(f"button {self.name}: no activation")
         if self.use_internal_state():
             logger.debug(f"button {self.name}: uses internal state, setting value")
-            self.set_current_value(self.button_value())
+            self.value = self.button_value()
         if self.has_changed():
             logger.log(
                 SPAM_LEVEL,

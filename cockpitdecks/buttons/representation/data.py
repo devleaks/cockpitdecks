@@ -53,7 +53,7 @@ class DataIcon(DrawBase):
         DrawBase.__init__(self, button=button)
         self.data = self._config[self.REPRESENTATION_NAME]
 
-    def get_datarefs(self):
+    def get_datarefs(self) -> set:
         if self.datarefs is None:
             if self.data is not None:
                 self.datarefs = self.button.scan_datarefs(base=self.data)
@@ -274,7 +274,7 @@ class ChartData:
         while not self.stop.wait(self.update):
             self.add(self.get_value())
 
-    def get_datarefs(self):
+    def get_datarefs(self) -> set:
         if self.datarefs is None:
             if self.chart is not None:
                 self.datarefs = self.chart.button.scan_datarefs(base=self._config)
@@ -371,9 +371,9 @@ class ChartIcon(DrawAnimation):
     def get_datarefs(self):
         # Collects datarefs in each chart
         if self.datarefs is None:
-            datarefs = []
+            datarefs = set()
             for c in self.charts.values():
-                datarefs = datarefs + c.get_datarefs()
+                datarefs = datarefs | c.get_datarefs()
             self.datarefs = datarefs
         return self.datarefs
 

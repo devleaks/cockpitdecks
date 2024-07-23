@@ -29,7 +29,7 @@ Create python environment
 
 pip install git+https://github.com/devleaks/cockpitdecks.git
 
-pip install avwx-engine scipy suntime timezonefinder metar
+pip install avwx-engine scipy suntime timezonefinder metar tabulate
 
 pip install streamdeck
 

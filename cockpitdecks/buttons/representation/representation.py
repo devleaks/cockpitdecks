@@ -148,8 +148,8 @@ class Representation:
     def get_datarefs(self) -> set:
         return set()
 
-    def get_current_value(self):
-        return self.button.get_current_value()
+    def get_button_value(self):
+        return self.button.value
 
     def get_status(self):
         return {"representation_type": type(self).__name__, "sound": self._vibrate}

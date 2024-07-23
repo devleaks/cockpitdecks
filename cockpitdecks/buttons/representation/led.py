@@ -29,12 +29,12 @@ class LED(Representation):
         self.mode = self._config.get("led", "single")  # unused
 
     def render(self):
-        value = self.get_current_value()
+        value = self.get_button_value()
         v = value is not None and value != 0
         return (v, self.mode)
 
     def clean(self):
-        self.button.set_current_value(0)
+        self.button.value = 0
         self.button.render()
 
     def describe(self) -> str:
@@ -96,7 +96,7 @@ class ColoredLED(Representation):
 
     def clean(self):
         logger.debug(f"{type(self).__name__}")
-        self.button.set_current_value(0)
+        self.button.value = 0
         self.button.render()
 
     def describe(self) -> str:

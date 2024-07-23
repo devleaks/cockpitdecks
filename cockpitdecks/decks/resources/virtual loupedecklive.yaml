@@ -43,23 +43,38 @@ buttons:
       hardware:
         type: virtual-ll-coloredbutton
   - name: left
-    name_int: 2001
     action: [push, swipe]
     feedback: image
     dimension: [60, 270]
     layout:
       offset: [120, 59]
     options: corner_radius=4
+    sub-buttons:
+      - name: l
+        action: [push]
+        feedback: image
+        dimension: [60, 60]
+        layout:
+          offset: [0, 15]
+          spacing: [0, 30]
   - name: right
-    name_int: 2003
     action: [push, swipe]
     feedback: image
     dimension: [60, 270]
     layout:
       offset: [546, 59]
     options: corner_radius=4
+    sub-buttons:
+      r1:
+        size: [60, 60]
+        offset: [0, 15]
+      r2:
+        size: [60, 60]
+        offset: [0, 105]
+      r3:
+        size: [60, 60]
+        offset: [0, 195]
   # - name: center
-  #   name_int: 2002
   #   action: [push, swipe]
   #   feedback: image
   #   dimension: [344, 270]

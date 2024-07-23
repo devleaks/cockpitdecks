@@ -260,7 +260,7 @@ class CircularSwitch(SwitchBase):
                 )
 
         # Needle
-        value = self.button.get_current_value()
+        value = self.button.value
         if value is None:
             value = 0
         if value >= self.tick_steps:
@@ -927,7 +927,7 @@ class Switch(SwitchBase):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         # Value
-        value = self.button.get_current_value()  # 0, 1, or 2 if three_way
+        value = self.button.value  # 0, 1, or 2 if three_way
         if value is None:
             value = 0
         pos = -1  # 1 or -1, or 0 if 3way

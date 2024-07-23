@@ -80,7 +80,6 @@ buttons:
       hardware:
         type: virtual-ll-coloredbutton
   - name: left
-    name_int: 2001
     action: [push, swipe]
     feedback: image
     dimension: [60, 250]
@@ -88,7 +87,6 @@ buttons:
       offset: [132, 64]
     options: corner_radius=4
   - name: right
-    name_int: 2003
     action: [push, swipe]
     feedback: image
     dimension: [60, 250]

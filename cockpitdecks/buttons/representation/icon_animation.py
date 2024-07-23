@@ -51,7 +51,7 @@ class IconAnimation(MultiIcons):
         while not self.exit.is_set():
             self.button.render()
             self.counter = self.counter + 1
-            self.button.set_current_value(self.counter)  # get_current_value() will fetch self.counter value
+            self.button.value = self.counter  # get_current_value() will fetch self.counter value
             self.exit.wait(self.speed)
         logger.debug(f"exited")
 
@@ -59,7 +59,7 @@ class IconAnimation(MultiIcons):
         """
         Check conditions to animate the icon.
         """
-        value = self.get_current_value()
+        value = self.get_button_value()
         return value is not None and value != 0
 
     def anim_start(self):
