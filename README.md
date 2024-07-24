@@ -21,19 +21,38 @@ You can find [numerous configurations for different aircrafts here](https://gith
 
 Fly safely.
 
+
 ## Installation
 
-See [documentation](https://devleaks.github.io/cockpitdecks-docs/Installation/).
+Read the [documentation](https://devleaks.github.io/cockpitdecks-docs/Installation/).
 
-Create python environment
+Create a python environment. Python 3.10 minimum (it is a requirement of an underlying package).
+(Tested in 3.11 and 3.12.)
 
-pip install git+https://github.com/devleaks/cockpitdecks.git
+In that environement, install the following packages:
 
-pip install avwx-engine scipy suntime timezonefinder metar tabulate
+```sh
+$ pip install git+https://github.com/devleaks/cockpitdecks.git
+```
 
-pip install streamdeck
+If you plan to use weather icons, optionally install the following complements:
+```sh
+$ pip install avwx-engine scipy suntime timezonefinder metar tabulate
+```
 
-pip install git+https://github.com/devleaks/python-loupedeck-live.git
+If you plan to use Elgato Stream Deck decks, install the following package:
+```sh
+$ pip install streamdeck
+```
 
-pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
+If you plan to use Loupedeck LoupedeckLive decks, install the following package:
+```sh
+$ pip install git+https://github.com/devleaks/python-loupedeck-live.git
+```
 
+If you plan to use X-Touch Mini decks, install the following package:
+```sh
+$ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
+```
+
+Fly safely.

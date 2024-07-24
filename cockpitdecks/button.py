@@ -636,7 +636,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return
-            self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
+            # self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
             self._activation.activate(event)
         else:
             logger.debug(f"button {self.name}: no activation")
@@ -683,7 +683,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if not self._representation.is_valid():
             logger.warning(f"button {self.name}: representation is not valid")
             return None
-        self.inc(INTERNAL_DATAREF.BUTTON_REPRESENTATIONS.value, cascade=False)
+        # self.inc(INTERNAL_DATAREF.BUTTON_REPRESENTATIONS.value, cascade=False)
         return self._representation.render()
 
     def get_representation_metadata(self):
@@ -719,7 +719,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if self.deck is not None:
             if self.on_current_page():
                 self.deck.vibrate(self)
-                self.inc("vibrate", cascade=False)
+                # self.inc("vibrate", cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
@@ -734,7 +734,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if self.deck is not None:
             if self.on_current_page():
                 self.deck.render(self)
-                self.inc(INTERNAL_DATAREF.BUTTON_RENDERS.value, cascade=False)
+                # self.inc(INTERNAL_DATAREF.BUTTON_RENDERS.value, cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
@@ -745,7 +745,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         Button removes itself from device
         """
-        self.inc(INTERNAL_DATAREF.BUTTON_CLEAN.value, cascade=False)
+        # self.inc(INTERNAL_DATAREF.BUTTON_CLEAN.value, cascade=False)
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
 
