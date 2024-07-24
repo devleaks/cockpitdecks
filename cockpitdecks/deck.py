@@ -14,6 +14,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_co
 
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.representation import IconBase
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from .page import Page
 from .button import Button
 
@@ -331,7 +332,7 @@ class Deck(ABC):
                     "..",
                 )
                 logger.info(f"deck {self.name}: page {page_name} includes {inc} (from file {display_fni}), include contains {ipb} buttons")
-                logger.debug(f"includes: ..included")
+                logger.debug("includes: ..included")
 
             logger.info(f"deck {self.name}: page {page_name} loaded (from file {display_fn}), contains {len(this_page.buttons)} buttons")
 
@@ -369,21 +370,22 @@ class Deck(ABC):
         if page in self.pages.keys():
             if self.current_page is not None:
                 logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
-                logger.debug(f"..unloading datarefs..")
+                logger.debug("..unloading datarefs..")
                 self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
                 self.cockpit.sim.remove_collections_to_monitor(self.current_page.dataref_collections)
-                logger.debug(f"..cleaning page..")
+                logger.debug("..cleaning page..")
                 self.current_page.clean()
+            self.inc(INTERNAL_DATAREF.PAGE_CHANGES.value)
             logger.debug(f"deck {self.name} ..installing new page {page}..")
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
             logger.debug(f"..reset device {self.name}..")
             self.device.reset()
-            logger.debug(f"..loading datarefs..")
+            logger.debug("..loading datarefs..")
             self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             self.cockpit.sim.add_collections_to_monitor(self.current_page.dataref_collections)
-            logger.debug(f"..rendering page..")
+            logger.debug("..rendering page..")
             self.current_page.render()
             logger.debug(f"deck {self.name} ..done")
             logger.info(f"deck {self.name} changed page to {page}")
@@ -400,7 +402,7 @@ class Deck(ABC):
         Please note that this may loead to unexpected results if page was
         too heavily modified or interaction with other pages occurred.
         """
-        self.inc("reload")
+        self.inc(INTERNAL_DATAREF.DECK_RELOADS.value)
         self.change_page(self.current_page.name)
 
     def set_home_page(self):
@@ -608,6 +610,7 @@ class DeckWithIcons(Deck):
         if image is not None:  # found a texture as requested
             logger.debug(f"{who}: use texture {texture_in}")
             image = image.resize((width, height))
+            self.inc(INTERNAL_DATAREF.RENDER_BG_TEXTURE.value)
             return image
         if use_texture and texture_in is None:
             logger.debug(f"{who}: should use texture but no texture found, using uniform color")
@@ -624,12 +627,14 @@ class DeckWithIcons(Deck):
         color = get_color()
         image = Image.new(mode="RGBA", size=(width, height), color=color)
         logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
+        self.inc(INTERNAL_DATAREF.RENDER_BG_COLOR.value)
         return image
 
     def create_icon_for_key(self, index, colors, texture):
         """Create a default icon for supplied key with proper texture or color"""
         image = None
         width, height = self.get_image_size(index)
+        self.inc(INTERNAL_DATAREF.RENDER_CREATE_ICON.value)
         return self.get_icon_background(
             name=str(index),
             width=width,
@@ -657,7 +662,7 @@ class DeckWithIcons(Deck):
         return final_image
 
     def fill_empty(self, key):
-        """Fills all empty buttons with e defalut representation.
+        """Fills all empty buttons with a default representation.
 
         If clean is True, removes the reprensetation rather than install a default one.
         Removing a representation often means installing a default, neutral one.

@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
+ACTIVATION_VALUE = "activation_value"
+
 
 class ButtonGuarded(Exception):
     "Raised when the button is guarded"
@@ -328,6 +330,7 @@ class Activation:
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
             "writable_dataref": self.writable_dataref,
+            "activation_value": self.activation_count,  # !
         }
 
     def describe(self) -> str:
@@ -909,10 +912,10 @@ class OnOff(Activation):
         if self.writable_dataref is not None:
             a.append(f"The button writes its value in dataref {self.writable_dataref}.")
 
-        if self.button.has_external_value():
-            a.append(f"The button gets its current value from its button value (dataref, or formula).")
-        else:
-            a.append(f"The button gets its current value from an internal counter that increases by 1 each time it is pressed.")
+        # if self.button.has_external_value():
+        #     a.append(f"The button gets its current value from its button value (dataref, or formula).")
+        # else:
+        #     a.append(f"The button gets its current value from internal parameters.")
 
         a.append(f"The current value is {'ON' if self.is_on() else 'OFF'}.")
         return "\n\r".join(a)

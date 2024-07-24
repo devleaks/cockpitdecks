@@ -4,6 +4,7 @@ import logging
 from typing import Dict
 
 from cockpitdecks import ID_SEP, CONFIG_KW
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
 from .button import Button, DECK_BUTTON_DEFINITION
 
@@ -162,7 +163,8 @@ class Page:
                 ref = self.sim.get_dataref(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
                     self.datarefs[d] = ref
-                    ref.add_listener(button)
+                    self.datarefs[d].add_listener(button)
+                    self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string()})")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
@@ -178,6 +180,7 @@ class Page:
                 if ref is not None:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
+                    self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
@@ -227,6 +230,8 @@ class Page:
             button.render()
             logger.debug(f"page {self.name}: button {button.name} rendered")
 
+        self.inc(INTERNAL_DATAREF.PAGE_RENDER.value)
+
         if not self.fill_empty_keys:
             return
 
@@ -265,3 +270,4 @@ class Page:
             self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.clean()
         self.buttons = {}
+        self.inc(INTERNAL_DATAREF.PAGE_CLEAN.value)

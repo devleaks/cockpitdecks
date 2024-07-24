@@ -10,7 +10,9 @@ import re
 import logging
 import sys
 
-from .buttons.activation import ACTIVATIONS
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+
+from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
 from .buttons.representation import REPRESENTATIONS, Annunciator
 from .simulator import Dataref, DatarefListener, DatarefSetListener
 from .value import Value, ValueProvider
@@ -522,7 +524,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         value = None
         status = self.get_state_variables()
         source = "all sources"
-        if name in status:  #
+        if name in status:
             value = str(status.get(name))
             source = "status"
         elif hasattr(self._activation, name):
@@ -556,18 +558,11 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         return self._value.get_text_detail(config=config, which_text=which_text)
 
     def get_text(self, base: dict, root: str = "label"):  # root={label|text}
-        """
-        Extract label or text from base and perform formula and dataref values substitution if present.
-        (I.e. replaces ${formula} and ${dataref} with their values.)
-        """
         return self._value.get_text(base=base, root=root)
 
     # ##################################
     # Value
     #
-    def has_external_value(self) -> bool:
-        return self.all_datarefs is not None and len(self.all_datarefs) > 1
-
     def get_button_value(self):
         """
         Button ultimately returns either one value or an array of values if representation requires it.
@@ -578,21 +573,20 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             logger.debug(f"button {self.name}: is Annunciator, getting part values")
             return self._representation.get_current_values()
 
-        # 2. Formula or dataref based
-        if self.dataref_rpn is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
+        # 2. dataref or formula based
+        if self.dataref is not None or self.dataref_rpn is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
             logger.debug(f"button {self.name}: has formula and/or datarefs")
             return self._value.get_value()
 
-        # 3. Button state based
-        if not self.use_internal_state():
-            logger.warning(f"button {self.name}: use internal state")
+        # 3. internal button state based
+        logger.debug(f"button {self.name}: use internal state")
+
         self._last_activation_state = self._activation.get_state_variables()
+        if ACTIVATION_VALUE in self._last_activation_state:
+            logger.debug(f"button {self.name}: getting activation value ({self._last_activation_state[ACTIVATION_VALUE]})")
+            return self._last_activation_state.get(ACTIVATION_VALUE)
 
-        if "current_value" in self._last_activation_state:
-            logger.debug(f"button {self.name}: getting activation current value ({self._last_activation_state['current_value']})")
-            return self._last_activation_state["current_value"]
-
-        logger.debug(f"button {self.name}: getting entire state ({self._last_activation_state})")
+        logger.warning(f"button {self.name}: getting entire state ({self._last_activation_state})")
         return self._last_activation_state
 
     def trend(self) -> int:
@@ -607,7 +601,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     # External API
     #
     def use_internal_state(self) -> bool:
-        return self.all_datarefs is None or len(self.all_datarefs) == 0
+        return self.dataref is None and self.dataref_rpn is None and (self.all_datarefs is None or len(self.all_datarefs) == 0)
 
     def dataref_changed(self, dataref: "Dataref"):
         """
@@ -642,7 +636,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return
-            self.inc("activation", cascade=False)
+            self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
             self._activation.activate(event)
         else:
             logger.debug(f"button {self.name}: no activation")
@@ -689,7 +683,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if not self._representation.is_valid():
             logger.warning(f"button {self.name}: representation is not valid")
             return None
-        self.inc("representation", cascade=False)
+        self.inc(INTERNAL_DATAREF.BUTTON_REPRESENTATIONS.value, cascade=False)
         return self._representation.render()
 
     def get_representation_metadata(self):
@@ -740,7 +734,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         if self.deck is not None:
             if self.on_current_page():
                 self.deck.render(self)
-                self.inc("render", cascade=False)
+                self.inc(INTERNAL_DATAREF.BUTTON_RENDERS.value, cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
@@ -751,7 +745,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         Button removes itself from device
         """
-        self.inc("clean", cascade=False)
+        self.inc(INTERNAL_DATAREF.BUTTON_CLEAN.value, cascade=False)
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
 

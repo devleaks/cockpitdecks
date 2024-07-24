@@ -21,6 +21,7 @@ from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS,
 from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
 from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, AIRCRAFT_CHANGE_MONITORING_DATAREF
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Dataref, DatarefListener
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
@@ -445,6 +446,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 deck.change_page()
 
     def reload_pages(self):
+        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
         for name, deck in self.cockpit.items():
             deck.reload_page()
 

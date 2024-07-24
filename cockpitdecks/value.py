@@ -453,11 +453,10 @@ class Value:
             for d in self.get_all_datarefs():
                 v = self.get_dataref_value(d)
                 r[d] = v
-            logger.debug(f"value {self.name}: {r} (no formula)")
+            logger.debug(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
             return r
-        else:
-            logger.debug(f"value {self.name}: no formula, no dataref")
 
+        logger.debug(f"value {self.name}: no formula, no dataref")
         # 4. State variables?
 
         return None

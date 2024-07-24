@@ -250,8 +250,8 @@ class ChartData:
         self.datarefs = None
 
         self.type = config.get("type", "line")
-        self.value_min = config.get("minimum", 0)
-        self.value_max = config.get("maximum", 100)
+        self.value_min = config.get("value-min", 0)
+        self.value_max = config.get("value-max", 100)
         self.keep = config.get("keep", 10)
         self.update = config.get("update")
         self.scale = config.get("scale", 1)
@@ -259,6 +259,7 @@ class ChartData:
         self.color = convert_color(self.color)
 
         self.value = Value(self.name, config=config, button=chart.button)
+        self._stop = None
 
         self.data = []
         self.last_data = now().timestamp()
@@ -267,13 +268,20 @@ class ChartData:
 
     def init(self):
         if self.update is not None and self.update > 0:
-            self.stop = threading.Event()
+            self._stop = threading.Event()
             self.thread = threading.Thread(target=self.start, name=f"ChartData:{self.name}")
             self.thread.start()
 
     def start(self):
-        while not self.stop.wait(self.update):
-            self.add(self.get_value())
+        logger.info(f"chart {self.name} started")
+        while not self._stop.wait(self.update):
+            r = self.get_value()
+            self.add(r)
+        logger.info(f"chart {self.name} stopped")
+
+    def stop(self):
+        if self._stop is not None:
+            self._stop.set()
 
     def get_datarefs(self) -> set:
         if self.datarefs is None:
@@ -440,12 +448,18 @@ class ChartIcon(DrawAnimation):
         # Add data
         for c in self.charts.values():
             plot = sorted(c.data, key=lambda v: v[1])  # sort by timestamp
+            vert_pix = image.height / (c.value_max - c.value_min)
+            # print(plot)
             if c.type == "line":
                 points = []
                 for pt in plot:
                     pt_value, pt_time = pt
+                    if pt_value < c.value_min:
+                        pt_value = c.value_min
+                    if pt_value > c.value_max:
+                        pt_value = c.value_max
                     x = (time_left - pt_time) * time_pix
-                    y = image.height * pt_value / c.value_max
+                    y = vert_pix * (pt_value - c.value_min)
                     points.append((int(x), int(y)))
                 chart.line(
                     points,

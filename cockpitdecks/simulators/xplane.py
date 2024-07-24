@@ -13,6 +13,7 @@ from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR, AIRCRAFT_CHANGE_MONITORING_DATAREF
 from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent, DEFAULT_REQ_FREQUENCY
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
 if USE_COLLECTOR:
     from cockpitdecks.simulator import DatarefSetCollector
@@ -487,7 +488,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     # Decode Packet
                     self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=4, cascade=True)
                     # Read the Header "RREF,".
-                    total_to = 0
+                    number_of_timeouts = 0
                     total_reads = total_reads + 1
                     now = datetime.now()
                     delta = now - last_read_ts
@@ -511,10 +512,10 @@ class XPlane(Simulator, XPlaneBeacon):
                                 if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
                                     value = 0.0
                                 v = value
-                                if d == "sim/time/zulu_time_sec":
+                                if d == DATETIME_DATAREFS[2]:  # zulu secs
                                     now = datetime.now().astimezone(tz=timezone.utc)
                                     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-                                    self.set_internal_dataref(path="xplane/timedelay", value=2, cascade=(total_reads % 10 == 0))
+                                    self.set_internal_dataref(path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=(v - seconds_since_midnight), cascade=(total_reads % 10 == 0))
                                 r = self.get_rounding(dataref_path=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)
@@ -530,10 +531,10 @@ class XPlane(Simulator, XPlaneBeacon):
                             f"average socket time between reads {round(total_read_time / total_reads, 3)} ({total_reads} reads; {total_values} values sent)"
                         )  # ignore
                 except:  # socket timeout
-                    total_to = total_to + 1
-                    logger.info(f"socket timeout received ({total_to}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    number_of_timeouts = number_of_timeouts + 1
+                    logger.info(f"socket timeout received ({number_of_timeouts}/{MAX_TIMEOUT_COUNT})")  # ignore
                     self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=2, cascade=True)
-                    if total_to >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
+                    if number_of_timeouts >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
                         self.beacon_data = {}
                         if self.udp_event is not None and not self.udp_event.is_set():

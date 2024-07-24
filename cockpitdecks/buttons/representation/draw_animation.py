@@ -66,6 +66,7 @@ class DrawAnimation(DrawBase):
         :rtype:     { return_type_description }
         """
         self.tween = self.tween + 1
+        self.inc("tween")
         # logger.debug(f"tick")
         # return super().render()
 
