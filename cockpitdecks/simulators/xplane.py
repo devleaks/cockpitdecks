@@ -480,7 +480,7 @@ class XPlane(Simulator, XPlaneBeacon):
         Terminates after 5 timeouts.
         """
         logger.debug("starting dataref listener..")
-        total_to = 0
+        number_of_timeouts = 0
         total_reads = 0
         total_values = 0
         last_read_ts = datetime.now()
@@ -525,7 +525,9 @@ class XPlane(Simulator, XPlaneBeacon):
                                 if d == DATETIME_DATAREFS[2]:  # zulu secs
                                     now = datetime.now().astimezone(tz=timezone.utc)
                                     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-                                    self.set_internal_dataref(path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=(v - seconds_since_midnight), cascade=(total_reads % 10 == 0))
+                                    self.set_internal_dataref(
+                                        path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=(v - seconds_since_midnight), cascade=(total_reads % 10 == 0)
+                                    )
                                 r = self.get_rounding(dataref_path=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)

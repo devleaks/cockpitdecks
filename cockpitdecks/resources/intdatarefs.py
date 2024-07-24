@@ -13,7 +13,6 @@ class INTERNAL_DATAREF(Enum):
     # Number of cockpitdecks reloads
     COCKPITDECK_RELOADS = "reload_pages"
 
-
     #
     # D E C K
     #
@@ -27,14 +26,12 @@ class INTERNAL_DATAREF(Enum):
     RENDER_BG_COLOR = "bg-color"
     RENDER_CREATE_ICON = "create_icon"
 
-
     #
     # P A G E
     #
     DATAREF_REGISTERED = "registered_dataref"
     PAGE_RENDER = "page_render"
     PAGE_CLEAN = "page_clean"
-
 
     #
     # B U T T O N
@@ -70,7 +67,6 @@ class INTERNAL_DATAREF(Enum):
     # Total number of dataref values recevied
     UDP_DATAREF_COUNT = "cockpitdecks/udp/dataref-count"
 
-
     #
     # E V E N T
     #
@@ -79,7 +75,6 @@ class INTERNAL_DATAREF(Enum):
     ENQUEUE_COUNT = "cockpitdecks/udp/enqueue/count"
 
     ENQUEUE_PERSEC = "cockpitdecks/udp/enqueue/persec"
-
 
     #
     # X - P L A N E

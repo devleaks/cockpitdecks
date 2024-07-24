@@ -161,7 +161,14 @@ class Value:
 
         for key in self._known_extras:
             text = base.get(key)
-            if text is not None and type(text) == str:
+            if text is None:
+                continue
+            if type(text) is dict:
+                # structure
+                # text:
+                #   text: ${AirbusFBW/BatVolts[1]}
+                text = text.get(key)
+            if type(text) is str:
                 datarefs = re.findall(PATTERN_DOLCB, text)
                 datarefs = set(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
                 if len(datarefs) > 0:

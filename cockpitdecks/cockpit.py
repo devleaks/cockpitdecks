@@ -905,12 +905,12 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.reload_decks(just_do_it=True)
                 elif e == "stop":
                     self.stop_decks(just_do_it=True)
-                self.inc("event_count_"+e)
+                self.inc("event_count_" + e)
                 continue
 
             try:
                 logger.debug(f"doing {e}..")
-                self.inc("event_count_"+type(e).__name__)
+                self.inc("event_count_" + type(e).__name__)
                 e.run(just_do_it=True)
                 logger.debug(f"..done without error")
             except:
