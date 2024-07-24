@@ -128,7 +128,6 @@ class Cockpit(DatarefListener, CockpitBase):
         self.event_loop_run = False
         self.event_loop_thread = None
         self.event_queue = Queue()
-        self._stats = {}
 
         self.init()
 
@@ -893,12 +892,6 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.warning(f"already running")
 
     def event_loop(self):
-        def add_event(s: str):
-            if s in self._stats:
-                self._stats[s] = self._stats[s] + 1
-            else:
-                self._stats[s] = 1
-
         logger.debug("starting event loop..")
 
         while self.event_loop_run:
@@ -912,12 +905,12 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.reload_decks(just_do_it=True)
                 elif e == "stop":
                     self.stop_decks(just_do_it=True)
-                add_event(e)
+                self.inc("event_count_"+e)
                 continue
 
             try:
                 logger.debug(f"doing {e}..")
-                add_event(type(e).__name__)
+                self.inc("event_count_"+type(e).__name__)
                 e.run(just_do_it=True)
                 logger.debug(f"..done without error")
             except:
@@ -931,7 +924,6 @@ class Cockpit(DatarefListener, CockpitBase):
             self.event_queue.put("terminate")  # to unblock the Queue.get()
             # self.event_loop_thread.join()
             logger.debug(f"stopped")
-            logger.info("event processing stats: " + json.dumps(self._stats, indent=2))
         else:
             logger.warning(f"not running")
 
@@ -1050,10 +1042,15 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def terminate_aircraft(self):
         logger.info(f"terminating..")
+        import sys
 
         # Spit stats, should be on debug
         drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal()
-        logger.info("local datarefs: " + json.dumps(drefs, indent=2))
+        # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
+        # with open("datarefs.json", "w") as fp:
+        #     json.dump(drefs, fp, indent=2)
+        with open("datarefs.yaml", "w") as fp:
+            yaml.dump(drefs, fp)
 
         for deck in self.cockpit.values():
             deck.terminate()

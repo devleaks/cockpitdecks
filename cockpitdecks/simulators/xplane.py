@@ -126,6 +126,7 @@ class XPlaneBeacon:
         try:
             packet, sender = sock.recvfrom(1472)
             logger.debug(f"XPlane Beacon: {packet.hex()}")
+            self.inc(INTERNAL_DATAREF.UDP_BEACON_RCV.value)
 
             # decode data
             # * Header
@@ -177,6 +178,7 @@ class XPlaneBeacon:
 
         except socket.timeout:
             logger.debug("XPlane IP not found.")
+            self.inc(INTERNAL_DATAREF.UDP_BEACON_TIMEOUT.value)
             raise XPlaneIpNotFound()
         finally:
             sock.close()
@@ -208,6 +210,7 @@ class XPlaneBeacon:
                         logger.info(self.beacon_data)
                         logger.debug("..connected, starting dataref listener..")
                         self.start()
+                        self.inc(INTERNAL_DATAREF.STARTS.value)
                         logger.info("..dataref listener started..")
                 except XPlaneVersionNotSupported:
                     self.beacon_data = {}
@@ -374,6 +377,10 @@ class XPlane(Simulator, XPlaneBeacon):
             curr = 0
         dref.update_value(new_value=curr + amount, cascade=cascade)
 
+    def inc(self, path: str, amount: float = 1.0, cascade: bool = True):
+        # shortcut alias
+        self.inc_internal_dataref(path=path, amount=amount, cascade=cascade)
+
     def execute_command(self, command: Command):
         if command is None:
             logger.warning(f"no command")
@@ -487,11 +494,13 @@ class XPlane(Simulator, XPlaneBeacon):
                     data, addr = self.socket.recvfrom(1472)  # maximum bytes of an RREF answer X-Plane will send (Ethernet MTU - IP hdr - UDP hdr)
                     # Decode Packet
                     self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=4, cascade=True)
+                    self.inc(INTERNAL_DATAREF.UDP_READS.value)
                     # Read the Header "RREF,".
                     number_of_timeouts = 0
                     total_reads = total_reads + 1
                     now = datetime.now()
                     delta = now - last_read_ts
+                    self.set_internal_dataref(path=INTERNAL_DATAREF.LAST_READ.value, value=delta.microseconds, cascade=True)
                     total_read_time = total_read_time + delta.microseconds / 1000000
                     last_read_ts = now
                     header = data[0:5]
@@ -501,6 +510,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         values = data[5:]
                         lenvalue = 8
                         numvalues = int(len(values) / lenvalue)
+                        self.inc(INTERNAL_DATAREF.VALUES.value, amount=numvalues)
                         total_values = total_values + numvalues
                         for i in range(0, numvalues):
                             singledata = data[(5 + lenvalue * i) : (5 + lenvalue * (i + 1))]
@@ -521,6 +531,7 @@ class XPlane(Simulator, XPlaneBeacon):
                                     v = round(value, r)
                                 if d not in self._dref_cache or (d in self._dref_cache and self._dref_cache[d] != v):
                                     e = DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys())
+                                    self.inc(INTERNAL_DATAREF.UPDATE_ENQUEUED.value)
                                     self._dref_cache[d] = v
                             else:
                                 logger.debug(f"no dataref ({values}), probably no longer monitored")
@@ -540,6 +551,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         if self.udp_event is not None and not self.udp_event.is_set():
                             self.udp_event.set()
                         self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=1, cascade=True)
+                        self.inc(INTERNAL_DATAREF.STOPS.value)
         self.udp_event = None
         self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=2, cascade=True)
         logger.debug("..dataref listener terminated")

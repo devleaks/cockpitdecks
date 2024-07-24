@@ -170,3 +170,4 @@ decklayout.json
 cockpitdecks/resources/decks/types
 cockpitdecks/resources/decks/images
 autoreload.sh
+datarefs.yaml

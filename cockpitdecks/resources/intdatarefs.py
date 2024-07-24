@@ -48,7 +48,15 @@ class INTERNAL_DATAREF(Enum):
     # U D P
     #
     # Number of UDP packet received
-    UDP_COUNT = "cockpitdecks/udp/count"
+    UDP_BEACON_RCV = "udp_beacon_received"
+    UDP_BEACON_TIMEOUT = "udp_beacon_timeout"
+    STARTS = "starts"
+    STOPS = "stops"
+
+    UDP_READS = "udp_rcv"
+    LAST_READ = "last_read_time"
+    VALUES = "values_read"
+    UPDATE_ENQUEUED = "value_change_enqueued"
 
     # Average number of reads per seconds (last 100 reads)
     UDP_READS_PERSEC = "cockpitdecks/udp/persec"
