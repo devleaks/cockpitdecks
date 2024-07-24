@@ -133,12 +133,12 @@ class PythonInterface:
                 dtype = xp.getDataRefTypes(cmdref)
 
                 val = 0
-                if begin is None: # toggle value
+                if begin is None:  # toggle value
                     if bool(dtype & xp.Type_Float):
                         val = xp.getDataf(cmdref)
                     elif bool(dtype & xp.Type_Int):
                         val = xp.getDataf(cmdref)
-                    val = 0 if val == 1 else 1 # invert value
+                    val = 0 if val == 1 else 1  # invert value
                 else:
                     val = 0 if not begin else 1
 
@@ -158,12 +158,12 @@ class PythonInterface:
                         dtype = xp.getDataRefTypes(cmdref)
 
                         val = 0
-                        if begin is None: # toggle value
+                        if begin is None:  # toggle value
                             if bool(dtype & xp.Type_Float):
                                 val = xp.getDataf(cmdref)
                             elif bool(dtype & xp.Type_Int):
                                 val = xp.getDataf(cmdref)
-                            val = 0 if val == 1 else 1 # invert value
+                            val = 0 if val == 1 else 1  # invert value
                         else:
                             val = 0 if not begin else 1
 

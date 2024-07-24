@@ -180,6 +180,13 @@ class Value:
     # ##################################
     # Formula value substitution
     #
+    def get_formula(self):
+        if self.formula is not None and self.formula != "":
+            return self.formula
+        if self._button.dataref_rpn is not None and self._button.dataref_rpn != "":
+            return self._button.dataref_rpn
+        return None
+
     def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
@@ -399,13 +406,9 @@ class Value:
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
             res = ""
-            if self.formula is not None and self.formula != "":  # kinda local formula (e.g. annunciator parts)
-                logger.warning(f"button {self._button.name}: executing local formula {self.formula}")
-                res = self.execute_formula(formula=self.formula)
-            elif self._button.dataref_rpn is not None:  # button level formula
-                logger.warning(f"button {self._button.name}: executing button formula {self._button.dataref_rpn}")
-                res = self.execute_formula(formula=self._button.dataref_rpn)
-            else:
+            formula = self.get_formula()
+            if formula is not None:
+                res = self.execute_formula(formula=formula)
                 logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found in button")
 
             if res != "":  # Format output if format present
@@ -426,22 +429,20 @@ class Value:
     def get_value(self):
         """ """
         # 1. If there is a formula, value comes from it
-        if self.formula is not None and self.formula != "":
-            ret = self.execute_formula(formula=self.formula)
+        formula = self.get_formula()
+        if formula is not None and formula != "":
+            ret = self.execute_formula(formula=formula)
             logger.debug(f"value {self.name}: {ret} (from formula)")
             return ret
 
-        if self._datarefs is None:
-            logger.debug(f"value {self.name}: no formula, no dataref")
-            return None
-
-        # 3. One dataref
-        if len(self._datarefs) == 1:
+        # 2. One dataref
+        if self.dataref is not None:
             # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            ret = self.get_dataref_value(list(self._datarefs)[0])
-            logger.debug(f"value {self.name}: {ret} (from single dataref {list(self._datarefs)[0]})")
+            ret = self.get_dataref_value(self.dataref)
+            logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
-        # 4. Multiple datarefs
+
+        # 3. Multiple datarefs
         if len(self._datarefs) > 1:
             r = {}
             for d in self.get_all_datarefs():
@@ -449,6 +450,10 @@ class Value:
                 r[d] = v
             logger.debug(f"value {self.name}: {r} (no formula)")
             return r
+        else:
+            logger.debug(f"value {self.name}: no formula, no dataref")
+
+        # 4. State variables?
 
         return None
 

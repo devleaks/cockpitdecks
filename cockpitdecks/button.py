@@ -191,7 +191,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
         self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
-    def get_button_value(self, name):
+    def get_get_button_value(self, name):
         if name is None or len(name) == 0:
             v = self.value
             if type(v) not in [int, float, str]:
@@ -297,19 +297,12 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 logger.debug(f"button {self.name} .. from initial-value")
                 self.value = self.initial_value
             else:
-                logger.debug(f"button {self.name} .. from button_value")
-                self.value = self.button_value()
+                logger.debug(f"button {self.name} .. from get_button_value")
+                self.value = self.get_button_value()
             logger.debug(f"button {self.name}: ..has value {self.current_value}.")
         else:
             logger.debug(f"button {self.name}: already has a value ({self.current_value}), initial value ignored")
         # logger.debug(f"button {self.name}: {self.id()}")
-
-    def get_current_value(self):
-        """
-        Gets the current value, but does not provoke a calculation, just returns the current value.
-        """
-        logger.debug(f"button {self.name}: {self.current_value}")
-        return self.current_value
 
     @property
     def value(self):
@@ -575,7 +568,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     def has_external_value(self) -> bool:
         return self.all_datarefs is not None and len(self.all_datarefs) > 1
 
-    def button_value(self):
+    def get_button_value(self):
         """
         Button ultimately returns either one value or an array of values if representation requires it.
         """
@@ -624,7 +617,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             logger.error(f"button {self.name}: not a dataref")
             return
         logger.debug(f"{self.name}: {dataref.path} changed")
-        self.value = self.button_value()
+        self.value = self.get_button_value()
         if self.has_changed() or dataref.has_changed():
             logger.log(
                 SPAM_LEVEL,
@@ -655,7 +648,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             logger.debug(f"button {self.name}: no activation")
         if self.use_internal_state():
             logger.debug(f"button {self.name}: uses internal state, setting value")
-            self.value = self.button_value()
+            self.value = self.get_button_value()
         if self.has_changed():
             logger.log(
                 SPAM_LEVEL,
@@ -731,8 +724,8 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         if self.deck is not None:
             if self.on_current_page():
-                self.inc("render", cascade=False)
                 self.deck.vibrate(self)
+                self.inc("vibrate", cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
@@ -746,7 +739,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         if self.deck is not None:
             if self.on_current_page():
-                self.inc("render", cascade=False)
                 self.deck.render(self)
                 self.inc("render", cascade=False)
                 # logger.debug(f"button {self.name} rendered")
