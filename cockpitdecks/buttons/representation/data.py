@@ -15,7 +15,7 @@ from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 #
@@ -124,6 +124,7 @@ class DataIcon(DrawBase):
         # Value
         DATA_UNIT_SEP = " "
         data_value, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(data, "data")
+        print(">>>>", data_value, data)
 
         if data_format is not None:
             data_str = data_format.format(float(data_value))

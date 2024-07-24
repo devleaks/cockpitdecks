@@ -180,7 +180,11 @@ class Value:
     # ##################################
     # Formula value substitution
     #
-    def get_formula(self):
+    def get_formula(self, base: dict = None):
+        if base is not None:
+            formula = base.get(CONFIG_KW.FORMULA.value)
+            if formula is not None and formula != "":
+                return formula
         if self.formula is not None and self.formula != "":
             return self.formula
         if self._button.dataref_rpn is not None and self._button.dataref_rpn != "":
@@ -406,17 +410,18 @@ class Value:
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
             res = ""
-            formula = self.get_formula()
+            formula = self.get_formula(base)
             if formula is not None:
                 res = self.execute_formula(formula=formula)
-                logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found in button")
+                if res != "":  # Format output if format present
+                    if text_format is not None:
+                        logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        res = text_format.format(res)
+                    else:
+                        res = str(res)
+            else:
+                logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
-            if res != "":  # Format output if format present
-                if text_format is not None:
-                    logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
-                    res = text_format.format(res)
-                else:
-                    res = str(res)
             text = text.replace(KW_FORMULA_STR, res)
 
         # Rest of text: substitution of ${}

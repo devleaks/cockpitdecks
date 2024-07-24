@@ -277,7 +277,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     for l in dref.listeners:
                         logger.info(f"  {l.name}")
         else:
-            logger.info(f"to do")
+            logger.info("to do")
 
     def inspect_monitored(self, what: str | None = None):
         for dref in self.sim.datarefs.values():
@@ -286,13 +286,13 @@ class Cockpit(DatarefListener, CockpitBase):
     def scan_devices(self):
         """Scan for hardware devices"""
         if len(DECK_DRIVERS) == 0:
-            logger.error(f"no driver")
+            logger.error("no driver")
             return
         driver_info = [
             f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}" for deck_driver in DECK_DRIVERS.keys() if deck_driver != VIRTUAL_DECK_DRIVER
         ]
         if len(driver_info) == 0:
-            logger.error(f"no driver for physical decks")
+            logger.warning("no driver for physical decks")
             return
         logger.info(f"drivers installed for {', '.join(driver_info)}; scanning..")
         dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in DECK_DRIVERS.items() if k != VIRTUAL_DECK_DRIVER]

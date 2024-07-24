@@ -93,6 +93,7 @@ buttons:
       tick-to: 120
       ticks: 8
       gauge-offset: 20
+    dataref: data:encoder0
   - index: 6
     type: onoff
     label: LAST 60 SECONDS
@@ -193,7 +194,7 @@ buttons:
     text-position: cm
   - index: 10
     type: stop
-    label: "GARDED!"
+    label: "PRESS 2 SECS\nTO LIFT GUARD"
     label-position: ct
     label-size: 8
     annunciator:

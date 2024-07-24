@@ -77,8 +77,8 @@ buttons:
     command: none
   - index: 3
     type: none
+    formula: ${state:activation_count}
     data:
-      formula: ${state:activation_count}
       top-line-color: darkblue
       top-line-width: 10
       icon: "fa:gauge"
@@ -118,6 +118,7 @@ buttons:
       tick-label-font: D-DIN-Bold.otf
     options: 3way,invert,hexa
     set-dataref: data:switches
+    dataref: data:switches
   - index: 5
     name: Horizontal round button
     label: BEACON
@@ -159,6 +160,7 @@ buttons:
       right: 56
     options: 3way,invert,hexa
     set-dataref: data:switches
+    dataref: data:switches
   - index: 7
     name: Push button
     type: updown
@@ -175,8 +177,8 @@ buttons:
   - index: 8
     type: none
     initial-value: 0
+    formula: ${data:enc0}
     data:
-      formula: ${data:enc0}
       top-line-color: darkblue
       top-line-width: 10
       icon: "fa:arrows-rotate"

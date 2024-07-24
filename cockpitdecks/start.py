@@ -258,9 +258,9 @@ def cockpit_wshandler():
                 cockpit.process_event(deck_name=deck, key=key, event=event, data=payload)
                 app.logger.debug(f"event processed deck={deck}, event={event} data={payload}")
     except ConnectionClosed:
-        app.logger.debug(f"connection closed")
+        app.logger.debug("connection closed")
         cockpit.remove(ws)
-        app.logger.debug(f"client removed")
+        app.logger.debug("client removed")
     return ""
 
 
@@ -276,8 +276,8 @@ def main():
         cockpit.start_aircraft(AIRCRAFT_HOME, release=True)
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():
-                logger.warning(f"no web deck, start for designer")  # , press CTRL-C ** twice ** to quit
-            logger.info(f"Starting application server")  # , press CTRL-C ** twice ** to quit
+                logger.warning("no web deck, start for designer")  # , press CTRL-C ** twice ** to quit
+            logger.info("Starting application server")  # , press CTRL-C ** twice ** to quit
             app.run(host="0.0.0.0", port=APP_HOST[1])
 
         # If single CTRL-C pressed, will terminate here

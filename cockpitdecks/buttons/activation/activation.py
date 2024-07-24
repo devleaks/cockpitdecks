@@ -5,8 +5,7 @@ Button action and activation abstraction
 import logging
 import random
 import threading
-import random
-from typing import Dict, List
+from typing import List
 
 from datetime import datetime
 
@@ -64,11 +63,16 @@ class Activation:
         # Options
 
         # Commands
+        self._command = None
         self._view = Command(path=self._config.get(CONFIG_KW.VIEW.value))  # Optional additional command, usually to set a view
         self._view_if = self._config.get(CONFIG_KW.VIEW_IF.value)
 
+        # Vibrate on press
+        self.vibrate = self.get_attribute("vibrate")
+
         # but could be anything.
         self._long_press = Command(path=self._config.get("long-press"))  # Optional additional command
+
         # Datarefs
         self.writable_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
         if self.writable_dataref is not None:
@@ -84,16 +88,12 @@ class Activation:
         self.duration = 0
         self.pressed = False
         self.initial_value = self._config.get(CONFIG_KW.INITIAL_VALUE.value)
+        self._guard_changed = False
 
         self.options = parse_options(self._config.get(CONFIG_KW.OPTIONS.value))
 
-        # Vibrate on press
-        self.vibrate = self.get_attribute("vibrate")
-
         if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
-
-        self._guard_changed = False
 
         self.init()
 
@@ -168,7 +168,9 @@ class Activation:
         # Check this before activating in subclasses if necessary
         # 1. call super().activate() up to the top
         # 2. check this is_guarded()
-        return not self._guard_changed and not self.button.is_guarded()
+        if self._guard_changed:
+            return True
+        return self.button.is_guarded()
 
     def activate(self, event):
         """
@@ -187,7 +189,7 @@ class Activation:
         self.inc(ID_SEP.join([s, "activation_count"]))
 
         # Special handling of some events
-        if type(event) != PushEvent:
+        if type(event) is not PushEvent:
             return
 
         if event.pressed:
@@ -238,11 +240,11 @@ class Activation:
     def done(self):
         if self._activate_start is not None:
             self._activation_completed = self._activation_completed + 1
-            self.inc(ID_SEP.join([s, "activation_completed"]))
+            self.inc("activation_completed")
 
             duration = datetime.now() - self._activate_start
             self._total_duration = self._total_duration + duration
-            self.inc(ID_SEP.join([s, "activation_duration"]), duration)
+            self.inc("activation_duration", duration)
 
     def is_pressed(self):
         return self.pressed
@@ -418,7 +420,7 @@ class Reload(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join([f"The button reloads all decks and tries to reload the page that was displayed."])
+        return "\n\r".join(["The button reloads all decks and tries to reload the page that was displayed."])
 
 
 class ChangeTheme(Activation):
