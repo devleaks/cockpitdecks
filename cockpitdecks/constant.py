@@ -104,6 +104,7 @@ class CONFIG_KW(Enum):
     BACKPAGE = "back"
     BUTTONS = "buttons"
     DATAREF = "dataref"
+    DATAREFS = "multi-datarefs"
     DECKS = "decks"
     DECOR = "decor"
     DEVICE = "device"
