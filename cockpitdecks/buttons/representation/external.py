@@ -314,7 +314,6 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         DrawAnimation.__init__(self, button=button)
         DatarefListener.__init__(self)
         self.speed = self.CHECK_STATION
-        self.anim_start()
 
     def init(self):
         if self._inited:
@@ -323,7 +322,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             # toliss_airbus/flightplan/departure_icao
             # toliss_airbus/flightplan/destination_icao
             self.icao_dataref = self.button.sim.get_dataref(self.icao_dataref_path, is_string=True)
-            self.icao_dataref.add_listener(self)
+            self.icao_dataref.add_listener(self) # the representation gets notified directly.
             self.dataref_changed(self.icao_dataref)
             self._inited = True
             logger.debug(f"initialized, aiting for dataref {self.icao_dataref.path}")
@@ -332,6 +331,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         icao = self.weather.get("station")
         if icao is None:
             icao = WeatherMetarIcon.DEFAULT_STATION # start with default position
+            logger.debug(f"default station installed {icao}")
             self.update_position = True # will be updated
         self.station = Station.from_icao(icao)
         self.metar = Metar(self.station.icao)
@@ -348,7 +348,6 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         self.weather_icon = self.select_weather_icon()
         # logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
         self._inited = True
-        logger.debug(f"default station installed {icao}")
 
     def at_default_station(self):
         if self.weather is not None and self.station is not None:
@@ -357,7 +356,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         return True
 
     def get_datarefs(self) -> set:
-        return {
+        ret = {
             "sim/flightmodel/position/latitude",
             "sim/flightmodel/position/longitude",
             "sim/cockpit2/clock_timer/local_time_hours",
@@ -366,19 +365,25 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             Dataref.mk_internal_dataref("weather:temperature"),
             Dataref.mk_internal_dataref("weather:dew_point"),
         }
+        if self.icao_dataref_path is not None:
+            ret.add(self.icao_dataref_path)
+        return ret
 
     def should_run(self) -> bool:
         """
         Check conditions to animate the icon.
         In this case, always runs
         """
-        return True
+        return self.button.on_current_page()
 
     # def animate(self):
     #    # self.update() # not necessary, will run in get_image_for_icon
     #    return super().animate()
 
     def dataref_changed(self, dataref):
+        # what if Dataref.mk_internal_dataref("weather:*") change?
+        if dataref.path != self.icao_dataref_path:
+            return
         icao = dataref.value()
         if icao is None or icao == "":
             return
