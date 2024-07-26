@@ -458,7 +458,6 @@ class IconText(IconColor):
             #   text-position: cm
             self.text_config = self._config
 
-
         self.text = str(self.text_config.get("text"))
         # Overwrite icon-* with text-bg-*
         self.icon_color = self.text_config.get("text-bg-color", self.cockpit_color)

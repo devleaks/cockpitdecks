@@ -23,10 +23,11 @@ yaml = YAML(typ="safe", pure=True)
 # ###########################################################
 # C O C K P T D E C K S
 #
-RELEASE = "1.0.2"  # local version number
+RELEASE = "1.0.3"  # local version number
 #
 # Changelog:
 #
+# 26-JUL-2024: 1.0.3: Added string-dataref (singular)
 # 11-JUL-2024: 1.0.2: Corrected issue when getDatas would complain for 0 length string
 # 11-JUL-2024: 1.0.1: Added AIRCRAFT_LIVERY to the list of datarefs that are always sent
 # 05-JUL-2024: 1.0.0: Initial version, combination of cockpitdecks_helper and string_datarefs_udp
@@ -354,7 +355,7 @@ class PythonInterface:
                                         if DEBUG:
                                             print(
                                                 self.Info,
-                                                f"get_beginend_commands: added {button_def[COMMAND]}",
+                                                f"get_beginend_commands: added command {button_def[COMMAND]}",
                                             )
                                     if MULTI_COMMANDS in button_def:
                                         for c in button_def[MULTI_COMMANDS]:
@@ -386,7 +387,8 @@ class PythonInterface:
         BUTTONS = "buttons"  # keyword for button definitions on page
         DECKS = "decks"  # keyword to list decks used for this aircraft
         LAYOUT = "layout"  # keyword to detect layout for above deck
-        STRING_DATAREFS = "string-datarefs"  # keyword to detect (X-Plane) command in definition of the button
+        STRING_DATAREF = "string-dataref"  # keyword to detect (X-Plane) command in definition of the button
+        STRING_DATAREFS = "string-datarefs"  #
 
         DEBUG = False
 
@@ -461,8 +463,10 @@ class PythonInterface:
                             for button_def in page_def[BUTTONS]:
                                 # if DEBUG:
                                 #     print(self.Info, f"get_string_datarefs: doing button {button_def.get('index')}..")
-                                sdrefs = button_def.get(STRING_DATAREFS)
-                                if sdrefs is None:
+                                sdrefs = button_def.get(STRING_DATAREF)
+                                sdrefs = [sdrefs] if sdrefs is not None else []
+                                sdrefs = sdrefs + button_def.get(STRING_DATAREFS, [])
+                                if sdrefs is None or len(sdrefs) == 0:
                                     # if DEBUG:
                                     #     print(
                                     #         self.Info,
@@ -577,7 +581,7 @@ class PythonInterface:
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandBegin(cmdref), 0)[1]  # callback must return 0 or 1
                     self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
-                        print(self.Info, f"load: added {cmd}")
+                        print(self.Info, f"load: added command {cmd}")
                     cmd = command + "/end"
                     self.commands[cmd] = {}
                     self.commands[cmd][REF] = xp.createCommand(cmd, "End " + cmd)
@@ -585,7 +589,7 @@ class PythonInterface:
                     # self.commands[cmd][FUN] = lambda *args: (xp.commandEnd(cmdref), 0)[1]  # callback must return 0 or 1
                     self.commands[cmd][HDL] = xp.registerCommandHandler(self.commands[cmd][REF], self.commands[cmd][FUN], 1, None)
                     if self.trace:
-                        print(self.Info, f"load: added {cmd}")
+                        print(self.Info, f"load: added command {cmd}")
                     # else:
                     #     print(self.Info, f"load: {command} not found")
                 except Exception as e:

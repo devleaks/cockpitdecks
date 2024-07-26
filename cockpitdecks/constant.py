@@ -9,7 +9,6 @@ import logging
 from typing import List
 from collections.abc import MutableMapping
 from enum import Enum
-from datetime import datetime
 import ruamel
 from ruamel.yaml import YAML
 
@@ -45,7 +44,7 @@ ICON_SIZE = 256  # px
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
-AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path
+AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
 
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")

@@ -80,16 +80,16 @@ except ImportError:
     logger.warning(f"XPWeatherIcon not installed")
 
 try:
-    logger.info(f"LiveWeatherIcon installed")
+    logger.info(f"WeatherMetarIcon installed")
 except ImportError:
-    logger.warning(f"LiveWeatherIcon not installed")
+    logger.warning(f"WeatherMetarIcon not installed")
 
 try:
-    from .external import LiveWeatherIcon
+    from .external import WeatherMetarIcon
 
-    logger.info(f"LiveWeatherIcon installed")
+    logger.info(f"WeatherMetarIcon installed")
 except ImportError:
-    logger.warning(f"LiveWeatherIcon not installed")
+    logger.warning(f"WeatherMetarIcon not installed")
 
 REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
 

@@ -4,6 +4,9 @@
 # Buttons were isolated here because they use specific packages (avwx-engine)
 # and rely on external services.
 #
+# The information these icon communicates DOES NOT come from X-Plane
+# but from external, real services.
+#
 import logging
 import random
 import re
@@ -24,7 +27,7 @@ from cockpitdecks.resources.iconfonts import (
     DEFAULT_WEATHER_ICON,
 )
 from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
-from cockpitdecks.simulator import Dataref
+from cockpitdecks.simulator import Dataref, DatarefListener
 
 from .draw_animation import DrawAnimation
 
@@ -258,7 +261,7 @@ class WI:
         self.special = special  # 0=none, 1=fog, 2=sandstorm
 
 
-class LiveWeatherIcon(DrawAnimation):
+class WeatherMetarIcon(DrawAnimation, DatarefListener):
     """
     Depends on avwx-engine
     """
@@ -266,6 +269,7 @@ class LiveWeatherIcon(DrawAnimation):
     REPRESENTATION_NAME = "weather-metar"
 
     MIN_UPDATE = 600  # seconds between two station updates
+    CHECK_STATION = 5.0  # Anim runs every so often to check for movements
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
     PARAMETERS = {
@@ -280,14 +284,12 @@ class LiveWeatherIcon(DrawAnimation):
         self.use_simulation = False  # If False, use current weather METAR/TAF, else use simulator METAR and date/time; no TAF.
         # This should be decide by a dataref in XPlane, use real weather, use real date/time.
 
-        self.weather = button._config.get("live-weather")
+        self.weather = button._config.get(self.REPRESENTATION_NAME)
         if self.weather is not None and isinstance(self.weather, dict):
-            button._config["animation"] = button._config.get("live-weather")
+            button._config["animation"] = button._config.get(self.REPRESENTATION_NAME)
         else:
             button._config["animation"] = {}
             self.weather = {}
-
-        DrawAnimation.__init__(self, button=button)
 
         self._last_updated: datetime | None = None
         self._cache = None
@@ -297,26 +299,45 @@ class LiveWeatherIcon(DrawAnimation):
         self.speed = int(speed) * 60  # minutes
 
         updated = self.weather.get("refresh-location", 10)  # minutes
-        LiveWeatherIcon.MIN_UPDATE = int(updated) * 60
+        WeatherMetarIcon.MIN_UPDATE = int(updated) * 60
 
         # Working variables
-        self.icon_color = self._representation_config.get("icon-color", "powderblue")
         self.station: Station | None = None
         self.metar: Metar | None = None
         self.weather_icon: str | None = None
+        self.update_position = False
 
+        self.icao_dataref_path = button._config.get("string-dataref")
+        self.icao_dataref = None
+        self.icon_color = self.weather.get("icon-color", "powderblue")
+
+        DrawAnimation.__init__(self, button=button)
+        DatarefListener.__init__(self)
+        self.speed = self.CHECK_STATION
         self.anim_start()
 
     def init(self):
         if self._inited:
             return
-        icao = self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
+        if self.icao_dataref_path is not None:
+            # toliss_airbus/flightplan/departure_icao
+            # toliss_airbus/flightplan/destination_icao
+            self.icao_dataref = self.button.sim.get_dataref(self.icao_dataref_path, is_string=True)
+            self.icao_dataref.add_listener(self)
+            self.dataref_changed(self.icao_dataref)
+            self._inited = True
+            logger.debug(f"initialized, aiting for dataref {self.icao_dataref.path}")
+            return
+
+        icao = self.weather.get("station")
+        if icao is None:
+            icao = WeatherMetarIcon.DEFAULT_STATION # start with default position
+            self.update_position = True # will be updated
         self.station = Station.from_icao(icao)
         self.metar = Metar(self.station.icao)
         self.sun = Sun(self.station.latitude, self.station.longitude)
         self.button._config["label"] = icao
         self._last_updated = datetime.now()
-
         # if self.metar is not None and self.metar.data is not None:
         #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
         #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
@@ -331,9 +352,8 @@ class LiveWeatherIcon(DrawAnimation):
 
     def at_default_station(self):
         if self.weather is not None and self.station is not None:
-            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', LiveWeatherIcon.DEFAULT_STATION)}, {self._moved}")
-            return not self._moved and self.station.icao == self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
-        logger.debug(f"True")
+            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', WeatherMetarIcon.DEFAULT_STATION)}, {self._moved}")
+            return not self._moved and self.station.icao == self.weather.get("station", WeatherMetarIcon.DEFAULT_STATION)
         return True
 
     def get_datarefs(self) -> set:
@@ -358,12 +378,29 @@ class LiveWeatherIcon(DrawAnimation):
     #    # self.update() # not necessary, will run in get_image_for_icon
     #    return super().animate()
 
+    def dataref_changed(self, dataref):
+        icao = dataref.value()
+        if icao is None or icao == "":
+            return
+        if self.station is not None and icao == self.station.icao:
+            return
+        self.station = Station.from_icao(icao)
+        self.sun = Sun(self.station.latitude, self.station.longitude)
+        self.button._config["label"] = icao
+        # invalidate previous values
+        self.metar = None
+        self._cache = None
+        self.update(force=True)
+
     def get_station(self):
+        if not self.update_position:
+            return None
+
         if self._last_updated is not None and not self.at_default_station():
             now = datetime.now()
             diff = now.timestamp() - self._last_updated.timestamp()
-            if diff < LiveWeatherIcon.MIN_UPDATE:
-                logger.debug(f"updated less than {LiveWeatherIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
+            if diff < WeatherMetarIcon.MIN_UPDATE:
+                logger.debug(f"updated less than {WeatherMetarIcon.MIN_UPDATE} secs. ago ({diff}), skipping..")
                 return None
             logger.debug(f"updated  {diff} secs. ago")
 
@@ -374,7 +411,7 @@ class LiveWeatherIcon(DrawAnimation):
         if lat is None or lon is None:
             logger.warning(f"no coordinates")
             if self.station is None:  # If no station, attempt to suggest the default one if we find it
-                icao = self.weather.get("station", LiveWeatherIcon.DEFAULT_STATION)
+                icao = self.weather.get("station", WeatherMetarIcon.DEFAULT_STATION)
                 logger.warning(f"no station, getting default {icao}")
                 return Station.from_icao(icao)
             return None
@@ -400,39 +437,40 @@ class LiveWeatherIcon(DrawAnimation):
         updated = False
         if force:
             self._last_updated = None
-        new = self.get_station()
 
-        if new is None:
+        new_station = self.get_station()
+
+        if new_station is None:
             if self.station is None:
                 return updated  # no new station, no existing station, we leave it as it is
 
         if self.station is None:
             try:
-                self.station = new
+                self.station = new_station
                 self.metar = Metar(self.station.icao)
                 self.metar.update()
                 self.sun = Sun(self.station.latitude, self.station.longitude)
-                self.button._config["label"] = new.icao
+                self.button._config["label"] = new_station.icao
                 self._last_updated = datetime.now()
                 updated = True
                 logger.info(f"UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(f"new station {new.icao}: Metar not created", exc_info=True)
-        elif new is not None and new.icao != self.station.icao:
+                logger.warning(f"new station {new_station.icao}: Metar not created", exc_info=True)
+        elif new_station is not None and new_station.icao != self.station.icao:
             try:
-                self.station = new
+                self.station = new_station
                 self.metar = Metar(self.station.icao)
                 self.metar.update()
                 self.sun = Sun(self.station.latitude, self.station.longitude)
-                self.button._config["label"] = new.icao
+                self.button._config["label"] = new_station.icao
                 self._last_updated = datetime.now()
                 updated = True
                 logger.info(f"UPDATED: station changed to {self.station.icao}")
             except:
                 self.metar = None
-                logger.warning(f"change station to {new.icao}: Metar not created", exc_info=True)
-        elif self.metar is None:
+                logger.warning(f"change station to {new_station.icao}: Metar not created", exc_info=True)
+        elif self.metar is None:  # create it the first time
             try:
                 self.metar = Metar(self.station.icao)
                 self.metar.update()
@@ -457,7 +495,7 @@ class LiveWeatherIcon(DrawAnimation):
                         logger.info(f"could not update station {self.station.icao}")
                 else:
                     diff = now.timestamp() - self._last_updated.timestamp()
-                    if diff > LiveWeatherIcon.MIN_UPDATE:
+                    if diff > WeatherMetarIcon.MIN_UPDATE:
                         updated = self.metar.update()
                         if updated:
                             self._last_updated = datetime.now()
@@ -515,10 +553,9 @@ class LiveWeatherIcon(DrawAnimation):
         """
 
         logger.debug(f"updating..")
-        if not self.update():
-            self._cache
-            logger.debug(f"..not updated, using cache..")
-        logger.debug(f"..updated")
+        if not self.update() and self._cache is not None:
+            logger.debug(f"..not updated, using cache")
+            return self._cache
 
         image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(image)
@@ -543,7 +580,7 @@ class LiveWeatherIcon(DrawAnimation):
                 logger.warning(f"default weather icon {DEFAULT_WEATHER_ICON} not found, using hardcoded default (wi_day_sunny)")
                 final_icon = "wi_day_sunny"
                 icon_text = "\uf00d"
-        logger.info(f"weather icon: {final_icon}")
+        logger.info(f"weather icon: {final_icon} ({self.speed})")
         draw.text(
             (w, h),
             text=icon_text,
@@ -601,6 +638,8 @@ class LiveWeatherIcon(DrawAnimation):
         )
         bg.alpha_composite(image)
         self._cache = bg
+
+        logger.debug(f"..updated")
         return self._cache
 
     def has_metar(self, what: str = "raw"):
