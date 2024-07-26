@@ -56,7 +56,7 @@ class ColoredLED(Representation):
         Representation.__init__(self, button=button)
 
     def init(self):
-        if type(self._color) == dict:  # @todo: does not currently work
+        if type(self._color) is dict:  # @todo: does not currently work
             self.datarefs = self.button.scan_datarefs(self._color)
             if self.datarefs is not None and len(self.datarefs) > 0:
                 logger.debug(f"button {self.button_name()}: adding datarefs {self.datarefs} for color")

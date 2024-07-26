@@ -608,7 +608,7 @@ class Push(Activation):
         self.onoff_current_value = None
         self.initial_value = button._config.get("initial-value")
         if self.initial_value is not None:
-            if type(self.initial_value) == bool:
+            if type(self.initial_value) is bool:
                 self.onoff_current_value = self.initial_value
             else:
                 self.onoff_current_value = self.initial_value != 0
@@ -621,7 +621,7 @@ class Push(Activation):
             return
 
         value = self.button.option_value("auto-repeat")
-        if type(value) == bool:  # options: auto-repeat; uses default
+        if type(value) is bool:  # options: auto-repeat; uses default
             return
         elif "/" in str(value):  # options: auto-repeat=1/0.2; set both
             arr = value.split("/")
@@ -647,7 +647,7 @@ class Push(Activation):
         if value is not None:
             if type(value) in [dict, tuple]:  # gets its value from internal state
                 self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
-            elif type(value) == bool:  # expect bool or number... (no check for number)
+            elif type(value) is bool:  # expect bool or number... (no check for number)
                 self.onoff_current_value = value
             else:
                 self.onoff_current_value = self.initial_value != 0  # @todo: fails if not number...
@@ -815,7 +815,7 @@ class OnOff(Activation):
                 self.onoff_current_value = value
             logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value}")
         elif self.initial_value is not None:
-            if type(self.initial_value) == bool:  # expect bool or number... (no check for number)
+            if type(self.initial_value) is bool:  # expect bool or number... (no check for number)
                 self.onoff_current_value = self.initial_value
             else:
                 self.onoff_current_value = self.initial_value != 0
@@ -855,7 +855,7 @@ class OnOff(Activation):
         if value is not None:
             if type(value) in [dict, tuple]:  # gets its value from internal state
                 self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
-            elif type(value) == bool:
+            elif type(value) is bool:
                 self.onoff_current_value = value
             elif type(value) in [int, float]:
                 value = int(value)

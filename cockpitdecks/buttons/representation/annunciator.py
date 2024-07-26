@@ -213,11 +213,11 @@ class AnnunciatorPart:
             framed = self._config.get("frame")
             if framed is None:
                 return False
-        if type(framed) == bool:
+        if type(framed) is bool:
             return framed
-        elif type(framed) == int:
+        elif type(framed) is int:
             return framed == 1
-        elif type(framed) == str:
+        elif type(framed) is str:
             return framed.lower() in ["true", "on", "yes", "1"]
         return False
 
@@ -734,7 +734,7 @@ class AnnunciatorAnimate(Annunciator):
         Check conditions to animate the icon.
         """
         value = self.get_button_value()
-        if type(value) == dict:
+        if type(value) is dict:
             value = value[list(value.keys())[0]]
         return value is not None and value != 0
 

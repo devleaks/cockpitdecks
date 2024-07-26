@@ -355,9 +355,8 @@ class Cockpit(DatarefListener, CockpitBase):
             else:
                 if i > 1:
                     logger.warning(f"more than one deck of type {req_driver}, no serial to disambiguate")
-                for deck in self.devices:
-                    if deck[CONFIG_KW.DRIVER.value] == req_driver:
-                        print(deck)
+                    deckdr = filter(lambda d: d[CONFIG_KW.DRIVER.value] == req_driver and d[CONFIG_KW.SERIAL.value] is None, self.devices)
+                    logger.warning(f"driver: {req_driver}, decks with no serial: {[d[CONFIG_KW.DEVICE.value].name for d in deckdr]}")
             return None
         ## Got serial, search for it
         for deck in self.devices:
@@ -640,8 +639,8 @@ class Cockpit(DatarefListener, CockpitBase):
             name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
 
             disabled = deck_config.get(CONFIG_KW.DISABLED.value)
-            if type(disabled) != bool:
-                if type(disabled) == str:
+            if type(disabled) is not bool:
+                if type(disabled) is str:
                     disabled = disabled.upper() in ["YES", "TRUE"]
                 elif type(disabled) in [int, float]:
                     disabled = int(disabled) != 0

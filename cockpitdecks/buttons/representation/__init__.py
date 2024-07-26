@@ -20,7 +20,8 @@ from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import Decor
 from .draw_animation import DrawAnimation, DrawAnimationFTG
 from .switch import Switch, CircularSwitch, PushSwitch, Knob
-from .data import DataIcon, ChartIcon
+from .data import DataIcon
+from .chart import ChartIcon
 from .gauge import TapeIcon, GaugeIcon
 
 

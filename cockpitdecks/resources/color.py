@@ -21,9 +21,9 @@ DEFAULT_COLOR_NAME = "grey"
 
 
 def is_integer(s) -> bool:
-    if type(s) == int:
+    if type(s) is int:
         return True
-    if type(s) == str:
+    if type(s) is str:
         return s.isdigit() or (s.startswith("-") and s[1:].isdigit())
     return False
 
@@ -35,7 +35,7 @@ def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     if instr is None:
         return None
 
-    if type(instr) == tuple or type(instr) == list:
+    if type(instr) in [tuple, list]:
         return tuple(instr)
 
     if type(instr) != str:

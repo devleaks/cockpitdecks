@@ -5,6 +5,8 @@ import logging
 import re
 from abc import ABC
 
+import ruamel
+
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.simulator import (
     Dataref,
@@ -184,6 +186,60 @@ class Value:
 
         return r
 
+    def deepscan(base: dict | ruamel.yaml.comments.CommentedMap | ruamel.yaml.comments.CommentedSeq):
+        # Highly ruamel.yaml specific procedure to scan
+        # all dataref in yaml-loaded structure.
+        # Returns a list of all ${} elements.
+        #
+        r = set()
+
+        # Direct use of datarefs:
+        #
+        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
+        for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
+            dataref = base.get(attribute)
+            if dataref is not None:
+                r.add(dataref)
+
+        # 1.2 List of datarefs in attributes
+        for attribute in [CONFIG_KW.MULTI_DATAREFS.value, CONFIG_KW.DATAREFS.value]:
+            datarefs = base.get(attribute)
+            if datarefs is not None:
+                r = r | set(datarefs)
+
+        # 2. In string datarefs (formula, text, etc.)
+        #    Crawl down in dict attribute values
+        for key, value in base.items():
+            if type(value) is str and value != "":
+                r = r | set(re.findall(PATTERN_DOLCB, value))
+            elif type(value) is dict:
+                r = r | deepscan(value)
+            elif type(value) is list:
+                for v in value:
+                    r = r | deepscan(v)
+            elif type(value) is ruamel.yaml.comments.CommentedMap:
+                t = {k: v for k, v in value.items()}
+                r = r | deepscan(t)
+            elif type(value) is ruamel.yaml.comments.CommentedSeq:
+                for v in enumerate(value):
+                    v1 = v[1]
+                    if type(v1) is str and v1 != "":
+                        r = r | set(re.findall(PATTERN_DOLCB, v1))
+                    elif type(v1) is dict:
+                        r = r | deepscan(v[1])
+                    elif type(v1) is ruamel.yaml.comments.CommentedMap:
+                        t = {k: v for k, v in v1.items()}
+                        r = r | deepscan(t)
+                    else:
+                        print("unprocessed", v, type(v1), v1)
+
+        if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
+            r.remove("formula")
+        if None in r:
+            r.remove(None)
+
+        return r
+
     # ##################################
     # Formula value substitution
     #
@@ -221,13 +277,13 @@ class Value:
             return message
 
         if formatting is not None:
-            if type(formatting) == list:
+            if type(formatting) is list:
                 if len(dataref_names) != len(formatting):
                     logger.warning(
                         f"value {self.name}:number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed."
                     )
                     return message
-            elif type(formatting) != str:
+            elif type(formatting) is not str:
                 logger.warning(f"value {self.name}:single format is not a string, cannot proceed.")
                 return message
 
@@ -237,9 +293,9 @@ class Value:
             value = self.get_dataref_value(dataref_name)
             value_str = ""
             if formatting is not None and value is not None:
-                if type(formatting) == list:
+                if type(formatting) is list:
                     value_str = formatting[cnt].format(value)
-                elif formatting is not None and type(formatting) == str:
+                elif formatting is not None and type(formatting) is str:
                     value_str = formatting.format(value)
             else:
                 value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
@@ -289,7 +345,7 @@ class Value:
     #     return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
-        if type(text) != str or "$" not in text:  # no ${..} to stubstitute
+        if type(text) is not str or "$" not in text:  # no ${..} to stubstitute
             logger.debug(f"substitute_values: value {text} has no variable ({text})")
             return text
         step1 = self.substitute_state_values(text, default=default, formatting=formatting)

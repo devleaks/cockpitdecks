@@ -61,32 +61,6 @@ class IconBase(Representation):
                 f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})"
             )
 
-        # Handle this presentation structure (text indented)
-        # - index: 9
-        #   typ: push
-        #   name: ATCCLR
-        #   command: AirbusFBW/ATCCodeKeyCLR
-        #   text:
-        #     text: CLR
-        #     text-font: DIN Bold
-        #     text-color: white
-        #     text-size: 24
-        #     text-position: cm
-        self.text_config = self._config.get("text")  # where to get text from
-
-        if type(self.text_config) is not dict:
-            # Handle this presentation structure (legacy, text unindented)
-            # - index: 9
-            #   typ: push
-            #   name: ATCCLR
-            #   command: AirbusFBW/ATCCodeKeyCLR
-            #   text: CLR
-            #   text-font: DIN Bold
-            #   text-color: white
-            #   text-size: 24
-            #   text-position: cm
-            self.text_config = self._config
-
         self.cockpit_color = button.get_attribute("cockpit-color")
         self.cockpit_color = convert_color(self.cockpit_color)
         self.cockpit_texture = button.get_attribute("cockpit-texture")
@@ -211,15 +185,11 @@ class IconBase(Representation):
         #     pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
         #     draw.polygon(pologon, fill="orange", outline="white")
 
-        return self.overlay_text(image, "label")
+        return self.overlay_text(image, "label", self._config)
 
-    def overlay_text(self, image, which_text):  # which_text = {label|text}
+    def overlay_text(self, image, which_text, text_dict):
         draw = None
         # Add label if any
-
-        text_dict = self._config
-        if which_text == "text":  # hum.
-            text_dict = self.text_config
 
         text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
 
@@ -375,7 +345,7 @@ class Icon(IconBase):
         #     pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
         #     draw.polygon(pologon, fill="orange", outline="white")
 
-        return self.overlay_text(image, "label")
+        return self.overlay_text(image, "label", self._config)
 
     def get_framed_icon(self):
         # We assume self.frame is a non null dict
@@ -462,10 +432,37 @@ class IconText(IconColor):
     def __init__(self, button: "Button"):
         IconColor.__init__(self, button=button)
 
-        self.text = str(self._config.get("text"))
+        # Handle this presentation structure (text indented)
+        # - index: 9
+        #   typ: push
+        #   name: ATCCLR
+        #   command: AirbusFBW/ATCCodeKeyCLR
+        #   text:
+        #     text: CLR
+        #     text-font: DIN Bold
+        #     text-color: white
+        #     text-size: 24
+        #     text-position: cm
+        self.text_config = self._config.get("text")  # where to get text from
+
+        if type(self.text_config) is not dict:
+            # Handle this presentation structure (legacy, text unindented)
+            # - index: 9
+            #   typ: push
+            #   name: ATCCLR
+            #   command: AirbusFBW/ATCCodeKeyCLR
+            #   text: CLR
+            #   text-font: DIN Bold
+            #   text-color: white
+            #   text-size: 24
+            #   text-position: cm
+            self.text_config = self._config
+
+
+        self.text = str(self.text_config.get("text"))
         # Overwrite icon-* with text-bg-*
-        self.icon_color = self._config.get("text-bg-color", self.cockpit_color)
-        self.icon_texture = self._config.get("text-bg-texture", self.cockpit_texture)
+        self.icon_color = self.text_config.get("text-bg-color", self.cockpit_color)
+        self.icon_texture = self.text_config.get("text-bg-texture", self.cockpit_texture)
 
     def get_image(self):
         """
@@ -474,7 +471,7 @@ class IconText(IconColor):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         image = super().get_image()
-        return self.overlay_text(image, "text")
+        return self.overlay_text(image, "text", self.text_config)
 
     def describe(self) -> str:
         return "The representation places an icon with optional text and label overlay."

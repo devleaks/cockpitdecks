@@ -300,7 +300,7 @@ class Deck(ABC):
             # Page includes
             if CONFIG_KW.INCLUDES.value in page_config:
                 includes = page_config[CONFIG_KW.INCLUDES.value]
-                if type(page_config[CONFIG_KW.INCLUDES.value]) == str:  # just one file
+                if type(page_config[CONFIG_KW.INCLUDES.value]) is str:  # just one file
                     includes = includes.split(",")
                 logger.debug(f"deck {self.name}: page {page_name} includes {includes}..")
                 ipb = 0
@@ -607,6 +607,7 @@ class DeckWithIcons(Deck):
         image = None
         if use_texture and texture_in is not None:
             image = self.cockpit.get_icon_image(texture_in)
+
         if image is not None:  # found a texture as requested
             logger.debug(f"{who}: use texture {texture_in}")
             image = image.resize((width, height))
