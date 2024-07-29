@@ -9,12 +9,14 @@ import logging
 
 from cockpitdecks import now
 from .xp_wb import XPWeatherBaseIcon
-from .xp_wd import XPWeatherData
+from .xp_wd import XPWeatherData, AIRCRAFT
 
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
+
+CLOUD_TYPE = ["Cirrus", "Stratus", "Cumulus", "Cumulo-nimbus"]
 
 
 class XPRealWeatherIcon(XPWeatherBaseIcon):
@@ -28,16 +30,20 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
 
     def __init__(self, button: "Button"):
         self.weather = button._config.get(self.REPRESENTATION_NAME, {})
-        self.mode = self.weather.get("mode", "region")
+        self.mode = self.weather.get("mode", AIRCRAFT)
 
         self.xpweather = None
 
-        self._wu_count = 0
         self._upd_calls = 0
+
         self._weather_last_updated = None
         self._icon_last_updated = None
         self._cache_metar = None
-        self._cache = None
+
+        self.cloud_index = 0
+        self.wind_index = 0
+
+        self._last_value = 0
 
         XPWeatherBaseIcon.__init__(self, button=button)
 
@@ -52,8 +58,17 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
         self._inited = True
         logger.debug(f"inited")
 
+    def should_update(self) -> bool:
+        UPDATE_TIME_SECS = 300
+        if self.xpweather is None:
+            self.xpweather = XPWeatherData(weather_type=self.mode) # read cache or create new set
+            return self.should_update()
+        now = datetime.now().timestamp()
+        return (now - self.xpweather.last_updated) > UPDATE_TIME_SECS
+
     def update_weather(self):
-        self.xpweather = XPWeatherData()
+        if self.should_update():
+            self.xpweather = XPWeatherData(weather_type=self.mode, update=True)
         if self._cache_metar is not None:
             if self._cache_metar == self.xpweather.make_metar():
                 logger.debug(f"XP weather unchanged")
@@ -62,12 +77,14 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
         self.weather_icon = self.select_weather_icon()
         self._weather_last_updated = now()
         # self.notify_weather_updated()
-        logger.info(f"XP weather updated: {self._cache_metar}")
+        logger.info(f"X-Plane real weather updated: {self._cache_metar}")
         logger.debug(self.xpweather.get_metar_desc(self._cache_metar))
         return True
 
     def is_updated(self, force: bool = False) -> bool:
         self._upd_calls = self._upd_calls + 1
+        if self._last_value != self.button.value:
+            return True
         if self.update_weather():
             if self._icon_last_updated is not None:
                 return self._weather_last_updated > self._icon_last_updated
@@ -84,7 +101,7 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
 
         dt = "NO TIME"
         if self.xpweather.last_updated is not None:
-            lu = datetime.fromtimestamp(self.xpweather.last_updated).strftime("%d %H:%M")
+            dt = datetime.fromtimestamp(self.xpweather.last_updated).strftime("%d %H:%M")
         lines.append(f"{dt} /M:{self.mode[0:4]}")
 
         press = round(self.xpweather.weather.qnh / 100, 0)
@@ -93,18 +110,24 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
         temp = round(self.xpweather.weather.temp, 1)
         lines.append(f"Temp: {temp}")
 
-        print(">>>>>>", self.xpweather.weather.wind_speed)
-
-        idx = 0
-        dewp = round(self.xpweather.wind_layers[idx].dew_point, 1)
-        lines.append(f"DewP:{dewp} (L{idx})")
-
         vis = round(self.xpweather.weather.visibility, 1)
         lines.append(f"Vis: {vis} sm")
 
-        wind_dir = round(self.xpweather.wind_layers[idx].direction)
-        wind_speed = round(self.xpweather.wind_layers[idx].speed_kts, 1)
-        lines.append(f"Winds: {wind_speed} m/s {wind_dir}° (L{idx})")
+        self._last_value = int(self.button.value)
+
+        # Wind layer info
+        widx = self._last_value % len(self.xpweather.wind_layers)
+        dewp = round(self.xpweather.wind_layers[widx].dew_point, 1)
+        lines.append(f"DewP:{dewp} (W{widx})")
+
+        wind_dir = round(self.xpweather.wind_layers[widx].direction)
+        wind_speed = round(self.xpweather.wind_layers[widx].speed_kts, 1)
+        lines.append(f"Winds: {wind_speed} m/s {wind_dir}° (W{widx})")
+
+        # Cloud layer info
+        cidx = self._last_value % len(self.xpweather.cloud_layers)
+        covr8 = int(self.xpweather.cloud_layers[cidx].coverage * 8)
+        lines.append(f"Clouds:{covr8}/8 {CLOUD_TYPE[int(self.xpweather.cloud_layers[cidx].cloud_type)]} (C{cidx})")
 
         return lines
 

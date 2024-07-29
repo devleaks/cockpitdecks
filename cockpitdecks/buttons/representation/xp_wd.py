@@ -111,11 +111,11 @@ DATAREF_REGION_CLOUD = {
     "base": "sim/weather/region/cloud_base_msl_m",
     "coverage_pct": "sim/weather/region/cloud_coverage_percent",
     "tops": "sim/weather/region/cloud_tops_msl_m",
-    "type": "sim/weather/region/cloud_type",
+    "cloud_type": "sim/weather/region/cloud_type",
 }
 
 DATAREF_REGION_WIND = {
-    "alt_levels_m": "sim/weather/region/atmosphere_alt_levels_m",
+    "alt_msl": "sim/weather/region/atmosphere_alt_levels_m",
     "dewpoint": "sim/weather/region/dewpoint_deg_c",
     "temp_aloft": "sim/weather/region/temperatures_aloft_deg_c",
     "temp_alt_msl": "sim/weather/region/temperature_altitude_msl_m",
@@ -284,14 +284,14 @@ class XPWeatherData:
                 weather_datarefs = weather_datarefs | {f"{d}[{i}]": v[i] for i in range(len(v))} # "dataref[i]": value(i)
 
         if os.path.exists(WEATHER_CACHE_FILE):
-            logger.warning(f"weather file already exists, not overwritten")
-        else:
+            logger.warning(f"weather file already exists, overwritten")
+        #     logger.warning(f"remove file {os.path.abspath(WEATHER_CACHE_FILE)} to update weather")
+        # else:
             with open(WEATHER_CACHE_FILE, "w") as fp:
                 json.dump(weather_datarefs, fp)
                 logger.info(f"weather file written")
 
         self.last_updated = datetime.now().timestamp()
-
         return weather_datarefs
 
     def init(self):

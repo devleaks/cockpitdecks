@@ -562,6 +562,7 @@ class XPlane(Simulator, XPlaneBeacon):
         logger.info("starting string dataref listener..")
         frequency = max(SDL_SOCKET_TIMEOUT, SDL_UPDATE_FREQ)
         total_to = 0
+        tot_items = 0
         total_reads = 0
         last_read_ts = datetime.now()
         total_read_time = 0.0
@@ -597,7 +598,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         src_cnt = src_cnt + 1
                         self.collector_avgtime = src_tot / src_cnt
                         if src_cnt % 100 == 0:
-                            logger.info(f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)}")
+                            logger.info(f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)} ({round(tot_items/total_reads,0)})")
                     src_last_ts = ts
 
                 freq = None
@@ -610,6 +611,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
 
                 for k, v in data.items():  # simple cache mechanism
+                    tot_items = tot_items + 1
                     if k not in self._strdref_cache or (k in self._strdref_cache and self._strdref_cache[k] != v):
                         e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)
                         self._strdref_cache[k] = v
