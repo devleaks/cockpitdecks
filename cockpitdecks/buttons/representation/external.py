@@ -313,16 +313,23 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
 
         DrawAnimation.__init__(self, button=button)
         DatarefListener.__init__(self)
+
+        self.weather_pressure = self.button.sim.get_internal_dataref("weather:pressure")
+        self.weather_wind_speed = self.button.sim.get_internal_dataref("weather:wind_speed")
+        self.weather_temperature = self.button.sim.get_internal_dataref("weather:temperature")
+        self.weather_dew_point = self.button.sim.get_internal_dataref("weather:dew_point")
+
         self.speed = self.CHECK_STATION
 
     def init(self):
         if self._inited:
             return
+
         if self.icao_dataref_path is not None:
             # toliss_airbus/flightplan/departure_icao
             # toliss_airbus/flightplan/destination_icao
             self.icao_dataref = self.button.sim.get_dataref(self.icao_dataref_path, is_string=True)
-            self.icao_dataref.add_listener(self) # the representation gets notified directly.
+            self.icao_dataref.add_listener(self)  # the representation gets notified directly.
             self.dataref_changed(self.icao_dataref)
             self._inited = True
             logger.debug(f"initialized, aiting for dataref {self.icao_dataref.path}")
@@ -330,23 +337,29 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
 
         icao = self.weather.get("station")
         if icao is None:
-            icao = WeatherMetarIcon.DEFAULT_STATION # start with default position
+            icao = WeatherMetarIcon.DEFAULT_STATION  # start with default position
             logger.debug(f"default station installed {icao}")
-            self.update_position = True # will be updated
+            self.update_position = True  # will be updated
         self.station = Station.from_icao(icao)
-        self.metar = Metar(self.station.icao)
-        self.sun = Sun(self.station.latitude, self.station.longitude)
-        self.button._config["label"] = icao
-        self._last_updated = datetime.now()
-        # if self.metar is not None and self.metar.data is not None:
-        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:pressure"), value=self.metar.data.altimeter.value, vtype='float')
-        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:wind_speed"), value=self.metar.data.wind_speed.value, vtype='float')
-        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:temperature"), value=self.metar.data.temperature.value, vtype='float')
-        #    self.button.sim.write_dataref(dataref=Dataref.mk_internal_dataref("weather:dew_point"), value=self.metar.data.dewpoint.value, vtype='float')
-        # else:
-        #    logger.debug(f"no metar for {self.station.icao}")
-        self.weather_icon = self.select_weather_icon()
-        # logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={updated}")
+        if self.station is not None:
+            self.metar = Metar(self.station.icao)
+            self.sun = Sun(self.station.latitude, self.station.longitude)
+            self.button._config["label"] = icao
+            self._last_updated = datetime.now()
+            if self.metar is not None and self.metar.data is not None:
+                logger.debug(f"data for {self.station.icao}")
+                self.weather_pressure.update_value(self.metar.data.altimeter.value)
+                logger.debug(f"pressure {self.metar.data.altimeter.value}")
+                self.weather_wind_speed.update_value(self.metar.data.wind_speed.value)
+                logger.debug(f"wind speed {self.metar.data.wind_speed.value}")
+                self.weather_temperature.update_value(self.metar.data.temperature.value)
+                logger.debug(f"temperature {self.metar.data.temperature.value}")
+                self.weather_dew_point.update_value(self.metar.data.dewpoint.value)
+                logger.debug(f"dew point {self.metar.data.dewpoint.value}")
+            else:
+                logger.debug(f"no metar for {self.station.icao}")
+            self.weather_icon = self.select_weather_icon()
+            logger.debug(f"Metar updated for {self.station.icao}, icon={self.weather_icon}, updated={self._last_updated}")
         self._inited = True
 
     def at_default_station(self):
@@ -360,10 +373,10 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             "sim/flightmodel/position/latitude",
             "sim/flightmodel/position/longitude",
             "sim/cockpit2/clock_timer/local_time_hours",
-            Dataref.mk_internal_dataref("weather:pressure"),
-            Dataref.mk_internal_dataref("weather:wind_speed"),
-            Dataref.mk_internal_dataref("weather:temperature"),
-            Dataref.mk_internal_dataref("weather:dew_point"),
+            self.weather_pressure.path,
+            self.weather_wind_speed.path,
+            self.weather_temperature.path,
+            self.weather_dew_point.path,
         }
         if self.icao_dataref_path is not None:
             ret.add(self.icao_dataref_path)
@@ -518,29 +531,13 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             # AVWX's Metar is not as comprehensive as python-metar's Metar...
             if self.has_metar("data"):
                 logger.debug(f"data for {self.station.icao}")
-                self.button.sim.write_dataref(
-                    dataref=Dataref.mk_internal_dataref("weather:pressure"),
-                    value=self.metar.data.altimeter.value,
-                    vtype="float",
-                )
+                self.weather_pressure.update_value(self.metar.data.altimeter.value)
                 logger.debug(f"pressure {self.metar.data.altimeter.value}")
-                self.button.sim.write_dataref(
-                    dataref=Dataref.mk_internal_dataref("weather:wind_speed"),
-                    value=self.metar.data.wind_speed.value,
-                    vtype="float",
-                )
+                self.weather_wind_speed.update_value(self.metar.data.wind_speed.value)
                 logger.debug(f"wind speed {self.metar.data.wind_speed.value}")
-                self.button.sim.write_dataref(
-                    dataref=Dataref.mk_internal_dataref("weather:temperature"),
-                    value=self.metar.data.temperature.value,
-                    vtype="float",
-                )
+                self.weather_temperature.update_value(self.metar.data.temperature.value)
                 logger.debug(f"temperature {self.metar.data.temperature.value}")
-                self.button.sim.write_dataref(
-                    dataref=Dataref.mk_internal_dataref("weather:dew_point"),
-                    value=self.metar.data.dewpoint.value,
-                    vtype="float",
-                )
+                self.weather_dew_point.update_value(self.metar.data.dewpoint.value)
                 logger.debug(f"dew point {self.metar.data.dewpoint.value}")
             else:
                 logger.debug(f"no metar data for {self.station.icao}")

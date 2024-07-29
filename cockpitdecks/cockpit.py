@@ -13,7 +13,7 @@ from datetime import datetime
 from queue import Queue
 
 from PIL import Image, ImageFont
-from cairosvg import svg2png
+# from cairosvg import svg2png
 
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
@@ -797,11 +797,15 @@ class Cockpit(DatarefListener, CockpitBase):
                         image = Image.open(fn)
                         self.icons[i] = image
                     elif has_ext(i, "svg"):  # Wow.
-                        fn = os.path.join(dn, i)
-                        fout = fn.replace(".svg", ".png")
-                        svg2png(url=fn, write_to=fout)
-                        image = Image.open(fout)
-                        self.icons[i] = image
+                        try:
+                            fn = os.path.join(dn, i)
+                            fout = fn.replace(".svg", ".png")
+                            svg2png(url=fn, write_to=fout)
+                            image = Image.open(fout)
+                            self.icons[i] = image
+                        except:
+                            logger.warning(f"could not load icon {fn}")
+                            pass # no cairosvg
 
                 if cache_icon:  # we cache both folders of icons
                     with open(cache, "wb") as fp:

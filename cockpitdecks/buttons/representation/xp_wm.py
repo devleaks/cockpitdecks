@@ -2,30 +2,32 @@
 # XP Weather METAR
 # Attempts to build a METAR from the weather datarefs
 #
-import sys
 import os
 import io
 import re
 import logging
+import json
 
 from typing import List
 from datetime import datetime, timezone
 
 from metar import Metar
 from tabulate import tabulate
-
-# When we are developing this class, we need this to run it standalone
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", ".."))  # we assume we're in subdir "bin/"
-
-from cockpitdecks.simulator import Dataref
-from cockpitdecks import to_fl
-
+import requests
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-WOFN = "wofn.txt"
+WEATHER_CACHE_FILE = "weather.json"
+
+def to_fl(m, r: int = 10):
+    # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar
+    fl = m / 30.48
+    if r is not None and r > 0:
+        fl = r * int(fl / r)
+    return fl
+
 
 # ######################################################################################
 # Mapping between python class instance attributes and datarefs:
@@ -52,18 +54,18 @@ DATAREF_AIRCRAFT_WEATHER = {
     "temp_leading_edge": "sim/weather/aircraft/temperature_leadingedge_deg_c",
     "thermal_rete": "sim/weather/aircraft/thermal_rate_ms",
     "visibility": "sim/weather/aircraft/visibility_reported_sm",
-    # "wave_ampl": "sim/weather/aircraft/wave_amplitude",
-    # "wave_dir": "sim/weather/aircraft/wave_dir",
-    # "wave_length": "sim/weather/aircraft/wave_length",
-    # "wave_speed": "sim/weather/aircraft/wave_speed",
-    "wind_speed": "sim/weather/aircraft/wind_speed_msc",
+    "wave_ampl": "sim/weather/aircraft/wave_amplitude",
+    "wave_dir": "sim/weather/aircraft/wave_dir",
+    "wave_length": "sim/weather/aircraft/wave_length",
+    "wave_speed": "sim/weather/aircraft/wave_speed",
+    "wind_speed": "sim/weather/aircraft/wind_speed_kts",
 }
 
 DATAREF_AIRCRAFT_CLOUD = {
     "base": "sim/weather/aircraft/cloud_base_msl_m",
     "coverage": "sim/weather/aircraft/cloud_coverage_percent",
     "tops": "sim/weather/aircraft/cloud_tops_msl_m",
-    "cloud_type": "sim/weather/aircraft/cloud_type",
+    "cloud_type": "sim/weather/aircraft/cloud_type", # Blended cloud types per layer. 0 = Cirrus, 1 = Stratus, 2 = Cumulus, 3 = Cumulo-nimbus. Intermediate values are to be expected.
 }
 
 DATAREF_AIRCRAFT_WIND = {
@@ -83,15 +85,15 @@ DATAREF_AIRCRAFT_WIND = {
 # PLEASE MAKE SURE YOU USE THE SAME ATTRIBUTE NAME IN AIRCRAFT AND REGION FOR SAME PURPOSE
 #
 DATAREF_REGION_WEATHER = {
-    "change_mode": "sim/weather/region/change_mode",
+    "change_mode": "sim/weather/region/change_mode", # How the weather is changing. 0 = Rapidly Improving, 1 = Improving, 2 = Gradually Improving, 3 = Static, 4 = Gradually Deteriorating, 5 = Deteriorating, 6 = Rapidly Deteriorating, 7 = Using Real Weather
     "qnh_base": "sim/weather/region/qnh_base_elevation",
     "rain_pct": "sim/weather/region/rain_percent",
-    "runway_friction": "sim/weather/region/runway_friction",
+    "runway_friction": "sim/weather/region/runway_friction", # The friction constant for runways (how wet they are). Dry = 0, wet(1-3), puddly(4-6), snowy(7-9), icy(10-12), snowy/icy(13-15)
     "pressure_msl": "sim/weather/region/sealevel_pressure_pas",
     "temperature_msl": "sim/weather/region/sealevel_temperature_c",
     "thermal_rate": "sim/weather/region/thermal_rate_ms",
-    "update": "sim/weather/region/update_immediately",
-    "variability": "sim/weather/region/variability_pct",
+    "update": "sim/weather/region/update_immediately",  # If this is true, any weather region changes EXCEPT CLOUDS will take place immediately instead of at the next update interval (currently 60 seconds).
+    "variability": "sim/weather/region/variability_pct",  # How randomly variable the weather is over distance. Range 0 - 1.
     "visibility": "sim/weather/region/visibility_reported_sm",
     "wave_amp": "sim/weather/region/wave_amplitude",
     "wave_dir": "sim/weather/region/wave_dir",
@@ -141,9 +143,9 @@ class DatarefAccessor:
             name = DATAREF[name]
         else:
             name = f"{DATAREF[name]}[{self.__drefidx__}]"
-        #       print("getting", name)
-        dref = self.__datarefs__.get(name)
-        return dref.value() if dref is not None else None
+        # print("getting", name)
+        return self.__datarefs__.get(name)
+#        return dref.value() if dref is not None else None # if dict values are datarefs, not values
 
 
 class WindLayer(DatarefAccessor):
@@ -199,7 +201,8 @@ class XPWeather:
     # Make dataref accessible through instance attributes like weather.temperature.
     #
 
-    def __init__(self, drefs):
+    def __init__(self, update: bool = False):
+        drefs = self.collect_weather_datarefs(update)
         self.weather = Weather(drefs)
         self.wind_layers: List[WindLayer] = []  #  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
         self.cloud_layers: List[CloudLayer] = []  #  Defined cloud layers. Not all layers are always defined. up to 3 layers
@@ -211,6 +214,70 @@ class XPWeather:
             self.wind_layers.append(WindLayer(drefs, i))
 
         self.init()
+
+    def collect_weather_datarefs(self, update: bool = False) -> dict:
+        if not update and os.path.exists(WEATHER_CACHE_FILE):
+            data = {}
+            with open(WEATHER_CACHE_FILE) as fp:
+                data = json.load(fp)
+                logger.info(f"weather file loaded")
+            return data
+
+        BASE_URL="http://192.168.1.141:8080/api/v1/datarefs"
+        DATA = "data"
+        IDENT = "id"
+
+        def get_dataref_specs(path: str) -> dict | None:
+            payload = {
+                "filter[name]": path
+            }
+            response = requests.get(BASE_URL, params=payload)
+            resp = response.json()
+            if DATA in resp:
+                return resp[DATA][0]
+            logger.error(resp)
+            return None
+
+        def get_dataref_id(path: str) -> int | None:
+            specs = get_dataref_specs(path)
+            if specs is not None and IDENT in specs:
+                return specs[IDENT]
+            logger.error(specs)
+            return None
+
+        def get_dataref_value(path: str):
+            dref = get_dataref_specs(path)
+            if dref is None or IDENT not in dref:
+                logger.error(f"error for {path}")
+                return None
+            url = f"{BASE_URL}/{dref[IDENT]}/value"
+            response = requests.get(url)
+            data = response.json()
+            if DATA in data:
+                return data[DATA]
+            logger.error(f"no value for {path}")
+            return None
+
+        logger.info("weather: collecting weather datarefs..")
+        weather_datarefs = {}
+        for d in DATAREF.values():
+            logger.debug(d)
+            weather_datarefs[d] = get_dataref_value(d)
+        logger.info(f"..collected {len(weather_datarefs)} datarefs")
+
+        # flatten arrays
+        for d, v in weather_datarefs.items():
+            if type(v) is list:  # "dataref": [value, value, ...]
+                weather_datarefs = weather_datarefs | {f"{d}[{i}]": v[i] for i in range(len(v))} # "dataref[i]": value(i)
+
+        if os.path.exists(WEATHER_CACHE_FILE):
+            logger.warning(f"weather file already exists, not overwritten")
+        else:
+            with open(WEATHER_CACHE_FILE, "w") as fp:
+                json.dump(weather_datarefs, fp)
+                logger.info(f"weather file written")
+
+        return weather_datarefs
 
     def init(self):
         self.print(level=logging.DEBUG)  # writes to logger.debug
@@ -295,9 +362,9 @@ class XPWeather:
         print(f"reconstructed METAR: {self.make_metar()}", file=output)
         print("=" * width, file=output)
 
-        with open(WOFN, "w") as fp:
-            for l in csv:
-                print(l[0], l[1], file=fp)
+        # with open(WEATHER_CACHE_FILE, "w") as fp:
+        #     for l in csv:
+        #         print(l[0], l[1], file=fp)
 
         contents = output.getvalue()
         output.close()
@@ -351,6 +418,7 @@ class XPWeather:
         # needs refining according to METAR conventions
         # 1. look at current overall visibility
         nocov = False
+        dist = 0
         if self.weather.visibility is not None:
             dist = round(self.weather.visibility * 1609)  ## m
             nocov = True
@@ -504,25 +572,29 @@ class XPWeather:
 
 # Tests
 if __name__ == "__main__":
-    drefs = {}
-    with open(os.path.join("..", "..", "..", WOFN), "r") as fp:
-        line = fp.readline()
-        line = line.strip().rstrip("\n\r")
-        while line:
-            if len(line) > 2:
-                arr = line.split()
-                dref = Dataref(arr[0])
-                dref.update_value(new_value=float(arr[1]))
-                drefs[arr[0]] = dref
-            line = fp.readline()
+    # drefs = {}
+    # fn = os.path.join("..", "..", "..", "aircrafts", "tests", "metar", "weather.json")
+    # if os.path.exists(fn):
+    #     with open(fn) as fp:
+    #         drefs = json.load(fp)
 
-    w = XPWeather(drefs)
+    # # flatten arrays
+    # for d, v in drefs.items():
+    #     if type(v) is list:  # "dataref": [value, value, ...]
+    #         drefs = drefs | {f"{d}[{i}]": v[i] for i in range(len(v))} # "dataref[i]": value(i)
+    w = XPWeather()
+
+    w.print_cloud_layers_alt()
+    print("cl base", w.cloud_layer_at(0).base)
+
+    w.print_wind_layers_alt()
+    print("wl base", w.wind_layer_at(0).alt_msl)
+
+    print("sample values")
+    print("baro", w.weather.baro)
+    print("qnh", w.weather.qnh)
+    print("cloud type", w.cloud_layers[2].cloud_type)
+    print("wind layer alt", w.wind_layers[7].alt_msl)
+
+    print("generated metar")
     print(w.get_metar_desc())
-    # w.print()
-    # w.print_cloud_layers_alt()
-    # print("cl base", w.cloud_layer_at(0).base)
-    # w.print_wind_layers_alt()
-    # print("wl base", w.wind_layer_at(0).alt_msl)
-    # print(w.weather.baro)
-    # print(w.cloud_layers[2].cloud_type)
-    # print(w.wind_layers[7].alt_msl)
