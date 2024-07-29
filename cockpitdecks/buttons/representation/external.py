@@ -1,6 +1,4 @@
 # ###########################
-# Buttons that are drawn on render()
-#
 # Buttons were isolated here because they use specific packages (avwx-engine)
 # and rely on external services.
 #
@@ -309,10 +307,11 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
 
         self.icao_dataref_path = button._config.get("string-dataref")
         self.icao_dataref = None
-        self.icon_color = self.weather.get("icon-color", "powderblue")
 
         DrawAnimation.__init__(self, button=button)
         DatarefListener.__init__(self)
+
+        self.icon_color = self.weather.get("icon-color", "powderblue")
 
         self.weather_pressure = self.button.sim.get_internal_dataref("weather:pressure")
         self.weather_wind_speed = self.button.sim.get_internal_dataref("weather:wind_speed")

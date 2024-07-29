@@ -30,8 +30,8 @@ class DrawBase(IconBase):
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
 
-        self.texture = None
-        self.bgcolor = None
+        self.icon_texture = self._config.get("icon-texture", None)
+        self.icon_color = self._config.get("icon-color", None)
         self.cockpit_texture = self._config.get("cockpit-texture", self.button.get_attribute("cockpit-texture"))
         self.cockpit_color = self._config.get("cockpit-color", self.button.get_attribute("cockpit-color"))
 
@@ -48,39 +48,6 @@ class DrawBase(IconBase):
         image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         return image, draw
-
-    def get_background(self, width: int, height: int, use_texture: bool = True):
-        """
-        Returns a **Pillow Image** of size width x height with either the file specified by texture or a uniform color
-        """
-        image = None
-        # Try local texture
-        if use_texture and self.texture is not None and self.button.deck.cockpit.get_icon(self.texture) is not None:
-            image = self.button.deck.cockpit.get_icon_image(self.texture)
-            if image is not None:  # found a texture as requested
-                image = image.resize((width, height))
-                logger.debug(f"using texture {self.texture}")
-                return image
-
-        # Try deck cockpit_texture
-        if use_texture and self.cockpit_texture is not None and self.button.deck.cockpit.get_icon(self.cockpit_texture) is not None:
-            image = self.button.deck.cockpit.get_icon_image(self.cockpit_texture)
-            if image is not None:  # found cockpit texture
-                image = image.resize((width, height))
-                logger.debug(f"using cockpit texture {self.cockpit_texture}")
-                return image
-
-        if use_texture and self.texture is None:
-            logger.debug(f"should use texture but no texture found, using uniform color")
-
-        if self.bgcolor is not None:
-            image = Image.new(mode="RGBA", size=(width, height), color=self.bgcolor)
-            logger.debug(f"using uniform color {self.bgcolor}")
-            return image
-
-        image = Image.new(mode="RGBA", size=(width, height), color=self.cockpit_color)
-        logger.debug(f"using uniform cockpit color {self.cockpit_color}")
-        return image
 
     def move_and_send(self, image):
         # 1. Scale whole drawing if requested

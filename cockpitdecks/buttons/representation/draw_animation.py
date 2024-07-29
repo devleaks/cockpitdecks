@@ -151,7 +151,17 @@ class DrawAnimationFTG(DrawAnimation):
         """
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
 
-        bgrd = self.get_background(width=image.width, height=image.height)
+
+        bgrd = self.button.deck.get_icon_background(
+            name=self.button_name(),
+            width=image.width,
+            height=image.height,
+            texture_in=self.icon_texture,
+            color_in=self.icon_color,
+            use_texture=True,
+            who="Weather",
+        )
+
         image.paste(bgrd)
         # Button
         cs = 4  # light size, px

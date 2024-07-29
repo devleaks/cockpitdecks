@@ -66,24 +66,25 @@ except ImportError:
     logger.warning(f"IconSide not installed")
 
 try:
-    from .xp_rw import RealWeatherIcon
+    from .xp_ws import XPWeatherSummaryIcon
 
-    logger.info(f"RealWeatherIcon installed")
+    logger.info(f"XPWeatherSummaryIcon installed")
 except ImportError:
-    logger.warning(f"RealWeatherIcon not installed")
+    logger.warning(f"XPWeatherSummaryIcon not installed")
 
 try:
-    from .xp_xw import XPWeatherIcon
+    from .xp_rw import XPRealWeatherIcon
 
-    logger.info(f"XPWeatherIcon installed")
+    logger.info(f"XPRealWeatherIcon installed")
 except ImportError:
-    logger.warning(f"XPWeatherIcon not installed")
+    logger.warning(f"XPRealWeatherIcon not installed")
 
 try:
     logger.info(f"WeatherMetarIcon installed")
 except ImportError:
     logger.warning(f"WeatherMetarIcon not installed")
 
+# NOT X-Plane related, uses real life METAR
 try:
     from .external import WeatherMetarIcon
 
