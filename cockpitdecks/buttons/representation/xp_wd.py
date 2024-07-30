@@ -2,12 +2,17 @@
 # XP Weather METAR
 # Attempts to build a METAR from X-Plane weather datarefs
 #
+# Note: This file is independent from Cockpitdecks (hence it's few hardcoded values)
+#       It also requests 2 specific packages (tabulate for debugging) and requests.
+#
+# Script contains a __main__ section to test it in place.
+#
 import os
 import io
 import re
 import logging
 import json
-
+from enum import Enum
 from typing import List
 from datetime import datetime, timezone
 
@@ -19,18 +24,17 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-
-XP_API_URL="http://192.168.1.141:8080/api/v1/datarefs"
+# «HARDCODED» values
+#
+XP_API_URL = "http://192.168.1.141:8080/api/v1/datarefs"
 WEATHER_CACHE_FILE = "weather.json"
-AIRCRAFT = "aircraft"
 
 
-def to_fl(m, r: int = 10):
-    # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar
-    fl = m / 30.48
-    if r is not None and r > 0:
-        fl = r * int(fl / r)
-    return fl
+class WEATHER_LOCATION(Enum):
+    # From X-Plane, two sources of weather informations
+    #
+    AIRCRAFT = "aircraft"
+    REGION = "region"
 
 
 # ######################################################################################
@@ -45,6 +49,8 @@ DATAREF_TIME = {
     "day_of_month": "sim/cockpit2/clock_timer/current_day",
     "day_of_year": "sim/time/local_date_days",
 }
+
+DATAREF_LOCATION = {"latitude": "sim/flightmodel/position/latitude", "longitude": "sim/flightmodel/position/longitude"}
 
 DATAREF_AIRCRAFT_WEATHER = {
     "alt_error": "sim/weather/aircraft/altimeter_temperature_error",
@@ -70,7 +76,7 @@ DATAREF_AIRCRAFT_CLOUD = {
     "base": "sim/weather/aircraft/cloud_base_msl_m",
     "coverage": "sim/weather/aircraft/cloud_coverage_percent",
     "tops": "sim/weather/aircraft/cloud_tops_msl_m",
-    "cloud_type": "sim/weather/aircraft/cloud_type", # Blended cloud types per layer. 0 = Cirrus, 1 = Stratus, 2 = Cumulus, 3 = Cumulo-nimbus. Intermediate values are to be expected.
+    "cloud_type": "sim/weather/aircraft/cloud_type",  # Blended cloud types per layer. 0 = Cirrus, 1 = Stratus, 2 = Cumulus, 3 = Cumulo-nimbus. Intermediate values are to be expected.
 }
 
 DATAREF_AIRCRAFT_WIND = {
@@ -84,16 +90,11 @@ DATAREF_AIRCRAFT_WIND = {
     "shear_kts": "sim/weather/aircraft/shear_speed_kts",
 }
 
-# Mapping between python class instance attributes and datarefs:
-# weather.baro get dataref "sim/weather/aircraft/barometer_current_pas" current value.
-#
-# PLEASE MAKE SURE YOU USE THE SAME ATTRIBUTE NAME IN AIRCRAFT AND REGION FOR SAME PURPOSE
-#
 DATAREF_REGION_WEATHER = {
-    "change_mode": "sim/weather/region/change_mode", # How the weather is changing. 0 = Rapidly Improving, 1 = Improving, 2 = Gradually Improving, 3 = Static, 4 = Gradually Deteriorating, 5 = Deteriorating, 6 = Rapidly Deteriorating, 7 = Using Real Weather
+    "change_mode": "sim/weather/region/change_mode",  # How the weather is changing. 0 = Rapidly Improving, 1 = Improving, 2 = Gradually Improving, 3 = Static, 4 = Gradually Deteriorating, 5 = Deteriorating, 6 = Rapidly Deteriorating, 7 = Using Real Weather
     "qnh_base": "sim/weather/region/qnh_base_elevation",
     "rain_pct": "sim/weather/region/rain_percent",
-    "runway_friction": "sim/weather/region/runway_friction", # The friction constant for runways (how wet they are). Dry = 0, wet(1-3), puddly(4-6), snowy(7-9), icy(10-12), snowy/icy(13-15)
+    "runway_friction": "sim/weather/region/runway_friction",  # The friction constant for runways (how wet they are). Dry = 0, wet(1-3), puddly(4-6), snowy(7-9), icy(10-12), snowy/icy(13-15)
     "pressure_msl": "sim/weather/region/sealevel_pressure_pas",
     "temperature_msl": "sim/weather/region/sealevel_temperature_c",
     "thermal_rate": "sim/weather/region/thermal_rate_ms",
@@ -133,7 +134,11 @@ DATAREF_REGION_WIND = {
 AIRCRAFT_DATAREFS = DATAREF_TIME | DATAREF_AIRCRAFT_WEATHER | DATAREF_AIRCRAFT_CLOUD | DATAREF_AIRCRAFT_WIND
 REGION_DATAREFS = DATAREF_TIME | DATAREF_REGION_WEATHER | DATAREF_REGION_CLOUD | DATAREF_REGION_WIND
 
+
 class DatarefAccessor:
+    # Maps an object attribute to a dict entry
+    # attr_db = { "temp": "sim/weather/aircraft/temperature_ambient_deg_c" }
+    # weather.temp --> self.__datarefs__.get( weather.attr_db.get("temp") )
     def __init__(self, attr_db: dict, drefs, index: int | None = None):
         self.attr_db = attr_db
         self.__datarefs__ = drefs
@@ -146,8 +151,8 @@ class DatarefAccessor:
         else:
             name = f"{self.attr_db[name]}[{self.__drefidx__}]"
         # print("getting", name)
+        # return dref.value() if dref is not None else None # if dict values are datarefs, not values
         return self.__datarefs__.get(name)
-#        return dref.value() if dref is not None else None # if dict values are datarefs, not values
 
 
 class WindLayer(DatarefAccessor):
@@ -199,18 +204,23 @@ class Airport(Station):
 
 class XPWeatherData:
     # Data accessor shell class.
-    # Must be supplied with dict of {path: Dataref(path)}
-    # Make dataref accessible through instance attributes like weather.temperature.
+    # Must be supplied with type/mode of weather (aircraft or region)
+    # and wether to force update on first start
+    # Make dataref accessible through instance attributes like weather.temp.
     #
+
     CLOUD_LAYERS = 3
     WIND_LAYERS = 13
 
+    def __init__(self, weather_type: str = WEATHER_LOCATION.AIRCRAFT.value, update: bool = False):
+        self.station = Station()  # temporarily
+        self.station.icao = "ICAO"
 
-    def __init__(self, weather_type: str = AIRCRAFT, update: bool = False):
         self.weather_type = weather_type
-        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == AIRCRAFT else DATAREF_REGION_WEATHER
-        DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == AIRCRAFT else DATAREF_REGION_CLOUD
-        DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == AIRCRAFT else DATAREF_REGION_WIND
+
+        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WEATHER
+        DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_CLOUD
+        DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WIND
 
         drefs = self.collect_weather_datarefs(weather_type, update)
 
@@ -226,7 +236,7 @@ class XPWeatherData:
 
         self.init()
 
-    def collect_weather_datarefs(self, weather_type: str = AIRCRAFT, update: bool = False) -> dict:
+    def collect_weather_datarefs(self, weather_type: str = WEATHER_LOCATION.AIRCRAFT.value, update: bool = False) -> dict:
         if not update and os.path.exists(WEATHER_CACHE_FILE):
             data = {}
             with open(WEATHER_CACHE_FILE) as fp:
@@ -239,9 +249,7 @@ class XPWeatherData:
         IDENT = "id"
 
         def get_dataref_specs(path: str) -> dict | None:
-            payload = {
-                "filter[name]": path
-            }
+            payload = {"filter[name]": path}
             response = requests.get(XP_API_URL, params=payload)
             resp = response.json()
             if DATA in resp:
@@ -281,12 +289,12 @@ class XPWeatherData:
         # flatten arrays
         for d, v in weather_datarefs.items():
             if type(v) is list:  # "dataref": [value, value, ...]
-                weather_datarefs = weather_datarefs | {f"{d}[{i}]": v[i] for i in range(len(v))} # "dataref[i]": value(i)
+                weather_datarefs = weather_datarefs | {f"{d}[{i}]": v[i] for i in range(len(v))}  # "dataref[i]": value(i)
 
         if os.path.exists(WEATHER_CACHE_FILE):
             logger.warning(f"weather file already exists, overwritten")
-        #     logger.warning(f"remove file {os.path.abspath(WEATHER_CACHE_FILE)} to update weather")
-        # else:
+            #     logger.warning(f"remove file {os.path.abspath(WEATHER_CACHE_FILE)} to update weather")
+            # else:
             with open(WEATHER_CACHE_FILE, "w") as fp:
                 json.dump(weather_datarefs, fp)
                 logger.info(f"weather file written")
@@ -296,6 +304,15 @@ class XPWeatherData:
 
     def init(self):
         self.print(level=logging.DEBUG)  # writes to logger.debug
+
+    def older_than(self, seconds):
+        if self.last_updated is None:
+            return True
+        now = datetime.now().timestamp()
+        return now - self.last_updated > seconds
+
+    def guess_location(self):
+        logger.info("location not guessed")
 
     def sort_layers_by_alt(self):
         # only keeps layers with altitude
@@ -402,7 +419,10 @@ class XPWeatherData:
             i = i + 1
 
     def getStation(self):
-        return "ICAO"
+        return self.station.icao
+
+    def setStation(self, station: Station):
+        self.station = station
 
     def getTime(self):
         t = datetime.now().astimezone(tz=timezone.utc)
@@ -445,8 +465,8 @@ class XPWeatherData:
         self.sort_layers_by_alt()
         i = 0
         while nocov and i < len(self.cloud_layers):
-            l = self.cloud_layers[i]
-            nocov = l.coverage is None or l.coverage < 0.125  # 1/8
+            cl = self.cloud_layers[i]
+            nocov = cl.coverage is None or cl.coverage < 0.125  # 1/8
             i = i + 1
         return dist > 9999 and nocov
 
@@ -527,6 +547,14 @@ class XPWeatherData:
         return phenomenon
 
     def getClouds(self):
+
+        def to_fl(m, r: int = 10):
+            # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar
+            fl = m / 30.48
+            if r is not None and r > 0:
+                fl = r * int(fl / r)
+            return fl
+
         clouds = ""
         self.sort_layers_by_alt()
         last = -1

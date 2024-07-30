@@ -8,7 +8,7 @@ import logging
 
 from cockpitdecks import now
 from .xp_wb import XPWeatherBaseIcon
-from .xp_wd import AIRCRAFT
+from .xp_wd import WEATHER_LOCATION
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -33,6 +33,7 @@ DISPLAY_DATAREFS_REGION = {
     "wind_speed": "sim/weather/region/wind_speed_msc",
 }
 
+
 class XPWeatherSummaryIcon(XPWeatherBaseIcon):
     """
     Depends on simulator weather
@@ -49,7 +50,7 @@ class XPWeatherSummaryIcon(XPWeatherBaseIcon):
         XPWeatherBaseIcon.__init__(self, button=button)
 
         # Working variables
-        self.display_datarefs = DISPLAY_DATAREFS_AIRCRAFT if self.mode == AIRCRAFT else DISPLAY_DATAREFS_REGION
+        self.display_datarefs = DISPLAY_DATAREFS_AIRCRAFT if self.mode == WEATHER_LOCATION.AIRCRAFT.value else DISPLAY_DATAREFS_REGION
         self.weather_datarefs = set(self.display_datarefs.values())
 
     def describe(self) -> str:

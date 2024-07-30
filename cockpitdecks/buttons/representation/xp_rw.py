@@ -9,7 +9,7 @@ import logging
 
 from cockpitdecks import now
 from .xp_wb import XPWeatherBaseIcon
-from .xp_wd import XPWeatherData, AIRCRAFT
+from .xp_wd import XPWeatherData, WEATHER_LOCATION
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
 
     def __init__(self, button: "Button"):
         self.weather = button._config.get(self.REPRESENTATION_NAME, {})
-        self.mode = self.weather.get("mode", AIRCRAFT)
+        self.mode = self.weather.get("mode", WEATHER_LOCATION.AIRCRAFT.value)
 
         self.xpweather = None
 
@@ -61,7 +61,7 @@ class XPRealWeatherIcon(XPWeatherBaseIcon):
     def should_update(self) -> bool:
         UPDATE_TIME_SECS = 300
         if self.xpweather is None:
-            self.xpweather = XPWeatherData(weather_type=self.mode) # read cache or create new set
+            self.xpweather = XPWeatherData(weather_type=self.mode)  # read cache or create new set
             return self.should_update()
         now = datetime.now().timestamp()
         return (now - self.xpweather.last_updated) > UPDATE_TIME_SECS

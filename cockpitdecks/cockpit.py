@@ -13,6 +13,7 @@ from datetime import datetime
 from queue import Queue
 
 from PIL import Image, ImageFont
+
 # from cairosvg import svg2png
 
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
@@ -805,7 +806,7 @@ class Cockpit(DatarefListener, CockpitBase):
                             self.icons[i] = image
                         except:
                             logger.warning(f"could not load icon {fn}")
-                            pass # no cairosvg
+                            pass  # no cairosvg
 
                 if cache_icon:  # we cache both folders of icons
                     with open(cache, "wb") as fp:

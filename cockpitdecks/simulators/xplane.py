@@ -598,7 +598,9 @@ class XPlane(Simulator, XPlaneBeacon):
                         src_cnt = src_cnt + 1
                         self.collector_avgtime = src_tot / src_cnt
                         if src_cnt % 100 == 0:
-                            logger.info(f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)} ({round(tot_items/total_reads,0)})")
+                            logger.info(
+                                f"string dataref listener: average time between reads {round(self.collector_avgtime, 4)} ({round(tot_items/total_reads,0)})"
+                            )
                     src_last_ts = ts
 
                 freq = None

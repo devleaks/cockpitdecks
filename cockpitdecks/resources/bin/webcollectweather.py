@@ -1,15 +1,13 @@
 import requests
 import json
 
-BASE_URL="http://localhost:8086/api/v1/datarefs"
+BASE_URL = "http://localhost:8086/api/v1/datarefs"
 DATA = "data"
 IDENT = "id"
 
 
 def get_dataref_specs(path: str) -> dict | None:
-    payload = {
-        "filter[name]": path
-    }
+    payload = {"filter[name]": path}
     response = requests.get(BASE_URL, params=payload)
     resp = response.json()
     if DATA in resp:
@@ -38,6 +36,7 @@ def get_dataref_value(path: str):
         return data[DATA]
     print(f"no value for {path}")
     return None
+
 
 # print(get_dataref_value("sim/weather/region/sealevel_pressure_pas"))
 WEATHER_DATAREFS = [
@@ -118,7 +117,7 @@ WEATHER_DATAREFS = [
     "sim/weather/view/wind_base_speed_kts",
     "sim/weather/view/wind_gust_kts",
     "sim/weather/view/wind_shear_deg",
-    "sim/weather/view/temperature_C"
+    "sim/weather/view/temperature_C",
 ]
 
 WEATHER = {}
