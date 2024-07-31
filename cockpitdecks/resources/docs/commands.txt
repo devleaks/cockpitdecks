@@ -1,0 +1,7 @@
+potential commands:
+
+sim/operation/toggle_weather_map
+
+(show grib files, like metview)
+
+

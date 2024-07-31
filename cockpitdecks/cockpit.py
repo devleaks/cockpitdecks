@@ -380,6 +380,7 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
+        logger.info("starting aircraft " + "-"*50)
         self.load_aircraft(acpath)
         self.run(release)
 
@@ -393,7 +394,7 @@ class Cockpit(DatarefListener, CockpitBase):
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
             self.terminate_aircraft()
-            self.sim.clean_datarefs_to_monitor()
+            # self.sim.clean_datarefs_to_monitor()
             logger.warning(f"{os.path.basename(self.acpath)} unloaded")
 
         if self.sim is None:
@@ -1065,6 +1066,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info(f"..done")
+        logger.info("aircraft terminated " + "-"*50)
 
     def terminate_devices(self):
         for deck in self.devices:
