@@ -637,12 +637,19 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return
             # self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
-            self._activation.activate(event)
+            try:
+                self._activation.activate(event)
+            except:
+                logger.warning(f"button {self.name}: problem during activation", exc_info=True)
+                logger.warning(f"button {self.name}: not completing activation/rendering")
+                return
         else:
             logger.debug(f"button {self.name}: no activation")
+
         if self.use_internal_state():
             logger.debug(f"button {self.name}: uses internal state, setting value")
             self.value = self.get_button_value()
+
         if self.has_changed():
             logger.log(
                 SPAM_LEVEL,
@@ -733,7 +740,12 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         """
         if self.deck is not None:
             if self.on_current_page():
-                self.deck.render(self)
+                try:
+                    self.deck.render(self)
+                except:
+                    logger.warning(f"button {self.name}: problem during rendering", exc_info=True)
+                    logger.warning(f"button {self.name}: not completing rendering")
+                    return
                 # self.inc(INTERNAL_DATAREF.BUTTON_RENDERS.value, cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:

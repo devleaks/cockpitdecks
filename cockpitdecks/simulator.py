@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW
 from cockpitdecks.event import Event
+from .config import DEFAULT_REQ_FREQUENCY
 from .resources.iconfonts import ICON_FONTS
 
 loggerDataref = logging.getLogger("Dataref")
@@ -68,9 +69,6 @@ PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly b
 PATTERN_INTDREF = f"\\${{{INTERNAL_DATAREF_PREFIX}([^\\}}]+?)}}"
 PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
 PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
-
-DEFAULT_REQ_FREQUENCY = 4  # if no frequency is supplied (or forced to None), this is used
-
 
 class Dataref:
     """

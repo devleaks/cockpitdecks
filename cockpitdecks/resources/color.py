@@ -33,7 +33,7 @@ def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     # and returns a tuple of 3 or 4 integers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
     if instr is None:
-        return None
+        return DEFAULT_COLOR
 
     if type(instr) in [tuple, list]:
         return tuple(instr)

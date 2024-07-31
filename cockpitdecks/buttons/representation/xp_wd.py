@@ -18,7 +18,11 @@ from datetime import datetime, timezone
 
 from tabulate import tabulate
 import requests
+
 from metar import Metar
+from avwx import Station
+
+from cockpitdecks.config import XP_API_URL, WEATHER_CACHE_FILE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -26,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 # «HARDCODED» values
 #
-XP_API_URL = "http://192.168.1.141:8080/api/v1/datarefs"
-WEATHER_CACHE_FILE = "weather.json"
+# XP_API_URL = "http://192.168.1.141:8080/api/v1/datarefs"
+# WEATHER_CACHE_FILE = "weather.json"
 
 
 class WEATHER_LOCATION(Enum):
@@ -139,67 +143,39 @@ class DatarefAccessor:
     # Maps an object attribute to a dict entry
     # attr_db = { "temp": "sim/weather/aircraft/temperature_ambient_deg_c" }
     # weather.temp --> self.__datarefs__.get( weather.attr_db.get("temp") )
-    def __init__(self, attr_db: dict, drefs, index: int | None = None):
+    def __init__(self, attr_db: dict, drefs: dict, index: int | None = None):
         self.attr_db = attr_db
         self.__datarefs__ = drefs
         self.__drefidx__ = index
 
     def __getattr__(self, name: str):
-        #       print("converting", name)
-        if self.__drefidx__ is None:
-            name = self.attr_db[name]
-        else:
-            name = f"{self.attr_db[name]}[{self.__drefidx__}]"
+        # print("converting", name)
+        name = f"{self.attr_db[name]}"
+        if self.__drefidx__ is not None:
+            name = name + f"[{self.__drefidx__}]"
         # print("getting", name)
         # return dref.value() if dref is not None else None # if dict values are datarefs, not values
         return self.__datarefs__.get(name)
 
 
 class WindLayer(DatarefAccessor):
-    def __init__(self, attr_db: dict, drefs, index):
+    def __init__(self, attr_db: dict, drefs: dict, index):
         DatarefAccessor.__init__(self, attr_db=attr_db, drefs=drefs, index=index)
 
 
 class CloudLayer(DatarefAccessor):
-    def __init__(self, attr_db: dict, drefs, index):
+    def __init__(self, attr_db: dict, drefs: dict, index):
         DatarefAccessor.__init__(self, attr_db=attr_db, drefs=drefs, index=index)
 
 
 class Weather(DatarefAccessor):
-    def __init__(self, attr_db: dict, drefs):
+    def __init__(self, attr_db: dict, drefs: dict):
         DatarefAccessor.__init__(self, attr_db=attr_db, drefs=drefs)
 
 
 class Time(DatarefAccessor):
-    def __init__(self, drefs):
-        DatarefAccessor.__init__(self, drefs=drefs)
-
-
-class Station:
-    def __init__(self):
-        self.icao = None
-        self.iata = None
-        self.name = None
-        self.name_local = None
-        self.lat = None
-        self.lon = None
-        self.alt = None
-        self.tz = None
-
-
-class Runway:
-    def __init__(self):
-        self.name = None
-        self.orientation = None
-        self.length = None
-        self.pavement = None
-        self.slope = None
-
-
-class Airport(Station):
-    def __init__(self):
-        Station.__init__(self)
-        self.runways = []
+    def __init__(self, attr_db: dict, drefs: dict):
+        DatarefAccessor.__init__(self, attr_db=attr_db, drefs=drefs)
 
 
 class XPWeatherData:
@@ -213,8 +189,7 @@ class XPWeatherData:
     WIND_LAYERS = 13
 
     def __init__(self, weather_type: str = WEATHER_LOCATION.AIRCRAFT.value, update: bool = False):
-        self.station = Station()  # temporarily
-        self.station.icao = "ICAO"
+        self.station = None
 
         self.weather_type = weather_type
 
@@ -241,7 +216,7 @@ class XPWeatherData:
             data = {}
             with open(WEATHER_CACHE_FILE) as fp:
                 data = json.load(fp)
-                logger.info(f"weather file loaded")
+                logger.info("weather file loaded")
                 self.last_updated = os.path.getmtime(WEATHER_CACHE_FILE)
             return data
 
@@ -277,7 +252,7 @@ class XPWeatherData:
             logger.error(f"no value for {path}")
             return None
 
-        WEATHER_DATAFEFS = AIRCRAFT_DATAREFS if self.weather_type == AIRCRAFT else REGION_DATAREFS
+        WEATHER_DATAFEFS = AIRCRAFT_DATAREFS if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else REGION_DATAREFS
 
         logger.info("weather: collecting weather datarefs..")
         weather_datarefs = {}
@@ -292,12 +267,10 @@ class XPWeatherData:
                 weather_datarefs = weather_datarefs | {f"{d}[{i}]": v[i] for i in range(len(v))}  # "dataref[i]": value(i)
 
         if os.path.exists(WEATHER_CACHE_FILE):
-            logger.warning(f"weather file already exists, overwritten")
-            #     logger.warning(f"remove file {os.path.abspath(WEATHER_CACHE_FILE)} to update weather")
-            # else:
+            logger.warning("weather file already exists, overwritten")
             with open(WEATHER_CACHE_FILE, "w") as fp:
                 json.dump(weather_datarefs, fp)
-                logger.info(f"weather file written")
+                logger.info("weather file written")
 
         self.last_updated = datetime.now().timestamp()
         return weather_datarefs
@@ -370,9 +343,9 @@ class XPWeatherData:
         table = []
         csv = []
 
-        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == AIRCRAFT else DATAREF_REGION_WEATHER
-        DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == AIRCRAFT else DATAREF_REGION_CLOUD
-        DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == AIRCRAFT else DATAREF_REGION_WIND
+        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WEATHER
+        DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_CLOUD
+        DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WIND
 
         for k, v in DATAREF_WEATHER.items():
             line = (v, getattr(self.weather, k))
@@ -419,7 +392,7 @@ class XPWeatherData:
             i = i + 1
 
     def getStation(self):
-        return self.station.icao
+        return "ICAO" if self.station is None else self.station.icao
 
     def setStation(self, station: Station):
         self.station = station
