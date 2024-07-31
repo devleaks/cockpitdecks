@@ -4,7 +4,6 @@
 import os
 import logging
 
-from cockpitdecks import AIRCRAFT_CHANGE_MONITORING_DATAREF
 from .icon import IconText
 
 logger = logging.getLogger(__name__)

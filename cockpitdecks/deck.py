@@ -239,7 +239,7 @@ class Deck(ABC):
 
         dn = os.path.join(self.cockpit.acpath, CONFIG_FOLDER, self.layout)
         if not os.path.exists(dn):
-            logger.warning(f"deck has no layout folder '{self.layout}', loading default page")
+            logger.warning(f"deck {self.name} has no layout folder '{self.layout}', loading default page")
             self.make_default_page()
             return
 

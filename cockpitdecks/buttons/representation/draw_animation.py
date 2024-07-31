@@ -50,7 +50,7 @@ class DrawAnimation(DrawBase):
             self.animate()
             self.button.render()
             self.exit.wait(self.speed)
-        logger.debug(f"exited")
+        logger.debug("exited")
 
     def should_run(self) -> bool:
         """
@@ -78,7 +78,7 @@ class DrawAnimation(DrawBase):
             self.running = True
             self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button.name})")
             self.thread.start()
-            logger.debug(f"started")
+            logger.debug("started")
         else:
             logger.warning(f"button {self.button.name}: already started")
 
@@ -92,7 +92,7 @@ class DrawAnimation(DrawBase):
             self.thread.join(timeout=2 * (self.speed if self.speed is not None else 5))
             if self.thread.is_alive():
                 logger.warning(f"button {self.button.name}: animation did not terminate (timetout {2 * self.speed}secs.)")
-            logger.debug(f"stopped")
+            logger.debug("stopped")
         else:
             logger.debug(f"button {self.button.name}: already stopped")
 

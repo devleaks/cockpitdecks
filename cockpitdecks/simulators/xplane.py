@@ -474,6 +474,9 @@ class XPlane(Simulator, XPlaneBeacon):
             time.sleep(0.2)
         return True
 
+    def remove_dataref_from_monitor(self, path):
+        return self.add_dataref_to_monitor(path, freq=0)
+
     def udp_enqueue(self):
         """Read and decode socket messages and enqueue dataref values
 
@@ -525,8 +528,9 @@ class XPlane(Simulator, XPlaneBeacon):
                                 if d == DATETIME_DATAREFS[2]:  # zulu secs
                                     now = datetime.now().astimezone(tz=timezone.utc)
                                     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+                                    diff = v - seconds_since_midnight
                                     self.set_internal_dataref(
-                                        path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=(v - seconds_since_midnight), cascade=(total_reads % 10 == 0)
+                                        path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=diff, cascade=(total_reads % 10 == 0)
                                     )
                                 r = self.get_rounding(dataref_path=d)
                                 if r is not None and value is not None:
@@ -855,6 +859,7 @@ class XPlane(Simulator, XPlaneBeacon):
     #
     def terminate(self):
         logger.debug(f"currently {'not ' if self.udp_event is None else ''}running. terminating..")
+        self.clean_datarefs_to_monitor()  # stop monitoring all datarefs
         self.remove_all_collections()  # this does not destroy datarefs, only unload current collection
         self.remove_all_datarefs()
         logger.info("terminating..disconnecting..")
@@ -900,7 +905,7 @@ class DatarefEvent(SimulatorEvent):
                 self.handling()
                 dataref.update_value(self.value, cascade=self.cascade)
                 self.handled()
-                logger.debug(f"..updated without error")
+                logger.debug(f"..updated")
             except:
                 logger.warning(f"..updated with error", exc_info=True)
                 return False

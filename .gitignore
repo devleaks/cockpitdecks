@@ -172,3 +172,4 @@ cockpitdecks/resources/decks/images
 autoreload.sh
 datarefs.yaml
 weather.json
+cockpitdecks/config.py

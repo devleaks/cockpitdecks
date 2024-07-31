@@ -60,18 +60,17 @@ class ChartData:
             self.thread.start()
 
     def loop(self):
-        logger.info(f"chart {self.name} started")
+        logger.info(f">>> chart {self.name} started")
         while not self._stop.wait(self.update):
             r = self.get_value()
-            print(">>>", self.update, r)
             self.add(r)
-        logger.info(f"chart {self.name} stopped")
+        logger.info(f">>> chart {self.name} stopped")
 
     def stop(self):
         if not self._stop.is_set():
             self._stop.set()
             logger.info(f"chart {self.name} will stop at next update")
-            self.thread.join()
+            self.thread.join(timeout=self.update)
             logger.info(f"chart {self.name}: thread terminated")
 
     def get_datarefs(self) -> set:
@@ -187,8 +186,10 @@ class ChartIcon(DrawAnimation):
     def anim_start(self):
         for c in self.charts.values():
             c.start()
+        super().anim_start()  # calls render()
 
     def anim_stop(self):
+        super().anim_stop()
         for c in self.charts.values():
             c.stop()
 
