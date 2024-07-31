@@ -11,7 +11,7 @@ from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 #
@@ -39,7 +39,9 @@ class ChartData:
         self.color = convert_color(self.color)
 
         self.value = Value(self.name, config=config, button=chart.button)
-        self._stop = None
+        self._stop = threading.Event()
+        self._stop.set()
+        self.thread = threading.Thread(target=self.loop, name=f"ChartData:{self.name}")
 
         self.data = []
         self.last_data = now().timestamp()
@@ -47,21 +49,30 @@ class ChartData:
         self.init()
 
     def init(self):
-        if self.update is not None and self.update > 0:
-            self._stop = threading.Event()
-            self.thread = threading.Thread(target=self.start, name=f"ChartData:{self.name}")
-            self.thread.start()
+        pass
 
     def start(self):
+        if not self._stop.is_set():
+            logger.info(f"chart {self.name} already started ({self.thread.is_alive() if self.thread is not None else 'no thread'})")
+            return
+        if self.update is not None and self.update > 0:
+            self._stop.clear()
+            self.thread.start()
+
+    def loop(self):
         logger.info(f"chart {self.name} started")
         while not self._stop.wait(self.update):
             r = self.get_value()
+            print(">>>", self.update, r)
             self.add(r)
         logger.info(f"chart {self.name} stopped")
 
     def stop(self):
-        if self._stop is not None:
+        if not self._stop.is_set():
             self._stop.set()
+            logger.info(f"chart {self.name} will stop at next update")
+            self.thread.join()
+            logger.info(f"chart {self.name}: thread terminated")
 
     def get_datarefs(self) -> set:
         if self.datarefs is None:
@@ -172,6 +183,14 @@ class ChartIcon(DrawAnimation):
         """
         return True
         return self.speed is not None
+
+    def anim_start(self):
+        for c in self.charts.values():
+            c.start()
+
+    def anim_stop(self):
+        for c in self.charts.values():
+            c.stop()
 
     def get_image_for_icon(self):
         """
