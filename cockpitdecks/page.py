@@ -35,7 +35,7 @@ class Page:
     def get_id(self):
         return ID_SEP.join([self.deck.get_id(), self.name])
 
-    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_current_page(self):

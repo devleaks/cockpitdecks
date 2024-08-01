@@ -190,7 +190,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     def get_id(self):
         return ID_SEP.join([self.page.get_id(), str(self.index)])
 
-    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def get_get_button_value(self, name):

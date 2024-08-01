@@ -5,6 +5,7 @@ import logging
 import threading
 import math
 from random import randint
+import traceback
 
 from PIL import ImageDraw
 
@@ -53,6 +54,7 @@ class ChartData(DrawBase, DatarefListener):
         self.update = config.get("update", 0)
         self.keep = config.get("keep", 0)
         self.time_width: float | None = config.get("time-width")
+        self.rate = config.get("rate", False)
 
         self._stop = threading.Event()
         self._stop.set()
@@ -120,7 +122,7 @@ class ChartData(DrawBase, DatarefListener):
         if not self._stop.is_set():
             self._stop.set()
             logger.debug(f"chart {self.name} will stop at next update")
-            self.thread.join(timeout=self.update)
+            e = self.thread.join(timeout=self.update)
             logger.debug(f"chart {self.name}: thread terminated")
 
     # Value
@@ -130,12 +132,14 @@ class ChartData(DrawBase, DatarefListener):
 
     def dataref_changed(self, dataref):
         r = dataref.value()
+        if r is None:
+            logger.warning(f"chart {self.name}: value is None, set to zero")
+            r = 0
         self.add(r)
 
     def add(self, value, timestamp=None):
         self.last_data = timestamp if timestamp is not None else now().timestamp()
         self.data.append((value, self.last_data))
-        print(self.name, self.last_data, value)
         if self.keep > 0:  # we know the number of points to keep
             if len(self.data) > self.keep:
                 data = sorted(self.data, key=lambda x: x[1])
@@ -149,22 +153,21 @@ class ChartData(DrawBase, DatarefListener):
         self.invalidate_representation()
         self.render()
 
-    def get_stats(self):
-        if len(self.data) == 0:
-            return (0, 0, 0, 0, 0, self.keep, self.update, self.duration)
+    def get_rate(self):
+        rate = []
+        if len(self.data) > 1:
+            p = None
+            for d in self.data:
+                if p is not None:
+                    rate.append(((d[0] - p[0])/(d[1] - p[1]), d[1]))
+                p = d
+        else:
+            if len(self.data) == 1:
+                rate = self.data
+        return rate
 
-        def v(idx):
-            return [v[idx] for v in self.data]
-
-        count = len(self.data)
-        valmin = min(v(0))
-        sclmin = valmin * self.scale
-        valmax = max(v(0))
-        sclmax = valmax * self.scale
-        tsmin = min(v(1))
-        tsmax = max(v(1))
-        #       0      1       2       3       4       5      6      7          8            9
-        return (count, valmin, valmax, sclmin, sclmax, tsmin, tsmax, self.keep, self.update, self.duration)
+    def get_data(self):
+        return self.get_rate() if self.rate else self.data
 
     def get_image_for_icon(self):
         """
@@ -191,10 +194,26 @@ class ChartData(DrawBase, DatarefListener):
         # image (width,0) is graph(maxtime, maxvalue)
         # data is sorted in truncate
         # plot = sorted(self.data, key=lambda v: v[1])  # sort by timestamp
-        plot = self.data
+        plot = self.get_data()
         vert_pix = image.height / (self.value_max - self.value_min) # available for plot
         vert_zero = image.height
-        if self.type == "line":
+        if self.type == "point":
+            radius = 2
+            for pt in plot:
+                pt_value, pt_time = pt
+                if pt_value < self.value_min:
+                    pt_value = self.value_min
+                if pt_value > self.value_max:
+                    pt_value = self.value_max
+                x = (time_left - pt_time) * time_pix
+                y = vert_zero - (vert_pix * (pt_value - self.value_min))
+                box = ((int(x)-radius, int(y)-radius), (int(x)+radius, int(y)+radius))
+                chart.ellipse(
+                    box,
+                    width=2,
+                    fill=self.color,
+                )
+        elif self.type in ["line", "curve"]:
             points = []
             for pt in plot:
                 pt_value, pt_time = pt
@@ -207,16 +226,16 @@ class ChartData(DrawBase, DatarefListener):
                 points.append((int(x), int(y)))
             chart.line(
                 points,
-                width=2,
+                width=3,
                 fill=self.color,
             )
-        elif self.type == "bar":
+        elif self.type in ["bar", "bars", "histogram"]:
             barwidth = int(self.update * time_pix * 0.8)
             for pt in plot:
                 pt_value, pt_time = pt
                 x = (time_left - pt_time) * time_pix
-                y = image.height * pt_value / self.value_max
-                bbox = [(x, image.height - y), (x + barwidth, image.height)]  # ((int(x), int(y)))
+                y = vert_zero - (vert_pix * (pt_value - self.value_min))
+                bbox = [(x, y), (x + barwidth, image.height)]  # ((int(x), int(y)))
                 chart.rectangle(
                     bbox,
                     fill=self.color,
@@ -285,12 +304,17 @@ class ChartIcon(DrawAnimation):
         return True
 
     def anim_start(self):
+        if self.running:
+            logger.warning(f"chart {self.name} already running")
+            return
         for c in self.charts.values():
             if c.auto_update:
                 c.start()
         self.running = True
 
     def anim_stop(self):
+        if not self.running:
+            return
         for c in self.charts.values():
             if c.auto_update:
                 c.stop()

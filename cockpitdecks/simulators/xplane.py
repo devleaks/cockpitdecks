@@ -366,18 +366,22 @@ class XPlane(Simulator, XPlaneBeacon):
     def get_internal_dataref(self, path: str, is_string: bool = False):
         return self.get_dataref(path=Dataref.mk_internal_dataref(path), is_string=is_string)
 
-    def set_internal_dataref(self, path: str, value: float, cascade: bool = True):
-        dref = self.get_dataref(path=Dataref.mk_internal_dataref(path))
-        dref.update_value(new_value=value, cascade=cascade)
+    def set_internal_dataref(self, path: str, value: float, cascade: bool):
+        if cascade:
+            e = DatarefEvent(sim=self, dataref=path, value=value, cascade=cascade)
+        else:  # just save the value, do not cascade
+            dref = self.get_dataref(path=Dataref.mk_internal_dataref(path))
+            dref.update_value(new_value=value, cascade=cascade)
 
-    def inc_internal_dataref(self, path: str, amount: float, cascade: bool = True):
-        dref = self.get_dataref(path=Dataref.mk_internal_dataref(path))
+    def inc_internal_dataref(self, path: str, amount: float, cascade: bool = False):
+        dref = self.get_internal_dataref(path=path)
         curr = dref.value()
         if curr is None:
             curr = 0
-        dref.update_value(new_value=curr + amount, cascade=cascade)
+        newvalue = curr + amount
+        self.set_internal_dataref(path=path, value=newvalue, cascade=cascade)
 
-    def inc(self, path: str, amount: float = 1.0, cascade: bool = True):
+    def inc(self, path: str, amount: float = 1.0, cascade: bool = False):
         # shortcut alias
         self.inc_internal_dataref(path=path, amount=amount, cascade=cascade)
 
@@ -529,9 +533,7 @@ class XPlane(Simulator, XPlaneBeacon):
                                     now = datetime.now().astimezone(tz=timezone.utc)
                                     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
                                     diff = v - seconds_since_midnight
-                                    self.set_internal_dataref(
-                                        path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=diff, cascade=(total_reads % 10 == 0)
-                                    )
+                                    self.set_internal_dataref(path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=diff, cascade=(total_reads % 2 == 0))
                                 r = self.get_rounding(dataref_path=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)

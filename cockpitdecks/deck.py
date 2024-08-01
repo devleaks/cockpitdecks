@@ -95,7 +95,7 @@ class Deck(ABC):
         l = self.layout if self.layout is not None else DEFAULT_LAYOUT
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
-    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_virtual_deck(self) -> bool:

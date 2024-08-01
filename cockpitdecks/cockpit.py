@@ -88,9 +88,6 @@ class Cockpit(DatarefListener, CockpitBase):
         self._secret = {}  # content of aircraft/deckconfig/secret.yaml
         self._reqdfts = set()
 
-        self._simulator = simulator
-        self.sim = simulator(self)
-
         # "Aircraft" name or model...
         self.acpath = None
         self.name = "Cockpitdecks"
@@ -115,6 +112,14 @@ class Cockpit(DatarefListener, CockpitBase):
         self.icon_folder = None
         self.icons = {}
 
+        # Main event look
+        self.event_loop_run = False
+        self.event_loop_thread = None
+        self.event_queue = Queue()
+
+        self._simulator = simulator
+        self.sim = simulator(self)
+
         # Internal variables
         self.busy_reloading = False
         self.disabled = False
@@ -124,11 +129,6 @@ class Cockpit(DatarefListener, CockpitBase):
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         self._acname = ""
-
-        # Main event look
-        self.event_loop_run = False
-        self.event_loop_thread = None
-        self.event_queue = Queue()
 
         self.init()
 
@@ -142,7 +142,8 @@ class Cockpit(DatarefListener, CockpitBase):
     def get_id(self):
         return self.name
 
-    def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
+        # Here, it is purely statistics
         self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
@@ -380,7 +381,7 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
-        logger.info("starting aircraft " + "-"*50)
+        logger.info("starting aircraft " + "-" * 50)
         self.load_aircraft(acpath)
         self.run(release)
 
@@ -616,7 +617,6 @@ class Cockpit(DatarefListener, CockpitBase):
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
         self._secret = serial_numbers
-
 
         # 1. Adjust some settings in global config file.
         if self.sim is not None:
@@ -1073,7 +1073,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info(f"..done")
-        logger.info("aircraft terminated " + "-"*50)
+        logger.info("aircraft terminated " + "-" * 50)
 
     def terminate_devices(self):
         for deck in self.devices:
