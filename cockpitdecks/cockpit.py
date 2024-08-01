@@ -617,6 +617,13 @@ class Cockpit(DatarefListener, CockpitBase):
         serial_numbers = Config(sn)
         self._secret = serial_numbers
 
+
+        # 1. Adjust some settings in global config file.
+        if self.sim is not None:
+            self.sim.set_roundings(self._config.get("dataref-roundings", {}))
+            self.sim.set_dataref_frequencies(self._config.get("dataref-fetch-frequencies", {}))
+
+        # 2. Create decks
         decks = self._config.get("decks")
         if decks is None:
             logger.warning(f"no deck in config file {fn}")

@@ -318,14 +318,14 @@ class Simulator(ABC):
         self.dataref_db_lock = threading.RLock()
 
         self.roundings = {}  # path: int
-        self.dataref_frequencies = {}
+        self.dataref_frequencies = {}  # path: int
 
         self._startup = True
 
         self.cockpit.set_logging_level(__name__)
 
     def set_roundings(self, roundings):
-        self.roundings = roundings
+        self.roundings = self.roundings | roundings
 
     def get_rounding(self, dataref_path: str) -> float | None:
         if not dataref_path.find("[") > 0:
@@ -334,7 +334,7 @@ class Simulator(ABC):
         return rnd if rnd is not None else self.roundings.get(dataref_path[: dataref_path.find("[")] + "[*]")  # rounds all datarefs in array ("dref[*]")
 
     def set_dataref_frequencies(self, dataref_frequencies):
-        self.dataref_frequencies = dataref_frequencies
+        self.dataref_frequencies = self.dataref_frequencies | dataref_frequencies
 
     def set_rounding(self, dataref):
         if dataref.path.find("[") > 0:
