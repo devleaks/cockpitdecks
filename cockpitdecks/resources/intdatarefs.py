@@ -44,6 +44,7 @@ class INTERNAL_DATAREF(Enum):
     #
     # U D P
     #
+    INTDREF_CONNECTION_STATUS = "_connection_status"
     # Number of UDP packet received
     UDP_BEACON_RCV = "udp_beacon_received"
     UDP_BEACON_TIMEOUT = "udp_beacon_timeout"

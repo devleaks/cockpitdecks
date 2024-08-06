@@ -9,10 +9,9 @@ import logging
 import time
 import json
 from datetime import datetime, timedelta, timezone
-from queue import Queue
 
 from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR, AIRCRAFT_CHANGE_MONITORING_DATAREF
-from cockpitdecks.simulator import Simulator, Dataref, Command, SimulatorEvent, DEFAULT_REQ_FREQUENCY
+from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
 if USE_COLLECTOR:
@@ -451,7 +450,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         idx = -9999
         if freq is None:
-            freq = DEFAULT_REQ_FREQUENCY
+            freq = self.DEFAULT_REQ_FREQUENCY
 
         if path in self.datarefs.values():
             idx = list(self.datarefs.keys())[list(self.datarefs.values()).index(path)]
@@ -875,43 +874,3 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.info("..no Collector..")
         logger.info("..terminated")
 
-
-class DatarefEvent(SimulatorEvent):
-    """Dataref Update Event"""
-
-    def __init__(self, sim: "XPlane", dataref: str, value: float | str, cascade: bool, autorun: bool = True):
-        """Dataref Update Event.
-
-        Args:
-        """
-        self.dataref_path = dataref
-        self.value = value
-        self.cascade = cascade
-        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
-
-    def __str__(self):
-        return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
-
-    def run(self, just_do_it: bool = False) -> bool:
-        if just_do_it:
-            if self.sim is None:
-                logger.warning("no simulator")
-                return False
-            dataref = self.sim.all_datarefs.get(self.dataref_path)
-            if dataref is None:
-                logger.debug(f"dataref {self.dataref_path} not found in database")
-                return
-
-            try:
-                logger.debug(f"updating {dataref.path}..")
-                self.handling()
-                dataref.update_value(self.value, cascade=self.cascade)
-                self.handled()
-                logger.debug(f"..updated")
-            except:
-                logger.warning(f"..updated with error", exc_info=True)
-                return False
-        else:
-            self.enqueue()
-            logger.debug(f"enqueued")
-        return True

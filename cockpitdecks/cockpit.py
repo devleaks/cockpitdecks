@@ -11,6 +11,7 @@ import json
 import pkg_resources
 from datetime import datetime
 from queue import Queue
+import traceback
 
 from PIL import Image, ImageFont
 
@@ -20,7 +21,7 @@ from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
-from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, AIRCRAFT_CHANGE_MONITORING_DATAREF
+from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, AIRCRAFT_CHANGE_MONITORING_DATAREF, DEFAULT_FREQUENCY
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Dataref, DatarefListener
@@ -622,6 +623,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if self.sim is not None:
             self.sim.set_roundings(self._config.get("dataref-roundings", {}))
             self.sim.set_dataref_frequencies(self._config.get("dataref-fetch-frequencies", {}))
+            self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("default-dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
         # 2. Create decks
         decks = self._config.get("decks")
@@ -924,20 +926,20 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
                 e.run(just_do_it=True)
-                logger.debug(f"..done without error")
+                logger.debug("..done without error")
             except:
-                logger.warning(f"..done with error", exc_info=True)
+                logger.warning("..done with error", exc_info=True)
 
-        logger.debug(f".. event loop ended")
+        logger.debug(".. event loop ended")
 
     def stop_event_loop(self):
         if self.event_loop_run:
             self.event_loop_run = False
             self.event_queue.put("terminate")  # to unblock the Queue.get()
             # self.event_loop_thread.join()
-            logger.debug(f"stopped")
+            logger.debug("stopped")
         else:
-            logger.warning(f"not running")
+            logger.warning("not running")
 
     # #########################################################
     # Cockpit start/stop/handle procedures for virtual decks
@@ -1146,7 +1148,6 @@ class Cockpit(DatarefListener, CockpitBase):
         if deck not in self.vd_ws_conn:
             self.vd_ws_conn[deck] = []
             logger.debug(f"{deck}: new registration")
-            self.handle_code(1, deck)
         self.vd_ws_conn[deck].append(websocket)
         logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
 
@@ -1158,14 +1159,14 @@ class Cockpit(DatarefListener, CockpitBase):
         #
         for deck in self.vd_ws_conn:
             remove = []
-            for ws in deck:
+            for ws in self.vd_ws_conn[deck]:
                 if ws == websocket:
                     remove.append(websocket)
             for ws in remove:
-                deck.remove(ws)
+                self.vd_ws_conn[deck].remove(ws)
         for deck in self.vd_ws_conn:
             if len(self.vd_ws_conn[deck]) == 0:
-                self.handle_code(2, deck)
+                self.handle_code(code=2, name=deck)
 
     def send(self, deck, payload) -> bool:
         sent = False

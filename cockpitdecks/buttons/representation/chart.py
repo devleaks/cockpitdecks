@@ -23,6 +23,7 @@ logger.setLevel(logging.DEBUG)
 MAX_UPDATE_RATE = 4  # per seconds
 MAX_SPARKLINES = 3
 
+
 #
 # ###############################
 # DYNAMIC CHARTS
@@ -45,7 +46,7 @@ class ChartData(DrawBase, DatarefListener):
         self.last_data = now().timestamp()
 
         # Vertical axis, assumes default values
-        self.type = config.get("type", "line")   # point, line, bar or bars or histogram
+        self.type = config.get("type", "line")  # point, line, bar or bars or histogram
         self.value_min = config.get("value-min", 0)
         self.value_max = config.get("value-max", 100)
 
@@ -92,7 +93,7 @@ class ChartData(DrawBase, DatarefListener):
 
     @property
     def auto_update(self):
-        return self.update >= (1/MAX_UPDATE_RATE)
+        return self.update >= (1 / MAX_UPDATE_RATE)
 
     @property
     def duration(self):
@@ -143,8 +144,8 @@ class ChartData(DrawBase, DatarefListener):
         if self.keep > 0:  # we know the number of points to keep
             if len(self.data) > self.keep:
                 data = sorted(self.data, key=lambda x: x[1])
-                self.data = data[-self.keep:]
-        else: # must use time, only keeps time_width more recent points
+                self.data = data[-self.keep :]
+        else:  # must use time, only keeps time_width more recent points
             maxtime = now().timestamp() - self.time_width  # in the past
             data = filter(lambda x: x[1] > maxtime, self.data)
             self.data = sorted(data, key=lambda x: x[1])
@@ -159,7 +160,7 @@ class ChartData(DrawBase, DatarefListener):
             p = None
             for d in self.data:
                 if p is not None:
-                    rate.append(((d[0] - p[0])/(d[1] - p[1]), d[1]))
+                    rate.append(((d[0] - p[0]) / (d[1] - p[1]), d[1]))
                 p = d
         else:
             if len(self.data) == 1:
@@ -195,7 +196,7 @@ class ChartData(DrawBase, DatarefListener):
         # data is sorted in truncate
         # plot = sorted(self.data, key=lambda v: v[1])  # sort by timestamp
         plot = self.get_data()
-        vert_pix = image.height / (self.value_max - self.value_min) # available for plot
+        vert_pix = image.height / (self.value_max - self.value_min)  # available for plot
         vert_zero = image.height
         if self.type == "point":
             radius = 2
@@ -207,7 +208,7 @@ class ChartData(DrawBase, DatarefListener):
                     pt_value = self.value_max
                 x = (time_left - pt_time) * time_pix
                 y = vert_zero - (vert_pix * (pt_value - self.value_min))
-                box = ((int(x)-radius, int(y)-radius), (int(x)+radius, int(y)+radius))
+                box = ((int(x) - radius, int(y) - radius), (int(x) + radius, int(y) + radius))
                 chart.ellipse(
                     box,
                     width=2,
@@ -246,6 +247,7 @@ class ChartData(DrawBase, DatarefListener):
 
     def render(self):
         self.chart.button.render()
+
 
 class ChartIcon(DrawAnimation):
     """Chart or Sparkline Icon

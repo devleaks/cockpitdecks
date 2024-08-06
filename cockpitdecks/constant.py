@@ -24,6 +24,7 @@ from ruamel.yaml import YAML
 ROOT_DEBUG = ""
 EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Streadecks
 USE_COLLECTOR = False
+DEFAULT_FREQUENCY = 3
 
 # Files
 CONFIG_FOLDER = "deckconfig"

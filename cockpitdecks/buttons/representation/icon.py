@@ -627,4 +627,6 @@ class LargeIcon(Icon):
 
         def render(self):
             """Renders each small icon onto the large icon"""
+            # @todo :-)
+
             return None

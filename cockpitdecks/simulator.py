@@ -5,11 +5,14 @@ import logging
 from typing import List, Any
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
+import base64
+import json
+import requests
 
-from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW
+from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW, DEFAULT_FREQUENCY
 from cockpitdecks.event import Event
-from .config import DEFAULT_REQ_FREQUENCY
 from .resources.iconfonts import ICON_FONTS
+from .config import XP_API_URL
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
@@ -34,7 +37,6 @@ NOT_A_COMMAND = [
     "no-command",
     "do-nothing",
 ]  # all forced to lower cases
-
 
 class Command:
     """
@@ -70,6 +72,10 @@ PATTERN_INTDREF = f"\\${{{INTERNAL_DATAREF_PREFIX}([^\\}}]+?)}}"
 PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
 PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
 
+# REST API model keywords
+REST_DATA = "data"
+REST_IDENT = "id"
+
 
 class Dataref:
     """
@@ -102,7 +108,7 @@ class Dataref:
         self.current_array: List[float] = []
         self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
         self._round = None
-        self.update_frequency = DEFAULT_REQ_FREQUENCY  # sent by the simulator that many times per second.
+        self.update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
         self.expire = None
         self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
 
@@ -160,11 +166,11 @@ class Dataref:
     def set_round(self, rounding):
         self._round = rounding
 
-    def set_update_frequency(self, frequency=1):
+    def set_update_frequency(self, frequency=DEFAULT_FREQUENCY):
         if frequency is not None and type(frequency) in [int, float]:
             self.update_frequency = frequency
         else:
-            self.update_frequency = DEFAULT_REQ_FREQUENCY
+            self.update_frequency = DEFAULT_FREQUENCY
 
     def value(self):
         return self.current_value
@@ -284,6 +290,120 @@ class Dataref:
         else:
             loggerDataref.warning(f"{self.dataref} not writable")
 
+    # ##############
+    # REST API INTERFACE
+    #
+    # NOT GENERIC ONLY WORKS FOR SCALAR VALUES, NOT ARRAYS
+    #
+    def get_specs(self) -> dict | None:
+        payload = {
+            "filter[name]": self.path
+        }
+        response = requests.get(XP_API_URL, params=payload)
+        resp = response.json()
+        if REST_DATA in resp:
+            return resp[REST_DATA][0]
+        logger.error(resp)
+        return None
+
+    def get_index(self) -> int | None:
+        if self._xpindex is not None:
+            return self._xpindex
+        data = self.get_specs()
+        if data is not None and REST_IDENT in data:
+            self._xpindex = int(data[REST_IDENT])
+            return self._xpindex
+        logger.error(f"could not get dataref specifications for {self.path} ({data})")
+        return None
+
+    def get_value(self):
+        if self._xpindex is None:
+            idx = self.get_index()
+            if idx is None:
+                logger.error("could not get XP index")
+                return None
+        url = f"{XP_API_URL}/{self._xpindex}/value"
+        response = requests.get(url)
+        data = response.json()
+        if REST_DATA in data:
+            if self._is_string or self.data_type == "string":
+                return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
+            return data[REST_DATA]
+        logger.error(f"could not get value for {self.path} ({data})")
+        return None
+
+    def set_value(self):
+        if self._xpindex is None:
+            idx = self.get_index()
+            if idx is None:
+                logger.error("could not get XP index")
+                return None
+        url = f"{XP_API_URL}/{self._xpindex}/value"
+        value = self.current_value
+        if self._is_string or self.data_type == "string":
+            value = base64.b64encode(bytes(self.current_value, 'ascii')).decode("ascii")
+        data = {
+            "data": value
+        }
+        response = requests.patch(url=url, data=data)
+        if response.status_code != 200:
+            logger.error(f"could not set value for {self.path} ({data}, {response})")
+
+    def ws_subscribe(self, ws):
+        request = {
+            "req_id": 1,
+            "type": "dataref_subscribe_values",
+            "params": {
+                "datarefs": [
+                    { "id": self._xpindex }
+                ]
+            }
+        }
+        ws.send(json.dumps(request))
+
+    def ws_unsubscribe(self, ws):
+        request = {
+            "req_id": 1,
+            "type": "dataref_unsubscribe_values",
+            "params": {
+                "datarefs": [
+                    { "id": self._xpindex }
+                ]
+            }
+        }
+        ws.send(json.dumps(request))
+
+    def ws_callback(self, response):
+        # gets called by websocket onmessage on receipt.
+        # 1. Ignore response with result unless error
+        # 2. Get data
+        # 3. Cascade if changed
+        pass
+
+    def ws_update(self):
+        request = {
+            "req_id": 1,
+            "type": "dataref_set_values",
+            "params": {
+                "datarefs": [
+                    {
+                        "id": self._xpindex,
+                        "value": self.current_value
+                    }
+                ]
+            }
+        }
+        ws.send(json.dumps(request))
+
+    def auto_collect(self):
+        if self.collector is None:
+            e = DatarefEvent(sim=self, dataref=self.path, value=self.get_value(), cascade=True)
+            self.collector = threading.Timer(self.update_frequency, self.auto_collect)
+
+    def cancel_autocollect(self):
+        if self.collector is not None:
+            self.collector.cancel()
+            self.collector = None
 
 class DatarefListener(ABC):
     # To get notified when a dataref has changed.
@@ -306,6 +426,8 @@ class Simulator(ABC):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
+
+    DEFAULT_REQ_FREQUENCY = DEFAULT_FREQUENCY
 
     def __init__(self, cockpit):
         self._inited = False
@@ -487,6 +609,47 @@ class SimulatorEvent(Event):
         else:
             logger.warning("no simulator")
 
+
+
+class DatarefEvent(SimulatorEvent):
+    """Dataref Update Event"""
+
+    def __init__(self, sim: Simulator, dataref: str, value: float | str, cascade: bool, autorun: bool = True):
+        """Dataref Update Event.
+
+        Args:
+        """
+        self.dataref_path = dataref
+        self.value = value
+        self.cascade = cascade
+        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
+
+    def __str__(self):
+        return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
+
+    def run(self, just_do_it: bool = False) -> bool:
+        if just_do_it:
+            if self.sim is None:
+                logger.warning("no simulator")
+                return False
+            dataref = self.sim.all_datarefs.get(self.dataref_path)
+            if dataref is None:
+                logger.debug(f"dataref {self.dataref_path} not found in database")
+                return
+
+            try:
+                logger.debug(f"updating {dataref.path}..")
+                self.handling()
+                dataref.update_value(self.value, cascade=self.cascade)
+                self.handled()
+                logger.debug(f"..updated")
+            except:
+                logger.warning(f"..updated with error", exc_info=True)
+                return False
+        else:
+            self.enqueue()
+            logger.debug(f"enqueued")
+        return True
 
 # To enable DatarefSet and Collector, uncomment the following lines.
 # Use at your own risk.

@@ -55,6 +55,13 @@ class Event(ABC):
         return hasattr(self, "completed") and self.completed is not None
 
     @property
+    def delay(self) -> float:
+        """Returns event handling duration in seconds"""
+        if hasattr(self, "started") and self.started is not None:
+            return self.started - self._ts
+        return -1.0
+
+    @property
     def duration(self) -> float:
         """Returns event handling duration in seconds"""
         if hasattr(self, "started") and self.started is not None and self.is_processed():
