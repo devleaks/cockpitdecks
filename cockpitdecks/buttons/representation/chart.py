@@ -12,6 +12,7 @@ from PIL import ImageDraw
 from cockpitdecks import ICON_SIZE, now
 
 from cockpitdecks.resources.color import convert_color
+from cockpitdecks.resources.ts import TimeSerie
 from cockpitdecks.simulator import DatarefListener
 from .draw import DrawBase
 from .draw_animation import DrawAnimation

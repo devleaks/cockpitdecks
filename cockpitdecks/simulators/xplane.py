@@ -98,12 +98,6 @@ class XPlaneBeacon:
     def connected(self):
         return "IP" in self.beacon_data.keys()
 
-    @property
-    def api_url(self):
-        if self.connected:
-            return f"http://{self.beacon_data['IP']}:{API_PORT}/{API_PATH}"
-        return None
-
     def FindIp(self):
         """
         Find the IP of XPlane Host in Network.
@@ -343,6 +337,12 @@ class XPlane(Simulator, XPlaneBeacon):
         for i in range(len(self.datarefs)):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
+
+    @property
+    def api_url(self):
+        if self.connected:
+            return f"http://{self.beacon_data['IP']}:{API_PORT}/{API_PATH}"
+        return None
 
     #
     # Datarefs
@@ -838,6 +838,14 @@ class XPlane(Simulator, XPlaneBeacon):
         self.add_all_datarefs_to_monitor()
         logger.info("reloading pages")
         self.cockpit.reload_pages()  # to take into account updated values
+        self.get_init_datarefs()
+
+    def get_init_datarefs(self):
+        # Test function for hastily get some dataref values
+        # through the XP 12.1.1 Web REST API
+        #
+        dref = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF, is_string=True)
+        logger.info(f"{dref.path}={dref.get_value(self)}")
 
     def stop(self):
         if self.udp_event is not None:

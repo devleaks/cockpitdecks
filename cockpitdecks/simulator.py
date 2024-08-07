@@ -111,6 +111,7 @@ class Dataref:
         self.update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
         self.expire = None
         self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
+        self._xpindex = None
 
         self.data_type = "float"  # int, float, byte, UDP always returns a float...
         if self.is_decimal:
@@ -314,7 +315,7 @@ class Dataref:
     def get_index(self, simulator: Simulator) -> int | None:
         if self._xpindex is not None:
             return self._xpindex
-        data = self.get_specs()
+        data = self.get_specs(simulator=simulator)
         if data is not None and REST_IDENT in data:
             self._xpindex = int(data[REST_IDENT])
             return self._xpindex
@@ -327,7 +328,7 @@ class Dataref:
             logger.warning("no api url")
             return None
         if self._xpindex is None:
-            idx = self.get_index()
+            idx = self.get_index(simulator=simulator)
             if idx is None:
                 logger.error("could not get XP index")
                 return None
@@ -347,7 +348,7 @@ class Dataref:
             logger.warning("no api url")
             return None
         if self._xpindex is None:
-            idx = self.get_index()
+            idx = self.get_index(simulator=simulator)
             if idx is None:
                 logger.error("could not get XP index")
                 return None
