@@ -247,7 +247,7 @@ def cockpit_wshandler():
             if code == 1:
                 deck = data.get("deck")
                 cockpit.register_deck(deck, ws)
-                app.logger.info(f"registered deck {deck}")
+                # app.logger.info(f"registered deck {deck}")
                 cockpit.handle_code(code, deck)
                 app.logger.debug(f"handled deck={deck}, code={code}")
             elif code == 0:

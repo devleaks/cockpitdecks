@@ -38,6 +38,7 @@ NOT_A_COMMAND = [
     "do-nothing",
 ]  # all forced to lower cases
 
+
 class Command:
     """
     A Button activation will instruct the simulator software to perform an action.
@@ -301,9 +302,7 @@ class Dataref:
         if api_url is None:
             logger.warning("no api url")
             return None
-        payload = {
-            "filter[name]": self.path
-        }
+        payload = {"filter[name]": self.path}
         api_url = f"{api_url}/datarefs"
         response = requests.get(api_url, params=payload)
         resp = response.json()
@@ -355,36 +354,18 @@ class Dataref:
         url = f"{api_url}/datarefs/{self._xpindex}/value"
         value = self.current_value
         if self._is_string or self.data_type == "string":
-            value = base64.b64encode(bytes(self.current_value, 'ascii')).decode("ascii")
-        data = {
-            "data": value
-        }
+            value = base64.b64encode(bytes(self.current_value, "ascii")).decode("ascii")
+        data = {"data": value}
         response = requests.patch(url=url, data=data)
         if response.status_code != 200:
             logger.error(f"could not set value for {self.path} ({data}, {response})")
 
     def ws_subscribe(self, ws):
-        request = {
-            "req_id": 1,
-            "type": "dataref_subscribe_values",
-            "params": {
-                "datarefs": [
-                    { "id": self._xpindex }
-                ]
-            }
-        }
+        request = {"req_id": 1, "type": "dataref_subscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
         ws.send(json.dumps(request))
 
     def ws_unsubscribe(self, ws):
-        request = {
-            "req_id": 1,
-            "type": "dataref_unsubscribe_values",
-            "params": {
-                "datarefs": [
-                    { "id": self._xpindex }
-                ]
-            }
-        }
+        request = {"req_id": 1, "type": "dataref_unsubscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
         ws.send(json.dumps(request))
 
     def ws_callback(self, response):
@@ -395,18 +376,7 @@ class Dataref:
         pass
 
     def ws_update(self, ws):
-        request = {
-            "req_id": 1,
-            "type": "dataref_set_values",
-            "params": {
-                "datarefs": [
-                    {
-                        "id": self._xpindex,
-                        "value": self.current_value
-                    }
-                ]
-            }
-        }
+        request = {"req_id": 1, "type": "dataref_set_values", "params": {"datarefs": [{"id": self._xpindex, "value": self.current_value}]}}
         ws.send(json.dumps(request))
 
     def auto_collect(self):
@@ -418,6 +388,7 @@ class Dataref:
         if self.collector is not None:
             self.collector.cancel()
             self.collector = None
+
 
 class DatarefListener(ABC):
     # To get notified when a dataref has changed.
@@ -628,7 +599,6 @@ class SimulatorEvent(Event):
             logger.warning("no simulator")
 
 
-
 class DatarefEvent(SimulatorEvent):
     """Dataref Update Event"""
 
@@ -668,6 +638,7 @@ class DatarefEvent(SimulatorEvent):
             self.enqueue()
             logger.debug(f"enqueued")
         return True
+
 
 # To enable DatarefSet and Collector, uncomment the following lines.
 # Use at your own risk.

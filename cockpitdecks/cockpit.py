@@ -1150,6 +1150,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.debug(f"{deck}: new registration")
         self.vd_ws_conn[deck].append(websocket)
         logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
+        logger.info(f"registered deck {deck}")
 
     def is_closed(self, ws):
         return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # there must be a better way to do this...
@@ -1164,9 +1165,14 @@ class Cockpit(DatarefListener, CockpitBase):
                     remove.append(websocket)
             for ws in remove:
                 self.vd_ws_conn[deck].remove(ws)
+        remove = []
         for deck in self.vd_ws_conn:
             if len(self.vd_ws_conn[deck]) == 0:
                 self.handle_code(code=2, name=deck)
+                remove.append(deck)
+                logger.info(f"unregistered deck {deck}")
+        for deck in remove:
+            del self.vd_ws_conn[deck]
 
     def send(self, deck, payload) -> bool:
         sent = False

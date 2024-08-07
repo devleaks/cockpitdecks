@@ -1,6 +1,7 @@
 from collections import deque
 from statistics import mean
 
+
 class TimeSerie:
     def __init__(self, size: int):
         self._elements = deque()
@@ -30,6 +31,7 @@ class TimeSerie:
 
     def average(self):
         return self._fun(mean)
+
 
 # a = TimeSerie(2)
 # a.enqueue((1, 2, 3))

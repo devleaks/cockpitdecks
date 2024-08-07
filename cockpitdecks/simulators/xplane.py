@@ -893,4 +893,3 @@ class XPlane(Simulator, XPlaneBeacon):
         else:
             logger.info("..no Collector..")
         logger.info("..terminated")
-

@@ -54,14 +54,13 @@ class VirtualDeck(DeckWithIcons):
     def remove_client(self):
         if self.clients > 0:
             self.clients = self.clients - 1
-        if not self.is_connected():
+        if not self.has_clients() and not self.is_connected():
             logger.debug("no more client, disconnecting..")
             self.disconnect()
             logger.debug("..disconnected")
 
     def has_clients(self) -> bool:
-        return True
-        # return self.clients > 0
+        return self.clients > 0
 
     def is_connected(self) -> bool:
         return self.cockpit.probe(self.name)
@@ -78,6 +77,7 @@ class VirtualDeck(DeckWithIcons):
             logger.debug("no current page to unload")
         logger.debug(f"..reset device {self.name}..")
         self.device.reset()
+        logger.debug(f"..done")
 
     def disconnect(self):
         self.unload_current_page()
