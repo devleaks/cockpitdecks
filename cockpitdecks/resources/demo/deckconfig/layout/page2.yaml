@@ -110,10 +110,12 @@ buttons:
       tick-color: black
       rule-height: 50
       charts:
-        - name: Baro
+        - name: Encoder Zero
           type: line
           keep: 20
           time-width: 60
+          value-max: 10
+          value-min: -10
           color: lime
           marker: square
           formula: ${data:encoder0} 5 * 50 +

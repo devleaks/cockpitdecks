@@ -88,7 +88,7 @@ class Page:
             if a[0] == self.name:
                 b = a[1].split(":")  # button-name:variable-name
                 if b[0] in self.button_names.keys():
-                    return self.button_names[b[0]].get_button_value(":".join(b[1:]) if len(b) > 1 else None)
+                    return self.button_names[b[0]].get_named_button_value(":".join(b[1:]) if len(b) > 1 else None)
                 else:
                     logger.warning(f"so such button {b[0]} in {self.buttons.keys()}")
             else:

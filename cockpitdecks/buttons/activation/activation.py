@@ -546,12 +546,20 @@ class Random(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
+        self.random_value = 0.0
 
     def activate(self, event):
         if not self.can_handle(event):
             return
         if event.pressed:
-            self.button.value = random.random()
+            self.random_value = random.random()
+
+    def get_state_variables(self):
+        s = super().get_state_variables()
+        if s is None:
+            s = {}
+        s = s | {"random": self.random_value}
+        return s
 
     def describe(self) -> str:
         """
@@ -887,7 +895,7 @@ class OnOff(Activation):
                     self.command(self._commands[1])
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
-            self.button.value = self.onoff_current_value  # update internal state
+            # self.button.value = self.onoff_current_value  # update internal state
             self.view()
         self.write_dataref(self.onoff_current_value)
 
