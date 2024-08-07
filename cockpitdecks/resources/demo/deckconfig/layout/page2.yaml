@@ -113,6 +113,7 @@ buttons:
         - name: Baro
           type: line
           keep: 20
+          time-width: 60
           color: lime
           marker: square
           formula: ${data:encoder0} 5 * 50 +
@@ -172,7 +173,8 @@ buttons:
   - index: 8
     name: SECONDS
     label: SECONDS
-    type: none
+    type: inspect
+    what: datarefs
     formula: ${sim/cockpit2/clock_timer/local_time_seconds} round
     text: ${formula}
     text-format: "{:02.0f}"

@@ -22,16 +22,13 @@ import requests
 from metar import Metar
 from avwx import Station
 
-from cockpitdecks.config import XP_API_URL, WEATHER_CACHE_FILE
-
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-# «HARDCODED» values
-#
-# XP_API_URL = "http://192.168.1.141:8080/api/v1/datarefs"
-# WEATHER_CACHE_FILE = "weather.json"
+# «HARDCODED» values for testing locally
+# XP_API_URL = "http://192.168.1.141:8080/api/v1"
+WEATHER_CACHE_FILE = "weather.json"
 
 
 class WEATHER_LOCATION(Enum):
@@ -224,8 +221,9 @@ class XPWeatherData:
         IDENT = "id"
 
         def get_dataref_specs(path: str) -> dict | None:
+            api_url = f"{self.button.sim.api_url}/datarefs"
             payload = {"filter[name]": path}
-            response = requests.get(XP_API_URL, params=payload)
+            response = requests.get(api_url, params=payload)
             resp = response.json()
             if DATA in resp:
                 return resp[DATA][0]
@@ -244,7 +242,7 @@ class XPWeatherData:
             if dref is None or IDENT not in dref:
                 logger.error(f"error for {path}")
                 return None
-            url = f"{XP_API_URL}/{dref[IDENT]}/value"
+            url = f"{self.button.sim.api_url}/datarefs/{dref[IDENT]}/value"
             response = requests.get(url)
             data = response.json()
             if DATA in data:

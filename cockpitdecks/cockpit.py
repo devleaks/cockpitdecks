@@ -275,7 +275,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def inspect_datarefs(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
             for dref in self.sim.all_datarefs.values():
-                logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)})")
+                logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)} lsnrs)")
                 if what.endswith("listener"):
                     for l in dref.listeners:
                         logger.info(f"  {l.name}")

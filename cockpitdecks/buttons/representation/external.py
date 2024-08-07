@@ -299,6 +299,8 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         updated = self.weather.get("refresh-location", 10)  # minutes
         WeatherMetarIcon.MIN_UPDATE = int(updated) * 60
 
+        self.icon_color = self.weather.get("icon-color", "powderblue")
+
         # Working variables
         self.station: Station | None = None
         self.metar: Metar | None = None
@@ -311,18 +313,17 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         DrawAnimation.__init__(self, button=button)
         DatarefListener.__init__(self)
 
-        self.icon_color = self.weather.get("icon-color", "powderblue")
-
-        self.weather_pressure = self.button.sim.get_internal_dataref("weather:pressure")
-        self.weather_wind_speed = self.button.sim.get_internal_dataref("weather:wind_speed")
-        self.weather_temperature = self.button.sim.get_internal_dataref("weather:temperature")
-        self.weather_dew_point = self.button.sim.get_internal_dataref("weather:dew_point")
-
         self.speed = self.CHECK_STATION
 
     def init(self):
         if self._inited:
             return
+
+        # Initialize datarefs to communicate weather main parameters
+        self.weather_pressure = self.button.sim.get_internal_dataref("weather:pressure")
+        self.weather_wind_speed = self.button.sim.get_internal_dataref("weather:wind_speed")
+        self.weather_temperature = self.button.sim.get_internal_dataref("weather:temperature")
+        self.weather_dew_point = self.button.sim.get_internal_dataref("weather:dew_point")
 
         if self.icao_dataref_path is not None:
             # toliss_airbus/flightplan/departure_icao
@@ -331,7 +332,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             self.icao_dataref.add_listener(self)  # the representation gets notified directly.
             self.dataref_changed(self.icao_dataref)
             self._inited = True
-            logger.debug(f"initialized, aiting for dataref {self.icao_dataref.path}")
+            logger.debug(f"initialized, waiting for dataref {self.icao_dataref.path}")
             return
 
         icao = self.weather.get("station")
@@ -518,7 +519,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
                             self._last_updated = datetime.now()
                             logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
                         else:
-                            logger.info(f"could not update station {self.station.icao}")
+                            logger.debug(f"not update for station {self.station.icao}")
                     else:
                         logger.debug(f"station {self.station.icao}, Metar does not need updating")
             except:

@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR, AIRCRAFT_CHANGE_MONITORING_DATAREF
+from cockpitdecks.config import API_PORT, API_PATH
 from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -96,6 +97,12 @@ class XPlaneBeacon:
     @property
     def connected(self):
         return "IP" in self.beacon_data.keys()
+
+    @property
+    def api_url(self):
+        if self.connected:
+            return f"http://{self.beacon_data['IP']}:{API_PORT}/{API_PATH}"
+        return None
 
     def FindIp(self):
         """
@@ -316,7 +323,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         self.add_datetime_datarefs()
 
-        self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=0, cascade=False)
+        self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=0, cascade=True)
 
         # Setup socket reception for string-datarefs
         self.socket_strdref = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -337,6 +344,8 @@ class XPlane(Simulator, XPlaneBeacon):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
 
+    #
+    # Datarefs
     def add_datetime_datarefs(self):
         dtdrefs = {}
         for d in DATETIME_DATAREFS:
@@ -362,14 +371,16 @@ class XPlane(Simulator, XPlaneBeacon):
             return self.all_datarefs[path]
         return self.register(Dataref(path, is_string=is_string))
 
+    # Shortcuts
     def get_internal_dataref(self, path: str, is_string: bool = False):
         return self.get_dataref(path=Dataref.mk_internal_dataref(path), is_string=is_string)
 
     def set_internal_dataref(self, path: str, value: float, cascade: bool):
+        int_path = Dataref.mk_internal_dataref(path)
         if cascade:
-            e = DatarefEvent(sim=self, dataref=path, value=value, cascade=cascade)
+            e = DatarefEvent(sim=self, dataref=int_path, value=value, cascade=cascade)
         else:  # just save the value, do not cascade
-            dref = self.get_dataref(path=Dataref.mk_internal_dataref(path))
+            dref = self.get_dataref(path=int_path)
             dref.update_value(new_value=value, cascade=cascade)
 
     def inc_internal_dataref(self, path: str, amount: float, cascade: bool = False):
@@ -384,6 +395,8 @@ class XPlane(Simulator, XPlaneBeacon):
         # shortcut alias
         self.inc_internal_dataref(path=path, amount=amount, cascade=cascade)
 
+    #
+    # Commands
     def execute_command(self, command: Command):
         if command is None:
             logger.warning(f"no command")
@@ -586,7 +599,7 @@ class XPlane(Simulator, XPlaneBeacon):
                 delta = now - last_read_ts
                 total_read_time = total_read_time + delta.microseconds / 1000000
                 last_read_ts = now
-                logger.debug(f"string dataref listener: got data")  # \n({json.dumps(json.loads(data.decode('utf-8')), indent=2)})
+                logger.debug("string dataref listener: got data")  # \n({json.dumps(json.loads(data.decode('utf-8')), indent=2)})
                 data = json.loads(data.decode("utf-8"))
 
                 meta = data  # older version carried meta data directly in message
@@ -615,8 +628,7 @@ class XPlane(Simulator, XPlaneBeacon):
                     del meta["f"]
                     if freq is not None and (oldf != (freq + 1)):
                         frequency = freq + 1
-                        logger.info(f"string dataref listener: adjusted frequency to {frequency} secs")
-
+                        logger.info(f"string dataref listener: {len(data)} strings, adjusted frequency to {frequency} secs")
                 for k, v in data.items():  # simple cache mechanism
                     tot_items = tot_items + 1
                     if k not in self._strdref_cache or (k in self._strdref_cache and self._strdref_cache[k] != v):
@@ -696,7 +708,7 @@ class XPlane(Simulator, XPlaneBeacon):
             super().add_datarefs_to_monitor({dref_ipc.path: dref_ipc})
 
         logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
-        logger.debug(f">>>>> monitoring++{len(self.datarefs)}/{self._max_monitored}")
+        logger.info(f">>>>> monitoring++{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_datarefs_to_monitor(self, datarefs):
         if not self.connected and len(self.datarefs_to_monitor) > 0:
@@ -726,7 +738,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
         logger.debug(f"removed {prnt}")
         super().remove_datarefs_to_monitor(datarefs)
-        logger.debug(f">>>>> monitoring--{len(self.datarefs)}/{self._max_monitored}")
+        logger.info(f">>>>> monitoring--{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_all_datarefs(self):
         if not self.connected and len(self.all_datarefs) > 0:

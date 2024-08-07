@@ -1,5 +1,6 @@
 # Base classes for interface with the simulation software
 #
+from __future__ import annotations
 import threading
 import logging
 from typing import List, Any
@@ -12,7 +13,6 @@ import requests
 from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW, DEFAULT_FREQUENCY
 from cockpitdecks.event import Event
 from .resources.iconfonts import ICON_FONTS
-from .config import XP_API_URL
 
 loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
@@ -295,18 +295,23 @@ class Dataref:
     #
     # NOT GENERIC ONLY WORKS FOR SCALAR VALUES, NOT ARRAYS
     #
-    def get_specs(self) -> dict | None:
+    def get_specs(self, simulator: Simulator) -> dict | None:
+        api_url = simulator.api_url
+        if api_url is None:
+            logger.warning("no api url")
+            return None
         payload = {
             "filter[name]": self.path
         }
-        response = requests.get(XP_API_URL, params=payload)
+        api_url = f"{api_url}/datarefs"
+        response = requests.get(api_url, params=payload)
         resp = response.json()
         if REST_DATA in resp:
             return resp[REST_DATA][0]
         logger.error(resp)
         return None
 
-    def get_index(self) -> int | None:
+    def get_index(self, simulator: Simulator) -> int | None:
         if self._xpindex is not None:
             return self._xpindex
         data = self.get_specs()
@@ -316,13 +321,17 @@ class Dataref:
         logger.error(f"could not get dataref specifications for {self.path} ({data})")
         return None
 
-    def get_value(self):
+    def get_value(self, simulator: Simulator):
+        api_url = simulator.api_url
+        if api_url is None:
+            logger.warning("no api url")
+            return None
         if self._xpindex is None:
             idx = self.get_index()
             if idx is None:
                 logger.error("could not get XP index")
                 return None
-        url = f"{XP_API_URL}/{self._xpindex}/value"
+        url = f"{api_url}/datarefs/{self._xpindex}/value"
         response = requests.get(url)
         data = response.json()
         if REST_DATA in data:
@@ -332,13 +341,17 @@ class Dataref:
         logger.error(f"could not get value for {self.path} ({data})")
         return None
 
-    def set_value(self):
+    def set_value(self, simulator: Simulator):
+        api_url = api_url
+        if api_url is None:
+            logger.warning("no api url")
+            return None
         if self._xpindex is None:
             idx = self.get_index()
             if idx is None:
                 logger.error("could not get XP index")
                 return None
-        url = f"{XP_API_URL}/{self._xpindex}/value"
+        url = f"{api_url}/datarefs/{self._xpindex}/value"
         value = self.current_value
         if self._is_string or self.data_type == "string":
             value = base64.b64encode(bytes(self.current_value, 'ascii')).decode("ascii")
@@ -380,7 +393,7 @@ class Dataref:
         # 3. Cascade if changed
         pass
 
-    def ws_update(self):
+    def ws_update(self, ws):
         request = {
             "req_id": 1,
             "type": "dataref_set_values",
@@ -446,6 +459,10 @@ class Simulator(ABC):
         self._startup = True
 
         self.cockpit.set_logging_level(__name__)
+
+    @property
+    def api_url(self):
+        return None
 
     def set_roundings(self, roundings):
         self.roundings = self.roundings | roundings

@@ -170,13 +170,15 @@ class Value:
                 # text:
                 #   text: ${AirbusFBW/BatVolts[1]}
                 text = text.get(key)
-            if type(text) is str:
+            elif type(text) is str:
                 logger.warning(f"value {self.name}: DEPRECATION WARNING: text representation should be indented")
-                datarefs = re.findall(PATTERN_DOLCB, text)
-                datarefs = set(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
-                if len(datarefs) > 0:
-                    r = r | datarefs
-                    logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
+            if text is not str:
+                text = str(text)
+            datarefs = re.findall(PATTERN_DOLCB, text)
+            datarefs = set(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
+            if len(datarefs) > 0:
+                r = r | datarefs
+                logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
 
         # Clean up
         # text: ${formula} replaces text with result of formula

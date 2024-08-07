@@ -12,6 +12,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 
 from cockpitdecks import DEFAULT_PAGE_NAME
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
@@ -80,6 +81,18 @@ class VirtualDeck(DeckWithIcons):
 
     def disconnect(self):
         self.unload_current_page()
+
+    def reload_page(self):
+        """Reloads page to take into account changes in definition
+
+        Please note that this may loead to unexpected results if page was
+        too heavily modified or interaction with other pages occurred.
+        """
+        if self.is_connected():
+            self.inc(INTERNAL_DATAREF.DECK_RELOADS.value)
+            self.change_page(self.current_page.name)
+        else:
+            logger.debug(f"deck {self.name} is not connected")
 
     # #######################################
     #
