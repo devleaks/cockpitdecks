@@ -119,13 +119,13 @@ buttons:
           color: lime
           marker: square
           formula: ${data:encoder0} 5 * 50 +
-        # - name: serie2
-        #   type: bar
-        #   update: 1
-        #   keep: 20
-        #   speed: 1
-        #   color: [255, 0, 0, 20]
-        #   formula: ${data:random}
+          # - name: serie2
+          #   type: bar
+          #   update: 1
+          #   keep: 20
+          #   speed: 1
+          #   color: [255, 0, 0, 20]
+          #   formula: ${data:random}
   - index: 7
     name: ND RANGE
     type: updown

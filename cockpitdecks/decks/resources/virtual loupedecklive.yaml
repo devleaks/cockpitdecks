@@ -74,13 +74,13 @@ buttons:
       r3:
         size: [60, 60]
         offset: [0, 195]
-  # - name: center
-  #   action: [push, swipe]
-  #   feedback: image
-  #   dimension: [344, 270]
-  #   layout:
-  #     offset: [150, 78]
-  #   options: corner_radius=4
+        # - name: center
+        #   action: [push, swipe]
+        #   feedback: image
+        #   dimension: [344, 270]
+        #   layout:
+        #     offset: [150, 78]
+        #   options: corner_radius=4
 background:
   color: "#222"
   image: loupedeck.live.png
