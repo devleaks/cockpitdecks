@@ -170,8 +170,11 @@ class Value:
                 # text:
                 #   text: ${AirbusFBW/BatVolts[1]}
                 text = text.get(key)
-            elif type(text) is str:
-                logger.warning(f"value {self.name}: DEPRECATION WARNING: text representation should be indented")
+            # elif type(text) is str:
+            #     c = ""
+            #     if self._button is not None:
+            #         c = f" (button {self._button.get_id()})"
+            #     logger.warning(f"value {self.name}: DEPRECATION WARNING: text representation should be indented{c}")
             if text is not str:
                 text = str(text)
             datarefs = re.findall(PATTERN_DOLCB, text)

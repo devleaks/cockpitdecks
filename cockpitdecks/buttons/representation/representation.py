@@ -149,6 +149,7 @@ class Representation:
         return set()
 
     def get_button_value(self):
+        # shortcut for representations
         return self.button.value
 
     def get_status(self):

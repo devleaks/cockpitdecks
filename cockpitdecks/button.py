@@ -193,7 +193,9 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
-    def get_named_button_value(self, name):
+    def get_button_value(self, name):
+        # Parses name into cockpit:deck:page:button and see if button is self
+        # in which case it returns its value.
         if name is None or len(name) == 0:
             v = self.value
             if type(v) not in [int, float, str]:
@@ -299,8 +301,8 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 logger.debug(f"button {self.name} .. from initial-value")
                 self.value = self.initial_value
             else:
-                logger.debug(f"button {self.name} .. from get_button_value")
-                self.value = self.get_button_value()
+                logger.debug(f"button {self.name} .. from compute_value")
+                self.value = self.compute_value()
             logger.debug(f"button {self.name}: ..has value {self.current_value}.")
         else:
             logger.debug(f"button {self.name}: already has a value ({self.current_value}), initial value ignored")
@@ -563,9 +565,13 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     # ##################################
     # Value
     #
-    def get_button_value(self):
+    def compute_value(self):
         """
-        Button ultimately returns either one value or an array of values if representation requires it.
+        Button ultimately returns either one value or an array of values.
+        Used in
+        - Button initialisation to get its first value
+        - After dataref is updated
+        - After activation
         """
 
         # 1. Special cases (Annunciator): Each annunciator part has its own evaluation
@@ -574,6 +580,8 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             return self._representation.get_current_values()
 
         # 2. dataref or formula based
+        #    note that a formula may also use state variables,
+        #    but get_value() knows how to get them if needed.
         if self.dataref is not None or self.dataref_rpn is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
             logger.debug(f"button {self.name}: has formula and/or datarefs")
             return self._value.get_value()
@@ -581,11 +589,13 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         # 3. internal button state based
         logger.debug(f"button {self.name}: use internal state")
 
+        # 3a. The activation explicitely has a dedicated attribute with its value(s)
         self._last_activation_state = self._activation.get_state_variables()
         if ACTIVATION_VALUE in self._last_activation_state:
             logger.debug(f"button {self.name}: getting activation value ({self._last_activation_state[ACTIVATION_VALUE]})")
             return self._last_activation_state.get(ACTIVATION_VALUE)
 
+        # 3b. The activation has no "dedicated" attributes, we return all we have from activation.
         logger.warning(f"button {self.name}: getting entire state ({self._last_activation_state})")
         return self._last_activation_state
 
@@ -600,9 +610,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
     # ##################################
     # External API
     #
-    def use_internal_state(self) -> bool:
-        return self.dataref is None and self.dataref_rpn is None and (self.all_datarefs is None or len(self.all_datarefs) == 0)
-
     def dataref_changed(self, dataref: "Dataref"):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
@@ -611,7 +618,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             logger.error(f"button {self.name}: not a dataref")
             return
         logger.debug(f"{self.name}: {dataref.path} changed")
-        self.value = self.get_button_value()
+        self.value = self.compute_value()
         if self.has_changed() or dataref.has_changed():
             logger.log(
                 SPAM_LEVEL,
@@ -646,7 +653,7 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         else:
             logger.debug(f"button {self.name}: no activation")
 
-        self.value = self.get_button_value()
+        self.value = self.compute_value()
 
         if self.has_changed():
             logger.log(
