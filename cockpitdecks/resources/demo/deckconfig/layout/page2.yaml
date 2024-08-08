@@ -15,27 +15,38 @@ buttons:
     # label-size: 8
     type: none
     multi-texts:
-      - text: "NOT\nCONNECTED\n\n"
+      - text: |+
+          NOT
+          CONNECTED
+
         text-color: red
         text-size: 14
         text-font: D-DIN-Bold
         text-position: cb
-      - text: "CONNECTING...\n\n"
+      - text: |+
+          CONNECTING...
+
         text-size: 14
         text-color: orange
         text-font: D-DIN-Bold
         text-position: cb
-      - text: "CONNECTING...\n\n"
+      - text: |+
+          CONNECTING...
+
         text-size: 14
         text-color: orange
         text-font: D-DIN-Bold
         text-position: cb
-      - text: "CONNECTING...\n\n"
+      - text: |+
+          CONNECTING...
+
         text-size: 14
         text-color: orange
         text-font: D-DIN-Bold
         text-position: cb
-      - text: "CONNECTED\n\n"
+      - text: |+
+          CONNECTED
+
         text-color: lime
         text-size: 14
         text-font: D-DIN-Bold
@@ -48,7 +59,9 @@ buttons:
     command: none
     annunciator-animate:
       formula: ${state:activation_count} 2 mod 0 eq
-      text: "MASTER\nWARN"
+      text: |-
+        MASTER
+        WARN
       text-color: firebrick
       text-font: D-DIN-Bold.otf
       text-size: 64
@@ -62,9 +75,15 @@ buttons:
     icon: isi
     frame:
       frame: annun-template.png
-      frame-size: [400, 400]
-      content-size: [222, 222]
-      content-offset: [90, 125]
+      frame-size:
+        - 400
+        - 400
+      content-size:
+        - 222
+        - 222
+      content-offset:
+        - 90
+        - 125
   - index: 3
     name: AIRCRAFT
     label: AIRCRAFT
@@ -73,7 +92,10 @@ buttons:
       - sim/aircraft/view/acf_ICAO
       - sim/aircraft/view/acf_tailnum
       - data:_livery
-    text: "${sim/aircraft/view/acf_ICAO}\n${sim/aircraft/view/acf_tailnum}\n${data:_livery}"
+    text: |-
+      ${sim/aircraft/view/acf_ICAO}
+      ${sim/aircraft/view/acf_tailnum}
+      ${data:_livery}
     text-size: 18
   - index: 4
     type: none
@@ -106,7 +128,7 @@ buttons:
       value-max: auto
       axis: 0
       tick: 10
-      tick-format: "{:2.0f}"
+      tick-format: '{:2.0f}'
       tick-color: black
       rule-height: 50
       charts:
@@ -179,14 +201,17 @@ buttons:
     what: datarefs
     formula: ${sim/cockpit2/clock_timer/local_time_seconds} round
     text: ${formula}
-    text-format: "{:02.0f}"
+    text-format: '{:02.0f}'
     text-color: lime
     text-font: D-DIN-Bold
     text-size: 32
     text-position: cm
   - index: 9
     type: reload
-    label: "RELOAD\n\nPAGE"
+    label: |-
+      RELOAD
+
+      PAGE
     label-position: cm
     label-color: red
     label-font: D-DIN-Bold.otf
@@ -198,14 +223,16 @@ buttons:
     text-position: cm
   - index: 10
     type: stop
-    label: "PRESS 2 SECS\nTO LIFT GUARD"
+    label: |-
+      PRESS 2 SECS
+      TO LIFT GUARD
     label-position: ct
     label-size: 8
     annunciator:
       type: A
       size: large
       A0:
-        text: "STOP"
+        text: STOP
         text-size: 60
         color: firebrick
         framed: true

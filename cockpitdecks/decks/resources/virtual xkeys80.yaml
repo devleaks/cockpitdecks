@@ -6,12 +6,20 @@ name: Virtual XKeys 80
 driver: virtualdeck
 buttons:
   - name: 0
-    repeat: [10, 8]
+    repeat:
+      - 10
+      - 8
     action: push
     feedback: image
-    dimension: [64, 64]
+    dimension:
+      - 64
+      - 64
     layout:
-      offset: [20, 20]
-      spacing: [10, 10]
+      offset:
+        - 20
+        - 20
+      spacing:
+        - 10
+        - 10
 background:
   color: black

@@ -336,7 +336,10 @@ class Dataref:
         data = response.json()
         if REST_DATA in data:
             if self._is_string or self.data_type == "string":
-                return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
+                if type(data[REST_DATA]) in [str, bytes]:
+                    return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
+                else:
+                    logger.warning(f"value for {self.path} ({data}) is not a string")
             return data[REST_DATA]
         logger.error(f"could not get value for {self.path} ({data})")
         return None

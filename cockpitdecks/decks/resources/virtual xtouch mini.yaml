@@ -7,24 +7,41 @@ buttons:
   # Encoders
   - name: 0
     prefix: e
-    action: [encoder, push]
-    feedback: [encoder-leds]
+    action:
+      - encoder
+      - push
+    feedback:
+      - encoder-leds
     dimension: 48
-    repeat: [8, 1]
+    repeat:
+      - 8
+      - 1
     layout:
-      offset: [100, 100]
-      spacing: [20, 0]
+      offset:
+        - 100
+        - 100
+      spacing:
+        - 20
+        - 0
       hardware:
         type: virtual-xtm-encoderled
   # Two rows of 8 LED push button
   - name: 0
     action: push
     feedback: led
-    repeat: [8, 2]
-    dimension: [48, 36]
+    repeat:
+      - 8
+      - 2
+    dimension:
+      - 48
+      - 36
     layout:
-      offset: [74, 186]
-      spacing: [68, 40]
+      offset:
+        - 74
+        - 186
+      spacing:
+        - 68
+        - 40
       hardware:
         type: virtual-xtm-led
     options: corner_radius=4
@@ -32,36 +49,56 @@ buttons:
   - name: a
     action: push
     feedback: led
-    dimension: [44, 36]
+    dimension:
+      - 44
+      - 36
     layout:
-      offset: [1106, 186]
+      offset:
+        - 1106
+        - 186
       hardware:
         type: virtual-xtm-led
     options: corner_radius=4
   - name: b
     action: push
     feedback: led
-    dimension: [44, 36]
+    dimension:
+      - 44
+      - 36
     layout:
-      offset: [1106, 262]
+      offset:
+        - 1106
+        - 262
       hardware:
         type: virtual-xtm-led
     options: corner_radius=4
   # Vertical cursor
   - name: slider
     action: cursor
-    range: [-8192, 8100]
-    dimension: [10, 254]
-    handle: [30, 60]
+    range:
+      - -8192
+      - 8100
+    dimension:
+      - 10
+      - 254
+    handle:
+      - 30
+      - 60
     layout:
-      offset: [1024, 62]
+      offset:
+        - 1024
+        - 62
     options: corner_radius=5
   # A and B page keys
   - name: mc
     feedback: led
-    dimension: [12, 4]
+    dimension:
+      - 12
+      - 4
     layout:
-      offset: [1123, 127]
+      offset:
+        - 1123
+        - 127
       hardware:
         type: virtual-xtm-mcled
     options: corner_radius=2

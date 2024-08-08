@@ -7,13 +7,21 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [96, 96]
-    repeat: [4, 2]
+    dimension:
+      - 96
+      - 96
+    repeat:
+      - 4
+      - 2
   - name: 0
     prefix: b
     action: push
     feedback: led
-    repeat: [2, 1]
+    repeat:
+      - 2
+      - 1
   - name: display
     feedback: image
-    dimension: [200, 50]
+    dimension:
+      - 200
+      - 50

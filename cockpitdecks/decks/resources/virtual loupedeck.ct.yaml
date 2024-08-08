@@ -16,15 +16,25 @@ buttons:
         - 58
     name: 0
     prefix: e
-    repeat: [2, 3]
+    repeat:
+      - 2
+      - 3
   - name: 0
-    repeat: [4, 3]
+    repeat:
+      - 4
+      - 3
     action: push
     feedback: image
-    dimension: [82, 82]
+    dimension:
+      - 82
+      - 82
     layout:
-      offset: [194, 64]
-      spacing: [1, 2]
+      offset:
+        - 194
+        - 64
+      spacing:
+        - 1
+        - 2
     options: corner_radius=8
   - action:
       - push
@@ -41,7 +51,9 @@ buttons:
         - 18
     name: 0
     prefix: l
-    repeat: [2, 3]
+    repeat:
+      - 2
+      - 3
   - action:
       - push
     dimension:
@@ -57,7 +69,9 @@ buttons:
         - 18
     name: 0
     prefix: r
-    repeat: [2, 3]
+    repeat:
+      - 2
+      - 3
   - action:
       - encoder
       - push
@@ -70,26 +84,44 @@ buttons:
     name: ec
   - name: 0
     prefix: b
-    repeat: [8, 1]
+    repeat:
+      - 8
+      - 1
     action: push
     dimension: 25
     feedback: colored-led
     layout:
-      offset: [60, 392.5]
-      spacing: [36, 0]
+      offset:
+        - 60
+        - 392.5
+      spacing:
+        - 36
+        - 0
       hardware:
         type: virtual-ll-coloredbutton
   - name: left
-    action: [push, swipe]
+    action:
+      - push
+      - swipe
     feedback: image
-    dimension: [60, 250]
+    dimension:
+      - 60
+      - 250
     layout:
-      offset: [132, 64]
+      offset:
+        - 132
+        - 64
     options: corner_radius=4
   - name: right
-    action: [push, swipe]
+    action:
+      - push
+      - swipe
     feedback: image
-    dimension: [60, 250]
+    dimension:
+      - 60
+      - 250
     layout:
-      offset: [530, 64]
+      offset:
+        - 530
+        - 64
     options: corner_radius=4

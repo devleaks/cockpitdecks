@@ -7,12 +7,18 @@ buttons:
   - name: 0
     action: push
     feedback: led
-    repeat: [8, 2]
+    repeat:
+      - 8
+      - 2
   - name: 0
     prefix: e
-    action: [encoder, push]
+    action:
+      - encoder
+      - push
     feedback: encoder-leds
-    repeat: [8, 1]
+    repeat:
+      - 8
+      - 1
   - name: a
     action: push
     feedback: led
@@ -21,4 +27,6 @@ buttons:
     feedback: led
   - name: slider
     action: cursor
-    range: [-8192, 8064]
+    range:
+      - -8192
+      - 8064

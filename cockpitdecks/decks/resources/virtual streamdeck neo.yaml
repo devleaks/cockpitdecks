@@ -7,30 +7,50 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [96, 96]
-    repeat: [4, 2]
+    dimension:
+      - 96
+      - 96
+    repeat:
+      - 4
+      - 2
     layout:
-      offset: [74, 65]
-      spacing: [29, 23]
+      offset:
+        - 74
+        - 65
+      spacing:
+        - 29
+        - 23
     options: corner_radius=12
   - name: 0
     prefix: b
     action: push
-    dimension: [50, 10]
+    dimension:
+      - 50
+      - 10
     feedback: led
-    repeat: [2, 1]
+    repeat:
+      - 2
+      - 1
     layout:
-      offset: [99, 324]
-      spacing: [324, 0]
+      offset:
+        - 99
+        - 324
+      spacing:
+        - 324
+        - 0
       hardware:
         type: virtual-sd-neoled
     options: corner_radius=5
   - name: display
     # we assume no action
     feedback: image
-    dimension: [200, 50]
+    dimension:
+      - 200
+      - 50
     layout:
-      offset: [200, 200]
+      offset:
+        - 200
+        - 200
     options: corner_radius=4
 background:
   color: silver

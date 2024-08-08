@@ -81,17 +81,17 @@ buttons:
     data:
       top-line-color: darkblue
       top-line-width: 10
-      icon: "fa:gauge"
+      icon: fa:gauge
       icon-size: 60
       icon-color: darkblue
       data: ${formula}
-      data-format: "{:03.0f}"
+      data-format: '{:03.0f}'
       data-font: D-DINCondensed.otf
       data-size: 80
       data-color: lime
       data-progress: 10
       progress-color: lime
-      data-unit: "HIT"
+      data-unit: HIT
       data-trend: true
       bottomline: Key Press
       bottomline-size: 30
@@ -110,7 +110,7 @@ buttons:
       button-underline-color: coral
       tick-labels:
         - "ON"
-        - "AUTO"
+        - AUTO
         - "OFF"
       tick-space: 15
       tick-label-size: 30
@@ -152,7 +152,7 @@ buttons:
       tick-labels:
         - "ON"
         - "OFF"
-        - "RETRACT"
+        - RETRACT
       tick-space: 14
       tick-label-space: -4
       tick-label-size: 30
@@ -181,15 +181,15 @@ buttons:
     data:
       top-line-color: darkblue
       top-line-width: 10
-      icon: "fa:arrows-rotate"
+      icon: fa:arrows-rotate
       icon-size: 60
       icon-color: darkblue
       data: ${formula}
-      data-format: "{:03.0f}"
+      data-format: '{:03.0f}'
       data-font: D-DINCondensed.otf
       data-size: 80
       data-color: lime
-      data-unit: "HIT"
+      data-unit: HIT
       data-trend: true
       bottomline: Encoder Turns
       bottomline-size: 30

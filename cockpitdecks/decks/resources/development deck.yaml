@@ -7,10 +7,20 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [96, 96]
-    repeat: [2, 1]
+    dimension:
+      - 96
+      - 96
+    repeat:
+      - 2
+      - 1
     layout:
-      offset: [20, 20]
-      spacing: [10, 10]
+      offset:
+        - 20
+        - 20
+      spacing:
+        - 10
+        - 10
 background:
-  size: [350, 240] # no image, so has to manually give a size
+  size:
+    - 350
+    - 240

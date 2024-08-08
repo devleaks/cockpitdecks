@@ -7,14 +7,27 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [120, 120]
-    repeat: [4, 2]
+    dimension:
+      - 120
+      - 120
+    repeat:
+      - 4
+      - 2
   - name: 0
     prefix: e
-    action: [encoder, push]
-    repeat: [4, 1]
+    action:
+      - encoder
+      - push
+    repeat:
+      - 4
+      - 1
   # touchscreen in streamdeck package vocabulary
   - name: touchscreen
-    action: [press, longpress, swipe]
+    action:
+      - press
+      - longpress
+      - swipe
     feedback: image
-    dimension: [800, 100]
+    dimension:
+      - 800
+      - 100

@@ -7,5 +7,9 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [96, 96]
-    repeat: [8, 4]
+    dimension:
+      - 96
+      - 96
+    repeat:
+      - 8
+      - 4

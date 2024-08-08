@@ -11,7 +11,7 @@ buttons:
       offset:
         - 375
         - 98
-    name: '2'
+    name: "2"
   - action:
       - encoder
       - push
@@ -40,7 +40,7 @@ buttons:
       offset:
         - 215
         - 99
-    name: '1'
+    name: "1"
   - action:
       - push
     dimension:
@@ -51,7 +51,7 @@ buttons:
       offset:
         - 56
         - 234
-    name: '4'
+    name: "4"
   - action:
       - push
     dimension:
@@ -62,6 +62,6 @@ buttons:
       offset:
         - 54
         - 99
-    name: '0'
+    name: "0"
 driver: virtualdeck
 name: cockpitdecks

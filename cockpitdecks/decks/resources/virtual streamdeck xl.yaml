@@ -7,11 +7,19 @@ buttons:
   - name: 0
     action: push
     feedback: image
-    dimension: [96, 96]
-    repeat: [8, 4]
+    dimension:
+      - 96
+      - 96
+    repeat:
+      - 8
+      - 4
     layout:
-      offset: [63, 130]
-      spacing: [19, 18]
+      offset:
+        - 63
+        - 130
+      spacing:
+        - 19
+        - 18
     options: corner_radius=8
 background:
   color: black
