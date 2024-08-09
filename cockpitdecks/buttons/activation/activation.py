@@ -804,33 +804,20 @@ class OnOff(Activation):
         self._commands = [Command(path) for path in button._config.get("commands", [])]
 
         # Internal variables
-        self.onoff_current_value = None  # bool on or off, true = on
-        self.initial_value = button._config.get("initial-value")
+        self.onoff_current_value = False  # bool on or off, true = on
 
         Activation.__init__(self, button=button)
 
     def init(self):
         if self._inited:
             return
-        value = self.button.value
-        if value is not None:
-            if type(value) in [
-                dict,
-                tuple,
-            ]:  # dataref, gets its value from internal state
-                self.onoff_current_value = not self.onoff_current_value if self.onoff_current_value is not None else False
-            else:
-                self.onoff_current_value = value
-            logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value}")
-        elif self.initial_value is not None:
+        if self.initial_value is not None:
             if type(self.initial_value) is bool:  # expect bool or number... (no check for number)
                 self.onoff_current_value = self.initial_value
             else:
                 self.onoff_current_value = self.initial_value != 0
             logger.debug(f"button {self.button_name()} initialized on/off at {self.onoff_current_value} from initial-value")
-        if self.onoff_current_value is not None:
-            self._inited = True
-        # self.onoff_current_value can still be None here...
+        self._inited = True
 
     def __str__(self):  # print its status
         return (
@@ -976,8 +963,8 @@ class ShortOrLongpress(Activation):
         """
         return "\n\r".join(
             [
-                f"The button executes {self._command[0]} when it is activated shortly (pressed).",
-                f"The button ends command {self._command[1]} when it is de-activated after a long press (released after more than {self.long_time}secs.).",
+                f"The button executes {self._commands[0]} when it is activated shortly (pressed).",
+                f"The button ends command {self._commands[1]} when it is de-activated after a long press (released after more than {self.long_time}secs.).",
                 f"(Begin and end command is a special terminology (phase of execution of a command) of X-Plane.)",
             ]
         )
@@ -1007,30 +994,19 @@ class UpDown(Activation):
         # Commands
         self._commands = [Command(path) for path in button._config.get("commands", [])]
 
+        # Config
+        self.stops = int(button._config.get("stops", 2))  # may fail
+
         # Internal status
-        self.stops = 0
-        stops = button._config.get("stops", 2)
-        if stops is not None:
-            self.stops = int(stops)
         self.go_up = True
-        self.stop_current_value: int | None = None
+        self.stop_current_value = 0
 
         Activation.__init__(self, button=button)
 
     def init(self):
         if self._inited:
             return
-        value = self.button.value
-        if value is not None:
-            self.stop_current_value = value
-            if self.stop_current_value >= (self.stops - 1):
-                self.stop_current_value = self.stops - 1
-                self.go_up = False
-            elif self.stop_current_value <= 0:
-                self.stop_current_value = 0
-                self.go_up = True
-            logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value}")
-        elif self.initial_value is not None:
+        if self.initial_value is not None:
             if is_integer(self.initial_value):
                 value = abs(self.initial_value)
                 if value > self.stops - 1:
@@ -1041,8 +1017,7 @@ class UpDown(Activation):
                 self.initial_value = value
                 self.stop_current_value = value
             logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value")
-        if self.stop_current_value is not None:
-            self._inited = True
+        self._inited = True
 
     def __str__(self):  # print its status
         return (
@@ -1104,7 +1079,7 @@ class UpDown(Activation):
         s = super().get_state_variables()
         if s is None:
             s = {}
-        s = s | {"stops": self.stops, "go_up": self.go_up}
+        s = s | {"stops": self.stops, "go_up": self.go_up, "stop": self.stop_current_value}
         return s
 
     def describe(self) -> str:

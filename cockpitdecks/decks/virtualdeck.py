@@ -184,9 +184,9 @@ class VirtualDeck(DeckWithIcons):
             im.putalpha(alpha)
             return im
 
-        if not self.has_clients():
-            logger.debug(f"deck {self.name} has no client")
-            return
+        # if not self.has_clients():
+        #     logger.debug(f"deck {self.name} has no client")
+        #     return
 
         buttondef = self.deck_type.get_button_definition(key)
         rc = buttondef.get_option("corner_radius")

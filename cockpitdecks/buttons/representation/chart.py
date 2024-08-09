@@ -19,7 +19,7 @@ from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 MAX_UPDATE_RATE = 4  # per seconds
 MAX_SPARKLINES = 3

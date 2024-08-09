@@ -183,7 +183,7 @@ buttons:
     commands:
       - none
       - none
-    formula: ${state:activation_count} 6 mod
+    formula: ${state:stop_current_value}
   # - index: 8
   #   name: INSPECT DATAREFS
   #   label: DATAREF VALUES

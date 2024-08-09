@@ -70,13 +70,13 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
         self._first_value_not_saved = True
         self._first_value = None  # first value the button will get
         self._last_activation_state = None
-        self.initial_value = config.get("initial-value")
+        self.initial_value = config.get(CONFIG_KW.INITIAL_VALUE.value)
         self.current_value = None
         self.previous_value = None
 
         #### Options
         #
-        self.options = parse_options(config.get("options"))
+        self.options = parse_options(config.get(CONFIG_KW.OPTIONS.value))
         self.managed = None
         self.guarded = None
 

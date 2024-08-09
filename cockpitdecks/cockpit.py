@@ -145,7 +145,8 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         # Here, it is purely statistics
-        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        if self.sim is not None:
+            self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
         ATTRNAME = "_defaults"
@@ -402,6 +403,8 @@ class Cockpit(DatarefListener, CockpitBase):
         if self.sim is None:
             logger.info(f"..starting simulator..")
             self.sim = self._simulator(self)
+        else:
+            logger.debug(f"simulator already running")
 
         self.cockpit = {}
         self.icons = {}
