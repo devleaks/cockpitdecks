@@ -1066,7 +1066,7 @@ class Cockpit(DatarefListener, CockpitBase):
         # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
         # with open("datarefs.json", "w") as fp:
         #     json.dump(drefs, fp, indent=2)
-        with open("datarefs.yaml", "w") as fp:
+        with open("datarefs-log.yaml", "w") as fp:
             yaml.dump(drefs, fp)
 
         for deck in self.cockpit.values():
@@ -1201,6 +1201,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def probe(self, deck):
         return self.send(deck=deck, payload={"code": 99, "deck": deck, "meta": {"ts": datetime.now().timestamp()}})
 
+    # ###############################################################
     # Button designer
     #
     #

@@ -9,6 +9,7 @@ import json
 import urllib.parse
 import socket
 
+from cockpitdecks.constant import CONFIG_KW
 from flask import Flask, render_template, send_from_directory, request, jsonify
 from simple_websocket import Server, ConnectionClosed
 
@@ -177,13 +178,13 @@ def button_designer_io():
             return {"status": "no deckconfig"}
         if CODE not in data:
             return {"status": "no code"}
-        if "name" not in data[CONFIG_FOLDER]:
+        if CONFIG_KW.NAME.value not in data[CONFIG_FOLDER]:
             return {"status": "no name"}
 
         if not os.path.exists(AIRCRAFT_DECK_TYPES):
             os.makedirs(AIRCRAFT_DECK_TYPES, exist_ok=True)
 
-        name = data[CONFIG_FOLDER].get("name")
+        name = data[CONFIG_FOLDER].get(CONFIG_KW.NAME.value)
         fn = os.path.join(AIRCRAFT_DECK_TYPES, name + ".json")
         with open(fn, "w") as fp:
             json.dump(data[CODE], fp, indent=2)

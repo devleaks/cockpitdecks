@@ -11,7 +11,7 @@ from datetime import datetime
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "11.16.0"
+__version__ = "11.16.1"
 
 #
 #
@@ -63,7 +63,7 @@ def all_subclasses(cls) -> list:
     Raises:
         ValueError: If invalid class found in recursion (types, etc.)
     """
-    if cls == type:
+    if cls is type:
         raise ValueError("Invalid class - 'type' is not a class")
     subclasses = set()
     stack = []

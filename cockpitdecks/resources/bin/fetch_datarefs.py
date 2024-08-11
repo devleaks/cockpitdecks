@@ -8,6 +8,7 @@ import time
 import itertools
 import threading
 from datetime import datetime
+from queue import Queue
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
 from cockpitdecks.simulator import DatarefListener, Dataref
@@ -24,7 +25,12 @@ class DatarefFetcher(DatarefListener, CockpitBase):
     """Dummy"""
 
     def __init__(self, simulator):
+        # Main event look
+        self.event_queue = Queue()
+
+        self._simulator = simulator
         self.sim = simulator(self)
+
         self._list = None
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)

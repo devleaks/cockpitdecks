@@ -522,6 +522,13 @@ class Deck(ABC):
     # Deck Specific Functions : Callbacks and activation
     #
     # There are highliy deck specific, no general function.
+    def get_default_page(self, index: str):
+        return f"""
+buttons:
+  - index: {index}
+    type: push
+    formula: ${{state:activation_count}} 2 %
+"""
 
 
 class DeckWithIcons(Deck):
@@ -714,3 +721,16 @@ class DeckWithIcons(Deck):
             logger.warning(f"button: representation is not an image ({type(representation)})")
             return None
         return button
+
+    def get_default_page(self, index: str):
+        return f"""
+buttons:
+  - index: {index}
+    type: push
+    multi-texts:
+      - text: 'HELLO\nPRESS ME'
+        text-size: 20
+      - text: 'WORLD\nPRESS ME'
+        text-size: 20
+    formula: ${{state:activation_count}} 2 %
+"""

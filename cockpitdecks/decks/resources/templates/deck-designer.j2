@@ -523,6 +523,26 @@ document.getElementById("label").addEventListener(
     false,
 );
 
+autosave = setInterval(function() {
+    code = stage.toJSON();
+    yaml = reset_transforms();
+    out = {code: JSON.parse(code), deckconfig: yaml}
+    out.deckconfig.name = "autosave"
+
+    fetch("/deck-designer-io", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"}, 
+      body: JSON.stringify(out)
+    })
+    .then(r =>  r.json().then(status => {
+        console.log("status", status)
+    }));
+    console.log("auto saved")
+},
+120 * 1000 // msecs
+)
+
+
 document.getElementById("save").addEventListener(
     "click",
     function (event) {
@@ -531,8 +551,7 @@ document.getElementById("save").addEventListener(
         yaml = reset_transforms();
         out = {code: JSON.parse(code), deckconfig: yaml}
         console.log("saving code", out)
-
-        reset_transforms()
+        // reset_transforms()
 
         fetch("/deck-designer-io", {
           method: "POST",
