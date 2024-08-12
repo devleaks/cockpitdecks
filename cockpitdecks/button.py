@@ -40,6 +40,7 @@ class Button(DatarefListener, ValueProvider):
         self._config = config
         self._def = config.get(DECK_BUTTON_DEFINITION)
         self.page: "Page" = page
+        self.mosaic = self._def.is_tile()
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
 
@@ -696,7 +697,7 @@ class Button(DatarefListener, ValueProvider):
         to ask to the button and render it.
         """
         if self.deck is not None:
-            if self.on_current_page():
+            if self.on_current_page() and not self.mosaic:
                 try:
                     self.deck.render(self)
                 except:

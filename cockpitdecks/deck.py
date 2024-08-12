@@ -295,7 +295,7 @@ class Deck(ABC):
             self.pages[page_name] = this_page
 
             # Page buttons
-            this_page.load_buttons(page_config[CONFIG_KW.BUTTONS.value])
+            this_page.load_buttons(buttons=page_config[CONFIG_KW.BUTTONS.value], deck_type=self.deck_type)
 
             # Page includes
             if CONFIG_KW.INCLUDES.value in page_config:
@@ -322,7 +322,7 @@ class Deck(ABC):
                         this_page.merge_attributes(inc_config.store)  # merges attributes first since can have things for buttons....
                         if CONFIG_KW.BUTTONS.value in inc_config:
                             before = len(this_page.buttons)
-                            this_page.load_buttons(inc_config[CONFIG_KW.BUTTONS.value])
+                            this_page.load_buttons(buttons=inc_config[CONFIG_KW.BUTTONS.value], deck_type=self.deck_type)
                             ipb = len(this_page.buttons) - before
                         del inc_config.store[CONFIG_KW.BUTTONS.value]
                     else:
@@ -547,8 +547,8 @@ class DeckWithIcons(Deck):
     #
     def get_image_size(self, index):
         """Gets image size for deck button index"""
-        button = self.deck_type.get_button_definition(index)
-        return button.display_size()
+        button_def = self.deck_type.get_button_definition(index)
+        return button_def.display_size()
 
     def create_empty_icon_for_key(self, index):
         return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
@@ -712,7 +712,7 @@ class DeckWithIcons(Deck):
     def make_button(self, config):
         # testing. returns random icon
         page = Page(name="_BUTTONDESIGNER", config={}, deck=self)
-        page.load_buttons(buttons=[config])
+        page.load_buttons(buttons=[config], deck_type=self.deck_type)
         button: Button = page.buttons[list(page.buttons.keys())[0]]
         representation = button._representation
         if not isinstance(representation, IconBase):

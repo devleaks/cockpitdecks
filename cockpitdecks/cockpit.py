@@ -1,5 +1,7 @@
 # Main container for all decks
 #
+from re import NOFLAG
+import sys
 import os
 import io
 import glob
@@ -90,7 +92,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self._reqdfts = set()
 
         # "Aircraft" name or model...
-        self.acpath = None
+        self._acpath = None
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
 
@@ -156,6 +158,32 @@ class Cockpit(DatarefListener, CockpitBase):
         if isinstance(ld, dict):
             ld[dflt] = value
         logger.debug(f"set default {dflt} to {value}")
+
+    @property
+    def acpath(self):
+        return self._acpath
+
+    @acpath.setter
+    def acpath(self, acpath: str | None):
+        self.remove_sys_path()
+        self._acpath = acpath
+        self.add_sys_path()
+
+    def add_sys_path(self):
+        if self.acpath is not None:
+            pythonpath = os.path.join(os.path.abspath(self.acpath), "resources", "decks", "drivers")
+            if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
+                if pythonpath not in sys.path:
+                    sys.path.append(pythonpath)
+                    logger.info(f"added {pythonpath} to sys.path")
+
+    def remove_sys_path(self):
+        if self.acpath is not None:
+            pythonpath = os.path.join(os.path.abspath(self.acpath), "resources", "decks", "drivers")
+            if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
+                if pythonpath in sys.path:
+                    sys.path.remove(pythonpath)
+                    logger.info(f"removed {pythonpath} to sys.path")
 
     def defaults_prefix(self):
         return "dark-default-" if self._dark else "default-"
@@ -667,7 +695,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.warning(f"invalid deck type {deck_type}, ignoring")
                 continue
 
-            deck_driver = self.deck_types[deck_type][CONFIG_KW.DRIVER.value]
+            deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
             if deck_driver not in DECK_DRIVERS.keys():
                 logger.warning(f"invalid deck driver {deck_driver}, ignoring")
                 continue

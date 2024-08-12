@@ -153,6 +153,7 @@ class DECK_KW(Enum):
     INDEX = "index"
     INT_NAME = "_intname"
     LAYOUT = "layout"
+    MOSAIC = "mosaic"
     NAME = "name"
     NONE = "none"
     OFFSET = "offset"
@@ -162,6 +163,7 @@ class DECK_KW(Enum):
     RANGE = "range"
     REPEAT = "repeat"
     SPACING = "spacing"
+    TILES = "tiles"
 
 
 # ############################################################

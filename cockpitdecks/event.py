@@ -319,6 +319,9 @@ class SwipeEvent(DeckEvent):
         """
         return self.swipe_distance < tolerance
 
+    def xy(self):
+        return (int((self.start_pos_x + self.end_pos_x) / 2), int((self.start_pos_y + self.end_pos_y) / 2))
+
     def long_press(self, minimum_duration: float = 3.0, tolerance: float = 10.0) -> bool:
         """Returns whether the swipe was just a touch but for a long time
 

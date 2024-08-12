@@ -8,6 +8,7 @@ from functools import reduce
 
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER
+from cockpitdecks.button import Button
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
@@ -52,6 +53,15 @@ class DeckButton:
         self.hardware_representation: dict | None = None
         if self.layout is not None:
             self.hardware_representation = self.layout.get(DECK_KW.HARDWARE_REPRESENTATION.value)
+
+        self.mosaic = None
+        self._tile = False
+        mosaic = config.get(DECK_KW.MOSAIC.value)
+        if mosaic is not None:
+            self.mosaic = DeckTypeBase(config={"name": "mosaic", "driver": "virtualdeck", "buttons": mosaic})
+            # Mark all mosaic buttons as tile of this mosaic
+            for b in self.mosaic.buttons.values():
+                b._tile = True
 
         self.init()
 
@@ -112,6 +122,12 @@ class DeckButton:
     def is_encoder(self) -> bool:
         return self.has_action("encoder")
 
+    def is_mosaic(self) -> bool:
+        return self.mosaic is not None
+
+    def is_tile(self) -> bool:
+        return self._tile
+
     def numeric_index(self, idx) -> int:
         if not self._name_is_int:
             loggerButtonType.warning(f"button index {idx} is not numeric")
@@ -148,13 +164,16 @@ class DeckButton:
     def can_represent(self, representation: str) -> bool:
         return representation in self.valid_representations()
 
-    def display_size(self, return_offset: bool = False) -> Tuple[int, int] | None:
+    def display_size(self) -> Tuple[int, int] | None:
         """Parses info from resources.decks.*.yaml"""
         if self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.dimension is not None:
-            sizes = self.dimension
-            if type(sizes) is int:  # just a radius
-                return (2 * sizes, 2 * sizes) if not return_offset else (sizes, sizes)
-            return self.dimension[0:2] if not return_offset else self.dimension[2:4]
+            return (2 * self.dimension, 2 * self.dimension) if type(self.dimension) is int else self.dimension
+        return None
+
+    def get_offset(self, return_offset: bool = False) -> Tuple[int, int] | None:
+        """Parses info from resources.decks.*.yaml"""
+        if self.has_feedback(DECK_FEEDBACK.IMAGE.value) and self.dimension is not None:
+            return self.position
         return None
 
     def get_drawing_size(self, length: int = ICON_SIZE) -> Tuple[int, int] | None:
@@ -184,6 +203,8 @@ class DeckButton:
             "dimension": self.dimension,
             "layout": self.layout,
             "options": self.options,
+            "mosaic": self.mosaic.desc() if self.mosaic is not None else None,
+            "tile": self._tile,
         }
 
 
@@ -191,17 +212,17 @@ DECK_TYPE_LOCATION = os.path.join(os.path.dirname(__file__))
 DECK_TYPE_GLOB = "*.yaml"
 
 
-class DeckType(Config):
+class DeckTypeBase:
     """Description of a deck capabilities, including its representation for web decks
 
     Reads and parse deck template file"""
 
-    def __init__(self, filename: str) -> None:
-        Config.__init__(self, filename=filename)
-        self.name = self[DECK_KW.NAME.value]
-        self.driver = self[DECK_KW.DRIVER.value]
+    def __init__(self, config: dict) -> None:
+        self._config = config
+        self.name = self._config.get(DECK_KW.NAME.value)
+        self.driver = self._config.get(DECK_KW.DRIVER.value)
         self.buttons: Dict[str | int, DeckButton] = {}
-        self.background = self.store.get(DECK_KW.BACKGROUND.value)
+        self.background = self._config.get(DECK_KW.BACKGROUND.value)
         self._special_displays = None  # cache
         self.count = 0
         self._aircraft = False
@@ -211,6 +232,10 @@ class DeckType(Config):
     def list(path: str = DECK_TYPE_LOCATION):
         return glob.glob(os.path.join(path, DECK_TYPE_GLOB))
 
+    @property
+    def store(self):
+        return self._config
+
     def init(self):
         """Parses a deck definition file and build a list of what's available.
 
@@ -218,7 +243,7 @@ class DeckType(Config):
         button can provide as a feedback.
         """
         cnt = 0
-        for button_block in self[DECK_KW.BUTTONS.value]:
+        for button_block in self._config[DECK_KW.BUTTONS.value]:
             self.buttons = self.buttons | self.parse_deck_button_block(button_block=button_block)
         loggerDeckType.debug(f"deck type {self.name}: buttons: {self.buttons.keys()}..")
         loggerDeckType.debug(f"..deck type {self.name} done")
@@ -263,6 +288,7 @@ class DeckType(Config):
                         DECK_KW.POSITION.value: offset,
                         DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value, [0, 0]),
                         DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
+                        DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     }
                 )
@@ -295,6 +321,7 @@ class DeckType(Config):
                         DECK_KW.POSITION.value: position,
                         DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value),
                         DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
+                        DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     }
                 )
@@ -325,7 +352,7 @@ class DeckType(Config):
         if self._special_displays is not None:
             return self._special_displays
         self._special_displays = []
-        for b in self.store.get(DECK_KW.BUTTONS.value, []):
+        for b in self._config.get(DECK_KW.BUTTONS.value, []):
             if DECK_KW.REPEAT.value not in b and DECK_FEEDBACK.IMAGE.value in b.get(DECK_KW.FEEDBACK.value, "") and b.get(DECK_KW.DIMENSION.value) is not None:
                 n = b.get(DECK_KW.NAME.value)
                 if n is not None:
@@ -341,6 +368,12 @@ class DeckType(Config):
     def get_button_definition(self, index):
         if type(index) is int:
             index = str(index)
+        # 1. search in all mosaic first...
+        for b in self.buttons.values():
+            if b.is_mosaic():
+                if index in b.mosaic.valid_indices():
+                    loggerDeckType.info(f"returning index {index} for {self.name} from mosaic")
+                    return b.mosaic.get_button_definition(index)
         return self.buttons.get(index)
 
     def get_index_prefix(self, index):
@@ -390,10 +423,10 @@ class DeckType(Config):
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
-    def display_size(self, index, return_offset: bool = False):
+    def display_size(self, index):
         b = self.get_button_definition(index)
         if b is not None:
-            return b.display_size(return_offset)
+            return b.display_size()
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
@@ -407,7 +440,7 @@ class DeckType(Config):
     def filter(self, query: dict) -> dict:
         res = []
         for what, value in query.items():
-            for button in self[DECK_KW.BUTTONS.value]:
+            for button in self._config[DECK_KW.BUTTONS.value]:
                 if what == DECK_KW.ACTION.value:
                     if what in button and value in button[what]:
                         res.append(button)
@@ -427,3 +460,19 @@ class DeckType(Config):
         """
         buttons = [b.desc() for b in self.buttons.values()]
         return {"name": self.name, "driver": self.driver, "background": self.background, "aircraft": self._aircraft, "buttons": buttons}
+
+    def get_button(self, x: int, y: int) -> DeckButton | None:
+        return None
+
+
+class DeckType(DeckTypeBase):
+    """Description of a deck capabilities, including its representation for web decks
+
+    Reads and parse deck template file"""
+
+    def __init__(self, filename: str) -> None:
+        file = Config(filename=filename)
+        DeckTypeBase.__init__(self, config=file.store)
+
+    def get(self, what: str):
+        return self._config.get(what)

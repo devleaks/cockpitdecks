@@ -1954,3 +1954,64 @@ class EncoderToggle(Activation):
                     f"This encoder executes command {self._commands[2]} when it is turned counter-clockwise.",
                 ]
             )
+
+
+#
+# ###############################
+# Touch screen activation for Mosaic-like icons
+# (large icons composed from multiple icons)
+#
+class Mosaic(Activation):
+    """
+    Defines a Push activation.
+    The supplied command is executed each time a button is pressed.
+    """
+
+    ACTIVATION_NAME = "mosaic"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.SWIPE]
+
+    PARAMETERS = {
+        "command": {"type": "string", "prompt": "Command", "mandatory": True},
+        "auto-repeat": {"type": "boolean", "prompt": "Auto-repeat"},
+        "auto-repeat-delay": {"type": "float", "prompt": "Auto-repeat delay", "hint": "Delay after press before repeat"},
+        "auto-repeat-speed": {"type": "float", "prompt": "Auto-repeat speed", "hint": "Speed of repeat"},
+        "initial-value": {
+            "type": "integer",
+            "prompt": "Initial value",
+        },
+    }
+
+    # Default values
+    AUTO_REPEAT_DELAY = 1  # seconds
+    AUTO_REPEAT_SPEED = 0.2  # seconds
+
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
+
+        # Working variables
+        self.pressed = False  # True while the button is pressed, False when released
+
+    def __str__(self):  # print its status
+        return super() + "\n" + f", is_valid: {self.is_valid()}"
+
+    def is_valid(self):
+        return super().is_valid()
+
+    def activate(self, event):
+        if not self.can_handle(event):
+            return
+        super().activate(event)
+
+        print(">>>>>>> touched", event.touched_only(), event.xy())
+        # determine which tile was hit
+        # activate proper event in tile
+
+    def describe(self) -> str:
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join(
+            [
+                f"The button converts its swipe event into a push event for a tile.",
+            ]
+        )

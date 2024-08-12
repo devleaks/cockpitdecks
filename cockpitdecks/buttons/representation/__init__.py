@@ -9,6 +9,7 @@ from .representation import Representation
 # Image/icon based
 from .icon import IconBase, Icon, IconText, MultiTexts, MultiIcons
 from .icon_animation import IconAnimation
+from .mosaic import Mosaic
 from .hardware import VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
 
 try:
