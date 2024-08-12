@@ -372,7 +372,6 @@ class Deck(ABC):
                 logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
                 logger.debug("..unloading datarefs..")
                 self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
-                self.cockpit.sim.remove_collections_to_monitor(self.current_page.dataref_collections)
                 logger.debug("..cleaning page..")
                 self.current_page.clean()
             self.inc(INTERNAL_DATAREF.PAGE_CHANGES.value)
@@ -384,7 +383,6 @@ class Deck(ABC):
             self.device.reset()
             logger.debug("..loading datarefs..")
             self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
-            self.cockpit.sim.add_collections_to_monitor(self.current_page.dataref_collections)
             logger.debug("..rendering page..")
             self.current_page.render()
             logger.debug(f"deck {self.name} ..done")

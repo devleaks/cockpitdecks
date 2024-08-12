@@ -70,7 +70,6 @@ class VirtualDeck(DeckWithIcons):
             logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
             logger.debug("..unloading datarefs..")
             self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
-            self.cockpit.sim.remove_collections_to_monitor(self.current_page.dataref_collections)
             logger.debug("..cleaning page..")
             self.current_page.clean()
         else:

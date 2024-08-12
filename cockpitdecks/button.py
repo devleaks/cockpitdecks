@@ -14,7 +14,7 @@ from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
 from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
 from .buttons.representation import REPRESENTATIONS, Annunciator
-from .simulator import Dataref, DatarefListener, DatarefSetListener
+from .simulator import Dataref, DatarefListener
 from .value import Value, ValueProvider
 
 from cockpitdecks import (
@@ -33,10 +33,9 @@ logger = logging.getLogger(__name__)
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
-class Button(DatarefListener, DatarefSetListener, ValueProvider):
+class Button(DatarefListener, ValueProvider):
     def __init__(self, config: dict, page: "Page"):
         DatarefListener.__init__(self)
-        DatarefSetListener.__init__(self)
         # Definition and references
         self._config = config
         self._def = config.get(DECK_BUTTON_DEFINITION)
@@ -149,12 +148,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
 
         # collection in single set
         self.all_datarefs = self.all_datarefs | self.string_datarefs
-
-        # collection of datarefs (datarefsets)
-        self.dataref_collections = None
-        self.dataref_collections = self.get_dataref_collections()
-        if len(self.dataref_collections) > 0:
-            self.page.register_dataref_collections(self)
 
         self.init()
 
@@ -397,40 +390,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
                 return [f"{pathroot}[{i}]" for i in range(start, end)]
         return [path]
 
-    def get_dataref_collections(self):
-        if self.dataref_collections is not None:
-            return self.dataref_collections
-
-        dc = self._config.get("dataref-collections")
-        if dc is None:
-            logger.debug("no collection")
-            self.dataref_collections = {}
-            return self.dataref_collections
-
-        collections = {}
-        for collection in dc:
-            name = collection.get("name", self.name + "-collection#" + str(len(collections)))
-            count = collection.get("array")
-            if count is None:  # no repetition
-                collections[name] = collection
-                drefs = collection["datarefs"]
-                # Expand datarefs into a list of individual datarefs
-                these_drefs = []
-                for dref in drefs:
-                    these_drefs = these_drefs + self.parse_dataref_array(dref)
-                collection["datarefs"] = these_drefs
-            else:
-                for i in range(count):
-                    new_collection = collection.copy()
-                    new_name = f"{name}#{i}"
-                    new_collection["datarefs"] = [f"{d}[{i}]" for d in collection["datarefs"]]
-                    new_collection["name"] = new_name
-                    collections[new_name] = new_collection
-
-        self.dataref_collections = collections
-        logger.debug(f"button {self.name}: loaded {len(collections)} collections")
-        return self.dataref_collections
-
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
@@ -627,13 +586,6 @@ class Button(DatarefListener, DatarefSetListener, ValueProvider):
             self.render()
         else:
             logger.debug(f"button {self.name}: no change")
-
-    def dataref_collection_changed(self, dataref_collection):
-        logger.log(
-            SPAM_LEVEL,
-            f"button {self.name}: dataref collection {dataref_collection.name} changed",
-        )
-        self.render()
 
     def activate(self, event):
         """

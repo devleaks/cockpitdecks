@@ -5,7 +5,7 @@ from typing import Dict
 
 from cockpitdecks import ID_SEP, CONFIG_KW
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Dataref, DatarefSet, MAX_COLLECTION_SIZE
+from cockpitdecks.simulator import Dataref
 from .button import Button, DECK_BUTTON_DEFINITION
 
 logger = logging.getLogger(__name__)
@@ -190,38 +190,6 @@ class Page:
 
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
-    def register_dataref_collections(self, button: Button):
-        # Transform dataref paths into Dataref().
-        for name, colldesc in button.get_dataref_collections().items():
-            collection: Dict[str, Dataref] = {}
-            for d in colldesc.get("datarefs"):
-                if len(collection) >= MAX_COLLECTION_SIZE:
-                    continue
-                ref = self.sim.get_dataref(d)  # creates or return already defined dataref
-                if ref is not None:
-                    collection[d] = ref  # ref DO NOT get added to page datarefs collection
-                    logger.debug(f"page {self.name}: button {button.name} added dataref {d} to collection {name}")
-                else:
-                    logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d} for collection {name}")
-            if len(collection) > MAX_COLLECTION_SIZE:
-                logger.warning(
-                    f"page {self.name}: button {button.name}: collection: {name}: too many datarefs ({len(colldesc['datarefs'])}, maximum is {MAX_COLLECTION_SIZE})"
-                )
-            dc = DatarefSet(datarefs=collection, sim=button.sim, name=name)
-            dc.add_listener(button)
-            dc.set_set_dataref(colldesc.get(CONFIG_KW.SET_DATAREF.value))
-            dc.set_expiration(colldesc.get("expire"))
-            dc.set_collect_time(colldesc.get("collection-duration"))
-            self.dataref_collections[name] = dc
-            logger.debug(f"page {self.name}: button {button.name} collection {name} registered")
-        logger.debug(f"page {self.name}: button {button.name} collections registered")
-
-    # def activate(self, idx: str):
-    #     if idx in self.buttons.keys():
-    #         self.buttons[idx].activate(state=False)
-    #     else:
-    #         logger.error(f"page {self.name}: invalid button index {idx}")
-
     def render(self):
         """
         Renders this page on the deck
@@ -266,7 +234,6 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
-            self.sim.remove_collections_to_monitor(self.dataref_collections)
             self.sim.remove_datarefs_to_monitor(self.datarefs)
         self.clean()
         self.buttons = {}

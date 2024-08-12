@@ -641,16 +641,3 @@ class DatarefEvent(SimulatorEvent):
             self.enqueue()
             logger.debug(f"enqueued")
         return True
-
-
-# To enable DatarefSet and Collector, uncomment the following lines.
-# Use at your own risk.
-# It does work, but not very reliably.
-#
-
-from .collector import (
-    MAX_COLLECTION_SIZE,
-    DatarefSet,
-    DatarefSetListener,
-    DatarefSetCollector,
-)

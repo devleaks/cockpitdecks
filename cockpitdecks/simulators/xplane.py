@@ -10,13 +10,10 @@ import time
 import json
 from datetime import datetime, timedelta, timezone
 
-from cockpitdecks import SPAM_LEVEL, USE_COLLECTOR, AIRCRAFT_CHANGE_MONITORING_DATAREF
+from cockpitdecks import SPAM_LEVEL, AIRCRAFT_CHANGE_MONITORING_DATAREF
 from cockpitdecks.config import API_PORT, API_PATH
 from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-
-if USE_COLLECTOR:
-    from cockpitdecks.simulator import DatarefSetCollector
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
@@ -297,10 +294,6 @@ class XPlane(Simulator, XPlaneBeacon):
         self.cockpit.set_logging_level(__name__)
 
         XPlaneBeacon.__init__(self)
-
-        self.collector: DatarefSetCollector | None = None
-        if USE_COLLECTOR:  # collector is started immediately in its init() upon creation
-            self.collector = DatarefSetCollector(self)
 
         self.socket_strdref = None
 
@@ -749,40 +742,6 @@ class XPlane(Simulator, XPlaneBeacon):
         # self.remove_datarefs_to_monitor(self.all_datarefs)
         super().remove_all_datarefs()
 
-    def add_collections_to_monitor(self, collections):
-        # if not self.connected:
-        #   logger.warning(f"no connection")
-        #   logger.debug(f"would add collection {collections.keys()} to monitor")
-        #   return
-        if not USE_COLLECTOR:
-            return
-        for k, v in collections.items():
-            self.collector.add_collection(v, start=False)
-            logger.debug(f"added collection {k}")
-        self.collector.enqueue_collections()
-
-    def remove_collections_to_monitor(self, collections):
-        # if not self.connected:
-        #   logger.warning(f"no connection")
-        #   logger.debug(f"would remove collection {collections.keys()} from monitor")
-        #   return
-        if not USE_COLLECTOR:
-            return
-        for k, v in collections.items():
-            self.collector.remove_collection(v, start=False)
-            logger.debug(f"removed collection {k}")
-        self.collector.enqueue_collections()
-
-    def remove_all_collections(self):
-        # if not self.connected:
-        #   logger.warning(f"no connection")
-        #   logger.debug(f"would remove all collections from monitor")
-        #   return
-        if not USE_COLLECTOR:
-            return
-        self.collector.remove_all_collections()
-        logger.debug("removed all collections from monitor")
-
     def add_all_datarefs_to_monitor(self):
         if not self.connected:
             logger.warning("no connection")
@@ -881,15 +840,9 @@ class XPlane(Simulator, XPlaneBeacon):
     def terminate(self):
         logger.debug(f"currently {'not ' if self.udp_event is None else ''}running. terminating..")
         self.clean_datarefs_to_monitor()  # stop monitoring all datarefs
-        self.remove_all_collections()  # this does not destroy datarefs, only unload current collection
         self.remove_all_datarefs()
         logger.info("terminating..disconnecting..")
         self.disconnect()
         logger.info("..stopping..")
         self.stop()
-        if self.collector is not None:
-            logger.info("..terminating Collector..")
-            self.collector.terminate()
-        else:
-            logger.info("..no Collector..")
         logger.info("..terminated")
