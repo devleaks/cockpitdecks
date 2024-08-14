@@ -4,7 +4,7 @@ import json
 import glob
 from typing import List, Dict, Tuple
 
-from functools import reduce
+from py3rtree import RTree, Rect
 
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER
@@ -60,6 +60,7 @@ class DeckButton:
         if mosaic is not None:
             self.mosaic = DeckTypeBase(config={"name": "mosaic", "driver": "virtualdeck", "buttons": mosaic})
             # Mark all mosaic buttons as tile of this mosaic
+            self.mosaic._parent_deck = self
             for b in self.mosaic.buttons.values():
                 b._tile = True
 
@@ -183,6 +184,11 @@ class DeckButton:
             return (int(length * sizes[0] / lmin), int(length * sizes[1] / lmin))
         return None
 
+    def get_corners(self):
+        # (left, bottom, right, top)
+        sizes = self.display_size()
+        return (self.position[0], self.position[1], self.position[0] + sizes[0], self.position[1] + sizes[1])
+
     def desc(self):
         """Returns a flattened description of the button
 
@@ -224,8 +230,10 @@ class DeckTypeBase:
         self.buttons: Dict[str | int, DeckButton] = {}
         self.background = self._config.get(DECK_KW.BACKGROUND.value)
         self._special_displays = None  # cache
+        self._map = None # display layout (RTree)
         self.count = 0
         self._aircraft = False
+        self._parent_deck = None
         self.init()
 
     @staticmethod
@@ -372,7 +380,7 @@ class DeckTypeBase:
         for b in self.buttons.values():
             if b.is_mosaic():
                 if index in b.mosaic.valid_indices():
-                    loggerDeckType.info(f"returning index {index} for {self.name} from mosaic")
+                    loggerDeckType.debug(f"returning index {index} for {self.name} from mosaic")
                     return b.mosaic.get_button_definition(index)
         return self.buttons.get(index)
 
@@ -462,7 +470,18 @@ class DeckTypeBase:
         return {"name": self.name, "driver": self.driver, "background": self.background, "aircraft": self._aircraft, "buttons": buttons}
 
     def get_button(self, x: int, y: int) -> DeckButton | None:
-        return None
+        # Don't force it. Use a bigger hammer. (/usr/bin/fortune, circa 1980, a motto of mine.)
+        if self._map is None:
+            # make map
+            self._map = RTree()
+            for b in self.buttons.values():
+                self._map.insert(b, Rect(*b.get_corners()))
+                # print("map>", b.name, b.get_corners())
+        real_point_res = [r.leaf_obj() for r in self._map.query_point( (x,y) ) if r.is_leaf()]
+        # print("query>", (x, y), [b.name for b in real_point_res])
+        if len(real_point_res) > 1:
+            loggerDeckType.warning(f"touched more than one button ({len(real_point_res)}), returning first button only")
+        return real_point_res[0] if len(real_point_res) > 0 else None
 
 
 class DeckType(DeckTypeBase):

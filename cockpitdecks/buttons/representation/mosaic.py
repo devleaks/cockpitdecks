@@ -4,13 +4,13 @@ from PIL import Image
 
 from cockpitdecks import DECK_KW
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
-from .icon import Icon
+from .icon import IconBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class Mosaic(Icon):
+class Mosaic(IconBase):
     """A Mosaic is an icon that is split into several smaller icon"""
 
     REPRESENTATION_NAME = "mosaic"
@@ -18,11 +18,11 @@ class Mosaic(Icon):
     PARAMETERS = {}
 
     def __init__(self, button: "Button"):
-        Icon.__init__(self, button=button)
-        self.mosaic = self._config.get(self.REPRESENTATION_NAME, {})
+        IconBase.__init__(self, button=button)
+        self.mosaic = self._representation_config
         self.tiles = {}
 
-        self.init2()
+        self.init2() # need to delay init2 after Icon is inited().
 
     def init2(self):
         # make buttons!
@@ -30,10 +30,6 @@ class Mosaic(Icon):
         if buttons is not None:
             pseudo_deck_type = self.button._def.mosaic
             self.tiles = self.button.page.load_buttons(buttons=buttons, deck_type=pseudo_deck_type)
-
-    def get_background(self):
-        size = self.button._def.display_size()
-        return Image.new(mode="RGBA", size=size, color=TRANSPARENT_PNG_COLOR)
 
     def place_tile(self, tile, image):
         dimensions = tile._def.display_size()
@@ -44,7 +40,7 @@ class Mosaic(Icon):
         image.paste(portion, dest, portion)
 
     def render(self):
-        image = self.get_background()
+        image = self.button.deck.create_icon_for_key(self.button.index, colors=self.cockpit_color, texture=self.cockpit_texture)
         for tile in self.tiles:
             self.place_tile(tile, image)
         return image

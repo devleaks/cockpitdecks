@@ -233,7 +233,6 @@ def deck(name: str):
         deck_desc[WEBDECK_DEFAULTS] = cockpit.get_virtual_deck_defaults()
     else:
         app.logger.debug(f"deck desc is not a dict {deck_desc}")
-    print(deck_desc)
     return render_template("deck.j2", deck=deck_desc)
 
 

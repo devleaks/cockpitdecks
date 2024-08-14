@@ -46,6 +46,8 @@ class VirtualDeck(DeckWithIcons):
         self.valid = True
         self.clients = 0
 
+        self._touch_event_start = None
+
         self.init()
 
     def add_client(self):
@@ -134,9 +136,21 @@ class VirtualDeck(DeckWithIcons):
         This is the function that is called when a key is pressed.
         For virtual decks, this function is quite complex
         since it has to take the "shape" of any "real physical deck" it virtualize
+        Event codes:
+         0 = Push/press RELEASE
+         1 = Push/press PRESS
+         2 = Turned clockwise
+         3 = Turned counter-clockwise
+         4 = Pulled
+         9 = Slider, event data contains value
+        10 = Touch start, event data contains value
+        11 = Touch end, event data contains value
+        12 = Swipe, event data contains value
+        14 = Tap, event data contains value
+
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        # print("===== handle_event", deck.name, key, state, data)
+        print("===== handle_event", deck.name, key, state, data)
         if state in [0, 1, 4]:
             PushEvent(deck=self, button=key, pressed=(state != 0), pulled=(state == 4))  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
@@ -144,6 +158,21 @@ class VirtualDeck(DeckWithIcons):
         if state in [2, 3]:
             logger.debug(f"EncoderEvent deck {self.name} key {key} = {state}")
             EncoderEvent(deck=self, button=key, clockwise=state == 2)
+            return  # no other possible handling
+        if state in [10, 11]:
+            if data is None:
+                logger.warning(f"TouchEvent deck {self.name} key {key} = {state}: no data")
+                return
+            logger.debug(f"TouchEvent deck {self.name} key {key} = {state}, {self._touch_event_start}, {data}")
+            if state == 10: # start
+                self._touch_event_start = TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"])
+            else:
+                TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"], start=self._touch_event_start)
+                self._touch_event_start = None
+            return  # no other possible handling
+        if state in [14]:
+            TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"])
+            logger.debug(f"TouchEvent deck {self.name} key {key} = {state} (press event)")
             return  # no other possible handling
         if state in [9]:
             logger.debug(f"SlideEvent deck {self.name} key {key} = {state}")

@@ -336,6 +336,8 @@ class SwipeEvent(DeckEvent):
 
 
 class TouchEvent(DeckEvent):
+    # Warning: Touch events require a swipe like action.
+    # But we decompose the begining and end of swipe.
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
     def __init__(
@@ -344,16 +346,21 @@ class TouchEvent(DeckEvent):
         button: str,
         pos_x: int,
         pos_y: int,
+        cli_ts: float | None = None,
         start: TouchEvent | None = None,
         autorun: bool = True,
     ):
         self.pos_x = pos_x
         self.pos_y = pos_y
+        self.cli_ts = cli_ts
         self.start = start
         DeckEvent.__init__(self, deck=deck, button=button, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:touch"
+
+    def xy(self):
+        return (self.pos_x, self.pos_y)
 
     def swipe(self) -> SwipeEvent | None:
         if self.start is not None:

@@ -33,12 +33,12 @@ const DEFAULT_USER_PREFERENCES = {
 var USER_PREFERENCES = DEFAULT_USER_PREFERENCES
 
 // Event codes
-// 0 = Push/press RELEASE
-// 1 = Push/press PRESS
-// 2 = Turned clockwise
-// 3 = Turned counter-clockwise
-// 4 = Pulled
-// 9 = Slider, event data contains value
+//  0 = Push/press RELEASE
+//  1 = Push/press PRESS
+//  2 = Turned clockwise
+//  3 = Turned counter-clockwise
+//  4 = Pulled
+//  9 = Slider, event data contains value
 // 10 = Touch start, event data contains value
 // 11 = Touch end, event data contains value
 // 12 = Swipe, event data contains value

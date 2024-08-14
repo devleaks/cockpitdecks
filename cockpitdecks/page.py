@@ -194,6 +194,15 @@ class Page:
 
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
+    def find_button(self, button_def):
+        btns = list(filter(lambda b: b._def == button_def, self.buttons.values()))
+        if len(btns) == 0:
+            logger.warning(f"page {self.name}: no button found for definition {button_def}")
+            return None
+        if len(btns) > 1:
+            logger.warning(f"page {self.name}: more than one button for definition {button_def}")
+        return btns[0]
+
     def render(self):
         """
         Renders this page on the deck

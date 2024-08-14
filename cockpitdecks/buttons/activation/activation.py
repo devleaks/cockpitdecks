@@ -11,7 +11,7 @@ from datetime import datetime
 
 # from cockpitdecks import SPAM
 from cockpitdecks.constant import ID_SEP
-from cockpitdecks.event import EncoderEvent, PushEvent
+from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Command
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
@@ -1965,10 +1965,11 @@ class Mosaic(Activation):
     """
     Defines a Push activation.
     The supplied command is executed each time a button is pressed.
+    (May be this proxy/transfer/indirection/forward could be done in driver?)
     """
 
     ACTIVATION_NAME = "mosaic"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.SWIPE]
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.SWIPE, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {
         "command": {"type": "string", "prompt": "Command", "mandatory": True},
@@ -2002,7 +2003,19 @@ class Mosaic(Activation):
             return
         super().activate(event)
 
-        print(">>>>>>> touched", event.touched_only(), event.xy())
+        if type(event) is TouchEvent:
+            coords = event.xy()
+            button_def = self.button._def.mosaic.get_button(x=coords[0], y=coords[1])
+            if button_def is not None:
+                logger.info(f"found button def {button_def.name}")
+                button = self.button.page.find_button(button_def)
+                if button is not None:
+                    logger.info(f"found button {button.index}")
+                    PushEvent(deck=event.deck, button=button.index, pressed=event.start is None)
+            else:
+                logger.debug(f"coordinates {coords} does not hit a button")
+        else: # swipe event
+            print(">>>>>>> swiped", event.touched_only(), event.xy())
         # determine which tile was hit
         # activate proper event in tile
 

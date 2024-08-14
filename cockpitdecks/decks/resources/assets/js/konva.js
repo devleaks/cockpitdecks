@@ -5,10 +5,10 @@
 })(this, (function () { 'use strict';
 
   /*
-   * Konva JavaScript Framework v9.3.11
+   * Konva JavaScript Framework v9.3.14
    * http://konvajs.org/
    * Licensed under the MIT
-   * Date: Thu May 23 2024
+   * Date: Tue Jul 16 2024
    *
    * Original work Copyright (C) 2011 - 2013 by Eric Rowell (KineticJS)
    * Modified work Copyright (C) 2014 - present by Anton Lavrenov (Konva)
@@ -35,7 +35,7 @@
               : {};
   const Konva$2 = {
       _global: glob,
-      version: '9.3.11',
+      version: '9.3.14',
       isBrowser: detectBrowser(),
       isUnminified: /param/.test(function (param) { }.toString()),
       dblClickWindow: 400,
@@ -5106,6 +5106,8 @@
   /**
    * get/set listening attr.  If you need to determine if a node is listening or not
    *   by taking into account its parents, use the isListening() method
+   *   nodes with listening set to false will not be detected in hit graph
+   *   so they will be ignored in container.getIntersection() method
    * @name Konva.Node#listening
    * @method
    * @param {Boolean} listening Can be true, or false.  The default is true.
@@ -5564,6 +5566,7 @@
        * canvas and redraw every shape inside the container, it should only be used for special situations
        * because it performs very poorly.  Please use the {@link Konva.Stage#getIntersection} method if at all possible
        * because it performs much better
+       * nodes with listening set to false will not be detected
        * @method
        * @name Konva.Container#getAllIntersections
        * @param {Object} pos
@@ -6173,6 +6176,7 @@
       /**
        * get visible intersection shape. This is the preferred
        *  method for determining if a point intersects a shape or not
+       * nodes with listening set to false will not be detected
        * @method
        * @name Konva.Stage#getIntersection
        * @param {Object} pos
@@ -6750,7 +6754,13 @@
       context.stroke();
   }
   function _fillFuncHit(context) {
-      context.fill();
+      const fillRule = this.attrs.fillRule;
+      if (fillRule) {
+          context.fill(fillRule);
+      }
+      else {
+          context.fill();
+      }
   }
   function _strokeFuncHit(context) {
       context.stroke();
@@ -7147,8 +7157,20 @@
           };
       }
       getClientRect(config = {}) {
+          // if we have a cached parent, it will use cached transform matrix
+          // but we don't want to that
+          let hasCachedParent = false;
+          let parent = this.getParent();
+          while (parent) {
+              if (parent.isCached()) {
+                  hasCachedParent = true;
+                  break;
+              }
+              parent = parent.getParent();
+          }
           const skipTransform = config.skipTransform;
-          const relativeTo = config.relativeTo;
+          // force relative to stage if we have a cached parent
+          const relativeTo = config.relativeTo || (hasCachedParent && this.getStage()) || undefined;
           const fillRect = this.getSelfRect();
           const applyStroke = !config.skipStroke && this.hasStroke();
           const strokeWidth = (applyStroke && this.strokeWidth()) || 0;
@@ -8632,6 +8654,7 @@
        * get visible intersection shape. This is the preferred
        * method for determining if a point intersects a shape or not
        * also you may pass optional selector parameter to return ancestor of intersected shape
+       * nodes with listening set to false will not be detected
        * @method
        * @name Konva.Layer#getIntersection
        * @param {Object} pos
@@ -11458,58 +11481,30 @@
           return null;
       }
       static getPointOnLine(dist, P1x, P1y, P2x, P2y, fromX, fromY) {
-          if (fromX === undefined) {
-              fromX = P1x;
+          fromX = fromX !== null && fromX !== void 0 ? fromX : P1x;
+          fromY = fromY !== null && fromY !== void 0 ? fromY : P1y;
+          const len = this.getLineLength(P1x, P1y, P2x, P2y);
+          if (len < 1e-10) {
+              return { x: P1x, y: P1y };
           }
-          if (fromY === undefined) {
-              fromY = P1y;
-          }
-          var m = (P2y - P1y) / (P2x - P1x + 0.00000001);
-          var run = Math.sqrt((dist * dist) / (1 + m * m));
-          if (P2x < P1x) {
-              run *= -1;
-          }
-          var rise = m * run;
-          var pt;
           if (P2x === P1x) {
-              // vertical line
-              pt = {
-                  x: fromX,
-                  y: fromY + rise,
-              };
+              // Vertical line
+              return { x: fromX, y: fromY + (P2y > P1y ? dist : -dist) };
           }
-          else if ((fromY - P1y) / (fromX - P1x + 0.00000001) === m) {
-              pt = {
-                  x: fromX + run,
-                  y: fromY + rise,
-              };
+          const m = (P2y - P1y) / (P2x - P1x);
+          const run = Math.sqrt((dist * dist) / (1 + m * m)) * (P2x < P1x ? -1 : 1);
+          const rise = m * run;
+          if (Math.abs(fromY - P1y - m * (fromX - P1x)) < 1e-10) {
+              return { x: fromX + run, y: fromY + rise };
           }
-          else {
-              var ix, iy;
-              var len = this.getLineLength(P1x, P1y, P2x, P2y);
-              // if (len < 0.00000001) {
-              //   return {
-              //     x: P1x,
-              //     y: P1y,
-              //   };
-              // }
-              var u = (fromX - P1x) * (P2x - P1x) + (fromY - P1y) * (P2y - P1y);
-              u = u / (len * len);
-              ix = P1x + u * (P2x - P1x);
-              iy = P1y + u * (P2y - P1y);
-              var pRise = this.getLineLength(fromX, fromY, ix, iy);
-              var pRun = Math.sqrt(dist * dist - pRise * pRise);
-              run = Math.sqrt((pRun * pRun) / (1 + m * m));
-              if (P2x < P1x) {
-                  run *= -1;
-              }
-              rise = m * run;
-              pt = {
-                  x: ix + run,
-                  y: iy + rise,
-              };
-          }
-          return pt;
+          const u = ((fromX - P1x) * (P2x - P1x) + (fromY - P1y) * (P2y - P1y)) / (len * len);
+          const ix = P1x + u * (P2x - P1x);
+          const iy = P1y + u * (P2y - P1y);
+          const pRise = this.getLineLength(fromX, fromY, ix, iy);
+          const pRun = Math.sqrt(dist * dist - pRise * pRise);
+          const adjustedRun = Math.sqrt((pRun * pRun) / (1 + m * m)) * (P2x < P1x ? -1 : 1);
+          const adjustedRise = m * adjustedRun;
+          return { x: ix + adjustedRun, y: iy + adjustedRise };
       }
       static getPointOnCubicBezier(pct, P1x, P1y, P2x, P2y, P3x, P3y, P4x, P4y) {
           function CB1(t) {
@@ -12651,6 +12646,11 @@
           }
       }
       _useBufferCanvas() {
+          const hasCornerRadius = !!this.cornerRadius();
+          const hasShadow = this.hasShadow();
+          if (hasCornerRadius && hasShadow) {
+              return true;
+          }
           return super._useBufferCanvas(true);
       }
       _sceneFunc(context) {
@@ -14498,26 +14498,29 @@
        * @returns {Object} { width , height} of measured text
        */
       measureSize(text) {
+          var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
           var _context = getDummyContext(), fontSize = this.fontSize(), metrics;
           _context.save();
           _context.font = this._getContextFont();
           metrics = _context.measureText(text);
           _context.restore();
+          // Scale the fallback values based on the provided fontSize compared to the sample size (100 in your new case)
+          const scaleFactor = fontSize / 100;
+          // Note, fallback values are from chrome browser with 100px font size and font-family "Arial"
           return {
-              // copy all text metrics data:
-              actualBoundingBoxAscent: metrics.actualBoundingBoxAscent,
-              actualBoundingBoxDescent: metrics.actualBoundingBoxDescent,
-              actualBoundingBoxLeft: metrics.actualBoundingBoxLeft,
-              actualBoundingBoxRight: metrics.actualBoundingBoxRight,
-              alphabeticBaseline: metrics.alphabeticBaseline,
-              emHeightAscent: metrics.emHeightAscent,
-              emHeightDescent: metrics.emHeightDescent,
-              fontBoundingBoxAscent: metrics.fontBoundingBoxAscent,
-              fontBoundingBoxDescent: metrics.fontBoundingBoxDescent,
-              hangingBaseline: metrics.hangingBaseline,
-              ideographicBaseline: metrics.ideographicBaseline,
+              actualBoundingBoxAscent: (_a = metrics.actualBoundingBoxAscent) !== null && _a !== void 0 ? _a : 71.58203125 * scaleFactor,
+              actualBoundingBoxDescent: (_b = metrics.actualBoundingBoxDescent) !== null && _b !== void 0 ? _b : 0, // Remains zero as there is no descent in the provided metrics
+              actualBoundingBoxLeft: (_c = metrics.actualBoundingBoxLeft) !== null && _c !== void 0 ? _c : -7.421875 * scaleFactor,
+              actualBoundingBoxRight: (_d = metrics.actualBoundingBoxRight) !== null && _d !== void 0 ? _d : 75.732421875 * scaleFactor,
+              alphabeticBaseline: (_e = metrics.alphabeticBaseline) !== null && _e !== void 0 ? _e : 0, // Remains zero as it's typically relative to the baseline itself
+              emHeightAscent: (_f = metrics.emHeightAscent) !== null && _f !== void 0 ? _f : 100 * scaleFactor,
+              emHeightDescent: (_g = metrics.emHeightDescent) !== null && _g !== void 0 ? _g : -20 * scaleFactor,
+              fontBoundingBoxAscent: (_h = metrics.fontBoundingBoxAscent) !== null && _h !== void 0 ? _h : 91 * scaleFactor,
+              fontBoundingBoxDescent: (_j = metrics.fontBoundingBoxDescent) !== null && _j !== void 0 ? _j : 21 * scaleFactor,
+              hangingBaseline: (_k = metrics.hangingBaseline) !== null && _k !== void 0 ? _k : 72.80000305175781 * scaleFactor,
+              ideographicBaseline: (_l = metrics.ideographicBaseline) !== null && _l !== void 0 ? _l : -21 * scaleFactor,
               width: metrics.width,
-              height: fontSize,
+              height: fontSize, // Typically set to the font size
           };
       }
       _getContextFont() {
@@ -16027,6 +16030,11 @@
           });
       }
       _handleMouseDown(e) {
+          // do nothing if we already transforming
+          // that is possible to trigger with multitouch
+          if (this._transforming) {
+              return;
+          }
           this._movingAnchorName = e.target.name().split(' ')[0];
           var attrs = this._getNodeRect();
           var width = attrs.width;
