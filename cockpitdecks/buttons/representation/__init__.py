@@ -9,14 +9,10 @@ from .representation import Representation
 # Image/icon based
 from .icon import IconBase, Icon, IconText, MultiTexts, MultiIcons
 from .icon_animation import IconAnimation
+
 from .mosaic import Mosaic
-from .hardware import VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
 
-try:
-    from .hardware import VirtualXTMEncoderLED
-except:
-    pass
-
+# Drawing based representation
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import Decor
 from .draw_animation import DrawAnimation, DrawAnimationFTG
@@ -25,6 +21,13 @@ from .data import DataIcon
 from .chart import ChartIcon
 from .gauge import TapeIcon, GaugeIcon
 
+# Special Web Deck represenations for hardware button
+from .hardware import VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
+
+try:
+    from .hardware import VirtualXTMEncoderLED
+except:
+    pass
 
 from cockpitdecks import DECK_FEEDBACK, all_subclasses
 

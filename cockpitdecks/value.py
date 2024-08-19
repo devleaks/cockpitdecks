@@ -38,6 +38,17 @@ class ValueProvider(DatarefValueProvider, StateVariableProvider):
     pass
 
 
+class Formula:
+
+    def __init__(self, name: str, formula: str, button: ValueProvider, **kwargs):
+        self.button = button
+        self.formula = formula
+        pass
+
+    def get_value(self):
+        return 0.0
+
+
 class Value:
     """Value class.
 

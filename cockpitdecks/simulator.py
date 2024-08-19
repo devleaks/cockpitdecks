@@ -95,10 +95,10 @@ class SetDataref(CommandBase):
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
-    def __init__(self, path: str):
-        CommandBase.__init__(self, name=path)
+    def __init__(self, path: str, value: any | None = None, delay: float = 0.0, condition: str | None = None):
+        CommandBase.__init__(self, name=path, delay=delay, condition=condition)
         self.path = path  # some/command
-        self._value = None
+        self._value = value
 
     def __str__(self) -> str:
         return "set-dataref:" + self.name
@@ -123,7 +123,6 @@ class MacroCommand(CommandBase):
 
     def __init__(self, name: str, commands: dict):
         CommandBase.__init__(self, name=name)
-        self.path = path  # some/command
         self.commands = commands
         self._commands = []
         self.init()
@@ -139,10 +138,12 @@ class MacroCommand(CommandBase):
                     loggerCommand.warning(f"Macro command {self.name}: command has both command and set-dataref, ignored")
                     continue
                 self._commands.append(
-                    Command(path=d.get(CONFIG_KW.COMMAND.value), delay=d.get(CONFIG_KW.DELAY.value), condition=d.get(CONFIG_KW.CONDITION.value))
+                    Command(path=c.get(CONFIG_KW.COMMAND.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
                 )
             elif CONFIG_KW.SET_DATAREF.value in c:
-                self._commands.append(SetDataref(path=d.get(CONFIG_KW.SET_DATAREF.value)))
+                self._commands.append(
+                    SetDataref(path=c.get(CONFIG_KW.SET_DATAREF.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
+                )
 
     def _execute(self, simulator: Simulator):
         for command in self._commands:

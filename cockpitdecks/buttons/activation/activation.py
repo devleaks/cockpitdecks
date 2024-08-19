@@ -10,10 +10,11 @@ from typing import List
 from datetime import datetime
 
 # from cockpitdecks import SPAM
+from cockpitdecks import simulator
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks.simulator import Command
+from cockpitdecks.simulator import Command, MacroCommand
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
@@ -66,8 +67,15 @@ class Activation:
 
         # Commands
         self._command = None
-        self._view = Command(path=self._config.get(CONFIG_KW.VIEW.value))  # Optional additional command, usually to set a view
-        self._view_if = self._config.get(CONFIG_KW.VIEW_IF.value)
+        self._view = None
+        self._view_if = None
+        self._view_macro = None
+        view = self._config.get(CONFIG_KW.VIEW.value)
+        if type(view) is str:
+            self._view = Command(path=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
+            self._view_if = self._config.get(CONFIG_KW.VIEW_IF.value)
+        elif type(view) in [list, tuple]:
+            self._view_macro = MacroCommand(name=f"{type(self).__name__}:view", commands=view)
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
@@ -288,6 +296,9 @@ class Activation:
             self.button.sim.commandOnce(command)
 
     def view(self):
+        if self._view_macro is not None:
+            self._view_macro.execute(simulator=self.button.sim)
+            return
         if self._view is not None:
             if self._view_if is None:
                 self.command(self._view)
