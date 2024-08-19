@@ -262,4 +262,5 @@ buttons:
     text-size: 60
 # Demos
 # hardware image for encoder?
+includes: hardware
 default-label-font: D-DIN-Bold

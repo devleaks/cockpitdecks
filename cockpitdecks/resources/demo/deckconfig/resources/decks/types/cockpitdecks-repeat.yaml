@@ -33,19 +33,44 @@ buttons:
       spacing:
         - 88
         - 0
-    name: 0
-    prefix: e
-    repeat: 3
+    name: e0
+    # prefix: e
+    # repeat: 3
   - action:
       - encoder
       - push
     dimension: 35
     layout:
       offset:
-        - 590
+        - 270
         - 573
     name: e3
     options: pushpull
+  # Hardware button demo
+  - name: b2
+    action:
+    - push
+    # dimension MUST be scalar
+    dimension: 35
+    feedback: colored-led
+    layout:
+      hardware:
+        type: virtual-ll-coloredbutton
+      offset:
+      - 430
+      - 574
+  - name: e4
+    action:
+      - encoder
+      - push
+    dimension: 60
+    feedback: encoder-leds
+    layout:
+      hardware:
+        type: virtual-xtm-encoderled
+      offset:
+      - 590
+      - 574
 # - action:
 #     - encoder
 #     - push

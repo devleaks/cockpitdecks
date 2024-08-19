@@ -1,0 +1,17 @@
+# Hardware button demo
+buttons:
+  - index: b2
+    type: push
+    colored-led: [255, 128, 0]
+    formula: ${state:activation_count} 2 %
+  - index: e4
+    name: encoder4
+    type: encoder-value
+    step: 1
+    value: 0
+    value-min: 0
+    value-max: 13
+    dataref: data:_enc0
+    set-dataref: data:_enc0
+    # formula: ${data:_enc0}
+    encoder-leds: 0

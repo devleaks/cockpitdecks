@@ -225,4 +225,5 @@ buttons:
 # Action in X-Plane (map? encoder?)
 # Possible connection status?
 # hardware image for encoder?
+includes: hardware
 default-label-font: D-DIN-Bold.otf
