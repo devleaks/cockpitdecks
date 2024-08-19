@@ -22,7 +22,7 @@ class Mosaic(IconBase):
         self.mosaic = self._representation_config
         self.tiles = {}
 
-        self.init2() # need to delay init2 after Icon is inited().
+        self.init2()  # need to delay init2 after Icon is inited().
 
     def init2(self):
         # make buttons!

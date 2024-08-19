@@ -230,7 +230,7 @@ class DeckTypeBase:
         self.buttons: Dict[str | int, DeckButton] = {}
         self.background = self._config.get(DECK_KW.BACKGROUND.value)
         self._special_displays = None  # cache
-        self._map = None # display layout (RTree)
+        self._map = None  # display layout (RTree)
         self.count = 0
         self._aircraft = False
         self._parent_deck = None
@@ -477,7 +477,7 @@ class DeckTypeBase:
             for b in self.buttons.values():
                 self._map.insert(b, Rect(*b.get_corners()))
                 # print("map>", b.name, b.get_corners())
-        real_point_res = [r.leaf_obj() for r in self._map.query_point( (x,y) ) if r.is_leaf()]
+        real_point_res = [r.leaf_obj() for r in self._map.query_point((x, y)) if r.is_leaf()]
         # print("query>", (x, y), [b.name for b in real_point_res])
         if len(real_point_res) > 1:
             loggerDeckType.warning(f"touched more than one button ({len(real_point_res)}), returning first button only")

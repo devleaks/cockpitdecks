@@ -601,7 +601,7 @@ class Push(Activation):
         Activation.__init__(self, button=button)
 
         # Commands
-        self._command = Command(button._config.get("command"))
+        self._command = Command(button._config.get(CONFIG_KW.COMMAND.value))
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -801,7 +801,7 @@ class OnOff(Activation):
 
     def __init__(self, button: "Button"):
         # Commands
-        self._commands = [Command(path) for path in button._config.get("commands", [])]
+        self._commands = [Command(path) for path in button._config.get(CONFIG_KW.COMMANDS.value, [])]
 
         # Internal variables
         self.onoff_current_value = False  # bool on or off, true = on
@@ -933,7 +933,7 @@ class ShortOrLongpress(Activation):
         Activation.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in self._config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
 
         self.long_time = self._config.get("long-time", 2)
 
@@ -992,7 +992,7 @@ class UpDown(Activation):
 
     def __init__(self, button: "Button"):
         # Commands
-        self._commands = [Command(path) for path in button._config.get("commands", [])]
+        self._commands = [Command(path) for path in button._config.get(CONFIG_KW.COMMANDS.value, [])]
 
         # Config
         self.stops = int(button._config.get("stops", 2))  # may fail
@@ -1126,7 +1126,7 @@ class Encoder(Activation):
         Activation.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in self._config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
 
         # Internal status
         self._turns = 0
@@ -1205,7 +1205,7 @@ class EncoderPush(Push):
         Push.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in self._config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:
@@ -1873,7 +1873,7 @@ class EncoderToggle(Activation):
         Activation.__init__(self, button=button)
 
         # Commands
-        self._commands = [Command(path) for path in self._config.get("commands", [])]
+        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:
@@ -2014,7 +2014,7 @@ class Mosaic(Activation):
                     PushEvent(deck=event.deck, button=button.index, pressed=event.start is None)
             else:
                 logger.debug(f"coordinates {coords} does not hit a button")
-        else: # swipe event
+        else:  # swipe event
             print(">>>>>>> swiped", event.touched_only(), event.xy())
         # determine which tile was hit
         # activate proper event in tile

@@ -1,6 +1,7 @@
 # Base classes for interface with the simulation software
 #
 from __future__ import annotations
+from os.path import commonprefix
 import threading
 import logging
 from typing import List, Any
@@ -8,6 +9,7 @@ from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 import base64
 import json
+
 import requests
 
 from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW, DEFAULT_FREQUENCY
@@ -39,21 +41,112 @@ NOT_A_COMMAND = [
 ]  # all forced to lower cases
 
 
-class Command:
+class CommandBase(ABC):
+
+    def __init__(self, name: str, delay: float = 0.0, condition: str | None = None) -> None:
+        super().__init__()
+        self.name = name
+        self.delay = delay
+        self.condition = condition
+        self._timer = None
+
+    @abstractmethod
+    def _execute(self, simulator: Simulator):
+        self.clean_timer()
+
+    def clean_timer(self):
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
+
+    def execute(self, simulator: Simulator):
+        if self._timer is None and self.delay > 0:
+            self._timer = threading.Timer(self.delay, self._execute, args=[simulator])
+            self._timer.start()
+            loggerCommand.debug(f"{self.name} will be executed in {self.delay} secs")
+            return
+        self._execute(simulator=simulator)
+
+
+class Command(CommandBase):
     """
     A Button activation will instruct the simulator software to perform an action.
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
-    def __init__(self, path: str | None, name: str | None = None):
+    def __init__(self, path: str | None, name: str | None = None, delay: float = 0.0, condition: str | None = None):
+        CommandBase.__init__(self, name=name, delay=delay, condition=condition)
         self.path = path  # some/command
-        self.name = name
 
     def __str__(self) -> str:
         return self.name if self.name is not None else (self.path if self.path is not None else "no command")
 
     def has_command(self) -> bool:
         return self.path is not None and not self.path.lower() in NOT_A_COMMAND
+
+    def _execute(self, simulator: Simulator):
+        simulator.execute_command(command=self)
+        self.clean_timer()
+
+
+class SetDataref(CommandBase):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, path: str):
+        CommandBase.__init__(self, name=path)
+        self.path = path  # some/command
+        self._value = None
+
+    def __str__(self) -> str:
+        return "set-dataref:" + self.name
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+    def _execute(self, simulator: Simulator):
+        simulator.write_dataref(dataref=self.path, value=self.value)
+
+
+class MacroCommand(CommandBase):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, name: str, commands: dict):
+        CommandBase.__init__(self, name=name)
+        self.path = path  # some/command
+        self.commands = commands
+        self._commands = []
+        self.init()
+
+    def __str__(self) -> str:
+        return self.name if self.name is not None else (self.path if self.path is not None else "no command")
+
+    def init(self):
+        self._commands = []
+        for c in self.commands:
+            if CONFIG_KW.COMMAND.value in c:
+                if CONFIG_KW.SET_DATAREF.value in c:
+                    loggerCommand.warning(f"Macro command {self.name}: command has both command and set-dataref, ignored")
+                    continue
+                self._commands.append(
+                    Command(path=d.get(CONFIG_KW.COMMAND.value), delay=d.get(CONFIG_KW.DELAY.value), condition=d.get(CONFIG_KW.CONDITION.value))
+                )
+            elif CONFIG_KW.SET_DATAREF.value in c:
+                self._commands.append(SetDataref(path=d.get(CONFIG_KW.SET_DATAREF.value)))
+
+    def _execute(self, simulator: Simulator):
+        for command in self._commands:
+            command.execute(simulator)
 
 
 # ########################################

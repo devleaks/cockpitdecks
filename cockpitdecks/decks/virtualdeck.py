@@ -164,7 +164,7 @@ class VirtualDeck(DeckWithIcons):
                 logger.warning(f"TouchEvent deck {self.name} key {key} = {state}: no data")
                 return
             logger.debug(f"TouchEvent deck {self.name} key {key} = {state}, {self._touch_event_start}, {data}")
-            if state == 10: # start
+            if state == 10:  # start
                 self._touch_event_start = TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"])
             else:
                 TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"], start=self._touch_event_start)
