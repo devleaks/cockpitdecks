@@ -22,21 +22,30 @@ class Mosaic(IconBase):
         self.mosaic = self._representation_config
         self.tiles = {}
 
-        self.init2()  # need to delay init2 after Icon is inited().
+        self.load_tiles()  # need to delay init2 after Icon is inited().
 
-    def init2(self):
+    def load_tiles(self):
         # make buttons!
         buttons = self.mosaic.get(DECK_KW.TILES.value)
         if buttons is not None:
             pseudo_deck_type = self.button._def.mosaic
-            self.tiles = self.button.page.load_buttons(buttons=buttons, deck_type=pseudo_deck_type)
+            if pseudo_deck_type is not None:
+                self.tiles = self.button.page.load_buttons(buttons=buttons, deck_type=pseudo_deck_type)
+            else:
+                logger.warning(f"{self.button.name}: no mosaic definition, not button loaded")
+        else:
+            logger.warning(f"{self.button.name}: no tile buttons")
 
     def place_tile(self, tile, image):
         dimensions = tile._def.display_size()
         portion = tile.get_representation()
-        portion.resize(dimensions)
+        if portion is None:
+            logger.warning(f"mosaic: tile {tile.name} has no image")
+            return
+        portion = portion.resize(dimensions)
         position = tile._def.get_offset()
         dest = (position[0], position[1], position[0] + dimensions[0], position[1] + dimensions[1])
+        # print(">>>", self.button.name, image.size, tile.name, dimensions, position, dest)
         image.paste(portion, dest, portion)
 
     def render(self):

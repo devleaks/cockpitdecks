@@ -39,6 +39,7 @@ ICONS_FOLDER = "icons"
 DECKS_FOLDER = "decks"
 DECK_TYPES = "types"
 DECK_IMAGES = "images"
+TYPES_FOLDER = "types"
 
 ICON_SIZE = 256  # px
 

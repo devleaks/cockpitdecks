@@ -101,10 +101,10 @@ class FMAIcon(DrawBase):
             fma = 1
         fma = int(fma)
         if fma < 1:
-            logger.info(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = 1
         if fma > FMA_COUNT:
-            logger.info(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
+            logger.warning(f"button {button.name}: FMA index must be in 1..{FMA_COUNT} range")
             fma = FMA_COUNT
         self.fma_idx = fma - 1
 
@@ -245,6 +245,7 @@ class FMAIcon(DrawBase):
 
         lines = self.get_fma_lines()
         logger.debug(f"button {self.button.name}: {lines}")
+
         font = self.get_font(text_font, text_size)
         w = image.width / 2
         p = "m"

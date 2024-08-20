@@ -7,7 +7,7 @@ from typing import List, Dict, Tuple
 from py3rtree import RTree, Rect
 
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
-from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER
+from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER
 from cockpitdecks.button import Button
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
@@ -214,7 +214,7 @@ class DeckButton:
         }
 
 
-DECK_TYPE_LOCATION = os.path.join(os.path.dirname(__file__))
+DECK_TYPE_LOCATION = os.path.join(os.path.dirname(__file__), TYPES_FOLDER)
 DECK_TYPE_GLOB = "*.yaml"
 
 

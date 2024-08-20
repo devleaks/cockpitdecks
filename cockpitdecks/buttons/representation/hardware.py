@@ -302,6 +302,7 @@ try:
 except:
     pass
 
+
 # ####################################################
 #
 # STREAMDECK
@@ -345,6 +346,8 @@ class VirtualLLColoredButton(HardwareIcon):
         self.knob_stroke_color = self.hardware.get("knob-stroke-color", "black")
         self.knob_stroke_width = self.hardware.get("knob-stroke-width", 1)
 
+        self.off_color = self.hardware.get("off-color", (96, 96, 96))
+
         # This is the symbol that will be used (character 0 to 7)
         # Needs extension to allow for other symbols
         self.number = int(self.button.num_index if self.button.num_index is not None else 0)
@@ -362,9 +365,7 @@ class VirtualLLColoredButton(HardwareIcon):
         )
         # marker
         self.number_color = self.button._representation.render()
-        color = self.number_color
-        if self.button.value == 0:
-            color = light_off(self.number_color)
+        color = self.off_color if self.button.value == 0 else self.number_color
         if self.number == 0:  # special marker for 0
             size = int(self.radius * 0.9)
             draw.ellipse(
@@ -373,9 +374,7 @@ class VirtualLLColoredButton(HardwareIcon):
                 width=2,
             )
             size = 4
-            draw.ellipse(
-                [self.radius - int(size / 2), self.radius - int(size / 2)] + [self.radius + int(size / 2), self.radius + int(size / 2)], fill=color
-            )
+            draw.ellipse([self.radius - int(size / 2), self.radius - int(size / 2)] + [self.radius + int(size / 2), self.radius + int(size / 2)], fill=color)
         else:
             font = self.get_font(self.get_attribute("font"), int(self.radius))  # (standard font)
             draw.text(
