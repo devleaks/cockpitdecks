@@ -45,12 +45,42 @@ buttons:
       - swipe
     feedback: image
     dimension:
-      - 548
-      - 95
+      - 520
+      - 65
     layout:
       offset:
-        - 31
-        - 330
+        - 45
+        - 343
+    # This is a mosaic to display 5 individual FMA in a row
+    # on the SD+ touchscreen display (800x100)
+    # (screen should be 65 x 520) to respect aspect ratio
+    # Alternative layout: space on left and right, all FMA in center, one next to another
+    mosaic:
+      - name: 0
+        # prefix of mosaic buttons (called tiles) should match name of parent mosaic
+        # names will be left0, left1, left2
+        prefix: touchscreen
+        action:
+          - push
+        feedback: image
+        dimension:
+          - 65
+          - 65
+        repeat: [5, 1]
+        # layout:
+        #   offset:
+        #     - 0
+        #     - 0
+        #   spacing:
+        #     - 0
+        #     - 48
+        layout:
+          offset:
+            - 95
+            - 0
+          spacing:
+            - 1
+            - 0
 background:
   color: black
   image: streamdeck.plus.png
