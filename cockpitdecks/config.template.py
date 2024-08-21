@@ -21,9 +21,11 @@ API_PATH = "/api/v1"  # no default, Laminar provides it
 
 # Where Cockpitdecks runs
 #
-APP_HOST = "127.0.0.1"
+APP_HOST = [os.getenv("APP_HOST", "127.0.0.1"), int(os.getenv("APP_PORT", "7777"))]
 
 # Where to search for aircrafts
 COCKPITDECKS_PATH = []
 if XP_HOME is not None:
     COCKPITDECKS_PATH = ":".join([os.path.join(XP_HOME, "Aircraft", "Extra Aircraft"), os.path.join(XP_HOME, "Aircraft", "Laminar Research")])
+
+DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "demo")

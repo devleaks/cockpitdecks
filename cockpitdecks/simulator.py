@@ -644,6 +644,10 @@ class Simulator(ABC):
         logger.debug(f"..removed")
 
     @abstractmethod
+    def runs_locally(self) -> bool:
+        return False
+
+    @abstractmethod
     def start(self):
         pass
 

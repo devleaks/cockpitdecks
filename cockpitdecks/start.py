@@ -9,7 +9,6 @@ import json
 import urllib.parse
 import socket
 
-from cockpitdecks.constant import CONFIG_KW
 from flask import Flask, render_template, send_from_directory, request, jsonify
 from simple_websocket import Server, ConnectionClosed
 
@@ -37,25 +36,83 @@ if LOGFILE is not None:
 #
 # COCKPITDECKS STARTS HERE
 #
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
-from cockpitdecks.simulators import XPlane  # The simulator we talk to
-from cockpitdecks import CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES
-from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
+# COMMAND LINE PARSING
+#
+from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME
+from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
 
 
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 
+
+def print_help():
+    print(
+        """usage: cockpitdecks-cli [--help] [--demo] [directory]
+
+--help, -h, -?: displays command line help and exits
+--demo        : starts demo mode, X-plane not needed but used if availa
+directory     : start from directory if directory contains deckconfig directory (ignored otherwise)
+
+without any argument:
+- if X-Plane runs on same computer as Cockpitdecks, starts in full automatic mode.
+- if X-Plane does not run on same computer as Cockpitdecks, start demo mode.
+"""
+    )
+    # --debug, -i   : prints more information
+
+
+if ac in ["--help", "-h", "-?"]:  # command line help
+    print_help()
+    sys.exit(0)
+
 # Distribution version: No aircraft starts the demo version.
-AIRCRAFT_HOME = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, "demo")
+AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
-if ac is not None:
+
+
+if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
+    print(f"X-Plane not found in {XP_HOME}")
+    sys.exit(1)
+
+if ac is None and XP_HOME is None:  # XP_HOME has been checked above
+    print(f"no local X-Plane, aircraft directory not supplied")
+    print(
+        """Please set XP_HOME in config.py if X-Plane is available on computer,
+or supply an aircraft directory where Cockpitdecks will find its configuration."""
+    )
+    sys.exit(1)
+
+if ac is not None and ac != "--demo":
+    if ac.startswith("-"):
+        print(f"invalid {ac} command line switch")
+        print_help()
+        sys.exit(1)
+    target_dir = os.path.abspath(os.path.join(os.getcwd(), ac))
+    if not os.path.exists(target_dir) or not os.path.isdir(target_dir):
+        print(f"{target_dir} directory not found")
+        sys.exit(1)
+    test_dir = os.path.join(target_dir, CONFIG_FOLDER)
+    if not os.path.exists(test_dir) or not os.path.isdir(test_dir):
+        print(f"{target_dir} directory does not contain {CONFIG_FOLDER} directory")
+        sys.exit(1)
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
     AIRCRAFT_DESC = os.path.basename(ac)
 
+
+#
+# COCKPITDECKS STARTS HERE, REALLY
+#
+from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
+from cockpitdecks.simulators import XPlane  # The simulator we talk to
+
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
 logger.info(f"Starting for {AIRCRAFT_DESC}..")
+if ac is None:
+    logger.info(f"(starting in demo mode but will load aircraft if X-Plane is running and aircraft loaded)")
 logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
 cockpit = Cockpit(XPlane)
+
 
 # ##################################
 # Flask Web Server (& WebSocket Server)
@@ -69,7 +126,6 @@ AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOL
 AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
 DESIGNER_CONFIG_FILE = "designer.yaml"
 DESIGNER = True
-APP_HOST = [os.getenv("APP_HOST", "127.0.0.1"), int(os.getenv("APP_PORT", "7777"))]
 CODE = "code"
 WEBDECK_DEFAULTS = "presentation-default"
 WEBDECK_WSURL = "ws_url"

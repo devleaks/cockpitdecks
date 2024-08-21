@@ -1062,6 +1062,9 @@ class Cockpit(DatarefListener, CockpitBase):
     def get_livery(self, path: str) -> str:
         return os.path.basename(os.path.normpath(path))
 
+    def get_aircraft_home(self, path: str) -> str:
+        return os.path.normpath(os.path.join(path, "..", ".."))
+
     def get_aircraft(self, path: str) -> str:
         # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
         return os.path.split(os.path.normpath(os.path.join(path, "..", "..")))[1]
@@ -1070,21 +1073,38 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if type(dataref) is Dataref and dataref.path == AIRCRAFT_CHANGE_MONITORING_DATAREF:
-            value = dataref.value()
-            if value is not None and type(value) is str:
-                new_livery = self.get_livery(value)
-                old_livery = self._livery_dataref.value()
-                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-                self._acname = self.get_aircraft(value)
-                logger.info(f"aircraft name set to {self._acname}")
-                if old_livery is None:
-                    logger.info(f"initial aircraft livery set to {new_livery}")
-                elif old_livery != new_livery:
-                    logger.info(f"new aircraft livery loaded {new_livery} (former was {old_livery})")
-                    self.reload_decks()
-        else:
+        print("*-"*30, "BEGIN")
+        if type(dataref) is not Dataref or dataref.path != AIRCRAFT_CHANGE_MONITORING_DATAREF:
             logger.warning(f"unhandled {dataref.path}={dataref.value()}")
+            return
+        value = dataref.value()
+        if value is not None and type(value) is str:
+            new_livery = self.get_livery(value)
+            old_livery = self._livery_dataref.value()
+            self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+            self._acname = self.get_aircraft(value)
+            logger.info(f"aircraft name set to {self._acname}")
+            if old_livery is None:
+                logger.info(f"initial aircraft livery set to {new_livery}")
+            elif old_livery != new_livery:
+                logger.info(f"new aircraft livery loaded {new_livery} (former was {old_livery})")
+                self.reload_decks()
+            # Automatic reloading
+            if not self.sim.runs_locally():
+                logger.info(f"livery changed, X-Plane is remote, aircraft not adjusted")
+            else: # attempt to change aircraft if new deckconfig found
+                ac_home = self.get_aircraft_home(new_livery)
+                new_ac = os.path.join(XP_HOME, ac_home)
+                new_cfg = os.path.join(new_ac, CONFIG_FOLDER)
+                if os.path.exists(new_cfg) and os.path.isdir(new_cfg): # let's change
+                    if self.acpath != new_ac:
+                        logger.info(f"livery changed to {new_livery}, aircraft changed, loading new aircraft")
+                        self.load_aircraft(acpath=new_ac)
+                    else:
+                        logger.info(f"livery changed to {new_livery} but no aircraft unchanged, aircraft not adjusted")
+                else:
+                    logger.info(f"livery changed to {new_livery} but no {CONFIG_FOLDER} in {new_ac}, aircraft not adjusted")
+        print("*-"*30, "END")
 
     def terminate_aircraft(self):
         logger.info(f"terminating..")

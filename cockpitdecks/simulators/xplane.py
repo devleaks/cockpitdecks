@@ -1,5 +1,6 @@
 # Class for interface with X-Plane using UDP protocol.
 #
+import os
 import socket
 import struct
 import binascii
@@ -11,7 +12,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from cockpitdecks import SPAM_LEVEL, AIRCRAFT_CHANGE_MONITORING_DATAREF
-from cockpitdecks.config import API_PORT, API_PATH
+from cockpitdecks.config import API_PORT, API_PATH, XP_HOME
 from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -85,6 +86,9 @@ class XPlaneBeacon:
     def __init__(self):
         # Open a UDP Socket to receive on Port 49000
         self.socket = None
+
+        hostname = socket.gethostname()
+        self.local_ip = socket.gethostbyname(hostname)
 
         self.beacon_data = {}
 
@@ -169,6 +173,16 @@ class XPlaneBeacon:
                     self.beacon_data["XPlaneVersion"] = xplane_version_number
                     self.beacon_data["role"] = role
                     logger.info(f"XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
+                    #
+                    s = "does not appear"
+                    if self.runs_locally():
+                        s = "appears"
+                        if XP_HOME is not None and os.path.isdir(XP_HOME):
+                            logger.info(f"XPlane home directory {XP_HOME}")
+                    logger.info(f"XPlane {s} to run locally ({self.local_ip}/{self.beacon_data['IP']})")
+                    if self.runs_locally() and XP_HOME is not None and os.path.isdir(XP_HOME):
+                        logger.info(f"XPlane home directory {XP_HOME}")
+                    #
                 else:
                     logger.warning(f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
                     raise XPlaneVersionNotSupported()
@@ -263,7 +277,6 @@ class XPlaneBeacon:
             else:
                 logger.debug("..not connected")
 
-
 class XPlane(Simulator, XPlaneBeacon):
     """
     Get data from XPlane via network.
@@ -336,6 +349,9 @@ class XPlane(Simulator, XPlaneBeacon):
         if self.connected:
             return f"http://{self.beacon_data['IP']}:{API_PORT}/{API_PATH}"
         return None
+
+    def runs_locally(self) -> bool:
+        return False if not self.connected else self.local_ip == self.beacon_data["IP"]
 
     #
     # Datarefs
@@ -797,6 +813,7 @@ class XPlane(Simulator, XPlaneBeacon):
         self.add_all_datarefs_to_monitor()
         logger.info("reloading pages")
         self.cockpit.reload_pages()  # to take into account updated values
+        # this is a test, ignore
         self.get_init_datarefs()
 
     def get_init_datarefs(self):
