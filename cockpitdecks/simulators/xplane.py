@@ -277,6 +277,7 @@ class XPlaneBeacon:
             else:
                 logger.debug("..not connected")
 
+
 class XPlane(Simulator, XPlaneBeacon):
     """
     Get data from XPlane via network.
@@ -333,7 +334,11 @@ class XPlane(Simulator, XPlaneBeacon):
         self.socket_strdref.bind((ANY, SDL_MCAST_PORT))
         # Tell the kernel that we want to add ourselves to a multicast group
         # The address for the multicast group is the third param
-        status = self.socket_strdref.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(SDL_MCAST_GRP) + socket.inet_aton(ANY))
+        status = self.socket_strdref.setsockopt(
+            socket.IPPROTO_IP,
+            socket.IP_ADD_MEMBERSHIP,
+            socket.inet_aton(SDL_MCAST_GRP) + socket.inet_aton(ANY),
+        )
 
         self._inited = True
 
@@ -351,6 +356,10 @@ class XPlane(Simulator, XPlaneBeacon):
         return None
 
     def runs_locally(self) -> bool:
+        if self.connected:
+            logger.debug(f"local ip {self.local_ip} vs beacon {self.beacon_data['IP']}")
+        else:
+            logger.debug(f"local ip {self.local_ip} but not connected to X-Plane")
         return False if not self.connected else self.local_ip == self.beacon_data["IP"]
 
     #
@@ -528,7 +537,11 @@ class XPlane(Simulator, XPlaneBeacon):
                     total_reads = total_reads + 1
                     now = datetime.now()
                     delta = now - last_read_ts
-                    self.set_internal_dataref(path=INTERNAL_DATAREF.LAST_READ.value, value=delta.microseconds, cascade=True)
+                    self.set_internal_dataref(
+                        path=INTERNAL_DATAREF.LAST_READ.value,
+                        value=delta.microseconds,
+                        cascade=True,
+                    )
                     total_read_time = total_read_time + delta.microseconds / 1000000
                     last_read_ts = now
                     header = data[0:5]
@@ -554,12 +567,21 @@ class XPlane(Simulator, XPlaneBeacon):
                                     now = datetime.now().astimezone(tz=timezone.utc)
                                     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
                                     diff = v - seconds_since_midnight
-                                    self.set_internal_dataref(path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value, value=diff, cascade=(total_reads % 2 == 0))
+                                    self.set_internal_dataref(
+                                        path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value,
+                                        value=diff,
+                                        cascade=(total_reads % 2 == 0),
+                                    )
                                 r = self.get_rounding(dataref_path=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)
                                 if d not in self._dref_cache or (d in self._dref_cache and self._dref_cache[d] != v):
-                                    e = DatarefEvent(sim=self, dataref=d, value=value, cascade=d in self.datarefs_to_monitor.keys())
+                                    e = DatarefEvent(
+                                        sim=self,
+                                        dataref=d,
+                                        value=value,
+                                        cascade=d in self.datarefs_to_monitor.keys(),
+                                    )
                                     self.inc(INTERNAL_DATAREF.UPDATE_ENQUEUED.value)
                                     self._dref_cache[d] = v
                             else:

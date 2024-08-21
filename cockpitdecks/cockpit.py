@@ -21,10 +21,33 @@ from PIL import Image, ImageFont
 
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
 from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
-from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
-from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
-from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, AIRCRAFT_CHANGE_MONITORING_DATAREF, DEFAULT_FREQUENCY
-from cockpitdecks.config import XP_HOME
+from cockpitdecks import (
+    CONFIG_FOLDER,
+    CONFIG_FILE,
+    SECRET_FILE,
+    EXCLUDE_DECKS,
+    ICONS_FOLDER,
+    FONTS_FOLDER,
+    RESOURCES_FOLDER,
+    DECKS_FOLDER,
+)
+from cockpitdecks import (
+    Config,
+    CONFIG_FILENAME,
+    CONFIG_KW,
+    DECK_KW,
+    COCKPITDECKS_DEFAULT_VALUES,
+    VIRTUAL_DECK_DRIVER,
+    DECK_TYPES,
+    DECK_IMAGES,
+)
+from cockpitdecks import (
+    COCKPITDECKS_ASSET_PATH,
+    AIRCRAFT_ASSET_PATH,
+    AIRCRAFT_CHANGE_MONITORING_DATAREF,
+    DEFAULT_FREQUENCY,
+)
+from cockpitdecks.config import XP_HOME, COCKPITDECKS_PATH
 from cockpitdecks.constant import DEFAULT_LAYOUT
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
@@ -53,6 +76,7 @@ DECK_TYPE_DESCRIPTION = "deck-type-flat"
 # Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
 # (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
 # but also the aircraft. So in 1 dataref, 2 data!
+RELOAD_ON_LIVERY_CHANGE = False
 AIRCRAFT = "_livery"  # dataref name is data:_livery
 
 
@@ -130,10 +154,12 @@ class Cockpit(DatarefListener, CockpitBase):
         self.disabled = False
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
+        self.demo = False
         self._dark = False
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         self._acname = ""
+        self._livery_path = ""
 
         self.init()
 
@@ -328,7 +354,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if len(driver_info) == 0:
             logger.warning("no driver for physical decks")
             return
-        logger.info(f"drivers installed for {', '.join(driver_info)}; scanning..")
+        logger.info(f"drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
         dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in DECK_DRIVERS.items() if k != VIRTUAL_DECK_DRIVER]
         logger.debug(f"dependencies: {dependencies}")
         pkg_resources.require(dependencies)
@@ -389,7 +415,10 @@ class Cockpit(DatarefListener, CockpitBase):
             else:
                 if i > 1:
                     logger.warning(f"more than one deck of type {req_driver}, no serial to disambiguate")
-                    deckdr = filter(lambda d: d[CONFIG_KW.DRIVER.value] == req_driver and d[CONFIG_KW.SERIAL.value] is None, self.devices)
+                    deckdr = filter(
+                        lambda d: d[CONFIG_KW.DRIVER.value] == req_driver and d[CONFIG_KW.SERIAL.value] is None,
+                        self.devices,
+                    )
                     logger.warning(f"driver: {req_driver}, decks with no serial: {[d[CONFIG_KW.DEVICE.value].name for d in deckdr]}")
             return None
         ## Got serial, search for it
@@ -409,11 +438,11 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.warning(f"deck {req_serial} not found")
         return None
 
-    def start_aircraft(self, acpath: str, release: bool = False):
+    def start_aircraft(self, acpath: str, release: bool = False, demo: bool = False):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
-        logger.info("starting aircraft " + "-" * 50)
+        self.demo = demo
         self.load_aircraft(acpath)
         self.run(release)
 
@@ -422,19 +451,21 @@ class Cockpit(DatarefListener, CockpitBase):
         Loads decks for aircraft in supplied path.
         """
         if self.disabled:
-            logger.warning(f"Cockpitdecks is disabled")
+            logger.warning("Cockpitdecks is disabled")
             return
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
             self.terminate_aircraft()
             # self.sim.clean_datarefs_to_monitor()
-            logger.warning(f"{os.path.basename(self.acpath)} unloaded")
+            logger.info(f"{os.path.basename(self.acpath)} unloaded")
 
         if self.sim is None:
-            logger.info(f"..starting simulator..")
+            logger.info("..starting simulator..")
             self.sim = self._simulator(self)
         else:
-            logger.debug(f"simulator already running")
+            logger.debug("simulator already running")
+
+        logger.info(f"starting {os.path.basename(acpath)} " + "-" * 50)
 
         self.cockpit = {}
         self.icons = {}
@@ -942,7 +973,6 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.debug("starting event loop..")
 
         while self.event_loop_run:
-
             e = self.event_queue.get()  # blocks infinitely here
 
             if type(e) is str:
@@ -1011,7 +1041,11 @@ class Cockpit(DatarefListener, CockpitBase):
             deck.remove_client()
             logger.debug(f"{name} closed")
         elif code in [4, 5]:
-            payload = {"code": code, "deck": name, "meta": {"ts": datetime.now().timestamp()}}
+            payload = {
+                "code": code,
+                "deck": name,
+                "meta": {"ts": datetime.now().timestamp()},
+            }
             self.send(deck=self.name, payload=payload)
 
     def process_event(self, deck_name, key, event, data):
@@ -1070,42 +1104,79 @@ class Cockpit(DatarefListener, CockpitBase):
         # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
         return os.path.split(os.path.normpath(os.path.join(path, "..", "..")))[1]
 
+    def get_aircraft_path(self, aircraft) -> str | None:
+        for base in COCKPITDECKS_PATH.split(":"):
+            ac = os.path.join(base, aircraft)
+            if os.path.exists(ac) and os.path.isdir(ac):
+                ac_cfg = os.path.join(ac, CONFIG_FOLDER)
+                if os.path.exists(ac_cfg) and os.path.isdir(ac_cfg):
+                    logger.info(f"aircraft path found in COCKPITDECKS_PATH: {ac}, with deckconfig")
+                    return ac
+        logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={COCKPITDECKS_PATH}")
+        return None
+
     def dataref_changed(self, dataref):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        print("*-"*30, "BEGIN")
         if type(dataref) is not Dataref or dataref.path != AIRCRAFT_CHANGE_MONITORING_DATAREF:
             logger.warning(f"unhandled {dataref.path}={dataref.value()}")
             return
         value = dataref.value()
-        if value is not None and type(value) is str:
-            new_livery = self.get_livery(value)
-            old_livery = self._livery_dataref.value()
-            self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-            self._acname = self.get_aircraft(value)
+        if value is not None and self._livery_path == value:
+            logger.info(f"livery path unchanged {self._livery_path}, doing nothing")
+            return
+        if value is None or type(value) is not str:
+            logger.info(f"livery path invalid value {value}, doing nothing")
+            return
+
+        self._livery_path = value
+        acname = self.get_aircraft(value)
+        if self._acname != acname:
+            self._acname = acname
             logger.info(f"aircraft name set to {self._acname}")
-            if old_livery is None:
-                logger.info(f"initial aircraft livery set to {new_livery}")
-            elif old_livery != new_livery:
-                logger.info(f"new aircraft livery loaded {new_livery} (former was {old_livery})")
-                self.reload_decks()
-            # Automatic reloading
-            if not self.sim.runs_locally():
-                logger.info(f"livery changed, X-Plane is remote, aircraft not adjusted")
-            else: # attempt to change aircraft if new deckconfig found
-                ac_home = self.get_aircraft_home(new_livery)
+
+        new_livery = self.get_livery(value)
+
+        # Automatic reloading of aircraft
+        if self.demo:
+            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
+        else:
+            if self.sim.runs_locally() and XP_HOME is not None:  # attempt to change aircraft if new deckconfig found
+                ac_home = self.get_aircraft_home(value)
                 new_ac = os.path.join(XP_HOME, ac_home)
                 new_cfg = os.path.join(new_ac, CONFIG_FOLDER)
-                if os.path.exists(new_cfg) and os.path.isdir(new_cfg): # let's change
+                if os.path.exists(new_cfg) and os.path.isdir(new_cfg):  # let's change
                     if self.acpath != new_ac:
-                        logger.info(f"livery changed to {new_livery}, aircraft changed, loading new aircraft")
+                        logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
+                        logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
                         self.load_aircraft(acpath=new_ac)
+                        return  # no additional processing
                     else:
                         logger.info(f"livery changed to {new_livery} but no aircraft unchanged, aircraft not adjusted")
                 else:
                     logger.info(f"livery changed to {new_livery} but no {CONFIG_FOLDER} in {new_ac}, aircraft not adjusted")
-        print("*-"*30, "END")
+            else:
+                # logger.info(f"X-Plane is remote, aircraft not adjusted")
+                new_ac = self.get_aircraft_path(self._acname)
+                if new_ac != None and self.acpath != new_ac:
+                    logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
+                    logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
+                    self.load_aircraft(acpath=new_ac)
+                    return  # no additional processing
+                else:
+                    logger.info(f"aircraft path not found, aircraft not adjusted")
+
+        # Adjustment of livery
+        old_livery = self._livery_dataref.value()
+        if old_livery is None:
+            self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+            logger.info(f"initial aircraft livery set to {new_livery}")
+        elif old_livery != new_livery:
+            self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+            logger.info(f"new aircraft livery {new_livery} (former was {old_livery})")
+            if RELOAD_ON_LIVERY_CHANGE:
+                self.reload_decks()
 
     def terminate_aircraft(self):
         logger.info(f"terminating..")
@@ -1128,7 +1199,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info(f"..done")
-        logger.info("aircraft terminated " + "-" * 50)
+        logger.info(f"{os.path.basename(self.acpath)} terminated " + "-" * 50)
 
     def terminate_devices(self):
         for deck in self.devices:
@@ -1249,7 +1320,14 @@ class Cockpit(DatarefListener, CockpitBase):
         return sent
 
     def probe(self, deck):
-        return self.send(deck=deck, payload={"code": 99, "deck": deck, "meta": {"ts": datetime.now().timestamp()}})
+        return self.send(
+            deck=deck,
+            payload={
+                "code": 99,
+                "deck": deck,
+                "meta": {"ts": datetime.now().timestamp()},
+            },
+        )
 
     # ###############################################################
     # Button designer
@@ -1362,7 +1440,12 @@ class Cockpit(DatarefListener, CockpitBase):
                 page_config = yaml.load(fp)
                 if page_config is not None:
                     if "buttons" in page_config:
-                        page_config["buttons"] = list(filter(lambda b: b["index"] != button_config["index"], page_config["buttons"]))
+                        page_config["buttons"] = list(
+                            filter(
+                                lambda b: b["index"] != button_config["index"],
+                                page_config["buttons"],
+                            )
+                        )
                     else:
                         page_config["buttons"] = []
         if page_config is None:
@@ -1401,7 +1484,10 @@ class Cockpit(DatarefListener, CockpitBase):
                 buf = io.BytesIO()
                 yaml.dump(b, buf)
                 ret = buf.getvalue().decode("utf-8")
-                return {"code": ret, "meta": {"error": f"no buttons in {page}"}}  # there might be yaml parser garbage in b
+                return {
+                    "code": ret,
+                    "meta": {"error": f"no buttons in {page}"},
+                }  # there might be yaml parser garbage in b
         return {"code": "", "meta": {"error": f"no button index {index}"}}
 
     def render_button(self, data):
@@ -1426,7 +1512,10 @@ class Cockpit(DatarefListener, CockpitBase):
                 return {"image": "", "meta": {"error": "button not created"}}
             image = button.get_representation()
         except:
-            logger.warning(f"error generating button or image\ndata: {data}\nconfig: {json.dumps(config, indent=2)}", exc_info=True)
+            logger.warning(
+                f"error generating button or image\ndata: {data}\nconfig: {json.dumps(config, indent=2)}",
+                exc_info=True,
+            )
         if button is None:
             return {"image": "", "meta": {"error": "no button"}}
         if image is None:
@@ -1480,5 +1569,9 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def refresh_all_decks(self):
         for name in self.get_web_decks():
-            payload = {"code": 1, "deck": name, "meta": {"ts": datetime.now().timestamp()}}
+            payload = {
+                "code": 1,
+                "deck": name,
+                "meta": {"ts": datetime.now().timestamp()},
+            }
             self.send(deck=name, payload=payload)

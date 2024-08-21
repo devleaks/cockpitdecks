@@ -1,15 +1,13 @@
 import sys
 import os
-import glob
 import logging
 import time
 import itertools
 import threading
 import json
 import urllib.parse
-import socket
 
-from flask import Flask, render_template, send_from_directory, request, jsonify
+from flask import Flask, render_template, send_from_directory, request
 from simple_websocket import Server, ConnectionClosed
 
 import ruamel
@@ -38,50 +36,43 @@ if LOGFILE is not None:
 #
 # COMMAND LINE PARSING
 #
-from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME
+from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME, VERBOSE
 from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
 
 
-ac = sys.argv[1] if len(sys.argv) > 1 else None
+# No aircraft supplied starts the demo version.
+AIRCRAFT_HOME = DEMO_HOME
+AIRCRAFT_DESC = "Cockpitdecks Demo"
 
 
 def print_help():
     print(
-        """usage: cockpitdecks-cli [--help] [--demo] [directory]
+        """usage: cockpitdecks-cli [ { --help | --demo | directory [fixed] } ]
 
 --help, -h, -?: displays command line help and exits
---demo        : starts demo mode, X-plane not needed but used if availa
+--demo        : starts demo mode, X-plane not needed but used if available, aircraft will not change
 directory     : start from directory if directory contains deckconfig directory (ignored otherwise)
+    fixed     : if 'fixed' added after the directory, aircraft will not change
 
 without any argument:
 - if X-Plane runs on same computer as Cockpitdecks, starts in full automatic mode.
 - if X-Plane does not run on same computer as Cockpitdecks, start demo mode.
 """
     )
-    # --debug, -i   : prints more information
 
+
+ac = sys.argv[1] if len(sys.argv) > 1 else None
+fixed = sys.argv[2] if len(sys.argv) > 2 else None
 
 if ac in ["--help", "-h", "-?"]:  # command line help
     print_help()
     sys.exit(0)
 
-# Distribution version: No aircraft starts the demo version.
-AIRCRAFT_HOME = DEMO_HOME
-AIRCRAFT_DESC = "Cockpitdecks Demo"
-
-
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
     sys.exit(1)
 
-if ac is None and XP_HOME is None:  # XP_HOME has been checked above
-    print(f"no local X-Plane, aircraft directory not supplied")
-    print(
-        """Please set XP_HOME in config.py if X-Plane is available on computer,
-or supply an aircraft directory where Cockpitdecks will find its configuration."""
-    )
-    sys.exit(1)
-
+demo = ac == "--demo"
 if ac is not None and ac != "--demo":
     if ac.startswith("-"):
         print(f"invalid {ac} command line switch")
@@ -97,7 +88,12 @@ if ac is not None and ac != "--demo":
         sys.exit(1)
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
     AIRCRAFT_DESC = os.path.basename(ac)
+    demo = fixed in ["fixed", "fix", "f"]
+elif ac is None and XP_HOME is None:
+    demo = True
 
+if VERBOSE:
+    print(f"{AIRCRAFT_HOME}, {'fixed' if demo else 'can change'}")
 
 #
 # COCKPITDECKS STARTS HERE, REALLY
@@ -107,11 +103,9 @@ from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
 
 logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
-logger.info(f"Starting for {AIRCRAFT_DESC}..")
-if ac is None:
-    logger.info(f"(starting in demo mode but will load aircraft if X-Plane is running and aircraft loaded)")
-logger.info(f"..searching for decks and initializing them (this may take a few seconds)..")
+logger.info(f"Initializing Cockpitdecks..")
 cockpit = Cockpit(XPlane)
+logger.info("..initialized")
 
 
 # ##################################
@@ -329,8 +323,11 @@ def cockpit_wshandler():
 #
 def main():
     try:
-
-        cockpit.start_aircraft(AIRCRAFT_HOME, release=True)
+        logger.info(f"Starting {AIRCRAFT_DESC}..")
+        if ac is None and XP_HOME is not None:
+            logger.info(f"(starting in demonstration mode but will load aircraft if X-Plane is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)")
+        cockpit.start_aircraft(AIRCRAFT_HOME, release=True, demo=demo)
+        logger.info("..started")
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():
                 logger.warning("no web deck, start for designer")  # , press CTRL-C ** twice ** to quit
@@ -339,7 +336,7 @@ def main():
 
         # If single CTRL-C pressed, will terminate here
         logger.warning("terminating (please wait)..")
-        cockpit.terminate_all(2)
+        cockpit.terminate_all(threads=1)  # [MainThread]
         logger.info(f"..{AIRCRAFT_DESC} terminated.")
 
     except KeyboardInterrupt:
