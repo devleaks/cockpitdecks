@@ -31,6 +31,7 @@ class Mosaic(IconBase):
             pseudo_deck_type = self.button._def.mosaic
             if pseudo_deck_type is not None:
                 self.tiles = self.button.page.load_buttons(buttons=buttons, deck_type=pseudo_deck_type)
+                logger.debug(f"load_tiles: loaded tiles {', '.join([t.name for t in self.tiles])}")
             else:
                 logger.warning(f"{self.button.name}: no mosaic definition, not button loaded")
         else:
@@ -45,10 +46,17 @@ class Mosaic(IconBase):
         portion = portion.resize(dimensions)
         position = tile._def.get_offset()
         dest = (position[0], position[1], position[0] + dimensions[0], position[1] + dimensions[1])
-        # print(">>>", self.button.name, image.size, tile.name, dimensions, position, dest)
+        logger.debug(f"place_tile: {self.button.name}, {image.size}, {tile.name}, {dimensions}, {position}, {dest}")
         image.paste(portion, dest, portion)
 
     def render(self):
+        # Warning: Do not update Mosaic too often because it may lead to performance issue:
+        # Recall that a mosaic update request the update of all underlying tiles.
+        # Make sure individual tiles DO cache their representation to speed up process.
+        # IF all "but one" representation is invalid and all other are cached, there is no problem.
+        # The overhead here, to paste together all tiles is negligible.
+        # But the building of each individual tile is not.
+
         image = self.button.deck.create_icon_for_key(self.button.index, colors=self.cockpit_color, texture=self.cockpit_texture)
         for tile in self.tiles:
             self.place_tile(tile, image)

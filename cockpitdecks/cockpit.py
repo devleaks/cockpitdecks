@@ -24,6 +24,7 @@ from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, SECRET_FILE, EXCLUDE_DECKS, ICONS_FOLDER, FONTS_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER
 from cockpitdecks import Config, CONFIG_FILENAME, CONFIG_KW, DECK_KW, COCKPITDECKS_DEFAULT_VALUES, VIRTUAL_DECK_DRIVER, DECK_TYPES, DECK_IMAGES
 from cockpitdecks import COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, AIRCRAFT_CHANGE_MONITORING_DATAREF, DEFAULT_FREQUENCY
+from cockpitdecks.constant import DEFAULT_LAYOUT
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Dataref, DatarefListener
@@ -736,7 +737,8 @@ class Cockpit(DatarefListener, CockpitBase):
                             DECK_TYPE_DESCRIPTION: deck_flat,
                         }
                     cnt = cnt + 1
-                    logger.info(f"deck {name} added ({deck_type}, driver {deck_driver})")
+                    deck_layout = deck_config.get(DECK_KW.LAYOUT.value, DEFAULT_LAYOUT)
+                    logger.info(f"deck {name} added ({deck_type}, driver {deck_driver}, layout {deck_layout})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             # else:
@@ -909,7 +911,6 @@ class Cockpit(DatarefListener, CockpitBase):
                         logger.debug(f"font {i} already loaded")
 
         # 3. DEFAULT_LABEL_FONT and DEFAULT_SYSTEM_FONT loaded in load_defaults()
-
         logger.info(
             f"{len(self.fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
         )

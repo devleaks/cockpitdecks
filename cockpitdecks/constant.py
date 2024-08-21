@@ -207,7 +207,7 @@ yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
 init_logger = logging.getLogger("init/common")
-
+init_logger.setLevel(logging.WARNING)
 
 #
 #  Yaml config file reader
@@ -230,7 +230,7 @@ class Config(MutableMapping):
                 dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
                 init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
         else:
-            init_logger.debug(f"no file {filename}")
+            init_logger.warning(f"no file {filename}")
 
     def __getitem__(self, key):
         return self.store[self._keytransform(key)]
