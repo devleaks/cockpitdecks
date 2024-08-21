@@ -165,13 +165,13 @@ class VirtualDeck(DeckWithIcons):
                 return
             logger.debug(f"TouchEvent deck {self.name} key {key} = {state}, {self._touch_event_start}, {data}")
             if state == 10:  # start
-                self._touch_event_start = TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"])
+                self._touch_event_start = TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"))
             else:
-                TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"], start=self._touch_event_start)
+                TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), start=self._touch_event_start)
                 self._touch_event_start = None
             return  # no other possible handling
         if state in [14]:
-            TouchEvent(deck=self, button=key, pos_x=data["x"], pos_y=data["y"], cli_ts=data["ts"])
+            TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"))
             logger.debug(f"TouchEvent deck {self.name} key {key} = {state} (press event)")
             return  # no other possible handling
         if state in [9]:

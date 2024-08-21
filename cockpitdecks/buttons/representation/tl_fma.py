@@ -85,7 +85,7 @@ class FMAIcon(DrawBase):
         self.fmaconfig = button._config.get("fma", {})  # should not be none, empty at most...
         self.all_in_one = False
         self.fma_label_mode = self.fmaconfig.get("label-mode", FMA_LABEL_MODE)
-        self.icon_color = "black"
+        self.icon_color = (20, 20, 20)
         self.text = {k: FMA_EMPTY_LINE for k in FMA_DATAREFS}
         self.fma_text: Dict[str, str] = {}
         self.previous_text: Dict[str, str] = {}
@@ -282,7 +282,7 @@ class FMAIcon(DrawBase):
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=None,
-            color_in="black",
+            color_in=self.icon_color,
             use_texture=False,
             who="FMA",
         )
@@ -365,7 +365,7 @@ class FMAIcon(DrawBase):
                 width=8 * ICON_SIZE,
                 height=ICON_SIZE,
                 texture_in=None,
-                color_in="black",
+                color_in=self.icon_color,
                 use_texture=False,
                 who="FMA",
             )
@@ -469,7 +469,7 @@ class FMAIcon(DrawBase):
             width=8 * ICON_SIZE,
             height=ICON_SIZE,
             texture_in=None,
-            color_in="black",
+            color_in=self.icon_color,
             use_texture=False,
             who="FMA",
         )
