@@ -154,7 +154,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.disabled = False
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
-        self.demo = False
+        self.mode = 0
         self._dark = False
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
@@ -438,11 +438,11 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.warning(f"deck {req_serial} not found")
         return None
 
-    def start_aircraft(self, acpath: str, release: bool = False, demo: bool = False):
+    def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
-        self.demo = demo
+        self.mode = mode
         self.load_aircraft(acpath)
         self.run(release)
 
@@ -1139,7 +1139,7 @@ class Cockpit(DatarefListener, CockpitBase):
         new_livery = self.get_livery(value)
 
         # Automatic reloading of aircraft
-        if self.demo:
+        if self.mode > 0:
             logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
         else:
             if self.sim.runs_locally() and XP_HOME is not None:  # attempt to change aircraft if new deckconfig found

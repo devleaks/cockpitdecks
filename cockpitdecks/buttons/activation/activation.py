@@ -263,7 +263,7 @@ class Activation:
         return self.duration > duration
 
     def has_long_press(self) -> bool:
-        return self._long_press is not None
+        return self._long_press is not None and self._long_press.has_command()
 
     def fast(self, duration: float = 0.1) -> bool:
         return self._fast < duration
@@ -300,14 +300,11 @@ class Activation:
             self._view_macro.execute(simulator=self.button.sim)
             return
         if self._view is not None:
-            if self._view_if is None:
+            doit = True
+            if self._view_if is not None:
+                doit = self.button.execute_formula(self._view_if)
+            if doit:
                 self.command(self._view)
-                return
-        doit = True
-        if self._view_if is not None:
-            doit = self.button.execute_formula(self._view_if)
-        if doit:
-            self.command(self._view)
 
     def long_press(self, event):
         self.command(self._long_press)

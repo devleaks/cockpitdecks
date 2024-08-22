@@ -235,6 +235,7 @@ class IconBase(Representation):
         Removes icon from deck
         """
         self.button.deck.fill_empty(self.button.index)
+        self.clean_cache()
 
     def describe(self) -> str:
         return "The representation creates an empty icon for other image display."

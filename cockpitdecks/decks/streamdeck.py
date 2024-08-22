@@ -13,7 +13,7 @@ from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTI
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.event import PushEvent, EncoderEvent, TouchEvent, SwipeEvent
 from cockpitdecks.page import Page
-from cockpitdecks.button import Button
+from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
 from cockpitdecks.buttons.representation import (
     Representation,
     IconBase,
@@ -108,6 +108,7 @@ class Streamdeck(DeckWithIcons):
                     image.paste(logo2, (inside, inside), logo2)
                 else:
                     logger.warning(f"deck {self.name}: no logo image {fn} found, using default")
+            image = image.convert("RGB")
             return image
 
         # Crops out a key-sized image from a larger deck-sized image, at the location
@@ -135,6 +136,7 @@ class Streamdeck(DeckWithIcons):
             # larger image.
             key_image = self.create_empty_icon_for_key(key)
             key_image.paste(segment)
+            key_image = key_image.convert("RGB")
 
             return to_native_format(deck, key_image)
 
@@ -154,14 +156,22 @@ class Streamdeck(DeckWithIcons):
                 self.device.set_key_image(k, key_image)
 
         # Add index 0 only button:
-        page0 = Page(name=DEFAULT_PAGE_NAME, config={"name": DEFAULT_PAGE_NAME}, deck=self)
+        page0 = Page(
+            name=DEFAULT_PAGE_NAME,
+            config={
+                "name": DEFAULT_PAGE_NAME
+            },
+            deck=self)
         button0 = Button(
             config={
                 "index": "0",
+                DECK_BUTTON_DEFINITION: self.deck_type.get_button_definition("0"),
                 "name": "X-Plane Map (default page)",
                 "type": "push",
                 "command": "sim/map/show_current",
-                "text": "MAP",
+                "text": {
+                    "text": "MAP"
+                }
             },
             page=page0,
         )

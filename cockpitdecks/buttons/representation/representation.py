@@ -56,6 +56,7 @@ class Representation:
             self._representation_config = {self.name(): self._representation_config}
 
         self._vibrate = self.get_attribute("vibrate")
+        self._cached = None
         self.datarefs = None
 
         self.button.deck.cockpit.set_logging_level(__name__)
@@ -73,6 +74,9 @@ class Representation:
 
     def init(self):  # ~ABC
         pass
+
+    def clean_cache(self):
+        self._cached = None
 
     def can_render(self) -> bool:
         button_cap = self.button._def[DECK_KW.FEEDBACK.value]

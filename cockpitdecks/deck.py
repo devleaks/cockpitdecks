@@ -374,13 +374,13 @@ class Deck(ABC):
                 self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
                 logger.debug("..cleaning page..")
                 self.current_page.clean()
-            self.inc(INTERNAL_DATAREF.PAGE_CHANGES.value)
+                logger.debug(f"..reset device {self.name}..")
+                self.device.reset()
             logger.debug(f"deck {self.name} ..installing new page {page}..")
+            self.inc(INTERNAL_DATAREF.PAGE_CHANGES.value)
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
-            logger.debug(f"..reset device {self.name}..")
-            self.device.reset()
             logger.debug("..loading datarefs..")
             self.cockpit.sim.add_datarefs_to_monitor(self.current_page.datarefs)  # set which datarefs to monitor
             logger.debug("..rendering page..")

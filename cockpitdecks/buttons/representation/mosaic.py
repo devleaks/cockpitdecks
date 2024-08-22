@@ -61,3 +61,9 @@ class Mosaic(IconBase):
         for tile in self.tiles:
             self.place_tile(tile, image)
         return image
+
+    def clean(self):
+        for tile in self.tiles:
+            tile.clean()
+        super().clean()
+

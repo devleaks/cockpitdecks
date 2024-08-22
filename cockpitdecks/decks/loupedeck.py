@@ -9,7 +9,7 @@ from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.page import Page
-from cockpitdecks.button import Button
+from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
 from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
 from cockpitdecks.buttons.representation import Representation, IconBase, ColoredLED
 
@@ -105,29 +105,26 @@ class Loupedeck(DeckWithIcons):
         self.device.draw_right_image(image_right)
 
         # Add index 0 only button:
-        page0 = Page(name=DEFAULT_PAGE_NAME, config={"name": DEFAULT_PAGE_NAME}, deck=self)
+        page0 = Page(
+            name=DEFAULT_PAGE_NAME,
+            config={
+                "name": DEFAULT_PAGE_NAME
+            },
+            deck=self)
         button0 = Button(
             config={
                 "index": "0",
+                DECK_BUTTON_DEFINITION: self.deck_type.get_button_definition("0"),
                 "name": "X-Plane Map (default page)",
                 "type": "push",
                 "command": "sim/map/show_current",
-                "text": "MAP",
+                "text": {
+                    "text": "MAP"
+                }
             },
             page=page0,
         )
         page0.add_button(button0.index, button0)
-        button1 = Button(
-            config={
-                "index": "1",
-                "name": "Exit",
-                "type": "stop",
-                "icon": "STOP",
-                "label": "STOP",
-            },
-            page=page0,
-        )
-        page0.add_button(button1.index, button1)
         self.pages = {DEFAULT_PAGE_NAME: page0}
         self.home_page = page0
         self.current_page = page0
@@ -230,6 +227,7 @@ class Loupedeck(DeckWithIcons):
                 ):
                     key = self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.KEY.value]
                     del self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]]
+                    logger.debug(f"Deck {deck.id()} Key {key} = {state}")
                     event = PushEvent(deck=self, button=key, pressed=state)
                 else:
                     dx = msg[CALLBACK_KEYWORD.X.value] - self.touches[msg[CALLBACK_KEYWORD.IDENTIFIER.value]][CALLBACK_KEYWORD.X.value]
@@ -295,6 +293,7 @@ class Loupedeck(DeckWithIcons):
                             event = event + [pressed]
                             logger.debug(f"side bar released, SIDE_INDIVIDUAL_KEYS event {pressed} = {state}")
                             # This transfer a (virtual) button release event
+                            logger.debug(f"Deck {deck.id()} Key {key} = {state}")
                             event = PushEvent(deck=self, button=key, pressed=state)
 
                     if same_key:
