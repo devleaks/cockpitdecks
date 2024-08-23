@@ -101,7 +101,7 @@ class SetDataref(CommandBase):
         self._value = value
 
     def __str__(self) -> str:
-        return "set-dataref:" + self.name
+        return "set-dataref: " + self.name
 
     @property
     def value(self):

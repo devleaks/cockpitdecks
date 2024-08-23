@@ -84,9 +84,10 @@ class Activation:
         self._long_press = Command(path=self._config.get("long-press"))  # Optional additional command
 
         # Datarefs
-        self.writable_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
-        if self.writable_dataref is not None:
-            self._writable_dataref = self.button.sim.get_dataref(self.writable_dataref)
+        self._writable_dataref = None
+        set_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
+        if set_dataref is not None:
+            self._writable_dataref = self.button.sim.get_dataref(set_dataref)
             self._writable_dataref.set_writable()
 
         # Working variables, internal state
@@ -228,13 +229,13 @@ class Activation:
             # Guard handling
             self._guard_changed = False
             if self.button.is_guarded() and self.long_pressed():
-                self._write_dataref(self.button.guarded, 1)  # just open it
+                self.button.set_guard_off()
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
                 self._guard_changed = True
                 return
 
-            if self.button.guard is not None and not self.button.is_guarded() and self.long_pressed():
-                self._write_dataref(self.button.guarded, 0)  # close it
+            if self.button.has_guard() and not self.button.is_guarded() and self.long_pressed():
+                self.button.set_guard_on()
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
                 self._guard_changed = True
                 return
@@ -269,9 +270,13 @@ class Activation:
         return self._fast < duration
 
     def get_datarefs(self) -> set:
-        if self.writable_dataref is not None:
-            return {self.writable_dataref}
+        if self._writable_dataref is not None:
+            return {self._writable_dataref.path}
         return set()
+
+    def set_dataref(self, button_value: int | float):
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} dataref {self._writable_dataref.path} set to {button_value}")
+        print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref} => {button_value}")
 
     def _write_dataref(self, dataref, value: float):
         if dataref is not None:
@@ -279,12 +284,13 @@ class Activation:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
 
     def write_dataref(self, value: float):
-        if self.writable_dataref is None:
+        if self._writable_dataref is None:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
             return
-        logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self.writable_dataref} => {value}")
-        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self.writable_dataref} => {value}")
-        self._write_dataref(self.writable_dataref, value)
+        self._writable_dataref.update_value(new_value=value, cascade=False)
+        self._writable_dataref.save(self.button.sim)
+        logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
+        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.parh} => {value}")
 
     def __str__(self):  # print its status
         return ", ".join([type(self).__name__, f"activation-count: {self.activation_count}"])
@@ -337,7 +343,7 @@ class Activation:
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
-            "writable_dataref": self.writable_dataref,
+            "writable_dataref": self._writable_dataref.path,
             "activation_value": self.activation_count,  # !
         }
 
@@ -848,7 +854,7 @@ class OnOff(Activation):
             if self.num_commands() < 2:
                 logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands")
                 return False
-        elif self.writable_dataref is None:
+        elif self._writable_dataref is None:
             logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         return super().is_valid()
@@ -912,8 +918,8 @@ class OnOff(Activation):
                 f"The button executes command {self._commands[1]} when its current value is ON (not 0).",
             ]
         a.append(f"The button does nothing when it is de-activated (released).")
-        if self.writable_dataref is not None:
-            a.append(f"The button writes its value in dataref {self.writable_dataref}.")
+        if self._writable_dataref is not None:
+            a.append(f"The button writes its value in dataref {self._writable_dataref.path}.")
 
         # if self.button.has_external_value():
         #     a.append(f"The button gets its current value from its button value (dataref, or formula).")
@@ -1048,7 +1054,7 @@ class UpDown(Activation):
             if self.num_commands() < 2:
                 logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least 2 commands")
                 return False
-        elif self.writable_dataref is None:
+        elif self._writable_dataref is None:
             logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least two commands or a dataref to write to")
             return False
         if self.stops is None or self.stops == 0:
@@ -1099,8 +1105,8 @@ class UpDown(Activation):
             a.append(f"The button executes command {self._commands[0]} when it increases its current value.")
             a.append(f"The button executes command {self._commands[1]} when it decreases its current value.")
         a.append(f"The button does nothing when it is de-activated (released).")
-        if self.writable_dataref is not None:
-            a.append(f"The button writes its value in dataref {self.writable_dataref}.")
+        if self._writable_dataref is not None:
+            a.append(f"The button writes its value in dataref {self._writable_dataref.path}.")
         a.append(f"The button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed.")
         a.append(f"The current value is {self.stop_current_value}. Value will {'increase' if self.go_up else 'decrease'}")
         return "\n\r".join(a)
@@ -1504,7 +1510,7 @@ class EncoderValue(OnOff):
             self._inited = True
 
     def is_valid(self):
-        if self.writable_dataref is None:
+        if self._writable_dataref is None:
             logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
@@ -1579,8 +1585,8 @@ class EncoderValue(OnOff):
             f"This encoder decreases a value by {self.step} when it is turned counter-clockwise.",
             f"The value remains in the range [{self.value_min}-{self.value_max}].",
         ]
-        if self.writable_dataref is not None:
-            a.append(f"The value is written in dataref {self.writable_dataref}.")
+        if self._writable_dataref is not None:
+            a.append(f"The value is written in dataref {self._writable_dataref.path}.")
         return "\n\r".join(a)
 
 
@@ -1665,7 +1671,7 @@ class EncoderValueExtended(OnOff):
             return x
 
     def is_valid(self):
-        if self.writable_dataref is None:
+        if self._writable_dataref is None:
             logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
@@ -1742,8 +1748,8 @@ class EncoderValueExtended(OnOff):
             f"This encoder decreases a value by {self.step} when it is turned counter-clockwise.",
             f"The value remains in the range [{self.value_min}-{self.value_max}].",
         ]
-        if self.writable_dataref is not None:
-            a.append(f"The value is written in dataref {self.writable_dataref}.")
+        if self._writable_dataref is not None:
+            a.append(f"The value is written in dataref {self._writable_dataref.path}.")
         return "\n\r".join(a)
 
 
@@ -1797,7 +1803,7 @@ class Slider(Activation):  # Cursor?
             Slider.SLIDER_MIN = min(range_values)
 
     def is_valid(self):
-        if self.writable_dataref is None:
+        if self._writable_dataref is None:
             logger.error(f"button {self.button_name()}: {type(self).__name__} must have a dataref to write to")
             return False
         return super().is_valid()
@@ -1812,7 +1818,7 @@ class Slider(Activation):  # Cursor?
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
         self.write_dataref(value)
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self.writable_dataref}")
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.path}")
 
     def describe(self) -> str:
         """
@@ -1822,8 +1828,8 @@ class Slider(Activation):  # Cursor?
             f"This slider produces a value between [{self.value_min}, {self.value_max}].",
             f"The raw value from slider is modified by formula {self.button.formula}.",
         ]
-        if self.writable_dataref is not None:
-            a.append(f"The value is written in dataref {self.writable_dataref}.")
+        if self._writable_dataref is not None:
+            a.append(f"The value is written in dataref {self._writable_dataref.path}.")
         return "\n\r".join(a)
 
 

@@ -121,11 +121,17 @@ class Button(DatarefListener, ValueProvider):
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
-        self.guard = config.get(CONFIG_KW.GUARD.value)
-        if self.guard is not None:
-            self.guarded = self.guard.get(CONFIG_KW.DATAREF.value)
-            if self.guarded is None:
+
+        self.guarded = config.get(CONFIG_KW.GUARD.value)
+        self._guard_dref = None
+        if self.guarded is not None and type(self.guarded) is dict:
+            guard_dref_path = self.guarded.get(CONFIG_KW.DATAREF.value)
+            if guard_dref_path is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
+            else:
+                self._guard_dref = self.sim.get_dataref(guard_dref_path)
+                self._guard_dref.update_value(new_value=0, cascade=False) # need initial value,  especially for internal drefs
+                logger.debug(f"button {self.name} has guard {self._guard_dref.path}")
 
         # String datarefs
         self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, set())
@@ -466,19 +472,41 @@ class Button(DatarefListener, ValueProvider):
         return False
         # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
 
+    def has_guard(self):
+        return self._guard_dref is not None
+
     def is_guarded(self):
-        if self.guarded is None:
+        if not self.has_guard():
             return False
-        d = self.get_dataref_value(self.guarded, default=0)
+        d = self._guard_dref.value()
         if d == 0:
             logger.debug(f"button {self.name}: is guarded ({d}).")
             return True
         return False
-        # return self.guarded is not None and self.get_dataref_value(dataref=self.guarded, default=0) != 0
+
+    def _set_guarded(self, value: int):
+        if not self.has_guard():
+            return
+        d = self._guard_dref.value()
+        if d == value:
+            logger.debug(f"button {self.name}: is already {'guarded' if d==1 else 'open'} ({value}).")
+            return
+        self._guard_dref.update_value(new_value=value, cascade=False)
+        self._guard_dref.save(self.sim)
+        logger.debug(f"button {self.name}: {'guarded' if value==1 else 'open'} ({value}).")
+
+    def set_guard_on(self):
+        self._set_guarded(value=0)
+
+    def set_guard_off(self):
+        self._set_guarded(value=1)
 
     # ##################################
     # Value provider
     #
+    def get_dataref(self, dataref):
+        return self.page.get_dataref(dataref=dataref)
+
     def get_dataref_value(self, dataref, default=None):
         return self.page.get_dataref_value(dataref=dataref, default=default)
 
@@ -607,6 +635,9 @@ class Button(DatarefListener, ValueProvider):
             logger.debug(f"button {self.name}: no activation")
 
         self.value = self.compute_value()
+
+        # May be we need to write/save the new button value to a set-dataref
+        self._activation.set_dataref(button_value=self.value)
 
         if self.has_changed():
             logger.log(

@@ -249,7 +249,7 @@ buttons:
       dataref: data:guard_open
       model: grid
       color: (255,0,0,255)
-  - index: e1
+  - index: e3
     type: onoff
     set-dataref: data:guard_open
   - index: 11

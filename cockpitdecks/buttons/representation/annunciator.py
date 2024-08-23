@@ -653,12 +653,12 @@ class Annunciator(DrawBase):
         image.paste(annunciator, box=(int(width_offset), int(height_offset)))
 
         # PART 4: Guard
-        if self.button.guard is not None:
-            cover = self.button.guard.get(CONFIG_KW.ANNUNCIATOR_MODEL.value, GUARD_TYPES.COVER.value)
-            guard_color = self.button.guard.get("color", "red")
+        if self.button.has_guard():
+            cover = self.button.guarded.get(CONFIG_KW.ANNUNCIATOR_MODEL.value, GUARD_TYPES.COVER.value)  # CONFIG_KW.ANNUNCIATOR_MODEL.value = "model"
+            guard_color = self.button.guarded.get("color", "red")
             guard_color = convert_color(guard_color)
-            sw = self.button.guard.get("grid-width", 16)
-            topp = self.button.guard.get("top", int(ICON_SIZE / 8))
+            sw = self.button.guarded.get("grid-width", 16)
+            topp = self.button.guarded.get("top", int(ICON_SIZE / 8))
             tl = (ICON_SIZE / 8, 0)
             br = (int(7 * ICON_SIZE / 8), topp)
             guard_draw.rectangle(tl + br, fill=guard_color)
