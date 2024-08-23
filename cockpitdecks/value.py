@@ -41,46 +41,70 @@ class ValueProvider(DatarefValueProvider, StateVariableProvider):
 class Formula:
 
     def __init__(self, name: str, formula: str):
-        self.formula = formula
+        self._formula_raw = formula
+        self._formula_temp = None
+
+    @staticmethod
+    def is_formula(formula: str, strict: bool = True) -> bool:
+        if strict:
+            return type(formula) is str and "${" in formula  # ${..} to substitute
+        if type(formula) in [int, float]:  # it is a constant
+            return True
+        try:
+            a = float(formula)  # "123.456"
+            return True
+        except ValueError:
+            pass
+        try:
+            a = int(formula)  # "123"
+            return True
+        except ValueError:
+            pass
+        return False
+
+    @property
+    def formula(self):
+        return self._formula_raw if self._formula_temp is None else self._formula_temp
 
     def get_datarefs(self) -> set:
         datarefs = re.findall(PATTERN_DOLCB, self.formula)
         return set(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
 
-    def substitute_dataref_values(self, message: str | int | float, provider: ValueProvider, default: str = "0.0", formatting: str = None):
+    def substitute_dataref_values(self, provider: ValueProvider, default: str = "0.0", formatting: str = None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
         """
-        if type(message) is int or type(message) is float:  # probably formula is a constant value
-            value_str = message
+        text = self.formula
+        if type(text) is int or type(text) is float:  # probably formula is a constant value
+            value_str = text
             if formatting is not None:
-                if formatting is not None:
-                    value_str = formatting.format(message)
-                    logger.debug(f"value {self.name}:received int or float, returning as is.")
-                else:
-                    value_str = str(message)
-                    logger.debug(f"value {self.name}:received int or float, returning formatted {formatting}.")
+                value_str = formatting.format(text)
+                logger.debug(f"value {provider.name}:received int or float, returning as is.")
+            else:
+                value_str = str(text)
+                logger.debug(f"value {provider.name}:received int or float, returning formatted {formatting}.")
             return value_str
 
-        dataref_names = re.findall(PATTERN_DOLCB, message)
+        dataref_names = re.findall(PATTERN_DOLCB, text)
 
         if len(dataref_names) == 0:
-            logger.debug(f"value {self.name}:no dataref to substitute.")
-            return message
+            logger.debug(f"value {provider.name}:no dataref to substitute.")
+            return text
 
         if formatting is not None:
             if type(formatting) is list:
                 if len(dataref_names) != len(formatting):
                     logger.warning(
-                        f"value {self.name}:number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed."
+                        f"value {provider.name}:number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed."
                     )
-                    return message
+                    return text
+                # Else: format (to do)
             elif type(formatting) is not str:
-                logger.warning(f"value {self.name}:single format is not a string, cannot proceed.")
-                return message
+                logger.warning(f"value {provider.name}:single format is not a string, cannot proceed.")
+                return text
 
-        retmsg = message
+        retmsg = text
         cnt = 0
         for dataref_name in dataref_names:
             value = provider.get_dataref_value(dataref_name)
@@ -101,8 +125,8 @@ class Formula:
 
         return retmsg
 
-    def substitute_state_values(self, text, provider: ValueProvider, default: str = "0.0", formatting: str = None):
-        txtcpy = text
+    def substitute_state_values(self, provider: ValueProvider, default: str = "0.0", formatting: str = None):
+        txtcpy = self.formula
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         for name in more:
             state_string = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
@@ -117,40 +141,43 @@ class Formula:
             logger.warning(f"formula {self.formula}:unsubstituted status values {more}")
         return txtcpy
 
-    # def substitute_button_values(self, text, default: str = "0.0", formatting=None):
-    #     # Experimental, do not use
-    #     txtcpy = text
-    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-    #     if len(more) > 0:
-    #         for m in more:
-    #             v = self.deck.cockpit.get_button_value(m)  # starts at the top
-    #             if v is None:
-    #                 logger.warning(f"value {self.name}:{m} has no value")
-    #                 v = str(default)
-    #             else:
-    #                 v = str(v)  # @todo: later: use formatting
-    #             m_str = f"${{button:{m}}}"  # "${formula}"
-    #             txtcpy = txtcpy.replace(m_str, v)
-    #             logger.debug(f"value {self.name}:replaced {m_str} by {str(v)}. ({m})")
-    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-    #     if len(more) > 0:
-    #         logger.warning(f"value {self.name}:unsubstituted button values {more}")
-    #     return txtcpy
+    def substitute_button_values(self, provider: ValueProvider, default: str = "0.0", formatting=None):
+        # Experimental, do not use
+        txtcpy = self.formula
+        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+        if len(more) > 0:
+            for m in more:
+                v = provider.deck.cockpit.get_button_value(m)  # starts at the top
+                if v is None:
+                    logger.warning(f"value {provider.name}:{m} has no value")
+                    v = str(default)
+                else:
+                    v = str(v)  # @todo: later: use formatting
+                m_str = f"${{button:{m}}}"  # "${formula}"
+                txtcpy = txtcpy.replace(m_str, v)
+                logger.debug(f"value {provider.name}:replaced {m_str} by {str(v)}. ({m})")
+        more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
+        if len(more) > 0:
+            logger.warning(f"value {provider.name}:unsubstituted button values {more}")
+        return txtcpy
 
-    def substitute_values(self, text, provider: ValueProvider, default: str = "0.0", formatting: str = None):
-        if type(text) is not str or "$" not in text:  # no ${..} to stubstitute
+    def substitute_values(self, provider: ValueProvider, default: str = "0.0", formatting: str = None):
+        text = self.formula
+        if type(text) is not str or "${" not in text:  # no ${..} to substitute
             logger.debug(f"substitute_values: value {text} has no variable ({text})")
             return text
-        step1 = self.substitute_state_values(text, provider=provider, default=default, formatting=formatting)
-        if text != step1:
-            logger.debug(f"substitute_values: value {self.name}: {text} => {step1}")
+        self._formula_temp = self.substitute_state_values(provider=provider, default=default, formatting=formatting)
+        if text != self._formula_temp:
+            logger.debug(f"substitute_values: value {provider.name}: {text} => {self._formula_temp}")
         else:
             logger.debug(f"substitute_values: has no state variable ({text})")
-        # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
-        step2 = step1
-        step3 = self.substitute_dataref_values(step2, provider=provider, default=default, formatting=formatting)
-        if step3 != step2:
-            logger.debug(f"substitute_values: value {self.name}: {step2} => {step3}")
+        # do not use
+        # step1 = self._formula_temp
+        # self._formula_temp = self.substitute_state_values(provider=provider, default=default, formatting=formatting)
+        # step2 = self._formula_temp
+        step3 = self.substitute_dataref_values(provider=provider, default=default, formatting=formatting)
+        if step3 != self._formula_temp:
+            logger.debug(f"substitute_values: value {provider.name}: {self._formula_temp} => {step3}")
         else:
             logger.debug(f"substitute_values: has no dataref ({step3})")
         return step3
@@ -163,13 +190,11 @@ class Formula:
         replace datarefs variables with their (numeric) value and execute formula.
         Returns formula result.
         """
-        expr = self.substitute_values(text=formula, provider=button, default=str(default))
+        expr = self.substitute_values(provider=button, default=str(default), formatting=formatting)
         logger.debug(f"value {self.formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
-        logger.debug(
-            f"formula: value {self.formula} => {expr}: => {value}",
-        )
+        logger.debug(f"formula: value {self.formula} => {expr}: => {value}")
         return value
 
 
@@ -379,15 +404,15 @@ class Value:
     # ##################################
     # Formula value substitution
     #
-    def get_formula(self, base: dict = None):
+    def get_formula(self, base: dict | None = None) -> str | None:
         if base is not None:
             formula = base.get(CONFIG_KW.FORMULA.value)
             if formula is not None and formula != "":
                 return formula
         if self.formula is not None and self.formula != "":
             return self.formula
-        if self._button.dataref_rpn is not None and self._button.dataref_rpn != "":
-            return self._button.dataref_rpn
+        if self._button.formula is not None and self._button.formula != "":
+            return self._button.formula
         return None
 
     def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):

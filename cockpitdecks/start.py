@@ -64,10 +64,12 @@ without any argument:
 """
     )
 
+
 class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
     FIXED = 2
+
 
 ac = sys.argv[1] if len(sys.argv) > 1 else None
 fixed = sys.argv[2] if len(sys.argv) > 2 else None

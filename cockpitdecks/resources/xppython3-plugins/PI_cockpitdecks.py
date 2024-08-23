@@ -23,10 +23,11 @@ yaml = YAML(typ="safe", pure=True)
 # ###########################################################
 # C O C K P T D E C K S
 #
-RELEASE = "1.0.4"  # local version number
+RELEASE = "1.1.0"  # local version number
 #
 # Changelog:
 #
+# 23-AUG-2024: 1.1.0: Added datarefs to allow for external monitoring
 # 21-AUG-2024: 1.0.4: Add defaults if requested
 # 26-JUL-2024: 1.0.3: Added string-dataref (singular)
 # 11-JUL-2024: 1.0.2: Corrected issue when getDatas would complain for 0 length string
@@ -39,7 +40,19 @@ CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 #
+# Internal datarefs for monitoring
 #
+CDH_RELEASE = "XPPython3/cockpitdeckshelper/release"
+CDH_IS_RUNNING = "XPPython3/cockpitdeckshelper/is_running"
+CDH_LPCOMMANDS = "XPPython3/cockpitdeckshelper/longpress_commands"
+CDH_STRINGDREF = "XPPython3/cockpitdeckshelper/string_datarefs"
+
+CDH_DATAREFS = [
+    CDH_IS_RUNNING,
+    CDH_RELEASE,
+    CDH_LPCOMMANDS,
+    CDH_STRINGDREF
+]
 #
 # ###########################################################
 # LONG PRESS COMMAND
@@ -70,19 +83,19 @@ AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
 DEFAULT_STRING_DATAREFS = [
     AIRCRAFT_DATAREF,
     AIRCRAFT_LIVERY,
+    CDH_RELEASE
 ]  # dataref that gets updated if new aircraft loaded
 LOAD_DEFAULT_DATAREFS = True
 
 CHECK_COUNT = [5, 20]
-
-
+#
 # ###########################################################
 # PLUG IN PythonInterface
 #
 class PythonInterface:
     def __init__(self):
         self.Name = "Cockpitdecks Helper"
-        self.Sig = "xppython3.strdrefmcast"
+        self.Sig = "xppython3.cockpitdeckshelper"
         self.Desc = f"Cockpitdecks Helper plugin to circumvent some X-Plane UDP limitations (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
@@ -100,9 +113,42 @@ class PythonInterface:
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MCAST_TTL)
         self.RLock = RLock()
 
+        self.isRunningRef = None # witness for all accessors
+        self.cmdCountRef = None
+        self.sdrCountRef = None
+        self.releaseRef = None
+
     def XPluginStart(self):
         if self.trace:
             print(self.Info, "XPluginStart: started")
+
+        self.isRunningRef = xp.registerDataAccessor(
+            name=CDH_IS_RUNNING,
+            dataType=xp.Type_Int,
+            writable=0,  # Read-Only
+            readInt=self.getRunningStatusCallback
+        )  # Refcons not used
+        self.cmdCountRef = xp.registerDataAccessor(
+            name=CDH_LPCOMMANDS,
+            dataType=xp.Type_Int,
+            writable=0,  # Read-Only
+            readInt=self.getLPCommandCountCallback
+        )  # Refcons not used
+        self.sdrCountRef = xp.registerDataAccessor(
+            CDH_STRINGDREF,
+            dataType=xp.Type_Int,
+            writable=0,  # Read-Only
+            readInt=self.getStringDrefCountCallback
+        )  # Refcons not used
+        self.releaseRef = xp.registerDataAccessor(
+            CDH_RELEASE,
+            dataType=xp.Type_Data,
+            writable=0,  # Read-Only
+            readData=self.getReleaseCallback
+        )  # Refcons not used
+        if self.trace:
+            print(self.Info, f"XPluginStart: data accessors added.")
+
         return self.Name, self.Sig, self.Desc
 
     def XPluginStop(self):
@@ -111,6 +157,22 @@ class PythonInterface:
                 xp.unregisterCommandHandler(v[REF], v[FUN], 1, None)
             if self.trace:
                 print(self.Info, "XPluginStop: unregistered", k)
+
+        if self.isRunningRef is not None:  # and self.isRunningRef > 0?
+            xp.unregisterDataAccessor(self.isRunningRef)
+            self.isRunningRef = None
+            xp.unregisterDataAccessor(self.cmdCountRef)
+            self.cmdCountRef = None
+            xp.unregisterDataAccessor(self.sdrCountRef)
+            self.sdrCountRef = None
+            xp.unregisterDataAccessor(self.releaseRef)
+            self.releaseRef = None
+            if self.trace:
+                print(self.Info, "XPluginStop: data accessors unregistered.")
+        else:
+            if self.trace:
+                print(self.Info, "XPluginStop: data accessors not unregistered.")
+
         if self.trace:
             print(self.Info, "XPluginStop: stopped.")
         return None
@@ -119,6 +181,19 @@ class PythonInterface:
         xp.registerFlightLoopCallback(self.FlightLoopCallback, 1.0, 0)
         if self.trace:
             print(self.Info, "XPluginEnable: flight loop registered")
+
+        if self.isRunningRef is not None:
+            for sig in ("com.leecbaker.datareftool", "xplanesdk.examples.DataRefEditor"):
+                dre = xp.findPluginBySignature(sig)
+                if dre != xp.NO_PLUGIN_ID:
+                    for path in CDH_DATAREFS:
+                        xp.sendMessageToPlugin(dre, 0x01000000, path)
+                    if self.trace:
+                        print(self.Info, f"XPluginEnable: data accessors registered with {sig}.")
+            else:
+                if self.trace:
+                    print(self.Info, f"XPluginEnable: plugin {sig} not found.")
+
         try:
             ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')
             if len(ac) == 2:
@@ -190,6 +265,23 @@ class PythonInterface:
                 print_exc()
                 self.enabled = False
         return None
+
+    def getRunningStatusCallback(self, inRefcon):
+        return 1 if self.enabled else 0
+
+    def getReleaseCallback(self, inRefcon, values, offset, count):
+        # https://xppython3.readthedocs.io/en/latest/development/modules/dataaccess.html
+        array = bytearray(RELEASE, encoding='utf-8')
+        if values is None:
+            return len(RELEASE)
+        values.extend(array[offset:offset + count])
+        return min(count, len(RELEASE) - offset)  # number of bytes copied
+
+    def getLPCommandCountCallback(self, inRefcon):
+        return len(self.commands) if self.commands is not None else 0
+
+    def getStringDrefCountCallback(self, inRefcon):
+        return len(self.datarefs) if self.datarefs is not None else 0
 
     def FlightLoopCallback(self, elapsedMe, elapsedSim, counter, refcon):
         if not self.enabled:

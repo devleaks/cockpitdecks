@@ -66,4 +66,3 @@ class Mosaic(IconBase):
         for tile in self.tiles:
             tile.clean()
         super().clean()
-

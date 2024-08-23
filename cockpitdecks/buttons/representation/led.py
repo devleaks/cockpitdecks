@@ -77,9 +77,9 @@ class ColoredLED(Representation):
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         hue = 0  # red
         if KW_FORMULA_STR in str(color_str):
-            dataref_rpn = base.get(CONFIG_KW.FORMULA.value)
-            if dataref_rpn is not None:
-                hue = self.button.execute_formula(formula=dataref_rpn)
+            formula = base.get(CONFIG_KW.FORMULA.value)
+            if formula is not None:
+                hue = self.button.execute_formula(formula=formula)
         else:
             hue = int(color_str)
             logger.warning(f"button {self.button_name()}: color contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")

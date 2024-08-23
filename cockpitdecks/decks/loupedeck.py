@@ -105,12 +105,7 @@ class Loupedeck(DeckWithIcons):
         self.device.draw_right_image(image_right)
 
         # Add index 0 only button:
-        page0 = Page(
-            name=DEFAULT_PAGE_NAME,
-            config={
-                "name": DEFAULT_PAGE_NAME
-            },
-            deck=self)
+        page0 = Page(name=DEFAULT_PAGE_NAME, config={"name": DEFAULT_PAGE_NAME}, deck=self)
         button0 = Button(
             config={
                 "index": "0",
@@ -118,9 +113,7 @@ class Loupedeck(DeckWithIcons):
                 "name": "X-Plane Map (default page)",
                 "type": "push",
                 "command": "sim/map/show_current",
-                "text": {
-                    "text": "MAP"
-                }
+                "text": {"text": "MAP"},
             },
             page=page0,
         )

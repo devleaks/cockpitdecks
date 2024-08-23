@@ -114,7 +114,7 @@ class Button(DatarefListener, ValueProvider):
         #### Datarefs
         #
         self.dataref = config.get(CONFIG_KW.DATAREF.value)
-        self.dataref_rpn = config.get(CONFIG_KW.FORMULA.value)
+        self.formula = config.get(CONFIG_KW.FORMULA.value)
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
             self.managed = self.manager.get(CONFIG_KW.DATAREF.value)
@@ -542,7 +542,7 @@ class Button(DatarefListener, ValueProvider):
         # 2. dataref or formula based
         #    note that a formula may also use state variables,
         #    but get_value() knows how to get them if needed.
-        if self.dataref is not None or self.dataref_rpn is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
+        if self.dataref is not None or self.formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
             logger.debug(f"button {self.name}: has formula and/or datarefs")
             return self._value.get_value()
 
