@@ -343,7 +343,7 @@ class Activation:
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
-            "writable_dataref": self._writable_dataref.path,
+            "writable_dataref": self._writable_dataref.path if self._writable_dataref is not None else None,
             "activation_value": self.activation_count,  # !
         }
 
