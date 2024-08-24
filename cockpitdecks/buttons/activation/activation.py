@@ -99,6 +99,7 @@ class Activation:
         self._view = None
         self._view_if = None
         self._view_macro = None
+        self.skip_view = False
         view = self._config.get(CONFIG_KW.VIEW.value)
         if type(view) is str:
             self._view = Command(path=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
@@ -222,11 +223,15 @@ class Activation:
 
     def handle(self, event):
         # Handle event, perform activation
-        if self.activate(event):
+        result = self.activate(event)
+        if result:
             # If set-dataref present and activation produces a value
             self.set_dataref()
             # Optionally affect cockpit view to concentrate on event consequences
-            self.view()
+            if self.skip_view:
+                self.skip_view = False
+            else:
+                self.view()
 
     def activate(self, event) -> bool:
         """
@@ -320,24 +325,15 @@ class Activation:
             return {self._writable_dataref.path}
         return set()
 
-    def write_dataref(self, value: float):
-        if self._writable_dataref is None:
-            logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
-            return
-        self._writable_dataref.update_value(new_value=value, cascade=True)
-        self._writable_dataref.save()
-        logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
-        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
-
     def set_dataref(self):
         if self._writable_dataref is None:
             return
         value = self.get_activation_value()
         if value is not None:
-            self._writable_dataref.update_value(new_value=value, cascade=False)
+            self._writable_dataref.update_value(new_value=value, cascade=True)
             self._writable_dataref.save()
             logger.debug(f"set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
-            print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
+            # print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
 
     def command(self, command=None):
         if command is None:
@@ -754,8 +750,6 @@ class Push(Activation):
                 self.command()
             if self.auto_repeat and self.exit is None:
                 self.auto_repeat_start()
-            else:
-                self.view()
         else:
             if self.button.is_guarded():
                 return False
@@ -831,9 +825,9 @@ class Longpress(Push):
             return False
         if event.pressed:
             self.button.sim.commandBegin(self._command)
+            self.skip_view = True
         else:
             self.button.sim.commandEnd(self._command)
-            self.view()  # on release only
         return True  # normal termination
 
     def inspect(self, what: str | None = None):
@@ -957,8 +951,6 @@ class OnOff(Activation):
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
             # self.button.value = self.onoff_current_value  # update internal state
-            self.view()
-        self.write_dataref(self.onoff_current_value)
         return True  # normal termination
 
     def get_activation_value(self):
@@ -1154,7 +1146,6 @@ class UpDown(Activation):
                     self.go_up = True
             # Update current value and write dataref if present
             self.stop_current_value = nextval
-            self.write_dataref(nextval)
         return True  # normal termination
 
     def get_activation_value(self):
@@ -1246,7 +1237,6 @@ class Encoder(Activation):
             self.inc("ccw")
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
-        self.write_dataref(self._turns)
         return True  # normal termination
 
     def get_activation_value(self):
@@ -1351,7 +1341,6 @@ class EncoderPush(Push):
                     self._cw = self._cw + 1
                     self.inc("turns")
                     self.inc("cw")
-                self.write_dataref(self._turns)  # update internal state
             elif event.turned_clockwise:  # rotate counter-clockwise
                 if self.longpush:
                     if self.is_pressed():
@@ -1372,8 +1361,7 @@ class EncoderPush(Push):
                     self._ccw = self._ccw + 1
                     self.inc("turns", -1)
                     self.inc("ccw")
-                self.write_dataref(self._turns)  # update internal state
-            return
+            return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
         return True  # normal termination
@@ -1483,8 +1471,6 @@ class EncoderOnOff(OnOff):
                     self._ccw = self._ccw + 1
                     self.inc("turns", -1)
                     self.inc("ccw")
-                self.view()
-                self.write_dataref(self._turns)  # update internal state
             elif event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.is_on():
                     if self.dual:
@@ -1504,8 +1490,6 @@ class EncoderOnOff(OnOff):
                     self._ccw = self._ccw + 1
                     self.inc("turns", -1)
                     self.inc("ccw")
-                self.view()
-                self.write_dataref(self._turns)  # update internal state
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
         return True  # normal termination
@@ -1613,7 +1597,6 @@ class EncoderValue(OnOff):
                     logger.debug(f"button {self.button_name()} not enough commands {len(self._commands)}/é")
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
-                self.view()
             return True
 
         if type(event) is EncoderEvent:
@@ -1640,7 +1623,6 @@ class EncoderValue(OnOff):
 
             if ok:
                 self.encoder_current_value = x
-                self.write_dataref(x)
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -1784,7 +1766,6 @@ class EncoderValueExtended(OnOff):
                     self._step_mode = self.stepxl
                 else:
                     self._step_mode = self.step
-                self.view()
                 return True
 
         if type(event) is EncoderEvent:
@@ -1809,7 +1790,6 @@ class EncoderValueExtended(OnOff):
                     self.inc("cw")
             if ok:
                 self.encoder_current_value = x
-                self.write_dataref(x)
                 if self._local_dataref is not None:
                     self._local_dataref.update_value(new_value=x)
             return True
@@ -1914,7 +1894,6 @@ class Slider(Activation):  # Cursor?
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
         self.current_value = value
-        self.write_dataref(value)
         logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.path}")
         return True  # normal termination
 

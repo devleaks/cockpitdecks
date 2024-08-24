@@ -11,7 +11,7 @@ from datetime import datetime
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "11.19.0"
+__version__ = "11.19.1"
 
 #
 #

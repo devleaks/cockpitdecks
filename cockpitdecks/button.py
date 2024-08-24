@@ -625,7 +625,7 @@ class Button(DatarefListener, ValueProvider):
                 return
             # self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
             try:
-                self._activation.activate(event)
+                self._activation.handle(event)
             except:
                 logger.warning(f"button {self.name}: problem during activation", exc_info=True)
                 logger.warning(f"button {self.name}: not completing activation/rendering")
