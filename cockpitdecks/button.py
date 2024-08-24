@@ -635,8 +635,8 @@ class Button(DatarefListener, ValueProvider):
 
         self.value = self.compute_value()
 
-        # May be we need to write/save the new button value to a set-dataref
-        self._activation.set_dataref(button_value=self.value)
+        # # May be we need to write/save the new button value to a set-dataref
+        # self._activation.write_dataref(value=self.value)
 
         if self.has_changed():
             logger.log(

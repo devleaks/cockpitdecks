@@ -50,8 +50,8 @@ class ActivationBase(ABC):
         return r if type(r) in [list, tuple] else [r]
 
     @abstractmethod
-    def activate(self, event):
-        pass
+    def activate(self, event) -> bool:
+        return False
 
     @abstractmethod
     def get_activation_value(self):
@@ -220,12 +220,15 @@ class Activation:
             return True
         return self.button.is_guarded()
 
-    def _activate(self, event):
-        self.activate(event)
-        self.set_dataref()
-        self.view()
+    def handle(self, event):
+        # Handle event, perform activation
+        if self.activate(event):
+            # If set-dataref present and activation produces a value
+            self.set_dataref()
+            # Optionally affect cockpit view to concentrate on event consequences
+            self.view()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         """
         Function that is executed when a button is activated (pressed, released, turned, etc.).
         Default is to tally number of times this button was pressed. It should have been released as many times :-D.
@@ -243,7 +246,7 @@ class Activation:
 
         # Special handling of some events
         if type(event) is not PushEvent:
-            return
+            return True  # finished normally
 
         if event.pressed:
             self.pressed = True
@@ -258,7 +261,7 @@ class Activation:
 
             # Guard handling
             if self.button.is_guarded():
-                return
+                return False
 
             if self.vibrate is not None and hasattr(self.button.deck, "_vibrate"):
                 self.button.deck._vibrate(self.vibrate)
@@ -274,21 +277,22 @@ class Activation:
                 self.button.set_guard_off()
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
                 self._guard_changed = True
-                return
+                return True
 
             if self.button.has_guard() and not self.button.is_guarded() and self.long_pressed():
                 self.button.set_guard_on()
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
                 self._guard_changed = True
-                return
+                return True
 
             # Long press handling
             if self.has_long_press() and self.long_pressed():
                 self.long_press(event)
                 logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
-                return
+                return True
 
         logger.debug(f"{type(self).__name__} activated ({event}, {self.activation_count})")
+        return True
 
     def done(self):
         if self._activate_start is not None:
@@ -316,31 +320,24 @@ class Activation:
             return {self._writable_dataref.path}
         return set()
 
-    def _write_dataref(self, dataref, value: float):
-        if dataref is not None:
-            self.button.sim.write_dataref(dataref=dataref, value=value, vtype="float")
-            logger.debug(f"button {self.button_name()}: {type(self).__name__} dataref {dataref} set to {value}")
-
     def write_dataref(self, value: float):
         if self._writable_dataref is None:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
             return
-        self._writable_dataref.update_value(new_value=value, cascade=False)
+        self._writable_dataref.update_value(new_value=value, cascade=True)
         self._writable_dataref.save()
         logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
-        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.parh} => {value}")
-
-    def write_dataref(self, value: float):
-        if self._writable_dataref is None:
-            logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
-            return
-        self._writable_dataref.update_value(new_value=value, cascade=False)
-        self._writable_dataref.save()
-        logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
-        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.parh} => {value}")
+        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
 
     def set_dataref(self):
-        self.write_dataref(self.get_activation_value())
+        if self._writable_dataref is None:
+            return
+        value = self.get_activation_value()
+        if value is not None:
+            self._writable_dataref.update_value(new_value=value, cascade=False)
+            self._writable_dataref.save()
+            logger.debug(f"set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
+            print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
 
     def command(self, command=None):
         if command is None:
@@ -439,8 +436,9 @@ class LoadPage(Activation):
 
     def activate(self, event: PushEvent):
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         decks = self.button.deck.cockpit.cockpit
         if self.remote_deck is not None and self.remote_deck not in decks.keys():
             logger.warning(f"{type(self).__name__}: deck not found {self.remote_deck}")
@@ -455,6 +453,7 @@ class LoadPage(Activation):
                 new_name = deck.change_page(self.page)
             else:
                 logger.warning(f"{type(self).__name__}: page not found {self.page}")
+        return True  # Normal termination
 
     def describe(self) -> str:
         """
@@ -477,11 +476,12 @@ class Reload(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
         if not event.pressed:  # trigger on button "release"
             self.button.deck.cockpit.reload_decks()
+        return True
 
     def describe(self) -> str:
         """
@@ -509,14 +509,15 @@ class ChangeTheme(Activation):
         Activation.__init__(self, button=button)
         self.theme = self._config.get("theme")
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
         if not event.pressed:  # trigger on button "release"
             COCKPIT_THEME = "cockpit-theme"
             cockpit = self.button.deck.cockpit
             cockpit._config[COCKPIT_THEME] = self.theme
             cockpit.reload_decks()
+        return True  # normal termination
 
     def describe(self) -> str:
         """
@@ -547,11 +548,12 @@ class Inspect(Activation):
 
         self.what = self._config.get("what", "status")
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
         if event.pressed:
             self.button.deck.cockpit.inspect(self.what)
+        return True  # normal termination
 
     def get_state_variables(self):
         s = super().get_state_variables()
@@ -580,16 +582,18 @@ class Stop(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
 
         # Guard handling
-        super().activate(event)
+        if not super().activate(event):
+            return False
 
         if not self.is_guarded():
             if not event.pressed:  # trigger on button "release"
                 self.button.deck.cockpit.stop_decks()
+        return True  # normal termination
 
     def describe(self) -> str:
         """
@@ -612,11 +616,12 @@ class Random(Activation):
         Activation.__init__(self, button=button)
         self.random_value = 0.0
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
         if event.pressed:
             self.random_value = random.random()
+        return True  # normal termination
 
     def get_state_variables(self):
         s = super().get_state_variables()
@@ -739,10 +744,11 @@ class Push(Activation):
             return False
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         if event.pressed:
             if not self.has_long_press():  # we don't have to wait for the release to trigger the command
                 self.command()
@@ -752,12 +758,13 @@ class Push(Activation):
                 self.view()
         else:
             if self.button.is_guarded():
-                return
+                return False
 
             if self.has_long_press() and not self.long_pressed():
                 self.command()
             if self.auto_repeat:
                 self.auto_repeat_stop()
+        return True  # normal termination
 
     def describe(self) -> str:
         """
@@ -817,15 +824,17 @@ class Longpress(Push):
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         if event.pressed:
             self.button.sim.commandBegin(self._command)
         else:
             self.button.sim.commandEnd(self._command)
             self.view()  # on release only
+        return True  # normal termination
 
     def inspect(self, what: str | None = None):
         if what is not None and "longpress" in what:
@@ -934,10 +943,11 @@ class OnOff(Activation):
     def is_off(self):
         return not self.is_on()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         if event.pressed:
             if self.num_commands() > 1:
                 if self.is_off():
@@ -949,6 +959,7 @@ class OnOff(Activation):
             # self.button.value = self.onoff_current_value  # update internal state
             self.view()
         self.write_dataref(self.onoff_current_value)
+        return True  # normal termination
 
     def get_activation_value(self):
         return self.onoff_current_value
@@ -1004,10 +1015,11 @@ class ShortOrLongpress(Activation):
 
         self.long_time = self._config.get("long-time", 2)
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         if not event.pressed:
             if self.num_commands() > 1:
                 if self.duration < self.long_time:
@@ -1016,6 +1028,7 @@ class ShortOrLongpress(Activation):
                 else:
                     self.command(self._commands[1])
                     logger.debug(f"looooong {self.duration}, {self.long_time}")
+        return True  # normal termination
 
     def num_commands(self):
         return len(self._commands) if self._commands is not None else 0
@@ -1115,10 +1128,11 @@ class UpDown(Activation):
             return False
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         if event.pressed:
             currval = self.stop_current_value
             if currval is None:
@@ -1141,6 +1155,7 @@ class UpDown(Activation):
             # Update current value and write dataref if present
             self.stop_current_value = nextval
             self.write_dataref(nextval)
+        return True  # normal termination
 
     def get_activation_value(self):
         return self.stop_current_value
@@ -1212,10 +1227,11 @@ class Encoder(Activation):
             return False
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
         if event.turned_counter_clockwise:  # rotate left
             self.command(self._commands[0])
             self._turns = self._turns + 1
@@ -1231,6 +1247,7 @@ class Encoder(Activation):
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
         self.write_dataref(self._turns)
+        return True  # normal termination
 
     def get_activation_value(self):
         return self._turns
@@ -1303,14 +1320,14 @@ class EncoderPush(Push):
             return False
         return True  # super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
 
         # Pressed
         if type(event) is PushEvent:
-            super().activate(event)
-            return
+            if not super().activate(event):
+                return False
 
         # Turned
         if type(event) is EncoderEvent:
@@ -1359,6 +1376,7 @@ class EncoderPush(Push):
             return
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+        return True  # normal termination
 
     def get_activation_value(self):
         return self._turns
@@ -1438,12 +1456,12 @@ class EncoderOnOff(OnOff):
             return False
         return True  # super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
         if type(event) is PushEvent:
-            super().activate(event)
-            return
+            if not super().activate(event):
+                return False
 
         if type(event) is EncoderEvent:
             if event.turned_clockwise:  # rotate clockwise
@@ -1488,9 +1506,9 @@ class EncoderOnOff(OnOff):
                     self.inc("ccw")
                 self.view()
                 self.write_dataref(self._turns)  # update internal state
-            return
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+        return True  # normal termination
 
     def get_activation_value(self):
         return self._turns
@@ -1580,9 +1598,9 @@ class EncoderValue(OnOff):
             return False
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
 
         if type(event) is PushEvent:
             if event.pressed:
@@ -1596,7 +1614,7 @@ class EncoderValue(OnOff):
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
                 self.view()
-            return
+            return True
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1623,9 +1641,10 @@ class EncoderValue(OnOff):
             if ok:
                 self.encoder_current_value = x
                 self.write_dataref(x)
-            return
+            return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+        return False
 
     def get_activation_value(self):
         return self.encoder_current_value
@@ -1746,12 +1765,13 @@ class EncoderValueExtended(OnOff):
             return False
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
 
         if type(event) is PushEvent:
-            super().activate(event)
+            if not super().activate(event):
+                return False
 
             if event.pressed:
 
@@ -1765,7 +1785,7 @@ class EncoderValueExtended(OnOff):
                 else:
                     self._step_mode = self.step
                 self.view()
-                return
+                return True
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1792,9 +1812,10 @@ class EncoderValueExtended(OnOff):
                 self.write_dataref(x)
                 if self._local_dataref is not None:
                     self._local_dataref.update_value(new_value=x)
-            return
+            return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+        return False
 
     def get_activation_value(self):
         return self.encoder_current_value
@@ -1883,9 +1904,9 @@ class Slider(Activation):  # Cursor?
             return False
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
 
         frac = abs(event.value - Slider.SLIDER_MAX) / (Slider.SLIDER_MAX - Slider.SLIDER_MIN)
         if self.value_step != 0:
@@ -1895,6 +1916,7 @@ class Slider(Activation):  # Cursor?
         self.current_value = value
         self.write_dataref(value)
         logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.path}")
+        return True  # normal termination
 
     def get_activation_value(self):
         return self.current_value
@@ -1928,10 +1950,11 @@ class Swipe(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
         logger.info(f"button {self.button_name()} has no action (value={event})")
+        return True  # normal termination
 
     def describe(self) -> str:
         """
@@ -1989,17 +2012,18 @@ class EncoderToggle(Activation):
             return False
         return True  # super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
+            return False
 
         if type(event) is PushEvent:
-            super().activate(event)
+            if not super().activate(event):
+                return False
             if event.pressed and self._on:
                 self._on = False
             elif event.pressed and not self._on:
                 self._on = True
-            return
+            return True
 
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
@@ -2013,9 +2037,10 @@ class EncoderToggle(Activation):
                     self.command(self._commands[1])
                 else:
                     self.command(self._commands[3])
-            return
+            return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+        return False  # normal termination
 
     def get_state_variables(self):
         a = super().get_state_variables()
@@ -2091,10 +2116,11 @@ class Mosaic(Activation):
     def is_valid(self):
         return super().is_valid()
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         if not self.can_handle(event):
-            return
-        super().activate(event)
+            return False
+        if not super().activate(event):
+            return False
 
         if type(event) is TouchEvent:
             coords = event.xy()
@@ -2107,10 +2133,13 @@ class Mosaic(Activation):
                     PushEvent(deck=event.deck, button=button.index, pressed=event.start is None)
             else:
                 logger.debug(f"coordinates {coords} does not hit a button")
+
+            return True
         else:  # swipe event
             print(">>>>>>> swiped", event.touched_only(), event.xy())
         # determine which tile was hit
         # activate proper event in tile
+        return False  # normal termination
 
     def describe(self) -> str:
         """
