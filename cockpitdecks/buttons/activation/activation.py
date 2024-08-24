@@ -213,7 +213,7 @@ class Activation:
         # because calling super().activate() may lift the guard.
         # So this keeps a track whether the guard was on or not BEFORE calling super().activate().
         #
-        # 1. call super().activate() up to the top
+        # 1. call super().activate()
         # 2. check this (local) is_guarded() before doing your things
         # (button.is_guarded() may have changed! if super().activate() was called.)
         #
@@ -317,9 +317,6 @@ class Activation:
     def has_long_press(self) -> bool:
         return self._long_press is not None and self._long_press.has_command()
 
-    def fast(self, duration: float = 0.1) -> bool:
-        return self._fast < duration
-
     def get_datarefs(self) -> set:
         if self._writable_dataref is not None:
             return {self._writable_dataref.path}
@@ -335,12 +332,6 @@ class Activation:
             logger.debug(f"set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
             # print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
 
-    def command(self, command=None):
-        if command is None:
-            command = self._command
-        if command is not None and command.has_command():
-            self.button.sim.commandOnce(command)
-
     def view(self):
         if self._view_macro is not None:
             self._view_macro.execute(simulator=self.button.sim)
@@ -351,6 +342,12 @@ class Activation:
                 doit = self.button.execute_formula(self._view_if)
             if doit:
                 self.command(self._view)
+
+    def command(self, command=None):
+        if command is None:
+            command = self._command
+        if command is not None and command.has_command():
+            self.button.sim.commandOnce(command)
 
     def long_press(self, event):
         self.command(self._long_press)

@@ -403,13 +403,6 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.debug(f"only one deck of type {req_driver}, returning it")
                 device = good[CONFIG_KW.DEVICE.value]
                 device.open()
-                if device.is_visual():
-                    image_format = device.key_image_format()
-                    logger.debug(
-                        f"key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees"
-                    )
-                else:
-                    logger.debug(f"no visual")
                 device.reset()
                 return device
             else:
@@ -426,13 +419,6 @@ class Cockpit(DatarefListener, CockpitBase):
             if deck[CONFIG_KW.SERIAL.value] == req_serial:
                 device = deck[CONFIG_KW.DEVICE.value]
                 device.open()
-                if device.is_visual():
-                    image_format = device.key_image_format()
-                    logger.debug(
-                        f"key images: {image_format['size'][0]}x{image_format['size'][1]} pixels, {image_format['format']} format, rotated {image_format['rotation']} degrees"
-                    )
-                else:
-                    logger.debug(f"no visual")
                 device.reset()
                 return device
         logger.warning(f"deck {req_serial} not found")

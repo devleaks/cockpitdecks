@@ -26,18 +26,6 @@ class VirtualDeck:
     def get_serial_number(self):
         return self.serial_number
 
-    def is_visual(self):
-        return True
-
-    def key_image_format(self):
-        # dummy
-        return {
-            "size": (0, 0),
-            "format": "",
-            "flip": (False, False),
-            "rotation": 0,
-        }
-
     # #########################################
     #
     def open(self):
