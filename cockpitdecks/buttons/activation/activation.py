@@ -5,6 +5,7 @@ Button action and activation abstraction
 import logging
 import random
 import threading
+from abc import ABC, abstractmethod
 from typing import List
 
 from datetime import datetime
@@ -21,12 +22,40 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
+# This state attribute is special
+# If present, it is written to set-dataref
 ACTIVATION_VALUE = "activation_value"
 
 
-class ButtonGuarded(Exception):
-    "Raised when the button is guarded"
-    pass
+class ActivationBase(ABC):
+
+    ACTIVATION_NAME = "base"
+
+    REQUIRED_DECK_ACTIONS: DECK_ACTIONS | List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
+    # One cannot request an activiation from a deck button that does not have the capability of the action
+    # requested by the activation.
+    PARAMETERS = {}
+
+    @classmethod
+    def parameters(cls) -> dict:
+        return cls.PARAMETERS
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.ACTIVATION_NAME
+
+    @classmethod
+    def get_required_capability(cls) -> list | tuple:
+        r = cls.REQUIRED_DECK_ACTIONS
+        return r if type(r) in [list, tuple] else [r]
+
+    @abstractmethod
+    def activate(self, event):
+        pass
+
+    @abstractmethod
+    def get_activation_value(self):
+        pass
 
 
 # ##########################################
@@ -85,10 +114,10 @@ class Activation:
 
         # Datarefs
         self._writable_dataref = None
-        set_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
-        if set_dataref is not None:
-            self._writable_dataref = self.button.sim.get_dataref(set_dataref)
-            self._writable_dataref.set_writable()
+        set_dataref_path = self._config.get(CONFIG_KW.SET_DATAREF.value)
+        if set_dataref_path is not None:
+            self._writable_dataref = self.button.sim.get_dataref(set_dataref_path)
+            self._writable_dataref.set_writable()  # should be checked/set from sim... (later)
 
         # Working variables, internal state
         self._last_event = None
@@ -118,6 +147,9 @@ class Activation:
 
     def get_id(self):
         return ID_SEP.join([self.button.get_id(), type(self).__name__])
+
+    def __str__(self):  # print its status
+        return ", ".join([type(self).__name__, f"activation-count: {self.activation_count}"])
 
     def can_handle(self, event) -> bool:
         if event.action not in self.get_required_capability():
@@ -177,11 +209,21 @@ class Activation:
 
     def is_guarded(self):
         # Check this before activating in subclasses if necessary
+        # because calling super().activate() may lift the guard.
+        # So this keeps a track whether the guard was on or not BEFORE calling super().activate().
+        #
         # 1. call super().activate() up to the top
-        # 2. check this is_guarded()
+        # 2. check this (local) is_guarded() before doing your things
+        # (button.is_guarded() may have changed! if super().activate() was called.)
+        #
         if self._guard_changed:
             return True
         return self.button.is_guarded()
+
+    def _activate(self, event):
+        self.activate(event)
+        self.set_dataref()
+        self.view()
 
     def activate(self, event):
         """
@@ -274,10 +316,6 @@ class Activation:
             return {self._writable_dataref.path}
         return set()
 
-    def set_dataref(self, button_value: int | float):
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} dataref {self._writable_dataref.path} set to {button_value}")
-        print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref} => {button_value}")
-
     def _write_dataref(self, dataref, value: float):
         if dataref is not None:
             self.button.sim.write_dataref(dataref=dataref, value=value, vtype="float")
@@ -288,12 +326,21 @@ class Activation:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
             return
         self._writable_dataref.update_value(new_value=value, cascade=False)
-        self._writable_dataref.save(self.button.sim)
+        self._writable_dataref.save()
         logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
         # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.parh} => {value}")
 
-    def __str__(self):  # print its status
-        return ", ".join([type(self).__name__, f"activation-count: {self.activation_count}"])
+    def write_dataref(self, value: float):
+        if self._writable_dataref is None:
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} has no writable set-dataref")
+            return
+        self._writable_dataref.update_value(new_value=value, cascade=False)
+        self._writable_dataref.save()
+        logger.debug(f"write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
+        # print(f">>>>> write_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.parh} => {value}")
+
+    def set_dataref(self):
+        self.write_dataref(self.get_activation_value())
 
     def command(self, command=None):
         if command is None:
@@ -336,6 +383,9 @@ class Activation:
         logger.info(f"{self.duration}")
         logger.info(f"{self.pressed}")
 
+    def get_activation_value(self):
+        return self.activation_count
+
     def get_state_variables(self) -> dict:
         return {
             "activation_type": type(self).__name__,
@@ -344,7 +394,7 @@ class Activation:
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
             "writable_dataref": self._writable_dataref.path if self._writable_dataref is not None else None,
-            "activation_value": self.activation_count,  # !
+            ACTIVATION_VALUE: self.get_activation_value(),
         }
 
     def describe(self) -> str:
@@ -900,6 +950,9 @@ class OnOff(Activation):
             self.view()
         self.write_dataref(self.onoff_current_value)
 
+    def get_activation_value(self):
+        return self.onoff_current_value
+
     def get_state_variables(self):
         s = super().get_state_variables()
         if s is None:
@@ -1089,6 +1142,9 @@ class UpDown(Activation):
             self.stop_current_value = nextval
             self.write_dataref(nextval)
 
+    def get_activation_value(self):
+        return self.stop_current_value
+
     def get_state_variables(self):
         s = super().get_state_variables()
         if s is None:
@@ -1175,6 +1231,9 @@ class Encoder(Activation):
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
         self.write_dataref(self._turns)
+
+    def get_activation_value(self):
+        return self._turns
 
     def get_state_variables(self):
         a = super().get_state_variables()
@@ -1300,6 +1359,9 @@ class EncoderPush(Push):
             return
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+
+    def get_activation_value(self):
+        return self._turns
 
     def get_state_variables(self):
         a = super().get_state_variables()
@@ -1429,6 +1491,9 @@ class EncoderOnOff(OnOff):
             return
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+
+    def get_activation_value(self):
+        return self._turns
 
     def get_state_variables(self):
         a = super().get_state_variables()
@@ -1562,6 +1627,9 @@ class EncoderValue(OnOff):
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
 
+    def get_activation_value(self):
+        return self.encoder_current_value
+
     def get_state_variables(self):
         a = super().get_state_variables()
         if a is None:
@@ -1631,9 +1699,11 @@ class EncoderValueExtended(OnOff):
         self._ccw = 0
         self.encoder_current_value = float(button._config.get("initial-value", 1))
         self._step_mode = self.step
-        self._local_dataref = button._config.get("dataref", None)  # "local-dataref"
-        if self._local_dataref is not None:
-            self._local_dataref = "data:" + self._local_dataref  # local dataref to write to
+
+        self._local_dataref = None
+        local_dataref = button._config.get("dataref", None)  # "local-dataref"
+        if local_dataref is not None:
+            self._local_dataref = self.button.sim.get_internal_dataref(local_dataref)
 
         OnOff.__init__(self, button=button)
 
@@ -1720,10 +1790,14 @@ class EncoderValueExtended(OnOff):
             if ok:
                 self.encoder_current_value = x
                 self.write_dataref(x)
-                self._write_dataref(self._local_dataref, x)
+                if self._local_dataref is not None:
+                    self._local_dataref.update_value(new_value=x)
             return
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
+
+    def get_activation_value(self):
+        return self.encoder_current_value
 
     def get_state_variables(self):
         a = super().get_state_variables()
@@ -1795,6 +1869,7 @@ class Slider(Activation):  # Cursor?
             temp = self.value_min
             self.value_min = self.value_max
             self.value_max = temp
+        self.current_value = 0
 
         bdef = self.button.deck.deck_type.filter({DECK_KW.ACTION.value: DECK_ACTIONS.CURSOR.value})
         range_values = bdef[0].get(DECK_KW.RANGE.value)
@@ -1817,8 +1892,12 @@ class Slider(Activation):  # Cursor?
             nstep = (self.value_max - self.value_min) / self.value_step
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
+        self.current_value = value
         self.write_dataref(value)
         logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.path}")
+
+    def get_activation_value(self):
+        return self.current_value
 
     def describe(self) -> str:
         """

@@ -32,27 +32,27 @@ Create a python environment. Python 3.10 minimum (it is a requirement of an unde
 In that environement, install the following packages:
 
 ```sh
-$ pip install git+https://github.com/devleaks/cockpitdecks.git
+pip install git+https://github.com/devleaks/cockpitdecks.git
 ```
 
 If you plan to use weather icons, optionally install the following complements:
 ```sh
-$ pip install avwx-engine scipy suntime timezonefinder metar tabulate
+pip install avwx-engine scipy suntime timezonefinder metar tabulate
 ```
 
 If you plan to use Elgato Stream Deck decks, install the following package:
 ```sh
-$ pip install streamdeck
+pip install streamdeck
 ```
 
 If you plan to use Loupedeck LoupedeckLive decks, install the following package:
 ```sh
-$ pip install git+https://github.com/devleaks/python-loupedeck-live.git
+pip install git+https://github.com/devleaks/python-loupedeck-live.git
 ```
 
 If you plan to use X-Touch Mini decks, install the following package:
 ```sh
-$ pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
+pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
 ```
 
 Fly safely.

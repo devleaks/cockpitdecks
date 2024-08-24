@@ -121,7 +121,6 @@ class Button(DatarefListener, ValueProvider):
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
-
         self.guarded = config.get(CONFIG_KW.GUARD.value)
         self._guard_dref = None
         if self.guarded is not None and type(self.guarded) is dict:
@@ -130,7 +129,7 @@ class Button(DatarefListener, ValueProvider):
                 logger.warning(f"button {self.name} has guard but no dataref")
             else:
                 self._guard_dref = self.sim.get_dataref(guard_dref_path)
-                self._guard_dref.update_value(new_value=0, cascade=False) # need initial value,  especially for internal drefs
+                self._guard_dref.update_value(new_value=0, cascade=False)  # need initial value,  especially for internal drefs
                 logger.debug(f"button {self.name} has guard {self._guard_dref.path}")
 
         # String datarefs
@@ -492,7 +491,7 @@ class Button(DatarefListener, ValueProvider):
             logger.debug(f"button {self.name}: is already {'guarded' if d==1 else 'open'} ({value}).")
             return
         self._guard_dref.update_value(new_value=value, cascade=False)
-        self._guard_dref.save(self.sim)
+        self._guard_dref.save()
         logger.debug(f"button {self.name}: {'guarded' if value==1 else 'open'} ({value}).")
 
     def set_guard_on(self):

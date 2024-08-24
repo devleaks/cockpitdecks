@@ -685,7 +685,7 @@ class Value:
 
         return None
 
-    def save(self, simulator):
+    def save(self):
         if self._set_dref is not None:
             self._set_dref.update_value(new_value=self.get_value(), cascade=False)
-            self._set_dref.save(simulator)
+            self._set_dref.save()

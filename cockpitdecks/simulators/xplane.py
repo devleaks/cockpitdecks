@@ -387,11 +387,13 @@ class XPlane(Simulator, XPlaneBeacon):
     def get_dataref(self, path: str, is_string: bool = False):
         if path in self.all_datarefs.keys():
             return self.all_datarefs[path]
-        return self.register(Dataref(path, is_string=is_string))
+        return self.register(dataref=Dataref(path, is_string=is_string), sim=self)
 
     # Shortcuts
     def get_internal_dataref(self, path: str, is_string: bool = False):
-        return self.get_dataref(path=Dataref.mk_internal_dataref(path), is_string=is_string)
+        if not Dataref.is_internal_dataref(path):  # prevent duplicate prepend
+            path = Dataref.mk_internal_dataref(path)
+        return self.get_dataref(path=path, is_string=is_string)
 
     def set_internal_dataref(self, path: str, value: float, cascade: bool):
         int_path = Dataref.mk_internal_dataref(path)

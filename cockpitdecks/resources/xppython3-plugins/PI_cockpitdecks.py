@@ -47,12 +47,7 @@ CDH_IS_RUNNING = "XPPython3/cockpitdeckshelper/is_running"
 CDH_LPCOMMANDS = "XPPython3/cockpitdeckshelper/longpress_commands"
 CDH_STRINGDREF = "XPPython3/cockpitdeckshelper/string_datarefs"
 
-CDH_DATAREFS = [
-    CDH_IS_RUNNING,
-    CDH_RELEASE,
-    CDH_LPCOMMANDS,
-    CDH_STRINGDREF
-]
+CDH_DATAREFS = [CDH_IS_RUNNING, CDH_RELEASE, CDH_LPCOMMANDS, CDH_STRINGDREF]
 #
 # ###########################################################
 # LONG PRESS COMMAND
@@ -80,14 +75,12 @@ AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
 
 # default is to return these if asked for default dataref
-DEFAULT_STRING_DATAREFS = [
-    AIRCRAFT_DATAREF,
-    AIRCRAFT_LIVERY,
-    CDH_RELEASE
-]  # dataref that gets updated if new aircraft loaded
+DEFAULT_STRING_DATAREFS = [AIRCRAFT_DATAREF, AIRCRAFT_LIVERY, CDH_RELEASE]  # dataref that gets updated if new aircraft loaded
 LOAD_DEFAULT_DATAREFS = True
 
 CHECK_COUNT = [5, 20]
+
+
 #
 # ###########################################################
 # PLUG IN PythonInterface
@@ -113,7 +106,7 @@ class PythonInterface:
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MCAST_TTL)
         self.RLock = RLock()
 
-        self.isRunningRef = None # witness for all accessors
+        self.isRunningRef = None  # witness for all accessors
         self.cmdCountRef = None
         self.sdrCountRef = None
         self.releaseRef = None
@@ -123,28 +116,16 @@ class PythonInterface:
             print(self.Info, "XPluginStart: started")
 
         self.isRunningRef = xp.registerDataAccessor(
-            name=CDH_IS_RUNNING,
-            dataType=xp.Type_Int,
-            writable=0,  # Read-Only
-            readInt=self.getRunningStatusCallback
+            name=CDH_IS_RUNNING, dataType=xp.Type_Int, writable=0, readInt=self.getRunningStatusCallback  # Read-Only
         )  # Refcons not used
         self.cmdCountRef = xp.registerDataAccessor(
-            name=CDH_LPCOMMANDS,
-            dataType=xp.Type_Int,
-            writable=0,  # Read-Only
-            readInt=self.getLPCommandCountCallback
+            name=CDH_LPCOMMANDS, dataType=xp.Type_Int, writable=0, readInt=self.getLPCommandCountCallback  # Read-Only
         )  # Refcons not used
         self.sdrCountRef = xp.registerDataAccessor(
-            CDH_STRINGDREF,
-            dataType=xp.Type_Int,
-            writable=0,  # Read-Only
-            readInt=self.getStringDrefCountCallback
+            CDH_STRINGDREF, dataType=xp.Type_Int, writable=0, readInt=self.getStringDrefCountCallback  # Read-Only
         )  # Refcons not used
         self.releaseRef = xp.registerDataAccessor(
-            CDH_RELEASE,
-            dataType=xp.Type_Data,
-            writable=0,  # Read-Only
-            readData=self.getReleaseCallback
+            CDH_RELEASE, dataType=xp.Type_Data, writable=0, readData=self.getReleaseCallback  # Read-Only
         )  # Refcons not used
         if self.trace:
             print(self.Info, f"XPluginStart: data accessors added.")
@@ -271,10 +252,10 @@ class PythonInterface:
 
     def getReleaseCallback(self, inRefcon, values, offset, count):
         # https://xppython3.readthedocs.io/en/latest/development/modules/dataaccess.html
-        array = bytearray(RELEASE, encoding='utf-8')
+        array = bytearray(RELEASE, encoding="utf-8")
         if values is None:
             return len(RELEASE)
-        values.extend(array[offset:offset + count])
+        values.extend(array[offset : offset + count])
         return min(count, len(RELEASE) - offset)  # number of bytes copied
 
     def getLPCommandCountCallback(self, inRefcon):
