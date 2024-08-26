@@ -9,7 +9,7 @@ buttons:
       - none
       - none
       - none
-    formula: ${state:ccw}
+    formula: ${state:turns}
     set-dataref: data:enc0
   - index: e3
     type: encoder-push
