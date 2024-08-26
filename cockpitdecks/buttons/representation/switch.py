@@ -1243,6 +1243,7 @@ class Knob(SwitchBase):
         )  # , width=self.mark_width, # https://github.com/python-pillow/Pillow/pull/7132
 
         image.alpha_composite(mark_image)
+        self.rotation = randint(0, 359)
         image = image.rotate(self.rotation, resample=Image.Resampling.NEAREST, center=center)
         base_image.alpha_composite(image)
         return self.move_and_send(base_image)

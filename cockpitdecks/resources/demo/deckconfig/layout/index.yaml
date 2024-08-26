@@ -167,13 +167,13 @@ buttons:
     stops: 3
     initial-value: 0
     set-dataref: data:switches
+    dataref: data:switches
     knob:
       knob-style: round
       button-dents: 8
       button-dent-extension: 12
       button-dent-size: 10
       button-size: 80
-    options: 3way
   - index: 8
     type: none
     initial-value: 0

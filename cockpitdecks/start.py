@@ -14,6 +14,13 @@ from simple_websocket import Server, ConnectionClosed
 import ruamel
 from ruamel.yaml import YAML
 
+from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME, VERBOSE
+from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
+
+from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
+from cockpitdecks.simulators import XPlane  # The simulator we talk to
+
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
@@ -23,7 +30,7 @@ yaml.default_flow_style = False
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 
-logging.basicConfig(level=logging.INFO, format=FORMAT)
+logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="%H:%M:%S")
 
 logger = logging.getLogger(__name__)
 if LOGFILE is not None:
@@ -37,14 +44,8 @@ if LOGFILE is not None:
 #
 # COMMAND LINE PARSING
 #
-from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME, VERBOSE
-from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
-
-from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
-from cockpitdecks.simulators import XPlane  # The simulator we talk to
-
 # No aircraft supplied starts the demo version.
+DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to X-Plane 12"
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 
@@ -110,7 +111,7 @@ if VERBOSE:
 #
 # COCKPITDECKS STARTS HERE, REALLY
 #
-logger.info(f"{__NAME__.title()} {__version__} {__COPYRIGHT__}")
+print(f"\n\n{__NAME__.title()} {__version__} {__COPYRIGHT__}\n{DESC}\n")
 logger.info(f"Initializing Cockpitdecks..")
 cockpit = Cockpit(XPlane)
 logger.info("..initialized")

@@ -337,9 +337,9 @@ class Activation:
         if value is not None:
             self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
             logger.debug(f"button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}")
-            # print(
-            #     f"set-dataref>> button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}"
-            # )
+            print(
+                f"set-dataref>> button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}"
+            )
 
     def view(self):
         if self._view_macro is not None:
@@ -1129,10 +1129,13 @@ class UpDown(Activation):
         if not super().activate(event):
             return False
         if event.pressed:
-            currval = self.stop_current_value
+            currval = self.button.value
             if currval is None:
                 currval = 0
                 self.go_up = True
+            if currval > self.stops:
+                currval = self.stops - 1
+                self.go_up = False
             nextval = int(currval + 1 if self.go_up else currval - 1)
             logger.debug(f"{currval}, {nextval}, {self.go_up}")
             if self.go_up:
