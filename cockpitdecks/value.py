@@ -117,6 +117,7 @@ class Formula:
             else:
                 value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
+            logger.debug(f"substitute_dataref_values {dataref_name} = {value_str}{' (default)' if value is not None else ''}")
             cnt = cnt + 1
 
         more = re.findall(PATTERN_DOLCB, retmsg)  # XXXHERE
@@ -134,8 +135,10 @@ class Formula:
             logger.debug(f"value {state_string} = {value}")
             if value is not None:
                 txtcpy = txtcpy.replace(state_string, value)
+                logger.debug(f"substitute_state_values {state_string} = {value}")
             else:
                 txtcpy = txtcpy.replace(state_string, default)
+                logger.debug(f"substitute_state_values {state_string} = {default} (default)")
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         if len(more) > 0:
             logger.warning(f"formula {self.formula}:unsubstituted status values {more}")
@@ -269,7 +272,6 @@ class Value:
     def is_self_modified(self):
         # Determine of the activation of the button directly modifies
         # a dataref used in computation of the value.
-        print("is_self_modified >>>", self._set_dataref in self._datarefs, self._set_dataref, self._datarefs)
         return self._set_dataref in self._datarefs
 
     def complement_datarefs(self, datarefs: set, reason: str | None = None):
@@ -400,7 +402,7 @@ class Value:
                         t = {k: v for k, v in v1.items()}
                         r = r | deepscan(t)
                     else:
-                        print("unprocessed", v, type(v1), v1)
+                        logger.warning("unprocessed: {v}, {type(v1)}, {v1}")
 
         if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
             r.remove("formula")
@@ -419,7 +421,7 @@ class Value:
                 return formula
         if self.formula is not None and self.formula != "":
             return self.formula
-        if self._button.formula is not None and self._button.formula != "":
+        if self._button.formula is not None and self._button.formula != "" and type(self._button._representation).__name__ != "Annunciator":
             return self._button.formula
         return None
 
@@ -469,6 +471,7 @@ class Value:
             else:
                 value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
             retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
+            logger.debug(f"substitute_dataref_values {dataref_name} = {value_str}{' (default)' if value is not None else ''}")
             cnt = cnt + 1
 
         more = re.findall(PATTERN_DOLCB, retmsg)  # XXXHERE
@@ -486,8 +489,10 @@ class Value:
             logger.debug(f"value {state_string} = {value}")
             if value is not None:
                 txtcpy = txtcpy.replace(state_string, value)
+                logger.debug(f"substitute_state_values: {state_string} -> {value}")
             else:
                 txtcpy = txtcpy.replace(state_string, default)
+                logger.debug(f"substitute_state_values: {state_string} -> {default} (default)")
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         if len(more) > 0:
             logger.warning(f"value {self.name}:unsubstituted status values {more}")
@@ -546,7 +551,7 @@ class Value:
         r = RPC(expr)
         value = r.calculate()
         logger.debug(
-            f"execute_formula: value {self.name}: {formula} => {expr}: => {value}",
+            f"execute_formula: value {self.name}: {formula} => {expr} => {value}",
         )
         return value
 

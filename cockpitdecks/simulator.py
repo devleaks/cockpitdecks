@@ -83,7 +83,6 @@ class Dataref:
         self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
         self._round = None
         self.update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
-        self.expire = None
         self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
         self._xpindex = None
         self._sim = None
@@ -206,16 +205,6 @@ class Dataref:
             return True
         # loggerDataref.error(f"dataref {self.path} updated")
         return False
-
-    def set_expired(self, expire):
-        self.expire = expire
-
-    def is_expired(self, when) -> bool:
-        if self.expire is None:
-            return False
-        if self._last_updated is None:
-            return True
-        return (self._last_updated + timedelta(seconds=self.expire)) < when
 
     def add_listener(self, obj):
         if not isinstance(obj, DatarefListener):

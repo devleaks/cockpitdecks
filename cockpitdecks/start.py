@@ -98,7 +98,7 @@ if ac is not None and ac != "--demo":
         sys.exit(1)
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
     AIRCRAFT_DESC = os.path.basename(ac)
-    mode = CD_MODE.FIXED if fixed in ["fixed", "fix", "f"] else CD_MODE.NORMAL
+    mode = CD_MODE.FIXED if fixed in ["--fixed", "fixed", "fix", "f"] else CD_MODE.NORMAL
 elif ac is None and XP_HOME is None:
     mode = CD_MODE.DEMO
     if VERBOSE:
