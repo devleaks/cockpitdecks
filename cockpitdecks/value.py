@@ -163,8 +163,9 @@ class Formula:
 
     def substitute_values(self, provider: ValueProvider, default: str = "0.0", formatting: str = None):
         text = self.formula
+        logger.debug(f"substitute_values: processing '{text}'..")
         if type(text) is not str or "${" not in text:  # no ${..} to substitute
-            logger.debug(f"substitute_values: value {text} has no variable ({text})")
+            logger.debug(f"substitute_values: value {text} has no variable, returning as it is")
             return text
         self._formula_temp = self.substitute_state_values(provider=provider, default=default, formatting=formatting)
         if text != self._formula_temp:
@@ -180,6 +181,7 @@ class Formula:
             logger.debug(f"substitute_values: value {provider.name}: {self._formula_temp} => {step3}")
         else:
             logger.debug(f"substitute_values: has no dataref ({step3})")
+        logger.debug(f"substitute_values: ..processed '{text}' => {step3}")
         return step3
 
     # ##################################
@@ -263,6 +265,12 @@ class Value:
     def formula(self) -> str:
         # Formula
         return self._config.get(CONFIG_KW.FORMULA.value, "")
+
+    def is_self_modified(self):
+        # Determine of the activation of the button directly modifies
+        # a dataref used in computation of the value.
+        print("is_self_modified >>>", self._set_dataref in self._datarefs, self._set_dataref, self._datarefs)
+        return self._set_dataref in self._datarefs
 
     def complement_datarefs(self, datarefs: set, reason: str | None = None):
         # Add datarefs to the value for computation purpose
@@ -506,12 +514,13 @@ class Value:
     #     return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
+        logger.debug(f"substitute_values: processing '{text}'..")
         if type(text) is not str or "$" not in text:  # no ${..} to stubstitute
-            logger.debug(f"substitute_values: value {text} has no variable ({text})")
+            logger.debug(f"substitute_values: value {text} has no variable to substitute, returning as it is")
             return text
         step1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != step1:
-            logger.debug(f"substitute_values: value {self.name}: {text} => {step1}")
+            logger.debug(f"substitute_values: state: value {self.name}: {text} => {step1}")
         else:
             logger.debug(f"substitute_values: has no state variable ({text})")
         # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
@@ -521,6 +530,7 @@ class Value:
             logger.debug(f"substitute_values: value {self.name}: {step2} => {step3}")
         else:
             logger.debug(f"substitute_values: has no dataref ({step3})")
+        logger.debug(f"substitute_values: ..processed '{text}' => {step3}")
         return step3
 
     # ##################################
@@ -686,6 +696,9 @@ class Value:
         return None
 
     def save(self):
+        # Writes the computed button value to set-dataref
         if self._set_dref is not None:
-            self._set_dref.update_value(new_value=self.get_value(), cascade=False)
+            new_value = self.get_value()
+            self._set_dref.update_value(new_value=new_value, cascade=True)
             self._set_dref.save()
+            # print(f"set-dataref>>value {self.name}: button {self._button.name}: set-dataref {self._set_dref.path} = {new_value} ({self._set_dref.value()})")

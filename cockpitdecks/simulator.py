@@ -242,17 +242,17 @@ class Dataref:
         #    loggerDataref.error(f"dataref {self.path} not changed")
 
     def notify_updated(self):
-        for dref in self.listeners:
-            dref.dataref_updated(self)
-            if hasattr(dref, "page") and dref.page is not None:
+        for lnsr in self.listeners:
+            lnsr.dataref_updated(self)
+            if hasattr(lnsr, "page") and lnsr.page is not None:
                 loggerDataref.log(
                     SPAM_LEVEL,
-                    f"{self.path}: notified {dref.page.name}/{dref.name} or update",
+                    f"{self.path}: notified {lnsr.page.name}/{lnsr.name} of update",
                 )
             else:
                 loggerDataref.log(
                     SPAM_LEVEL,
-                    f"{self.path}: notified {dref.name} of update (not on an page)",
+                    f"{self.path}: notified {lnsr.name} of update (not on an page)",
                 )
         # else:
         #    loggerDataref.error(f"dataref {self.path} not changed")

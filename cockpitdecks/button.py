@@ -552,6 +552,11 @@ class Button(DatarefListener, ValueProvider):
     # ##################################
     # Value
     #
+    def is_self_modified(self):
+        # Determine of the activation of the button directly modifies
+        # a dataref used in computation of the value.
+        return self._value.is_self_modified()
+
     def compute_value(self):
         """
         Button ultimately returns either one value or an array of values.
@@ -634,9 +639,7 @@ class Button(DatarefListener, ValueProvider):
             logger.debug(f"button {self.name}: no activation")
 
         self.value = self.compute_value()
-
-        # # May be we need to write/save the new button value to a set-dataref
-        # self._activation.write_dataref(value=self.value)
+        self._value.save()  # write set-dataref with the button value and cascade effects
 
         if self.has_changed():
             logger.log(

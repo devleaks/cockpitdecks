@@ -119,6 +119,7 @@ class Activation:
         if set_dataref_path is not None:
             self._writable_dataref = self.button.sim.get_dataref(set_dataref_path)
             self._writable_dataref.set_writable()  # should be checked/set from sim... (later)
+        self.activation_requires_modification_set_dataref = True
 
         # Working variables, internal state
         self._last_event = None
@@ -221,18 +222,47 @@ class Activation:
             return True
         return self.button.is_guarded()
 
-    def handle(self, event):
-        # Handle event, perform activation
-        result = self.activate(event)
-        if result:
-            # If set-dataref present and activation produces a value
-            self.set_dataref()
-            # Optionally affect cockpit view to concentrate on event consequences
-            if self.skip_view:
-                self.skip_view = False
-            else:
-                self.view()
+    def done(self):
+        if self._activate_start is not None:
+            self._activation_completed = self._activation_completed + 1
+            self.inc("activation_completed")
 
+            duration = datetime.now() - self._activate_start
+            self._total_duration = self._total_duration + duration
+            self.inc("activation_duration", duration)
+
+    def is_pressed(self):
+        return self.pressed
+
+    def long_pressed(self, duration: float = 2) -> bool:
+        return self.duration > duration
+
+    def has_long_press(self) -> bool:
+        return self._long_press is not None and self._long_press.has_command()
+
+    def get_datarefs(self) -> set:
+        if self._writable_dataref is not None:
+            return {self._writable_dataref.path}
+        return set()
+
+    def command(self, command=None):
+        if command is None:
+            command = self._command
+        if command is not None and command.has_command():
+            self.button.sim.commandOnce(command)
+
+    def long_press(self, event):
+        self.command(self._long_press)
+
+    def is_valid(self) -> bool:
+        if self.button is None:
+            logger.warning(f"{type(self).__name__} has no button")
+            return False
+        return True
+
+    # ############################
+    # Main external API procedures
+    #
     def activate(self, event) -> bool:
         """
         Function that is executed when a button is activated (pressed, released, turned, etc.).
@@ -299,38 +329,17 @@ class Activation:
         logger.debug(f"{type(self).__name__} activated ({event}, {self.activation_count})")
         return True
 
-    def done(self):
-        if self._activate_start is not None:
-            self._activation_completed = self._activation_completed + 1
-            self.inc("activation_completed")
-
-            duration = datetime.now() - self._activate_start
-            self._total_duration = self._total_duration + duration
-            self.inc("activation_duration", duration)
-
-    def is_pressed(self):
-        return self.pressed
-
-    def long_pressed(self, duration: float = 2) -> bool:
-        return self.duration > duration
-
-    def has_long_press(self) -> bool:
-        return self._long_press is not None and self._long_press.has_command()
-
-    def get_datarefs(self) -> set:
-        if self._writable_dataref is not None:
-            return {self._writable_dataref.path}
-        return set()
-
     def set_dataref(self):
+        # Writes the "raw" activation value to set-dataref as produced by the activation
         if self._writable_dataref is None:
             return
         value = self.get_activation_value()
         if value is not None:
-            self._writable_dataref.update_value(new_value=value, cascade=True)
-            self._writable_dataref.save()
-            logger.debug(f"set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
-            # print(f">>>>> set_dataref button {self.button_name()}: {type(self).__name__} written set-dataref {self._writable_dataref.path} => {value}")
+            self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}")
+            # print(
+            #     f"set-dataref>> button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}"
+            # )
 
     def view(self):
         if self._view_macro is not None:
@@ -343,20 +352,17 @@ class Activation:
             if doit:
                 self.command(self._view)
 
-    def command(self, command=None):
-        if command is None:
-            command = self._command
-        if command is not None and command.has_command():
-            self.button.sim.commandOnce(command)
-
-    def long_press(self, event):
-        self.command(self._long_press)
-
-    def is_valid(self) -> bool:
-        if self.button is None:
-            logger.warning(f"{type(self).__name__} has no button")
-            return False
-        return True
+    def handle(self, event):
+        # Handle event, perform activation
+        result = self.activate(event)
+        if result:  # terminated without error
+            if self.activation_requires_modification_set_dataref:
+                self.set_dataref()
+            # Optionally affect cockpit view to concentrate on event consequences
+            if self.skip_view:
+                self.skip_view = False
+            else:
+                self.view()
 
     def inspect(self, what: str | None = None):
         if what is not None and "activation" not in what:
@@ -1222,16 +1228,16 @@ class Encoder(Activation):
             return False
         if event.turned_counter_clockwise:  # rotate left
             self.command(self._commands[0])
-            self._turns = self._turns + 1
-            self._cw = self._cw + 1
-            self.inc("turns")
-            self.inc("cw")
-        elif event.turned_clockwise:  # rotate right
-            self.command(self._commands[1])
             self._turns = self._turns - 1
             self._ccw = self._ccw + 1
             self.inc("turns", -1)
             self.inc("ccw")
+        elif event.turned_clockwise:  # rotate right
+            self.command(self._commands[1])
+            self._turns = self._turns + 1
+            self._cw = self._cw + 1
+            self.inc("turns", -1)
+            self.inc("cw")
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
         return True  # normal termination
@@ -1318,27 +1324,29 @@ class EncoderPush(Push):
 
         # Turned
         if type(event) is EncoderEvent:
-            if event.turned_counter_clockwise:  # rotate clockwise
+            if event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.longpush:
                     if self.is_pressed():
                         self.command(self._commands[2])
-                        self._turns = self._turns + 1
-                        self._cw = self._cw + 1
-                        self.inc("turns")
-                        self.inc("cw")
+                        self._turns = self._turns - 1
+                        self._ccw = self._ccw + 1
+                        self.inc("turns", -1)
+                        self.inc("ccw")
                     else:
                         self.command(self._commands[0])
                         self._turns = self._turns - 1
                         self._ccw = self._ccw + 1
                         self.inc("turns", -1)
                         self.inc("ccw")
+                    self.inc("long-push")
                 else:
                     self.command(self._commands[1])
-                    self._turns = self._turns + 1
-                    self._cw = self._cw + 1
-                    self.inc("turns")
-                    self.inc("cw")
-            elif event.turned_clockwise:  # rotate counter-clockwise
+                    self._turns = self._turns - 1
+                    self._ccw = self._ccw + 1
+                    self.inc("turns", -1)
+                    self.inc("ccw")
+                    self.inc("short-push")
+            elif event.turned_clockwise:  # rotate clockwise
                 if self.longpush:
                     if self.is_pressed():
                         self.command(self._commands[3])
@@ -1348,16 +1356,18 @@ class EncoderPush(Push):
                         self.inc("cw")
                     else:
                         self.command(self._commands[1])
-                        self._turns = self._turns - 1
-                        self._ccw = self._ccw + 1
-                        self.inc("turns", -1)
-                        self.inc("ccw")
+                        self._turns = self._turns + 1
+                        self._cw = self._cw + 1
+                        self.inc("turns")
+                        self.inc("cw")
+                    self.inc("long-push")
                 else:
                     self.command(self._commands[2])
-                    self._turns = self._turns - 1
-                    self._ccw = self._ccw + 1
-                    self.inc("turns", -1)
-                    self.inc("ccw")
+                    self._turns = self._turns + 1
+                    self._cw = self._cw + 1
+                    self.inc("turns")
+                    self.inc("cw")
+                    self.inc("short-push")
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -1453,8 +1463,10 @@ class EncoderOnOff(OnOff):
                 if self.is_on():
                     if self.dual:
                         self.command(self._commands[2])
+                        self.inc("on")
                     else:
                         self.command(self._commands[2])
+                        self.inc("off")
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                     self.inc("turns")
@@ -1464,20 +1476,22 @@ class EncoderOnOff(OnOff):
                         self.command(self._commands[4])
                     else:
                         self.command(self._commands[2])
-                    self._turns = self._turns - 1
-                    self._ccw = self._ccw + 1
-                    self.inc("turns", -1)
-                    self.inc("ccw")
-            elif event.turned_counter_clockwise:  # rotate counter-clockwise
-                if self.is_on():
-                    if self.dual:
-                        self.command(self._commands[3])
-                    else:
-                        self.command(self._commands[3])
                     self._turns = self._turns + 1
                     self._cw = self._cw + 1
                     self.inc("turns")
                     self.inc("cw")
+            elif event.turned_counter_clockwise:  # rotate counter-clockwise
+                if self.is_on():
+                    if self.dual:
+                        self.command(self._commands[3])
+                        self.inc("on")
+                    else:
+                        self.command(self._commands[3])
+                        self.inc("off")
+                    self._turns = self._turns - 1
+                    self._ccw = self._ccw + 1
+                    self.inc("turns", -1)
+                    self.inc("ccw")
                 else:
                     if self.dual:
                         self.command(self._commands[5])
@@ -1604,17 +1618,17 @@ class EncoderValue(OnOff):
             if event.turned_counter_clockwise:  # rotate left
                 x = max(self.value_min, x - self.step)
                 ok = True
-                self._turns = self._turns + 1
-                self._cw = self._cw + 1
-                self.inc("turns")
-                self.inc("cw")
-            elif event.turned_clockwise:  # rotate right
-                x = min(self.value_max, x + self.step)
-                ok = True
                 self._turns = self._turns - 1
                 self._ccw = self._ccw + 1
                 self.inc("turns", -1)
                 self.inc("ccw")
+            elif event.turned_clockwise:  # rotate right
+                x = min(self.value_max, x + self.step)
+                ok = True
+                self._turns = self._turns + 1
+                self._cw = self._cw + 1
+                self.inc("turns")
+                self.inc("cw")
             else:
                 logger.warning(f"{type(self).__name__} invalid event {event}")
 
@@ -2007,12 +2021,22 @@ class EncoderToggle(Activation):
                     self.command(self._commands[0])
                 else:
                     self.command(self._commands[2])
+                self._turns = self._turns - 1
+                self._ccw = self._ccw + 1
+                self.inc("turns", -1)
+                self.inc("ccw")
 
             elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
                 if self._on:
                     self.command(self._commands[1])
+                    self.inc("on")
                 else:
                     self.command(self._commands[3])
+                    self.inc("off")
+                self._turns = self._turns + 1
+                self._cw = self._cw + 1
+                self.inc("turns")
+                self.inc("cw")
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -2112,7 +2136,7 @@ class Mosaic(Activation):
 
             return True
         else:  # swipe event
-            print(">>>>>>> swiped", event.touched_only(), event.xy())
+            logger.warning("swiped: {event.touched_only()}, {event.xy()}")
         # determine which tile was hit
         # activate proper event in tile
         return False  # normal termination
