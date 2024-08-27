@@ -525,6 +525,7 @@ class Button(DatarefListener, ValueProvider):
         else:
             logger.debug(f"button {self.name}: state {name} not found")
         logger.debug(f"button {self.name}: state {name} = {value} (from {source})")
+        print(f"button {self.name}: state {name} = {value} (from {source})")
         return value
 
     # ##################################
@@ -602,7 +603,7 @@ class Button(DatarefListener, ValueProvider):
     # ##################################
     # External API
     #
-    def dataref_changed(self, dataref: "Dataref"):
+    def dataref_changed(self, dataref: Dataref):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
@@ -658,20 +659,7 @@ class Button(DatarefListener, ValueProvider):
             "managed": self.managed,
             "guarded": self.guarded,
         }
-        drefs = {}
-        b = self.get_id()
-        b = Dataref.mk_internal_dataref(b)
-        for d, v in self.sim.all_datarefs.items():
-            if d.startswith(b):
-                k = d.replace(b, "")
-                if k in drefs:
-                    logger.warning(f"button {self.name}: duplicate state {k}")
-                drefs[k] = v.value()
-        state = a | drefs | self._activation.get_state_variables()
-        # logger.debug(f"button {self.name}: state {state}")
-        # if self._representation is not None:
-        #     repstate self._representation.get_state_variables()
-        return state
+        return a | self._activation.get_state_variables()
 
     def get_representation(self):
         """

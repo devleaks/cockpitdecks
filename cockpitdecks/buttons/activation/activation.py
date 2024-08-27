@@ -11,11 +11,10 @@ from typing import List
 from datetime import datetime
 
 # from cockpitdecks import SPAM
-from cockpitdecks import simulator
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks.simulator import Command, MacroCommand
+from cockpitdecks.simulator import Dataref, Command, MacroCommand
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
@@ -125,7 +124,6 @@ class Activation:
         self._last_event = None
         self._activate_start = None
 
-        self.activation_count = 0
         self.last_activated = 0
         self.duration = 0
         self.pressed = False
@@ -263,6 +261,12 @@ class Activation:
     # ############################
     # Main external API procedures
     #
+    @property
+    def activation_count(self):
+        dref = self.button.sim.get_internal_dataref("activation_count")
+        value = dref.value()
+        return 0 if value is None else value
+
     def activate(self, event) -> bool:
         """
         Function that is executed when a button is activated (pressed, released, turned, etc.).
@@ -285,7 +289,6 @@ class Activation:
 
         if event.pressed:
             self.pressed = True
-            self.activation_count = self.activation_count + 1
             self.inc("activation_count")
 
             now = datetime.now().timestamp()
@@ -337,9 +340,7 @@ class Activation:
         if value is not None:
             self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
             logger.debug(f"button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}")
-            print(
-                f"set-dataref>> button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}"
-            )
+            # print(f"{type(self).__name__} set-dataref>> button {self.button_name()}:  updated set-dataref {self._writable_dataref.path} to activation value {value}")
 
     def view(self):
         if self._view_macro is not None:
@@ -383,15 +384,17 @@ class Activation:
         return self.activation_count
 
     def get_state_variables(self) -> dict:
-        return {
+        base = Dataref.mk_internal_dataref(self.get_id())
+        drefs = {d.path.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.path.startswith(base), self.button.sim.all_datarefs.values())}
+        a = {
             "activation_type": type(self).__name__,
-            "activation_count": self.activation_count,
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
             "writable_dataref": self._writable_dataref.path if self._writable_dataref is not None else None,
             ACTIVATION_VALUE: self.get_activation_value(),
         }
+        return a | drefs
 
     def describe(self) -> str:
         """
@@ -1325,6 +1328,8 @@ class EncoderPush(Push):
             if not super().activate(event):
                 return False
 
+        self.inc("activation_count") # since super() not called
+
         # Turned
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise:  # rotate counter-clockwise
@@ -1460,6 +1465,8 @@ class EncoderOnOff(OnOff):
         if type(event) is PushEvent:
             if not super().activate(event):
                 return False
+
+        self.inc("activation_count") # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_clockwise:  # rotate clockwise
@@ -1612,6 +1619,8 @@ class EncoderValue(OnOff):
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
             return True
+
+        self.inc("activation_count") # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1781,6 +1790,8 @@ class EncoderValueExtended(OnOff):
                 else:
                     self._step_mode = self.step
                 return True
+
+        self.inc("activation_count") # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -2017,6 +2028,8 @@ class EncoderToggle(Activation):
             elif event.pressed and not self._on:
                 self._on = True
             return True
+
+        self.inc("activation_count") # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise

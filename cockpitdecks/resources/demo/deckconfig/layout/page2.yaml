@@ -8,7 +8,7 @@ buttons:
     commands:
       - none
       - none
-    formula: ${state:activation_count}
+    formula: ${state:turns}
     set-dataref: data:encoder0
   - index: 0
     # label: "Connection Status"

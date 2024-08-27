@@ -166,13 +166,13 @@ class Formula:
 
     def substitute_values(self, provider: ValueProvider, default: str = "0.0", formatting: str = None):
         text = self.formula
-        logger.debug(f"substitute_values: processing '{text}'..")
+        logger.debug(f"substitute_values: {provider.name}: processing '{text}'..")
         if type(text) is not str or "${" not in text:  # no ${..} to substitute
-            logger.debug(f"substitute_values: value {text} has no variable, returning as it is")
+            logger.debug(f"substitute_values: {provider.name}: value {text} has no variable, returning as it is")
             return text
         self._formula_temp = self.substitute_state_values(provider=provider, default=default, formatting=formatting)
         if text != self._formula_temp:
-            logger.debug(f"substitute_values: value {provider.name}: {text} => {self._formula_temp}")
+            logger.debug(f"substitute_values: {provider.name}: value {text} => {self._formula_temp}")
         else:
             logger.debug(f"substitute_values: has no state variable ({text})")
         # do not use
@@ -181,9 +181,9 @@ class Formula:
         # step2 = self._formula_temp
         step3 = self.substitute_dataref_values(provider=provider, default=default, formatting=formatting)
         if step3 != self._formula_temp:
-            logger.debug(f"substitute_values: value {provider.name}: {self._formula_temp} => {step3}")
+            logger.debug(f"substitute_values: {provider.name}: value {self._formula_temp} => {step3}")
         else:
-            logger.debug(f"substitute_values: has no dataref ({step3})")
+            logger.debug(f"substitute_values: {provider.name}: value has no dataref ({step3})")
         logger.debug(f"substitute_values: ..processed '{text}' => {step3}")
         return step3
 
@@ -519,23 +519,23 @@ class Value:
     #     return txtcpy
 
     def substitute_values(self, text, default: str = "0.0", formatting=None):
-        logger.debug(f"substitute_values: processing '{text}'..")
+        logger.debug(f"substitute_values: {self._button.name}: value {self.name}: processing '{text}'..")
         if type(text) is not str or "$" not in text:  # no ${..} to stubstitute
-            logger.debug(f"substitute_values: value {text} has no variable to substitute, returning as it is")
+            logger.debug(f"substitute_values: {self._button.name}: value {self.name}: {text} has no variable to substitute, returning as it is")
             return text
         step1 = self.substitute_state_values(text, default=default, formatting=formatting)
         if text != step1:
-            logger.debug(f"substitute_values: state: value {self.name}: {text} => {step1}")
+            logger.debug(f"substitute_values: {self._button.name}: value {self.name}: {text} => {step1}")
         else:
-            logger.debug(f"substitute_values: has no state variable ({text})")
+            logger.debug(f"substitute_values: {self._button.name}: value {self.name} has no state variable ({text})")
         # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
         step2 = step1
         step3 = self.substitute_dataref_values(step2, default=default, formatting=formatting)
         if step3 != step2:
-            logger.debug(f"substitute_values: value {self.name}: {step2} => {step3}")
+            logger.debug(f"substitute_values: {self._button.name}: value {self.name}: {step2} => {step3}")
         else:
-            logger.debug(f"substitute_values: has no dataref ({step3})")
-        logger.debug(f"substitute_values: ..processed '{text}' => {step3}")
+            logger.debug(f"substitute_values: {self._button.name}: value {self.name} has no dataref ({step3})")
+        logger.debug(f"substitute_values: {self._button.name}: value {self.name}: ..processed '{text}' => {step3}")
         return step3
 
     # ##################################
@@ -617,7 +617,7 @@ class Value:
 
         return text, text_format, text_font, text_color, text_size, text_position
 
-    def get_text(self, base: dict, root: str = "label"):  # root={label|text}
+    def get_text(self, base: dict, root: str = CONFIG_KW.LABEL.value):  # root={label|text}
         """
         Extract label or text from base and perform formula and dataref values substitution if present.
         (I.e. replaces ${formula} and ${dataref} with their values.)
@@ -664,7 +664,8 @@ class Value:
             text = text.replace(KW_FORMULA_STR, res)
 
         # Rest of text: substitution of ${}
-        text = self.substitute_values(text, formatting=text_format, default="---")
+        if root != CONFIG_KW.LABEL.value:
+            text = self.substitute_values(text, formatting=text_format, default="---")
         return text
 
     # ##################################

@@ -122,6 +122,7 @@ class CONFIG_KW(Enum):
     INDEX = "index"
     INDEX_NUMERIC = "_index"
     INITIAL_VALUE = "initial-value"
+    LABEL = "label"
     LAYOUT = "layout"
     MANAGED = "managed"
     MULTI_DATAREFS = "multi-datarefs"
