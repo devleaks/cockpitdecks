@@ -1120,7 +1120,7 @@ class Knob(SwitchBase):
         self.mark_off_stroke_color = convert_color(self.mark_off_stroke_color)
         self.mark_off_stroke_width = self.get_attribute("witness-stroke-off-width", 4)
 
-        self.rotation = randint(0, 359)
+        self.rotation = randint(0, 9) * 40
 
     def set_rotation(self, rotation):
         """Rotates a button's drawing
@@ -1243,7 +1243,7 @@ class Knob(SwitchBase):
         )  # , width=self.mark_width, # https://github.com/python-pillow/Pillow/pull/7132
 
         image.alpha_composite(mark_image)
-        self.rotation = randint(0, 359)
+        self.rotation = randint(0, 9) * 40
         image = image.rotate(self.rotation, resample=Image.Resampling.NEAREST, center=center)
         base_image.alpha_composite(image)
         return self.move_and_send(base_image)

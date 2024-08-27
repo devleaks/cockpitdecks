@@ -1,12 +1,12 @@
 """
 Button action and activation abstraction
 """
+
 import logging
 import random
 import threading
 from abc import ABC, abstractmethod
 from typing import List
-
 from datetime import datetime
 
 # from cockpitdecks import SPAM
@@ -15,6 +15,7 @@ from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import Dataref, Command, MacroCommand
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
+from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -206,7 +207,6 @@ class Activation:
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
         self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=False)
 
-
     def is_guarded(self):
         # Check this before activating in subclasses if necessary
         # because calling super().activate() may lift the guard.
@@ -223,11 +223,11 @@ class Activation:
     def done(self):
         if self._activate_start is not None:
             self._activation_completed = self._activation_completed + 1
-            self.inc("activation_completed")
+            self.inc(INTERNAL_DATAREF.ACTIVATION_COMPLETED.value)
 
             duration = datetime.now() - self._activate_start
             self._total_duration = self._total_duration + duration
-            self.inc("activation_duration", duration)
+            self.inc(INTERNAL_DATAREF.ACTIVATION_DURATION.value, duration)
 
     def is_pressed(self):
         return self.pressed
@@ -263,7 +263,7 @@ class Activation:
     #
     @property
     def activation_count(self):
-        path = ID_SEP.join([self.get_id(), "activation_count"])
+        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ACTIVATION_COUNT.value])
         dref = self.button.sim.get_internal_dataref(path)
         value = dref.value()
         return 0 if value is None else value
@@ -290,7 +290,8 @@ class Activation:
 
         if event.pressed:
             self.pressed = True
-            self.inc("activation_count")
+            self.skip_view = True # we only trigger the view on release
+            self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)
 
             now = datetime.now().timestamp()
             self.last_activated = now
@@ -308,7 +309,7 @@ class Activation:
         else:
             self.pressed = False
             self.duration = datetime.now().timestamp() - self.last_activated
-            self.inc("release_count")
+            self.inc(INTERNAL_DATAREF.ACTIVATION_RELEASE.value)
 
             # Guard handling
             self._guard_changed = False
@@ -338,12 +339,14 @@ class Activation:
         if self._writable_dataref is None:
             return
         value = self.get_activation_value()
-        if value is not None:
-            if type(value) is bool:
-                value = 1 if True else 0
-            self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
-            logger.debug(f"button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}")
-            # print(f"{type(self).__name__} set-dataref>> button {self.button_name()}:  updated set-dataref {self._writable_dataref.path} to activation value {value}")
+        if value is None:
+            logger.debug(f"button {self.button_name()}: {type(self).__name__} activation value is none")
+            return
+        if type(value) is bool:
+            value = 1 if True else 0
+        self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.path} to activation value {value}")
+        print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
 
     def view(self):
         if self._view_macro is not None:
@@ -365,8 +368,10 @@ class Activation:
             # Optionally affect cockpit view to concentrate on event consequences
             if self.skip_view:
                 self.skip_view = False
+                logger.debug(f"button {self.button_name()}: {type(self).__name__} view skipped")
             else:
                 self.view()
+                logger.debug(f"button {self.button_name()}: {type(self).__name__} view activated")
 
     def inspect(self, what: str | None = None):
         if what is not None and "activation" not in what:
@@ -560,7 +565,7 @@ class Inspect(Activation):
             self.button.deck.cockpit.inspect(self.what)
         return True  # normal termination
 
-    def get_state_variables(self):
+    def get_state_variables(self) -> dict:
         s = super().get_state_variables()
         if s is None:
             s = {}
@@ -628,7 +633,7 @@ class Random(Activation):
             self.random_value = random.random()
         return True  # normal termination
 
-    def get_state_variables(self):
+    def get_state_variables(self) -> dict:
         s = super().get_state_variables()
         if s is None:
             s = {}
@@ -965,11 +970,11 @@ class OnOff(Activation):
     def get_activation_value(self):
         return self.onoff_current_value
 
-    def get_state_variables(self):
+    def get_state_variables(self) -> dict:
         s = super().get_state_variables()
         if s is None:
             s = {}
-        s = s | {"on": self.is_on()}
+        s = s | {INTERNAL_DATAREF.ACTIVATION_ON.value: self.is_on()}
         return s
 
     def describe(self) -> str:
@@ -1163,7 +1168,7 @@ class UpDown(Activation):
     def get_activation_value(self):
         return self.stop_current_value
 
-    def get_state_variables(self):
+    def get_state_variables(self) -> dict:
         s = super().get_state_variables()
         if s is None:
             s = {}
@@ -1198,7 +1203,32 @@ An Encoder with a step value of 1 is more or less a variant of Knob.
 """
 
 
-class Encoder(Activation):
+class EncoderProperties:
+    """Trait for property definitions"""
+
+    @property
+    def _turns(self):
+        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_TURNS.value])
+        dref = self.button.sim.get_internal_dataref(path)
+        value = dref.value()
+        return 0 if value is None else value
+
+    @property
+    def _cw(self):
+        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_CLOCKWISE.value])
+        dref = self.button.sim.get_internal_dataref(path)
+        value = dref.value()
+        return 0 if value is None else value
+
+    @property
+    def _ccw(self):
+        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value])
+        dref = self.button.sim.get_internal_dataref(path)
+        value = dref.value()
+        return 0 if value is None else value
+
+
+class Encoder(Activation, EncoderProperties):
     """
     Defines a know with stepped value.
     One command is executed when the encoder is turned clockwise one step,
@@ -1216,11 +1246,6 @@ class Encoder(Activation):
         # Commands
         self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
 
-        # Internal status
-        self._turns = 0
-        self._cw = 0
-        self._ccw = 0
-
     def num_commands(self):
         return len(self._commands) if self._commands is not None else 0
 
@@ -1237,16 +1262,12 @@ class Encoder(Activation):
             return False
         if event.turned_counter_clockwise:  # rotate left
             self.command(self._commands[0])
-            self._turns = self._turns - 1
-            self._ccw = self._ccw + 1
-            self.inc("turns", -1)
-            self.inc("ccw")
+            self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+            self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
         elif event.turned_clockwise:  # rotate right
             self.command(self._commands[1])
-            self._turns = self._turns + 1
-            self._cw = self._cw + 1
-            self.inc("turns", -1)
-            self.inc("cw")
+            self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+            self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
         return True  # normal termination
@@ -1254,11 +1275,13 @@ class Encoder(Activation):
     def get_activation_value(self):
         return self._turns
 
-    def get_state_variables(self):
-        a = super().get_state_variables()
-        if a is None:
-            a = {}
-        return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
+    def get_state_variables(self) -> dict:
+        a = {
+            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
+            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+        }
+        return a | super().get_state_variables()
 
     def describe(self) -> str:
         """
@@ -1272,7 +1295,7 @@ class Encoder(Activation):
         )
 
 
-class EncoderPush(Push):
+class EncoderPush(Push, EncoderProperties):
     """
     Defines a encoder with stepped value coupled to a Push button.
     First command is executed when encoder is pushed.
@@ -1305,11 +1328,6 @@ class EncoderPush(Push):
 
         self.longpush = self.button.has_option("longpush")
 
-        # Internal status
-        self._turns = 0
-        self._cw = 0
-        self._ccw = 0
-
     def num_commands(self):
         return len(self._commands) if self._commands is not None else 0
 
@@ -1330,7 +1348,7 @@ class EncoderPush(Push):
         if type(event) is PushEvent:
             return super().activate(event)
 
-        self.inc("activation_count")  # since super() not called
+        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
 
         # Turned
         if type(event) is EncoderEvent:
@@ -1338,46 +1356,34 @@ class EncoderPush(Push):
                 if self.longpush:
                     if self.is_pressed():
                         self.command(self._commands[2])
-                        self._turns = self._turns - 1
-                        self._ccw = self._ccw + 1
-                        self.inc("turns", -1)
-                        self.inc("ccw")
+                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                        self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     else:
                         self.command(self._commands[0])
-                        self._turns = self._turns - 1
-                        self._ccw = self._ccw + 1
-                        self.inc("turns", -1)
-                        self.inc("ccw")
-                    self.inc("long-push")
+                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                        self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                    self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
                 else:
                     self.command(self._commands[1])
-                    self._turns = self._turns - 1
-                    self._ccw = self._ccw + 1
-                    self.inc("turns", -1)
-                    self.inc("ccw")
-                    self.inc("short-push")
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                    self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
             elif event.turned_clockwise:  # rotate clockwise
                 if self.longpush:
                     if self.is_pressed():
                         self.command(self._commands[3])
-                        self._turns = self._turns + 1
-                        self._cw = self._cw + 1
-                        self.inc("turns")
-                        self.inc("cw")
+                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                        self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     else:
                         self.command(self._commands[1])
-                        self._turns = self._turns + 1
-                        self._cw = self._cw + 1
-                        self.inc("turns")
-                        self.inc("cw")
-                    self.inc("long-push")
+                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                        self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                    self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
                 else:
                     self.command(self._commands[2])
-                    self._turns = self._turns + 1
-                    self._cw = self._cw + 1
-                    self.inc("turns")
-                    self.inc("cw")
-                    self.inc("short-push")
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                    self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -1386,11 +1392,13 @@ class EncoderPush(Push):
     def get_activation_value(self):
         return self._turns
 
-    def get_state_variables(self):
-        a = super().get_state_variables()
-        if a is None:
-            a = {}
-        return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
+    def get_state_variables(self) -> dict:
+        a = {
+            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
+            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+        }
+        return a | super().get_state_variables()
 
     def describe(self) -> str:
         """
@@ -1418,7 +1426,7 @@ class EncoderPush(Push):
             )
 
 
-class EncoderOnOff(OnOff):
+class EncoderOnOff(OnOff, EncoderProperties):
     """
     Defines a encoder with stepped value coupled to a OnOff button.
     First command is executed when button is Off and pressed.
@@ -1444,11 +1452,6 @@ class EncoderOnOff(OnOff):
 
         self.dual = self.button.has_option("dual")
 
-        # Internal status
-        self._turns = 0
-        self._cw = 0
-        self._ccw = 0
-
     def num_commands(self):
         return len(self._commands) if self._commands is not None else 0
 
@@ -1467,51 +1470,43 @@ class EncoderOnOff(OnOff):
         if type(event) is PushEvent:
             return super().activate(event)
 
-        self.inc("activation_count")  # since super() not called
+        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_clockwise:  # rotate clockwise
                 if self.is_on():
                     if self.dual:
                         self.command(self._commands[2])
-                        self.inc("on")
+                        self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                     else:
                         self.command(self._commands[2])
-                        self.inc("off")
-                    self._turns = self._turns + 1
-                    self._cw = self._cw + 1
-                    self.inc("turns")
-                    self.inc("cw")
+                        self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                 else:
                     if self.dual:
                         self.command(self._commands[4])
                     else:
                         self.command(self._commands[2])
-                    self._turns = self._turns + 1
-                    self._cw = self._cw + 1
-                    self.inc("turns")
-                    self.inc("cw")
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
             elif event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.is_on():
                     if self.dual:
                         self.command(self._commands[3])
-                        self.inc("on")
+                        self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                     else:
                         self.command(self._commands[3])
-                        self.inc("off")
-                    self._turns = self._turns - 1
-                    self._ccw = self._ccw + 1
-                    self.inc("turns", -1)
-                    self.inc("ccw")
+                        self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                 else:
                     if self.dual:
                         self.command(self._commands[5])
                     else:
                         self.command(self._commands[3])
-                    self._turns = self._turns - 1
-                    self._ccw = self._ccw + 1
-                    self.inc("turns", -1)
-                    self.inc("ccw")
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
         return True  # normal termination
@@ -1519,11 +1514,13 @@ class EncoderOnOff(OnOff):
     def get_activation_value(self):
         return self._turns
 
-    def get_state_variables(self):
-        a = super().get_state_variables()
-        if a is None:
-            a = {}
-        return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
+    def get_state_variables(self) -> dict:
+        a = {
+            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
+            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+        }
+        return a | super().get_state_variables()
 
     def describe(self) -> str:
         """
@@ -1555,7 +1552,7 @@ class EncoderOnOff(OnOff):
             )
 
 
-class EncoderValue(OnOff):
+class EncoderValue(OnOff, EncoderProperties):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
@@ -1578,9 +1575,6 @@ class EncoderValue(OnOff):
         self.value_max = float(button._config.get("value-max", 100))
 
         # Internal status
-        self._turns = 0
-        self._cw = 0
-        self._ccw = 0
         self.encoder_current_value = 0
 
         OnOff.__init__(self, button=button)
@@ -1621,7 +1615,7 @@ class EncoderValue(OnOff):
                 self.onoff_current_value = not self.onoff_current_value
             return True
 
-        self.inc("activation_count")  # since super() not called
+        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1631,17 +1625,13 @@ class EncoderValue(OnOff):
             if event.turned_counter_clockwise:  # rotate left
                 x = max(self.value_min, x - self.step)
                 ok = True
-                self._turns = self._turns - 1
-                self._ccw = self._ccw + 1
-                self.inc("turns", -1)
-                self.inc("ccw")
+                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
             elif event.turned_clockwise:  # rotate right
                 x = min(self.value_max, x + self.step)
                 ok = True
-                self._turns = self._turns + 1
-                self._cw = self._cw + 1
-                self.inc("turns")
-                self.inc("cw")
+                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
             else:
                 logger.warning(f"{type(self).__name__} invalid event {event}")
 
@@ -1655,19 +1645,17 @@ class EncoderValue(OnOff):
     def get_activation_value(self):
         return self.encoder_current_value
 
-    def get_state_variables(self):
-        a = super().get_state_variables()
-        if a is None:
-            a = {}
-        return a | {
+    def get_state_variables(self) -> dict:
+        a = {
             "step": self.step,
             "stepxl": self.stepxl,
             "value_min": self.value_min,
             "value_max": self.value_max,
-            "cw": self._cw,
-            "ccw": self._ccw,
-            "turns": self._turns,
+            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
+            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
         }
+        return a | super().get_state_variables()
 
     def describe(self) -> str:
         """
@@ -1683,7 +1671,7 @@ class EncoderValue(OnOff):
         return "\n\r".join(a)
 
 
-class EncoderValueExtended(OnOff):
+class EncoderValueExtended(OnOff, EncoderProperties):
     """
     Activation that maintains an internal value and optionally write that value to a dataref
     """
@@ -1719,9 +1707,6 @@ class EncoderValueExtended(OnOff):
         self.options = button._config.get("options", None)
 
         # Internal status
-        self._turns = 0
-        self._cw = 0
-        self._ccw = 0
         self.encoder_current_value = float(button._config.get("initial-value", 1))
         self._step_mode = self.step
 
@@ -1792,7 +1777,7 @@ class EncoderValueExtended(OnOff):
                     self._step_mode = self.step
                 return True
 
-        self.inc("activation_count")  # since super() not called
+        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1803,17 +1788,13 @@ class EncoderValueExtended(OnOff):
                 if event.turned_counter_clockwise:  # anti-clockwise
                     x = self.decrease(x)
                     ok = True
-                    self._turns = self._turns - 1
-                    self._ccw = self._ccw + 1
-                    self.inc("turns", -1)
-                    self.inc("ccw")
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                 elif event.turned_clockwise:  # clockwise
                     x = self.increase(x)
                     ok = True
-                    self._turns = self._turns + 1
-                    self._cw = self._cw + 1
-                    self.inc("turns")
-                    self.inc("cw")
+                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
             if ok:
                 self.encoder_current_value = x
                 if self._local_dataref is not None:
@@ -1826,19 +1807,17 @@ class EncoderValueExtended(OnOff):
     def get_activation_value(self):
         return self.encoder_current_value
 
-    def get_state_variables(self):
-        a = super().get_state_variables()
-        if a is None:
-            a = {}
-        return a | {
+    def get_state_variables(self) -> dict:
+        a = {
             "step": self.step,
             "stepxl": self.stepxl,
             "value_min": self.value_min,
             "value_max": self.value_max,
-            "cw": self._cw,
-            "ccw": self._ccw,
-            "turns": self._turns,
+            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
+            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
         }
+        return a | super().get_state_variables()
 
     def describe(self) -> str:
         """
@@ -1973,7 +1952,7 @@ class Swipe(Activation):
         )
 
 
-class EncoderToggle(Activation):
+class EncoderToggle(Activation, EncoderProperties):
     """
     Defines a encoder with stepped value coupled to an on/off button.
 
@@ -2001,10 +1980,6 @@ class EncoderToggle(Activation):
             logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least one command")
 
         # Internal status
-        self._turns = 0
-        self._cw = 0
-        self._ccw = 0
-
         self.longpush = True
         self._on = True
 
@@ -2030,7 +2005,7 @@ class EncoderToggle(Activation):
                 self._on = True
             return True
 
-        self.inc("activation_count")  # since super() not called
+        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
@@ -2038,32 +2013,30 @@ class EncoderToggle(Activation):
                     self.command(self._commands[0])
                 else:
                     self.command(self._commands[2])
-                self._turns = self._turns - 1
-                self._ccw = self._ccw + 1
-                self.inc("turns", -1)
-                self.inc("ccw")
+                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+                self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
 
             elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
                 if self._on:
                     self.command(self._commands[1])
-                    self.inc("on")
+                    self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                 else:
                     self.command(self._commands[3])
-                    self.inc("off")
-                self._turns = self._turns + 1
-                self._cw = self._cw + 1
-                self.inc("turns")
-                self.inc("cw")
+                    self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
+                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
+                self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
         return False  # normal termination
 
-    def get_state_variables(self):
-        a = super().get_state_variables()
-        if a is None:
-            a = {}
-        return a | {"cw": self._cw, "ccw": self._ccw, "turns": self._turns}
+    def get_state_variables(self) -> dict:
+        a = {
+            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
+            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+        }
+        return a | super().get_state_variables()
 
     def describe(self) -> str:
         """

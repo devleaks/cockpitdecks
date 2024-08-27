@@ -8,7 +8,7 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFilter
 
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
-from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off
+from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off, is_number
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.simulator import Dataref
 from cockpitdecks.value import Value
@@ -128,13 +128,6 @@ class AnnunciatorPart:
 
     @property
     def value(self):
-        def is_number(n):
-            try:
-                float(n)
-            except ValueError:
-                return False
-            return True
-
         r = self._value.get_value()
         self.lit = r is not None and is_number(r) and float(r) > 0
         # print("PART", self.annunciator.button.name, self.name, r, self.lit, self._value.name, self._value.formula, self._value)

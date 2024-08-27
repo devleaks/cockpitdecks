@@ -225,8 +225,8 @@ class Value:
         # Used in "value"
         self._datarefs = None
         self._string_datarefs = None
-        self._statevars = {}
         self._known_extras = ()
+        self._formula = None
 
         self.init()
 
@@ -328,7 +328,7 @@ class Value:
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
 
         # 2. In string datarefs (formula, text, etc.)
-        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.VIEW_IF.value]
+        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.VIEW_IF.value, CONFIG_KW.CONDITION.value]
         self._known_extras = set(extra_keys + allways_extra)
 
         for key in self._known_extras:
@@ -687,24 +687,44 @@ class Value:
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
 
-        # 3. Multiple datarefs
+        # 3. Activation value
+        if self._button._activation is not None:
+            # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
+            ret = self._button._activation.get_activation_value()
+            if ret is not None:
+                if type(ret) is bool:
+                    ret = 1 if ret else 0
+                logger.info(f"value {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
+                return ret
+
+        # From now on, warning issued since returns non scalar value
+        # 4. Multiple datarefs
         if len(self._datarefs) > 1:
             r = {}
             for d in self.get_all_datarefs():
                 v = self.get_dataref_value(d)
                 r[d] = v
-            logger.debug(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
+            logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
             return r
 
-        logger.debug(f"value {self.name}: no formula, no dataref")
-        # 4. State variables?
+        logger.warning(f"value {self.name}: no formula, no dataref, no activation")
 
+        # 4. State variables?
+        if self._button._activation is not None:
+            r = self._button._activation.get_state_variables()
+            logger.info(f"value {self.name}: {r} (from state variables)")
+            return r
+
+        logger.warning(f"value {self.name}: no value")
         return None
 
     def save(self):
         # Writes the computed button value to set-dataref
         if self._set_dref is not None:
             new_value = self.get_value()
+            if new_value is None:
+                logger.warning(f"value {self.name}: value is None, set to 0")
+                new_value = 0
             self._set_dref.update_value(new_value=new_value, cascade=True)
+            print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_dref.path} to button value {new_value}")
             self._set_dref.save()
-            # print(f"set-dataref>>value {self.name}: button {self._button.name}: set-dataref {self._set_dref.path} = {new_value} ({self._set_dref.value()})")

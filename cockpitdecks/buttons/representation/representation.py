@@ -4,20 +4,9 @@ All representations are listed at the end of this file.
 """
 
 import logging
-import colorsys
 
-from enum import Enum
+from cockpitdecks import ID_SEP, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
-from PIL import ImageDraw, ImageFont
-
-from cockpitdecks.resources.color import (
-    convert_color,
-    is_integer,
-    has_ext,
-    add_ext,
-    DEFAULT_COLOR,
-)
-from cockpitdecks import ID_SEP, CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

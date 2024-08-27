@@ -536,9 +536,6 @@ class Button(DatarefListener, ValueProvider):
     # ##################################
     # Value substitution
     #
-    def substitute_values(self, text, default: str = "0.0", formatting=None):
-        return self._value.substitute_values(text=text, default=default, formatting=formatting)
-
     def execute_formula(self, formula, default: float = 0.0):
         """
         replace datarefs variables with their (numeric) value and execute formula.

@@ -21,11 +21,23 @@ DEFAULT_COLOR_NAME = "grey"
 
 
 def is_integer(s) -> bool:
-    if type(s) is int:
-        return True
-    if type(s) is str:
-        return s.isdigit() or (s.startswith("-") and s[1:].isdigit())
-    return False
+    try:
+        int(s)
+    except ValueError:
+        return False
+    return True
+
+
+def is_float(n):
+    try:
+        float(n)
+    except ValueError:
+        return False
+    return True
+
+
+def is_number(n):
+    return is_integer(n) or is_float(n)
 
 
 def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:

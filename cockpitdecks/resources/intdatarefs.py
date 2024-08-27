@@ -41,6 +41,19 @@ class INTERNAL_DATAREF(Enum):
     BUTTON_REPRESENTATIONS = "representation"
     BUTTON_CLEAN = "clean"
 
+    # ACTIVATION
+    ACTIVATION_COMPLETED = "activation_completed"
+    ACTIVATION_DURATION = "activation_duration"
+    ACTIVATION_COUNT = "activation_count"
+    ACTIVATION_RELEASE = "release_count"
+    ENCODER_TURNS = "turns"
+    ENCODER_CLOCKWISE = "cw"
+    ENCODER_COUNTER_CLOCKWISE = "ccw"
+    ACTIVATION_LONGPUSH = "long-push"
+    ACTIVATION_SHORTPUSH = "short-push"
+    ACTIVATION_ON = "on"
+    ACTIVATION_OFF = "off"
+
     #
     # U D P
     #
