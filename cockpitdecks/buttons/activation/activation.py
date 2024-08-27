@@ -1,7 +1,6 @@
 """
 Button action and activation abstraction
 """
-
 import logging
 import random
 import threading
@@ -205,7 +204,8 @@ class Activation:
         return default
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
-        self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=False)
+
 
     def is_guarded(self):
         # Check this before activating in subclasses if necessary
@@ -263,7 +263,8 @@ class Activation:
     #
     @property
     def activation_count(self):
-        dref = self.button.sim.get_internal_dataref("activation_count")
+        path = ID_SEP.join([self.get_id(), "activation_count"])
+        dref = self.button.sim.get_internal_dataref(path)
         value = dref.value()
         return 0 if value is None else value
 
@@ -281,7 +282,7 @@ class Activation:
 
         # Stats keeping
         s = str(type(event).__name__)
-        self.inc(ID_SEP.join([s, "activation_count"]))
+        self.inc(ID_SEP.join([s, "activations"]))
 
         # Special handling of some events
         if type(event) is not PushEvent:
@@ -338,6 +339,8 @@ class Activation:
             return
         value = self.get_activation_value()
         if value is not None:
+            if type(value) is bool:
+                value = 1 if True else 0
             self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
             logger.debug(f"button {self.button_name()}: {type(self).__name__} updated set-dataref {self._writable_dataref.path} to activation value {value}")
             # print(f"{type(self).__name__} set-dataref>> button {self.button_name()}:  updated set-dataref {self._writable_dataref.path} to activation value {value}")
@@ -1325,10 +1328,9 @@ class EncoderPush(Push):
 
         # Pressed
         if type(event) is PushEvent:
-            if not super().activate(event):
-                return False
+            return super().activate(event)
 
-        self.inc("activation_count") # since super() not called
+        self.inc("activation_count")  # since super() not called
 
         # Turned
         if type(event) is EncoderEvent:
@@ -1463,10 +1465,9 @@ class EncoderOnOff(OnOff):
         if not self.can_handle(event):
             return False
         if type(event) is PushEvent:
-            if not super().activate(event):
-                return False
+            return super().activate(event)
 
-        self.inc("activation_count") # since super() not called
+        self.inc("activation_count")  # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_clockwise:  # rotate clockwise
@@ -1620,7 +1621,7 @@ class EncoderValue(OnOff):
                 self.onoff_current_value = not self.onoff_current_value
             return True
 
-        self.inc("activation_count") # since super() not called
+        self.inc("activation_count")  # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1791,7 +1792,7 @@ class EncoderValueExtended(OnOff):
                     self._step_mode = self.step
                 return True
 
-        self.inc("activation_count") # since super() not called
+        self.inc("activation_count")  # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -2029,7 +2030,7 @@ class EncoderToggle(Activation):
                 self._on = True
             return True
 
-        self.inc("activation_count") # since super() not called
+        self.inc("activation_count")  # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise

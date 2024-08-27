@@ -509,7 +509,7 @@ class Button(DatarefListener, ValueProvider):
     def get_dataref_value(self, dataref, default=None):
         return self.page.get_dataref_value(dataref=dataref, default=default)
 
-    def get_state_value(self, name):
+    def get_state_value(self, name, default: str = "0"):
         value = None
         status = self.get_state_variables()
         source = "all sources"
@@ -524,8 +524,13 @@ class Button(DatarefListener, ValueProvider):
             source = "button attribute"
         else:
             logger.debug(f"button {self.name}: state {name} not found")
+        if value == "True":
+            value = "1"
+        if value == "False":
+            value = "0"
+        if value == "None":
+            value = default
         logger.debug(f"button {self.name}: state {name} = {value} (from {source})")
-        print(f"button {self.name}: state {name} = {value} (from {source})")
         return value
 
     # ##################################
@@ -547,7 +552,7 @@ class Button(DatarefListener, ValueProvider):
     def get_text_detail(self, config, which_text):
         return self._value.get_text_detail(config=config, which_text=which_text)
 
-    def get_text(self, base: dict, root: str = "label"):  # root={label|text}
+    def get_text(self, base: dict, root: str = CONFIG_KW.LABEL.value):  # root={label|text}
         return self._value.get_text(base=base, root=root)
 
     # ##################################
