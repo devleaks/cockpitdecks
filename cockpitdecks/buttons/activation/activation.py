@@ -290,7 +290,7 @@ class Activation:
 
         if event.pressed:
             self.pressed = True
-            self.skip_view = True # we only trigger the view on release
+            self.skip_view = True  # we only trigger the view on release
             self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)
 
             now = datetime.now().timestamp()
@@ -346,7 +346,7 @@ class Activation:
             value = 1 if True else 0
         self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
         logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.path} to activation value {value}")
-        print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
+        # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
 
     def view(self):
         if self._view_macro is not None:

@@ -16,7 +16,7 @@ from cockpitdecks.simulator import (
 )
 from .resources.iconfonts import ICON_FONTS
 from .resources.rpc import RPC
-from .resources.color import convert_color
+from .resources.color import convert_color, is_integer, is_float
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -50,16 +50,8 @@ class Formula:
             return type(formula) is str and "${" in formula  # ${..} to substitute
         if type(formula) in [int, float]:  # it is a constant
             return True
-        try:
-            a = float(formula)  # "123.456"
+        if is_integer(formula) or is_float(formula):
             return True
-        except ValueError:
-            pass
-        try:
-            a = int(formula)  # "123"
-            return True
-        except ValueError:
-            pass
         return False
 
     @property
@@ -582,16 +574,16 @@ class Value:
         if dflt_text_size is None:
             dflt_text_size = self._button.get_attribute("label-size")
             if dflt_text_size is None:
-                logger.warning(f"button {self._button.name}: no default label size, using 10")
                 dflt_text_size = 16
+                logger.warning(f"button {self._button.name}: no default label size, using {dflt_text_size}px")
         text_size = config.get(f"{which_text}-size", dflt_text_size)
 
         dflt_text_color = self._button.get_attribute(f"{which_text}-color")
         if dflt_text_color is None:
             dflt_text_color = self._button.get_attribute("label-color")
             if dflt_text_color is None:
-                logger.warning(f"button {self._button.name}: no default label color, using {DEFAULT_COLOR}")
                 dflt_text_color = DEFAULT_COLOR
+                logger.warning(f"button {self._button.name}: no default label color, using {dflt_text_color}")
         text_color = config.get(f"{which_text}-color", dflt_text_color)
         text_color = convert_color(text_color)
 
@@ -599,8 +591,8 @@ class Value:
         if dflt_text_position is None:
             dflt_text_position = self._button.get_attribute("label-position")
             if dflt_text_position is None:
-                logger.warning(f"button {self._button.name}: no default label position, using cm")
                 dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
+                logger.warning(f"button {self._button.name}: no default label position, using {dflt_text_position}")
         text_position = config.get(f"{which_text}-position", dflt_text_position)
         if text_position[0] not in "lcr":
             text_position = DEFAULT_VALID_TEXT_POSITION
@@ -698,6 +690,7 @@ class Value:
                 return ret
 
         # From now on, warning issued since returns non scalar value
+        #
         # 4. Multiple datarefs
         if len(self._datarefs) > 1:
             r = {}
@@ -726,5 +719,5 @@ class Value:
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0
             self._set_dref.update_value(new_value=new_value, cascade=True)
-            print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_dref.path} to button value {new_value}")
+            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_dref.path} to button value {new_value}")
             self._set_dref.save()
