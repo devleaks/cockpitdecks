@@ -44,6 +44,7 @@ class ButtonBlock:
     def set_block_wallpaper(self, wallpaper):
         # wallpaper is full path
         self.wallpaper = wallpaper
+        loggerButtonType.debug(f"button block screen size {self.sizes}")
 
     def has_wallpaper(self) -> bool:
         return self.wallpaper is not None
@@ -52,11 +53,11 @@ class ButtonBlock:
         # build it on first call, cache it for after
         if self.resized_wallpaper is None:
             if self.wallpaper_image is None:
-                self.wallpaper_image = Image.open(self.wallpaper)
+                self.wallpaper_image = Image.open(self.wallpaper).convert("RGB")
             r1 = self.wallpaper_image.width / self.wallpaper_image.height
             r2 = self.sizes[0] / self.sizes[1]
             if round(r1, 1) != round(r2, 1):
-                loggerButtonType.warning(f"wallpaper aspect ratio differ ({r1}/{r2}, {self.wallpaper_image.size}/{self.sizes})")
+                loggerButtonType.warning(f"wallpaper aspect ratio differ ({round(r1, 3)}/{round(r2, 3)}, {self.wallpaper_image.size}/{self.sizes})")
             self.resized_wallpaper = self.wallpaper_image.resize(self.sizes)
         return self.resized_wallpaper
 
@@ -350,8 +351,7 @@ class DeckTypeBase:
         # this definition is for a single button
         if repeat is None or repeat == [1, 1]:
             name = f"{prefix}{start}"
-            return {
-                name: DeckButton(
+            db = DeckButton(
                     config={
                         DECK_KW.NAME.value: name,
                         DECK_KW.INDEX.value: start,
@@ -368,6 +368,13 @@ class DeckTypeBase:
                     },
                     button_block=bb_class
                 )
+            corners = db.get_corners()
+            if corners is not None:
+                bb_class.offset = corners[:2]
+                bb_class.sizes = (corners[2]-corners[0], corners[3]-corners[1])
+                loggerDeckType.debug(f"{self.driver}: {self.name}: screen size {bb_class.sizes}")
+            return {
+                name: db
             }
 
         # definition is a for a collection of similar buttons
@@ -414,7 +421,7 @@ class DeckTypeBase:
         if ul is not None and br is not None:
             bb_class.offset = ul[:2]
             bb_class.sizes = (br[2]-ul[0], br[3]-ul[1])
-            loggerDeckType.info(f"{self.driver}: {self.name}: screen size {bb_class.sizes}")
+            loggerDeckType.debug(f"{self.driver}: {self.name}: screen size {bb_class.sizes}")
 
         return button_types
 

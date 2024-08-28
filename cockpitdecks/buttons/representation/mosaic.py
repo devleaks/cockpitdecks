@@ -113,7 +113,6 @@ class Mosaic(MultiButtons):
         # IF all "but one" representation is invalid and all other are cached, there is no problem.
         # The overhead here, to paste together all tiles is negligible.
         # But the building of each individual tile is not.
-
         image = self.button.deck.create_icon_for_key(self.button.index, colors=self.cockpit_color, texture=self.cockpit_texture)
         for tile in self.tiles:
             self.place_tile(tile, image)
