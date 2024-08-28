@@ -155,6 +155,10 @@ class Button(DatarefListener, ValueProvider):
         # collection in single set
         self.all_datarefs = self.all_datarefs | self.string_datarefs
 
+        self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
+        if self.wallpaper is not None:
+            self._def.set_block_wallpaper(self.wallpaper)
+
         self.init()
 
     @staticmethod

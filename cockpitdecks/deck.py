@@ -550,6 +550,11 @@ class DeckWithIcons(Deck):
         button_def = self.deck_type.get_button_definition(index)
         return button_def.display_size()
 
+    def get_wallpaper(self, index):
+        """Gets image size for deck button index"""
+        button_def = self.deck_type.get_button_definition(index)
+        return button_def.get_wallpaper()
+
     def create_empty_icon_for_key(self, index):
         return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
 
@@ -640,8 +645,9 @@ class DeckWithIcons(Deck):
         """Create a default icon for supplied key with proper texture or color"""
         image = None
         width, height = self.get_image_size(index)
+        wp = self.get_wallpaper(index) # for this block
         self.inc(INTERNAL_DATAREF.RENDER_CREATE_ICON.value)
-        return self.get_icon_background(
+        return wp if wp is not None else self.get_icon_background(
             name=str(index),
             width=width,
             height=height,

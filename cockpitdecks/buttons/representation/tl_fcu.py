@@ -13,6 +13,19 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
+class FCUBaseIcon(DrawBase):
+    """Displays Toliss Airbus Flight Mode Annunciators on Streamdeck Plus touchscreen"""
+
+    REPRESENTATION_NAME = "fma"
+
+    PARAMETERS = {}
+
+    def __init__(self, button: "Button"):
+        DrawBase.__init__(self, button=button)
+
+        self.fcuconfig = button._config.get("fcu", {})  # should not be none, empty at most...
+
+
 class FCUIcon(DrawBase):
     """Highly customized class to display FCU on Streamdeck Plus touchscreen (whole screen)."""
 

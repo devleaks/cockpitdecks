@@ -199,7 +199,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def add_sys_path(self):
         if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), "resources", "decks", "drivers")
+            pythonpath = os.path.join(os.path.abspath(self.acpath), RESOURCES_FOLDER, DECKS_FOLDER, "drivers")
             if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                 if pythonpath not in sys.path:
                     sys.path.append(pythonpath)
@@ -207,7 +207,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def remove_sys_path(self):
         if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), "resources", "decks", "drivers")
+            pythonpath = os.path.join(os.path.abspath(self.acpath), RESOURCES_FOLDER, DECKS_FOLDER, "drivers")
             if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                 if pythonpath in sys.path:
                     sys.path.remove(pythonpath)
@@ -1561,3 +1561,23 @@ class Cockpit(DatarefListener, CockpitBase):
                 "meta": {"ts": datetime.now().timestamp()},
             }
             self.send(deck=name, payload=payload)
+
+    def locate_image(self, filename):
+        if filename is None:
+            return None
+        places = [
+            os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER),
+            os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER),
+            os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER),
+            os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, "images"),
+            os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER)),
+            os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER, ICONS_FOLDER))
+        ]
+        for directory in places:
+            fn = os.path.abspath(os.path.join(directory, filename))
+            logger.debug(f"trying {fn}")
+            if os.path.exists(fn):
+                logger.debug(f"file {filename} in {fn}")
+                return fn
+        logger.warning(f"file {filename} not found")
+        return None

@@ -10,7 +10,7 @@ from .representation import Representation
 from .icon import IconBase, Icon, IconText, MultiTexts, MultiIcons
 from .icon_animation import IconAnimation
 
-from .mosaic import Mosaic
+from .mosaic import Mosaic, MultiButtons
 
 # Drawing based representation
 from .annunciator import Annunciator, AnnunciatorAnimate

@@ -35,7 +35,7 @@ FMA_BOXES = [
 ]
 # Reproduction on Streamdeck touchscreen colors is difficult.
 FMA_COLORS = {
-    "b": "#0080FF",
+    "b": "#00EEFF",
     "w": "white",
     "g": "#00FF00",
     "m": "#FF00FF",

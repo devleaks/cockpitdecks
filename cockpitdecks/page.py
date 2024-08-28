@@ -98,7 +98,7 @@ class Page:
             logger.warning(f"invalid name {name}")
         return None
 
-    def load_buttons(self, buttons: dict, deck_type: DeckType) -> list:
+    def load_buttons(self, buttons: dict, deck_type: DeckType, add_to_page: bool = True) -> list:
         built = []
         for button_config in buttons:
             button = None
@@ -131,7 +131,8 @@ class Page:
             button_config[DECK_BUTTON_DEFINITION] = deck_type.get_button_definition(idx)
             button = Button(config=button_config, page=self)
             if button is not None:
-                self.add_button(idx, button)
+                if add_to_page:
+                    self.add_button(idx, button)
                 built.append(button)
                 logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
         return built

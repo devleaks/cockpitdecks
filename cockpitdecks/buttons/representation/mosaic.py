@@ -10,7 +10,55 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class Mosaic(IconBase):
+class MultiButtons(IconBase):
+
+    REPRESENTATION_NAME = "multi-buttons"
+
+    PARAMETERS = {}
+
+    def __init__(self, button: "Button"):
+        IconBase.__init__(self, button=button)
+        self.multi_buttons = self._representation_config
+        self.buttons = {}
+        self.current_button = None
+
+        self.load_buttons()  # need to delay init2 after Icon is inited().
+
+    def load_buttons(self):
+        # make buttons!
+        buttons = self.multi_buttons.get(DECK_KW.TILES.value)
+        if buttons is not None:
+            self.buttons = self.button.page.load_buttons(buttons=buttons, deck_type=self.button.deck.deck_type, add_to_page = False)
+            logger.debug(f"load_buttons: loaded buttons {', '.join([t.name for t in self.buttons])}")
+            self.current_button = self.buttons[0]
+        else:
+            logger.warning(f"{self.button.name}: no buttons")
+
+    def num_icons(self):
+        return len(self.buttons)
+
+    def render(self):
+        value = self.get_button_value()
+        if value is None:
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
+            return None
+        if type(value) in [str, int, float]:
+            value = int(value)
+        else:
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
+            return None
+        if self.num_icons() > 0:
+            if value >= 0 and value < self.num_icons():
+                self.current_button = self.buttons[value]
+            else:
+                self.current_button = self.buttons[value % self.num_icons()]
+            return self.current_button.get_representation()
+        else:
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: button not found {value}/{self.num_icons()}")
+        return None
+
+
+class Mosaic(MultiButtons):
     """A Mosaic is an icon that is split into several smaller icon"""
 
     REPRESENTATION_NAME = "mosaic"
@@ -18,13 +66,22 @@ class Mosaic(IconBase):
     PARAMETERS = {}
 
     def __init__(self, button: "Button"):
-        IconBase.__init__(self, button=button)
-        self.mosaic = self._representation_config
-        self.tiles = {}
+        MultiButtons.__init__(self, button=button)
 
-        self.load_tiles()  # need to delay init2 after Icon is inited().
+    @property
+    def mosaic(self):
+        # alias
+        return self._representation_config
 
-    def load_tiles(self):
+    @property
+    def tiles(self):
+        return self.buttons
+
+    @tiles.setter
+    def tiles(self, tiles):
+        self.buttons = tiles
+
+    def load_buttons(self):
         # make buttons!
         buttons = self.mosaic.get(DECK_KW.TILES.value)
         if buttons is not None:

@@ -2,9 +2,11 @@ import os
 import logging
 import json
 import glob
+import posixpath
 from typing import List, Dict, Tuple
 
 from py3rtree import RTree, Rect
+from PIL import Image
 
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER
@@ -28,8 +30,9 @@ class DeckButton:
     For web decks, adds position and sizes information.
     """
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, button_block: dict) -> None:
         self._config = config
+        self._button_block = button_block
         self._inited = False
 
         self.name = config.get(DECK_KW.NAME.value, config.get(DECK_KW.INT_NAME.value))
@@ -102,6 +105,37 @@ class DeckButton:
 
     def get_option(self, option):
         return self.options.get(option)
+
+    def set_block_wallpaper(self, wallpaper):
+        # wallpaper is full path
+        self._button_block["wallpaper"] = wallpaper
+
+    def resized_wallpaper(self):
+        # build it on first call, cache it for after
+        bb = self._button_block
+        if "resized-wallpaper" not in bb:
+            if "wallpaper-image" not in bb:
+                bb["wallpaper-image"] = Image.open(bb["wallpaper"])
+            r1 = bb["wallpaper-image"].width / bb["wallpaper-image"].height
+            r2 = bb["block-size"][0] / bb["block-size"][1]
+            if round(r1, 1) != round(r2, 1):
+                loggerButtonType.warning(f"wallpaper aspect ratio differ ({r1}/{r2}, {bb['wallpaper-image'].size}/{bb['block-size']})")
+            bb["resized-wallpaper"] = bb["wallpaper-image"].resize(bb["block-size"])
+        return bb["resized-wallpaper"]
+
+    def has_wallpaper(self) -> bool:
+        return "wallpaper" in self._button_block and self._button_block["wallpaper"] is not None
+
+    def get_wallpaper(self) -> bool:
+        if not self.has_wallpaper():
+            return None
+        wallpaper = self.resized_wallpaper()
+        if wallpaper is None:
+            loggerButtonType.warning(f"no wallpaper")
+        portion = self.get_corners()
+        if portion is None:
+            loggerButtonType.warning(f"no corners")
+        return wallpaper.crop(portion)
 
     def has_drawing(self):
         return self.position is not None and self.dimension is not None
@@ -187,6 +221,9 @@ class DeckButton:
     def get_corners(self):
         # (left, bottom, right, top)
         sizes = self.display_size()
+        if sizes is None:
+            loggerButtonType.debug(f"{self.name}: no size")
+            return None
         return (self.position[0], self.position[1], self.position[0] + sizes[0], self.position[1] + sizes[1])
 
     def desc(self):
@@ -282,7 +319,7 @@ class DeckTypeBase:
 
         # this definition is for a single button
         if repeat is None or repeat == [1, 1]:
-            name = prefix + str(start)
+            name = f"{prefix}{start}"
             return {
                 name: DeckButton(
                     config={
@@ -298,7 +335,8 @@ class DeckTypeBase:
                         DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
                         DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
-                    }
+                    },
+                    button_block=button_block
                 )
             }
 
@@ -306,9 +344,10 @@ class DeckTypeBase:
         start = int(start)  # should be int, but no test
         button_types = {}
         idx = start
-        for y in range(repeat[1]):
-            for x in range(repeat[0]):
-                name = prefix + str(idx)
+        last = None
+        for y in range(repeat[1]): # top to bottom
+            for x in range(repeat[0]): # left to right
+                name = f"{prefix}{idx}"
                 sizes = button_block.get(DECK_KW.DIMENSION.value)
                 if sizes is None:
                     sizes = [0, 0]
@@ -331,9 +370,16 @@ class DeckTypeBase:
                         DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
                         DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
-                    }
+                    },
+                    button_block=button_block
                 )
                 idx = idx + 1
+                last = button_types[name]
+
+        corners = last.get_corners()
+        if corners is not None:
+            button_block["block-size"] = corners[2:]
+            loggerDeckType.info(f"{self.driver}: {self.name}: {last.name}: screen size {corners[2:]}")
 
         return button_types
 

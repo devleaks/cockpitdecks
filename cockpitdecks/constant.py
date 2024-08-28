@@ -135,6 +135,7 @@ class CONFIG_KW(Enum):
     TYPE = "type"
     VIEW = "view"
     VIEW_IF = "view-if"
+    WALLPAPER = "wallpaper"
 
 
 class ACTIVATION_KW(Enum):
