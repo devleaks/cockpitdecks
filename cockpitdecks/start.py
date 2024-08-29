@@ -56,16 +56,16 @@ class CD_MODE(Enum):
     DEMO = 1
     FIXED = 2
 
-
-
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?",
                     help="aircraft folder for non automatic start")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-f", "--fixed", action="store_true",  help="does not automatically switch aircraft")
+parser.add_argument("-s", "--silent", action="store_true",  help="silence startup information")
 
 args = parser.parse_args()
-print(">>>", args, args.aircraft_folder)
+
+VERBOSE = not args.silent
 
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")

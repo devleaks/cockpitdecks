@@ -16,6 +16,7 @@ from cockpitdecks.simulator import (
     PATTERN_INTSTATE,
 )
 from .resources.iconfonts import ICON_FONTS
+from .resources.color import convert_color
 from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
