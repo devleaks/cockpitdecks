@@ -719,7 +719,7 @@ class DeckWithIcons(Deck):
         """
         pass
 
-    def make_button(self, config):
+    def make_button(self, config: dict):
         # testing. returns random icon
         page = Page(name="_BUTTONDESIGNER", config={}, deck=self)
         page.load_buttons(buttons=[config], deck_type=self.deck_type)

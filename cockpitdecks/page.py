@@ -29,7 +29,6 @@ class Page:
         self.buttons: Dict[str, Button] = {}
         self.button_names: Dict[str, Button] = {}
         self.datarefs: Dict[str, Dataref] = {}
-        self.dataref_collections: Dict[str, DatarefSet] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
 

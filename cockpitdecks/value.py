@@ -74,6 +74,16 @@ class Value:
             else:
                 self._string_datarefs = [self._string_datarefs]
 
+        # there is a special issue if dataref we get value from is also dataref we set
+        # in this case there MUST be a formula to evalute the value before we set it
+        if self.dataref is not None and self.set_dataref is not None:
+            if self.dataref == self.set_dataref:
+                logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
+                # if formula is None:
+                #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
+                # else:
+                #     logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
+
     def get_dataref_value(self, dataref):
         return self._button.get_dataref_value(dataref)
 
@@ -510,16 +520,6 @@ class Value:
     def get_value(self):
         """ """
         formula = self.get_formula()
-
-        # there is a special issue if dataref we get value from is also dataref we set
-        # in this case there MUST be a formula to evalute the value before we set it
-        if self.dataref is not None and self.set_dataref is not None:
-            if self.dataref == self.set_dataref:
-                logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}), result ambiguous (might not be what as expected)")
-                if formula is None:
-                    logger.warning(f"value {self.name}: has no formula, get/set are identical")
-                else:
-                    logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
 
         # 1. If there is a formula, value comes from it
         if formula is not None and formula != "":

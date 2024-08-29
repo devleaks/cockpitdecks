@@ -6,10 +6,9 @@ import logging
 import random
 import threading
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List
 from datetime import datetime
 
-# from cockpitdecks import SPAM
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
@@ -18,6 +17,7 @@ from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PRE
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
 logger = logging.getLogger(__name__)
+# from cockpitdecks import SPAM
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 

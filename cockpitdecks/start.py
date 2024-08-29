@@ -6,6 +6,8 @@ import itertools
 import threading
 import json
 import urllib.parse
+import argparse
+
 from enum import Enum
 
 from flask import Flask, render_template, send_from_directory, request
@@ -49,46 +51,29 @@ DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to 
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 
-
-def print_help():
-    print(
-        """usage: cockpitdecks-cli [ { --help | --demo | directory [fixed] } ]
-
---help, -h, -?: displays command line help and exits
---demo        : starts demo mode, X-plane not needed but used if available, aircraft will not change
-directory     : start from directory if directory contains deckconfig directory (ignored otherwise)
-       fixed  : if 'fixed' added after the directory, aircraft will not change in Cockpitdecks
-
-without any argument:
-- if X-Plane runs on same computer as Cockpitdecks, starts in full automatic mode.
-- if X-Plane does not run on same computer as Cockpitdecks, start demo mode.
-"""
-    )
-
-
 class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
     FIXED = 2
 
 
-ac = sys.argv[1] if len(sys.argv) > 1 else None
-fixed = sys.argv[2] if len(sys.argv) > 2 else None
 
-if ac in ["--help", "-h", "-?"]:  # command line help
-    print_help()
-    sys.exit(0)
+parser = argparse.ArgumentParser(description="Start Cockpitdecks")
+parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?",
+                    help="aircraft folder for non automatic start")
+parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
+parser.add_argument("-f", "--fixed", action="store_true",  help="does not automatically switch aircraft")
+
+args = parser.parse_args()
+print(">>>", args, args.aircraft_folder)
 
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
     sys.exit(1)
 
-mode = CD_MODE.DEMO if ac == "--demo" else CD_MODE.NORMAL
-if ac is not None and ac != "--demo":
-    if ac.startswith("-"):
-        print(f"invalid {ac} command line switch")
-        print_help()
-        sys.exit(1)
+mode = CD_MODE.DEMO if args.demo else CD_MODE.NORMAL
+ac = args.aircraft_folder
+if ac is not None:
     target_dir = os.path.abspath(os.path.join(os.getcwd(), ac))
     if not os.path.exists(target_dir) or not os.path.isdir(target_dir):
         print(f"{target_dir} directory not found")
@@ -99,7 +84,7 @@ if ac is not None and ac != "--demo":
         sys.exit(1)
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
     AIRCRAFT_DESC = os.path.basename(ac)
-    mode = CD_MODE.FIXED if fixed in ["--fixed", "fixed", "fix", "f"] else CD_MODE.NORMAL
+    mode = CD_MODE.FIXED if args.fixed else CD_MODE.NORMAL
 elif ac is None and XP_HOME is None:
     mode = CD_MODE.DEMO
     if VERBOSE:
@@ -112,9 +97,9 @@ if VERBOSE:
 # COCKPITDECKS STARTS HERE, REALLY
 #
 print(f"\n\n{__NAME__.title()} {__version__} {__COPYRIGHT__}\n{DESC}\n")
-logger.info(f"Initializing Cockpitdecks..")
+logger.info("Initializing Cockpitdecks..")
 cockpit = Cockpit(XPlane)
-logger.info("..initialized")
+logger.info("..initialized\n")
 
 
 # ##################################

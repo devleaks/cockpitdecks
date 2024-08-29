@@ -362,7 +362,7 @@ class TouchEvent(DeckEvent):
     def xy(self):
         return (self.pos_x, self.pos_y)
 
-    def swipe(self) -> SwipeEvent | None:
+    def swipe(self, autorun: bool = True) -> SwipeEvent | None:
         if self.start is not None:
             return SwipeEvent(
                 deck=self.deck,
@@ -373,6 +373,6 @@ class TouchEvent(DeckEvent):
                 end_pos_x=self.pos_x,
                 end_pos_y=self.pos_y,
                 end_ts=self.timestamp,
-                autorun=autorun,
+                autorun=autorun
             )
         return None
