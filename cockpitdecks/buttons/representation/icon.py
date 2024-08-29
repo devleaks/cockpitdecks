@@ -57,8 +57,9 @@ class IconBase(Representation):
                 logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label horizontal position code {self.label_position[0]}")
             if self.label_position[1] not in "tmb":
                 logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label vertical position code {self.label_position[1]}")
+            self.label_position = button.get_attribute("default-label-position")
             logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({default_position})"
+                f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({self.label_position})"
             )
 
         self.cockpit_color = button.get_attribute("cockpit-color")

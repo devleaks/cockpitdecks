@@ -13,11 +13,12 @@ from PIL import ImageColor
 
 logger = logging.getLogger(__name__)
 
-TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
 TRANSPARENT_PNG_COLOR_BLACK = (0, 0, 0, 0)  # black-based
+TRANSPARENT_PNG_COLOR_WHITE = (255, 255, 255, 0)  # white
+TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
 
-DEFAULT_COLOR = (128, 128, 128)
 DEFAULT_COLOR_NAME = "grey"
+DEFAULT_COLOR = (128, 128, 128)
 
 
 def is_integer(s) -> bool:
@@ -40,7 +41,7 @@ def is_number(n):
     return is_integer(n) or is_float(n)
 
 
-def convert_color(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
+def convert_color(instr: str | None | tuple | list) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     # process either a color name or a color tuple as a string "(1, 2, 3)"
     # and returns a tuple of 3 or 4 integers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.
@@ -79,9 +80,8 @@ def convert_color_hsl(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]
 
 def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tuple[int, int, int]:
     # Darkens (or lighten) a color
-    if type(color) not in [tuple, list]:
-        color = convert_color(color)
-    a = list(colorsys.rgb_to_hls(*[c / 255 for c in color]))
+    temp_color = color if type(color) in [tuple, list] else convert_color(color)
+    a = list(colorsys.rgb_to_hls(*[c / 255 for c in temp_color]))
     a[1] = lightness
     return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
 

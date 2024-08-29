@@ -41,6 +41,7 @@ class Button(DatarefListener, ValueProvider):
         self._def = config.get(DECK_BUTTON_DEFINITION)
         self.page: "Page" = page
         self.mosaic = self._def.is_tile()
+        self._part_of_multi = False
         self.deck = page.deck
         self.sim = self.deck.cockpit.sim  # shortcut alias
 
@@ -724,7 +725,9 @@ class Button(DatarefListener, ValueProvider):
         to ask to the button and render it.
         """
         if self.deck is not None:
-            if self.on_current_page() and not self.mosaic:
+            if self.on_current_page() and not self.mosaic and not self._part_of_multi:
+                # Mosaic and buttons parts of a multi-buttons cannot take the initiative to render themselves.
+                # Instruction to render has to come from "parent" button.
                 try:
                     self.deck.render(self)
                 except:

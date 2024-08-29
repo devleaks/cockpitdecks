@@ -1571,7 +1571,7 @@ class Cockpit(DatarefListener, CockpitBase):
             os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER),
             os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, "images"),
             os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER)),
-            os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER, ICONS_FOLDER))
+            os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER, ICONS_FOLDER)),
         ]
         for directory in places:
             fn = os.path.abspath(os.path.join(directory, filename))

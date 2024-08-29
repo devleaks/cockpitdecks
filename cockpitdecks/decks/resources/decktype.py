@@ -23,6 +23,7 @@ loggerButtonType = logging.getLogger("ButtonType")
 loggerDeckType = logging.getLogger("DeckType")
 # loggerDeckType.setLevel(logging.DEBUG)
 
+
 class ButtonBlock:
     """Defines a button on a deck, its capabilities, its representation.
 
@@ -352,30 +353,28 @@ class DeckTypeBase:
         if repeat is None or repeat == [1, 1]:
             name = f"{prefix}{start}"
             db = DeckButton(
-                    config={
-                        DECK_KW.NAME.value: name,
-                        DECK_KW.INDEX.value: start,
-                        DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
-                        DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
-                        DECK_KW.HANDLE.value: button_block.get(DECK_KW.HANDLE.value),
-                        DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
-                        DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
-                        DECK_KW.POSITION.value: offset,
-                        DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value, [0, 0]),
-                        DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
-                        DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
-                        DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
-                    },
-                    button_block=bb_class
-                )
+                config={
+                    DECK_KW.NAME.value: name,
+                    DECK_KW.INDEX.value: start,
+                    DECK_KW.PREFIX.value: button_block.get(DECK_KW.PREFIX.value),
+                    DECK_KW.RANGE.value: button_block.get(DECK_KW.RANGE.value),
+                    DECK_KW.HANDLE.value: button_block.get(DECK_KW.HANDLE.value),
+                    DECK_KW.ACTION.value: button_block.get(DECK_KW.ACTION.value),
+                    DECK_KW.FEEDBACK.value: button_block.get(DECK_KW.FEEDBACK.value),
+                    DECK_KW.POSITION.value: offset,
+                    DECK_KW.DIMENSION.value: button_block.get(DECK_KW.DIMENSION.value, [0, 0]),
+                    DECK_KW.LAYOUT.value: button_block.get(DECK_KW.LAYOUT.value),
+                    DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
+                    DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
+                },
+                button_block=bb_class,
+            )
             corners = db.get_corners()
             if corners is not None:
                 bb_class.offset = corners[:2]
-                bb_class.sizes = (corners[2]-corners[0], corners[3]-corners[1])
+                bb_class.sizes = (corners[2] - corners[0], corners[3] - corners[1])
                 loggerDeckType.debug(f"{self.driver}: {self.name}: screen size {bb_class.sizes}")
-            return {
-                name: db
-            }
+            return {name: db}
 
         # definition is a for a collection of similar buttons
         start = int(start)  # should be int, but no test
@@ -383,8 +382,8 @@ class DeckTypeBase:
         idx = start
         first = None
         last = None
-        for y in range(repeat[1]): # top to bottom
-            for x in range(repeat[0]): # left to right
+        for y in range(repeat[1]):  # top to bottom
+            for x in range(repeat[0]):  # left to right
                 name = f"{prefix}{idx}"
                 sizes = button_block.get(DECK_KW.DIMENSION.value)
                 if sizes is None:
@@ -409,7 +408,7 @@ class DeckTypeBase:
                         DECK_KW.MOSAIC.value: button_block.get(DECK_KW.MOSAIC.value),
                         DECK_KW.OPTIONS.value: button_block.get(DECK_KW.OPTIONS.value),
                     },
-                    button_block=bb_class
+                    button_block=bb_class,
                 )
                 idx = idx + 1
                 if first is None:
@@ -420,7 +419,7 @@ class DeckTypeBase:
         br = last.get_corners()
         if ul is not None and br is not None:
             bb_class.offset = ul[:2]
-            bb_class.sizes = (br[2]-ul[0], br[3]-ul[1])
+            bb_class.sizes = (br[2] - ul[0], br[3] - ul[1])
             loggerDeckType.debug(f"{self.driver}: {self.name}: screen size {bb_class.sizes}")
 
         return button_types

@@ -37,6 +37,7 @@ SDL_MCAST_GRP = "239.255.1.1"
 SDL_UPDATE_FREQ = 5.0  # same starting value as PI_string_datarefs_udp.FREQUENCY  (= 5.0 default)
 SDL_SOCKET_TIMEOUT = SDL_UPDATE_FREQ + 1.0  # should be larger or equal to PI_string_datarefs_udp.FREQUENCY
 
+XP_MIN_VERSION = 121100
 
 # When this dataref changes, the loaded aircraft has changed
 #
@@ -219,6 +220,11 @@ class XPlaneBeacon:
                     self.FindIp()
                     if self.connected:
                         logger.info(self.beacon_data)
+                        if "XPlaneVersion" in self.beacon_data:
+                            curr = self.beacon_data["XPlaneVersion"]
+                            if curr < XP_MIN_VERSION:
+                                logger.warning(f"X-Plane version {curr} detected, minimal version is {XP_MIN_VERSION}.")
+                                logger.warning(f"Some features in Cockpitdecks may not work properly.")
                         logger.debug("..connected, starting dataref listener..")
                         self.start()
                         self.inc(INTERNAL_DATAREF.STARTS.value)

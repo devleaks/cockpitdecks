@@ -20,7 +20,7 @@ class MultiButtons(IconBase):
         IconBase.__init__(self, button=button)
         self.multi_buttons = self._representation_config
         self.buttons = {}
-        self.current_button = None
+        self.current_value = None
 
         self.load_buttons()  # need to delay init2 after Icon is inited().
 
@@ -28,9 +28,11 @@ class MultiButtons(IconBase):
         # make buttons!
         buttons = self.multi_buttons.get(DECK_KW.TILES.value)
         if buttons is not None:
-            self.buttons = self.button.page.load_buttons(buttons=buttons, deck_type=self.button.deck.deck_type, add_to_page = False)
+            self.buttons = self.button.page.load_buttons(buttons=buttons, deck_type=self.button.deck.deck_type, add_to_page=False)
+            for b in self.buttons:
+                b._part_of_multi = True
             logger.debug(f"load_buttons: loaded buttons {', '.join([t.name for t in self.buttons])}")
-            self.current_button = self.buttons[0]
+            self.current_value = 0
         else:
             logger.warning(f"{self.button.name}: no buttons")
 
@@ -48,14 +50,16 @@ class MultiButtons(IconBase):
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
             return None
         if self.num_icons() > 0:
-            if value >= 0 and value < self.num_icons():
-                self.current_button = self.buttons[value]
-            else:
-                self.current_button = self.buttons[value % self.num_icons()]
-            return self.current_button.get_representation()
+            self.current_value = value if value >= 0 and value < self.num_icons() else value % self.num_icons()
+            return self.buttons[self.current_value].get_representation()
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: button not found {value}/{self.num_icons()}")
         return None
+
+    def clean(self):
+        for button in self.buttons:
+            button.clean()
+        super().clean()
 
 
 class Mosaic(MultiButtons):
@@ -117,8 +121,3 @@ class Mosaic(MultiButtons):
         for tile in self.tiles:
             self.place_tile(tile, image)
         return image
-
-    def clean(self):
-        for tile in self.tiles:
-            tile.clean()
-        super().clean()

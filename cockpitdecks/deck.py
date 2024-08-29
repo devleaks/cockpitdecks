@@ -645,16 +645,20 @@ class DeckWithIcons(Deck):
         """Create a default icon for supplied key with proper texture or color"""
         image = None
         width, height = self.get_image_size(index)
-        wp = self.get_wallpaper(index) # for this block
+        wp = self.get_wallpaper(index)  # for this block
         self.inc(INTERNAL_DATAREF.RENDER_CREATE_ICON.value)
-        return wp if wp is not None else self.get_icon_background(
-            name=str(index),
-            width=width,
-            height=height,
-            texture_in=texture,
-            color_in=colors,
-            use_texture=True,
-            who=type(self).__name__,
+        return (
+            wp
+            if wp is not None
+            else self.get_icon_background(
+                name=str(index),
+                width=width,
+                height=height,
+                texture_in=texture,
+                color_in=colors,
+                use_texture=True,
+                who=type(self).__name__,
+            )
         )
 
     def scale_icon_for_key(self, index, image, name: str | None = None):

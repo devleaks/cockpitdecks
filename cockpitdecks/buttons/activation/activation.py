@@ -6,7 +6,7 @@ import logging
 import random
 import threading
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 from datetime import datetime
 
 # from cockpitdecks import SPAM
@@ -343,10 +343,10 @@ class Activation:
             logger.debug(f"button {self.button_name()}: {type(self).__name__} activation value is none")
             return
         if type(value) is bool:
-            value = 1 if True else 0
+            value = 1 if value else 0
         self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
         logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.path} to activation value {value}")
-        # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
+        print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
 
     def view(self):
         if self._view_macro is not None:
@@ -365,6 +365,9 @@ class Activation:
         if result:  # terminated without error
             if self.activation_requires_modification_set_dataref:
                 self.set_dataref()
+            else:
+                logger.debug(f"button {self.button_name()}: {type(self).__name__} activation does not set-dataref ({event})")
+                self.activation_requires_modification_set_dataref = True  # reset it
             # Optionally affect cockpit view to concentrate on event consequences
             if self.skip_view:
                 self.skip_view = False

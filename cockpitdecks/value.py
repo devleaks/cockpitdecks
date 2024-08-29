@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Tuple
 import logging
 import re
 from abc import ABC
@@ -16,7 +17,6 @@ from cockpitdecks.simulator import (
 )
 from .resources.iconfonts import ICON_FONTS
 from .resources.rpc import RPC
-from .resources.color import convert_color, is_integer, is_float
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -24,18 +24,19 @@ logger = logging.getLogger(__name__)
 
 class DatarefValueProvider(ABC):
     @abstractmethod
-    def get_dataref_value(name: str):
+    def get_dataref_value(self, name: str):
         pass
 
 
 class StateVariableProvider(ABC):
     @abstractmethod
-    def get_state_value(name: str):
+    def get_state_value(self, name: str):
         pass
 
 
 class ValueProvider(DatarefValueProvider, StateVariableProvider):
-    pass
+    def __init__(self):
+        self.sim = None
 
 
 class Value:
@@ -58,10 +59,10 @@ class Value:
             self._set_dref.set_writable()
 
         # Used in "value"
-        self._datarefs = None
-        self._string_datarefs = None
-        self._known_extras = ()
-        self._formula = None
+        self._datarefs: set | None = None
+        self._string_datarefs: set | None = None
+        self._known_extras: Tuple[str] = tuple()
+        self._formula: str | None = None
 
         self.init()
 
@@ -470,7 +471,7 @@ class Value:
 
         # Substituing icons in icon fonts
         for k, v in ICON_FONTS.items():
-            if text_font.lower().startswith(v[0].lower()): # should be equal, except extension?
+            if text_font.lower().startswith(v[0].lower()):  # should be equal, except extension?
                 s = "\\${%s:([^\\}]+?)}" % (k)
                 icons = re.findall(s, text)
                 for i in icons:
@@ -508,8 +509,19 @@ class Value:
     #
     def get_value(self):
         """ """
-        # 1. If there is a formula, value comes from it
         formula = self.get_formula()
+
+        # there is a special issue if dataref we get value from is also dataref we set
+        # in this case there MUST be a formula to evalute the value before we set it
+        if self.dataref is not None and self.set_dataref is not None:
+            if self.dataref == self.set_dataref:
+                logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}), result ambiguous (might not be what as expected)")
+                if formula is None:
+                    logger.warning(f"value {self.name}: has no formula, get/set are identical")
+                else:
+                    logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
+
+        # 1. If there is a formula, value comes from it
         if formula is not None and formula != "":
             ret = self.execute_formula(formula=formula)
             logger.debug(f"value {self.name}: {ret} (from formula)")
@@ -529,7 +541,7 @@ class Value:
             if ret is not None:
                 if type(ret) is bool:
                     ret = 1 if ret else 0
-                logger.info(f"value {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
+                logger.debug(f"value {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
                 return ret
 
         # From now on, warning issued since returns non scalar value

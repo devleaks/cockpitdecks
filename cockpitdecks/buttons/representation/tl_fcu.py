@@ -4,9 +4,27 @@
 # Vertical: present half FCU left or right.
 # These buttons are *highly* X-Plane and Toliss Airbus specific.
 #
+# "speed": "sim/cockpit2/autopilot/airspeed_dial_kts_mach",
+# "altitude": "sim/cockpit2/autopilot/altitude_dial_ft",
+# "heading": "sim/cockpit/autopilot/heading_mag",
+# "vertspeed": "sim/cockpit/autopilot/vertical_velocity",
+# "speed_managed": "AirbusFBW/SPDmanaged",
+# "lnav_managed": "AirbusFBW/HDGmanaged",
+# "vnav_managed": "AirbusFBW/ALTmanaged",
+# "mach": "sim/cockpit/autopilot/airspeed_is_mach",
+# "track": "AirbusFBW/HDGTRKmode",
+# "vsdashed": "AirbusFBW/VSdashed",
+# "spddashed": "AirbusFBW/SPDdashed",
+# "hdgdashed": "AirbusFBW/HDGdashed",
+# "barostd": "AirbusFBW/BaroStdCapt",
+# "barounit": "AirbusFBW/BaroUnitCapt",
+# "barohg": "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot",
+#
 import logging
 
 from cockpitdecks import ICON_SIZE
+from cockpitdecks.value import Value
+
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
@@ -16,14 +34,68 @@ logger = logging.getLogger(__name__)
 class FCUBaseIcon(DrawBase):
     """Displays Toliss Airbus Flight Mode Annunciators on Streamdeck Plus touchscreen"""
 
-    REPRESENTATION_NAME = "fma"
+    REPRESENTATION_NAME = "fcu-base"
 
     PARAMETERS = {}
 
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
 
-        self.fcuconfig = button._config.get("fcu", {})  # should not be none, empty at most...
+        self.mode = Value(name="modes", config=self.fcu_config, button=self.button)
+        self.main_value = Value(name="main", config=self.fcu_config.get("main"), button=self.button)
+        self.alt_value = Value(name="alt", config=self.fcu_config.get("alt"), button=self.button)
+        self.managed_value = Value(name="managed", config=self.fcu_config.get("managed"), button=self.button)
+        self.icon_color = self.fcu_config.get("icon-bg-color", "#101010")
+
+    @property
+    def fcu_config(self):
+        return self._representation_config
+
+    def get_datarefs(self) -> set:
+        return set(self.mode.get_datarefs() | self.main_value.get_datarefs() | self.alt_value.get_datarefs() | self.managed_value.get_datarefs())
+
+    def get_image_for_icon(self):
+        return None
+
+    def describe(self) -> str:
+        return "The representation is specific to Toliss Airbus and display the one element of the FCU: QNH, SPEED, HEADING, ALTITUDE, or VERTICAL SPEED."
+
+    def get_image_for_icon(self):
+        image, draw = self.double_icon()
+        inside = round(0.04 * ICON_SIZE + 0.5)
+        # pylint: disable=W0612
+
+        mode = self.mode.get_value()
+        print("mode", mode)
+
+        main = self.main_value.get_value()
+        print("main", main)
+
+        alt = self.alt_value.get_value()
+        print("alt", alt)
+
+        managed = self.managed_value.get_value()
+        print("managed", managed)
+
+        # This is for the header text
+        text, text_format, text_font, text_color, text_size, text_position = self.main_value.get_text_detail(config=self.main_value._config, which_text="text")
+
+        # This is for the value
+        text, text_format, text_font, text_color, text_size, text_position = self.main_value.get_text_detail(config=self.main_value._config, which_text="data")
+
+        # Paste image on cockpit background and return it.
+        bg = self.button.deck.get_icon_background(
+            name=self.button_name(),
+            width=2 * ICON_SIZE,
+            height=2 * ICON_SIZE,
+            texture_in=None,
+            color_in=self.icon_color,
+            use_texture=False,
+            who="FCU-BASE",
+        )
+        bg.alpha_composite(image)
+        self._cached = bg
+        return self._cached
 
 
 class FCUIcon(DrawBase):
@@ -35,32 +107,16 @@ class FCUIcon(DrawBase):
 
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
-        self.fcuconfig = button._config.get("fcu")
+
         self.mode: str = self.fcuconfig.get("mode", "horizontal")  # type: ignore # horizontal, vertical-left, vertical-right
-        self._cached = None
         self.icon_color = "#101010"
+
+    @property
+    def fcuconfig(self):
+        return self._representation_config
 
     def describe(self) -> str:
         return "The representation is specific to Toliss Airbus and display the Flight Control Unit (FCU)."
-
-    def get_fcu_datarefs(self):
-        return {
-            "speed": "sim/cockpit2/autopilot/airspeed_dial_kts_mach",
-            "altitude": "sim/cockpit2/autopilot/altitude_dial_ft",
-            "heading": "sim/cockpit/autopilot/heading_mag",
-            "vertspeed": "sim/cockpit/autopilot/vertical_velocity",
-            "speed_managed": "AirbusFBW/SPDmanaged",
-            "lnav_managed": "AirbusFBW/HDGmanaged",
-            "vnav_managed": "AirbusFBW/ALTmanaged",
-            "mach": "sim/cockpit/autopilot/airspeed_is_mach",
-            "track": "AirbusFBW/HDGTRKmode",
-            "vsdashed": "AirbusFBW/VSdashed",
-            "spddashed": "AirbusFBW/SPDdashed",
-            "hdgdashed": "AirbusFBW/HDGdashed",
-            "barostd": "AirbusFBW/BaroStdCapt",
-            "barounit": "AirbusFBW/BaroUnitCapt",
-            "barohg": "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot",
-        }
 
     def get_image_for_icon(self):
         if self.mode == "vertical-left":
