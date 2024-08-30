@@ -174,3 +174,4 @@ datarefs.yaml
 weather.json
 cockpitdecks/config.py
 datarefs-log.yaml
+events.json

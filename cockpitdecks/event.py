@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from math import sqrt
 import logging
+import json
 
 from cockpitdecks import DECK_ACTIONS
 
@@ -71,6 +72,12 @@ class Event(ABC):
     @abstractmethod
     def run(self, just_do_it: bool = False) -> bool:
         return False
+
+    def to_json(self):
+        return json.dumps({
+            "type": type(self).__name__,
+            "ts": self._ts
+        })
 
 
 class DeckEvent(Event):

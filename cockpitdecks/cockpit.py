@@ -68,6 +68,15 @@ if LOGFILE is not None:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+EVENTLOGFILE = "events.json"
+event_logger = logging.getLogger("events")
+if EVENTLOGFILE is not None:
+    formatter = logging.Formatter('{"ts": "%(asctime)s", "event": %(message)s}')
+    handler = logging.FileHandler(EVENTLOGFILE, mode="w")
+    handler.setFormatter(formatter)
+    event_logger.addHandler(handler)
+    event_logger.propagate = False
+
 # IMPORTANT: These are rendez-vous point for JavaScript code
 #
 DECK_TYPE_ORIGINAL = "deck-type-desc"
@@ -111,6 +120,7 @@ class Cockpit(DatarefListener, CockpitBase):
         DatarefListener.__init__(self)
 
         # Defaults and config
+        self._startup_time = datetime.now()
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
         self._config = {}  # content of aircraft/deckconfig/config.yaml
@@ -160,6 +170,12 @@ class Cockpit(DatarefListener, CockpitBase):
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         self._acname = ""
         self._livery_path = ""
+
+        #
+        # Global parameters that affect colors
+        # and deck LCD backlight
+        self.global_luminosity = 1.0
+        self.global_brightness = 1.0
 
         self.init()
 
@@ -948,12 +964,12 @@ class Cockpit(DatarefListener, CockpitBase):
     #
     def start_event_loop(self):
         if not self.event_loop_run:
-            self.event_loop_thread = threading.Thread(target=self.event_loop, name=f"Cockpit::event_loop")
+            self.event_loop_thread = threading.Thread(target=self.event_loop, name="Cockpit::event_loop")
             self.event_loop_run = True
             self.event_loop_thread.start()
-            logger.debug(f"started")
+            logger.debug("started")
         else:
-            logger.warning(f"already running")
+            logger.warning("already running")
 
     def event_loop(self):
         logger.debug("starting event loop..")
@@ -974,6 +990,8 @@ class Cockpit(DatarefListener, CockpitBase):
             try:
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
+                if EVENTLOGFILE is not None:
+                    event_logger.info(e.to_json())
                 e.run(just_do_it=True)
                 logger.debug("..done without error")
             except:
@@ -1056,17 +1074,17 @@ class Cockpit(DatarefListener, CockpitBase):
         """
         # A security... if we get called we must ensure reloader is running...
         if just_do_it:
-            logger.info(f"reloading decks..")
+            logger.info("reloading decks..")
             self.busy_reloading = True
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
             for name, deck in self.cockpit.items():
                 self.default_pages[name] = deck.current_page.name
             self.load_aircraft(self.acpath)  # will terminate it before loading again
             self.busy_reloading = False
-            logger.info(f"..done")
+            logger.info("..done")
         else:
             self.event_queue.put("reload")
-            logger.debug(f"enqueued")
+            logger.debug("enqueued")
 
     def stop_decks(self, just_do_it: bool = False):
         """
@@ -1074,11 +1092,11 @@ class Cockpit(DatarefListener, CockpitBase):
         since we are called from it ... So we just tell it to terminate.
         """
         if just_do_it:
-            logger.info(f"stopping decks..")
+            logger.info("stopping decks..")
             self.terminate_all()
         else:
             self.event_queue.put("stop")
-            logger.debug(f"enqueued")
+            logger.debug("enqueued")
 
     def get_livery(self, path: str) -> str:
         return os.path.basename(os.path.normpath(path))
@@ -1151,7 +1169,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.load_aircraft(acpath=new_ac)
                     return  # no additional processing
                 else:
-                    logger.info(f"aircraft path not found, aircraft not adjusted")
+                    logger.info("aircraft path not found, aircraft not adjusted")
 
         # Adjustment of livery
         old_livery = self._livery_dataref.value()
@@ -1165,9 +1183,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 self.reload_decks()
 
     def terminate_aircraft(self):
-        logger.info(f"terminating..")
-        import sys
-
+        logger.info("terminating..")
         # Spit stats, should be on debug
         drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal()
         # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
@@ -1184,7 +1200,7 @@ class Cockpit(DatarefListener, CockpitBase):
         if nt > 1:
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
-        logger.info(f"..done")
+        logger.info("..done")
         logger.info(f"{os.path.basename(self.acpath)} terminated " + "-" * 50)
 
     def terminate_devices(self):
@@ -1197,14 +1213,14 @@ class Cockpit(DatarefListener, CockpitBase):
             DECK_DRIVERS[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
-        logger.info(f"terminating..")
+        logger.info("terminating..")
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
-            logger.info(f"..event loop stopped..")
+            logger.info("..event loop stopped..")
         # Terminate decks
         self.terminate_aircraft()
-        logger.info(f"..aircraft terminated..")
+        logger.info("..aircraft terminated..")
         # Terminate dataref collection
         if self.sim is not None:
             logger.info("..terminating connection to simulator..")
@@ -1213,9 +1229,9 @@ class Cockpit(DatarefListener, CockpitBase):
             del self.sim
             self.sim = None
             logger.debug("..connection to simulator deleted..")
-        logger.info(f"..terminating devices..")
+        logger.info("..terminating devices..")
         self.terminate_devices()
-        logger.info(f"..done")
+        logger.info("..done")
         left = len(threading.enumerate())
         if left > threads:  # [MainThread and spinner]
             logger.error(f"{left} threads remaining")
@@ -1226,17 +1242,17 @@ class Cockpit(DatarefListener, CockpitBase):
         if len(self.cockpit) > 0:
             # Each deck should have been started
             # Start reload loop
-            logger.info(f"starting..")
+            logger.info("starting..")
             self.sim.connect()
-            logger.info(f"..connect to simulator loop started..")
+            logger.info("..connect to simulator loop started..")
             self.start_event_loop()
-            logger.info(f"..event loop started..")
+            logger.info("..event loop started..")
             if self.has_web_decks():
                 self.handle_code(code=4, name="init")  # wake up proxy
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
-            logger.info(f"(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
-            logger.info(f"..started")
+            logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
+            logger.info("..started")
             if not release or not self.has_web_decks():
                 logger.info(f"serving {self.name}")
                 for t in threading.enumerate():
@@ -1247,7 +1263,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.info("terminated")
             logger.info(f"serving {self.name} (released)")
         else:
-            logger.warning(f"no deck")
+            logger.warning("no deck")
             if self.acpath is not None:
                 self.terminate_all()
 

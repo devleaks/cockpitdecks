@@ -1,6 +1,8 @@
 # ##############################
 #
-# MAIN SYSTEM CINFIGURATION FILE
+# MAIN SYSTEM CONFIGURATION FILE
+#
+# Default values assume Cockpitdecks runs on same host as X-Plane
 #
 import os
 
@@ -16,8 +18,7 @@ VERBOSE = True
 XP_HOST = "127.0.0.1"
 XP_HOME = os.getenv("XP_HOME", os.path.join(os.sep, "Applications", "X-Plane 12"))
 
-# or...
-# XP_HOST = "remotexplanehost"
+# or, if X-Plane not present on this host
 # XP_HOME = None
 
 API_PORT = "8086"  # API is only available if running on the same host (or use a proxy)

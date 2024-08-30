@@ -79,7 +79,8 @@ class Value:
         # in this case there MUST be a formula to evalute the value before we set it
         if self.dataref is not None and self.set_dataref is not None:
             if self.dataref == self.set_dataref:
-                logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
+                if self.formula == '':
+                    logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
                 # if formula is None:
                 #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
                 # else:
