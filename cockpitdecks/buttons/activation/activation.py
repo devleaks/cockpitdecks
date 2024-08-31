@@ -346,7 +346,7 @@ class Activation:
             value = 1 if value else 0
         self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
         logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.path} to activation value {value}")
-        print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
+        # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
 
     def view(self):
         if self._view_macro is not None:

@@ -27,6 +27,7 @@ RELEASE = "1.1.0"  # local version number
 #
 # Changelog:
 #
+# 23-AUG-2024: 1.1.1: Wrong if/then/else
 # 23-AUG-2024: 1.1.0: Added datarefs to allow for external monitoring
 # 21-AUG-2024: 1.0.4: Add defaults if requested
 # 26-JUL-2024: 1.0.3: Added string-dataref (singular)
@@ -171,9 +172,9 @@ class PythonInterface:
                         xp.sendMessageToPlugin(dre, 0x01000000, path)
                     if self.trace:
                         print(self.Info, f"XPluginEnable: data accessors registered with {sig}.")
-            else:
-                if self.trace:
-                    print(self.Info, f"XPluginEnable: plugin {sig} not found.")
+                else:
+                    if self.trace:
+                        print(self.Info, f"XPluginEnable: plugin {sig} not found.")
 
         try:
             ac = xp.getNthAircraftModel(0)  # ('Cessna_172SP.acf', '/Volumns/SSD1/X-Plane/Aircraft/Laminar Research/Cessna 172SP/Cessna_172SP.acf')

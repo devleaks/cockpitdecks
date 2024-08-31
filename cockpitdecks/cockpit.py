@@ -990,7 +990,7 @@ class Cockpit(DatarefListener, CockpitBase):
             try:
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
-                if EVENTLOGFILE is not None:
+                if EVENTLOGFILE is not None and type(e).__name__ != "DatarefEvent":
                     event_logger.info(e.to_json())
                 e.run(just_do_it=True)
                 logger.debug("..done without error")

@@ -73,11 +73,11 @@ class Event(ABC):
     def run(self, just_do_it: bool = False) -> bool:
         return False
 
+    def info(self):
+        return {"type": type(self).__name__, "ts": self._ts}
+
     def to_json(self):
-        return json.dumps({
-            "type": type(self).__name__,
-            "ts": self._ts
-        })
+        return json.dumps(self.info())
 
 
 class DeckEvent(Event):
@@ -100,9 +100,7 @@ class DeckEvent(Event):
         """
         self.deck = deck
         self.button = button
-        self._ts = datetime.now().timestamp()
-        if autorun:
-            self.run()
+        Event.__init__(self, autorun=autorun)
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}"
@@ -121,6 +119,9 @@ class DeckEvent(Event):
     def timestamp(self) -> float:
         """Event creation timestamp"""
         return self._ts
+
+    def info(self):
+        return super().info() | {"deck": self.deck.get_id(), "button": self.button}
 
     def handling(self):
         """Called before event is processed"""
@@ -214,6 +215,9 @@ class PushEvent(DeckEvent):
     def is_pulled(self) -> bool:
         return self.pulled
 
+    def info(self):
+        return super().info() | {"pressed": self.pressed, "pulled": self.pulled}
+
 
 class EncoderEvent(DeckEvent):
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
@@ -238,6 +242,9 @@ class EncoderEvent(DeckEvent):
     def turned_counter_clockwise(self) -> bool:
         return not self.turned_clockwise
 
+    def info(self):
+        return super().info() | {"clockwise": self.clockwise}
+
 
 class SlideEvent(DeckEvent):
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.CURSOR
@@ -253,6 +260,9 @@ class SlideEvent(DeckEvent):
 
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:{self.value}"
+
+    def info(self):
+        return super().info() | {"value": self.value}
 
 
 class SwipeEvent(DeckEvent):
@@ -315,6 +325,16 @@ class SwipeEvent(DeckEvent):
         """
         return self.end_ts - self.start_ts
 
+    def info(self):
+        return super().info() | {
+            "start_pos_x": self.start_pos_x,
+            "start_pos_y": self.start_pos_y,
+            "start_ts": self.start_ts,
+            "end_pos_x": self.end_pos_x,
+            "end_pos_y": self.end_pos_y,
+            "end_ts": self.end_ts,
+        }
+
     def touched_only(self, tolerance: float = 10.0) -> bool:
         """Returns whether the swipe was just a touch, a very small movement swipe
 
@@ -366,6 +386,9 @@ class TouchEvent(DeckEvent):
     def __str__(self):
         return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:touch"
 
+    def info(self):
+        return super().info() | {"pos_x": self.pos_x, "pos_y": self.pos_y, "cli_ts": self.cli_ts, "start": self.start.info()}
+
     def xy(self):
         return (self.pos_x, self.pos_y)
 
@@ -380,6 +403,6 @@ class TouchEvent(DeckEvent):
                 end_pos_x=self.pos_x,
                 end_pos_y=self.pos_y,
                 end_ts=self.timestamp,
-                autorun=autorun
+                autorun=autorun,
             )
         return None

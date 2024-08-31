@@ -319,7 +319,7 @@ class VirtualSDNeoLED(VirtualLED):
     def __init__(self, button: "Button"):
         VirtualLED.__init__(self, button=button)
 
-        self.color = self._representation_config.get("color", "lime") # Led can change color...
+        self.color = self._representation_config.get("color", "lime")  # Led can change color...
         self.off_color = self.hardware.get("off-color", "silver")
 
     def describe(self) -> str:

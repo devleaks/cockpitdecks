@@ -51,17 +51,18 @@ DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to 
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 
+
 class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
     FIXED = 2
 
+
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
-parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?",
-                    help="aircraft folder for non automatic start")
+parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
-parser.add_argument("-f", "--fixed", action="store_true",  help="does not automatically switch aircraft")
-parser.add_argument("-s", "--silent", action="store_true",  help="silence startup information")
+parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
+parser.add_argument("-s", "--silent", action="store_true", help="silence startup information")
 
 args = parser.parse_args()
 

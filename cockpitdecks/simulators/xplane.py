@@ -12,7 +12,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from cockpitdecks import SPAM_LEVEL, AIRCRAFT_CHANGE_MONITORING_DATAREF
-from cockpitdecks.config import API_PORT, API_PATH, XP_HOME
+from cockpitdecks.config import API_HOST, API_PORT, API_PATH, XP_HOME
 from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -358,7 +358,10 @@ class XPlane(Simulator, XPlaneBeacon):
     @property
     def api_url(self):
         if self.connected:
-            return f"http://{self.beacon_data['IP']}:{API_PORT}/{API_PATH}"
+            host = API_HOST
+            if host is None:
+                host = self.beacon_data["IP"]
+            return f"http://{host}:{API_PORT}/{API_PATH}"
         return None
 
     def runs_locally(self) -> bool:

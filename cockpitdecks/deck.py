@@ -233,6 +233,8 @@ class Deck(ABC):
         static page with one activatio.
 
         """
+        verbose = True
+
         if self.layout is None:
             self.make_default_page()
             return
@@ -275,6 +277,8 @@ class Deck(ABC):
             if not page_config.is_valid():
                 logger.warning(f"file {p} not found")
                 continue
+
+            verbose = page_config.get("verbose", False)
 
             page_name = ".".join(p.split(".")[:-1])  # build default page name, remove extension ".yaml" or ".yml" from filename
             if CONFIG_KW.NAME.value in page_config:
@@ -331,10 +335,12 @@ class Deck(ABC):
                     os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep),
                     "..",
                 )
-                logger.info(f"deck {self.name}: page {page_name} includes {inc} (from file {display_fni}), include contains {ipb} buttons")
+                if verbose:
+                    logger.info(f"deck {self.name}: page {page_name} includes {inc} (from file {display_fni}), include contains {ipb} buttons")
                 logger.debug("includes: ..included")
 
-            logger.info(f"deck {self.name}: page {page_name} loaded (from file {display_fn}), contains {len(this_page.buttons)} buttons")
+            if verbose:
+                logger.info(f"deck {self.name}: page {page_name} loaded (from file {display_fn}), contains {len(this_page.buttons)} buttons")
 
         if not len(self.pages) > 0:
             self.valid = False

@@ -686,6 +686,9 @@ class SimulatorEvent(Event):
     def __str__(self):
         return f"{self.sim.name}:{self.timestamp}"
 
+    def info(self):
+        return super().info() | {"sim": self.sim.name}
+
     def enqueue(self):
         if self.sim is not None:
             self.sim.cockpit.event_queue.put(self)
@@ -708,6 +711,9 @@ class DatarefEvent(SimulatorEvent):
 
     def __str__(self):
         return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
+
+    def info(self):
+        return super().info() | {"path": self.dataref_path, "value": self.value, "cascade": self.cascade}
 
     def run(self, just_do_it: bool = False) -> bool:
         if just_do_it:
