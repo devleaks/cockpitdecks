@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks.simulator import Dataref, Command, MacroCommand
+from cockpitdecks.simulator import Dataref, Instruction
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -96,21 +96,23 @@ class Activation:
         # Commands
         self._command = None
         self._view = None
-        self._view_if = None
-        self._view_macro = None
         self.skip_view = False
+
+        cmdname = ":".join([self.button.get_id(), type(self).__name__])
+
         view = self._config.get(CONFIG_KW.VIEW.value)
-        if type(view) is str:
-            self._view = Command(path=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
-            self._view_if = self._config.get(CONFIG_KW.VIEW_IF.value)
-        elif type(view) in [list, tuple]:
-            self._view_macro = MacroCommand(name=f"{type(self).__name__}:view", commands=view)
+        if view is not None:
+            self._view = Instruction.new(name=cmdname+":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
+            self._view.button = self.button # set button to evalute conditional
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
 
         # but could be anything.
-        self._long_press = Command(path=self._config.get("long-press"))  # Optional additional command
+        self._long_press = None
+        long_press = self._config.get("long-press")
+        if long_press is not None:
+            self._long_press = Instruction.new(name=cmdname+":long-press", command=long_press)  # Optional additional command
 
         # Datarefs
         self._writable_dataref = None
@@ -235,22 +237,24 @@ class Activation:
     def long_pressed(self, duration: float = 2) -> bool:
         return self.duration > duration
 
+    def has_continuous_press(self) -> bool:
+        if hasattr(self, "_command"):
+            cmd = getattr(self, "_command")
+            if cmd is not None:
+                return type(cmd).__name__ == "BeginEndCommand"
+        return False
+
     def has_long_press(self) -> bool:
-        return self._long_press is not None and self._long_press.has_command()
+        return self._long_press is not None and self._long_press.is_valid()
 
     def get_datarefs(self) -> set:
         if self._writable_dataref is not None:
             return {self._writable_dataref.path}
         return set()
 
-    def command(self, command=None):
-        if command is None:
-            command = self._command
-        if command is not None and command.has_command():
-            self.button.sim.commandOnce(command)
-
     def long_press(self, event):
-        self.command(self._long_press)
+        print(">"*40, " long_press")
+        self._long_press.execute(simulator=self.button.sim)
 
     def is_valid(self) -> bool:
         if self.button is None:
@@ -349,15 +353,11 @@ class Activation:
         # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
 
     def view(self):
-        if self._view_macro is not None:
-            self._view_macro.execute(simulator=self.button.sim)
-            return
         if self._view is not None:
-            doit = True
-            if self._view_if is not None:
-                doit = self.button.execute_formula(self._view_if)
-            if doit:
-                self.command(self._view)
+            if self.skip_view:
+                logger.debug(f"button {self.button_name()}: skipping view {self._view}")
+                return
+            self._view.execute(self.button.sim)
 
     def handle(self, event):
         # Handle event, perform activation
@@ -437,7 +437,7 @@ class LoadPage(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
-        # Commands
+        # Activation arguments
         self.page = self._config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = self._config.get("deck")
 
@@ -520,6 +520,8 @@ class ChangeTheme(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
+
+        # Activation arguments
         self.theme = self._config.get("theme")
 
     def activate(self, event) -> bool:
@@ -559,6 +561,7 @@ class Inspect(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
+        # Activation arguments
         self.what = self._config.get("what", "status")
 
     def activate(self, event) -> bool:
@@ -627,6 +630,8 @@ class Random(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
+
+        # Activation arguments
         self.random_value = 0.0
 
     def activate(self, event) -> bool:
@@ -652,7 +657,7 @@ class Random(Activation):
 
 #
 # ###############################
-# PUSH-BUTTON TYPE ACTIVATION
+# PUSH-BUTTON TYPE ACTIVATIONS
 #
 #
 class Push(Activation):
@@ -682,8 +687,12 @@ class Push(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
-        # Commands
-        self._command = Command(button._config.get(CONFIG_KW.COMMAND.value))
+        # Activation arguments
+        # Command
+        cmd = button._config.get(CONFIG_KW.COMMAND.value)
+        if cmd is not None:
+            cmdname = ":".join([self.button.get_id(), type(self).__name__])
+            self._command = Instruction.new(name=cmdname, command=cmd)
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -763,36 +772,25 @@ class Push(Activation):
         if not super().activate(event):
             return False
         if event.pressed:
-            if not self.has_long_press():  # we don't have to wait for the release to trigger the command
-                self.command()
+            if not (self.has_long_press() or self.has_continuous_press()):  # we don't have to wait for the release to trigger the command
+                self._command.execute(simulator=self.button.sim)
             if self.auto_repeat and self.exit is None:
                 self.auto_repeat_start()
         else:
             if self.button.is_guarded():
                 return False
 
-            if self.has_long_press() and not self.long_pressed():
-                self.command()
+            if (self.has_long_press() and not self.long_pressed()) and not self.has_continuous_press():
+                self._command.execute(simulator=self.button.sim)
             if self.auto_repeat:
                 self.auto_repeat_stop()
         return True  # normal termination
-
-    def describe(self) -> str:
-        """
-        Describe what the button does in plain English
-        """
-        return "\n\r".join(
-            [
-                f"The button executes {self._command} when it is activated (pressed).",
-                f"The button does nothing when it is de-activated (released).",
-            ]
-        )
 
     # Auto repeat
     def auto_repeat_loop(self):
         self.exit.wait(self.auto_repeat_delay)
         while not self.exit.is_set():
-            self.command()
+            self._command.execute(simulator=self.button.sim)
             self.exit.wait(self.auto_repeat_speed)
         logger.debug(f"exited")
 
@@ -821,13 +819,24 @@ class Push(Activation):
         else:
             logger.debug(f"button {self.button_name()}: already stopped")
 
+    def describe(self) -> str:
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join(
+            [
+                f"The button executes {self._command} when it is activated (pressed).",
+                f"The button does nothing when it is de-activated (released).",
+            ]
+        )
 
-class Longpress(Push):
+
+class Continuouspress(Push):
     """
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
 
-    ACTIVATION_NAME = "long-press"
+    ACTIVATION_NAME = "continuous-press"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
@@ -835,16 +844,31 @@ class Longpress(Push):
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
 
+        # Command
+        if self._command is not None:
+            del self._command
+        self._command = None
+        cmd = button._config.get(CONFIG_KW.COMMAND.value)
+        if cmd is not None:
+            cmdname = ":".join([self.button.get_id(), type(self).__name__])
+            self._command = Instruction.new(name=cmdname, command=cmd, longpress=True)
+
+    def is_valid(self):
+        if type(self._command).__name__ != "BeginEndCommand":
+            logger.warning(f"{self.button.get_id()}: {type(self)}: command is not BeginEndCommand: {type(self._command)}")
+            return False
+        return super().is_valid()
+
     def activate(self, event) -> bool:
         if not self.can_handle(event):
             return False
         if not super().activate(event):
             return False
         if event.pressed:
-            self.button.sim.commandBegin(self._command)
+            self._command.execute(simulator=self.button.sim)
             self.skip_view = True
         else:
-            self.button.sim.commandEnd(self._command)
+            self._command.execute(simulator=self.button.sim)
         return True  # normal termination
 
     def inspect(self, what: str | None = None):
@@ -884,13 +908,19 @@ class OnOff(Activation):
     }
 
     def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
+
+        # Activation arguments
         # Commands
-        self._commands = [Command(path) for path in button._config.get(CONFIG_KW.COMMANDS.value, [])]
+        self._commands = []
+        cmds = button._config.get(CONFIG_KW.COMMANDS.value)
+        if cmds is not None:
+            cmdname = ":".join([self.button.get_id(), type(self).__name__])
+            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.onoff_current_value = False  # bool on or off, true = on
 
-        Activation.__init__(self, button=button)
 
     def init(self):
         if self._inited:
@@ -962,9 +992,9 @@ class OnOff(Activation):
         if event.pressed:
             if self.num_commands() > 1:
                 if self.is_off():
-                    self.command(self._commands[0])
+                    self._commands[0].execute(simulator=self.button.sim)
                 else:
-                    self.command(self._commands[1])
+                    self._commands[1].execute(simulator=self.button.sim)
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
             # self.button.value = self.onoff_current_value  # update internal state
@@ -1019,9 +1049,15 @@ class ShortOrLongpress(Activation):
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
+        # Activation arguments
         # Commands
-        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
+        self._commands = []
+        cmds = button._config.get(CONFIG_KW.COMMANDS.value)
+        if cmds is not None:
+            cmdname = ":".join([self.button.get_id(), type(self).__name__])
+            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
 
+        # Internal variables
         self.long_time = self._config.get("long-time", 2)
 
     def activate(self, event) -> bool:
@@ -1032,10 +1068,10 @@ class ShortOrLongpress(Activation):
         if not event.pressed:
             if self.num_commands() > 1:
                 if self.duration < self.long_time:
-                    self.command(self._commands[0])
+                    self._commands[0].execute(simulator=self.button.sim)
                     logger.debug(f"short {self.duration}, {self.long_time}")
                 else:
-                    self.command(self._commands[1])
+                    self._commands[1].execute(simulator=self.button.sim)
                     logger.debug(f"looooong {self.duration}, {self.long_time}")
         return True  # normal termination
 
@@ -1080,19 +1116,23 @@ class UpDown(Activation):
     }
 
     def __init__(self, button: "Button"):
-        # Commands
-        self._commands = [Command(path) for path in button._config.get(CONFIG_KW.COMMANDS.value, [])]
-
-        # Config
-        self.stops = int(button._config.get("stops", 2))  # may fail
-
-        # Internal status
-        self.go_up = True
-        self.stop_current_value = 0
-
         Activation.__init__(self, button=button)
 
-    def init(self):
+        # Activation arguments
+        self.stops = int(button._config.get("stops", 2))  # may fail
+        # Commands
+        self._commands = []
+        cmds = button._config.get(CONFIG_KW.COMMANDS.value)
+        if cmds is not None:
+            cmdname = ":".join([self.button.get_id(), type(self).__name__])
+            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
+
+        # Internal variables
+        self.go_up = True
+        self.stop_current_value = 0
+        self.init_differed()
+
+    def init_differed(self):
         if self._inited:
             return
         if self.initial_value is not None:
@@ -1154,13 +1194,13 @@ class UpDown(Activation):
             logger.debug(f"{currval}, {nextval}, {self.go_up}")
             if self.go_up:
                 if self.num_commands() > 0:
-                    self.command(self._commands[0])  # up
+                    self._commands[0].execute(simulator=self.button.sim)  # up
                 if nextval >= (self.stops - 1):
                     nextval = self.stops - 1
                     self.go_up = False
             else:
                 if self.num_commands() > 1:
-                    self.command(self._commands[1])  # down
+                    self._commands[0].execute(simulator=self.button.sim)  # down
                 if nextval <= 0:
                     nextval = 0
                     self.go_up = True
@@ -1209,6 +1249,14 @@ An Encoder with a step value of 1 is more or less a variant of Knob.
 class EncoderProperties:
     """Trait for property definitions"""
 
+    def __init__(self, button: "Button"):
+        # Encoder commands (and more if available)
+        self._commands = []
+        cmds = button._config.get(CONFIG_KW.COMMANDS.value)
+        if cmds is not None:
+            cmdname = ":".join([self.button.get_id(), type(self).__name__])
+            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
+
     @property
     def _turns(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_TURNS.value])
@@ -1245,9 +1293,7 @@ class Encoder(Activation, EncoderProperties):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
-
-        # Commands
-        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
+        EncoderProperties.__init__(self, button=button)
 
     def num_commands(self):
         return len(self._commands) if self._commands is not None else 0
@@ -1264,11 +1310,11 @@ class Encoder(Activation, EncoderProperties):
         if not super().activate(event):
             return False
         if event.turned_counter_clockwise:  # rotate left
-            self.command(self._commands[0])
+            self._commands[0].execute(simulator=self.button.sim)
             self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
             self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
         elif event.turned_clockwise:  # rotate right
-            self.command(self._commands[1])
+            self._commands[1].execute(simulator=self.button.sim)
             self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
             self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
         else:
@@ -1321,9 +1367,9 @@ class EncoderPush(Push, EncoderProperties):
 
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
+        EncoderProperties.__init__(self, button=button)
 
-        # Commands
-        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
+        # Activation arguments
         if len(self._commands) > 0:
             self._command = self._commands[0]
         else:
@@ -1358,32 +1404,32 @@ class EncoderPush(Push, EncoderProperties):
             if event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.longpush:
                     if self.is_pressed():
-                        self.command(self._commands[2])
+                        self._commands[2].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                         self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     else:
-                        self.command(self._commands[0])
+                        self._commands[0].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                         self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
                 else:
-                    self.command(self._commands[1])
+                    self._commands[1].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
             elif event.turned_clockwise:  # rotate clockwise
                 if self.longpush:
                     if self.is_pressed():
-                        self.command(self._commands[3])
+                        self._commands[3].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                         self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     else:
-                        self.command(self._commands[1])
+                        self._commands[1].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                         self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
                 else:
-                    self.command(self._commands[2])
+                    self._commands[2].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
@@ -1452,7 +1498,9 @@ class EncoderOnOff(OnOff, EncoderProperties):
 
     def __init__(self, button: "Button"):
         OnOff.__init__(self, button=button)
+        EncoderProperties.__init__(self, button=button)
 
+        # Activation options
         self.dual = self.button.has_option("dual")
 
     def num_commands(self):
@@ -1479,35 +1527,35 @@ class EncoderOnOff(OnOff, EncoderProperties):
             if event.turned_clockwise:  # rotate clockwise
                 if self.is_on():
                     if self.dual:
-                        self.command(self._commands[2])
+                        self._commands[2].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                     else:
-                        self.command(self._commands[2])
+                        self._commands[2].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                 else:
                     if self.dual:
-                        self.command(self._commands[4])
+                        self._commands[4].execute(simulator=self.button.sim)
                     else:
-                        self.command(self._commands[2])
+                        self._commands[2].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
             elif event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.is_on():
                     if self.dual:
-                        self.command(self._commands[3])
+                        self._commands[3].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                     else:
-                        self.command(self._commands[3])
+                        self._commands[3].execute(simulator=self.button.sim)
                         self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                 else:
                     if self.dual:
-                        self.command(self._commands[5])
+                        self._commands[5].execute(simulator=self.button.sim)
                     else:
-                        self.command(self._commands[3])
+                        self._commands[3].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
 
@@ -1572,17 +1620,21 @@ class EncoderValue(OnOff, EncoderProperties):
     }
 
     def __init__(self, button: "Button"):
+        OnOff.__init__(self, button=button)
+        EncoderProperties.__init__(self, button=button)
+
+        # Activation arguments
         self.step = float(button._config.get("step", 1))
         self.stepxl = float(button._config.get("stepxl", 10))
         self.value_min = float(button._config.get("value-min", 0))
         self.value_max = float(button._config.get("value-max", 100))
 
-        # Internal status
+        # Internal variables
         self.encoder_current_value = 0
 
-        OnOff.__init__(self, button=button)
+        self.init_differed()
 
-    def init(self):
+    def init_differed(self):
         if self._inited:
             return
         value = self.button.value
@@ -1609,9 +1661,9 @@ class EncoderValue(OnOff, EncoderProperties):
             if event.pressed:
                 if len(self._commands) > 1:
                     if self.is_off():
-                        self.command(self._commands[0])
+                        self._commands[0].execute(simulator=self.button.sim)
                     else:
-                        self.command(self._commands[1])
+                        self._commands[1].execute(simulator=self.button.sim)
                 else:
                     logger.debug(f"button {self.button_name()} not enough commands {len(self._commands)}/é")
                 # Update current value and write dataref if present
@@ -1703,13 +1755,19 @@ class EncoderValueExtended(OnOff, EncoderProperties):
     }
 
     def __init__(self, button: "Button"):
+        OnOff.__init__(self, button=button)
+        EncoderProperties.__init__(self, button=button)
+
+        # Activation arguments
         self.step = float(button._config.get("step", 1))
         self.stepxl = float(button._config.get("stepxl", 10))
         self.value_min = float(button._config.get("value-min", 0))
         self.value_max = float(button._config.get("value-max", 100))
+
+        # Activation options
         self.options = button._config.get("options", None)
 
-        # Internal status
+        # Internal variables
         self.encoder_current_value = float(button._config.get("initial-value", 1))
         self._step_mode = self.step
 
@@ -1718,9 +1776,9 @@ class EncoderValueExtended(OnOff, EncoderProperties):
         if local_dataref is not None:
             self._local_dataref = self.button.sim.get_internal_dataref(local_dataref)
 
-        OnOff.__init__(self, button=button)
+        self.init_differed()
 
-    def init(self):
+    def init_differed(self):
         if self._inited:
             return
         value = self.button.value
@@ -1871,6 +1929,7 @@ class Slider(Activation):  # Cursor?
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
+        # Activation arguments
         self.value_min = float(self._config.get("value-min", 0))
         self.value_max = float(self._config.get("value-max", 100))
         self.value_step = float(self._config.get("value-step", 0))
@@ -1974,15 +2033,9 @@ class EncoderToggle(Activation, EncoderProperties):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
+        EncoderProperties.__init__(self, button=button)
 
-        # Commands
-        self._commands = [Command(path) for path in self._config.get(CONFIG_KW.COMMANDS.value, [])]
-        if len(self._commands) > 0:
-            self._command = self._commands[0]
-        else:
-            logger.error(f"button {self.button_name()}: {type(self).__name__} must have at least one command")
-
-        # Internal status
+        # Internal variables
         self.longpush = True
         self._on = True
 
@@ -2013,18 +2066,18 @@ class EncoderToggle(Activation, EncoderProperties):
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
                 if self._on:
-                    self.command(self._commands[0])
+                    self._commands[0].execute(simulator=self.button.sim)
                 else:
-                    self.command(self._commands[2])
+                    self._commands[2].execute(simulator=self.button.sim)
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                 self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
 
             elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
                 if self._on:
-                    self.command(self._commands[1])
+                    self._commands[1].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                 else:
-                    self.command(self._commands[3])
+                    self._commands[3].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                 self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)

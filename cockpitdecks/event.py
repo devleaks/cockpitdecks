@@ -387,7 +387,7 @@ class TouchEvent(DeckEvent):
         return f"{self.deck.name}:{self.button}:{self.REQUIRED_DECK_ACTIONS}:{self.timestamp}:touch"
 
     def info(self):
-        return super().info() | {"pos_x": self.pos_x, "pos_y": self.pos_y, "cli_ts": self.cli_ts, "start": self.start.info()}
+        return super().info() | {"pos_x": self.pos_x, "pos_y": self.pos_y, "cli_ts": self.cli_ts, "start": self.start.info() if self.start is not None else None}
 
     def xy(self):
         return (self.pos_x, self.pos_y)

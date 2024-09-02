@@ -4,7 +4,8 @@ Button action and activation abstraction
 
 from .activation import Activation, ACTIVATION_VALUE
 from .activation import LoadPage, Reload, Inspect, Stop
-from .activation import Push, Longpress, OnOff, UpDown
+from .activation import Push, OnOff, UpDown
+from .activation import Continuouspress
 from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue, EncoderToggle
 from .activation import EncoderValueExtended
 from .activation import Slider, Swipe

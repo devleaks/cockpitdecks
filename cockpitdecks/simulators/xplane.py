@@ -430,7 +430,7 @@ class XPlane(Simulator, XPlaneBeacon):
         if command is None:
             logger.warning(f"no command")
             return
-        elif not command.has_command():
+        elif not command.is_valid():
             logger.warning(f"command '{command}' not sent (command placeholder, no command, do nothing)")
             return
         if not self.connected:
@@ -696,16 +696,16 @@ class XPlane(Simulator, XPlaneBeacon):
     # ################################
     # X-Plane Interface
     #
-    def commandOnce(self, command: Command):
+    def command_once(self, command: Command):
         self.execute_command(command)
 
-    def commandBegin(self, command: Command):
+    def command_begin(self, command: Command):
         if command.path is not None:
             self.execute_command(Command(command.path + "/begin"))
         else:
             logger.warning(f"no command")
 
-    def commandEnd(self, command: Command):
+    def command_end(self, command: Command):
         if command.path is not None:
             self.execute_command(Command(command.path + "/end"))
         else:

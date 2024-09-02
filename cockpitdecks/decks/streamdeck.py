@@ -216,9 +216,9 @@ class Streamdeck(DeckWithIcons):
         idx = KW_TOUCHSCREEN
         logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
         if action == TouchscreenEventType.SHORT:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), cli_ts=datetime.now().timestamp())
         elif action == TouchscreenEventType.LONG:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), start=datetime.now().timestamp())
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), cli_ts=datetime.now().timestamp())
         elif action == TouchscreenEventType.DRAG:
             event = SwipeEvent(
                 deck=self,

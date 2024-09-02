@@ -1,14 +1,13 @@
 # Base classes for interface with the simulation software
 #
 from __future__ import annotations
-from os.path import commonprefix
 import threading
 import logging
-from typing import List, Any
-from datetime import datetime, timedelta
-from abc import ABC, abstractmethod
 import base64
 import json
+from datetime import datetime
+from typing import List, Any
+from abc import ABC, abstractmethod
 
 import requests
 
@@ -20,9 +19,9 @@ loggerDataref = logging.getLogger("Dataref")
 # loggerDataref.setLevel(SPAM_LEVEL)
 # loggerDataref.setLevel(logging.DEBUG)
 
-loggerCommand = logging.getLogger("Command")
-# loggerCommand.setLevel(SPAM_LEVEL)
-# loggerCommand.setLevel(logging.DEBUG)
+loggerInstr = logging.getLogger("Instruction")
+# loggerInstr.setLevel(SPAM_LEVEL)
+loggerInstr.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when dataref are updated
@@ -51,6 +50,10 @@ REST_DATA = "data"
 REST_IDENT = "id"
 
 
+# ########################################
+# Dataref
+#
+# A value in the simulator
 class Dataref:
     """
     A Dataref is an internal value of the simulation software made accessible to outside modules,
@@ -396,14 +399,56 @@ class Instruction(ABC):
         self.delay = delay
         self.condition = condition
         self._timer = None
+        self._button = None
 
     @abstractmethod
     def _execute(self, simulator: Simulator):
         self.clean_timer()
 
     @classmethod
-    def new(cls, **kwargs):
-        return cls(name=type(cls).__name__, delay=0.0)
+    def new(cls, name, **kwargs):
+        for keyw in ["view", "command"]:
+            if keyw in kwargs:
+                cmdargs = kwargs.get(keyw)
+                if type(cmdargs) is str:
+                    if kwargs.get("longpress", False):
+                        return BeginEndCommand(name=name, path=cmdargs, delay=kwargs.get("delay", 0.0), condition=kwargs.get("condition"))
+                    else:
+                        return Command(name=name, path=cmdargs, delay=kwargs.get("delay", 0.0), condition=kwargs.get("condition"))
+                elif type(cmdargs) in [list, tuple]:
+                    return MacroCommand(name=name, commands=cmdargs)
+        if "set_dataref" in kwargs:
+            cmdargs = kwargs.get("set_dataref")
+            if type(cmdargs) is str:
+                return SetDataref(
+                    name=name,
+                    path=cmdargs,
+                    value=kwargs.get("value"),
+                    formula=kwargs.get("formula"),
+                    delay=kwargs.get("delay"),
+                    condition=kwargs.get("condition"),
+                )
+        else:
+            loggerInstr.warning(f"Instruction {name}: invalid argument {kwargs}")
+        return None
+
+    @property
+    def button(self):
+        return self._button
+
+    @button.setter
+    def button(self, button):
+        self._button = button
+
+    def can_execute(self) -> bool:
+        if self.condition is None:
+            return True
+        if self._button is None:
+            loggerInstr.warning(f"instruction {self.name} has condition but no button")
+            return True  # no condition
+        value = self._button._value.execute_formula(self.condition)
+        loggerInstr.debug(f"instruction {self.name}: {self.condition} = {value} ({value != 0})")
+        return value != 0
 
     def clean_timer(self):
         if self._timer is not None:
@@ -411,10 +456,13 @@ class Instruction(ABC):
             self._timer = None
 
     def execute(self, simulator: Simulator):
+        if not self.can_execute():
+            loggerInstr.debug(f"{self.name} not allowed to run")
+            return
         if self._timer is None and self.delay > 0:
             self._timer = threading.Timer(self.delay, self._execute, args=[simulator])
             self._timer.start()
-            loggerCommand.debug(f"{self.name} will be executed in {self.delay} secs")
+            loggerInstr.debug(f"{self.name} will be executed in {self.delay} secs")
             return
         self._execute(simulator=simulator)
 
@@ -432,11 +480,31 @@ class Command(Instruction):
     def __str__(self) -> str:
         return self.name if self.name is not None else (self.path if self.path is not None else "no command")
 
-    def has_command(self) -> bool:
+    def is_valid(self) -> bool:
         return self.path is not None and not self.path.lower() in NOT_A_COMMAND
 
     def _execute(self, simulator: Simulator):
         simulator.execute_command(command=self)
+        self.clean_timer()
+
+
+class BeginEndCommand(Command):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, path: str | None, name: str | None = None, delay: float = 0.0, condition: str | None = None):
+        Command.__init__(self, path=path, name=name, delay=delay, condition=condition)
+        self.is_on = False
+
+    def _execute(self, simulator: Simulator):
+        if self.is_on:
+            simulator.command_end(command=self)
+            self.is_on = False
+        else:
+            simulator.command_begin(command=self)
+            self.is_on = True
         self.clean_timer()
 
 
@@ -446,9 +514,10 @@ class SetDataref(Instruction):
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
-    def __init__(self, path: str, value: any | None = None, delay: float = 0.0, condition: str | None = None):
+    def __init__(self, path: str, value: any | None = None, formula: str | None = None, delay: float = 0.0, condition: str | None = None):
         Instruction.__init__(self, name=path, delay=delay, condition=condition)
         self.path = path  # some/command
+        self.formula = None  # = formula: later, a set-dataref specific formula, different from the button one?
         self._value = value
 
     def __str__(self) -> str:
@@ -462,7 +531,15 @@ class SetDataref(Instruction):
     def value(self, value):
         self._value = value
 
+    def compute_value(self):
+        if self._button is not None:
+            return self._button.value.execute_formula(self.formula)
+        loggerInstr.warning(f"SetDataref {name}: no button")
+        return None
+
     def _execute(self, simulator: Simulator):
+        if self.formula is not None:
+            self._value = self.compute_value()
         simulator.write_dataref(dataref=self.path, value=self.value)
 
 
@@ -486,7 +563,7 @@ class MacroCommand(Instruction):
         for c in self.commands:
             if CONFIG_KW.COMMAND.value in c:
                 if CONFIG_KW.SET_DATAREF.value in c:
-                    loggerCommand.warning(f"Macro command {self.name}: command has both command and set-dataref, ignored")
+                    loggerInstr.warning(f"Macro command {self.name}: command has both command and set-dataref, ignored")
                     continue
                 self._commands.append(
                     Command(path=c.get(CONFIG_KW.COMMAND.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
@@ -660,15 +737,15 @@ class Simulator(ABC):
     # X-Plane Interface
     #
     @abstractmethod
-    def commandOnce(self, command: Command):
+    def command_once(self, command: Command):
         pass
 
     @abstractmethod
-    def commandBegin(self, command: Command):
+    def command_begin(self, command: Command):
         pass
 
     @abstractmethod
-    def commandEnd(self, command: Command):
+    def command_end(self, command: Command):
         pass
 
 
