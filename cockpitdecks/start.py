@@ -16,7 +16,7 @@ from simple_websocket import Server, ConnectionClosed
 import ruamel
 from ruamel.yaml import YAML
 
-from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME, VERBOSE
+from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME
 from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
 
 from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
@@ -40,7 +40,6 @@ if LOGFILE is not None:
     handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
 #
 # COCKPITDECKS STARTS HERE
 #

@@ -175,3 +175,4 @@ weather.json
 cockpitdecks/config.py
 datarefs-log.yaml
 events.json
+cockpitdecks/config-mini.py

@@ -384,7 +384,11 @@ NOT_A_COMMAND = [
 ]  # all forced to lower cases
 
 
-class CommandBase(ABC):
+class Instruction(ABC):
+    """An Instruction is sent to the Simulator to execute some action.
+
+    [description]
+    """
 
     def __init__(self, name: str, delay: float = 0.0, condition: str | None = None) -> None:
         super().__init__()
@@ -396,6 +400,10 @@ class CommandBase(ABC):
     @abstractmethod
     def _execute(self, simulator: Simulator):
         self.clean_timer()
+
+    @classmethod
+    def new(cls, **kwargs):
+        return cls(name=type(cls).__name__, delay=0.0)
 
     def clean_timer(self):
         if self._timer is not None:
@@ -411,14 +419,14 @@ class CommandBase(ABC):
         self._execute(simulator=simulator)
 
 
-class Command(CommandBase):
+class Command(Instruction):
     """
     A Button activation will instruct the simulator software to perform an action.
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
     def __init__(self, path: str | None, name: str | None = None, delay: float = 0.0, condition: str | None = None):
-        CommandBase.__init__(self, name=name, delay=delay, condition=condition)
+        Instruction.__init__(self, name=name, delay=delay, condition=condition)
         self.path = path  # some/command
 
     def __str__(self) -> str:
@@ -432,14 +440,14 @@ class Command(CommandBase):
         self.clean_timer()
 
 
-class SetDataref(CommandBase):
+class SetDataref(Instruction):
     """
     A Button activation will instruct the simulator software to perform an action.
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
     def __init__(self, path: str, value: any | None = None, delay: float = 0.0, condition: str | None = None):
-        CommandBase.__init__(self, name=path, delay=delay, condition=condition)
+        Instruction.__init__(self, name=path, delay=delay, condition=condition)
         self.path = path  # some/command
         self._value = value
 
@@ -458,14 +466,14 @@ class SetDataref(CommandBase):
         simulator.write_dataref(dataref=self.path, value=self.value)
 
 
-class MacroCommand(CommandBase):
+class MacroCommand(Instruction):
     """
     A Button activation will instruct the simulator software to perform an action.
     A Command is the message that the simulation sofware is expecting to perform that action.
     """
 
     def __init__(self, name: str, commands: dict):
-        CommandBase.__init__(self, name=name)
+        Instruction.__init__(self, name=name)
         self.commands = commands
         self._commands = []
         self.init()
