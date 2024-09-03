@@ -82,19 +82,19 @@ class XTouchMini(Deck):
         if key >= 16 and key <= 23:  # turn encoder
             key1 = f"{prefix}{key - 16}"
             state1 = state == 3
-            event = EncoderEvent(deck=self, button=key1, clockwise=state1, autorun=False)
+            event = EncoderEvent(deck=self, button=key1, clockwise=state1, autorun=False, code=state)
         elif key >= 32 and key <= 39:  # push on encoder
             key1 = f"{prefix}{key - 32}"
             state1 = state == 1
-            event = PushEvent(deck=self, button=key1, pressed=state == state1, autorun=False)
+            event = PushEvent(deck=self, button=key1, pressed=state == state1, autorun=False, code=state)
         elif key == 8:  # slider
             key1 = cursor
             state1 = int(state)
-            event = SlideEvent(deck=self, button=key1, value=state1, autorun=False)
+            event = SlideEvent(deck=self, button=key1, value=state1, autorun=False, code=state)
         else:  # push a button
             key1 = KEY_MAP[key]
             state1 = state == 1
-            event = PushEvent(deck=self, button=key1, pressed=state1, autorun=False)
+            event = PushEvent(deck=self, button=key1, pressed=state1, autorun=False, code=state)
 
         logger.debug(f"{key} => {type(event).__name__} {key1} {state1}")
 

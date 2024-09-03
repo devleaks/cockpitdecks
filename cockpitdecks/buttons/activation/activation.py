@@ -1560,6 +1560,7 @@ class EncoderOnOff(OnOff, EncoderProperties):
                         self._commands[3].execute(simulator=self.button.sim)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+            return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
         return True  # normal termination

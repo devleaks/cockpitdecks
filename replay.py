@@ -9,6 +9,7 @@ import json
 import argparse
 import jsonlines
 from datetime import datetime
+from typing import Tuple
 from simple_websocket import Client, ConnectionClosed
 
 
@@ -33,7 +34,7 @@ if not args.info:
         ws = Client.connect(f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit")
         if not args.silent:
             print("connected")
-    except:
+    except ConnectionRefusedError:
         print("no connection")
 elif not args.silent:
     print("no connection")
@@ -50,20 +51,48 @@ elif not args.silent:
 # 12 = Swipe, event data contains value
 # 14 = Tap, event data contains value
 # Event data varies with the code...
-def get_event(event):
+def get_event(event) -> Tuple[int | None, dict]:
     code = 0
     data = {}
 
     event_type = event["type"]
-    if event_type == "PushEvent":
-        if event["pressed"]:
-            if event["pulled"] > 0:
-                code = 4
+    # PushEvent
+    # EncoderEvent
+    # SlideEvent
+    # SwipeEvent
+    # TouchEvent
+
+    event_code = event["code"]
+    if event_code == -1: # need to recontruct it
+        if event_type == "PushEvent":
+            if event["pressed"]:
+                if event["pulled"] > 0:
+                    code = 4
+                else:
+                    code = 1
+        elif event_type == "EncoderEvent":
+            if event["clockwise"]:
+                code = 2
             else:
-                code = 1
-    else:
-        print("unhandled event type", event_type)
-        return None
+                code = 3
+        elif event_type == "TouchEvent":
+            if event["start"] is None:
+                code = 10
+            else:
+                code = 11
+            data = {
+                "x": event["pos_x"],
+                "y": event["pos_y"],
+                "ts": event["cli_ts"]
+            }
+        elif event_type == "SlideEvent":
+            code = 9
+            data = {
+                "value": event["value"]
+            }
+        else:
+            print("unhandled event type", event_type)
+            return None, data
 
     return code, data | {"_replay": True}
 
@@ -99,3 +128,5 @@ try:
 except (KeyboardInterrupt, EOFError, ConnectionClosed):
     if ws is not None:
         ws.close()
+if not args.silent:
+    print("done")

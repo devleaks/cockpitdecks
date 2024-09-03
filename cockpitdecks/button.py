@@ -10,10 +10,8 @@ import re
 import logging
 import sys
 
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-
 from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
-from .buttons.representation import REPRESENTATIONS, Annunciator
+from .buttons.representation import REPRESENTATIONS, HARDWARE_REPRESENTATIONS, Annunciator
 from .simulator import Dataref, DatarefListener
 from .value import Value, ValueProvider
 
@@ -176,7 +174,7 @@ class Button(DatarefListener, ValueProvider):
 
     @staticmethod
     def guess_representation_type(config):
-        a = [r for r in REPRESENTATIONS.keys() if r in config]
+        a = [r for r in REPRESENTATIONS.keys() if r in config and r not in HARDWARE_REPRESENTATIONS.keys()]
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:

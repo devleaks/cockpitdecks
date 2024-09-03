@@ -80,7 +80,7 @@ class Value:
         if self.dataref is not None and self.set_dataref is not None:
             if self.dataref == self.set_dataref:
                 if self.formula == "":
-                    logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
+                    logger.debug(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
                 # if formula is None:
                 #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
                 # else:

@@ -183,8 +183,8 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a key is pressed.
         """
         # print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
-        logger.debug(f"Deck {deck.get_id()} Key {key} = {state}")
-        PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
+        logger.debug(f"Deck {deck} Key {key} = {state}")
+        PushEvent(deck=self, button=key, pressed=state, code=state)  # autorun enqueues it in cockpit.event_queue for later execution
 
     def dial_callback(self, deck, key, action, value):
         """
@@ -196,11 +196,11 @@ class Streamdeck(DeckWithIcons):
         prefix = bdef[0].get(DECK_KW.PREFIX.value)
         idx = f"{prefix}{key}"
         if action == DialEventType.PUSH:
-            event = PushEvent(deck=self, button=idx, pressed=value)
+            event = PushEvent(deck=self, button=idx, pressed=value, code=action)
         elif action == DialEventType.TURN:
             direction = 2 if value < 0 else 3
             for i in range(abs(value)):
-                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2)
+                event = EncoderEvent(deck=self, button=idx, clockwise=direction == 2, code=action)
         else:
             logger.warning(f"deck {self.name}: invalid dial action {action}")
 
@@ -216,9 +216,9 @@ class Streamdeck(DeckWithIcons):
         idx = KW_TOUCHSCREEN
         logger.debug(f"Deck {deck.id()} Key {idx} = {action}, {value}")
         if action == TouchscreenEventType.SHORT:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), cli_ts=datetime.now().timestamp())
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), cli_ts=datetime.now().timestamp(), code=action)
         elif action == TouchscreenEventType.LONG:
-            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), cli_ts=datetime.now().timestamp())
+            event = TouchEvent(deck=self, button=idx, pos_x=int(value["x"]), pos_y=int(value["y"]), cli_ts=datetime.now().timestamp(), code=action)
         elif action == TouchscreenEventType.DRAG:
             event = SwipeEvent(
                 deck=self,
@@ -230,6 +230,7 @@ class Streamdeck(DeckWithIcons):
                 end_pos_y=int(value["y_out"]),
                 end_ts=datetime.now().timestamp(),
                 autorun=True,
+                code=action
             )
         else:
             logger.warning(f"deck {self.name}: invalid touchscreen action {action}")

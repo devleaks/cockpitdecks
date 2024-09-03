@@ -22,7 +22,7 @@ from .chart import ChartIcon
 from .gauge import TapeIcon, GaugeIcon
 
 # Special Web Deck represenations for hardware button
-from .hardware import VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
+from .hardware import HardwareIcon, VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
 
 try:
     from .hardware import VirtualXTMEncoderLED
@@ -97,7 +97,7 @@ except ImportError:
     logger.warning(f"WeatherMetarIcon not installed")
 
 REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
-
+HARDWARE_REPRESENTATIONS = {s.name(): s for s in all_subclasses(HardwareIcon)}
 
 def get_representations_for(feedback: DECK_FEEDBACK):
     return [a for a in REPRESENTATIONS.values() if feedback in a.get_required_capability()]

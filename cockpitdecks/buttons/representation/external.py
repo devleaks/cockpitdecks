@@ -32,7 +32,7 @@ from .draw_animation import DrawAnimation
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 # #############
 # Local constant
@@ -363,10 +363,11 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         self._inited = True
 
     def at_default_station(self):
+        ret = True
         if self.weather is not None and self.station is not None:
-            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', WeatherMetarIcon.DEFAULT_STATION)}, {self._moved}")
-            return not self._moved and self.station.icao == self.weather.get("station", WeatherMetarIcon.DEFAULT_STATION)
-        return True
+            ret = not self._moved and self.station.icao == self.weather.get("station", WeatherMetarIcon.DEFAULT_STATION)
+            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', WeatherMetarIcon.DEFAULT_STATION)}, {self._moved}, returns {ret}")
+        return ret
 
     def get_datarefs(self) -> set:
         ret = {
@@ -506,20 +507,20 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
                 now = datetime.now()
                 if self._last_updated is None:
                     updated = self.metar.update()
+                    self._last_updated = datetime.now()
                     if updated:
-                        self._last_updated = datetime.now()
                         logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
                     else:
-                        logger.info(f"could not update station {self.station.icao}")
+                        logger.debug(f"Metar fetched, no Metar update for station {self.station.icao}")
                 else:
                     diff = now.timestamp() - self._last_updated.timestamp()
                     if diff > WeatherMetarIcon.MIN_UPDATE:
                         updated = self.metar.update()
+                        self._last_updated = datetime.now()
                         if updated:
-                            self._last_updated = datetime.now()
                             logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
                         else:
-                            logger.debug(f"not update for station {self.station.icao}")
+                            logger.debug(f"Metar fetched, no Metar update for station {self.station.icao}")
                     else:
                         logger.debug(f"station {self.station.icao}, Metar does not need updating")
             except:

@@ -203,6 +203,10 @@ class Cockpit(DatarefListener, CockpitBase):
             ld[dflt] = value
         logger.debug(f"set default {dflt} to {value}")
 
+    def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
+        self.global_luminosity = luminosity
+        self.global_brightness = brightness
+
     @property
     def acpath(self):
         return self._acpath
