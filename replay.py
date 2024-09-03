@@ -62,7 +62,7 @@ def get_event(event) -> Tuple[int | None, dict]:
     # SwipeEvent
     # TouchEvent
 
-    event_code = event["rawcode"]
+    event_code = event.get("rawcode", -1)
     if event_code == -1: # need to recontruct it
         if event_type == "PushEvent":
             if event["pressed"]:
@@ -105,6 +105,7 @@ try:
         for obj in reader:
             if last is not None:
                 delta = datetime.fromisoformat(obj["ts"]).timestamp() -  datetime.fromisoformat(last["ts"]).timestamp()
+            tot_time = tot_time + delta
             time.sleep(1 if args.fast else delta)
             code, data = get_event(obj["event"])
             if code is None:
@@ -118,11 +119,10 @@ try:
                 "data": data
             }
             if not args.silent or args.info:
-                print("replay", round(tot_time, 3), new_event)
+                print("replay", f"{tot_time:5.3f}", new_event)
             if ws is not None:
                 ws.send(json.dumps(new_event))
             last = obj
-            tot_time = tot_time + delta
     if ws is not None:
         ws.close()
 except (KeyboardInterrupt, EOFError, ConnectionClosed):

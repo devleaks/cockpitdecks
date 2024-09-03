@@ -7,6 +7,7 @@ import threading
 import json
 import urllib.parse
 import argparse
+import subprocess
 
 from enum import Enum
 
@@ -22,6 +23,7 @@ from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
+
 
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
@@ -46,7 +48,7 @@ if LOGFILE is not None:
 # COMMAND LINE PARSING
 #
 # No aircraft supplied starts the demo version.
-DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to X-Plane 12"
+DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to X-Plane 12.1+"
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 
@@ -61,11 +63,11 @@ parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
-parser.add_argument("-s", "--silent", action="store_true", help="silence startup information")
+parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 
 args = parser.parse_args()
 
-VERBOSE = not args.silent
+VERBOSE = args.verbose
 
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
@@ -91,12 +93,17 @@ elif ac is None and XP_HOME is None:
         print("no aircraft, no X-Plane on this host, starting in demo mode")
 
 if VERBOSE:
-    print(f"{AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'can change'}")
+    print(f"{AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'can change'}\n")
 
 #
 # COCKPITDECKS STARTS HERE, REALLY
 #
-print(f"\n\n{__NAME__.title()} {__version__} {__COPYRIGHT__}\n{DESC}\n")
+# Run git status
+process = subprocess.Popen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+stdout, stderr = process.communicate()
+last_commit = stdout.decode("utf-8")[:10].replace("-", "")
+
+print(f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n")
 logger.info("Initializing Cockpitdecks..")
 cockpit = Cockpit(XPlane)
 logger.info("..initialized\n")

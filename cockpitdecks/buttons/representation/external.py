@@ -441,6 +441,21 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         logger.debug(f"nearest={nearest}")
         return nearest
 
+    def update_metar(self, create: bool = False):
+        if create:
+            self.metar = Metar(self.station.icao)
+        before = self.metar.raw
+        updated = self.metar.update()
+        self._last_updated = datetime.now()
+        if updated:
+            logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
+            if before != self.metar.raw and before is not None and before != "":
+                logger.info(f"{before}")
+                logger.info(f"{self.metar.raw}")
+        else:
+            logger.debug(f"Metar fetched, no Metar update for station {self.station.icao}")
+        return updated
+
     def update(self, force: bool = False) -> bool:
         """
         Creates or updates Metar. Call to avwx may fail, so it is wrapped into try/except block
@@ -466,35 +481,30 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         if self.station is None:
             try:
                 self.station = new_station
-                self.metar = Metar(self.station.icao)
-                self.metar.update()
+                updated = self.update_metar(create=True)
                 self.sun = Sun(self.station.latitude, self.station.longitude)
                 self.button._config["label"] = new_station.icao
-                self._last_updated = datetime.now()
-                updated = True
+                updated = True  #force
                 logger.info(f"UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
                 logger.warning(f"new station {new_station.icao}: Metar not created", exc_info=True)
         elif new_station is not None and new_station.icao != self.station.icao:
             try:
+                old_station = self.station.icao
                 self.station = new_station
-                self.metar = Metar(self.station.icao)
-                self.metar.update()
+                updated = self.update_metar(create=True)
                 self.sun = Sun(self.station.latitude, self.station.longitude)
                 self.button._config["label"] = new_station.icao
-                self._last_updated = datetime.now()
-                updated = True
-                logger.info(f"UPDATED: station changed to {self.station.icao}")
+                updated = True  #force
+                logger.info(f"UPDATED: station changed from {old_station} to {self.station.icao}")
             except:
                 self.metar = None
                 logger.warning(f"change station to {new_station.icao}: Metar not created", exc_info=True)
         elif self.metar is None:  # create it the first time
             try:
-                self.metar = Metar(self.station.icao)
-                self.metar.update()
-                self._last_updated = datetime.now()
-                updated = True
+                self.metar.update_metar(create=True)
+                updated = True  #force
                 logger.info(f"UPDATED: station {self.station.icao}, first Metar")
             except:
                 self.metar = None
@@ -506,21 +516,12 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             try:
                 now = datetime.now()
                 if self._last_updated is None:
-                    updated = self.metar.update()
-                    self._last_updated = datetime.now()
-                    if updated:
-                        logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
-                    else:
-                        logger.debug(f"Metar fetched, no Metar update for station {self.station.icao}")
+                    updated = self.update_metar()
+                    logger.debug(f"station {self.station.icao}, Metar collected")
                 else:
                     diff = now.timestamp() - self._last_updated.timestamp()
                     if diff > WeatherMetarIcon.MIN_UPDATE:
-                        updated = self.metar.update()
-                        self._last_updated = datetime.now()
-                        if updated:
-                            logger.info(f"UPDATED: station {self.station.icao}, Metar updated")
-                        else:
-                            logger.debug(f"Metar fetched, no Metar update for station {self.station.icao}")
+                        updated = self.update_metar()
                     else:
                         logger.debug(f"station {self.station.icao}, Metar does not need updating")
             except:

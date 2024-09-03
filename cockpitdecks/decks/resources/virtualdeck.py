@@ -24,7 +24,7 @@ class VirtualDeck:
         self.serial_number = serial
 
     def get_serial_number(self):
-        return self.serial_number
+        return self.serial_number if self.serial_number is not None else f"serial#{self.name.replace(' ', '-')}"
 
     # #########################################
     #

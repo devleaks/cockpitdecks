@@ -654,7 +654,7 @@ class Cockpit(DatarefListener, CockpitBase):
             if serial in EXCLUDE_DECKS:
                 logger.warning(f"deck {serial} excluded")
                 del decks[name]
-            logger.info(f"added virtual deck {name}, serial {serial})")
+            logger.info(f"added virtual deck {name}, type {device.virtual_deck_config.get('type', 'type-not-found')}, serial {serial})")
             self.devices.append(
                 {
                     CONFIG_KW.DRIVER.value: VIRTUAL_DECK_DRIVER,
