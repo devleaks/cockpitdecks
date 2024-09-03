@@ -183,7 +183,7 @@ class Streamdeck(DeckWithIcons):
         This is the function that is called when a key is pressed.
         """
         # print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
-        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
+        logger.debug(f"Deck {deck.get_id()} Key {key} = {state}")
         PushEvent(deck=self, button=key, pressed=state)  # autorun enqueues it in cockpit.event_queue for later execution
 
     def dial_callback(self, deck, key, action, value):

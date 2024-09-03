@@ -295,7 +295,7 @@ def cockpit_wshandler():
                 # app.logger.info(f"registered deck {deck}")
                 cockpit.handle_code(code, deck)
                 app.logger.debug(f"handled deck={deck}, code={code}")
-            elif code == 0:
+            elif code == 0 or code == 99:  # 99 is replay
                 deck = data.get("deck")
                 key = data.get("key")
                 event = data.get("event")

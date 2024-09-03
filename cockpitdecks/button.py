@@ -176,16 +176,13 @@ class Button(DatarefListener, ValueProvider):
 
     @staticmethod
     def guess_representation_type(config):
-        a = []
-        for r in REPRESENTATIONS.keys():
-            if r in config:
-                a.append(r)
+        a = [r for r in REPRESENTATIONS.keys() if r in config]
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
             logger.debug(f"no representation in {config}")
         else:
-            logger.debug(f"multiple representation {a} in {config}")
+            logger.warning(f"multiple representations {a} found in {config}")
         return CONFIG_KW.NONE.value
 
     def button_name(self):

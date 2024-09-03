@@ -312,7 +312,7 @@ class Dataref:
         return None
 
     def set_value(self, simulator: Simulator):
-        api_url = api_url
+        api_url = simulator.api_url
         if api_url is None:
             logger.warning("no api url")
             return None
@@ -323,8 +323,8 @@ class Dataref:
                 return None
         url = f"{api_url}/datarefs/{self._xpindex}/value"
         value = self.current_value
-        if self._is_string or self.data_type == "string":
-            value = base64.b64encode(bytes(self.current_value, "ascii")).decode("ascii")
+        if value is not None and (self._is_string or self.data_type == "string"):
+            value = base64.b64encode(bytes(str(self.current_value), "ascii")).decode("ascii")
         data = {"data": value}
         response = requests.patch(url=url, data=data)
         if response.status_code != 200:
@@ -393,13 +393,16 @@ class Instruction(ABC):
     [description]
     """
 
-    def __init__(self, name: str, delay: float = 0.0, condition: str | None = None) -> None:
+    def __init__(self, name: str, delay: float = 0.0, condition: str | None = None, button: "Button" | None = None) -> None:
         super().__init__()
         self.name = name
+
         self.delay = delay
         self.condition = condition
+
+        self._button = button
+
         self._timer = None
-        self._button = None
 
     @abstractmethod
     def _execute(self, simulator: Simulator):
@@ -495,7 +498,7 @@ class BeginEndCommand(Command):
     """
 
     def __init__(self, path: str | None, name: str | None = None, delay: float = 0.0, condition: str | None = None):
-        Command.__init__(self, path=path, name=name, delay=delay, condition=condition)
+        Command.__init__(self, path=path, name=name, delay=0.0, condition=condition)  # force no delay for commandBegin/End
         self.is_on = False
 
     def _execute(self, simulator: Simulator):
@@ -556,7 +559,17 @@ class MacroCommand(Instruction):
         self.init()
 
     def __str__(self) -> str:
-        return self.name if self.name is not None else (self.path if self.path is not None else "no command")
+        return self.name + f"({', '.join([c.name for c in self._commands])}"
+
+    @property
+    def button(self):
+        return self._button
+
+    @button.setter
+    def button(self, button):
+        self._button = button
+        for command in self._commands:
+            command._button = button
 
     def init(self):
         self._commands = []

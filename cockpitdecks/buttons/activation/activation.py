@@ -102,8 +102,8 @@ class Activation:
 
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:
-            self._view = Instruction.new(name=cmdname+":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
-            self._view.button = self.button # set button to evalute conditional
+            self._view = Instruction.new(name=cmdname + ":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
+            self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
@@ -112,9 +112,12 @@ class Activation:
         self._long_press = None
         long_press = self._config.get("long-press")
         if long_press is not None:
-            self._long_press = Instruction.new(name=cmdname+":long-press", command=long_press)  # Optional additional command
+            self._long_press = Instruction.new(name=cmdname + ":long-press", command=long_press)  # Optional additional command
 
         # Datarefs
+        # Note on set-dataref: The activation will set the dataref value
+        # to the value of the activatiuon but it will NOT write it the X-Plane
+        # Therefore, here, it is not a Instruction SetDataref that is built.
         self._writable_dataref = None
         set_dataref_path = self._config.get(CONFIG_KW.SET_DATAREF.value)
         if set_dataref_path is not None:
@@ -237,7 +240,7 @@ class Activation:
     def long_pressed(self, duration: float = 2) -> bool:
         return self.duration > duration
 
-    def has_continuous_press(self) -> bool:
+    def has_beginend_command(self) -> bool:
         if hasattr(self, "_command"):
             cmd = getattr(self, "_command")
             if cmd is not None:
@@ -253,7 +256,7 @@ class Activation:
         return set()
 
     def long_press(self, event):
-        print(">"*40, " long_press")
+        print(">" * 40, " long_press")
         self._long_press.execute(simulator=self.button.sim)
 
     def is_valid(self) -> bool:
@@ -652,7 +655,7 @@ class Random(Activation):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join([f"The button stops Cockpitdecks and terminates gracefully."])
+        return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])
 
 
 #
@@ -772,7 +775,7 @@ class Push(Activation):
         if not super().activate(event):
             return False
         if event.pressed:
-            if not (self.has_long_press() or self.has_continuous_press()):  # we don't have to wait for the release to trigger the command
+            if not (self.has_long_press() or self.has_beginend_command()):  # we don't have to wait for the release to trigger the command
                 self._command.execute(simulator=self.button.sim)
             if self.auto_repeat and self.exit is None:
                 self.auto_repeat_start()
@@ -780,7 +783,7 @@ class Push(Activation):
             if self.button.is_guarded():
                 return False
 
-            if (self.has_long_press() and not self.long_pressed()) and not self.has_continuous_press():
+            if (self.has_long_press() and not self.long_pressed()) and not self.has_beginend_command():
                 self._command.execute(simulator=self.button.sim)
             if self.auto_repeat:
                 self.auto_repeat_stop()
@@ -792,7 +795,7 @@ class Push(Activation):
         while not self.exit.is_set():
             self._command.execute(simulator=self.button.sim)
             self.exit.wait(self.auto_repeat_speed)
-        logger.debug(f"exited")
+        logger.debug("exited")
 
     def auto_repeat_start(self):
         """
@@ -813,7 +816,7 @@ class Push(Activation):
             self.exit.set()
             self.thread.join(timeout=2 * self.auto_repeat_speed)
             if self.thread.is_alive():
-                logger.warning(f"..thread may hang..")
+                logger.warning("..thread may hang..")
             else:
                 self.exit = None
         else:
@@ -826,17 +829,17 @@ class Push(Activation):
         return "\n\r".join(
             [
                 f"The button executes {self._command} when it is activated (pressed).",
-                f"The button does nothing when it is de-activated (released).",
+                "The button does nothing when it is de-activated (released).",
             ]
         )
 
 
-class Continuouspress(Push):
+class BeginEndPress(Push):
     """
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
 
-    ACTIVATION_NAME = "continuous-press"
+    ACTIVATION_NAME = "begin-end-command"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
@@ -920,7 +923,6 @@ class OnOff(Activation):
 
         # Internal variables
         self.onoff_current_value = False  # bool on or off, true = on
-
 
     def init(self):
         if self._inited:
