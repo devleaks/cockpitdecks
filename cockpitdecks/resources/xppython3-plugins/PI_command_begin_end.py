@@ -42,13 +42,13 @@ RELEASE = "1.0.5"  # local version number
 # 21-NOV-2023: 1.0.2: Added encoding to file open.
 # 28-FEB-2023: 1.0.1: Adjusted for new Yaml file format and attributes.
 # 25-OCT-2022: 1.0.0: Initial version
-#
+
 
 
 class PythonInterface:
     def __init__(self):
         self.Name = "Cockpitdecks Helper"
-        self.Sig = "xppython3.cockpitdeckshelper"
+        self.Sig = "xppython3.commandbeginend"
         self.Desc = f"Decompose long press commands into command/begin and command/end. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False

@@ -1,4 +1,7 @@
-# Python Plugin To Save Toliss Situations on request.
+# Switches between system time or not.
+# Provides command xppython3/time_of_day to switch.
+# Displays local tima and zulu time in lower left corner.
+#
 # Enjoy.
 #
 import os

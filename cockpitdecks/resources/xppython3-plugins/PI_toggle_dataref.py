@@ -1,5 +1,4 @@
-# Creates pair of commandBegin/commandEnd for some commands.
-# New commands for "command" are "command/begin" and "command/end".
+# Creates a command to change the value of a dataref between 0 and 1.
 #
 import os
 import glob
@@ -18,11 +17,8 @@ CONFIG_DIR = "deckconfig"
 CONFIG_FILE = "config.yaml"
 DEFAULT_LAYOUT = "default"
 
-#
-#
 # Commands extracted from these button types
 # will get a command/begin command/end helper command.
-#
 #
 REF = "cmdref"
 FUN = "cmdfun"
@@ -38,8 +34,8 @@ RELEASE = "1.0.0"  # local version number
 
 class PythonInterface:
     def __init__(self):
-        self.Name = "Set/Unset/Toggle writable «boolean» datarefs"
-        self.Sig = "xppython3.cockpitdeckshelper"
+        self.Name = "Toggle «boolean» DataRefs"
+        self.Sig = "xppython3.toggledataref"
         self.Desc = f"Make a boolean writable dataref settable by commands set/unset/toggle. (Rel. {RELEASE})"
         self.Info = self.Name + f" (rel. {RELEASE})"
         self.enabled = False
