@@ -32,7 +32,7 @@ from .draw_animation import DrawAnimation
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 # #############
 # Local constant

@@ -62,7 +62,7 @@ def get_event(event) -> Tuple[int | None, dict]:
     # SwipeEvent
     # TouchEvent
 
-    event_code = event["code"]
+    event_code = event["rawcode"]
     if event_code == -1: # need to recontruct it
         if event_type == "PushEvent":
             if event["pressed"]:

@@ -130,7 +130,7 @@ class DeckEvent(Event):
         return self._ts
 
     def info(self):
-        return super().info() | {"deck": self.deck.get_id(), "button": self.button}
+        return super().info() | {"deck": self.deck.get_id(), "button": self.button, "rawcode": self._rawcode}
 
     def handling(self):
         """Called before event is processed"""

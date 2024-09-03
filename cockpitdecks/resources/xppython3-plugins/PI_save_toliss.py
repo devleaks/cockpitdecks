@@ -65,6 +65,7 @@ class PythonInterface:
         return None
 
     def XPluginEnable(self):
+        xp.registerDrawCallback(self._notify)
         self.enabled = True
         return 1
 
