@@ -3,22 +3,12 @@
 #
 import os
 import glob
-from traceback import print_exc
+import time
 from datetime import datetime
 
 import xp
 
-# ###########################################################
-# SAVE TOLISS SITUATION
-#
-PLUGIN_VERSION = "1.0.1"
-#
-# Changelog:
-#
-# 24-FEB-2024: 1.0.1: Change date-time format
-# 31-JAN-2024: 1.0.0: Original release
-#
-#
+PLUGIN_VERSION = "1.1.0"
 SAVE_TOLISS_COMMAND = "toliss/save_situation_now"
 SAVE_TOLISS_COMMAND_DESC = "Save ToLiss Airbus situation to file with a timestamp"
 
@@ -26,6 +16,17 @@ TOLISS_SAVE_COMMAND = "toliss_airbus/iscsinterface/save_sit"
 XPLANE_FOLDER_PATH = os.getcwd()
 SAVED_SITUATION_FOLDER_PATH = os.path.join("Resources", "Plugins", "ToLissData", "Situations")
 DATETIME_FORMAT = "%Y%m%d%H%M%S"
+
+# ###########################################################
+# S A V E   T O L I S S   S I T U A T I O N
+#
+RELEASE = "1.1.0"  # local version number
+#
+# Changelog:
+#
+# 02-SEP-2024: 1.1.0: Add notification on screen that it worked
+# 23-AUG-2024: 1.0.1: Changed date/time format
+# 02-FEB-2024: 1.0.0: Initial version
 
 
 class PythonInterface:
@@ -36,6 +37,10 @@ class PythonInterface:
         self.Info = self.Name + f" (rel. {PLUGIN_VERSION})"
         self.enabled = False
         self.trace = True  # produces extra debugging in XPPython3.log for this class
+        self.color = (0.0, 1.0, 0.0)
+        self.message = "Save ToLiss Airbus situation"
+        self.duration = 5
+        self.refCon = {"unsued": "unused"}
         self.saveToLissCmdRef = None
 
     def XPluginStart(self):
@@ -69,6 +74,17 @@ class PythonInterface:
 
     def XPluginReceiveMessage(self, inFromWho, inMessage, inParam):
         pass
+
+    def notify(self):
+        self.duration = 100
+        xp.registerDrawCallback(self._notify)
+
+    def _notify(self, phase, after, refCon):
+        xp.setGraphicsState(0, 1, 0, 0, 0, 0, 0)
+        xp.drawString(self.color, 20, 100, self.message)
+        self.duration = self.duration - 1
+        if self.duration <= 0:
+            xp.unregisterDrawCallback(self._notify)
 
     def saveToLiss(self, *args, **kwargs):
         # pylint: disable=unused-argument
@@ -106,6 +122,7 @@ class PythonInterface:
                 all_files = glob.glob(os.path.join(XPLANE_FOLDER_PATH, SAVED_SITUATION_FOLDER_PATH, "*.qps"))
                 all_files = all_files + glob.glob(os.path.join(XPLANE_FOLDER_PATH, SAVED_SITUATION_FOLDER_PATH, "*_pilotItems.dat"))
                 files = list(filter(lambda f: os.path.getctime(f) > ts.timestamp(), all_files))
+                # print(self.Info, "newer files", files)
                 # Rename those files with <timestamp> added to name
                 newname = ""
                 if len(files) > 0:
@@ -114,7 +131,10 @@ class PythonInterface:
                         fn, fext = os.path.os.path.splitext(f)
                         newname = os.path.join(fn + "-" + tstr + fext).replace("AUTO", "USER")
                         os.rename(f, newname)
-                        print(self.Info, f"saved situation at {ts} in file {newname}")
+                        self.message = f"saved situation at {ts} in file {os.path.basename(newname)}"
+                        print(self.Info, self.message)
+
+                        self.notify()
                     # if self.trace:
                     #     print(self.Info, f"{len(files)} files renamed at {tstr}")
                 else:
