@@ -40,9 +40,6 @@ dynamic = [
 ]
 
 [project.optional-dependencies]
-streamdeck = ["streamdeck~=0.9.5"]
-loupedeck = ["loupedeck @ git+https://github.com/devleaks/python-loupedeck-live.git"]
-xtouchmini = ["xtouchmini @ git+https://github.com/devleaks/python-berhinger-xtouchmini.git"]
 weather = [
     "avwx-engine~=1.9.0",
     "scipy",
@@ -51,6 +48,9 @@ weather = [
     "metar~=1.11.0",
     "tabulate~=0.9.0"
 ]
+streamdeck = ["streamdeck~=0.9.5"]
+loupedeck = ["loupedeck @ git+https://github.com/devleaks/python-loupedeck-live.git"]
+xtouchmini = ["xtouchmini @ git+https://github.com/devleaks/python-berhinger-xtouchmini.git"]
 development = [
     "types-Flask~=1.1.6",
     "types-Pillow~=10.2.0",

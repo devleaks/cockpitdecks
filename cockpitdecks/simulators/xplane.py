@@ -219,12 +219,14 @@ class XPlaneBeacon:
                 try:
                     self.FindIp()
                     if self.connected:
-                        logger.info(self.beacon_data)
+                        logger.info(f"beacon: {self.beacon_data}")
                         if "XPlaneVersion" in self.beacon_data:
                             curr = self.beacon_data["XPlaneVersion"]
                             if curr < XP_MIN_VERSION:
-                                logger.warning(f"X-Plane version {curr} detected, minimal version is {XP_MIN_VERSION}.")
-                                logger.warning(f"Some features in Cockpitdecks may not work properly.")
+                                logger.warning(f"X-Plane version {curr} detected, minimal version is {XP_MIN_VERSION}")
+                                logger.warning(f"Some features in Cockpitdecks may not work properly")
+                            else:
+                                logger.info(f"X-Plane version {curr} meets minima (>={XP_MIN_VERSION})")
                         logger.debug("..connected, starting dataref listener..")
                         self.start()
                         self.inc(INTERNAL_DATAREF.STARTS.value)
