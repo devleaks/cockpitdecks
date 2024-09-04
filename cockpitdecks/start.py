@@ -113,7 +113,8 @@ process = subprocess.Popen(["git", "show", "-s", "--format=%ci"], stdout=subproc
 stdout, stderr = process.communicate()
 last_commit = stdout.decode("utf-8")[:10].replace("-", "")
 
-print(f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n")
+copyrights = f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n"
+print(copyrights)
 logger.info("Initializing Cockpitdecks..")
 cockpit = Cockpit(XPlane)
 logger.info("..initialized\n")
@@ -146,7 +147,7 @@ app.logger.setLevel(logging.INFO)
 
 @app.route("/")
 def index():
-    return render_template("index.j2", virtual_decks=cockpit.get_web_decks())
+    return render_template("index.j2", virtual_decks=cockpit.get_web_decks(), copyrights={"copyrights": copyrights.replace("\n", "<br/>")})
 
 
 @app.route("/favicon.ico")

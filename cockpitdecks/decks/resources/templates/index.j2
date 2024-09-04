@@ -3,8 +3,24 @@
 <head>
     <title>Cockpitdecks Web Decks</title>
 <style type="text/css">
+html {
+    position: relative;
+    min-height: 100%;
+}
 body {
     font-family: sans-serif;
+    margin: 0 0 100px;
+    /* bottom = footer height */
+    padding: 25px;
+}
+
+footer {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 100px;
+    width: 100%;
+    overflow: hidden;
 }
 </style>
 </head>
@@ -29,5 +45,10 @@ body {
         <p>Please start Cockpitdecks to see available web decks.</p>
         <p><a href="/">Refresh page</a></p>
     {% endif %}
+    <footer  style="font-size: small;">
+        <hr style="width:35%;text-align:left;margin-left:0">
+        {{ copyrights.copyrights }}
+        <a href="https://devleaks.github.io/cockpitdecks-docs/" target="_blank">Cockpitdecks Documentation </a>
+    </footer>
 </body>
 </html>
