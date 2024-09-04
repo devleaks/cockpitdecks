@@ -5,6 +5,8 @@
 # Respect original timing.
 # Open perspective of automation, espcially for testing
 #
+# Pip install jsonlines before using.
+#
 import sys
 import os
 import time
@@ -31,8 +33,6 @@ if args.logfile is None:
     parser.print_help()
     sys.exit(1)
 
-INTERNAL_DATAREF_PREFIX = "data:"
-FORWARD_INTERNAL_DATAREF = args.internal
 need_flush = False
 def flush():
     global need_flush
@@ -40,7 +40,10 @@ def flush():
         print(".", flush=True)
     need_flush = False
 
+
+INTERNAL_DATAREF_PREFIX = "data:"
 APP_HOST = [os.getenv("APP_HOST", "mac-studio-de-pierre.local"), int(os.getenv("APP_PORT", 7777))]
+
 ws = None
 if not args.info:
     try:
@@ -70,6 +73,7 @@ def get_event(event) -> Tuple[int | None, dict]:
     data = {}
 
     event_type = event["type"]
+    # Event types:
     # PushEvent
     # EncoderEvent
     # SlideEvent
@@ -107,7 +111,7 @@ def get_event(event) -> Tuple[int | None, dict]:
         elif event_type == "DatarefEvent":
             if args.xplane:
                 path = event["path"]
-                if path is not None and (FORWARD_INTERNAL_DATAREF or not path.startswith(INTERNAL_DATAREF_PREFIX)):
+                if path is not None and (args.internal or not path.startswith(INTERNAL_DATAREF_PREFIX)):
                     data = {
                         "code": 99,
                         "path": path,
@@ -167,3 +171,4 @@ except (KeyboardInterrupt, EOFError, ConnectionClosed):
 if not args.silent:
     flush()
     print("done")
+flush()

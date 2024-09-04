@@ -505,7 +505,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
                 logger.warning(f"change station to {new_station.icao}: Metar not created", exc_info=True)
         elif self.metar is None:  # create it the first time
             try:
-                self.metar.update_metar(create=True)
+                updated = self.update_metar(create=True)
                 updated = True  # force
                 logger.info(f"UPDATED: station {self.station.icao}, first Metar")
             except:
