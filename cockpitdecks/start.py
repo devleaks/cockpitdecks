@@ -27,11 +27,10 @@ from simple_websocket import Server, ConnectionClosed
 import ruamel
 from ruamel.yaml import YAML
 
-from cockpitdecks.config import XP_HOME, APP_HOST, DEMO_HOME
-from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
+from cockpitdecks.constant import CONFIG_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
 
-from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, COCKPITDECKS_ASSET_PATH, AIRCRAFT_ASSET_PATH, TEMPLATE_FOLDER, ASSET_FOLDER
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__
+from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
 
 
@@ -59,6 +58,7 @@ if LOGFILE is not None:
 #
 # No aircraft supplied starts the demo version.
 DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to X-Plane 12.1+"
+DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "demo")
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 
@@ -71,6 +71,7 @@ class CD_MODE(Enum):
 
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
+parser.add_argument("-c", "--config", metavar="config_file", type=str, nargs=1, help="alternate configuration file")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
@@ -78,10 +79,22 @@ parser.add_argument("-v", "--verbose", action="store_true", help="show startup i
 args = parser.parse_args()
 
 VERBOSE = args.verbose
+CONFIG_FILE = os.path.join("cockpitdecks", "config.yaml") if args.config is None else args.config[0]
 
+config = Config(filename=os.path.abspath(CONFIG_FILE))
+
+
+XP_HOME = config.get("XP_HOME")
+APP_HOST = config.get("APP_HOST")
+COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")
+if XP_HOME is not None:
+    COCKPITDECKS_PATH = ":".join(
+        COCKPITDECKS_PATH.split(":") + [os.path.join(XP_HOME, "Aircraft", "Extra Aircraft"), os.path.join(XP_HOME, "Aircraft", "Laminar Research")]
+    )
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
     sys.exit(1)
+
 
 mode = CD_MODE.DEMO if args.demo else CD_MODE.NORMAL
 ac = args.aircraft_folder
@@ -116,7 +129,7 @@ last_commit = stdout.decode("utf-8")[:10].replace("-", "")
 copyrights = f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n"
 print(copyrights)
 logger.info("Initializing Cockpitdecks..")
-cockpit = Cockpit(XPlane)
+cockpit = Cockpit(XPlane, environ=config)
 logger.info("..initialized\n")
 
 
@@ -322,7 +335,7 @@ def cockpit_wshandler():
                     key = data.get("key")
                     event = data.get("event")
                     payload = data.get("data")
-                    cockpit.process_event(deck_name=deck, key=key, event=event, data=payload, replay=code==99)
+                    cockpit.process_event(deck_name=deck, key=key, event=event, data=payload, replay=code == 99)
                 # app.logger.info(f"event processed deck={deck}, event={event} data={payload}")
     except ConnectionClosed:
         app.logger.debug("connection closed")
@@ -343,7 +356,7 @@ def main():
         logger.info(f"Starting {AIRCRAFT_DESC}..")
         if ac is None and XP_HOME is not None:
             logger.info(f"(starting in demonstration mode but will load aircraft if X-Plane is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)")
-        cockpit.start_aircraft(AIRCRAFT_HOME, release=True, mode=mode.value)
+        cockpit.start_aircraft(acpath=AIRCRAFT_HOME, cdpath=COCKPITDECKS_PATH, release=True, mode=mode.value)
         logger.info("..started")
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():

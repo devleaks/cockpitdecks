@@ -195,8 +195,6 @@ class Dataref:
 
     def notify(self):
         for lsnr in self.listeners:
-            if not self.path.startswith("data:"):
-                print("notifying", self.path, lsnr.name)
             lsnr.dataref_changed(self)
             if hasattr(lsnr, "page") and lsnr.page is not None:
                 loggerDataref.log(
@@ -569,8 +567,9 @@ class Simulator(ABC):
 
     DEFAULT_REQ_FREQUENCY = DEFAULT_FREQUENCY
 
-    def __init__(self, cockpit):
+    def __init__(self, cockpit, environ):
         self._inited = False
+        self._environ = environ
         self.name = type(self).__name__
         self.cockpit = cockpit
         self.running = False

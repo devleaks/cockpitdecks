@@ -182,7 +182,7 @@ class Streamdeck(DeckWithIcons):
         """
         This is the function that is called when a key is pressed.
         IMPORTANT: The deck is the class instance for the **DEVICE**, not the Cockpitdecks.Deck().
-         """
+        """
         # print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
         logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         PushEvent(deck=self, button=key, pressed=state, code=state)  # autorun enqueues it in cockpit.event_queue for later execution

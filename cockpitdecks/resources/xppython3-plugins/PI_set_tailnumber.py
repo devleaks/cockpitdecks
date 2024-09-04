@@ -114,6 +114,3 @@ class PythonInterface:
             print(self.Info, f"set_tail_number: {acpath}, {livery}: set to {reg}.")
 
         return 0
-
-
-w

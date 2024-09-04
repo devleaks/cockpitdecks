@@ -550,11 +550,22 @@ class Deck(ABC):
                 return
             logger.debug(f"REPLAY TouchEvent deck {self.name} key {key} = {state}, {self._touch_event_start}, {data}")
             if state == 10:  # start
-                self._touch_event_start = TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), code=state, autorun=False)
+                self._touch_event_start = TouchEvent(
+                    deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), code=state, autorun=False
+                )
                 self._touch_event_start._replay = True
                 self._touch_event_start.run()
-            else: # probably end
-                e = TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), start=self._touch_event_start, code=state, autorun=False)
+            else:  # probably end
+                e = TouchEvent(
+                    deck=self,
+                    button=key,
+                    pos_x=data.get("x"),
+                    pos_y=data.get("y"),
+                    cli_ts=data.get("ts"),
+                    start=self._touch_event_start,
+                    code=state,
+                    autorun=False,
+                )
                 e._replay = True
                 e.run()
                 self._touch_event_start = None  # reset start

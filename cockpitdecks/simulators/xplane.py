@@ -12,7 +12,6 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from cockpitdecks import SPAM_LEVEL, AIRCRAFT_CHANGE_MONITORING_DATAREF
-from cockpitdecks.config import API_HOST, API_PORT, API_PATH, XP_HOME
 from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -178,11 +177,11 @@ class XPlaneBeacon:
                     s = "does not appear"
                     if self.runs_locally():
                         s = "appears"
-                        if XP_HOME is not None and os.path.isdir(XP_HOME):
-                            logger.info(f"XPlane home directory {XP_HOME}")
+                        if self.xp_home is not None and os.path.isdir(self.xp_home):
+                            logger.info(f"XPlane home directory {self.xp_home}")
                     logger.info(f"XPlane {s} to run locally ({self.local_ip}/{self.beacon_data['IP']})")
-                    if self.runs_locally() and XP_HOME is not None and os.path.isdir(XP_HOME):
-                        logger.info(f"XPlane home directory {XP_HOME}")
+                    if self.runs_locally() and self.xp_home is not None and os.path.isdir(self.xp_home):
+                        logger.info(f"XPlane home directory {self.xp_home}")
                     #
                 else:
                     logger.warning(f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
@@ -298,7 +297,7 @@ class XPlane(Simulator, XPlaneBeacon):
     BEACON_TIMEOUT = 3.0  # seconds
     TERMINATE_QUEUE = "quit"
 
-    def __init__(self, cockpit):
+    def __init__(self, cockpit, environ):
         # list of requested datarefs with index number
         self.datarefidx = 0
         self.datarefs = {}  # key = idx, value = dataref path
@@ -312,7 +311,12 @@ class XPlane(Simulator, XPlaneBeacon):
         self.dref_thread = None
         self._strdref_cache = {}
 
-        Simulator.__init__(self, cockpit=cockpit)
+        self.xp_home = environ.get("XP_HOME")
+        self.api_host = environ.get("API_HOST")
+        self.api_port = environ.get("API_PORT")
+        self.api_path = environ.get("API_PATH")
+
+        Simulator.__init__(self, cockpit=cockpit, environ=environ)
         self.cockpit.set_logging_level(__name__)
 
         XPlaneBeacon.__init__(self)
@@ -360,10 +364,10 @@ class XPlane(Simulator, XPlaneBeacon):
     @property
     def api_url(self):
         if self.connected:
-            host = API_HOST
+            host = self.api_host
             if host is None:
                 host = self.beacon_data["IP"]
-            return f"http://{host}:{API_PORT}/{API_PATH}"
+            return f"http://{host}:{self.api_port}/{self.api_path}"
         return None
 
     def runs_locally(self) -> bool:

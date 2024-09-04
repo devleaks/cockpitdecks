@@ -20,43 +20,41 @@ from PIL import Image, ImageFont
 # from cairosvg import svg2png
 
 from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
-from cockpitdecks import ID_SEP, SPAM, SPAM_LEVEL, ROOT_DEBUG, yaml
 from cockpitdecks import (
-    CONFIG_FOLDER,
-    CONFIG_FILE,
-    SECRET_FILE,
-    EXCLUDE_DECKS,
-    ICONS_FOLDER,
-    FONTS_FOLDER,
-    RESOURCES_FOLDER,
-    DECKS_FOLDER,
-)
-from cockpitdecks import (
-    Config,
-    CONFIG_FILENAME,
-    CONFIG_KW,
-    DECK_KW,
-    COCKPITDECKS_DEFAULT_VALUES,
-    VIRTUAL_DECK_DRIVER,
-    DECK_TYPES,
-    DECK_IMAGES,
-)
-from cockpitdecks import (
-    COCKPITDECKS_ASSET_PATH,
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
+    COCKPITDECKS_ASSET_PATH,
+    COCKPITDECKS_DEFAULT_VALUES,
+    Config,
+    CONFIG_FILE,
+    CONFIG_FILENAME,
+    CONFIG_FOLDER,
+    CONFIG_KW,
+    DECK_IMAGES,
+    DECK_KW,
+    DECK_TYPES,
+    DECKS_FOLDER,
     DEFAULT_FREQUENCY,
+    DEFAULT_LAYOUT,
+    EXCLUDE_DECKS,
+    FONTS_FOLDER,
+    ICONS_FOLDER,
+    ID_SEP,
+    RESOURCES_FOLDER,
+    ROOT_DEBUG,
+    SECRET_FILE,
+    SPAM,
+    SPAM_LEVEL,
+    VIRTUAL_DECK_DRIVER,
+    yaml,
 )
-from cockpitdecks.config import XP_HOME, COCKPITDECKS_PATH
-from cockpitdecks.constant import DEFAULT_LAYOUT
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Dataref, DatarefListener, DatarefEvent
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
-from .buttons.activation import ACTIVATIONS
-from .buttons.representation import REPRESENTATIONS
-
+from cockpitdecks.buttons.activation import ACTIVATIONS
+from cockpitdecks.buttons.representation import REPRESENTATIONS
 
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
@@ -116,11 +114,12 @@ class Cockpit(DatarefListener, CockpitBase):
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
 
-    def __init__(self, simulator):
+    def __init__(self, simulator, environ):
         CockpitBase.__init__(self)
         DatarefListener.__init__(self)
 
         # Defaults and config
+        self._environ = environ
         self._startup_time = datetime.now()
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
@@ -158,7 +157,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self.event_queue = Queue()
 
         self._simulator = simulator
-        self.sim = simulator(self)
+        self.sim = simulator(self, self._environ)
 
         # Internal variables
         self.busy_reloading = False
@@ -169,6 +168,7 @@ class Cockpit(DatarefListener, CockpitBase):
         self._dark = False
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
+        self.cockpitdecks_path = ""
         self._acname = ""
         self._livery_path = ""
 
@@ -445,10 +445,11 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.warning(f"deck {req_serial} not found")
         return None
 
-    def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):
+    def start_aircraft(self, acpath: str, cdpath: str, release: bool = False, mode: int = 0):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
+        self.cockpitdecks_path = cdpath
         self.mode = mode
         self.load_aircraft(acpath)
         self.run(release)
@@ -468,7 +469,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         if self.sim is None:
             logger.info("..starting simulator..")
-            self.sim = self._simulator(self)
+            self.sim = self._simulator(self, self._environ)
         else:
             logger.debug("simulator already running")
 
@@ -1078,7 +1079,7 @@ class Cockpit(DatarefListener, CockpitBase):
             if not Dataref.is_internal_dataref(path):
                 e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True, autorun=False)
                 e._replay = True
-                e.run() # enqueue after setting the reply flag
+                e.run()  # enqueue after setting the reply flag
         else:
             logger.warning(f"path not found")
 
@@ -1127,14 +1128,14 @@ class Cockpit(DatarefListener, CockpitBase):
         return os.path.split(os.path.normpath(os.path.join(path, "..", "..")))[1]
 
     def get_aircraft_path(self, aircraft) -> str | None:
-        for base in COCKPITDECKS_PATH.split(":"):
+        for base in self.cockpitdecks_path.split(":"):
             ac = os.path.join(base, aircraft)
             if os.path.exists(ac) and os.path.isdir(ac):
                 ac_cfg = os.path.join(ac, CONFIG_FOLDER)
                 if os.path.exists(ac_cfg) and os.path.isdir(ac_cfg):
                     logger.info(f"aircraft path found in COCKPITDECKS_PATH: {ac}, with deckconfig")
                     return ac
-        logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={COCKPITDECKS_PATH}")
+        logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
 
     def dataref_changed(self, dataref):
@@ -1164,30 +1165,29 @@ class Cockpit(DatarefListener, CockpitBase):
         if self.mode > 0:
             logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
         else:
-            if self.sim.runs_locally() and XP_HOME is not None:  # attempt to change aircraft if new deckconfig found
-                ac_home = self.get_aircraft_home(value)
-                new_ac = os.path.join(XP_HOME, ac_home)
-                new_cfg = os.path.join(new_ac, CONFIG_FOLDER)
-                if os.path.exists(new_cfg) and os.path.isdir(new_cfg):  # let's change
-                    if self.acpath != new_ac:
-                        logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
-                        logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
-                        self.load_aircraft(acpath=new_ac)
-                        return  # no additional processing
-                    else:
-                        logger.info(f"livery changed to {new_livery} but no aircraft unchanged, aircraft not adjusted")
-                else:
-                    logger.info(f"livery changed to {new_livery} but no {CONFIG_FOLDER} in {new_ac}, aircraft not adjusted")
+            # if self.sim.runs_locally() and XP_HOME is not None:  # attempt to change aircraft if new deckconfig found
+            #     ac_home = self.get_aircraft_home(value)
+            #     new_ac = os.path.join(XP_HOME, ac_home)
+            #     new_cfg = os.path.join(new_ac, CONFIG_FOLDER)
+            #     if os.path.exists(new_cfg) and os.path.isdir(new_cfg):  # let's change
+            #         if self.acpath != new_ac:
+            #             logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
+            #             logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
+            #             self.load_aircraft(acpath=new_ac)
+            #             return  # no additional processing
+            #         else:
+            #             logger.info(f"livery changed to {new_livery} but no aircraft unchanged, aircraft not adjusted")
+            #     else:
+            #         logger.info(f"livery changed to {new_livery} but no {CONFIG_FOLDER} in {new_ac}, aircraft not adjusted")
+            # else:
+            new_ac = self.get_aircraft_path(self._acname)
+            if new_ac != None and self.acpath != new_ac:
+                logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
+                logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
+                self.load_aircraft(acpath=new_ac)
+                return  # no additional processing
             else:
-                # logger.info(f"X-Plane is remote, aircraft not adjusted")
-                new_ac = self.get_aircraft_path(self._acname)
-                if new_ac != None and self.acpath != new_ac:
-                    logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
-                    logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
-                    self.load_aircraft(acpath=new_ac)
-                    return  # no additional processing
-                else:
-                    logger.info("aircraft path not found, aircraft not adjusted")
+                logger.info("aircraft path not found, aircraft not adjusted")
 
         # Adjustment of livery
         old_livery = self._livery_dataref.value()
