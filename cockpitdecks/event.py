@@ -26,6 +26,7 @@ class Event(ABC):
             action (DECK_ACTIONS): Action produced by this event (~ DeckEvent type)
             deck (Deck): Deck that produced the event
         """
+        self._replay = False
         self._ts = datetime.now().timestamp()
         if autorun:
             self.run()
@@ -42,6 +43,9 @@ class Event(ABC):
     def timestamp(self) -> float:
         """Event creation timestamp"""
         return self._ts
+
+    def is_replay(self) -> bool:
+        return self._replay
 
     def handling(self):
         """Called before event is processed"""

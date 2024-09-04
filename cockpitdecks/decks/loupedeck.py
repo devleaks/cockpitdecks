@@ -130,6 +130,7 @@ class Loupedeck(DeckWithIcons):
     def key_change_callback(self, deck, msg=None, **kwargs):
         """
         This is the function that is called when a key is pressed.
+        IMPORTANT: The deck is the class instance for the **DEVICE**, not the Cockpitdecks.Deck().
         """
         if type(deck) is not LoupedeckLive:  # we are not coming from the driver:
             return self.replay(deck=deck, **kwargs)

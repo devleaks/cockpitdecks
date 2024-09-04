@@ -995,7 +995,8 @@ class Cockpit(DatarefListener, CockpitBase):
             try:
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
-                if EVENTLOGFILE is not None and (LOG_DATAREF_EVENTS or type(e) is not DatarefEvent):
+                if EVENTLOGFILE is not None and (LOG_DATAREF_EVENTS or type(e) is not DatarefEvent) and not e.is_replay():
+                    # we do not enqueue events that are replayed
                     event_logger.info(e.to_json())
                 e.run(just_do_it=True)
                 logger.debug("..done without error")
@@ -1057,24 +1058,27 @@ class Cockpit(DatarefListener, CockpitBase):
             }
             self.send(deck=self.name, payload=payload)
 
-    def process_event(self, deck_name, key, event, data):
+    def process_event(self, deck_name, key, event, data, replay: bool = False):
         deck = self.cockpit.get(deck_name)
         logger.debug(f"received {deck_name}: key={key}, event={event}")
         if deck is None:
             logger.warning(f"handle event: deck {deck_name} not found")
             return
-        if deck.deck_type.is_virtual_deck():
-            deck.key_change_callback(deck=deck, key=key, state=event, data=data)
-        else:
-            # logger.warning(f"handle event: deck {deck_name} is not virtual")
-            deck.key_change_callback(deck=deck, key=key, state=event)
+        if not replay:
+            if deck.deck_type.is_virtual_deck():
+                deck.key_change_callback(key=key, state=event, data=data)
+            else:
+                deck.key_change_callback(deck=deck.device, key=key, state=event)
+            return
+        deck.replay(key=key, state=event, data=data)
 
-    def process_sim_event(self, data: dict):
+    def replay_sim_event(self, data: dict):
         path = data.get("path")
         if path is not None:
             if not Dataref.is_internal_dataref(path):
-                e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True)
-                print(f"replay dataref update: {path}={data.get('value')}")
+                e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True, autorun=False)
+                e._replay = True
+                e.run() # enqueue after setting the reply flag
         else:
             logger.warning(f"path not found")
 

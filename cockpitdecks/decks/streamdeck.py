@@ -181,14 +181,16 @@ class Streamdeck(DeckWithIcons):
     def key_change_callback(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
-        """
+        IMPORTANT: The deck is the class instance for the **DEVICE**, not the Cockpitdecks.Deck().
+         """
         # print(f"KEY: {type(self).__name__}: {deck.id()}: {key}={state}")
-        logger.debug(f"Deck {deck} Key {key} = {state}")
+        logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         PushEvent(deck=self, button=key, pressed=state, code=state)  # autorun enqueues it in cockpit.event_queue for later execution
 
     def dial_callback(self, deck, key, action, value):
         """
         This is the function that is called when a dial is rotated.
+        IMPORTANT: The deck is the class instance for the **DEVICE**, not the Cockpitdecks.Deck().
         """
         # print(f"DIAL: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
         logger.debug(f"Deck {deck.id()} Key {key} = {action}, {value}")
@@ -207,6 +209,7 @@ class Streamdeck(DeckWithIcons):
     def touchscreen_callback(self, deck, action, value):
         """
         This is the function that is called when the touchscreen is touched swiped.
+        IMPORTANT: The deck is the class instance for the **DEVICE**, not the Cockpitdecks.Deck().
         """
         # print(f"TOUCHSCREEN: {type(self).__name__}: {deck.id()}: {key} {action} {value}")
         logger.debug(f"Deck {deck.id()} Action {action} = {value}")

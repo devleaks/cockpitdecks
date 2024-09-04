@@ -63,6 +63,7 @@ class XTouchMini(Deck):
     def key_change_callback(self, deck, key, state):
         """
         This is the function that is called when a key is pressed.
+        IMPORTANT: The deck is the class instance for the **DEVICE**, not the Cockpitdecks.Deck().
         """
         # logger.debug(f"Deck {deck.id()} Key {key} = {state}")
         # logger.debug(f"Deck {deck.id()} Keys: {self.current_page.buttons.keys()}")

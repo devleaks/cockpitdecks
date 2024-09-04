@@ -316,13 +316,13 @@ def cockpit_wshandler():
             elif code == 0 or code == 99:  # 99 is replay
                 deck = data.get("deck")
                 if deck is None:  # sim event
-                    cockpit.process_sim_event(data=data)
+                    cockpit.replay_sim_event(data=data)
                     # app.logger.info(f"dataref event processed, data={data}")
                 else:
                     key = data.get("key")
                     event = data.get("event")
                     payload = data.get("data")
-                    cockpit.process_event(deck_name=deck, key=key, event=event, data=payload)
+                    cockpit.process_event(deck_name=deck, key=key, event=event, data=payload, replay=code==99)
                 # app.logger.info(f"event processed deck={deck}, event={event} data={payload}")
     except ConnectionClosed:
         app.logger.debug("connection closed")

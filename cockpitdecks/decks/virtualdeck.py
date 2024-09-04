@@ -131,7 +131,7 @@ class VirtualDeck(DeckWithIcons):
     #
     # Deck Specific Functions : Activation
     #
-    def key_change_callback(self, deck, key, state: int, data: dict | None = None) -> Event | None:
+    def key_change_callback(self, key, state: int, data: dict | None = None) -> Event | None:
         """
         This is the function that is called when a key is pressed.
         For virtual decks, this function is quite complex
@@ -150,7 +150,7 @@ class VirtualDeck(DeckWithIcons):
 
         """
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
-        # print("===== handle_event", deck.name, key, state, data)
+        # print("===== handle_event", self.name, key, state, data)
         if state in [0, 1, 4]:
             PushEvent(
                 deck=self, button=key, pressed=(state != 0), pulled=(state == 4), code=state

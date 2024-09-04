@@ -194,17 +194,19 @@ class Dataref:
         loggerDataref.debug(f"{self.dataref} added listener ({len(self.listeners)})")
 
     def notify(self):
-        for dref in self.listeners:
-            dref.dataref_changed(self)
-            if hasattr(dref, "page") and dref.page is not None:
+        for lsnr in self.listeners:
+            if not self.path.startswith("data:"):
+                print("notifying", self.path, lsnr.name)
+            lsnr.dataref_changed(self)
+            if hasattr(lsnr, "page") and lsnr.page is not None:
                 loggerDataref.log(
                     SPAM_LEVEL,
-                    f"{self.path}: notified {dref.page.name}/{dref.name}",
+                    f"{self.path}: notified {lsnr.page.name}/{lsnr.name}",
                 )
             else:
                 loggerDataref.log(
                     SPAM_LEVEL,
-                    f"{self.path}: notified {dref.name} (not on an page)",
+                    f"{self.path}: notified {lsnr.name} (not on an page)",
                 )
 
     @property
