@@ -1,3 +1,13 @@
+"""Main startup script for Cockpitdecks
+
+Starts up Cockpitdecks. Process command line arguments, load Cockpitdecks with proper simulator.
+Starts listening to events from both X-Plane and decks connected to the computer.
+Starts web server to serve web decks, designer, and button editor.
+Starts WebSocket listener to collect events from web decks.
+
+Press CTRL-C ** once ** to gracefully stop Cockpitdecks. Be patient.
+"""
+
 import sys
 import os
 import logging
@@ -99,7 +109,7 @@ if VERBOSE:
 # COCKPITDECKS STARTS HERE, REALLY
 #
 # Run git status
-process = subprocess.Popen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+process = subprocess.Popen(["git", "show", "-s", "--format=%ci"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 stdout, stderr = process.communicate()
 last_commit = stdout.decode("utf-8")[:10].replace("-", "")
 
@@ -304,11 +314,15 @@ def cockpit_wshandler():
                 app.logger.debug(f"handled deck={deck}, code={code}")
             elif code == 0 or code == 99:  # 99 is replay
                 deck = data.get("deck")
-                key = data.get("key")
-                event = data.get("event")
-                payload = data.get("data")
-                cockpit.process_event(deck_name=deck, key=key, event=event, data=payload)
-                app.logger.debug(f"event processed deck={deck}, event={event} data={payload}")
+                if deck is None:  # sim event
+                    cockpit.process_sim_event(data=data)
+                    # app.logger.info(f"dataref event processed, data={data}")
+                else:
+                    key = data.get("key")
+                    event = data.get("event")
+                    payload = data.get("data")
+                    cockpit.process_event(deck_name=deck, key=key, event=event, data=payload)
+                # app.logger.info(f"event processed deck={deck}, event={event} data={payload}")
     except ConnectionClosed:
         app.logger.debug("connection closed")
         cockpit.remove(ws)

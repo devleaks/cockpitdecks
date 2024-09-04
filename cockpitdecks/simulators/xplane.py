@@ -398,7 +398,7 @@ class XPlane(Simulator, XPlaneBeacon):
     def get_dataref(self, path: str, is_string: bool = False):
         if path in self.all_datarefs.keys():
             return self.all_datarefs[path]
-        return self.register(dataref=Dataref(path, is_string=is_string), sim=self)
+        return self.register(dataref=Dataref(path, is_string=is_string))
 
     # Shortcuts
     def get_internal_dataref(self, path: str, is_string: bool = False):
@@ -445,7 +445,7 @@ class XPlane(Simulator, XPlaneBeacon):
         else:
             logger.warning("execute_command: no command")
 
-    def write_dataref(self, dataref: str, value: float | int | bool, vtype: str = "float"):
+    def write_dataref(self, dataref: str, value: float | int | bool, vtype: str = "float") -> bool:
         """
         Write Dataref to XPlane
         DREF0+(4byte byte value)+dref_path+0+spaces to complete the whole message to 509 bytes
@@ -456,11 +456,11 @@ class XPlane(Simulator, XPlaneBeacon):
             d = self.get_dataref(path)
             d.update_value(new_value=value, cascade=True)
             logger.debug(f"written local dataref ({path}={value})")
-            return
+            return False
 
         if not self.connected:
             logger.warning(f"no connection ({path}={value})")
-            return
+            return False
 
         cmd = b"DREF\x00"
         path = path + "\x00"
@@ -478,6 +478,7 @@ class XPlane(Simulator, XPlaneBeacon):
         logger.log(SPAM_LEVEL, f"write_dataref: {path}={value}")
         self.socket.sendto(message, (self.beacon_data["IP"], self.beacon_data["Port"]))
         logger.debug(".. sent")
+        return True
 
     def add_dataref_to_monitor(self, path, freq=None):
         """
@@ -736,10 +737,10 @@ class XPlane(Simulator, XPlaneBeacon):
         super().add_datarefs_to_monitor(datarefs)
         prnt = []
         for d in datarefs.values():
-            if d.is_internal():
+            if d.is_internal:
                 logger.debug(f"local dataref {d.path} is not monitored")
                 continue
-            if d.is_string():
+            if d.is_string:
                 logger.debug(f"string dataref {d.path} is not monitored")
                 continue
             if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
@@ -762,7 +763,7 @@ class XPlane(Simulator, XPlaneBeacon):
         # Add those to monitor
         prnt = []
         for d in datarefs.values():
-            if d.is_internal():
+            if d.is_internal:
                 logger.debug(f"local dataref {d.path} is not monitored")
                 continue
             if d.path in self.datarefs_to_monitor.keys():
@@ -803,7 +804,7 @@ class XPlane(Simulator, XPlaneBeacon):
         prnt = []
         for path in self.datarefs_to_monitor.keys():
             d = self.all_datarefs.get(path)
-            if d is not None and not d.is_string():
+            if d is not None and not d.is_string:
                 if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
                     prnt.append(d.path)
                 else:

@@ -230,7 +230,7 @@ class Streamdeck(DeckWithIcons):
                 end_pos_y=int(value["y_out"]),
                 end_ts=datetime.now().timestamp(),
                 autorun=True,
-                code=action
+                code=action,
             )
         else:
             logger.warning(f"deck {self.name}: invalid touchscreen action {action}")

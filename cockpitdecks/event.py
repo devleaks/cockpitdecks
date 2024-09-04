@@ -74,7 +74,7 @@ class Event(ABC):
         return False
 
     def info(self):
-        return {"type": type(self).__name__, "ts": self._ts, "code": self.rawcode}
+        return {"type": type(self).__name__, "ts": self._ts}
 
     def to_json(self):
         return json.dumps(self.info())
@@ -288,7 +288,7 @@ class SwipeEvent(DeckEvent):
         end_pos_y: int,
         end_ts: float,
         autorun: bool = True,
-        code: int = -1
+        code: int = -1,
     ):
         """Event when a touch screen has been touched or swiped.
 
@@ -386,7 +386,7 @@ class TouchEvent(DeckEvent):
         cli_ts: float | None = None,
         start: TouchEvent | None = None,
         autorun: bool = True,
-        code: int = -1
+        code: int = -1,
     ):
         self.pos_x = pos_x
         self.pos_y = pos_y

@@ -4,7 +4,7 @@ import os
 import logging
 from PIL import Image, ImageOps
 
-from Loupedeck.Devices.LoupedeckLive import KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
+from Loupedeck.Devices.LoupedeckLive import LoupedeckLive, KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
@@ -127,10 +127,14 @@ class Loupedeck(DeckWithIcons):
     #
     # Deck Specific Functions : Activation
     #
-    def key_change_callback(self, deck, msg):
+    def key_change_callback(self, deck, msg=None, **kwargs):
         """
         This is the function that is called when a key is pressed.
         """
+        if type(deck) is not LoupedeckLive:  # we are not coming from the driver:
+            return self.replay(deck=deck, **kwargs)
+
+        # print("===== handle_event (from device)", deck.id(), msg)
         # logger.debug(f"{msg}")
         if CALLBACK_KEYWORD.ACTION.value not in msg or CALLBACK_KEYWORD.IDENTIFIER.value not in msg:
             logger.debug(f"invalid message {msg}, no action and/or no id")

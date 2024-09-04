@@ -169,12 +169,12 @@ class Page:
                     self.datarefs[d] = ref
                     self.datarefs[d].add_listener(button)
                     self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
-                    logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string()})")
+                    logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
                 self.datarefs[d].add_listener(button)
-                logger.debug(f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.datarefs[d].is_string()})")
+                logger.debug(f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.datarefs[d].is_string})")
 
         # Possible issue if a dataref is created here below and is a string dataref
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref

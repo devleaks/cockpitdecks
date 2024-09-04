@@ -99,5 +99,6 @@ except ImportError:
 REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
 HARDWARE_REPRESENTATIONS = {s.name(): s for s in all_subclasses(HardwareIcon)}
 
+
 def get_representations_for(feedback: DECK_FEEDBACK):
     return [a for a in REPRESENTATIONS.values() if feedback in a.get_required_capability()]

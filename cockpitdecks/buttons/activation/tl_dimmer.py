@@ -25,5 +25,5 @@ class LightDimmer(UpDown):
         if currval is not None and 0 <= currval < len(self.dimmer):
             self.button.deck.set_brightness(self.dimmer[currval])
             if self.adjust_cockpit:
-                self.button.cockpit.adjust_light(brightness=int(self.dimmer[currval])/100)
+                self.button.cockpit.adjust_light(brightness=int(self.dimmer[currval]) / 100)
         super().activate(event)

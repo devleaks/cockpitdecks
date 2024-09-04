@@ -44,7 +44,6 @@ RELEASE = "1.0.5"  # local version number
 # 25-OCT-2022: 1.0.0: Initial version
 
 
-
 class PythonInterface:
     def __init__(self):
         self.Name = "Cockpitdecks Helper"

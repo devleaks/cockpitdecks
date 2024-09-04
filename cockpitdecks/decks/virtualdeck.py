@@ -152,7 +152,9 @@ class VirtualDeck(DeckWithIcons):
         # logger.debug(f"Deck {self.name} Key {key} = {state}")
         # print("===== handle_event", deck.name, key, state, data)
         if state in [0, 1, 4]:
-            PushEvent(deck=self, button=key, pressed=(state != 0), pulled=(state == 4), code=state)  # autorun enqueues it in cockpit.event_queue for later execution
+            PushEvent(
+                deck=self, button=key, pressed=(state != 0), pulled=(state == 4), code=state
+            )  # autorun enqueues it in cockpit.event_queue for later execution
             logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
             return  # no other possible handling
         if state in [2, 3]:

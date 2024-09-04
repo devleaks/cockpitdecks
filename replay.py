@@ -1,3 +1,6 @@
+# Experimental script to replay actions
+# Currently only works for all events except DatarefEvents
+#
 # Sends events one by one from the event file logged by Cockpitdecks.
 # Respect original timing.
 # Open perspective of automation, espcially for testing
@@ -16,9 +19,11 @@ from simple_websocket import Client, ConnectionClosed
 
 parser = argparse.ArgumentParser(description="Replay Cockpitdecks event log")
 parser.add_argument("logfile", type=str, nargs="?", help="file with logged events (jsonlines format)")
-parser.add_argument("-f", "--fast", action="store_true", help="does not respect timing, send event every second")
+parser.add_argument("-f", "--fast", action="store_true", help="does not respect timing")
 parser.add_argument("-s", "--silent", action="store_true", help="disable logging")
 parser.add_argument("-i", "--info", action="store_true", help="disable sending to Cockpitdecks (just print)")
+parser.add_argument("-x", "--xplane", action="store_true", help="send X-Plane dataref updates")
+parser.add_argument("-I", "--internal", action="store_true", help="send internal dataref updates")
 
 args = parser.parse_args()
 
@@ -26,6 +31,14 @@ if args.logfile is None:
     parser.print_help()
     sys.exit(1)
 
+INTERNAL_DATAREF_PREFIX = "data:"
+FORWARD_INTERNAL_DATAREF = args.internal
+need_flush = False
+def flush():
+    global need_flush
+    if need_flush:
+        print(".", flush=True)
+    need_flush = False
 
 APP_HOST = [os.getenv("APP_HOST", "mac-studio-de-pierre.local"), int(os.getenv("APP_PORT", 7777))]
 ws = None
@@ -52,6 +65,7 @@ elif not args.silent:
 # 14 = Tap, event data contains value
 # Event data varies with the code...
 def get_event(event) -> Tuple[int | None, dict]:
+    global need_flush
     code = 0
     data = {}
 
@@ -90,12 +104,29 @@ def get_event(event) -> Tuple[int | None, dict]:
             data = {
                 "value": event["value"]
             }
+        elif event_type == "DatarefEvent":
+            if args.xplane:
+                path = event["path"]
+                if path is not None and (FORWARD_INTERNAL_DATAREF or not path.startswith(INTERNAL_DATAREF_PREFIX)):
+                    data = {
+                        "code": 99,
+                        "path": path,
+                        "value": event["value"]
+                    }
+                    return -1, data
+            if not args.silent:
+                print(".", end="", flush=True)
+                need_flush = True
+            return None, data
         else:
-            print("unhandled event type", event_type)
+            if not args.silent:
+                flush()
+                print("unhandled event type", event_type)
             return None, data
 
     return code, data | {"_replay": True}
 
+MIN_TIME = 0.01  # secs between 2 send
 tot_time = 0
 try:
     data = []
@@ -106,27 +137,33 @@ try:
             if last is not None:
                 delta = datetime.fromisoformat(obj["ts"]).timestamp() -  datetime.fromisoformat(last["ts"]).timestamp()
             tot_time = tot_time + delta
-            time.sleep(1 if args.fast else delta)
+            time.sleep(MIN_TIME if args.fast else max(MIN_TIME, delta))
             code, data = get_event(obj["event"])
+            last = obj
             if code is None:
                 tot_time = tot_time + delta
                 continue
-            new_event = {
-                "code": 99,  # special code for replay
-                "deck": obj["event"]["deck"].split("/")[1],
-                "key": obj["event"]["button"],
-                "event": code,
-                "data": data
+            new_event = data if code == -1 else {
+                    "code": 99,  # special code for replay
+                    "deck": obj["event"]["deck"].split("/")[1],
+                    "key": obj["event"]["button"],
+                    "event": code,
+                    "data": data
             }
             if not args.silent or args.info:
+                flush()
                 print("replay", f"{tot_time:5.3f}", new_event)
             if ws is not None:
-                ws.send(json.dumps(new_event))
-            last = obj
+                try:
+                    ws.send(json.dumps(new_event))
+                except:
+                    flush()
+                    print(f"failed to send {new_event}")
     if ws is not None:
         ws.close()
 except (KeyboardInterrupt, EOFError, ConnectionClosed):
     if ws is not None:
         ws.close()
 if not args.silent:
+    flush()
     print("done")

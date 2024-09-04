@@ -6,9 +6,9 @@ import logging
 import base64
 import json
 from datetime import datetime
-from typing import List, Any
+from typing import List, Any, Tuple
 from abc import ABC, abstractmethod
-
+from random import randint
 import requests
 
 from cockpitdecks import SPAM_LEVEL, now, CONFIG_KW, DEFAULT_FREQUENCY
@@ -58,61 +58,48 @@ class Dataref:
     """
     A Dataref is an internal value of the simulation software made accessible to outside modules,
     plugins, or other software in general.
+
+    From Spring 2024 on, this is no longer inspired from Sandy Barbour and the like in Python 2.
+    Most of the original code has been removed, because unused.
+    This is a modern implementation, specific to Cockpitdecks. It even use X-Plane 12.1 REST/WebSocket API.
     """
 
-    def __init__(
-        self,
-        path: str,
-        is_decimal: bool = False,
-        is_string: bool = False,
-        length: int | None = None,
-    ):
+    def __init__(self, path: str, is_string: bool = False):
+        # Data
         self.path = path  # some/path/values[6]
+        self.is_string = is_string
+
         self.dataref = path  # some/path/values
         self.index = 0  # 6
-        self.length = length  # length of some/path/values array, if available.
-        self.is_array = False  # array of above
-        self.is_decimal = is_decimal
-        self._is_string = is_string
-        self._previous_value = None  # raw values
-        self._current_value = None
+        if "[" in path:  # sim/some/values[4]
+            self.dataref = self.path[: self.path.find("[")]
+            self.index = int(self.path[self.path.find("[") + 1 : self.path.find("]")])
+
+        self._round = None
+        self._update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
+        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
+        self._xpindex = None
+        self._req_id = 0
+
+        # Stats
         self._last_updated = None
         self._last_changed = None
         self._updated = 0  # number of time value updated
         self._changed = 0  # number of time value changed
+
+        # value
+        self._previous_value = None  # raw values
+        self._current_value = None
         self.previous_value = None
         self.current_value: Any | None = None
         self.current_array: List[float] = []
-        self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
-        self._round = None
-        self.update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
-        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
-        self._xpindex = None
+
         self._sim = None
 
-        self.data_type = "float"  # int, float, byte, UDP always returns a float...
-        if self.is_decimal:
-            self.data_type = "int"
-            if self._is_string:
-                loggerDataref.error(f"__init__: index {self.path} cannot be both decimal and string")
-        elif self._is_string:
-            self.data_type = "str"
-
-        if self.length is not None and self.length > 1:
-            self.is_array = True
-
-        # is dataref a path to an array element?
-        if "[" in path:  # sim/some/values[4]
-            self.dataref = self.path[: self.path.find("[")]
-            self.index = int(self.path[self.path.find("[") + 1 : self.path.find("]")])
-            self.is_array = True
-            if self.length is None:
-                self.length = self.index + 1  # at least that many values
-            if self.index >= self.length:
-                loggerDataref.error(f"__init__: index {self.index} out of range [0,{self.length-1}]")
+        self.listeners: List[DatarefListener] = []  # buttons using this dataref, will get notified if changes.
 
     @staticmethod
-    def get_dataref_type(path):
+    def get_dataref_type(path) -> Tuple[str, str]:
         if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
             return path[:-2], path[-1]
         return path, "f"
@@ -135,39 +122,28 @@ class Dataref:
                 return False
         return path != CONFIG_KW.FORMULA.value
 
-    def is_string(self) -> bool:
-        return self._is_string
-
+    @property
     def is_internal(self) -> bool:
         return Dataref.is_internal_dataref(self.path)
 
-    def set_round(self, rounding):
+    @property
+    def rounding(self):
+        return self._round
+
+    @rounding.setter
+    def rounding(self, rounding):
         self._round = rounding
 
-    def set_update_frequency(self, frequency=DEFAULT_FREQUENCY):
+    @property
+    def update_frequency(self):
+        return self._update_frequency
+
+    @update_frequency.setter
+    def update_frequency(self, frequency: int | float = DEFAULT_FREQUENCY):
         if frequency is not None and type(frequency) in [int, float]:
-            self.update_frequency = frequency
+            self._update_frequency = frequency
         else:
-            self.update_frequency = DEFAULT_FREQUENCY
-
-    def value(self):
-        return self.current_value
-
-    def value_typed(self):
-        # May fail during conversion
-        if self.current_value is None:
-            return None
-        if self.data_type == "float":
-            return float(self.current_value)
-        elif self.data_type == "int" or self.is_decimal:
-            return int(self.current_value)
-        elif self.data_type == "str" or self.data_type == "string" or self.is_string():
-            return str(self.current_value)
-        # arrays, etc
-        return self.current_value
-
-    def exists(self):
-        return self.path is not None
+            self._update_frequency = DEFAULT_FREQUENCY
 
     def has_changed(self):
         if self.previous_value is None and self.current_value is None:
@@ -178,24 +154,25 @@ class Dataref:
             return True
         return self.current_value != self.previous_value
 
-    def updated(self) -> bool:
-        # Returns True if updated at least once
-        return self._updated > 0
-
-    def round(self, new_value):
-        return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
+    def value(self):
+        return self.current_value
 
     def update_value(self, new_value, cascade: bool = False) -> bool:
+        # returns whether has changed
+
+        def local_round(new_value):
+            return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
+
         self._previous_value = self._current_value  # raw
         self._current_value = new_value  # raw
         self.previous_value = self.current_value  # exposed
-        if self.is_string():
+        if self.is_string:
             self.current_value = new_value
         else:
-            self.current_value = self.round(new_value)
+            self.current_value = local_round(new_value)
         self._updated = self._updated + 1
         self._last_updated = now()
-        self.notify_updated()
+        # self.notify_updated()
         if self.has_changed():
             self._changed = self._changed + 1
             self._last_changed = now()
@@ -217,47 +194,34 @@ class Dataref:
         loggerDataref.debug(f"{self.dataref} added listener ({len(self.listeners)})")
 
     def notify(self):
-        if self.has_changed():
-            for dref in self.listeners:
-                dref.dataref_changed(self)
-                if hasattr(dref, "page") and dref.page is not None:
-                    loggerDataref.log(
-                        SPAM_LEVEL,
-                        f"{self.path}: notified {dref.page.name}/{dref.name}",
-                    )
-                else:
-                    loggerDataref.log(
-                        SPAM_LEVEL,
-                        f"{self.path}: notified {dref.name} (not on an page)",
-                    )
-        # else:
-        #    loggerDataref.error(f"dataref {self.path} not changed")
-
-    def notify_updated(self):
-        for lnsr in self.listeners:
-            lnsr.dataref_updated(self)
-            if hasattr(lnsr, "page") and lnsr.page is not None:
+        for dref in self.listeners:
+            dref.dataref_changed(self)
+            if hasattr(dref, "page") and dref.page is not None:
                 loggerDataref.log(
                     SPAM_LEVEL,
-                    f"{self.path}: notified {lnsr.page.name}/{lnsr.name} of update",
+                    f"{self.path}: notified {dref.page.name}/{dref.name}",
                 )
             else:
                 loggerDataref.log(
                     SPAM_LEVEL,
-                    f"{self.path}: notified {lnsr.name} of update (not on an page)",
+                    f"{self.path}: notified {dref.name} (not on an page)",
                 )
-        # else:
-        #    loggerDataref.error(f"dataref {self.path} not changed")
 
-    def set_writable(self):
-        self._writable = True
+    @property
+    def writable(self) -> bool:
+        return self._writable
 
-    def save(self):
+    @writable.setter
+    def writable(self, writable: bool):
+        self._writable = writable
+
+    def save(self) -> bool:
         if self._writable:
-            if not self.is_internal():
-                self._sim.write_dataref(dataref=self.path, value=self.value(), vtype=self.data_type)
+            if not self.is_internal:
+                return self._sim.write_dataref(dataref=self.path, value=self.value())
         else:
             loggerDataref.warning(f"{self.dataref} not writable")
+        return False
 
     # ##############
     # REST API INTERFACE
@@ -302,7 +266,7 @@ class Dataref:
         response = requests.get(url)
         data = response.json()
         if REST_DATA in data:
-            if self._is_string or self.data_type == "string":
+            if self.is_string:
                 if type(data[REST_DATA]) in [str, bytes]:
                     return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
                 else:
@@ -323,7 +287,7 @@ class Dataref:
                 return None
         url = f"{api_url}/datarefs/{self._xpindex}/value"
         value = self.current_value
-        if value is not None and (self._is_string or self.data_type == "string"):
+        if value is not None and (self.is_string):
             value = base64.b64encode(bytes(str(self.current_value), "ascii")).decode("ascii")
         data = {"data": value}
         response = requests.patch(url=url, data=data)
@@ -331,19 +295,24 @@ class Dataref:
             logger.error(f"could not set value for {self.path} ({data}, {response})")
 
     def ws_subscribe(self, ws):
-        request = {"req_id": 1, "type": "dataref_subscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
+        self._req_id = randint(100000, 1000000)
+        request = {"req_id": self._req_id, "type": "dataref_subscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
         ws.send(json.dumps(request))
 
     def ws_unsubscribe(self, ws):
-        request = {"req_id": 1, "type": "dataref_unsubscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
+        request = {"req_id": self._req_id, "type": "dataref_unsubscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
         ws.send(json.dumps(request))
 
-    def ws_callback(self, response):
+    def ws_callback(self, response) -> bool:
         # gets called by websocket onmessage on receipt.
         # 1. Ignore response with result unless error
         # 2. Get data
         # 3. Cascade if changed
-        pass
+        if "req_id" in response:
+            if response.get("req_id") != self._req_id:
+                return False
+        # do something
+        return True
 
     def ws_update(self, ws):
         request = {"req_id": 1, "type": "dataref_set_values", "params": {"datarefs": [{"id": self._xpindex, "value": self.current_value}]}}
@@ -368,9 +337,6 @@ class DatarefListener(ABC):
 
     @abstractmethod
     def dataref_changed(self, dataref):
-        pass
-
-    def dataref_updated(self, dataref):
         pass
 
 
@@ -606,6 +572,8 @@ class Simulator(ABC):
         self.name = type(self).__name__
         self.cockpit = cockpit
         self.running = False
+
+        # This is really the database of all datarefs
         self.all_datarefs = {}
 
         self.datarefs_to_monitor = {}  # dataref path and number of objects monitoring
@@ -639,45 +607,47 @@ class Simulator(ABC):
         if dataref.path.find("[") > 0:
             rnd = self.roundings.get(dataref.path)
             if rnd is not None:
-                dataref.set_round(rounding=rnd)  # rounds this very priecise dataref
+                dataref.rounding = rnd  # rounds this very priecise dataref
             else:
                 idx = dataref.path.find("[")
                 base = dataref.path[:idx]
                 rnd = self.roundings.get(base + "[*]")  # rounds all datarefs in array, explicit
                 if rnd is not None:
-                    dataref.set_round(rounding=rnd)  # rounds this very priecise dataref
+                    dataref.rounding = rnd  # rounds this very priecise dataref
                 # rnd = self.roundings.get(base)        # rounds all datarefs in array
                 # if rnd is not None:
-                #   dataref.set_round(rounding=rnd)     # rounds this very priecise dataref
+                #   dataref.rounding = rnd     # rounds this very priecise dataref
         else:
-            dataref.set_round(rounding=self.roundings.get(dataref.path))
+            dataref.rounding = self.roundings.get(dataref.path)
 
     def set_frequency(self, dataref):
         if dataref.path.find("[") > 0:
             freq = self.dataref_frequencies.get(dataref.path)
             if freq is not None:
-                dataref.set_update_frequency(frequency=freq)  # rounds this very priecise dataref
+                dataref.update_frequency = freq  # rounds this very priecise dataref
             else:
                 idx = dataref.path.find("[")
                 base = dataref.path[:idx]
                 freq = self.dataref_frequencies.get(base + "[*]")  # rounds all datarefs in array, explicit
                 if freq is not None:
-                    dataref.set_update_frequency(frequency=freq)  # rounds this very priecise dataref
+                    dataref.update_frequency = freq  # rounds this very priecise dataref
                 # rnd = self.roundings.get(base)        # rounds all datarefs in array
                 # if rnd is not None:
-                #   dataref.set_round(rounding=rnd)     # rounds this very priecise dataref
+                #   dataref.rounding = rnd     # rounds this very priecise dataref
         else:
-            dataref.set_update_frequency(frequency=self.dataref_frequencies.get(dataref.path))
+            dataref.update_frequency = self.dataref_frequencies.get(dataref.path)
 
-    def register(self, dataref, sim):
+    def register(self, dataref):
+        if dataref.path is None:
+            logger.warning(f"invalid dataref path {dataref.path}")
+            return None
         if dataref.path not in self.all_datarefs:
-            if dataref.exists():
-                dataref._sim = sim
-                self.set_rounding(dataref)
-                self.set_frequency(dataref)
-                self.all_datarefs[dataref.path] = dataref
-            else:
-                logger.warning(f"invalid dataref {dataref.path}")
+            dataref._sim = self
+            self.set_rounding(dataref)
+            self.set_frequency(dataref)
+            self.all_datarefs[dataref.path] = dataref
+        else:
+            logger.debug(f"dataref path {dataref.path} already registered")
         return dataref
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:

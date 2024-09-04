@@ -51,7 +51,7 @@ from cockpitdecks.config import XP_HOME, COCKPITDECKS_PATH
 from cockpitdecks.constant import DEFAULT_LAYOUT
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Dataref, DatarefListener
+from cockpitdecks.simulator import Dataref, DatarefListener, DatarefEvent
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
 from .buttons.activation import ACTIVATIONS
@@ -76,6 +76,7 @@ if EVENTLOGFILE is not None:
     handler.setFormatter(formatter)
     event_logger.addHandler(handler)
     event_logger.propagate = False
+LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
 
 # IMPORTANT: These are rendez-vous point for JavaScript code
 #
@@ -994,7 +995,7 @@ class Cockpit(DatarefListener, CockpitBase):
             try:
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
-                if EVENTLOGFILE is not None and type(e).__name__ != "DatarefEvent":
+                if EVENTLOGFILE is not None and (LOG_DATAREF_EVENTS or type(e) is not DatarefEvent):
                     event_logger.info(e.to_json())
                 e.run(just_do_it=True)
                 logger.debug("..done without error")
@@ -1065,8 +1066,17 @@ class Cockpit(DatarefListener, CockpitBase):
         if deck.deck_type.is_virtual_deck():
             deck.key_change_callback(deck=deck, key=key, state=event, data=data)
         else:
-            logger.warning(f"handle event: deck {deck_name} is not virtual")
+            # logger.warning(f"handle event: deck {deck_name} is not virtual")
             deck.key_change_callback(deck=deck, key=key, state=event)
+
+    def process_sim_event(self, data: dict):
+        path = data.get("path")
+        if path is not None:
+            if not Dataref.is_internal_dataref(path):
+                e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True)
+                print(f"replay dataref update: {path}={data.get('value')}")
+        else:
+            logger.warning(f"path not found")
 
     # #########################################################
     # Other
@@ -1189,7 +1199,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def terminate_aircraft(self):
         logger.info("terminating..")
         # Spit stats, should be on debug
-        drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal()
+        drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal
         # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
         # with open("datarefs.json", "w") as fp:
         #     json.dump(drefs, fp, indent=2)

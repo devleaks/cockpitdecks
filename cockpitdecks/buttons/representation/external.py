@@ -366,7 +366,9 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         ret = True
         if self.weather is not None and self.station is not None:
             ret = not self._moved and self.station.icao == self.weather.get("station", WeatherMetarIcon.DEFAULT_STATION)
-            logger.debug(f"default station installed {self.station.icao}, {self.weather.get('station', WeatherMetarIcon.DEFAULT_STATION)}, {self._moved}, returns {ret}")
+            logger.debug(
+                f"default station installed {self.station.icao}, {self.weather.get('station', WeatherMetarIcon.DEFAULT_STATION)}, {self._moved}, returns {ret}"
+            )
         return ret
 
     def get_datarefs(self) -> set:
@@ -484,7 +486,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
                 updated = self.update_metar(create=True)
                 self.sun = Sun(self.station.latitude, self.station.longitude)
                 self.button._config["label"] = new_station.icao
-                updated = True  #force
+                updated = True  # force
                 logger.info(f"UPDATED: new station {self.station.icao}")
             except:
                 self.metar = None
@@ -496,7 +498,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
                 updated = self.update_metar(create=True)
                 self.sun = Sun(self.station.latitude, self.station.longitude)
                 self.button._config["label"] = new_station.icao
-                updated = True  #force
+                updated = True  # force
                 logger.info(f"UPDATED: station changed from {old_station} to {self.station.icao}")
             except:
                 self.metar = None
@@ -504,7 +506,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         elif self.metar is None:  # create it the first time
             try:
                 self.metar.update_metar(create=True)
-                updated = True  #force
+                updated = True  # force
                 logger.info(f"UPDATED: station {self.station.icao}, first Metar")
             except:
                 self.metar = None

@@ -14,6 +14,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_co
 
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.representation import IconBase
+from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from .page import Page
 from .button import Button
@@ -526,6 +527,46 @@ class Deck(ABC):
     # Deck Specific Functions : Callbacks and activation
     #
     # There are highliy deck specific, no general function.
+    def replay(self, deck, key=None, state=None, data: dict | None = None):
+        # This is a fairly generic replay function
+        print("===== replay", deck.name, key, state, data)
+        if state in [0, 1, 4]:
+            PushEvent(
+                deck=self, button=key, pressed=(state != 0), pulled=(state == 4), code=state
+            )  # autorun enqueues it in cockpit.event_queue for later execution
+            logger.debug(f"PushEvent deck {self.name} key {key} = {state}")
+            return  # no other possible handling
+        if state in [2, 3]:
+            logger.debug(f"EncoderEvent deck {self.name} key {key} = {state}")
+            EncoderEvent(deck=self, button=key, clockwise=state == 2, code=state)
+            return  # no other possible handling
+        if state in [10, 11]:
+            if data is None:
+                logger.warning(f"TouchEvent deck {self.name} key {key} = {state}: no data")
+                return
+            logger.debug(f"TouchEvent deck {self.name} key {key} = {state}, {self._touch_event_start}, {data}")
+            if state == 10:  # start
+                self._touch_event_start = TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), code=state)
+                print("start set", self._touch_event_start)
+            else:
+                TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), start=self._touch_event_start, code=state)
+                print("start used", self._touch_event_start, "reset")
+                self._touch_event_start = None
+            return  # no other possible handling
+        if state in [14]:
+            TouchEvent(deck=self, button=key, pos_x=data.get("x"), pos_y=data.get("y"), cli_ts=data.get("ts"), code=state)
+            logger.debug(f"TouchEvent deck {self.name} key {key} = {state} (press event)")
+            return  # no other possible handling
+        if state in [9]:
+            logger.debug(f"SlideEvent deck {self.name} key {key} = {state}")
+            if data is not None and "value" in data:
+                SlideEvent(deck=self, button=key, value=int(data.get("value")), code=state)
+                return  # no other possible handling
+            else:
+                logger.warning(f"deck {deck.name}: SliderEvent has no value ({data})")
+        logger.warning(f"deck {deck.name}: unhandled event ({deck}, {key}, {state}, {data})")
+        return None
+
     def get_default_page(self, index: str):
         return f"""
 buttons:

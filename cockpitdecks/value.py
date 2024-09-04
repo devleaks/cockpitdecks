@@ -57,7 +57,7 @@ class Value:
         self._set_dref = None
         if self._set_dataref is not None:
             self._set_dref = self._button.sim.get_dataref(self._set_dataref)
-            self._set_dref.set_writable()
+            self._set_dref.writable = True
 
         # Used in "value"
         self._datarefs: set | None = None

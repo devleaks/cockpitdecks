@@ -122,7 +122,7 @@ class Activation:
         set_dataref_path = self._config.get(CONFIG_KW.SET_DATAREF.value)
         if set_dataref_path is not None:
             self._writable_dataref = self.button.sim.get_dataref(set_dataref_path)
-            self._writable_dataref.set_writable()  # should be checked/set from sim... (later)
+            self._writable_dataref.writable = True
         self.activation_requires_modification_set_dataref = True
 
         # Working variables, internal state

@@ -23,6 +23,7 @@ TAIL_NUMBER = "OO-PMA"
 LIVERY_DATAREF = "sim/aircraft/view/acf_livery_path"
 TAILNUM_DATAREF = "sim/aircraft/view/acf_tailnum"
 
+
 class PythonInterface:
     def __init__(self):
         self.Name = "Set Tail Number"
@@ -107,11 +108,12 @@ class PythonInterface:
         else:
             print(self.Info, f"set_tail_number: file not found {fn}, using default tail number {TAIL_NUMBER}.")
 
-
         dref = xp.findDataRef(TAILNUM_DATAREF)
         if dref is not None:
             xp.setDatas(dref, TAIL_NUMBER)
             print(self.Info, f"set_tail_number: {acpath}, {livery}: set to {reg}.")
 
         return 0
+
+
 w
