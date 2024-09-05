@@ -28,7 +28,6 @@ import ruamel
 from ruamel.yaml import YAML
 
 from cockpitdecks.constant import CONFIG_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
-
 from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
@@ -61,7 +60,7 @@ DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to 
 DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "demo")
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
-
+COCKPITDECKS_FOLDER = "cockpitdecks"
 
 class CD_MODE(Enum):
     NORMAL = 0
@@ -79,7 +78,7 @@ parser.add_argument("-v", "--verbose", action="store_true", help="show startup i
 args = parser.parse_args()
 
 VERBOSE = args.verbose
-CONFIG_FILE = os.path.join("cockpitdecks", "config.yaml") if args.config is None else args.config[0]
+config_file = os.path.join(COCKPITDECKS_FOLDER, CONFIG_FILE) if args.config is None else args.config[0]
 
 environment = Config(filename=os.path.abspath(CONFIG_FILE))
 
