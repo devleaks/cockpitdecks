@@ -1,0 +1,25 @@
+# ##############################
+#
+# MAIN SYSTEM CONFIGURATION FILE
+#
+# 1. NETWORK SETTING
+#
+# Where X-Plane runs
+#
+# X-Plane not on this host: omit it or leave it blank
+XP_HOST: xplane_hotname
+# XP_HOME: /Applications/X-Plane 12
+
+# if None, set to self.beacon_data['IP']
+# API_HOST: 127.0.0.1
+
+# You must provide a proxy since API is only accessible on the localhost
+# See https://gist.github.com/devleaks/729bda6db10007b844111178694c7971
+#
+API_PORT: 8088
+API_PATH: /api/v1
+
+#
+# Where Cockpitdecks runs
+#
+APP_HOST: [cockpitdecks_host, 7777]

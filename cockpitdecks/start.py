@@ -81,19 +81,20 @@ args = parser.parse_args()
 VERBOSE = args.verbose
 CONFIG_FILE = os.path.join("cockpitdecks", "config.yaml") if args.config is None else args.config[0]
 
-config = Config(filename=os.path.abspath(CONFIG_FILE))
+environment = Config(filename=os.path.abspath(CONFIG_FILE))
 
 
-XP_HOME = config.get("XP_HOME")
-APP_HOST = config.get("APP_HOST")
+XP_HOME = environment.get("XP_HOME")
+if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
+    print(f"X-Plane not found in {XP_HOME}")
+    sys.exit(1)
+
+APP_HOST = environment.get("APP_HOST", "127.0.0.1")
 COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")
 if XP_HOME is not None:
     COCKPITDECKS_PATH = ":".join(
         COCKPITDECKS_PATH.split(":") + [os.path.join(XP_HOME, "Aircraft", "Extra Aircraft"), os.path.join(XP_HOME, "Aircraft", "Laminar Research")]
     )
-if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
-    print(f"X-Plane not found in {XP_HOME}")
-    sys.exit(1)
 
 
 mode = CD_MODE.DEMO if args.demo else CD_MODE.NORMAL
@@ -129,7 +130,7 @@ last_commit = stdout.decode("utf-8")[:10].replace("-", "")
 copyrights = f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n"
 print(copyrights)
 logger.info("Initializing Cockpitdecks..")
-cockpit = Cockpit(XPlane, environ=config)
+cockpit = Cockpit(XPlane, environ=environment)
 logger.info("..initialized\n")
 
 
