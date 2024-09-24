@@ -1,5 +1,7 @@
 # Class for interface with X-Plane using UDP protocol.
 #
+from __future__ import annotations
+
 import os
 import socket
 import struct
@@ -9,15 +11,497 @@ import threading
 import logging
 import time
 import json
-from datetime import datetime, timedelta, timezone
+import base64
 
-from cockpitdecks import SPAM_LEVEL, AIRCRAFT_CHANGE_MONITORING_DATAREF
-from cockpitdecks.simulator import Simulator, Dataref, Command, DatarefEvent
+import requests
+
+from datetime import datetime, timedelta, timezone
+from typing import Tuple
+
+from cockpitdecks import SPAM_LEVEL, CONFIG_KW, AIRCRAFT_CHANGE_MONITORING_DATAREF, DEFAULT_FREQUENCY
+from cockpitdecks.simulator import CockpitdecksData, Simulator, SimulatorDataType, SimulatorData, Instruction, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.simulator import INTERNAL_STATE_PREFIX, BUTTON_VARIABLE_PREFIX, PREFIX_SEP
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
 # logger.setLevel(logging.DEBUG)
+
+
+# #############################################
+# DATAREF
+#
+# A velue in X-Plane Simulator
+INTERNAL_DATAREF_PREFIX = "data:"
+PATTERN_INTDREF = f"\\${{{INTERNAL_DATAREF_PREFIX}([^\\}}]+?)}}"
+
+# REST API model keywords
+REST_DATA = "data"
+REST_IDENT = "id"
+
+
+class XPlaneData(SimulatorData):
+
+    def __init__(self, path: str, is_string: bool = False):
+        # Data
+        SimulatorData.__init__(self, name=path, data_type="string" if is_string else "float")
+
+    @classmethod
+    def new(cls, name, **kwargs):
+        is_string = False
+        if "is_string" in kwargs:
+            is_string = kwargs.get("is_string")
+
+        is_internal = False
+        if "is_internal" in kwargs:
+            is_internal = kwargs.get("is_internal")
+
+        if is_internal:
+            if not name.startswith(INTERNAL_DATAREF_PREFIX):
+                name = INTERNAL_DATAREF_PREFIX + name
+            return CockpitdecksData(path=name, is_string=is_string)
+
+        return Dataref(path=name, is_string=is_string)
+
+
+class Dataref(SimulatorData):
+    """
+    A Dataref is an internal value of the simulation software made accessible to outside modules,
+    plugins, or other software in general.
+
+    From Spring 2024 on, this is no longer inspired from Sandy Barbour and the like in Python 2.
+    Most of the original code has been removed, because unused.
+    This is a modern implementation, specific to Cockpitdecks. It even use X-Plane 12.1 REST/WebSocket API.
+    """
+
+    DEFAULT_REQ_FREQUENCY = DEFAULT_FREQUENCY
+
+    def __init__(self, path: str, is_string: bool = False):
+        # Data
+        SimulatorData.__init__(self, name=path, data_type="string" if is_string else "float")
+
+        self.dataref = path  # some/path/values
+        self.index = 0  # 6
+        if "[" in path:  # sim/some/values[4]
+            self.dataref = self.path[: self.path.find("[")]
+            self.index = int(self.path[self.path.find("[") + 1 : self.path.find("]")])
+
+        self._round = None
+        self._update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
+        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
+        self._xpindex = None
+        self._req_id = 0
+
+    @property
+    def path(self) -> str:
+        return self.name
+
+    @property
+    def is_string(self) -> bool:
+        return self.data_type == SimulatorDataType.STRING
+
+    @staticmethod
+    def get_dataref_type(path) -> Tuple[str, str]:
+        if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
+            return path[:-2], path[-1]
+        return path, "f"
+
+    @staticmethod
+    def is_internal_dataref(path: str) -> bool:
+        return path.startswith(INTERNAL_DATAREF_PREFIX)
+
+    @staticmethod
+    def mk_internal_dataref(path: str) -> str:
+        return INTERNAL_DATAREF_PREFIX + path
+
+    @staticmethod
+    def might_be_dataref(path: str) -> bool:
+        # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
+        # Not sure it is a dataref, but sure non-datarefs are excluded ;-)
+        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
+        for start in PREFIX:
+            if path.startswith(start + PREFIX_SEP):
+                return False
+        return path != CONFIG_KW.FORMULA.value
+
+    @property
+    def is_internal(self) -> bool:
+        return Dataref.is_internal_dataref(self.path)
+
+    @property
+    def rounding(self):
+        return self._round
+
+    @rounding.setter
+    def rounding(self, rounding):
+        self._round = rounding
+
+    @property
+    def update_frequency(self):
+        return self._update_frequency
+
+    @update_frequency.setter
+    def update_frequency(self, frequency: int | float = DEFAULT_FREQUENCY):
+        if frequency is not None and type(frequency) in [int, float]:
+            self._update_frequency = frequency
+        else:
+            self._update_frequency = DEFAULT_FREQUENCY
+
+    @property
+    def writable(self) -> bool:
+        return self._writable
+
+    @writable.setter
+    def writable(self, writable: bool):
+        self._writable = writable
+
+    def save(self) -> bool:
+        if self._writable:
+            if not self.is_internal:
+                return self._sim.write_dataref(dataref=self.path, value=self.value())
+        else:
+            loggerDataref.warning(f"{self.dataref} not writable")
+        return False
+
+    # ##############
+    # REST API INTERFACE
+    #
+    # NOT GENERIC ONLY WORKS FOR SCALAR VALUES, NOT ARRAYS
+    #
+    def get_specs(self, simulator: Simulator) -> dict | None:
+        api_url = simulator.api_url
+        if api_url is None:
+            logger.warning("no api url")
+            return None
+        payload = {"filter[name]": self.path}
+        api_url = f"{api_url}/datarefs"
+        response = requests.get(api_url, params=payload)
+        resp = response.json()
+        if REST_DATA in resp:
+            return resp[REST_DATA][0]
+        logger.error(resp)
+        return None
+
+    def get_index(self, simulator: Simulator) -> int | None:
+        if self._xpindex is not None:
+            return self._xpindex
+        data = self.get_specs(simulator=simulator)
+        if data is not None and REST_IDENT in data:
+            self._xpindex = int(data[REST_IDENT])
+            return self._xpindex
+        logger.error(f"could not get dataref specifications for {self.path} ({data})")
+        return None
+
+    def get_value(self, simulator: Simulator):
+        api_url = simulator.api_url
+        if api_url is None:
+            logger.warning("no api url")
+            return None
+        if self._xpindex is None:
+            idx = self.get_index(simulator=simulator)
+            if idx is None:
+                logger.error("could not get XP index")
+                return None
+        url = f"{api_url}/datarefs/{self._xpindex}/value"
+        response = requests.get(url)
+        data = response.json()
+        if REST_DATA in data:
+            if self.is_string:
+                if type(data[REST_DATA]) in [str, bytes]:
+                    return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
+                else:
+                    logger.warning(f"value for {self.path} ({data}) is not a string")
+            return data[REST_DATA]
+        logger.error(f"could not get value for {self.path} ({data})")
+        return None
+
+    def set_value(self, simulator: Simulator):
+        api_url = simulator.api_url
+        if api_url is None:
+            logger.warning("no api url")
+            return None
+        if self._xpindex is None:
+            idx = self.get_index(simulator=simulator)
+            if idx is None:
+                logger.error("could not get XP index")
+                return None
+        url = f"{api_url}/datarefs/{self._xpindex}/value"
+        value = self.current_value
+        if value is not None and (self.is_string):
+            value = base64.b64encode(bytes(str(self.current_value), "ascii")).decode("ascii")
+        data = {"data": value}
+        response = requests.patch(url=url, data=data)
+        if response.status_code != 200:
+            logger.error(f"could not set value for {self.path} ({data}, {response})")
+
+    def ws_subscribe(self, ws):
+        self._req_id = randint(100000, 1000000)
+        request = {"req_id": self._req_id, "type": "dataref_subscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
+        ws.send(json.dumps(request))
+
+    def ws_unsubscribe(self, ws):
+        request = {"req_id": self._req_id, "type": "dataref_unsubscribe_values", "params": {"datarefs": [{"id": self._xpindex}]}}
+        ws.send(json.dumps(request))
+
+    def ws_callback(self, response) -> bool:
+        # gets called by websocket onmessage on receipt.
+        # 1. Ignore response with result unless error
+        # 2. Get data
+        # 3. Cascade if changed
+        if "req_id" in response:
+            if response.get("req_id") != self._req_id:
+                return False
+        # do something
+        return True
+
+    def ws_update(self, ws):
+        request = {"req_id": 1, "type": "dataref_set_values", "params": {"datarefs": [{"id": self._xpindex, "value": self.current_value}]}}
+        ws.send(json.dumps(request))
+
+    def auto_collect(self):
+        if self.collector is None:
+            e = DatarefEvent(sim=self, dataref=self.path, value=self.get_value(), cascade=True)
+            self.collector = threading.Timer(self.update_frequency, self.auto_collect)
+
+    def cancel_autocollect(self):
+        if self.collector is not None:
+            self.collector.cancel()
+            self.collector = None
+
+
+class DatarefListener(SimulatorDataListener):
+    # To get notified when a dataref has changed.
+
+    def __init__(self, name: str = "abstract-dataref-listener"):
+        self.name = name
+
+    def simulator_data_changed(self, data: SimulatorData):
+        self.dataref_changed(dataref=data)
+
+    def dataref_changed(self, dataref):
+        pass
+
+
+class DatarefEvent(SimulatorEvent):
+    """Dataref Update Event"""
+
+    def __init__(self, sim: Simulator, dataref: str, value: float | str, cascade: bool, autorun: bool = True):
+        """Dataref Update Event.
+
+        Args:
+        """
+        self.dataref_path = dataref
+        self.value = value
+        self.cascade = cascade
+        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
+
+    def __str__(self):
+        return f"{self.sim.name}:{self.dataref_path}={self.value}:{self.timestamp}"
+
+    def info(self):
+        return super().info() | {"path": self.dataref_path, "value": self.value, "cascade": self.cascade}
+
+    def run(self, just_do_it: bool = False) -> bool:
+        if just_do_it:
+            if self.sim is None:
+                logger.warning("no simulator")
+                return False
+            dataref = self.sim.all_simulator_data.get(self.dataref_path)
+            if dataref is None:
+                logger.debug(f"dataref {self.dataref_path} not found in database")
+                return
+
+            try:
+                logger.debug(f"updating {dataref.path}..")
+                self.handling()
+                dataref.update_value(self.value, cascade=self.cascade)
+                self.handled()
+                logger.debug(f"..updated")
+            except:
+                logger.warning(f"..updated with error", exc_info=True)
+                return False
+        else:
+            self.enqueue()
+            logger.debug(f"enqueued")
+        return True
+
+
+# #############################################
+# COMMANDS
+#
+# The command keywords are not executed, ignored with a warning
+NOT_A_COMMAND = [
+    "none",
+    "noop",
+    "no-operation",
+    "no-command",
+    "do-nothing",
+]  # all forced to lower cases
+
+
+class XPlaneInstruction(Instruction):
+    """An Instruction is sent to the Simulator to execute some action.
+
+    [description]
+    """
+
+    def __init__(self, name: str, delay: float = 0.0, condition: str | None = None, button=None) -> None:
+        Instruction.__init__(self, name=name, delay=delay, condition=condition, button=button)
+
+    @classmethod
+    def new(cls, name, **kwargs):
+        for keyw in ["view", "command"]:
+            if keyw in kwargs:
+                cmdargs = kwargs.get(keyw)
+                if type(cmdargs) is str:
+                    if kwargs.get("longpress", False):
+                        return BeginEndCommand(name=name, path=cmdargs, delay=kwargs.get("delay", 0.0), condition=kwargs.get("condition"))
+                    else:
+                        return Command(name=name, path=cmdargs, delay=kwargs.get("delay", 0.0), condition=kwargs.get("condition"))
+                elif type(cmdargs) in [list, tuple]:
+                    return MacroCommand(name=name, commands=cmdargs)
+        if "set_dataref" in kwargs:
+            cmdargs = kwargs.get("set_dataref")
+            if type(cmdargs) is str:
+                return SetDataref(
+                    name=name,
+                    path=cmdargs,
+                    value=kwargs.get("value"),
+                    formula=kwargs.get("formula"),
+                    delay=kwargs.get("delay"),
+                    condition=kwargs.get("condition"),
+                )
+        else:
+            logger.warning(f"Instruction {name}: invalid argument {kwargs}")
+        return None
+
+
+class Command(Instruction):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, path: str | None, name: str | None = None, delay: float = 0.0, condition: str | None = None):
+        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+        self.path = path  # some/command
+
+    def __str__(self) -> str:
+        return self.name if self.name is not None else (self.path if self.path is not None else "no command")
+
+    def is_valid(self) -> bool:
+        return self.path is not None and not self.path.lower() in NOT_A_COMMAND
+
+    def _execute(self, simulator: Simulator):
+        simulator.execute_command(command=self)
+        self.clean_timer()
+
+
+class BeginEndCommand(Command):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, path: str | None, name: str | None = None, delay: float = 0.0, condition: str | None = None):
+        Command.__init__(self, path=path, name=name, delay=0.0, condition=condition)  # force no delay for commandBegin/End
+        self.is_on = False
+
+    def _execute(self, simulator: Simulator):
+        if self.is_on:
+            simulator.command_end(command=self)
+            self.is_on = False
+        else:
+            simulator.command_begin(command=self)
+            self.is_on = True
+        self.clean_timer()
+
+
+class SetDataref(Instruction):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, path: str, value=None, formula: str | None = None, delay: float = 0.0, condition: str | None = None):
+        Instruction.__init__(self, name=path, delay=delay, condition=condition)
+        self.path = path  # some/command
+        self.formula = None  # = formula: later, a set-dataref specific formula, different from the button one?
+        self._value = value
+
+    def __str__(self) -> str:
+        return "set-dataref: " + self.name
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+    def compute_value(self):
+        if self._button is not None:
+            return self._button.value.execute_formula(self.formula)
+        loggerInstr.warning(f"SetDataref {name}: no button")
+        return None
+
+    def _execute(self, simulator: Simulator):
+        if self.formula is not None:
+            self._value = self.compute_value()
+        simulator.write_dataref(dataref=self.path, value=self.value)
+
+
+class MacroCommand(Instruction):
+    """
+    A Button activation will instruct the simulator software to perform an action.
+    A Command is the message that the simulation sofware is expecting to perform that action.
+    """
+
+    def __init__(self, name: str, commands: dict):
+        Instruction.__init__(self, name=name)
+        self.commands = commands
+        self._commands = []
+        self.init()
+
+    def __str__(self) -> str:
+        return self.name + f"({', '.join([c.name for c in self._commands])}"
+
+    @property
+    def button(self):
+        return self._button
+
+    @button.setter
+    def button(self, button):
+        self._button = button
+        for command in self._commands:
+            command._button = button
+
+    def init(self):
+        self._commands = []
+        for c in self.commands:
+            if CONFIG_KW.COMMAND.value in c:
+                if CONFIG_KW.SET_DATAREF.value in c:
+                    loggerInstr.warning(f"Macro command {self.name}: command has both command and set-dataref, ignored")
+                    continue
+                self._commands.append(
+                    Command(path=c.get(CONFIG_KW.COMMAND.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
+                )
+            elif CONFIG_KW.SET_DATAREF.value in c:
+                self._commands.append(
+                    SetDataref(path=c.get(CONFIG_KW.SET_DATAREF.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
+                )
+
+    def _execute(self, simulator: Simulator):
+        for command in self._commands:
+            command.execute(simulator)
+
+
+# #############################################
+# SIMULATOR
+#
+# A velue in X-Plane Simulatot
 
 # Data too delicate to be put in constant.py
 # !! adjust with care !!
@@ -388,11 +872,11 @@ class XPlane(Simulator, XPlaneBeacon):
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the simulator date and time"""
-        if not DATETIME_DATAREFS[0] in self.all_datarefs.keys():  # hack, means dref not created yet
+        if not DATETIME_DATAREFS[0] in self.all_simulator_data.keys():  # hack, means dref not created yet
             return super().datetime(zulu=zulu, system=system)
         now = datetime.now().astimezone()
-        days = self.get_dataref_value("sim/time/local_date_days")
-        secs = self.get_dataref_value("sim/time/local_date_sec")
+        days = self.get_simulation_data_value("sim/time/local_date_days")
+        secs = self.get_simulation_data_value("sim/time/local_date_sec")
         if not system and days is not None and secs is not None:
             simnow = datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0).astimezone()
             simnow = simnow + timedelta(days=days) + timedelta(days=secs)
@@ -400,9 +884,9 @@ class XPlane(Simulator, XPlaneBeacon):
         return now
 
     def get_dataref(self, path: str, is_string: bool = False):
-        if path in self.all_datarefs.keys():
-            return self.all_datarefs[path]
-        return self.register(dataref=Dataref(path, is_string=is_string))
+        if path in self.all_simulator_data.keys():
+            return self.all_simulator_data[path]
+        return self.register(simulator_data=Dataref(path, is_string=is_string))
 
     # Shortcuts
     def get_internal_dataref(self, path: str, is_string: bool = False):
@@ -590,7 +1074,7 @@ class XPlane(Simulator, XPlaneBeacon):
                                         value=diff,
                                         cascade=(total_reads % 2 == 0),
                                     )
-                                r = self.get_rounding(dataref_path=d)
+                                r = self.get_rounding(simulator_data_name=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)
                                 if d not in self._dref_cache or (d in self._dref_cache and self._dref_cache[d] != v):
@@ -598,7 +1082,7 @@ class XPlane(Simulator, XPlaneBeacon):
                                         sim=self,
                                         dataref=d,
                                         value=value,
-                                        cascade=d in self.datarefs_to_monitor.keys(),
+                                        cascade=d in self.simulator_data_to_monitor.keys(),
                                     )
                                     self.inc(INTERNAL_DATAREF.UPDATE_ENQUEUED.value)
                                     self._dref_cache[d] = v
@@ -612,7 +1096,7 @@ class XPlane(Simulator, XPlaneBeacon):
                         )  # ignore
                 except:  # socket timeout
                     number_of_timeouts = number_of_timeouts + 1
-                    logger.info(f"socket timeout received ({number_of_timeouts}/{MAX_TIMEOUT_COUNT})")  # ignore
+                    logger.info(f"socket timeout received ({number_of_timeouts}/{MAX_TIMEOUT_COUNT})", exc_info=True)  # ignore
                     self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=2, cascade=True)
                     if number_of_timeouts >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
@@ -727,7 +1211,7 @@ class XPlane(Simulator, XPlaneBeacon):
             return
         for i in range(len(self.datarefs)):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
-        super().clean_datarefs_to_monitor()
+        super().clean_simulator_data_to_monitor()
         self._strdref_cache = {}
         self._dref_cache = {}
         logger.debug("done")
@@ -738,7 +1222,7 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.debug(f"would add {self.remove_local_datarefs(datarefs.keys())}")
             return
         # Add those to monitor
-        super().add_datarefs_to_monitor(datarefs)
+        super().add_simulator_data_to_monitor(datarefs)
         prnt = []
         for d in datarefs.values():
             if d.is_internal:
@@ -754,13 +1238,13 @@ class XPlane(Simulator, XPlaneBeacon):
         dref_ipc = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF)
         if self.add_dataref_to_monitor(dref_ipc.path, freq=dref_ipc.update_frequency):
             prnt.append(dref_ipc.path)
-            super().add_datarefs_to_monitor({dref_ipc.path: dref_ipc})
+            super().add_simulator_data_to_monitor({dref_ipc.path: dref_ipc})
 
         logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
         logger.info(f">>>>> monitoring++{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_datarefs_to_monitor(self, datarefs):
-        if not self.connected and len(self.datarefs_to_monitor) > 0:
+        if not self.connected and len(self.simulator_data_to_monitor) > 0:
             logger.warning("no connection")
             logger.debug(f"would remove {datarefs.keys()}/{self._max_monitored}")
             return
@@ -770,12 +1254,12 @@ class XPlane(Simulator, XPlaneBeacon):
             if d.is_internal:
                 logger.debug(f"local dataref {d.path} is not monitored")
                 continue
-            if d.path in self.datarefs_to_monitor.keys():
-                if self.datarefs_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_datarefs_to_monitor()
+            if d.path in self.simulator_data_to_monitor.keys():
+                if self.simulator_data_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_simulator_data_to_monitor()
                     if self.add_dataref_to_monitor(d.path, freq=0):
                         prnt.append(d.path)
                 else:
-                    logger.debug(f"{d.path} monitored {self.datarefs_to_monitor[d.path]} times")
+                    logger.debug(f"{d.path} monitored {self.simulator_data_to_monitor[d.path]} times")
             else:
                 logger.debug(f"no need to remove {d.path}")
 
@@ -783,20 +1267,20 @@ class XPlane(Simulator, XPlaneBeacon):
         dref_ipc = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF)
         if self.add_dataref_to_monitor(dref_ipc.path, freq=0):
             prnt.append(dref_ipc.path)
-            super().remove_datarefs_to_monitor({dref_ipc.path: dref_ipc})
+            super().remove_simulator_data_to_monitor({dref_ipc.path: dref_ipc})
 
         logger.debug(f"removed {prnt}")
-        super().remove_datarefs_to_monitor(datarefs)
+        super().remove_simulator_data_to_monitor(datarefs)
         logger.info(f">>>>> monitoring--{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_all_datarefs(self):
-        if not self.connected and len(self.all_datarefs) > 0:
+        if not self.connected and len(self.all_simulator_data) > 0:
             logger.warning("no connection")
-            logger.debug(f"would remove {self.all_datarefs.keys()}")
+            logger.debug(f"would remove {self.all_simulator_data.keys()}")
             return
         # Not necessary:
-        # self.remove_datarefs_to_monitor(self.all_datarefs)
-        super().remove_all_datarefs()
+        # self.remove_datarefs_to_monitor(self.all_simulator_data)
+        super().remove_all_simulator_data()
 
     def add_all_datarefs_to_monitor(self):
         if not self.connected:
@@ -806,8 +1290,8 @@ class XPlane(Simulator, XPlaneBeacon):
         self.add_datetime_datarefs()
         # Add those to monitor
         prnt = []
-        for path in self.datarefs_to_monitor.keys():
-            d = self.all_datarefs.get(path)
+        for path in self.simulator_data_to_monitor.keys():
+            d = self.all_simulator_data.get(path)
             if d is not None and not d.is_string:
                 if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
                     prnt.append(d.path)

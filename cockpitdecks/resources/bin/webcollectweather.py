@@ -1,15 +1,22 @@
 import requests
 import json
+import logging
 
-BASE_URL = "http://localhost:8086/api/v1/datarefs"
+logging.basicConfig(level=logging.DEBUG)
+
+
+# BASE_URL = "http://localhost:8086/api/v1/datarefs"
+BASE_URL = "http://mac-mini-de-pierre.local:8080/api/v1/datarefs"
 DATA = "data"
 IDENT = "id"
 
 
 def get_dataref_specs(path: str) -> dict | None:
     payload = {"filter[name]": path}
+    print("send", BASE_URL, payload)
     response = requests.get(BASE_URL, params=payload)
     resp = response.json()
+    print("received", resp)
     if DATA in resp:
         return resp[DATA][0]
     print(resp)
@@ -30,8 +37,10 @@ def get_dataref_value(path: str):
         print(f"error for {path}")
         return None
     url = f"{BASE_URL}/{dref[IDENT]}/value"
+    print("send", url)
     response = requests.get(url)
     data = response.json()
+    print("received", data)
     if DATA in data:
         return data[DATA]
     print(f"no value for {path}")

@@ -62,6 +62,7 @@ AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 COCKPITDECKS_FOLDER = "cockpitdecks"
 
+
 class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
@@ -80,7 +81,7 @@ args = parser.parse_args()
 VERBOSE = args.verbose
 config_file = os.path.join(COCKPITDECKS_FOLDER, CONFIG_FILE) if args.config is None else args.config[0]
 
-environment = Config(filename=os.path.abspath(CONFIG_FILE))
+environment = Config(filename=os.path.abspath(config_file))
 
 
 XP_HOME = environment.get("XP_HOME")

@@ -1,0 +1,4 @@
+{"ts": "2024-09-04 15:03:37,578", "event": {"type": "PushEvent", "ts": 1725455017.578338, "deck": "Cockpitdecks/XPDeckPlus/efis", "button": 5, "rawcode": -1, "pressed": true, "pulled": false}}
+{"ts": "2024-09-04 15:03:37,783", "event": {"type": "PushEvent", "ts": 1725455017.783651, "deck": "Cockpitdecks/XPDeckPlus/efis", "button": 5, "rawcode": -1, "pressed": false, "pulled": false}}
+{"ts": "2024-09-04 15:03:38,797", "event": {"type": "PushEvent", "ts": 1725455018.797392, "deck": "Cockpitdecks/XPDeckPlus/efis", "button": 6, "rawcode": -1, "pressed": true, "pulled": false}}
+{"ts": "2024-09-04 15:03:39,001", "event": {"type": "PushEvent", "ts": 1725455019.000526, "deck": "Cockpitdecks/XPDeckPlus/efis", "button": 6, "rawcode": -1, "pressed": false, "pulled": false}}

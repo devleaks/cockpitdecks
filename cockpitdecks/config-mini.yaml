@@ -6,15 +6,16 @@
 #
 # Where X-Plane runs
 #
-XP_HOST: 127.0.0.1
-XP_HOME: /Applications/X-Plane 12
+XP_HOST: "mac-mini-de-pierre.local"
+# X-Plane not on this host
+XP_HOME:
 
-API_HOST: 127.0.0.1
+API_HOST:
 # if None, set to self.beacon_data['IP']
-API_PORT: 8086
+API_PORT: 8080
 API_PATH: /api/v1
 
 #
 # Where Cockpitdecks runs
 #
-APP_HOST: [127.0.0.1, 7777]
+APP_HOST: [mac-studio-de-pierre.local, 7777]

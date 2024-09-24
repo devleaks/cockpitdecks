@@ -10,10 +10,12 @@ import ruamel
 
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.simulator import (
-    Dataref,
     INTERNAL_STATE_PREFIX,
     PATTERN_DOLCB,
     PATTERN_INTSTATE,
+)
+from cockpitdecks.simulators.xplane import (
+    Dataref,
 )
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
@@ -25,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class DatarefValueProvider(ABC):
     @abstractmethod
-    def get_dataref_value(self, name: str):
+    def get_simulation_data_value(self, name: str):
         pass
 
 
@@ -86,8 +88,8 @@ class Value:
                 # else:
                 #     logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
 
-    def get_dataref_value(self, dataref):
-        return self._button.get_dataref_value(dataref)
+    def get_simulation_data_value(self, dataref):
+        return self._button.get_simulation_data_value(dataref)
 
     def get_state_value(self, state):
         return self._button.get_state_value(state)
@@ -130,7 +132,7 @@ class Value:
         self._datarefs = self._datarefs | datarefs
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
-    def get_datarefs(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+    def get_simulator_data(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -146,7 +148,7 @@ class Value:
         return self._datarefs
 
     def get_all_datarefs(self) -> list:
-        return self.get_datarefs() | self._string_datarefs
+        return self.get_simulator_data() | self._string_datarefs
 
     def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
@@ -309,7 +311,7 @@ class Value:
         retmsg = message
         cnt = 0
         for dataref_name in dataref_names:
-            value = self.get_dataref_value(dataref_name)
+            value = self.get_simulation_data_value(dataref_name)
             value_str = ""
             if formatting is not None and value is not None:
                 if type(formatting) is list:
@@ -531,14 +533,14 @@ class Value:
 
         # 2. One dataref
         if self.dataref is not None:
-            # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
-            ret = self.get_dataref_value(self.dataref)
+            # if self._datarefs[0] in self.page.simulator_data.keys():  # unnecessary check
+            ret = self.get_simulation_data_value(self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
 
         # 3. Activation value
         if self._button._activation is not None:
-            # if self._datarefs[0] in self.page.datarefs.keys():  # unnecessary check
+            # if self._datarefs[0] in self.page.simulator_data.keys():  # unnecessary check
             ret = self._button._activation.get_activation_value()
             if ret is not None:
                 if type(ret) is bool:
@@ -552,7 +554,7 @@ class Value:
         if len(self._datarefs) > 1:
             r = {}
             for d in self.get_all_datarefs():
-                v = self.get_dataref_value(d)
+                v = self.get_simulation_data_value(d)
                 r[d] = v
             logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
             return r

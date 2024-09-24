@@ -50,7 +50,7 @@ from cockpitdecks import (
 )
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Dataref, DatarefListener, DatarefEvent
+from cockpitdecks.simulators.xplane import Dataref, DatarefListener, DatarefEvent
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import ACTIVATIONS
@@ -352,7 +352,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def inspect_datarefs(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
-            for dref in self.sim.all_datarefs.values():
+            for dref in self.sim.all_simulator_data.values():
                 logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)} lsnrs)")
                 if what.endswith("listener"):
                     for l in dref.listeners:
@@ -361,7 +361,7 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info("to do")
 
     def inspect_monitored(self, what: str | None = None):
-        for dref in self.sim.datarefs.values():
+        for dref in self.sim.simulator_data.values():
             logger.info(f"{dref}")
 
     def scan_devices(self):
@@ -574,8 +574,8 @@ class Cockpit(DatarefListener, CockpitBase):
         self.set_logging_level(__name__)
 
         if self.sim is not None:
-            self.sim.set_roundings(self._resources_config.get("dataref-roundings", {}))
-            self.sim.set_dataref_frequencies(self._resources_config.get("dataref-fetch-frequencies", {}))
+            self.sim.set_simulator_data_roundings(self._resources_config.get("dataref-roundings", {}))
+            self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # 1. Load global icons
         #   (They are never cached when loaded without aircraft.)
@@ -693,8 +693,8 @@ class Cockpit(DatarefListener, CockpitBase):
 
         # 1. Adjust some settings in global config file.
         if self.sim is not None:
-            self.sim.set_roundings(self._config.get("dataref-roundings", {}))
-            self.sim.set_dataref_frequencies(self._config.get("dataref-fetch-frequencies", {}))
+            self.sim.set_simulator_data_roundings(self._config.get("dataref-roundings", {}))
+            self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._config.get("dataref-fetch-frequencies", {}))
             self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("default-dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
         # 2. Create decks
@@ -1203,7 +1203,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def terminate_aircraft(self):
         logger.info("terminating..")
         # Spit stats, should be on debug
-        drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal
+        drefs = {d.path: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
         # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
         # with open("datarefs.json", "w") as fp:
         #     json.dump(drefs, fp, indent=2)

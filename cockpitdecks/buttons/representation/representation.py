@@ -138,7 +138,7 @@ class Representation:
                     return True
         return default
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         return set()
 
     def get_button_value(self):

@@ -12,7 +12,7 @@ import sys
 
 from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
 from .buttons.representation import REPRESENTATIONS, HARDWARE_REPRESENTATIONS, Annunciator
-from .simulator import Dataref, DatarefListener
+from .simulators.xplane import Dataref, DatarefListener
 from .value import Value, ValueProvider
 
 from cockpitdecks import (
@@ -146,7 +146,7 @@ class Button(DatarefListener, ValueProvider):
 
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
-        self.all_datarefs = self.get_datarefs()  # this does not add string datarefs
+        self.all_datarefs = self.get_simulator_data()  # this does not add string datarefs
         if len(self.all_datarefs) > 0:
             self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
@@ -229,8 +229,8 @@ class Button(DatarefListener, ValueProvider):
             logger.info(f"Button {self.name} -- {what}")
             if "dataref" in what:
                 # logger.info("")
-                for d in self.get_datarefs():
-                    v = self.get_dataref_value(d)
+                for d in self.get_simulator_data():
+                    v = self.get_simulation_data_value(d)
                     logger.info(f"    {d} = {v}")
             if "activation" in what or "longpress" in what:
                 logger.info("")
@@ -399,7 +399,7 @@ class Button(DatarefListener, ValueProvider):
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
-    def get_datarefs(self, base: dict | None = None) -> set:
+    def get_simulator_data(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -411,7 +411,7 @@ class Button(DatarefListener, ValueProvider):
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.get_datarefs(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
+        r = self._value.get_simulator_data(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
 
         # 1b. Managed values
         managed = None
@@ -433,7 +433,7 @@ class Button(DatarefListener, ValueProvider):
 
         # Activation datarefs
         if self._activation is not None:
-            datarefs = self._activation.get_datarefs()
+            datarefs = self._activation.get_simulator_data()
             if datarefs is not None:
                 r = r | datarefs
                 self._value.complement_datarefs(r, reason="activation")
@@ -441,7 +441,7 @@ class Button(DatarefListener, ValueProvider):
 
         # Representation datarefs
         if self._representation is not None:
-            datarefs = self._representation.get_datarefs()
+            datarefs = self._representation.get_simulator_data()
             if datarefs is not None:
                 r = r | datarefs
                 self._value.complement_datarefs(r, reason="representation")
@@ -463,13 +463,13 @@ class Button(DatarefListener, ValueProvider):
         if self.managed is None:
             logger.debug(f"button {self.name}: is managed is none.")
             return False
-        d = self.get_dataref_value(self.managed, default=0)
+        d = self.get_simulation_data_value(self.managed, default=0)
         if d != 0:
             logger.debug(f"button {self.name}: is managed ({d}).")
             return True
         logger.debug(f"button {self.name}: is not managed ({d}).")
         return False
-        # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
+        # return self.managed is not None and self.get_simulation_data_value(dataref=self.managed, default=0) != 0
 
     def has_guard(self):
         return self._guard_dref is not None
@@ -506,8 +506,8 @@ class Button(DatarefListener, ValueProvider):
     def get_dataref(self, dataref):
         return self.page.get_dataref(dataref=dataref)
 
-    def get_dataref_value(self, dataref, default=None):
-        return self.page.get_dataref_value(dataref=dataref, default=default)
+    def get_simulation_data_value(self, dataref, default=None):
+        return self.page.get_simulation_data_value(dataref=dataref, default=default)
 
     def get_state_value(self, name, default: str = "0"):
         value = None
