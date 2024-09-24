@@ -1094,9 +1094,9 @@ class XPlane(Simulator, XPlaneBeacon):
                         logger.debug(
                             f"average socket time between reads {round(total_read_time / total_reads, 3)} ({total_reads} reads; {total_values} values sent)"
                         )  # ignore
-                except:  # socket timeout
+                except TimeoutError:  # socket timeout
                     number_of_timeouts = number_of_timeouts + 1
-                    logger.info(f"socket timeout received ({number_of_timeouts}/{MAX_TIMEOUT_COUNT})", exc_info=True)  # ignore
+                    logger.info(f"socket timeout received ({number_of_timeouts}/{MAX_TIMEOUT_COUNT})")  # , exc_info=True
                     self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=2, cascade=True)
                     if number_of_timeouts >= MAX_TIMEOUT_COUNT:  # attemps to reconnect
                         logger.warning("too many times out, disconnecting, udp_enqueue terminated")  # ignore
@@ -1105,6 +1105,8 @@ class XPlane(Simulator, XPlaneBeacon):
                             self.udp_event.set()
                         self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=1, cascade=True)
                         self.inc(INTERNAL_DATAREF.STOPS.value)
+                except:
+                    logger.error(f"udp_enqueue", exc_info=True)
         self.udp_event = None
         self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=2, cascade=True)
         logger.debug("..dataref listener terminated")

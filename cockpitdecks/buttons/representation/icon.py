@@ -505,7 +505,7 @@ class MultiTexts(IconText):
         else:
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         datarefs = set()
         for text in self.multi_texts:
             drefs = self.button.scan_datarefs(text)
