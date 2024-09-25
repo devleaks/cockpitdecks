@@ -216,14 +216,15 @@ class Page:
         self.inc(INTERNAL_DATAREF.PAGE_RENDER.value)
 
         if not self.fill_empty_keys:
-            print("STOP - " * 10)
             return
 
-        for key in filter(
-            lambda b: b not in self.buttons.keys(),
-            self.deck.valid_indices(with_icon=True),
-        ):
+        for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices(with_icon=True)):
             self.deck.fill_empty(key)
+
+        # If virtual deck, we also need to fill unused hardware representations
+        if self.deck.is_virtual_deck():
+            for key in filter(lambda b: b not in self.buttons.keys(), self.deck.deck_type.indices_with_hardware_representations()):
+                self.deck.fill_empty_hardware_representation(key, self)
 
         if self.get_attribute("print-page-dir"):
             self.deck.print_page(self)

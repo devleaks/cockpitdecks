@@ -244,6 +244,15 @@ class VirtualDeck(DeckWithIcons):
         payload = {"code": 0, "deck": self.name, "key": key, "image": base64.encodebytes(content).decode("ascii"), "meta": meta}
         self.cockpit.send(deck=self.name, payload=payload)
 
+    def fill_empty_hardware_representation(self, key, page):
+        config = self.deck_type.get_empty_button_config(key)
+        if config is not None:
+            btn = Button(config=config, page=page)
+            self._set_hardware_image(btn)
+            logger.info(f"fill_empty_hardware_representation: done for {key}")
+        else:
+            logger.warning(f"fill_empty_hardware_representation: need empty representation for {key}")
+
     def _send_hardware_key_image_to_device(self, key, image, metadata):
         def add_corners(im, rad):
             circle = Image.new("L", (rad * 2, rad * 2), 0)

@@ -168,7 +168,7 @@ class VirtualXTMLED(VirtualLED):
         VirtualLED.__init__(self, button=button)
 
         self.color = self.hardware.get("color", (207, 229, 149))
-        self.off_color = self.hardware.get("off-color", "ghostwhite")
+        self.off_color = self.hardware.get("off-color", (150, 150, 150))
 
     def describe(self) -> str:
         return "The representation places a uniform color icon for X-Touch Mini buttons."

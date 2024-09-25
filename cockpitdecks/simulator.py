@@ -194,6 +194,9 @@ class SimulatorData(ABC):
                     f"{self.name}: notified {lsnr.name} (not on an page)",
                 )
 
+    def save(self):
+        pass
+
 
 class SimulatorDataListener(ABC):
     # To get notified when a simulator data has changed.
