@@ -159,7 +159,7 @@ class Page:
         self.button_names[button.name] = button
         logger.debug(f"page {self.name}: button {idx} {button.name} added")
 
-    def register_datarefs(self, button: Button):
+    def register_simulator_data(self, button: Button):
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
         for d in button.get_string_datarefs():
@@ -174,7 +174,9 @@ class Page:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
                 self.simulator_data[d].add_listener(button)
-                logger.debug(f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.simulator_data[d].is_string})")
+                logger.debug(
+                    f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.simulator_data[d].is_string})"
+                )
 
         # Possible issue if a dataref is created here below and is a string dataref
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref

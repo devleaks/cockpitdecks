@@ -10,9 +10,11 @@ import re
 import logging
 import sys
 
+from cockpitdecks.simulator import CockpitdecksData
+
 from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
 from .buttons.representation import REPRESENTATIONS, HARDWARE_REPRESENTATIONS, Annunciator
-from .simulators.xplane import Dataref, DatarefListener
+from .simulator import SimulatorData, SimulatorDataListener
 from .value import Value, ValueProvider
 
 from cockpitdecks import (
@@ -31,9 +33,9 @@ logger = logging.getLogger(__name__)
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
-class Button(DatarefListener, ValueProvider):
+class Button(SimulatorDataListener, ValueProvider):
     def __init__(self, config: dict, page: "Page"):
-        DatarefListener.__init__(self)
+        SimulatorDataListener.__init__(self)
         # Definition and references
         self._config = config
         self._def = config.get(DECK_BUTTON_DEFINITION)
@@ -129,7 +131,7 @@ class Button(DatarefListener, ValueProvider):
             else:
                 self._guard_dref = self.sim.get_dataref(guard_dref_path)
                 self._guard_dref.update_value(new_value=0, cascade=False)  # need initial value,  especially for internal drefs
-                logger.debug(f"button {self.name} has guard {self._guard_dref.path}")
+                logger.debug(f"button {self.name} has guard {self._guard_dref.name}")
 
         # String datarefs
         self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, set())
@@ -148,7 +150,7 @@ class Button(DatarefListener, ValueProvider):
         self.all_datarefs = None  # all datarefs used by this button
         self.all_datarefs = self.get_simulator_data()  # this does not add string datarefs
         if len(self.all_datarefs) > 0:
-            self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
+            self.page.register_simulator_data(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
 
         # collection in single set
@@ -605,16 +607,16 @@ class Button(DatarefListener, ValueProvider):
     # ##################################
     # External API
     #
-    def dataref_changed(self, dataref: Dataref):
+    def simulator_data_changed(self, data: SimulatorData):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(dataref, Dataref):
-            logger.error(f"button {self.name}: not a dataref")
+        if not isinstance(data, SimulatorData):
+            logger.error(f"button {self.name}: not a simulator data")
             return
-        logger.debug(f"{self.name}: {dataref.path} changed")
+        logger.debug(f"{self.name}: {data.name} changed")
         self.value = self.compute_value()
-        if self.has_changed() or dataref.has_changed():
+        if self.has_changed() or data.has_changed():
             logger.log(
                 SPAM_LEVEL,
                 f"button {self.name}: {self.previous_value} -> {self.current_value}",

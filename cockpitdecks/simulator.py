@@ -8,8 +8,9 @@ from typing import List, Any
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from cockpitdecks import SPAM_LEVEL, now, DEFAULT_FREQUENCY
+from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
 from cockpitdecks.event import Event
+from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 loggerSimdata = logging.getLogger("SimulatorData")
 # loggerSimdata.setLevel(SPAM_LEVEL)
@@ -70,6 +71,7 @@ class SimulatorData(ABC):
         # value
         self._round = None
         self._update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
+        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
 
         self._previous_value = None  # raw values
         self._current_value = None
@@ -80,6 +82,55 @@ class SimulatorData(ABC):
         self._sim = None
 
         self.listeners: List[SimulatorDataListener] = []  # buttons using this simulator_data, will get notified if changes.
+
+    @staticmethod
+    def might_be_simulator_data(path: str) -> bool:
+        # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
+        # At the end, we are not sure it is a dataref, but wea re sure non-datarefs are excluded ;-)
+        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
+        for start in PREFIX:
+            if path.startswith(start + PREFIX_SEP):
+                return False
+        return path != CONFIG_KW.FORMULA.value
+
+    @staticmethod
+    def is_internal_simulator_data(path: str) -> bool:
+        return path.startswith(COCKPITDECKS_DATA_PREFIX)
+
+    @property
+    def is_internal(self) -> bool:
+        return self.name.startswith(COCKPITDECKS_DATA_PREFIX)
+
+    @property
+    def is_string(self) -> bool:
+        return self.data_type == SimulatorDataType.STRING
+
+    @property
+    def rounding(self):
+        return self._round
+
+    @rounding.setter
+    def rounding(self, rounding):
+        self._round = rounding
+
+    @property
+    def update_frequency(self):
+        return self._update_frequency
+
+    @update_frequency.setter
+    def update_frequency(self, frequency: int | float = DEFAULT_FREQUENCY):
+        if frequency is not None and type(frequency) in [int, float]:
+            self._update_frequency = frequency
+        else:
+            self._update_frequency = DEFAULT_FREQUENCY
+
+    @property
+    def writable(self) -> bool:
+        return self._writable
+
+    @writable.setter
+    def writable(self, writable: bool):
+        self._writable = writable
 
     def has_changed(self):
         if self.previous_value is None and self.current_value is None:
@@ -131,7 +182,7 @@ class SimulatorData(ABC):
 
     def notify(self):
         for lsnr in self.listeners:
-            lsnr.dataref_changed(self)
+            lsnr.simulator_data_changed(self)
             if hasattr(lsnr, "page") and lsnr.page is not None:
                 loggerSimdata.log(
                     SPAM_LEVEL,
@@ -157,6 +208,7 @@ class SimulatorDataListener(ABC):
 
 # "Internal" data, same properties as the simulator data
 # but does not get forwarded to the simulator
+# Mistakenly sometimes called an internal dataref... (historical)
 class CockpitdecksData(SimulatorData):
 
     def __init__(self, path: str, is_string: bool = False):
@@ -170,9 +222,7 @@ class CockpitdecksData(SimulatorData):
 # Command
 #
 class Instruction(ABC):
-    """An Instruction is sent to the Simulator to execute some action.
-
-    [description]
+    """An Instruction is sent to the Simulator to execute an action.
     """
 
     def __init__(self, name: str, delay: float = 0.0, condition: str | None = None, button: "Button" | None = None) -> None:

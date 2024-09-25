@@ -56,7 +56,7 @@ if LOGFILE is not None:
 # COMMAND LINE PARSING
 #
 # No aircraft supplied starts the demo version.
-DESC = "Elgato Stream Decks, LoupedeckLive, Berhinger X-Touch, and web decks to X-Plane 12.1+"
+DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
 DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "demo")
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
@@ -68,7 +68,24 @@ class CD_MODE(Enum):
     DEMO = 1
     FIXED = 2
 
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ.get("PATH", "").split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+# Command-line arguments
+#
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 parser.add_argument("-c", "--config", metavar="config_file", type=str, nargs=1, help="alternate configuration file")
@@ -79,24 +96,58 @@ parser.add_argument("-v", "--verbose", action="store_true", help="show startup i
 args = parser.parse_args()
 
 VERBOSE = args.verbose
-config_file = os.path.join(COCKPITDECKS_FOLDER, CONFIG_FILE) if args.config is None else args.config[0]
 
-environment = Config(filename=os.path.abspath(config_file))
+# Environment File
+#
+default_environment_file = os.path.join(COCKPITDECKS_FOLDER, CONFIG_FILE)
+config_file = default_environment_file if args.config is None else args.config[0]
 
+environment = {}
+if os.path.exists(config_file):
+    environment = Config(filename=os.path.abspath(config_file))
+    if VERBOSE:
+        print(f"Cockpitdecks loaded environment from file {config_file}")
+else:
+    print(f"Cockpitdecks environment file {config_file} not found")
+    if os.path.exists(default_environment_file):
+        environment = Config(filename=default_environment_file)
+        print(f"Cockpitdecks loaded default environment file {default_environment_file} instead")
+    else:
+        print(f"Cockpitdecks defalut environment file {default_environment_file} not found")
+        sys.exit(1)
 
+# X-Plane
+#
 XP_HOME = environment.get("XP_HOME")
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
     sys.exit(1)
 
 APP_HOST = environment.get("APP_HOST", "127.0.0.1")
+
+
+# COCKPITDECKS_PATH
+#
+def add_env(env, paths):
+    return ":".join(set(env.split(":") + paths)).strip(":")
+
+# Strats from environment
 COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")
+
+# Append from environment file
+ENV_PATH = environment.get("COCKPITDECKS_PATH")
+if ENV_PATH is not None:
+    COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, ENV_PATH)
+
+# Append X-Plane regular aircraft paths
 if XP_HOME is not None:
-    COCKPITDECKS_PATH = ":".join(
-        COCKPITDECKS_PATH.split(":") + [os.path.join(XP_HOME, "Aircraft", "Extra Aircraft"), os.path.join(XP_HOME, "Aircraft", "Laminar Research")]
-    )
+    COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, [os.path.join(XP_HOME, "Aircraft", "Extra Aircraft"), os.path.join(XP_HOME, "Aircraft", "Laminar Research")])
 
+if VERBOSE:
+    print(f"COCKPITDECKS_PATH={COCKPITDECKS_PATH}")
 
+# Start-up Mode
+#
 mode = CD_MODE.DEMO if args.demo else CD_MODE.NORMAL
 ac = args.aircraft_folder
 if ac is not None:
@@ -123,9 +174,12 @@ if VERBOSE:
 # COCKPITDECKS STARTS HERE, REALLY
 #
 # Run git status
-process = subprocess.Popen(["git", "show", "-s", "--format=%ci"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-stdout, stderr = process.communicate()
-last_commit = stdout.decode("utf-8")[:10].replace("-", "")
+last_commit = ""
+git = which("git")
+if os.path.exists(".git") and git is not None:
+    process = subprocess.Popen([git, "show", "-s", "--format=%ci"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    last_commit = stdout.decode("utf-8")[:10].replace("-", "")
 
 copyrights = f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n"
 print(copyrights)

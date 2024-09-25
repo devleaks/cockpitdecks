@@ -11,7 +11,7 @@ from datetime import datetime
 from queue import Queue
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
-from cockpitdecks.simulator import DatarefListener, Dataref
+from cockpitdecks.simulator import SimulatorDataListener, SimulatorData
 from cockpitdecks import CockpitBase
 from cockpitdecks.simulators import XPlane
 
@@ -21,7 +21,7 @@ __version__ = "0.0.1"
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
-class DatarefFetcher(DatarefListener, CockpitBase):
+class DatarefFetcher(SimulatorDataListener, CockpitBase):
     """Dummy"""
 
     def __init__(self, simulator):
@@ -33,7 +33,7 @@ class DatarefFetcher(DatarefListener, CockpitBase):
 
         self._list = None
         CockpitBase.__init__(self)
-        DatarefListener.__init__(self)
+        SimulatorDataListener.__init__(self)
 
     def set_logging_level(self, name):
         pass
@@ -44,17 +44,17 @@ class DatarefFetcher(DatarefListener, CockpitBase):
         self.fetch_datarefs(self._list)
         self.sim.add_all_datarefs_to_monitor()
 
-    def dataref_changed(self, dataref):
+    def simulator_data_changed(self, data: SimulatorData):
         """Core function
 
         Should register dataref changes and store them in some structure.
         Dataframe? simpler array? dict? should be passivated to disk on regular basis
         in a kind of circular logging.
         """
-        if dataref.previous_value is None and dataref.current_value is not None:
-            print(f"{dataref.path} get initial value: {dataref.current_value}")
+        if data.previous_value is None and data.current_value is not None:
+            print(f"{data.path} get initial value: {data.current_value}")
             return  # got initial value, do not report it...
-        print(f"{datetime.now().strftime('%H:%M:%S.%f')} {dataref.path} changed: {dataref.previous_value} -> {dataref.current_value}")
+        print(f"{datetime.now().strftime('%H:%M:%S.%f')} {data.path} changed: {data.previous_value} -> {data.current_value}")
 
     def fetch_datarefs(self, dataref_paths=None):
         if dataref_paths is not None:

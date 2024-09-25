@@ -163,7 +163,7 @@ class Value:
         # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
             dataref = base.get(attribute)
-            if dataref is not None and Dataref.might_be_dataref(dataref):
+            if dataref is not None and Dataref.might_be_simulator_data(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 
@@ -172,7 +172,7 @@ class Value:
         if datarefs is not None:
             a = []
             for d in datarefs:
-                if Dataref.might_be_dataref(d):
+                if Dataref.might_be_simulator_data(d):
                     r.add(d)
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
@@ -193,7 +193,7 @@ class Value:
             if text is not str:
                 text = str(text)
             datarefs = re.findall(PATTERN_DOLCB, text)
-            datarefs = set(filter(lambda x: Dataref.might_be_dataref(x), datarefs))
+            datarefs = set(filter(lambda x: Dataref.might_be_simulator_data(x), datarefs))
             if len(datarefs) > 0:
                 r = r | datarefs
                 logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
@@ -578,5 +578,5 @@ class Value:
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0
             self._set_dref.update_value(new_value=new_value, cascade=True)
-            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_dref.path} to button value {new_value}")
+            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_dref.name} to button value {new_value}")
             self._set_dref.save()

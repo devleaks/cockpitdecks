@@ -176,3 +176,5 @@ cockpitdecks/config.py
 datarefs-log.yaml
 events.json
 cockpitdecks/config-mini.py
+cockpitdecks/config-xp-on-studio.yaml
+cockpitdecks/config-xp-on-mini.yaml

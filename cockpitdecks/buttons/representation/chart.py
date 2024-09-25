@@ -13,7 +13,7 @@ from cockpitdecks import ICON_SIZE, now
 
 from cockpitdecks.resources.color import convert_color
 from cockpitdecks.resources.ts import TimeSerie
-from cockpitdecks.simulators.xplane import DatarefListener
+from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
 from .draw import DrawBase
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
@@ -30,7 +30,7 @@ MAX_SPARKLINES = 3
 # DYNAMIC CHARTS
 #
 #
-class ChartData(DrawBase, DatarefListener):
+class ChartData(DrawBase, SimulatorDataListener):
 
     def __init__(self, chart, config: dict) -> None:
         self.chart_config = config
@@ -132,8 +132,8 @@ class ChartData(DrawBase, DatarefListener):
         return self.value.get_value()
         # return randint(self.value_min, self.value_max)
 
-    def dataref_changed(self, dataref):
-        r = dataref.value()
+    def simulator_data_changed(self, data: SimulatorData):
+        r = data.value()
         if r is None:
             logger.warning(f"chart {self.name}: value is None, set to zero")
             r = 0

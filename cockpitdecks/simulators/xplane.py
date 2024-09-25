@@ -19,10 +19,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
 from cockpitdecks import SPAM_LEVEL, CONFIG_KW, AIRCRAFT_CHANGE_MONITORING_DATAREF, DEFAULT_FREQUENCY
-from cockpitdecks.simulator import CockpitdecksData, Simulator, SimulatorDataType, SimulatorData, Instruction, SimulatorDataListener, SimulatorEvent
-from cockpitdecks.simulator import INTERNAL_STATE_PREFIX, BUTTON_VARIABLE_PREFIX, PREFIX_SEP
+from cockpitdecks.simulator import COCKPITDECKS_DATA_PREFIX, INTERNAL_STATE_PREFIX, BUTTON_VARIABLE_PREFIX, PREFIX_SEP
+from cockpitdecks.simulator import Simulator, SimulatorDataType, SimulatorData, CockpitdecksData, Instruction, SimulatorDataListener, SimulatorEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.resources.iconfonts import ICON_FONTS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see which dataref are requested
@@ -33,8 +32,7 @@ logger = logging.getLogger(__name__)
 # DATAREF
 #
 # A velue in X-Plane Simulator
-INTERNAL_DATAREF_PREFIX = "data:"
-PATTERN_INTDREF = f"\\${{{INTERNAL_DATAREF_PREFIX}([^\\}}]+?)}}"
+PATTERN_INTDREF = f"\\${{{COCKPITDECKS_DATA_PREFIX}([^\\}}]+?)}}"
 
 # REST API model keywords
 REST_DATA = "data"
@@ -49,17 +47,10 @@ class XPlaneData(SimulatorData):
 
     @classmethod
     def new(cls, name, **kwargs):
-        is_string = False
-        if "is_string" in kwargs:
-            is_string = kwargs.get("is_string")
+        is_string = kwargs.get("is_string", False)
+        is_internal = kwargs.get("is_internal", False)
 
-        is_internal = False
-        if "is_internal" in kwargs:
-            is_internal = kwargs.get("is_internal")
-
-        if is_internal:
-            if not name.startswith(INTERNAL_DATAREF_PREFIX):
-                name = INTERNAL_DATAREF_PREFIX + name
+        if is_internal or name.startswith(COCKPITDECKS_DATA_PREFIX):
             return CockpitdecksData(path=name, is_string=is_string)
 
         return Dataref(path=name, is_string=is_string)
@@ -84,82 +75,26 @@ class Dataref(SimulatorData):
         self.dataref = path  # some/path/values
         self.index = 0  # 6
         if "[" in path:  # sim/some/values[4]
-            self.dataref = self.path[: self.path.find("[")]
-            self.index = int(self.path[self.path.find("[") + 1 : self.path.find("]")])
+            self.dataref = self.name[: self.name.find("[")]
+            self.index = int(self.name[self.name.find("[") + 1 : self.name.find("]")])
 
-        self._round = None
-        self._update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
-        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
         self._xpindex = None
         self._req_id = 0
 
-    @property
-    def path(self) -> str:
-        return self.name
-
-    @property
-    def is_string(self) -> bool:
-        return self.data_type == SimulatorDataType.STRING
+    # @property
+    # def path(self) -> str:
+    #     return self.name
 
     @staticmethod
-    def get_dataref_type(path) -> Tuple[str, str]:
-        if len(path) > 3 and path[-2:-1] == ":" and path[-1] in "difsb":  # decimal, integer, float, string, byte(s)
-            return path[:-2], path[-1]
-        return path, "f"
-
-    @staticmethod
-    def is_internal_dataref(path: str) -> bool:
-        return path.startswith(INTERNAL_DATAREF_PREFIX)
-
-    @staticmethod
-    def mk_internal_dataref(path: str) -> str:
-        return INTERNAL_DATAREF_PREFIX + path
-
-    @staticmethod
-    def might_be_dataref(path: str) -> bool:
-        # ${state:button-value} is not a dataref, BUT ${data:path} is a "local" dataref
-        # Not sure it is a dataref, but sure non-datarefs are excluded ;-)
-        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
-        for start in PREFIX:
-            if path.startswith(start + PREFIX_SEP):
-                return False
-        return path != CONFIG_KW.FORMULA.value
-
-    @property
-    def is_internal(self) -> bool:
-        return Dataref.is_internal_dataref(self.path)
-
-    @property
-    def rounding(self):
-        return self._round
-
-    @rounding.setter
-    def rounding(self, rounding):
-        self._round = rounding
-
-    @property
-    def update_frequency(self):
-        return self._update_frequency
-
-    @update_frequency.setter
-    def update_frequency(self, frequency: int | float = DEFAULT_FREQUENCY):
-        if frequency is not None and type(frequency) in [int, float]:
-            self._update_frequency = frequency
-        else:
-            self._update_frequency = DEFAULT_FREQUENCY
-
-    @property
-    def writable(self) -> bool:
-        return self._writable
-
-    @writable.setter
-    def writable(self, writable: bool):
-        self._writable = writable
+    def internal_dataref_path(path: str) -> str:
+        if not Dataref.is_internal_simulator_data(path):  # prevent duplicate prepend
+            return COCKPITDECKS_DATA_PREFIX + path
+        return path # already startswith COCKPITDECKS_DATA_PREFIX
 
     def save(self) -> bool:
         if self._writable:
             if not self.is_internal:
-                return self._sim.write_dataref(dataref=self.path, value=self.value())
+                return self._sim.write_dataref(dataref=self.name, value=self.value())
         else:
             loggerDataref.warning(f"{self.dataref} not writable")
         return False
@@ -174,7 +109,7 @@ class Dataref(SimulatorData):
         if api_url is None:
             logger.warning("no api url")
             return None
-        payload = {"filter[name]": self.path}
+        payload = {"filter[name]": self.name}
         api_url = f"{api_url}/datarefs"
         response = requests.get(api_url, params=payload)
         resp = response.json()
@@ -190,7 +125,7 @@ class Dataref(SimulatorData):
         if data is not None and REST_IDENT in data:
             self._xpindex = int(data[REST_IDENT])
             return self._xpindex
-        logger.error(f"could not get dataref specifications for {self.path} ({data})")
+        logger.error(f"could not get dataref specifications for {self.name} ({data})")
         return None
 
     def get_value(self, simulator: Simulator):
@@ -211,9 +146,9 @@ class Dataref(SimulatorData):
                 if type(data[REST_DATA]) in [str, bytes]:
                     return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
                 else:
-                    logger.warning(f"value for {self.path} ({data}) is not a string")
+                    logger.warning(f"value for {self.name} ({data}) is not a string")
             return data[REST_DATA]
-        logger.error(f"could not get value for {self.path} ({data})")
+        logger.error(f"could not get value for {self.name} ({data})")
         return None
 
     def set_value(self, simulator: Simulator):
@@ -233,7 +168,7 @@ class Dataref(SimulatorData):
         data = {"data": value}
         response = requests.patch(url=url, data=data)
         if response.status_code != 200:
-            logger.error(f"could not set value for {self.path} ({data}, {response})")
+            logger.error(f"could not set value for {self.name} ({data}, {response})")
 
     def ws_subscribe(self, ws):
         self._req_id = randint(100000, 1000000)
@@ -261,26 +196,13 @@ class Dataref(SimulatorData):
 
     def auto_collect(self):
         if self.collector is None:
-            e = DatarefEvent(sim=self, dataref=self.path, value=self.get_value(), cascade=True)
+            e = DatarefEvent(sim=self, dataref=self.name, value=self.get_value(), cascade=True)
             self.collector = threading.Timer(self.update_frequency, self.auto_collect)
 
     def cancel_autocollect(self):
         if self.collector is not None:
             self.collector.cancel()
             self.collector = None
-
-
-class DatarefListener(SimulatorDataListener):
-    # To get notified when a dataref has changed.
-
-    def __init__(self, name: str = "abstract-dataref-listener"):
-        self.name = name
-
-    def simulator_data_changed(self, data: SimulatorData):
-        self.dataref_changed(dataref=data)
-
-    def dataref_changed(self, dataref):
-        pass
 
 
 class DatarefEvent(SimulatorEvent):
@@ -313,7 +235,7 @@ class DatarefEvent(SimulatorEvent):
                 return
 
             try:
-                logger.debug(f"updating {dataref.path}..")
+                logger.debug(f"updating {dataref.name}..")
                 self.handling()
                 dataref.update_value(self.value, cascade=self.cascade)
                 self.handled()
@@ -883,19 +805,19 @@ class XPlane(Simulator, XPlaneBeacon):
             return simnow
         return now
 
-    def get_dataref(self, path: str, is_string: bool = False):
+    def get_dataref(self, path: str, is_string: bool = False) -> CockpitdecksData | Dataref:
         if path in self.all_simulator_data.keys():
             return self.all_simulator_data[path]
+        if Dataref.is_internal_simulator_data(path):  # prevent duplicate prepend
+            return self.register(simulator_data=CockpitdecksData(path, is_string=is_string))
         return self.register(simulator_data=Dataref(path, is_string=is_string))
 
     # Shortcuts
     def get_internal_dataref(self, path: str, is_string: bool = False):
-        if not Dataref.is_internal_dataref(path):  # prevent duplicate prepend
-            path = Dataref.mk_internal_dataref(path)
-        return self.get_dataref(path=path, is_string=is_string)
+        return self.get_dataref(path=Dataref.internal_dataref_path(path), is_string=is_string)
 
     def set_internal_dataref(self, path: str, value: float, cascade: bool):
-        int_path = Dataref.mk_internal_dataref(path)
+        int_path = Dataref.internal_dataref_path(path)
         if cascade:
             e = DatarefEvent(sim=self, dataref=int_path, value=value, cascade=cascade)
         else:  # just save the value, do not cascade
@@ -940,7 +862,7 @@ class XPlane(Simulator, XPlaneBeacon):
         DREF0+(4byte byte value of 1)+ sim/cockpit/switches/anti_ice_surf_heat_left+0+spaces to complete to 509 bytes
         """
         path = dataref
-        if Dataref.is_internal_dataref(path):
+        if Dataref.is_internal_simulator_data(path):
             d = self.get_dataref(path)
             d.update_value(new_value=value, cascade=True)
             logger.debug(f"written local dataref ({path}={value})")
@@ -973,7 +895,7 @@ class XPlane(Simulator, XPlaneBeacon):
         Configure XPlane to send the dataref with a certain frequency.
         You can disable a dataref by setting freq to 0.
         """
-        if Dataref.is_internal_dataref(path):
+        if Dataref.is_internal_simulator_data(path):
             logger.debug(f"{path} is local and does not need X-Plane monitoring")
             return False
 
@@ -1205,7 +1127,7 @@ class XPlane(Simulator, XPlaneBeacon):
             logger.warning(f"no command")
 
     def remove_local_datarefs(self, datarefs) -> list:
-        return list(filter(lambda d: not Dataref.is_internal_dataref(d), datarefs))
+        return list(filter(lambda d: not Dataref.is_internal_simulator_data(d), datarefs))
 
     def clean_datarefs_to_monitor(self):
         if not self.connected:
@@ -1228,19 +1150,19 @@ class XPlane(Simulator, XPlaneBeacon):
         prnt = []
         for d in datarefs.values():
             if d.is_internal:
-                logger.debug(f"local dataref {d.path} is not monitored")
+                logger.debug(f"local dataref {d.name} is not monitored")
                 continue
             if d.is_string:
-                logger.debug(f"string dataref {d.path} is not monitored")
+                logger.debug(f"string dataref {d.name} is not monitored")
                 continue
-            if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
-                prnt.append(d.path)
+            if self.add_dataref_to_monitor(d.name, freq=d.update_frequency):
+                prnt.append(d.name)
 
         # Add aircraft
         dref_ipc = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF)
-        if self.add_dataref_to_monitor(dref_ipc.path, freq=dref_ipc.update_frequency):
-            prnt.append(dref_ipc.path)
-            super().add_simulator_data_to_monitor({dref_ipc.path: dref_ipc})
+        if self.add_dataref_to_monitor(dref_ipc.name, freq=dref_ipc.update_frequency):
+            prnt.append(dref_ipc.name)
+            super().add_simulator_data_to_monitor({dref_ipc.name: dref_ipc})
 
         logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
         logger.info(f">>>>> monitoring++{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
@@ -1254,22 +1176,22 @@ class XPlane(Simulator, XPlaneBeacon):
         prnt = []
         for d in datarefs.values():
             if d.is_internal:
-                logger.debug(f"local dataref {d.path} is not monitored")
+                logger.debug(f"local dataref {d.name} is not monitored")
                 continue
-            if d.path in self.simulator_data_to_monitor.keys():
-                if self.simulator_data_to_monitor[d.path] == 1:  # will be decreased by 1 in super().remove_simulator_data_to_monitor()
-                    if self.add_dataref_to_monitor(d.path, freq=0):
-                        prnt.append(d.path)
+            if d.name in self.simulator_data_to_monitor.keys():
+                if self.simulator_data_to_monitor[d.name] == 1:  # will be decreased by 1 in super().remove_simulator_data_to_monitor()
+                    if self.add_dataref_to_monitor(d.name, freq=0):
+                        prnt.append(d.name)
                 else:
-                    logger.debug(f"{d.path} monitored {self.simulator_data_to_monitor[d.path]} times")
+                    logger.debug(f"{d.name} monitored {self.simulator_data_to_monitor[d.name]} times")
             else:
-                logger.debug(f"no need to remove {d.path}")
+                logger.debug(f"no need to remove {d.name}")
 
         # Add aircraft path
         dref_ipc = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF)
-        if self.add_dataref_to_monitor(dref_ipc.path, freq=0):
-            prnt.append(dref_ipc.path)
-            super().remove_simulator_data_to_monitor({dref_ipc.path: dref_ipc})
+        if self.add_dataref_to_monitor(dref_ipc.name, freq=0):
+            prnt.append(dref_ipc.name)
+            super().remove_simulator_data_to_monitor({dref_ipc.name: dref_ipc})
 
         logger.debug(f"removed {prnt}")
         super().remove_simulator_data_to_monitor(datarefs)
@@ -1295,8 +1217,8 @@ class XPlane(Simulator, XPlaneBeacon):
         for path in self.simulator_data_to_monitor.keys():
             d = self.all_simulator_data.get(path)
             if d is not None and not d.is_string:
-                if self.add_dataref_to_monitor(d.path, freq=d.update_frequency):
-                    prnt.append(d.path)
+                if self.add_dataref_to_monitor(d.name, freq=d.update_frequency):
+                    prnt.append(d.name)
                 else:
                     logger.warning(f"no dataref {path}")
         logger.log(SPAM_LEVEL, f"added {prnt}")
@@ -1347,7 +1269,7 @@ class XPlane(Simulator, XPlaneBeacon):
         # through the XP 12.1.1 Web REST API
         #
         dref = self.get_dataref(AIRCRAFT_CHANGE_MONITORING_DATAREF, is_string=True)
-        logger.info(f"{dref.path}={dref.get_value(self)}")
+        logger.info(f"{dref.name}={dref.get_value(self)}")
 
     def stop(self):
         if self.udp_event is not None:

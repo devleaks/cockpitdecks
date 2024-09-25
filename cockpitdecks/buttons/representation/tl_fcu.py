@@ -52,7 +52,12 @@ class FCUBaseIcon(DrawBase):
         return self._representation_config
 
     def get_simulator_data(self) -> set:
-        return set(self.mode.get_simulator_data() | self.main_value.get_simulator_data() | self.alt_value.get_simulator_data() | self.managed_value.get_simulator_data())
+        return set(
+            self.mode.get_simulator_data()
+            | self.main_value.get_simulator_data()
+            | self.alt_value.get_simulator_data()
+            | self.managed_value.get_simulator_data()
+        )
 
     def get_image_for_icon(self):
         return None

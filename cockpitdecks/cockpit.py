@@ -13,13 +13,12 @@ import json
 import pkg_resources
 from datetime import datetime
 from queue import Queue
-import traceback
 
 from PIL import Image, ImageFont
 
 # from cairosvg import svg2png
 
-from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
+from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
@@ -50,7 +49,8 @@ from cockpitdecks import (
 )
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulators.xplane import Dataref, DatarefListener, DatarefEvent
+from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
+from cockpitdecks.simulators.xplane import DatarefEvent
 from cockpitdecks.decks import DECK_DRIVERS
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import ACTIVATIONS
@@ -108,7 +108,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(DatarefListener, CockpitBase):
+class Cockpit(SimulatorDataListener, CockpitBase):
     """
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
@@ -116,7 +116,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def __init__(self, simulator, environ):
         CockpitBase.__init__(self)
-        DatarefListener.__init__(self)
+        SimulatorDataListener.__init__(self)
 
         # Defaults and config
         self._environ = environ
@@ -1076,7 +1076,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def replay_sim_event(self, data: dict):
         path = data.get("path")
         if path is not None:
-            if not Dataref.is_internal_dataref(path):
+            if not Dataref.is_internal_simulator_data(path):
                 e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True, autorun=False)
                 e._replay = True
                 e.run()  # enqueue after setting the reply flag
@@ -1138,14 +1138,14 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
 
-    def dataref_changed(self, dataref):
+    def simulator_data_changed(self, data: SimulatorData):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if type(dataref) is not Dataref or dataref.path != AIRCRAFT_CHANGE_MONITORING_DATAREF:
-            logger.warning(f"unhandled {dataref.path}={dataref.value()}")
+        if type(data) is not Dataref or data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
+            logger.warning(f"unhandled {data.name}={data.value()}")
             return
-        value = dataref.value()
+        value = data.value()
         if value is not None and self._livery_path == value:
             logger.info(f"livery path unchanged {self._livery_path}, doing nothing")
             return
@@ -1203,7 +1203,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def terminate_aircraft(self):
         logger.info("terminating..")
         # Spit stats, should be on debug
-        drefs = {d.path: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
+        drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
         # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
         # with open("datarefs.json", "w") as fp:
         #     json.dump(drefs, fp, indent=2)
