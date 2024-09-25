@@ -249,9 +249,9 @@ class VirtualDeck(DeckWithIcons):
         if config is not None:
             btn = Button(config=config, page=page)
             self._set_hardware_image(btn)
-            logger.info(f"fill_empty_hardware_representation: done for {key}")
+            logger.debug(f"{self.name}: done for {key}")
         else:
-            logger.warning(f"fill_empty_hardware_representation: need empty representation for {key}")
+            logger.warning(f"{self.name}: no empty hardware representation for {key}")
 
     def _send_hardware_key_image_to_device(self, key, image, metadata):
         def add_corners(im, rad):
