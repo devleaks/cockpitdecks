@@ -70,8 +70,8 @@ class VirtualDeck(DeckWithIcons):
     def unload_current_page(self):
         if self.current_page is not None:
             logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
-            logger.debug("..unloading datarefs..")
-            self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
+            logger.debug("..unloading simulator data..")
+            self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.simulator_data)
             logger.debug("..cleaning page..")
             self.current_page.clean()
         else:
@@ -197,6 +197,16 @@ class VirtualDeck(DeckWithIcons):
         # Virtual deck driver transform into Event and enqueue for Cockpitdecks processing
         # Payload is key, pressed(0 or 1), and deck name (bytes of UTF-8 string)
         payload = {"code": code, "deck": self.name, "meta": {"ts": datetime.now().timestamp()}}
+        self.cockpit.send(deck=self.name, payload=payload)
+
+    def play_sound(self, sound):
+        content = self.cockpit.sounds.get(sound)
+        if content is None:
+            logger.warning(f"{self.name}: sound {sound} not found")
+            return
+        meta = {"ts": datetime.now().timestamp()}  # dummy
+        typ = sound.split(".")[-1]
+        payload = {"code": 2, "deck": self.name, "sound": base64.encodebytes(content).decode("ascii"), "type": typ, "meta": meta}
         self.cockpit.send(deck=self.name, payload=payload)
 
     def set_key_icon(self, key, image):

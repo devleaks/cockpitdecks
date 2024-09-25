@@ -68,6 +68,7 @@ class CD_MODE(Enum):
     DEMO = 1
     FIXED = 2
 
+
 def which(program):
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -83,6 +84,7 @@ def which(program):
                 return exe_file
 
     return None
+
 
 # Command-line arguments
 #
@@ -118,6 +120,7 @@ else:
 
 # X-Plane
 #
+# XP_HOME = os.getenv("XP_HOME", "")
 XP_HOME = environment.get("XP_HOME")
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
@@ -130,6 +133,7 @@ APP_HOST = environment.get("APP_HOST", "127.0.0.1")
 #
 def add_env(env, paths):
     return ":".join(set(env.split(":") + paths)).strip(":")
+
 
 # Strats from environment
 COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")
@@ -162,10 +166,10 @@ if ac is not None:
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
     AIRCRAFT_DESC = os.path.basename(ac)
     mode = CD_MODE.FIXED if args.fixed else CD_MODE.NORMAL
-elif ac is None and XP_HOME is None:
+elif ac is None and XP_HOME is None and len(COCKPITDECKS_PATH) == 0:
     mode = CD_MODE.DEMO
     if VERBOSE:
-        print("no aircraft, no X-Plane on this host, starting in demo mode")
+        print("no aircraft, no X-Plane on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
 
 if VERBOSE:
     print(f"{AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'can change'}\n")

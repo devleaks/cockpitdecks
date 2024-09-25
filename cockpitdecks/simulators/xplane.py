@@ -89,7 +89,7 @@ class Dataref(SimulatorData):
     def internal_dataref_path(path: str) -> str:
         if not Dataref.is_internal_simulator_data(path):  # prevent duplicate prepend
             return COCKPITDECKS_DATA_PREFIX + path
-        return path # already startswith COCKPITDECKS_DATA_PREFIX
+        return path  # already startswith COCKPITDECKS_DATA_PREFIX
 
     def save(self) -> bool:
         if self._writable:

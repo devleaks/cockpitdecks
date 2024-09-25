@@ -42,6 +42,7 @@ from cockpitdecks import (
     RESOURCES_FOLDER,
     ROOT_DEBUG,
     SECRET_FILE,
+    SOUNDS_FOLDER,
     SPAM,
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
@@ -147,6 +148,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         # Content
         self.fonts = {}
+        self.sounds = {}
 
         self.icon_folder = None
         self.icons = {}
@@ -494,6 +496,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
             self.load_icons()
             self.load_fonts()
+            self.load_sounds()
             self.create_decks()
             self.load_pages()
         else:
@@ -955,6 +958,43 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             f"{len(self.fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
         )
 
+    def load_sounds(self):
+        # Loading sounds.
+        #
+        # 1. Load sounds supplied by Cockpitdeck in its resource folder
+        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, SOUNDS_FOLDER)
+        if os.path.exists(rn):
+            sounds = os.listdir(rn)
+            for i in sounds:
+                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
+                    if i not in self.sounds.keys():
+                        fn = os.path.join(rn, i)
+                        try:
+                            with open(fn, mode="rb") as file:  # b is important -> binary
+                                self.sounds[i] = file.read()
+                        except:
+                            logger.warning(f"default sound file {fn} not loaded")
+                    else:
+                        logger.debug(f"sound {i} already loaded")
+
+        # 2. Load fonts supplied by the user in the configuration
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
+        if os.path.exists(dn):
+            sounds = os.listdir(dn)
+            for i in sounds:
+                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
+                    if i not in self.sounds.keys():
+                        fn = os.path.join(dn, i)
+                        try:
+                            with open(fn, mode="rb") as file:  # b is important -> binary
+                                self.sounds[i] = file.read()
+                        except:
+                            logger.warning(f"custom sound file {fn} not loaded")
+                    else:
+                        logger.debug(f"sound {i} already loaded")
+
+        logger.info(f"{len(self.sounds)} sounds loaded")
+
     # #########################################################
     # Cockpit start/stop/event/reload procedures
     #
@@ -1142,7 +1182,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if type(data) is not Dataref or data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
+        if not isinstance(data, SimulatorData) or data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
         value = data.value()

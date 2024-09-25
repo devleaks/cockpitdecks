@@ -222,8 +222,7 @@ class CockpitdecksData(SimulatorData):
 # Command
 #
 class Instruction(ABC):
-    """An Instruction is sent to the Simulator to execute an action.
-    """
+    """An Instruction is sent to the Simulator to execute an action."""
 
     def __init__(self, name: str, delay: float = 0.0, condition: str | None = None, button: "Button" | None = None) -> None:
         super().__init__()

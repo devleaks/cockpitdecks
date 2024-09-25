@@ -45,6 +45,7 @@ class Representation:
             self._representation_config = {self.name(): self._representation_config}
 
         self._vibrate = self.get_attribute("vibrate")
+        self._sound = self.get_attribute("sound")
         self._cached = None
         self.datarefs = None
 

@@ -107,6 +107,7 @@ class Activation:
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
+        self.sound = self.get_attribute("sound")
 
         # but could be anything.
         self._long_press = None
@@ -312,6 +313,9 @@ class Activation:
 
             if self.vibrate is not None and hasattr(self.button.deck, "_vibrate"):
                 self.button.deck._vibrate(self.vibrate)
+
+            if self.sound is not None and hasattr(self.button.deck, "play_sound"):
+                self.button.deck.play_sound(self.sound)
 
         else:
             self.pressed = False

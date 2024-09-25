@@ -35,6 +35,7 @@ DEFAULT_PAGE_NAME = "Default Page"
 
 RESOURCES_FOLDER = "resources"
 FONTS_FOLDER = "fonts"
+SOUNDS_FOLDER = "sounds"
 ICONS_FOLDER = "icons"
 DECKS_FOLDER = "decks"
 DECK_TYPES = "types"
