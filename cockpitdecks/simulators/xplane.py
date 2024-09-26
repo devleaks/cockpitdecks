@@ -983,19 +983,18 @@ class XPlane(Simulator, XPlaneBeacon):
 
                             d = self.datarefs.get(idx)
                             if d is not None:
-                                # Should cache with roundings applied
                                 if value < 0.0 and value > -0.001:  # convert -0.0 values to positive 0.0
                                     value = 0.0
-                                v = value
                                 if d == DATETIME_DATAREFS[2]:  # zulu secs
                                     now = datetime.now().astimezone(tz=timezone.utc)
                                     seconds_since_midnight = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-                                    diff = v - seconds_since_midnight
+                                    diff = value - seconds_since_midnight
                                     self.set_internal_dataref(
                                         path=INTERNAL_DATAREF.ZULU_DIFFERENCE.value,
                                         value=diff,
                                         cascade=(total_reads % 2 == 0),
                                     )
+                                v = value
                                 r = self.get_rounding(simulator_data_name=d)
                                 if r is not None and value is not None:
                                     v = round(value, r)
@@ -1009,7 +1008,7 @@ class XPlane(Simulator, XPlaneBeacon):
                                     self.inc(INTERNAL_DATAREF.UPDATE_ENQUEUED.value)
                                     self._dref_cache[d] = v
                             else:
-                                logger.debug(f"no dataref ({values}), probably no longer monitored")
+                                logger.debug(f"no dataref at index {idx}, probably no longer monitored")
                     else:
                         logger.warning(f"{binascii.hexlify(data)}")
                     if total_reads % 10 == 0:
@@ -1091,14 +1090,13 @@ class XPlane(Simulator, XPlaneBeacon):
                     if k not in self._strdref_cache or (k in self._strdref_cache and self._strdref_cache[k] != v):
                         e = DatarefEvent(sim=self, dataref=k, value=v, cascade=True)
                         self._strdref_cache[k] = v
-            except:
+            except TimeoutError:  # socket timeout
                 total_to = total_to + 1
-                logger.debug(
-                    f"string dataref listener: socket timeout ({frequency} secs.) received ({total_to})",
-                    exc_info=(logger.level == logging.DEBUG),
-                )
+                logger.debug(f"string dataref listener: socket timeout ({frequency} secs.) received ({total_to})")
                 self.set_internal_dataref(path=INTDREF_CONNECTION_STATUS, value=2, cascade=True)
-                frequency = frequency + 1
+                frequency = frequency + 1  # may be we are too fast to ask, let's slow down a bit next time...
+            except:
+                logger.warning(f"strdref_enqueue", exc_info=True)
 
         self.dref_event = None
         # Bind to the port that we know will receive multicast data

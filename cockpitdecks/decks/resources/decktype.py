@@ -482,7 +482,7 @@ class DeckTypeBase:
         bntdef = self.get_button_definition(key)
         btncfg = bntdef.get_button_for_empty_hardware_representation()
         if btncfg is not None:
-            btncfg2 = btncfg.copy() # need a copy otherwise original gets polluted by following additions:
+            btncfg2 = btncfg.copy()  # need a copy otherwise original gets polluted by following additions:
             btncfg2["index"] = key
             btncfg2[DECK_BUTTON_DEFINITION] = bntdef
             return btncfg2
