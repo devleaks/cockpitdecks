@@ -24,6 +24,7 @@ from cockpitdecks import (
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
+    COCKPITDECKS_EXTENSION_PATH,
     Config,
     CONFIG_FILE,
     CONFIG_FILENAME,
@@ -47,7 +48,7 @@ from cockpitdecks import (
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
     yaml,
-    all_subclasses
+    all_subclasses,
 )
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
@@ -56,6 +57,7 @@ from cockpitdecks.simulators.xplane import DatarefEvent
 
 # imports all known decks, if deck driver not available, ignore it
 import cockpitdecks.decks
+
 # @todo later: put custom decks outside of cockpitdecks for flexibility
 # same for simulator
 from cockpitdecks.deck import Deck
@@ -137,6 +139,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         # Defaults and config
         self._environ = environ
+        self.extpath = environ.get(COCKPITDECKS_EXTENSION_PATH)
         self._startup_time = datetime.now()
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
@@ -202,6 +205,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         Loads all devices connected to this computer.
         """
+        self.add_extension_path()
         self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f">>> available drivers: {self.deck_drivers.keys()}")
         self.load_deck_types()
@@ -234,17 +238,35 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     @acpath.setter
     def acpath(self, acpath: str | None):
-        self.remove_sys_path()
+        self.remove_aircraft_path()
         self._acpath = acpath
-        self.add_sys_path()
+        self.add_aircraft_path()
 
-    def add_sys_path(self):
+    def add_extension_path(self):
+        # never tested (yet)
+        if self.extpath is not None:
+            paths = self.extpath.split(":")
+            for path in paths:
+                pythonpath = os.path.join(os.path.abspath(path))
+                if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
+                    if pythonpath not in sys.path:
+                        sys.path.append(pythonpath)
+                        logger.info(f"added extension path {pythonpath} to sys.path")
+                try:
+                    import cockpitdecks_ext.decks
+                    import cockpitdecks_ext.simulators
+                except ImportError:
+                    logger.debug("import error", exc_info=True)
+            self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+            logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+
+    def add_aircraft_path(self):
         if self.acpath is not None:
             pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
             if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                 if pythonpath not in sys.path:
                     sys.path.append(pythonpath)
-                    logger.info(f"added {pythonpath} to sys.path")
+                    logger.info(f"added aircraft path {pythonpath} to sys.path")
                     try:
                         import drivers
                     except ImportError:
@@ -252,13 +274,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
                     logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
 
-    def remove_sys_path(self):
+    def remove_aircraft_path(self):
         if self.acpath is not None:
             pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
             if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                 if pythonpath in sys.path:
                     sys.path.remove(pythonpath)
-                    logger.info(f"removed {pythonpath} from sys.path")
+                    logger.info(f"removed aircraft path {pythonpath} from sys.path")
                     try:
                         import drivers
                     except ImportError:
@@ -401,14 +423,32 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         if len(self.deck_drivers) == 0:
             logger.error("no driver")
             return
-        driver_info = [
-            f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}" for deck_driver in self.deck_drivers.keys() if deck_driver != VIRTUAL_DECK_DRIVER
-        ]
+        driver_info = []
+        for deck_driver in self.deck_drivers:
+            desc = f"{deck_driver} (included)"
+            try:
+                desc = f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}"
+            except:
+                pass
+            driver_info.append(desc)
+        # driver_info = [
+        #     f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}"
+        #     for deck_driver in self.deck_drivers.keys()
+        #     if deck_driver != VIRTUAL_DECK_DRIVER  # virtual deck is part of package cockpitdecks and does not load separately
+        # ]
         if len(driver_info) == 0:
             logger.warning("no driver for physical decks")
             return
         logger.info(f"drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
-        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in self.deck_drivers.items() if k != VIRTUAL_DECK_DRIVER]
+        dependencies = []
+        for deck_driver in self.deck_drivers.items():
+            dep = ""
+            try:
+                dep = f"{deck_driver[0].DRIVER_NAME}>={deck_driver[0].MIN_DRIVER_VERSION}"
+            except:
+                pass
+            if dep != "":
+                dependencies.append(dep)
         logger.debug(f"dependencies: {dependencies}")
         pkg_resources.require(dependencies)
 
@@ -505,7 +545,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         else:
             logger.debug("simulator already running")
 
-        logger.info(f"starting {os.path.basename(acpath)} " + "-" * 50)
+        logger.info(f"starting {os.path.basename(acpath)} " + "=" * 50)
 
         self.cockpit = {}
         self.icons = {}
@@ -1289,7 +1329,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info("..done")
-        logger.info(f"{os.path.basename(self.acpath)} terminated " + "-" * 50)
+        logger.info(f"{os.path.basename(self.acpath)} terminated " + "=" * 50)
 
     def terminate_devices(self):
         for deck in self.devices:

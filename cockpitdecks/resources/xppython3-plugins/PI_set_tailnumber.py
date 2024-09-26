@@ -7,16 +7,18 @@
 #
 import os
 import xp
+from traceback import print_exc
 
 PLUGIN_VERSION = "1.0.0"
 
 # ###########################################################
 # S E T   T A I L   N U M B E R
 #
-RELEASE = "1.0.0"  # local version number
+RELEASE = "1.0.1"  # local version number
 #
 # Changelog:
 #
+# 26-SEP-2024: 1.0.1: getDatas returns error if count=-1
 # 03-SEP-2024: 1.0.0: Initial version
 
 TAIL_NUMBER = "OO-PMA"
@@ -97,20 +99,25 @@ class PythonInterface:
             return 0
 
         dref = xp.findDataRef(LIVERY_DATAREF)
-        livery = xp.getDatas(dref)
-        fn = os.path.join(livery, "tailnum.txt")
-        reg = TAIL_NUMBER
-        if os.path.exists(fn):
-            with open(fn, "r") as fp:
-                reg = fp.read()
-            print(self.Info, f"set_tail_number: tail number {reg} found in {fn}.")
-            reg = reg.strip()
-        else:
-            print(self.Info, f"set_tail_number: file not found {fn}, using default tail number {TAIL_NUMBER}.")
-
-        dref = xp.findDataRef(TAILNUM_DATAREF)
         if dref is not None:
-            xp.setDatas(dref, TAIL_NUMBER)
-            print(self.Info, f"set_tail_number: {acpath}, {livery}: set to {reg}.")
+            livery = xp.getDatas(dref, count=100)  # count=-1 gets error
+            fn = os.path.join(livery, "tailnum.txt")
+            reg = TAIL_NUMBER
+            if os.path.exists(fn):
+                with open(fn, "r") as fp:
+                    reg = fp.read()
+                print(self.Info, f"set_tail_number: tail number {reg} found in {fn}.")
+                reg = reg.strip()
+            else:
+                print(self.Info, f"set_tail_number: file not found {fn}, using default tail number {TAIL_NUMBER}.")
+
+            dref = xp.findDataRef(TAILNUM_DATAREF)
+            if dref is not None:
+                xp.setDatas(dref, TAIL_NUMBER)
+                print(self.Info, f"set_tail_number: {acpath}, {livery}: set to {reg}.")
+            else:
+                print(self.Info, f"set_tail_number: {TAILNUM_DATAREF} dataref not found")
+        else:
+            print(self.Info, f"set_tail_number: {LIVERY_DATAREF} dataref not found")
 
         return 0

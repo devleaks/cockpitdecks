@@ -48,6 +48,7 @@ ICON_SIZE = 256  # px
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
+COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
 
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
