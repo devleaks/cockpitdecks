@@ -30,6 +30,7 @@ class Deck(ABC):
     """
 
     DECK_NAME = "none"
+    DEVICE_MANAGER = None
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         self._config = config  # content of aircraft/deckconfig/config.yaml decks attributes for this deck

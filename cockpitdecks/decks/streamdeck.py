@@ -8,6 +8,7 @@ from PIL import Image, ImageOps
 
 from StreamDeck.ImageHelpers.PILHelper import to_native_format, to_native_key_format, to_native_touchscreen_format
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
+from StreamDeck.DeviceManager import DeviceManager
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_ACTIONS
 from cockpitdecks.deck import DeckWithIcons
@@ -42,6 +43,7 @@ class Streamdeck(DeckWithIcons):
     DECK_NAME = "streamdeck"
     DRIVER_NAME = "streamdeck"
     MIN_DRIVER_VERSION = "0.9.5"
+    DEVICE_MANAGER = DeviceManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)

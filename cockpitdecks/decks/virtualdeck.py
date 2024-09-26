@@ -14,6 +14,8 @@ from PIL import Image, ImageDraw
 from cockpitdecks import DEFAULT_PAGE_NAME
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.deck import DeckWithIcons
+from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
+
 from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
@@ -21,6 +23,7 @@ from cockpitdecks.buttons.representation import (
     Representation,
     IconBase,
 )  # valid representations for this type of deck
+
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -37,6 +40,7 @@ class VirtualDeck(DeckWithIcons):
     DECK_NAME = "virtualdeck"
     DRIVER_NAME = "virtualdeck"
     MIN_DRIVER_VERSION = "0.0.0"
+    DEVICE_MANAGER = VirtualDeckManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)

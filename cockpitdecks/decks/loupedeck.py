@@ -5,6 +5,7 @@ import logging
 from PIL import Image, ImageOps
 
 from Loupedeck.Devices.LoupedeckLive import LoupedeckLive, KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
+from Loupedeck import DeviceManager
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
@@ -30,6 +31,7 @@ class Loupedeck(DeckWithIcons):
     DECK_NAME = "loupedeck"
     DRIVER_NAME = "loupedeck"
     MIN_DRIVER_VERSION = "1.4.5"
+    DEVICE_MANAGER = DeviceManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)

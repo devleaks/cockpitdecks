@@ -47,16 +47,26 @@ from cockpitdecks import (
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
     yaml,
+    all_subclasses
 )
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
 from cockpitdecks.simulators.xplane import DatarefEvent
-from cockpitdecks.decks import DECK_DRIVERS
+
+# imports all known decks, if deck driver not available, ignore it
+import cockpitdecks.decks
+# @todo later: put custom decks outside of cockpitdecks for flexibility
+# same for simulator
+from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import ACTIVATIONS
 from cockpitdecks.buttons.representation import REPRESENTATIONS
 
+# #################################
+#
+# Logging
+#
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -77,14 +87,20 @@ if EVENTLOGFILE is not None:
     event_logger.propagate = False
 LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
 
+# #################################
+#
+# Global constants
+#
 # IMPORTANT: These are rendez-vous point for JavaScript code
+# If changed here, please adjust JavaScript Code too.
 #
 DECK_TYPE_ORIGINAL = "deck-type-desc"
 DECK_TYPE_DESCRIPTION = "deck-type-flat"
 
+# Aircraft change detection
 # Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
 # (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
-# but also the aircraft. So in 1 dataref, 2 data!
+# but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 RELOAD_ON_LIVERY_CHANGE = False
 AIRCRAFT = "_livery"  # dataref name is data:_livery
 
@@ -186,6 +202,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         Loads all devices connected to this computer.
         """
+        self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+        logger.info(f">>> available drivers: {self.deck_drivers.keys()}")
         self.load_deck_types()
         self.scan_devices()
 
@@ -222,19 +240,31 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     def add_sys_path(self):
         if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), RESOURCES_FOLDER, DECKS_FOLDER, "drivers")
+            pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
             if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                 if pythonpath not in sys.path:
                     sys.path.append(pythonpath)
                     logger.info(f"added {pythonpath} to sys.path")
+                    try:
+                        import drivers
+                    except ImportError:
+                        logger.debug("import error", exc_info=True)
+                    self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+                    logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
 
     def remove_sys_path(self):
         if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), RESOURCES_FOLDER, DECKS_FOLDER, "drivers")
+            pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
             if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                 if pythonpath in sys.path:
                     sys.path.remove(pythonpath)
-                    logger.info(f"removed {pythonpath} to sys.path")
+                    logger.info(f"removed {pythonpath} from sys.path")
+                    try:
+                        import drivers
+                    except ImportError:
+                        logger.debug("import error", exc_info=True)
+                    self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+                    logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
 
     def defaults_prefix(self):
         return "dark-default-" if self._dark else "default-"
@@ -368,21 +398,21 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     def scan_devices(self):
         """Scan for hardware devices"""
-        if len(DECK_DRIVERS) == 0:
+        if len(self.deck_drivers) == 0:
             logger.error("no driver")
             return
         driver_info = [
-            f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}" for deck_driver in DECK_DRIVERS.keys() if deck_driver != VIRTUAL_DECK_DRIVER
+            f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}" for deck_driver in self.deck_drivers.keys() if deck_driver != VIRTUAL_DECK_DRIVER
         ]
         if len(driver_info) == 0:
             logger.warning("no driver for physical decks")
             return
         logger.info(f"drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
-        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in DECK_DRIVERS.items() if k != VIRTUAL_DECK_DRIVER]
+        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in self.deck_drivers.items() if k != VIRTUAL_DECK_DRIVER]
         logger.debug(f"dependencies: {dependencies}")
         pkg_resources.require(dependencies)
 
-        for deck_driver, builder in DECK_DRIVERS.items():
+        for deck_driver, builder in self.deck_drivers.items():
             if deck_driver == VIRTUAL_DECK_DRIVER:
                 # will be added later, when we have acpath set, in add virtual_decks()
                 continue
@@ -651,7 +681,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             return
         cnt = 0
         virtual_deck_types = {d.name: d for d in filter(lambda d: d.is_virtual_deck(), self.deck_types.values())}
-        builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
+        builder = self.deck_drivers.get(VIRTUAL_DECK_DRIVER)
         decks = builder[1]().enumerate(acpath=self.acpath, virtual_deck_types=virtual_deck_types)
         logger.info(f"found {len(decks)} virtual deck(s)")
         for name, device in decks.items():
@@ -740,7 +770,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 continue
 
             deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in DECK_DRIVERS.keys():
+            if deck_driver not in self.deck_drivers.keys():
                 logger.warning(f"invalid deck driver {deck_driver}, ignoring")
                 continue
 
@@ -763,7 +793,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 else:
                     deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
-                    self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+                    self.cockpit[name] = self.deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
                         deck_flat = self.deck_types.get(deck_type).desc()
                         if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
@@ -805,7 +835,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         # }
         for deck in self.devices:
             deckdriver = deck.get(CONFIG_KW.DRIVER.value)
-            if deckdriver not in DECK_DRIVERS.keys():
+            if deckdriver not in self.deck_drivers.keys():
                 logger.warning(f"invalid deck driver {deckdriver}, ignoring")
                 continue
             device = deck[CONFIG_KW.DEVICE.value]
@@ -819,7 +849,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 CONFIG_KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
-            self.cockpit[name] = DECK_DRIVERS[deckdriver][0](name, config, self, device)
+            self.cockpit[name] = self.deck_drivers[deckdriver][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches
@@ -1264,11 +1294,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     def terminate_devices(self):
         for deck in self.devices:
             deck_driver = deck.get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in DECK_DRIVERS.keys():
+            if deck_driver not in self.deck_drivers.keys():
                 logger.warning(f"invalid deck type {deck_driver}, ignoring")
                 continue
             device = deck[CONFIG_KW.DEVICE.value]
-            DECK_DRIVERS[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
+            self.deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
         logger.info("terminating..")

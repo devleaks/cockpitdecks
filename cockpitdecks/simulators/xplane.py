@@ -994,6 +994,24 @@ class XPlane(Simulator, XPlaneBeacon):
                                         value=diff,
                                         cascade=(total_reads % 2 == 0),
                                     )
+
+                                # Need to investigate why this does not work:
+                                #
+                                # dref = self.get_dataref(d)
+                                # if dref is not None:
+                                #     dref.update_value(new_value=value, cascade=False) # just store new value
+                                #     if dref.has_changed():
+                                #         e = DatarefEvent(
+                                #             sim=self,
+                                #             dataref=d,
+                                #             value=value,
+                                #             cascade=d in self.simulator_data_to_monitor.keys(),
+                                #         )
+                                #         self.inc(INTERNAL_DATAREF.UPDATE_ENQUEUED.value)
+                                # else:
+                                #     logger.warning(f"dataref {d} not found")
+                                #
+
                                 v = value
                                 r = self.get_rounding(simulator_data_name=d)
                                 if r is not None and value is not None:
