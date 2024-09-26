@@ -209,7 +209,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f">>> available drivers: {self.deck_drivers.keys()}")
         self.load_deck_types()
-        self.scan_devices()
+        self.scan_devices()  # at least once
 
     def get_id(self):
         return self.name
@@ -238,14 +238,17 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     @acpath.setter
     def acpath(self, acpath: str | None):
+        print("remove", self.acpath)
         self.remove_aircraft_path()
         self._acpath = acpath
+        print("add", self.acpath)
         self.add_aircraft_path()
 
     def add_extension_path(self):
         # never tested (yet)
         if self.extpath is not None:
             paths = self.extpath.split(":")
+            added = False
             for path in paths:
                 pythonpath = os.path.join(os.path.abspath(path))
                 if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
@@ -254,11 +257,18 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         logger.info(f"added extension path {pythonpath} to sys.path")
                 try:
                     import cockpitdecks_ext.decks
+                    added = True
+                except ImportError:
+                    logger.debug("import error", exc_info=True)
+                try:
                     import cockpitdecks_ext.simulators
+                    added = True
                 except ImportError:
                     logger.debug("import error", exc_info=True)
             self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
             logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+            if added:
+                self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
 
     def add_aircraft_path(self):
         if self.acpath is not None:
@@ -273,6 +283,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         logger.debug("import error", exc_info=True)
                     self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
                     logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+                    self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
 
     def remove_aircraft_path(self):
         if self.acpath is not None:
@@ -287,6 +298,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         logger.debug("import error", exc_info=True)
                     self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
                     logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+                    self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
 
     def defaults_prefix(self):
         return "dark-default-" if self._dark else "default-"
@@ -431,11 +443,6 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             except:
                 pass
             driver_info.append(desc)
-        # driver_info = [
-        #     f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}"
-        #     for deck_driver in self.deck_drivers.keys()
-        #     if deck_driver != VIRTUAL_DECK_DRIVER  # virtual deck is part of package cockpitdecks and does not load separately
-        # ]
         if len(driver_info) == 0:
             logger.warning("no driver for physical decks")
             return
@@ -452,6 +459,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         logger.debug(f"dependencies: {dependencies}")
         pkg_resources.require(dependencies)
 
+        # If there are already some devices, we need to terminate/kill them first
+        if len(self.devices) > 0:
+            logger.info("new scan for devices, terminating devices..")
+            self.terminate_devices()
+            logger.info("..terminated")
+
+        self.devices = []
         for deck_driver, builder in self.deck_drivers.items():
             if deck_driver == VIRTUAL_DECK_DRIVER:
                 # will be added later, when we have acpath set, in add virtual_decks()
