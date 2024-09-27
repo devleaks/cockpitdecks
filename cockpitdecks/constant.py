@@ -64,7 +64,7 @@ class ANNUNCIATOR_STYLES(Enum):
 
 # internals
 ID_SEP = "/"
-DEFAULT_ATTRIBUTE_PREFIX = "default-"
+DEFAULT_ATTRIBUTE_PREFIX = "default-"  # cannot be "", must be at lesat one char
 
 # System default values
 COCKPITDECKS_DEFAULT_VALUES = {

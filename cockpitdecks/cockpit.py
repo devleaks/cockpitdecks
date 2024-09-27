@@ -233,6 +233,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
+        if not dflt.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"default variable {dflt} does not start with {DEFAULT_ATTRIBUTE_PREFIX}")
         ATTRNAME = "_defaults"
         if not hasattr(self, ATTRNAME):
             setattr(self, ATTRNAME, dict())
@@ -339,6 +341,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         if not silence:
             logger.info(f"cockpit attribute {attribute} not found, returning default ({default})")
+
+        if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            # we did not search for a default-*, now we do:
+            default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
+            return self.get_attribute(attribute=default_attribute, default=default, silence=silence)
 
         return default
 
@@ -596,7 +603,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
             # 1. Try "system" font
             try:
-                test = ImageFont.truetype(fontname, self.get_attribute("default-label-size"))
+                test = ImageFont.truetype(fontname, self.get_attribute("label-size"))
                 logger.debug(f"font {fontname} found in computer system fonts")
                 return fontname
             except:
@@ -606,7 +613,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                 logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
@@ -616,7 +623,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                 logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
@@ -649,7 +656,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     self.icons[i] = image
 
         # 1.2 Do we have a default icon with proper name?
-        dftname = self.get_attribute("default-icon-name")
+        dftname = self.get_attribute("icon-name")
         if dftname in self.icons.keys():
             logger.debug(f"default icon name {dftname} found")
         else:
@@ -659,7 +666,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         #   WE MUST find a default, system font at least
 
         # 2.1 We try the requested "default label font"
-        default_label_font = self.get_attribute("default-label-font")
+        default_label_font = self.get_attribute("label-font")
         if default_label_font is not None and default_label_font not in self.fonts.keys():
             f = locate_font(default_label_font)
             if f is not None:  # found one, perfect
@@ -669,7 +676,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 logger.debug(f"default label font set to {default_label_font}")
 
         # 2.3 We try the "default system font"
-        default_system_font = self.get_attribute("default-system-font")
+        default_system_font = self.get_attribute("system-font")
         if default_system_font is not None:
             f = locate_font(default_system_font)
             if f is not None:  # found it, perfect, keep it as default font for all purposes
@@ -755,7 +762,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         if self.sim is not None:
             self.sim.set_simulator_data_roundings(self._config.get("dataref-roundings", {}))
             self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._config.get("dataref-fetch-frequencies", {}))
-            self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("default-dataref-fetch-frequency", DEFAULT_FREQUENCY)
+            self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
         # 2. Create decks
         decks = self._config.get("decks")
@@ -987,7 +994,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"default font file {fn} not loaded")
@@ -1003,7 +1010,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"custom font file {fn} not loaded")

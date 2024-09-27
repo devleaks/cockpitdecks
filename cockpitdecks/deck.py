@@ -694,7 +694,7 @@ class DeckWithIcons(Deck):
         def get_color():
             for t in [
                 color_in,
-                # self.get_attribute("default-icon-color"),
+                # self.get_attribute("icon-color"),
                 self.get_attribute("cockpit-color"),
             ]:
                 if t is not None:
