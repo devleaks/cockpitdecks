@@ -118,16 +118,42 @@ else:
         print(f"Cockpitdecks defalut environment file {default_environment_file} not found")
         sys.exit(1)
 
+# Debug
+#
+debug = environment.get("DEBUG", "info").lower()
+if debug == "debug":
+    logging.basicConfig(level=logging.DEBUG)
+elif debug == "warning":
+    logging.basicConfig(level=logging.WARNING)
+elif debug != "info":
+    debug = "info"
+    print(f"invalid debug mode {debug}, using info")
+if VERBOSE:
+    print(f"debug set to {debug}")
+
+
 # X-Plane
 #
-# XP_HOME = os.getenv("XP_HOME", "")
-XP_HOME = environment.get("XP_HOME")
+# First try env:
+XP_HOME = os.getenv("XP_HOME")
+# Then environment
+if XP_HOME is None:
+    XP_HOME = environment.get("XP_HOME")
+# if defined, must exist.
 if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
     sys.exit(1)
 
-APP_HOST = environment.get("APP_HOST", "127.0.0.1")
-
+if VERBOSE:
+    if XP_HOME is not None:
+        print(f"X-Plane found in {XP_HOME}")
+    else:
+        XP_HOST = environment.get("XP_HOST")
+        if XP_HOST is None:
+            print(f"X-Plane not found. no folder, no remove host")
+            sys.exit(1)
+        else:
+            print(f"no XP_HOME, assume remote installation at XP_HOST={XP_HOST}")
 
 # COCKPITDECKS_PATH
 #
@@ -150,6 +176,17 @@ if XP_HOME is not None:
 if VERBOSE:
     print(f"COCKPITDECKS_PATH={COCKPITDECKS_PATH}")
 
+# Other environment variables
+APP_HOST = os.getenv("APP_HOST")
+APP_PORT = 7777
+if APP_HOST is not None:
+    APP_PORT = os.getenv("APP_PORT", 7777)
+else:
+    APP_HOST = environment.get("APP_HOST", ["127.0.0.1", 7777])
+
+if VERBOSE:
+    print(f"Cockpitdecks server at {APP_HOST}")
+
 # Start-up Mode
 #
 mode = CD_MODE.DEMO if args.demo else CD_MODE.NORMAL
@@ -166,13 +203,13 @@ if ac is not None:
     AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
     AIRCRAFT_DESC = os.path.basename(ac)
     mode = CD_MODE.FIXED if args.fixed else CD_MODE.NORMAL
+    if VERBOSE:
+        print(f"starting aircraft folder {AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'dynamically adjusted to aircraft'}\n")
 elif ac is None and XP_HOME is None and len(COCKPITDECKS_PATH) == 0:
     mode = CD_MODE.DEMO
     if VERBOSE:
         print("no aircraft, no X-Plane on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
 
-if VERBOSE:
-    print(f"{AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'can change'}\n")
 
 #
 # COCKPITDECKS STARTS HERE, REALLY

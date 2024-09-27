@@ -206,8 +206,10 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         Loads all devices connected to this computer.
         """
         self.add_extension_path()
+
         self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-        logger.info(f">>> available drivers: {self.deck_drivers.keys()}")
+        logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+
         self.load_deck_types()
         self.scan_devices()  # at least once
 
@@ -238,11 +240,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     @acpath.setter
     def acpath(self, acpath: str | None):
-        print("remove", self.acpath)
-        self.remove_aircraft_path()
+        # self.remove_aircraft_path()
         self._acpath = acpath
-        print("add", self.acpath)
-        self.add_aircraft_path()
+        # self.add_aircraft_path()
 
     def add_extension_path(self):
         # never tested (yet)
@@ -250,55 +250,55 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             paths = self.extpath.split(":")
             added = False
             for path in paths:
-                pythonpath = os.path.join(os.path.abspath(path))
+                pythonpath = os.path.abspath(path)
                 if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                     if pythonpath not in sys.path:
                         sys.path.append(pythonpath)
                         logger.info(f"added extension path {pythonpath} to sys.path")
-                try:
-                    import cockpitdecks_ext.decks
-                    added = True
-                except ImportError:
-                    logger.debug("import error", exc_info=True)
-                try:
-                    import cockpitdecks_ext.simulators
-                    added = True
-                except ImportError:
-                    logger.debug("import error", exc_info=True)
-            self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-            logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
-            if added:
-                self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
+            logger.debug(f"reloading deck drivers..")
+            try:
+                import cockpitdecks_ext.decks
+                added = True
+            except ImportError:
+                logger.debug("import error", exc_info=True)
+            logger.debug(f"..reloading simulators..")
+            try:
+                import cockpitdecks_ext.simulators
+                added = True
+            except ImportError:
+                logger.debug("import error", exc_info=True)
+            logger.debug(f"..reloaded")
 
-    def add_aircraft_path(self):
-        if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
-            if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
-                if pythonpath not in sys.path:
-                    sys.path.append(pythonpath)
-                    logger.info(f"added aircraft path {pythonpath} to sys.path")
-                    try:
-                        import drivers
-                    except ImportError:
-                        logger.debug("import error", exc_info=True)
-                    self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-                    logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
-                    self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
+    # Too complicated...
+    # def add_aircraft_path(self):
+    #     if self.acpath is not None:
+    #         pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
+    #         if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
+    #             if pythonpath not in sys.path:
+    #                 sys.path.append(pythonpath)
+    #                 logger.info(f"added aircraft path {pythonpath} to sys.path")
+    #                 try:
+    #                     import drivers
+    #                 except ImportError:
+    #                     logger.debug("import error", exc_info=True)
+    #                 self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+    #                 logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+    #                 self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
 
-    def remove_aircraft_path(self):
-        if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
-            if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
-                if pythonpath in sys.path:
-                    sys.path.remove(pythonpath)
-                    logger.info(f"removed aircraft path {pythonpath} from sys.path")
-                    try:
-                        import drivers
-                    except ImportError:
-                        logger.debug("import error", exc_info=True)
-                    self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-                    logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
-                    self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
+    # def remove_aircraft_path(self):
+    #     if self.acpath is not None:
+    #         pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
+    #         if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
+    #             if pythonpath in sys.path:
+    #                 sys.path.remove(pythonpath)
+    #                 logger.info(f"removed aircraft path {pythonpath} from sys.path")
+    #                 try:
+    #                     import drivers
+    #                 except ImportError:
+    #                     logger.debug("import error", exc_info=True)
+    #                 self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+    #                 logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+    #                 self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
 
     def defaults_prefix(self):
         return "dark-default-" if self._dark else "default-"
