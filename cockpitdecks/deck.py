@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT
+from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color
 
 from cockpitdecks.decks.resources import DeckType
@@ -63,9 +63,9 @@ class Deck(ABC):
 
         self.brightness = int(config.get("brightness", 100))
 
-        self.home_page_name = config.get("home-page-name", self.get_attribute("default-home-page-name"))
-        self.logo = config.get("logo", self.get_attribute("default-logo"))
-        self.wallpaper = config.get("wallpaper", self.get_attribute("default-wallpaper"))
+        self.home_page_name = self.get_attribute("home-page-name")
+        self.logo = self.get_attribute("logo")
+        self.wallpaper = self.get_attribute("wallpaper")
 
         if self.layout is not None:
             self.valid = True
@@ -142,6 +142,10 @@ class Deck(ABC):
         Returns:
             [type]: [description]
         """
+        default_attribute = attribute
+        if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            if not attribute.startswith("cockpit-"):  # no "default" for global cockpit-* attributes
+                default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
 
         # Is there such an attribute in the layout definition?
         if self._layout_config is not None:
@@ -174,7 +178,7 @@ class Deck(ABC):
         if propagate:
             if not silence:
                 logger.info(f"deck {self.name} propagate to cockpit for {attribute}")
-            return self.cockpit.get_attribute(attribute, default=default, silence=silence)
+            return self.cockpit.get_attribute(default_attribute, default=default, silence=silence)
 
         if not silence:
             logger.warning(f"deck {self.name}: attribute not found {attribute}, returning default ({default})")
@@ -610,6 +614,20 @@ class DeckWithIcons(Deck):
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
+
+    def get_default_icon(self):
+        icons = self.cockpit.icons
+        default_icon_name = self.get_attribute("icon-name", "none.png")
+        if default_icon_name in icons:
+            return icons.get(default_icon_name)
+        else:
+            if len(icons) > 0:
+                first = list(icons.keys())[0]
+                return icons.get(first)
+            else:
+                logger.error("no default icon")
+                return None
+
     # #######################################
     #
     # Deck Specific Functions : Icon specific functions
@@ -645,7 +663,7 @@ class DeckWithIcons(Deck):
             tarr = []
             if texture_in is not None:
                 tarr.append(texture_in)
-            # default_icon_texture = self.get_attribute("default-icon-texture")
+            # default_icon_texture = self.get_attribute("icon-texture")
             # if default_icon_texture is not None:
             #     tarr.append(default_icon_texture)
             cockpit_texture = self.get_attribute("cockpit-texture")

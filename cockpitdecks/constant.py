@@ -43,6 +43,7 @@ DECK_IMAGES = "images"
 TYPES_FOLDER = "types"
 
 ICON_SIZE = 256  # px
+DEFAULT_LABEL_POSITION = "cm"
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"

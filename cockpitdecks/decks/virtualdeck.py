@@ -302,8 +302,7 @@ class VirtualDeck(DeckWithIcons):
 
         if image is None:
             logger.warning("button returned no image, using default")
-            default_icon_name = self.get_attribute("default-icon-name")
-            image = self.cockpit.get_icon_image(default_icon_name)
+            image = self.get_default_icon()
 
         if image is None:
             logger.warning(f"no image for default icon {default_icon_name}")

@@ -3,7 +3,7 @@
 import logging
 from typing import Dict
 
-from cockpitdecks import ID_SEP, CONFIG_KW
+from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulators.xplane import Dataref
@@ -45,6 +45,11 @@ class Page:
         return self.deck.current_page == self
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
+        default_attribute = attribute
+        if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            if not attribute.startswith("cockpit-"):  # no "default" for global cockpit-* attributes
+                default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
+
         # Is there such an attribute in the page defintion?
         value = self._config.get(attribute)
 
@@ -58,7 +63,7 @@ class Page:
         if propagate:
             if not silence:
                 logger.info(f"page {self.name} propagate to deck for {attribute}")
-            return self.deck.get_attribute(attribute, default=default, propagate=propagate, silence=silence)
+            return self.deck.get_attribute(default_attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
             logger.warning(f"page {self.name}: attribute not found {attribute}")

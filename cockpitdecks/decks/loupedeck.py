@@ -79,7 +79,7 @@ class Loupedeck(DeckWithIcons):
                 image = Image.new(
                     mode="RGBA",
                     size=(deck_width, deck_height),
-                    color=self.get_attribute("default-icon-color"),
+                    color=self.get_attribute("icon-color"),
                 )
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
@@ -353,7 +353,7 @@ class Loupedeck(DeckWithIcons):
         color = button.get_representation()
         if color is None:
             logger.warning("button returned no representation color, using default")
-            color = self.get_attribute("default-color")
+            color = self.get_attribute("color")
         bdef = self.deck_type.filter({DECK_KW.FEEDBACK.value: "colored-led"})
         prefix = bdef[0].get(DECK_KW.PREFIX.value)
         key = button.index.lower().replace(prefix, "")

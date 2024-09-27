@@ -96,7 +96,7 @@ class Streamdeck(DeckWithIcons):
                 image = ImageOps.fit(image, full_deck_image_size, Image.LANCZOS)
             else:
                 logger.warning(f"deck {self.name}: no wallpaper image {image_filename} found, using default")
-                dic = self.get_attribute("default-icon-color")
+                dic = self.get_attribute("icon-color")
                 image = Image.new(mode="RGBA", size=(deck_width, deck_height), color=dic)
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
@@ -272,9 +272,9 @@ class Streamdeck(DeckWithIcons):
         if button.index not in self.get_deck_type().special_displays():
             if image is None:
                 logger.warning("button returned no image, using default")
-                default_icon_name = self.get_attribute("default-icon-name")
-                image = self.cockpit.get_icon_image(default_icon_name)
-            self.set_key_icon(button.index, image)
+                image = self.get_default_icon()
+            if image is not None:
+                self.set_key_icon(button.index, image)
         else:
             if image is None:
                 logger.warning("button returned no image, no default for touch screen, ignoring")

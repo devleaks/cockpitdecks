@@ -11,6 +11,8 @@ import logging
 import pickle
 import json
 import pkg_resources
+import importlib
+
 from datetime import datetime
 from queue import Queue
 
@@ -34,6 +36,7 @@ from cockpitdecks import (
     DECK_KW,
     DECK_TYPES,
     DECKS_FOLDER,
+    DEFAULT_ATTRIBUTE_PREFIX,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
     EXCLUDE_DECKS,
@@ -201,6 +204,14 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         self.init()
 
+    @property
+    def acpath(self):
+        return self._acpath
+
+    @acpath.setter
+    def acpath(self, acpath: str | None):
+        self._acpath = acpath
+
     def init(self):
         """
         Loads all devices connected to this computer.
@@ -234,74 +245,36 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
 
-    @property
-    def acpath(self):
-        return self._acpath
-
-    @acpath.setter
-    def acpath(self, acpath: str | None):
-        # self.remove_aircraft_path()
-        self._acpath = acpath
-        # self.add_aircraft_path()
-
     def add_extension_path(self):
         # never tested (yet)
         if self.extpath is not None:
             paths = self.extpath.split(":")
-            added = False
             for path in paths:
                 pythonpath = os.path.abspath(path)
                 if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                     if pythonpath not in sys.path:
                         sys.path.append(pythonpath)
                         logger.info(f"added extension path {pythonpath} to sys.path")
-            logger.debug(f"reloading deck drivers..")
-            try:
-                import cockpitdecks_ext.decks
-                added = True
-            except ImportError:
-                logger.debug("import error", exc_info=True)
-            logger.debug(f"..reloading simulators..")
-            try:
-                import cockpitdecks_ext.simulators
-                added = True
-            except ImportError:
-                logger.debug("import error", exc_info=True)
-            logger.debug(f"..reloaded")
-
-    # Too complicated...
-    # def add_aircraft_path(self):
-    #     if self.acpath is not None:
-    #         pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
-    #         if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
-    #             if pythonpath not in sys.path:
-    #                 sys.path.append(pythonpath)
-    #                 logger.info(f"added aircraft path {pythonpath} to sys.path")
-    #                 try:
-    #                     import drivers
-    #                 except ImportError:
-    #                     logger.debug("import error", exc_info=True)
-    #                 self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-    #                 logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
-    #                 self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
-
-    # def remove_aircraft_path(self):
-    #     if self.acpath is not None:
-    #         pythonpath = os.path.join(os.path.abspath(self.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER)
-    #         if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
-    #             if pythonpath in sys.path:
-    #                 sys.path.remove(pythonpath)
-    #                 logger.info(f"removed aircraft path {pythonpath} from sys.path")
-    #                 try:
-    #                     import drivers
-    #                 except ImportError:
-    #                     logger.debug("import error", exc_info=True)
-    #                 self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-    #                 logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
-    #                 self.scan_devices() # to rescan devices for new devices of type loaded in aircraft_path
+            logger.debug(f"adding extension..")
+            for module_name in [
+                "cockpitdecks_ext.decks",
+                "cockpitdecks_ext.buttons.activation",
+                "cockpitdecks_ext.buttons.representation",
+                "cockpitdecks_ext.simulators"]:
+                parts = module_name.split(".")
+                mod_name = parts[-1]
+                pkg_name = ".".join(parts[:-1])
+                spec = importlib.util.find_spec(mod_name, package=pkg_name)
+                if spec is not None:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[module_name] = module
+                    spec.loader.exec_module(module)
+                else:
+                    logger.debug(f"{module_name} not found ({mod_name, pkg_name})")
+            logger.debug(f"..added")
 
     def defaults_prefix(self):
-        return "dark-default-" if self._dark else "default-"
+        return "dark-" + DEFAULT_ATTRIBUTE_PREFIX if self._dark else DEFAULT_ATTRIBUTE_PREFIX
 
     def get_attribute(self, attribute: str, default=None, silence: bool = True):
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
@@ -315,7 +288,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         self._reqdfts.add(attribute)  # internal stats
 
-        if attribute.startswith("default-") or attribute.startswith("cockpit-"):
+        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX) or attribute.startswith("cockpit-"):
             theme_prefix = self._config.get("cockpit-theme", "")  # prefix = "dark", or nothing
             if theme_prefix is not None and theme_prefix not in ["", "default", "cockpit"] and not attribute.startswith(theme_prefix):
                 newattr = "-".join([theme_prefix, attribute])  # dark-default-color
