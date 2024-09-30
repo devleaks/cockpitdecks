@@ -11,10 +11,8 @@ from PIL import Image
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER
 from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
-from cockpitdecks.buttons.activation import get_activations_for
-from cockpitdecks.buttons.activation.activation import Activation
-from cockpitdecks.buttons.representation import get_representations_for
-from cockpitdecks.buttons.representation.representation import Representation
+from cockpitdecks.buttons.activation import Activation
+from cockpitdecks.buttons.representation import Representation
 from cockpitdecks import ICON_SIZE, VIRTUAL_DECK_DRIVER
 
 loggerButtonType = logging.getLogger("ButtonType")
@@ -138,8 +136,6 @@ class DeckButton:
                 else:
                     options_new[opt_arr[0]] = True
         self.options = options_new
-
-        loggerButtonType.debug(f"{self.prefix}/{self.name}: {self.valid_representations()}")
         self._inited = True
 
     def get_option(self, option):
@@ -207,16 +203,16 @@ class DeckButton:
             return int(idx.replace(self.prefix, ""))
         return int(idx)
 
-    def valid_activations(self) -> set:
+    def valid_activations(self, source) -> set:
         ret = [Activation]  # always valid
         for action in self.actions:
-            ret = ret + get_activations_for(DECK_ACTIONS(action))
+            ret = ret + source.get_activations_for(DECK_ACTIONS(action))
         return set([x.name() for x in ret if x is not None])  # remove duplicates, remove None
 
-    def valid_representations(self) -> set:
+    def valid_representations(self, source) -> set:
         ret = [Representation]  # always valid
         for feedback in self.feedbacks:
-            ret = ret + get_representations_for(DECK_FEEDBACK(feedback))
+            ret = ret + source.get_representations_for(DECK_FEEDBACK(feedback))
         return set([x.name() for x in ret if x is not None])  # remove duplicates, remove None
 
     def has_action(self, action: str) -> bool:
@@ -227,12 +223,6 @@ class DeckButton:
 
     def has_no_feedback(self) -> bool:
         return (DECK_KW.NONE.value in self.feedbacks and len(self.feedbacks) == 1) or len(self.feedbacks) == 0
-
-    def can_activate(self, activation: str) -> bool:
-        return activation in self.valid_activations()
-
-    def can_represent(self, representation: str) -> bool:
-        return representation in self.valid_representations()
 
     def display_size(self) -> Tuple[int, int] | None:
         """Parses info from resources.decks.*.yaml"""
@@ -522,17 +512,17 @@ class DeckTypeBase:
         )
         return [b.name for b in with_hr]
 
-    def valid_activations(self, index):
+    def valid_activations(self, index, source):
         b = self.get_button_definition(index)
         if b is not None:
-            return b.valid_activations()
+            return b.valid_activations(source)
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 
-    def valid_representations(self, index):
+    def valid_representations(self, index, source):
         b = self.get_button_definition(index)
         if b is not None:
-            return b.valid_representations()
+            return b.valid_representations(source)
         loggerDeckType.warning(f"deck {self.name}: no button index {index}")
         return None
 

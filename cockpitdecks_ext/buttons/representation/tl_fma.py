@@ -1,11 +1,6 @@
-import socket
-import threading
 import logging
-import time
-import json
 
-from typing import Dict, List, Set
-from datetime import datetime
+from typing import Dict, Set
 
 from cockpitdecks.buttons.representation.draw import DrawBase
 from cockpitdecks import ICON_SIZE

@@ -201,13 +201,13 @@ class Deck(ABC):
         """Returns the valid activations for the button pointed by the index.
         If None is given, returns all valid activations.
         """
-        return self.deck_type.valid_activations(index=index)
+        return self.deck_type.valid_activations(index=index, source=self.cockpit)
 
     def valid_representations(self, index=None):
         """Returns the valid representations for the button pointed by the index.
         If None is given, returns all valid representations.
         """
-        return self.deck_type.valid_representations(index=index)
+        return self.deck_type.valid_representations(index=index, source=self.cockpit)
 
     # #######################################
     #

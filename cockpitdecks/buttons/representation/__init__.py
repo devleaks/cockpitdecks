@@ -14,7 +14,7 @@ from .mosaic import Mosaic, MultiButtons
 
 # Drawing based representation
 from .annunciator import Annunciator, AnnunciatorAnimate
-from .draw import Decor
+from .draw import Decor, DrawBase
 from .draw_animation import DrawAnimation, DrawAnimationFTG
 from .switch import Switch, CircularSwitch, PushSwitch, Knob
 from .data import DataIcon
@@ -42,10 +42,6 @@ logger = logging.getLogger(__name__)
 
 # X-Plane specific
 from .xp_acf import Aircraft
-
-# Toliss Airbus specific
-from .tl_fma import FMAIcon
-from .tl_fcu import FCUIcon
 
 # Deck specific
 try:
@@ -96,9 +92,3 @@ try:
 except ImportError:
     logger.warning(f"WeatherMetarIcon not installed")
 
-REPRESENTATIONS = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
-HARDWARE_REPRESENTATIONS = {s.name(): s for s in all_subclasses(HardwareIcon)}
-
-
-def get_representations_for(feedback: DECK_FEEDBACK):
-    return [a for a in REPRESENTATIONS.values() if feedback in a.get_required_capability()]

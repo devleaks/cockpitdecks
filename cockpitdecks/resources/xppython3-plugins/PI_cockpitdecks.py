@@ -27,6 +27,7 @@ RELEASE = "1.1.0"  # local version number
 #
 # Changelog:
 #
+# 30-SEP-2024: 1.1.2: Add maximum frequency (~10 secs)
 # 23-AUG-2024: 1.1.1: Wrong if/then/else
 # 23-AUG-2024: 1.1.0: Added datarefs to allow for external monitoring
 # 21-AUG-2024: 1.0.4: Add defaults if requested
@@ -71,6 +72,7 @@ MCAST_PORT = 49505  # 49707 for XPlane12
 MCAST_TTL = 2
 
 FREQUENCY = 5.0  # will run every FREQUENCY seconds at most, never faster
+FREQUENCY_MAX = 10
 
 AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
@@ -618,7 +620,7 @@ class PythonInterface:
                 )
             # adjust frequency since operation is expensive
             oldf = self.frequency
-            self.frequency = max(FREQUENCY + len(self.datarefs) / 2, FREQUENCY)
+            self.frequency = min(max(FREQUENCY + len(self.datarefs) / 2, FREQUENCY), FREQUENCY_MAX)
             if oldf != self.frequency and self.trace:
                 print(self.Info, f"load: frequency adjusted to {self.frequency}")
 

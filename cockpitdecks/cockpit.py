@@ -1,6 +1,5 @@
 # Main container for all decks
 #
-from re import NOFLAG
 import sys
 import os
 import io
@@ -24,6 +23,7 @@ from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
+    ASSETS_FOLDER,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
     COCKPITDECKS_EXTENSION_PATH,
@@ -32,6 +32,8 @@ from cockpitdecks import (
     CONFIG_FILENAME,
     CONFIG_FOLDER,
     CONFIG_KW,
+    DECK_ACTIONS,
+    DECK_FEEDBACK,
     DECK_IMAGES,
     DECK_KW,
     DECK_TYPES,
@@ -53,6 +55,7 @@ from cockpitdecks import (
     yaml,
     all_subclasses,
 )
+from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
@@ -65,8 +68,8 @@ import cockpitdecks.decks
 # same for simulator
 from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
-from cockpitdecks.buttons.activation import ACTIVATIONS
-from cockpitdecks.buttons.representation import REPRESENTATIONS
+from cockpitdecks.buttons.activation import Activation
+from cockpitdecks.buttons.representation import Representation, HardwareIcon
 
 # #################################
 #
@@ -221,6 +224,15 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
 
+        self.all_activations = {s.name(): s for s in all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
+        logger.info(f"available activations: {sorted(self.all_activations.keys())}")
+
+        self.all_representations = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
+        logger.info(f"available representations: {sorted(self.all_representations.keys())}")
+
+        self.all_hardware_representations = {s.name(): s for s in all_subclasses(HardwareIcon)}
+        logger.info(f"available hardware representations: {self.all_hardware_representations.keys()}")
+
         self.load_deck_types()
         self.scan_devices()  # at least once
 
@@ -251,29 +263,37 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         # never tested (yet)
         if self.extpath is not None:
             paths = self.extpath.split(":")
+            packages = []
             for path in paths:
                 pythonpath = os.path.abspath(path)
                 if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                     if pythonpath not in sys.path:
                         sys.path.append(pythonpath)
+                        arr = os.path.split(pythonpath)
+                        packages.append(arr[1])
                         logger.info(f"added extension path {pythonpath} to sys.path")
+
             logger.debug(f"adding extension..")
-            for module_name in [
-                "cockpitdecks_ext.decks",
-                "cockpitdecks_ext.buttons.activation",
-                "cockpitdecks_ext.buttons.representation",
-                "cockpitdecks_ext.simulators"]:
+            for module_name in packages:
                 parts = module_name.split(".")
                 mod_name = parts[-1]
                 pkg_name = ".".join(parts[:-1])
-                spec = importlib.util.find_spec(mod_name, package=pkg_name)
+                # spec = importlib.util.find_spec(mod_name, package=pkg_name)
+                spec = importlib.util.find_spec(module_name)
                 if spec is not None:
                     module = importlib.util.module_from_spec(spec)
                     sys.modules[module_name] = module
                     spec.loader.exec_module(module)
+                    logger.info(f"module {module_name} added")
                 else:
-                    logger.debug(f"{module_name} not found ({mod_name, pkg_name})")
+                    logger.warning(f"module {module_name} not found ({mod_name, pkg_name})")
             logger.debug(f"..added")
+
+    def get_activations_for(self, action: DECK_ACTIONS) -> list:
+        return [a for a in self.all_activations.values() if action in a.get_required_capability()]
+
+    def get_representations_for(self, feedback: DECK_FEEDBACK):
+        return [a for a in self.all_representations.values() if feedback in a.get_required_capability()]
 
     def defaults_prefix(self):
         return "dark-" + DEFAULT_ATTRIBUTE_PREFIX if self._dark else DEFAULT_ATTRIBUTE_PREFIX
@@ -889,11 +909,23 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     # Cockpit data caches
     #
     def load_deck_types(self):
+        # 1. "System" types
         for deck_type in DeckType.list():
             data = DeckType(deck_type)
             self.deck_types[data.name] = data
             if data.is_virtual_deck():
                 self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+        # 2. Deck types in extension folder(s)
+        if self.extpath is not None:
+            paths = self.extpath.split(":")
+            for path in paths:
+                ext_path = os.path.join(path, DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER)
+                for deck_type in DeckType.list(ext_path):
+                    data = DeckType(deck_type)
+                    self.deck_types[data.name] = data
+                    if data.is_virtual_deck():
+                        self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+
         logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
 
     def load_aircraft_deck_types(self):
@@ -1468,8 +1500,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             "decks": decks,
             "fonts": list(self.fonts.keys()),
             "icons": list(self.icons.keys()),
-            "activations": list(ACTIVATIONS.keys()),
-            "representations": list(REPRESENTATIONS.keys()),
+            "activations": list(self.all_activations.keys()),
+            "representations": list(self.all_representations.keys()),
         }
 
     def get_deck_indices(self, name):
@@ -1486,15 +1518,15 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             "deck": deck.name,
             "deck_type": deck.deck_type.name,
             "index": index,
-            "activations": list(deck.deck_type.valid_activations(index)),
-            "representations": list(deck.deck_type.valid_representations(index)),
+            "activations": list(deck.deck_type.valid_activations(index, source=self)),
+            "representations": list(deck.deck_type.valid_representations(index, source=self)),
         }
 
     def get_activation_parameters(self, name, index=None):
-        return ACTIVATIONS.get(name).parameters()
+        return self.all_activations.get(name).parameters()
 
     def get_representation_parameters(self, name, index=None):
-        return REPRESENTATIONS.get(name).parameters()
+        return self.all_representations.get(name).parameters()
 
     def save_deck(self, deck):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
@@ -1661,7 +1693,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     def get_deck_background_images(self):
         # Located either in cockpitdecks/decks/resources/assets/decks/images
         # or <aircraft>/deckconfig/resources/decks/images.
-        ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, "assets"))
+        ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER))
         AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
         INTERNAL_DESIGN = False
         folders = [AIRCRAFT_ASSET_FOLDER]

@@ -24,8 +24,7 @@ import logging
 
 from cockpitdecks import ICON_SIZE
 from cockpitdecks.value import Value
-
-from .draw import DrawBase
+from cockpitdecks.buttons.representation.draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

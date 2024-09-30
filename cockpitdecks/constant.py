@@ -42,6 +42,9 @@ DECK_TYPES = "types"
 DECK_IMAGES = "images"
 TYPES_FOLDER = "types"
 
+ASSETS_FOLDER = "assets"
+TEMPLATES_FOLDER = "templates"
+
 ICON_SIZE = 256  # px
 DEFAULT_LABEL_POSITION = "cm"
 
@@ -51,8 +54,8 @@ AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forwa
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
 COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
 
-TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
-ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
+TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, TEMPLATES_FOLDER)
+ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
 
 AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
 

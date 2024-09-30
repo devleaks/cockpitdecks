@@ -12,8 +12,8 @@ import sys
 
 from cockpitdecks.simulator import CockpitdecksData
 
-from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
-from .buttons.representation import REPRESENTATIONS, HARDWARE_REPRESENTATIONS, Annunciator
+from .buttons.activation import ACTIVATION_VALUE
+from .buttons.representation import Annunciator
 from .simulator import SimulatorData, SimulatorDataListener
 from .value import Value, ValueProvider
 
@@ -85,32 +85,32 @@ class Button(SimulatorDataListener, ValueProvider):
         #
         self._activation = None
         atype = Button.guess_activation_type(config)
-        if atype is not None and atype in ACTIVATIONS:
-            self._activation = ACTIVATIONS[atype](self)
+        if atype is not None and atype in self.deck.cockpit.all_activations:
+            self._activation = self.deck.cockpit.all_activations[atype](self)
             logger.debug(f"button {self.name} activation {atype}")
         else:
             logger.info(f"button {self.name} has no activation defined, using default activation 'none'")
-            self._activation = ACTIVATIONS["none"](self)
+            self._activation = self.deck.cockpit.all_activations["none"](self)
 
         #### Representation
         #
         self._representation = None
 
         idx = Button.guess_index(config)
-        rtype = Button.guess_representation_type(config)
-        if rtype is not None and rtype in REPRESENTATIONS:
-            self._representation = REPRESENTATIONS[rtype](self)
+        rtype = Button.guess_representation_type(config, all_representations=self.deck.cockpit.all_representations, all_hardware_representations=self.deck.cockpit.all_hardware_representations)
+        if rtype is not None and rtype in self.deck.cockpit.all_representations:
+            self._representation = self.deck.cockpit.all_representations[rtype](self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
             logger.info(f"button {self.name} has no representation defined, using default representation 'none'")
-            self._representation = REPRESENTATIONS["none"](self)
+            self._representation = self.deck.cockpit.all_representations["none"](self)
 
         self._hardware_representation = None
         if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
             rtype = self._def.get_hardware_representation()
-            if rtype is not None and rtype in REPRESENTATIONS:
+            if rtype is not None and rtype in self.deck.cockpit.all_representations:
                 logger.debug(f"button {self.name} has hardware representation {rtype}")
-                self._hardware_representation = REPRESENTATIONS[rtype](self)
+                self._hardware_representation = self.deck.cockpit.all_representations[rtype](self)
 
         #### Datarefs
         #
@@ -175,8 +175,8 @@ class Button(SimulatorDataListener, ValueProvider):
         return a
 
     @staticmethod
-    def guess_representation_type(config):
-        a = [r for r in REPRESENTATIONS.keys() if r in config and r not in HARDWARE_REPRESENTATIONS.keys()]
+    def guess_representation_type(config, all_representations, all_hardware_representations):
+        a = [r for r in all_representations.keys() if r in config and r not in all_hardware_representations.keys()]
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
@@ -673,7 +673,7 @@ class Button(SimulatorDataListener, ValueProvider):
         if not self._representation.is_valid():
             logger.warning(f"button {self.name}: representation is not valid")
             return None
-        # self.inc(INTERNAL_DATAREF.BUTTON_REPRESENTATIONS.value, cascade=False)
+        # self.inc(INTERNAL_DATAREF.BUTTON_self.deck.cockpit.all_representations.value, cascade=False)
         return self._representation.render()
 
     def get_representation_metadata(self):
@@ -745,30 +745,3 @@ class Button(SimulatorDataListener, ValueProvider):
         # self.inc(INTERNAL_DATAREF.BUTTON_CLEAN.value, cascade=False)
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
-
-    @staticmethod
-    def mk_button(config, deck, page):
-        idx = Button.guess_index(config)
-        if idx is None:
-            logger.error(f"button has no index, ignoring {config}")
-            return None
-        if idx not in deck.valid_indices():
-            logger.error(f"button has invalid index '{idx}' (valid={deck.valid_indices()}), ignoring '{config}'")
-            return None
-
-        # How the button will behave, it is does something
-        aty = Button.guess_activation_type(config)
-        if aty is None or aty not in deck.valid_activations(idx):
-            logger.error(f"button has invalid activation type {aty} not in {deck.valid_activations(idx)} for index {idx}, ignoring {config}")
-            return None
-
-        # How the button will be represented, if it is
-        rty = Button.guess_representation_type(config)
-        if rty not in deck.valid_representations(idx):
-            logger.error(f"button has invalid representation type {rty} for index {idx}, ignoring {config}")
-            return None
-        if rty == "none":
-            logger.debug(f"button has no representation but it is ok")
-
-        config[DECK_BUTTON_DEFINITION] = deck.get_deck_button_definition(idx)
-        return Button(config=config, page=page)
