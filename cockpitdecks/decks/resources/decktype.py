@@ -10,7 +10,7 @@ from PIL import Image
 
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER
-from cockpitdecks.button import Button
+from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
 from cockpitdecks.buttons.activation import get_activations_for
 from cockpitdecks.buttons.activation.activation import Activation
 from cockpitdecks.buttons.representation import get_representations_for
@@ -176,6 +176,11 @@ class DeckButton:
     def get_hardware_representation(self):
         if self.has_hardware_representation():
             return self.hardware_representation.get("type")
+        return None
+
+    def get_button_for_empty_hardware_representation(self):
+        if self.has_hardware_representation():
+            return self.hardware_representation.get("empty-button")
         return None
 
     def has_icon(self) -> bool:
@@ -471,6 +476,18 @@ class DeckTypeBase:
                     return b.mosaic.get_button_definition(index)
         return self.buttons.get(index)
 
+    def get_empty_button_config(self, key):
+        """Returns a dummy working button config for "empty" hardware representation"""
+        # HARDCODED FOR XTOUCH MINI
+        bntdef = self.get_button_definition(key)
+        btncfg = bntdef.get_button_for_empty_hardware_representation()
+        if btncfg is not None:
+            btncfg2 = btncfg.copy()  # need a copy otherwise original gets polluted by following additions:
+            btncfg2["index"] = key
+            btncfg2[DECK_BUTTON_DEFINITION] = bntdef
+            return btncfg2
+        return None
+
     def get_index_prefix(self, index):
         b = self.get_button_definition(index)
         if b is not None:
@@ -496,6 +513,14 @@ class DeckTypeBase:
             return [b.name for b in with_image]
         # else, returns all of them
         return list(self.buttons.keys())
+
+    def indices_with_hardware_representations(self):
+        # If with_icon is True, only returns keys with image icon associted with it
+        with_hr = filter(
+            lambda x: x.has_hardware_representation(),
+            self.buttons.values(),
+        )
+        return [b.name for b in with_hr]
 
     def valid_activations(self, index):
         b = self.get_button_definition(index)

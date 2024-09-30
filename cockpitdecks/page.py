@@ -3,10 +3,10 @@
 import logging
 from typing import Dict
 
-from cockpitdecks import ID_SEP, CONFIG_KW
+from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Dataref
+from cockpitdecks.simulators.xplane import Dataref
 from .button import Button, DECK_BUTTON_DEFINITION
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class Page:
 
         self.buttons: Dict[str, Button] = {}
         self.button_names: Dict[str, Button] = {}
-        self.datarefs: Dict[str, Dataref] = {}
+        self.simulator_data: Dict[str, Dataref] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
 
@@ -45,6 +45,11 @@ class Page:
         return self.deck.current_page == self
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
+        default_attribute = attribute
+        if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            if not attribute.startswith("cockpit-"):  # no "default" for global cockpit-* attributes
+                default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
+
         # Is there such an attribute in the page defintion?
         value = self._config.get(attribute)
 
@@ -58,7 +63,7 @@ class Page:
         if propagate:
             if not silence:
                 logger.info(f"page {self.name} propagate to deck for {attribute}")
-            return self.deck.get_attribute(attribute, default=default, propagate=propagate, silence=silence)
+            return self.deck.get_attribute(default_attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
             logger.warning(f"page {self.name}: attribute not found {attribute}")
@@ -75,8 +80,8 @@ class Page:
         if isinstance(ld, dict) and isinstance(attributes, dict):
             setattr(self, ATTRNAME, ld | attributes)
 
-    def get_dataref_value(self, dataref, default=None):
-        d = self.datarefs.get(dataref)
+    def get_simulation_data_value(self, dataref, default=None):
+        d = self.simulator_data.get(dataref)
         if d is None:
             logger.warning(f"page {self.name}: {dataref} not found")
             return None  # should return default?
@@ -159,37 +164,39 @@ class Page:
         self.button_names[button.name] = button
         logger.debug(f"page {self.name}: button {idx} {button.name} added")
 
-    def register_datarefs(self, button: Button):
+    def register_simulator_data(self, button: Button):
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
         for d in button.get_string_datarefs():
-            if d not in self.datarefs:
+            if d not in self.simulator_data:
                 ref = self.sim.get_dataref(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
-                    self.datarefs[d] = ref
-                    self.datarefs[d].add_listener(button)
+                    self.simulator_data[d] = ref
+                    self.simulator_data[d].add_listener(button)
                     self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
-                self.datarefs[d].add_listener(button)
-                logger.debug(f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.datarefs[d].is_string})")
+                self.simulator_data[d].add_listener(button)
+                logger.debug(
+                    f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.simulator_data[d].is_string})"
+                )
 
         # Possible issue if a dataref is created here below and is a string dataref
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref
-        for d in button.get_datarefs():
-            if d not in self.datarefs:
+        for d in button.get_simulator_data():
+            if d not in self.simulator_data:
                 ref = self.sim.get_dataref(d)  # creates or return already defined dataref
                 if ref is not None:
-                    self.datarefs[d] = ref
-                    self.datarefs[d].add_listener(button)
+                    self.simulator_data[d] = ref
+                    self.simulator_data[d].add_listener(button)
                     self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
-                self.datarefs[d].add_listener(button)
+                self.simulator_data[d].add_listener(button)
                 logger.debug(f"page {self.name}: button {button.name} registered for existing dataref {d}")
 
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
@@ -214,14 +221,15 @@ class Page:
         self.inc(INTERNAL_DATAREF.PAGE_RENDER.value)
 
         if not self.fill_empty_keys:
-            print("STOP - " * 10)
             return
 
-        for key in filter(
-            lambda b: b not in self.buttons.keys(),
-            self.deck.valid_indices(with_icon=True),
-        ):
+        for key in filter(lambda b: b not in self.buttons.keys(), self.deck.valid_indices(with_icon=True)):
             self.deck.fill_empty(key)
+
+        # If virtual deck, we also need to fill unused hardware representations
+        if self.deck.is_virtual_deck():
+            for key in filter(lambda b: b not in self.buttons.keys(), self.deck.deck_type.indices_with_hardware_representations()):
+                self.deck.fill_empty_hardware_representation(key, self)
 
         if self.get_attribute("print-page-dir"):
             self.deck.print_page(self)
@@ -241,6 +249,10 @@ class Page:
             self.deck.valid_indices(with_icon=True),
         ):
             self.deck.clean_empty(key)
+        # If virtual deck, we also need to fill unused hardware representations
+        if self.deck.is_virtual_deck():
+            for key in filter(lambda b: b not in self.buttons.keys(), self.deck.deck_type.indices_with_hardware_representations()):
+                self.deck.fill_empty_hardware_representation(key, self)
         logger.debug(f"page {self.name}: ..done")
 
     def terminate(self):
@@ -248,7 +260,7 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
-            self.sim.remove_datarefs_to_monitor(self.datarefs)
+            self.sim.remove_datarefs_to_monitor(self.simulator_data)
         self.clean()
         self.buttons = {}
         self.inc(INTERNAL_DATAREF.PAGE_CLEAN.value)

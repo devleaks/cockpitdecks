@@ -13,7 +13,7 @@ from cockpitdecks import ICON_SIZE, now
 
 from cockpitdecks.resources.color import convert_color
 from cockpitdecks.resources.ts import TimeSerie
-from cockpitdecks.simulator import DatarefListener
+from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
 from .draw import DrawBase
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
@@ -30,7 +30,7 @@ MAX_SPARKLINES = 3
 # DYNAMIC CHARTS
 #
 #
-class ChartData(DrawBase, DatarefListener):
+class ChartData(DrawBase, SimulatorDataListener):
 
     def __init__(self, chart, config: dict) -> None:
         self.chart_config = config
@@ -80,12 +80,12 @@ class ChartData(DrawBase, DatarefListener):
             if self.auto_update and self.keep == 0:
                 self.keep = math.ceil(self.time_width / self.update)
         if not self.auto_update:
-            for d in self.get_datarefs():
+            for d in self.get_simulator_data():
                 dref = self.chart.button.sim.get_dataref(d)
                 dref.add_listener(self)
-            logger.debug(f"chart {self.name}: installed listener on {self.get_datarefs()}")
+            logger.debug(f"chart {self.name}: installed listener on {self.get_simulator_data()}")
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         if self.datarefs is None:
             if self.chart is not None:
                 self.datarefs = self.chart.button.scan_datarefs(base=self.chart_config)
@@ -132,8 +132,8 @@ class ChartData(DrawBase, DatarefListener):
         return self.value.get_value()
         # return randint(self.value_min, self.value_max)
 
-    def dataref_changed(self, dataref):
-        r = dataref.value()
+    def simulator_data_changed(self, data: SimulatorData):
+        r = data.value()
         if r is None:
             logger.warning(f"chart {self.name}: value is None, set to zero")
             r = 0
@@ -291,12 +291,12 @@ class ChartIcon(DrawAnimation):
                 i = i + 1
         self.charts = {d["name"]: ChartData(chart=self, config=d) for d in self.chart_configs[:MAX_SPARKLINES]}
 
-    def get_datarefs(self):
+    def get_simulator_data(self):
         # Collects datarefs in each chart
         if self.datarefs is None:
             datarefs = set()
             for c in self.charts.values():
-                datarefs = datarefs | c.get_datarefs()
+                datarefs = datarefs | c.get_simulator_data()
             self.datarefs = datarefs
         return self.datarefs
 

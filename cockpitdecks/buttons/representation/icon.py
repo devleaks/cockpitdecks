@@ -11,9 +11,9 @@ from cockpitdecks.resources.color import (
     convert_color,
     has_ext,
     add_ext,
-    DEFAULT_COLOR,
+    DEFAULT_COLOR
 )
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_LABEL_POSITION
 from .representation import Representation
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class IconBase(Representation):
         Representation.__init__(self, button=button)
 
         # This is leaf node in hierarchy, so we have to be careful.
-        # Button addresses "feature" and if it does not exist we return "default-feature"
+        # Button addresses "feature" and if it does not exist we return DEFAULT_ATTRIBUTE_PREFIX + "feature"
         # from hierarchy.
         self.label = self._config.get("label")
         self.label_format = self._config.get("label-format")
@@ -57,7 +57,7 @@ class IconBase(Representation):
                 logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label horizontal position code {self.label_position[0]}")
             if self.label_position[1] not in "tmb":
                 logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label vertical position code {self.label_position[1]}")
-            self.label_position = button.get_attribute("default-label-position")
+            self.label_position = DEFAULT_LABEL_POSITION
             logger.warning(
                 f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({self.label_position})"
             )
@@ -505,7 +505,7 @@ class MultiTexts(IconText):
         else:
             logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         datarefs = set()
         for text in self.multi_texts:
             drefs = self.button.scan_datarefs(text)

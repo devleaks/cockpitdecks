@@ -25,6 +25,9 @@ buttons:
         - 0
       hardware:
         type: virtual-xtm-encoderled
+        empty-button:
+          type: encoder-value
+          encoder-leds: 0
   # Two rows of 8 LED push button
   - name: 0
     action: push
@@ -44,6 +47,9 @@ buttons:
         - 40
       hardware:
         type: virtual-xtm-led
+        empty-button:
+          type: none
+          led: single
     options: corner_radius=4
   # A and B page keys
   - name: a

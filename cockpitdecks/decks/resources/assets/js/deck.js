@@ -88,6 +88,17 @@ var POINTERS = {};
     });
 });
 
+var Sound = (function () {
+    var df = document.createDocumentFragment();
+    return function Sound(src) {
+        var snd = new Audio(src);
+        df.appendChild(snd); // keep in fragment until finished playing
+        snd.addEventListener('ended', function () {df.removeChild(snd);});
+        snd.play();
+        return snd;
+    }
+}());
+
 // B U T T O N S
 //
 // Key
@@ -986,6 +997,11 @@ class Deck {
             that.key_images[key] = button
         };
         buttonImage.src = "data:image/jpeg;base64," + image;
+    }
+
+    play_sound(sound, type) {
+        console.log("sound", "data:audio/"+type+";base64,")
+        var snd = Sound("data:audio/"+type+";base64," + sound);
     }
 
     save() {

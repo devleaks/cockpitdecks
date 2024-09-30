@@ -11,20 +11,22 @@ import logging
 import pickle
 import json
 import pkg_resources
+import importlib
+
 from datetime import datetime
 from queue import Queue
-import traceback
 
 from PIL import Image, ImageFont
 
 # from cairosvg import svg2png
 
-from cockpitdecks import __version__, __NAME__, LOGFILE, FORMAT
+from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
+    COCKPITDECKS_EXTENSION_PATH,
     Config,
     CONFIG_FILE,
     CONFIG_FILENAME,
@@ -34,6 +36,7 @@ from cockpitdecks import (
     DECK_KW,
     DECK_TYPES,
     DECKS_FOLDER,
+    DEFAULT_ATTRIBUTE_PREFIX,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
     EXCLUDE_DECKS,
@@ -43,19 +46,32 @@ from cockpitdecks import (
     RESOURCES_FOLDER,
     ROOT_DEBUG,
     SECRET_FILE,
+    SOUNDS_FOLDER,
     SPAM,
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
     yaml,
+    all_subclasses,
 )
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Dataref, DatarefListener, DatarefEvent
-from cockpitdecks.decks import DECK_DRIVERS
+from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
+from cockpitdecks.simulators.xplane import DatarefEvent
+
+# imports all known decks, if deck driver not available, ignore it
+import cockpitdecks.decks
+
+# @todo later: put custom decks outside of cockpitdecks for flexibility
+# same for simulator
+from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import ACTIVATIONS
 from cockpitdecks.buttons.representation import REPRESENTATIONS
 
+# #################################
+#
+# Logging
+#
 logging.addLevelName(SPAM_LEVEL, SPAM)
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -76,14 +92,20 @@ if EVENTLOGFILE is not None:
     event_logger.propagate = False
 LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
 
+# #################################
+#
+# Global constants
+#
 # IMPORTANT: These are rendez-vous point for JavaScript code
+# If changed here, please adjust JavaScript Code too.
 #
 DECK_TYPE_ORIGINAL = "deck-type-desc"
 DECK_TYPE_DESCRIPTION = "deck-type-flat"
 
+# Aircraft change detection
 # Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
 # (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
-# but also the aircraft. So in 1 dataref, 2 data!
+# but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 RELOAD_ON_LIVERY_CHANGE = False
 AIRCRAFT = "_livery"  # dataref name is data:_livery
 
@@ -108,7 +130,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(DatarefListener, CockpitBase):
+class Cockpit(SimulatorDataListener, CockpitBase):
     """
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
@@ -116,10 +138,11 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def __init__(self, simulator, environ):
         CockpitBase.__init__(self)
-        DatarefListener.__init__(self)
+        SimulatorDataListener.__init__(self)
 
         # Defaults and config
         self._environ = environ
+        self.extpath = environ.get(COCKPITDECKS_EXTENSION_PATH)
         self._startup_time = datetime.now()
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
@@ -147,6 +170,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         # Content
         self.fonts = {}
+        self.sounds = {}
 
         self.icon_folder = None
         self.icons = {}
@@ -180,12 +204,25 @@ class Cockpit(DatarefListener, CockpitBase):
 
         self.init()
 
+    @property
+    def acpath(self):
+        return self._acpath
+
+    @acpath.setter
+    def acpath(self, acpath: str | None):
+        self._acpath = acpath
+
     def init(self):
         """
         Loads all devices connected to this computer.
         """
+        self.add_extension_path()
+
+        self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+        logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+
         self.load_deck_types()
-        self.scan_devices()
+        self.scan_devices()  # at least once
 
     def get_id(self):
         return self.name
@@ -196,6 +233,8 @@ class Cockpit(DatarefListener, CockpitBase):
             self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
+        if not dflt.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"default variable {dflt} does not start with {DEFAULT_ATTRIBUTE_PREFIX}")
         ATTRNAME = "_defaults"
         if not hasattr(self, ATTRNAME):
             setattr(self, ATTRNAME, dict())
@@ -208,34 +247,36 @@ class Cockpit(DatarefListener, CockpitBase):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
 
-    @property
-    def acpath(self):
-        return self._acpath
-
-    @acpath.setter
-    def acpath(self, acpath: str | None):
-        self.remove_sys_path()
-        self._acpath = acpath
-        self.add_sys_path()
-
-    def add_sys_path(self):
-        if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), RESOURCES_FOLDER, DECKS_FOLDER, "drivers")
-            if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
-                if pythonpath not in sys.path:
-                    sys.path.append(pythonpath)
-                    logger.info(f"added {pythonpath} to sys.path")
-
-    def remove_sys_path(self):
-        if self.acpath is not None:
-            pythonpath = os.path.join(os.path.abspath(self.acpath), RESOURCES_FOLDER, DECKS_FOLDER, "drivers")
-            if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
-                if pythonpath in sys.path:
-                    sys.path.remove(pythonpath)
-                    logger.info(f"removed {pythonpath} to sys.path")
+    def add_extension_path(self):
+        # never tested (yet)
+        if self.extpath is not None:
+            paths = self.extpath.split(":")
+            for path in paths:
+                pythonpath = os.path.abspath(path)
+                if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
+                    if pythonpath not in sys.path:
+                        sys.path.append(pythonpath)
+                        logger.info(f"added extension path {pythonpath} to sys.path")
+            logger.debug(f"adding extension..")
+            for module_name in [
+                "cockpitdecks_ext.decks",
+                "cockpitdecks_ext.buttons.activation",
+                "cockpitdecks_ext.buttons.representation",
+                "cockpitdecks_ext.simulators"]:
+                parts = module_name.split(".")
+                mod_name = parts[-1]
+                pkg_name = ".".join(parts[:-1])
+                spec = importlib.util.find_spec(mod_name, package=pkg_name)
+                if spec is not None:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[module_name] = module
+                    spec.loader.exec_module(module)
+                else:
+                    logger.debug(f"{module_name} not found ({mod_name, pkg_name})")
+            logger.debug(f"..added")
 
     def defaults_prefix(self):
-        return "dark-default-" if self._dark else "default-"
+        return "dark-" + DEFAULT_ATTRIBUTE_PREFIX if self._dark else DEFAULT_ATTRIBUTE_PREFIX
 
     def get_attribute(self, attribute: str, default=None, silence: bool = True):
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
@@ -249,7 +290,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
         self._reqdfts.add(attribute)  # internal stats
 
-        if attribute.startswith("default-") or attribute.startswith("cockpit-"):
+        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX) or attribute.startswith("cockpit-"):
             theme_prefix = self._config.get("cockpit-theme", "")  # prefix = "dark", or nothing
             if theme_prefix is not None and theme_prefix not in ["", "default", "cockpit"] and not attribute.startswith(theme_prefix):
                 newattr = "-".join([theme_prefix, attribute])  # dark-default-color
@@ -300,6 +341,11 @@ class Cockpit(DatarefListener, CockpitBase):
 
         if not silence:
             logger.info(f"cockpit attribute {attribute} not found, returning default ({default})")
+
+        if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            # we did not search for a default-*, now we do:
+            default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
+            return self.get_attribute(attribute=default_attribute, default=default, silence=silence)
 
         return default
 
@@ -352,8 +398,8 @@ class Cockpit(DatarefListener, CockpitBase):
 
     def inspect_datarefs(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
-            for dref in self.sim.all_datarefs.values():
-                logger.info(f"{dref.path} = {dref.value()} ({len(dref.listeners)} lsnrs)")
+            for dref in self.sim.all_simulator_data.values():
+                logger.info(f"{dref.name} = {dref.value()} ({len(dref.listeners)} lsnrs)")
                 if what.endswith("listener"):
                     for l in dref.listeners:
                         logger.info(f"  {l.name}")
@@ -361,26 +407,46 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info("to do")
 
     def inspect_monitored(self, what: str | None = None):
-        for dref in self.sim.datarefs.values():
+        for dref in self.sim.simulator_data.values():
             logger.info(f"{dref}")
 
     def scan_devices(self):
         """Scan for hardware devices"""
-        if len(DECK_DRIVERS) == 0:
+        if len(self.deck_drivers) == 0:
             logger.error("no driver")
             return
-        driver_info = [
-            f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}" for deck_driver in DECK_DRIVERS.keys() if deck_driver != VIRTUAL_DECK_DRIVER
-        ]
+        driver_info = []
+        for deck_driver in self.deck_drivers:
+            desc = f"{deck_driver} (included)"
+            try:
+                desc = f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}"
+            except:
+                pass
+            driver_info.append(desc)
         if len(driver_info) == 0:
             logger.warning("no driver for physical decks")
             return
         logger.info(f"drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
-        dependencies = [f"{v[0].DRIVER_NAME}>={v[0].MIN_DRIVER_VERSION}" for k, v in DECK_DRIVERS.items() if k != VIRTUAL_DECK_DRIVER]
+        dependencies = []
+        for deck_driver in self.deck_drivers.items():
+            dep = ""
+            try:
+                dep = f"{deck_driver[0].DRIVER_NAME}>={deck_driver[0].MIN_DRIVER_VERSION}"
+            except:
+                pass
+            if dep != "":
+                dependencies.append(dep)
         logger.debug(f"dependencies: {dependencies}")
         pkg_resources.require(dependencies)
 
-        for deck_driver, builder in DECK_DRIVERS.items():
+        # If there are already some devices, we need to terminate/kill them first
+        if len(self.devices) > 0:
+            logger.info("new scan for devices, terminating devices..")
+            self.terminate_devices()
+            logger.info("..terminated")
+
+        self.devices = []
+        for deck_driver, builder in self.deck_drivers.items():
             if deck_driver == VIRTUAL_DECK_DRIVER:
                 # will be added later, when we have acpath set, in add virtual_decks()
                 continue
@@ -473,7 +539,7 @@ class Cockpit(DatarefListener, CockpitBase):
         else:
             logger.debug("simulator already running")
 
-        logger.info(f"starting {os.path.basename(acpath)} " + "-" * 50)
+        logger.info(f"starting {os.path.basename(acpath)} " + "=" * 50)
 
         self.cockpit = {}
         self.icons = {}
@@ -494,6 +560,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
             self.load_icons()
             self.load_fonts()
+            self.load_sounds()
             self.create_decks()
             self.load_pages()
         else:
@@ -536,7 +603,7 @@ class Cockpit(DatarefListener, CockpitBase):
 
             # 1. Try "system" font
             try:
-                test = ImageFont.truetype(fontname, self.get_attribute("default-label-size"))
+                test = ImageFont.truetype(fontname, self.get_attribute("label-size"))
                 logger.debug(f"font {fontname} found in computer system fonts")
                 return fontname
             except:
@@ -546,7 +613,7 @@ class Cockpit(DatarefListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                 logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
@@ -556,7 +623,7 @@ class Cockpit(DatarefListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                 logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
@@ -574,8 +641,8 @@ class Cockpit(DatarefListener, CockpitBase):
         self.set_logging_level(__name__)
 
         if self.sim is not None:
-            self.sim.set_roundings(self._resources_config.get("dataref-roundings", {}))
-            self.sim.set_dataref_frequencies(self._resources_config.get("dataref-fetch-frequencies", {}))
+            self.sim.set_simulator_data_roundings(self._resources_config.get("dataref-roundings", {}))
+            self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # 1. Load global icons
         #   (They are never cached when loaded without aircraft.)
@@ -589,7 +656,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     self.icons[i] = image
 
         # 1.2 Do we have a default icon with proper name?
-        dftname = self.get_attribute("default-icon-name")
+        dftname = self.get_attribute("icon-name")
         if dftname in self.icons.keys():
             logger.debug(f"default icon name {dftname} found")
         else:
@@ -599,7 +666,7 @@ class Cockpit(DatarefListener, CockpitBase):
         #   WE MUST find a default, system font at least
 
         # 2.1 We try the requested "default label font"
-        default_label_font = self.get_attribute("default-label-font")
+        default_label_font = self.get_attribute("label-font")
         if default_label_font is not None and default_label_font not in self.fonts.keys():
             f = locate_font(default_label_font)
             if f is not None:  # found one, perfect
@@ -609,7 +676,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 logger.debug(f"default label font set to {default_label_font}")
 
         # 2.3 We try the "default system font"
-        default_system_font = self.get_attribute("default-system-font")
+        default_system_font = self.get_attribute("system-font")
         if default_system_font is not None:
             f = locate_font(default_system_font)
             if f is not None:  # found it, perfect, keep it as default font for all purposes
@@ -648,7 +715,7 @@ class Cockpit(DatarefListener, CockpitBase):
             return
         cnt = 0
         virtual_deck_types = {d.name: d for d in filter(lambda d: d.is_virtual_deck(), self.deck_types.values())}
-        builder = DECK_DRIVERS.get(VIRTUAL_DECK_DRIVER)
+        builder = self.deck_drivers.get(VIRTUAL_DECK_DRIVER)
         decks = builder[1]().enumerate(acpath=self.acpath, virtual_deck_types=virtual_deck_types)
         logger.info(f"found {len(decks)} virtual deck(s)")
         for name, device in decks.items():
@@ -693,9 +760,9 @@ class Cockpit(DatarefListener, CockpitBase):
 
         # 1. Adjust some settings in global config file.
         if self.sim is not None:
-            self.sim.set_roundings(self._config.get("dataref-roundings", {}))
-            self.sim.set_dataref_frequencies(self._config.get("dataref-fetch-frequencies", {}))
-            self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("default-dataref-fetch-frequency", DEFAULT_FREQUENCY)
+            self.sim.set_simulator_data_roundings(self._config.get("dataref-roundings", {}))
+            self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._config.get("dataref-fetch-frequencies", {}))
+            self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
         # 2. Create decks
         decks = self._config.get("decks")
@@ -737,7 +804,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 continue
 
             deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in DECK_DRIVERS.keys():
+            if deck_driver not in self.deck_drivers.keys():
                 logger.warning(f"invalid deck driver {deck_driver}, ignoring")
                 continue
 
@@ -760,7 +827,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 else:
                     deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
-                    self.cockpit[name] = DECK_DRIVERS[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+                    self.cockpit[name] = self.deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
                         deck_flat = self.deck_types.get(deck_type).desc()
                         if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
@@ -802,7 +869,7 @@ class Cockpit(DatarefListener, CockpitBase):
         # }
         for deck in self.devices:
             deckdriver = deck.get(CONFIG_KW.DRIVER.value)
-            if deckdriver not in DECK_DRIVERS.keys():
+            if deckdriver not in self.deck_drivers.keys():
                 logger.warning(f"invalid deck driver {deckdriver}, ignoring")
                 continue
             device = deck[CONFIG_KW.DEVICE.value]
@@ -816,7 +883,7 @@ class Cockpit(DatarefListener, CockpitBase):
                 CONFIG_KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
-            self.cockpit[name] = DECK_DRIVERS[deckdriver][0](name, config, self, device)
+            self.cockpit[name] = self.deck_drivers[deckdriver][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches
@@ -927,7 +994,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"default font file {fn} not loaded")
@@ -943,7 +1010,7 @@ class Cockpit(DatarefListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("default-label-size"))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size"))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"custom font file {fn} not loaded")
@@ -954,6 +1021,43 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(
             f"{len(self.fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
         )
+
+    def load_sounds(self):
+        # Loading sounds.
+        #
+        # 1. Load sounds supplied by Cockpitdeck in its resource folder
+        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, SOUNDS_FOLDER)
+        if os.path.exists(rn):
+            sounds = os.listdir(rn)
+            for i in sounds:
+                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
+                    if i not in self.sounds.keys():
+                        fn = os.path.join(rn, i)
+                        try:
+                            with open(fn, mode="rb") as file:  # b is important -> binary
+                                self.sounds[i] = file.read()
+                        except:
+                            logger.warning(f"default sound file {fn} not loaded")
+                    else:
+                        logger.debug(f"sound {i} already loaded")
+
+        # 2. Load fonts supplied by the user in the configuration
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
+        if os.path.exists(dn):
+            sounds = os.listdir(dn)
+            for i in sounds:
+                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
+                    if i not in self.sounds.keys():
+                        fn = os.path.join(dn, i)
+                        try:
+                            with open(fn, mode="rb") as file:  # b is important -> binary
+                                self.sounds[i] = file.read()
+                        except:
+                            logger.warning(f"custom sound file {fn} not loaded")
+                    else:
+                        logger.debug(f"sound {i} already loaded")
+
+        logger.info(f"{len(self.sounds)} sounds loaded")
 
     # #########################################################
     # Cockpit start/stop/event/reload procedures
@@ -1076,7 +1180,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def replay_sim_event(self, data: dict):
         path = data.get("path")
         if path is not None:
-            if not Dataref.is_internal_dataref(path):
+            if not Dataref.is_internal_simulator_data(path):
                 e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True, autorun=False)
                 e._replay = True
                 e.run()  # enqueue after setting the reply flag
@@ -1138,14 +1242,14 @@ class Cockpit(DatarefListener, CockpitBase):
         logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
 
-    def dataref_changed(self, dataref):
+    def simulator_data_changed(self, data: SimulatorData):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if type(dataref) is not Dataref or dataref.path != AIRCRAFT_CHANGE_MONITORING_DATAREF:
-            logger.warning(f"unhandled {dataref.path}={dataref.value()}")
+        if not isinstance(data, SimulatorData) or data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
+            logger.warning(f"unhandled {data.name}={data.value()}")
             return
-        value = dataref.value()
+        value = data.value()
         if value is not None and self._livery_path == value:
             logger.info(f"livery path unchanged {self._livery_path}, doing nothing")
             return
@@ -1203,7 +1307,7 @@ class Cockpit(DatarefListener, CockpitBase):
     def terminate_aircraft(self):
         logger.info("terminating..")
         # Spit stats, should be on debug
-        drefs = {d.path: d.value() for d in self.sim.all_datarefs.values()}  #  if d.is_internal
+        drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
         # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
         # with open("datarefs.json", "w") as fp:
         #     json.dump(drefs, fp, indent=2)
@@ -1219,16 +1323,16 @@ class Cockpit(DatarefListener, CockpitBase):
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info("..done")
-        logger.info(f"{os.path.basename(self.acpath)} terminated " + "-" * 50)
+        logger.info(f"{os.path.basename(self.acpath)} terminated " + "=" * 50)
 
     def terminate_devices(self):
         for deck in self.devices:
             deck_driver = deck.get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in DECK_DRIVERS.keys():
+            if deck_driver not in self.deck_drivers.keys():
                 logger.warning(f"invalid deck type {deck_driver}, ignoring")
                 continue
             device = deck[CONFIG_KW.DEVICE.value]
-            DECK_DRIVERS[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
+            self.deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
         logger.info("terminating..")

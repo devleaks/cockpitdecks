@@ -1,7 +1,12 @@
 import requests
 import json
+import logging
 
-BASE_URL = "http://localhost:8086/api/v1/datarefs"
+logging.basicConfig(level=logging.INFO)
+
+
+# BASE_URL = "http://localhost:8086/api/v1/datarefs"
+BASE_URL = "http://192.168.1.140:8080/api/v1/datarefs"
 DATA = "data"
 IDENT = "id"
 

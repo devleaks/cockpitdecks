@@ -43,7 +43,7 @@ class IconSide(Icon):  # modified Representation IconSide class
         self.labels: str | None = self.side.get("labels")  # type: ignore
         self.label_position = self._config.get("label-position", "cm")  # "centered" on middle of side image
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         datarefs = set()
         for label in self.labels:
             drefs = self.button.scan_datarefs(label)
@@ -52,7 +52,7 @@ class IconSide(Icon):  # modified Representation IconSide class
         return datarefs
 
     # get_datarefs from old IconSide
-    # def get_datarefs(self):
+    # def get_simulator_data(self):
     #     if self.datarefs is None:
     #         self.datarefs = []
     #         if self.labels is not None:
@@ -110,7 +110,7 @@ class IconSide(Icon):  # modified Representation IconSide class
                 # Managed block from old IconSide
                 # managed = label.get(CONFIG_KW.MANAGED.value)
                 # if managed is not None:
-                #     value = self.button.get_dataref_value(managed)
+                #     value = self.button.get_simulation_data_value(managed)
                 #     txto = txt
                 #     if value:
                 #         txt = txt + "•"  # \n•"

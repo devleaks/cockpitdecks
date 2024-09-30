@@ -10,6 +10,7 @@ from .decktype import DeckType
 class VirtualDeck:
 
     DECK_NAME = "virtualdeck"
+    VERSION = "1.0.0"
 
     def __init__(self, name: str, definition: DeckType, config: dict):
         self.name: str = name

@@ -10,9 +10,11 @@ import re
 import logging
 import sys
 
+from cockpitdecks.simulator import CockpitdecksData
+
 from .buttons.activation import ACTIVATIONS, ACTIVATION_VALUE
 from .buttons.representation import REPRESENTATIONS, HARDWARE_REPRESENTATIONS, Annunciator
-from .simulator import Dataref, DatarefListener
+from .simulator import SimulatorData, SimulatorDataListener
 from .value import Value, ValueProvider
 
 from cockpitdecks import (
@@ -31,9 +33,9 @@ logger = logging.getLogger(__name__)
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
-class Button(DatarefListener, ValueProvider):
+class Button(SimulatorDataListener, ValueProvider):
     def __init__(self, config: dict, page: "Page"):
-        DatarefListener.__init__(self)
+        SimulatorDataListener.__init__(self)
         # Definition and references
         self._config = config
         self._def = config.get(DECK_BUTTON_DEFINITION)
@@ -129,7 +131,7 @@ class Button(DatarefListener, ValueProvider):
             else:
                 self._guard_dref = self.sim.get_dataref(guard_dref_path)
                 self._guard_dref.update_value(new_value=0, cascade=False)  # need initial value,  especially for internal drefs
-                logger.debug(f"button {self.name} has guard {self._guard_dref.path}")
+                logger.debug(f"button {self.name} has guard {self._guard_dref.name}")
 
         # String datarefs
         self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, set())
@@ -146,9 +148,9 @@ class Button(DatarefListener, ValueProvider):
 
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
-        self.all_datarefs = self.get_datarefs()  # this does not add string datarefs
+        self.all_datarefs = self.get_simulator_data()  # this does not add string datarefs
         if len(self.all_datarefs) > 0:
-            self.page.register_datarefs(self)  # when the button's page is loaded, we monitor these datarefs
+            self.page.register_simulator_data(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
 
         # collection in single set
@@ -229,8 +231,8 @@ class Button(DatarefListener, ValueProvider):
             logger.info(f"Button {self.name} -- {what}")
             if "dataref" in what:
                 # logger.info("")
-                for d in self.get_datarefs():
-                    v = self.get_dataref_value(d)
+                for d in self.get_simulator_data():
+                    v = self.get_simulation_data_value(d)
                     logger.info(f"    {d} = {v}")
             if "activation" in what or "longpress" in what:
                 logger.info("")
@@ -399,7 +401,7 @@ class Button(DatarefListener, ValueProvider):
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
-    def get_datarefs(self, base: dict | None = None) -> set:
+    def get_simulator_data(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -411,7 +413,7 @@ class Button(DatarefListener, ValueProvider):
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.get_datarefs(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
+        r = self._value.get_simulator_data(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
 
         # 1b. Managed values
         managed = None
@@ -433,7 +435,7 @@ class Button(DatarefListener, ValueProvider):
 
         # Activation datarefs
         if self._activation is not None:
-            datarefs = self._activation.get_datarefs()
+            datarefs = self._activation.get_simulator_data()
             if datarefs is not None:
                 r = r | datarefs
                 self._value.complement_datarefs(r, reason="activation")
@@ -441,7 +443,7 @@ class Button(DatarefListener, ValueProvider):
 
         # Representation datarefs
         if self._representation is not None:
-            datarefs = self._representation.get_datarefs()
+            datarefs = self._representation.get_simulator_data()
             if datarefs is not None:
                 r = r | datarefs
                 self._value.complement_datarefs(r, reason="representation")
@@ -463,13 +465,13 @@ class Button(DatarefListener, ValueProvider):
         if self.managed is None:
             logger.debug(f"button {self.name}: is managed is none.")
             return False
-        d = self.get_dataref_value(self.managed, default=0)
+        d = self.get_simulation_data_value(self.managed, default=0)
         if d != 0:
             logger.debug(f"button {self.name}: is managed ({d}).")
             return True
         logger.debug(f"button {self.name}: is not managed ({d}).")
         return False
-        # return self.managed is not None and self.get_dataref_value(dataref=self.managed, default=0) != 0
+        # return self.managed is not None and self.get_simulation_data_value(dataref=self.managed, default=0) != 0
 
     def has_guard(self):
         return self._guard_dref is not None
@@ -506,8 +508,8 @@ class Button(DatarefListener, ValueProvider):
     def get_dataref(self, dataref):
         return self.page.get_dataref(dataref=dataref)
 
-    def get_dataref_value(self, dataref, default=None):
-        return self.page.get_dataref_value(dataref=dataref, default=default)
+    def get_simulation_data_value(self, dataref, default=None):
+        return self.page.get_simulation_data_value(dataref=dataref, default=default)
 
     def get_state_value(self, name, default: str = "0"):
         value = None
@@ -605,16 +607,16 @@ class Button(DatarefListener, ValueProvider):
     # ##################################
     # External API
     #
-    def dataref_changed(self, dataref: Dataref):
+    def simulator_data_changed(self, data: SimulatorData):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(dataref, Dataref):
-            logger.error(f"button {self.name}: not a dataref")
+        if not isinstance(data, SimulatorData):
+            logger.error(f"button {self.name}: not a simulator data")
             return
-        logger.debug(f"{self.name}: {dataref.path} changed")
+        logger.debug(f"{self.name}: {data.name} changed")
         self.value = self.compute_value()
-        if self.has_changed() or dataref.has_changed():
+        if self.has_changed() or data.has_changed():
             logger.log(
                 SPAM_LEVEL,
                 f"button {self.name}: {self.previous_value} -> {self.current_value}",

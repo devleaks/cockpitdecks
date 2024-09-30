@@ -14,6 +14,8 @@ from PIL import Image, ImageDraw
 from cockpitdecks import DEFAULT_PAGE_NAME
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.deck import DeckWithIcons
+from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
+
 from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
 from cockpitdecks.page import Page
 from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
@@ -21,6 +23,7 @@ from cockpitdecks.buttons.representation import (
     Representation,
     IconBase,
 )  # valid representations for this type of deck
+
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -37,6 +40,7 @@ class VirtualDeck(DeckWithIcons):
     DECK_NAME = "virtualdeck"
     DRIVER_NAME = "virtualdeck"
     MIN_DRIVER_VERSION = "0.0.0"
+    DEVICE_MANAGER = VirtualDeckManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
@@ -70,8 +74,8 @@ class VirtualDeck(DeckWithIcons):
     def unload_current_page(self):
         if self.current_page is not None:
             logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
-            logger.debug("..unloading datarefs..")
-            self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.datarefs)
+            logger.debug("..unloading simulator data..")
+            self.cockpit.sim.remove_datarefs_to_monitor(self.current_page.simulator_data)
             logger.debug("..cleaning page..")
             self.current_page.clean()
         else:
@@ -199,6 +203,16 @@ class VirtualDeck(DeckWithIcons):
         payload = {"code": code, "deck": self.name, "meta": {"ts": datetime.now().timestamp()}}
         self.cockpit.send(deck=self.name, payload=payload)
 
+    def play_sound(self, sound):
+        content = self.cockpit.sounds.get(sound)
+        if content is None:
+            logger.warning(f"{self.name}: sound {sound} not found")
+            return
+        meta = {"ts": datetime.now().timestamp()}  # dummy
+        typ = sound.split(".")[-1]
+        payload = {"code": 2, "deck": self.name, "sound": base64.encodebytes(content).decode("ascii"), "type": typ, "meta": meta}
+        self.cockpit.send(deck=self.name, payload=payload)
+
     def set_key_icon(self, key, image):
         # Sends the PIL Image bytes with a few meta to Flask for web display
         # Image is sent as a stream of bytes which is the file content of the image saved in PNG format
@@ -233,6 +247,15 @@ class VirtualDeck(DeckWithIcons):
         meta = {"ts": datetime.now().timestamp()}  # dummy
         payload = {"code": 0, "deck": self.name, "key": key, "image": base64.encodebytes(content).decode("ascii"), "meta": meta}
         self.cockpit.send(deck=self.name, payload=payload)
+
+    def fill_empty_hardware_representation(self, key, page):
+        config = self.deck_type.get_empty_button_config(key)
+        if config is not None:
+            btn = Button(config=config, page=page)
+            self._set_hardware_image(btn)
+            logger.debug(f"{self.name}: done for {key}")
+        else:
+            logger.warning(f"{self.name}: no empty hardware representation for {key}")
 
     def _send_hardware_key_image_to_device(self, key, image, metadata):
         def add_corners(im, rad):
@@ -279,8 +302,7 @@ class VirtualDeck(DeckWithIcons):
 
         if image is None:
             logger.warning("button returned no image, using default")
-            default_icon_name = self.get_attribute("default-icon-name")
-            image = self.cockpit.get_icon_image(default_icon_name)
+            image = self.get_default_icon()
 
         if image is None:
             logger.warning(f"no image for default icon {default_icon_name}")

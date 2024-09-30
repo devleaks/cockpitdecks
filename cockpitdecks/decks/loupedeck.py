@@ -5,6 +5,7 @@ import logging
 from PIL import Image, ImageOps
 
 from Loupedeck.Devices.LoupedeckLive import LoupedeckLive, KW_LEFT, KW_RIGHT, KW_CIRCLE, HAPTIC, CALLBACK_KEYWORD, BUTTONS, KW_KNOB
+from Loupedeck import DeviceManager
 
 from cockpitdecks import RESOURCES_FOLDER, DEFAULT_PAGE_NAME, DECK_KW, DECK_FEEDBACK
 from cockpitdecks.deck import DeckWithIcons
@@ -30,6 +31,7 @@ class Loupedeck(DeckWithIcons):
     DECK_NAME = "loupedeck"
     DRIVER_NAME = "loupedeck"
     MIN_DRIVER_VERSION = "1.4.5"
+    DEVICE_MANAGER = DeviceManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         DeckWithIcons.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
@@ -77,7 +79,7 @@ class Loupedeck(DeckWithIcons):
                 image = Image.new(
                     mode="RGBA",
                     size=(deck_width, deck_height),
-                    color=self.get_attribute("default-icon-color"),
+                    color=self.get_attribute("icon-color"),
                 )
                 fn = os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, self.logo)
                 if os.path.exists(fn):
@@ -351,7 +353,7 @@ class Loupedeck(DeckWithIcons):
         color = button.get_representation()
         if color is None:
             logger.warning("button returned no representation color, using default")
-            color = self.get_attribute("default-color")
+            color = self.get_attribute("color")
         bdef = self.deck_type.filter({DECK_KW.FEEDBACK.value: "colored-led"})
         prefix = bdef[0].get(DECK_KW.PREFIX.value)
         key = button.index.lower().replace(prefix, "")

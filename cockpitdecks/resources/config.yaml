@@ -4,6 +4,7 @@
 # since it should be usable by all aircrafts.
 ---
 cache-icon: True
+default-icon-name: none.png
 dataref-roundings:
   sim/cockpit/autopilot/heading_mag: 2
   # used in Weather button 3 or 4 decimals sufficient...

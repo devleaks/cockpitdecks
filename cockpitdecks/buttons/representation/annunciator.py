@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off, is_number
 from cockpitdecks.resources.rpc import RPC
-from cockpitdecks.simulator import Dataref
+from cockpitdecks.simulators.xplane import Dataref
 from cockpitdecks.value import Value
 
 from .draw import DrawBase
@@ -98,9 +98,9 @@ class AnnunciatorPart:
     def center_h(self):
         return self._center_h
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         if self.datarefs is None:
-            self.datarefs = self._value.get_datarefs(extra_keys=["text"])
+            self.datarefs = self._value.get_simulator_data(extra_keys=["text"])
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
@@ -452,7 +452,7 @@ class Annunciator(DrawBase):
             logger.error(f"button {self.button.name}: annunciator has no model")
 
         self.annunciator_datarefs: List[Dataref] | None = None
-        self.annunciator_datarefs = self.get_datarefs()
+        self.annunciator_datarefs = self.get_simulator_data()
 
         DrawBase.__init__(self, button=button)
 
@@ -484,7 +484,7 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_datarefs(self) -> Set[Dataref]:
+    def get_simulator_data(self) -> Set[Dataref]:
         """
         Complement button datarefs with annunciator special lit datarefs
         """
@@ -494,7 +494,7 @@ class Annunciator(DrawBase):
         r: Set[Dataref] = set()
         if self.annunciator_parts is not None:
             for k, v in self.annunciator_parts.items():
-                datarefs = v.get_datarefs()
+                datarefs = v.get_simulator_data()
                 if len(datarefs) > 0:
                     r = r | datarefs
                     logger.debug(f"button {self.button.name}: added {k} datarefs {datarefs}")

@@ -2,12 +2,16 @@
 #
 # MAIN SYSTEM CONFIGURATION FILE
 #
+# This file is a template.
+# It will work if X-Plane and Cockpitdecks are both running on the same host computer.
+# In which case, only X-Plane home directory should be specified in the XP_HOME variable.
+# The default value will work on Apple MacOS computer with X-Plane installed in the Applications folder.
+#
 # 1. NETWORK SETTING
 #
 # Where X-Plane runs
 #
 XP_HOST: 127.0.0.1
-# X-Plane not on this host
 XP_HOME: /Applications/X-Plane 12
 
 API_HOST: 127.0.0.1

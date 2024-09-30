@@ -4,7 +4,6 @@ Discover virtual web decks
 """
 
 import os
-from pickle import NONE
 from typing import Dict
 
 from cockpitdecks import (

@@ -147,7 +147,7 @@ class FMAIcon(DrawBase):
             logger.debug(f"boxed changed {self.boxed}/{oldboxed}")
             return True
         self.previous_text = self.text
-        self.text = {k: self.button.get_dataref_value(v, default=FMA_EMPTY_LINE) for k, v in FMA_DATAREFS.items()}
+        self.text = {k: self.button.get_simulation_data_value(v, default=FMA_EMPTY_LINE) for k, v in FMA_DATAREFS.items()}
         return self.text != self.previous_text
 
     def check_boxed(self):
@@ -155,25 +155,25 @@ class FMAIcon(DrawBase):
         They are listed as FMA#-LINE# pairs of digit. Special keyword WARNING if warning enabled.
         """
         boxed = []
-        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAAPLeftArmedBox") == 1:
             boxed.append("22")
-        if self.button.get_dataref_value("AirbusFBW/FMAAPLeftModeBox") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAAPLeftModeBox") == 1:
             boxed.append("21")
-        if self.button.get_dataref_value("AirbusFBW/FMAAPRightArmedBox") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAAPRightArmedBox") == 1:
             boxed.append("32")
-        if self.button.get_dataref_value("AirbusFBW/FMAAPRightModeBox") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAAPRightModeBox") == 1:
             boxed.append("31")
-        if self.button.get_dataref_value("AirbusFBW/FMAATHRModeBox") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAATHRModeBox") == 1:
             boxed.append("11")
-        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAATHRboxing") == 1:
             boxed.append("12")
-        if self.button.get_dataref_value("AirbusFBW/FMAATHRboxing") == 2:
+        if self.button.get_simulation_data_value("AirbusFBW/FMAATHRboxing") == 2:
             boxed.append("11")
             boxed.append("12")
-        if self.button.get_dataref_value("AirbusFBW/FMATHRWarning") == 1:
+        if self.button.get_simulation_data_value("AirbusFBW/FMATHRWarning") == 1:
             boxed.append(WARNING)
         # big mess:
-        boxcode = self.button.get_dataref_value("AirbusFBW/FMAAPFDboxing")
+        boxcode = self.button.get_simulation_data_value("AirbusFBW/FMAAPFDboxing")
         if boxcode is not None:  # can be 0-7, is it a set of binary flags?
             boxcode = int(boxcode)
             if boxcode & 1 == 1:
@@ -211,6 +211,15 @@ class FMAIcon(DrawBase):
                 for k, v in self.text.items():
                     raws = {k: v for k, v in self.text.items() if int(k[0]) == li}
                     for k, v in raws.items():
+                        # ERROR
+                        # ERROR
+                        # ERROR
+                        if type(v) is float:
+                            # logger.warning(f"{k}={v} is float ({raws})")
+                            continue
+                        # ERROR
+                        # ERROR
+                        # ERROR
                         # normalize
                         if len(v) < FMA_LINE_LENGTH:
                             v = v + " " * (FMA_LINE_LENGTH - len(v))

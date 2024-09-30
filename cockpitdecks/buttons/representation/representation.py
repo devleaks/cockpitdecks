@@ -45,6 +45,7 @@ class Representation:
             self._representation_config = {self.name(): self._representation_config}
 
         self._vibrate = self.get_attribute("vibrate")
+        self._sound = self.get_attribute("sound")
         self._cached = None
         self.datarefs = None
 
@@ -138,7 +139,7 @@ class Representation:
                     return True
         return default
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         return set()
 
     def get_button_value(self):

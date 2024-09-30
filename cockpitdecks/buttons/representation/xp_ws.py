@@ -63,7 +63,7 @@ class XPWeatherSummaryIcon(XPWeatherBaseIcon):
         self._inited = True
         logger.debug(f"inited")
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         return self.weather_datarefs
 
     def is_updated(self, force: bool = False) -> bool:
@@ -89,17 +89,17 @@ class XPWeatherSummaryIcon(XPWeatherBaseIcon):
     def get_lines(self) -> list:
         lines = list()
         lines.append(f"Mode: {self.mode}")
-        press = self.button.get_dataref_value(self.display_datarefs["press"])
+        press = self.button.get_simulation_data_value(self.display_datarefs["press"])
         if press is not None:
             press = int(press / 100)
         lines.append(f"Press: {press}")
-        temp = self.button.get_dataref_value(self.display_datarefs["temp"])
+        temp = self.button.get_simulation_data_value(self.display_datarefs["temp"])
         lines.append(f"Temp: {temp}")
-        dewp = self.button.get_dataref_value(self.display_datarefs["dewp"])
+        dewp = self.button.get_simulation_data_value(self.display_datarefs["dewp"])
         lines.append(f"DewP:{dewp}")  # "sim/weather/region/sealevel_temperature_c"
-        vis = self.button.get_dataref_value(self.display_datarefs["vis"])
+        vis = self.button.get_simulation_data_value(self.display_datarefs["vis"])
         lines.append(f"Vis: {vis} sm")
-        wind_dir = self.button.get_dataref_value(self.display_datarefs["wind_dir"])
-        wind_speed = self.button.get_dataref_value(self.display_datarefs["wind_speed"])
+        wind_dir = self.button.get_simulation_data_value(self.display_datarefs["wind_dir"])
+        wind_speed = self.button.get_simulation_data_value(self.display_datarefs["wind_speed"])
         lines.append(f"Winds: {wind_speed} m/s {wind_dir}°")
         return lines

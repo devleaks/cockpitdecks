@@ -35,6 +35,7 @@ DEFAULT_PAGE_NAME = "Default Page"
 
 RESOURCES_FOLDER = "resources"
 FONTS_FOLDER = "fonts"
+SOUNDS_FOLDER = "sounds"
 ICONS_FOLDER = "icons"
 DECKS_FOLDER = "decks"
 DECK_TYPES = "types"
@@ -42,11 +43,13 @@ DECK_IMAGES = "images"
 TYPES_FOLDER = "types"
 
 ICON_SIZE = 256  # px
+DEFAULT_LABEL_POSITION = "cm"
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
+COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
 
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "templates")
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, "assets")
@@ -61,7 +64,7 @@ class ANNUNCIATOR_STYLES(Enum):
 
 # internals
 ID_SEP = "/"
-DEFAULT_ATTRIBUTE_PREFIX = "default-"
+DEFAULT_ATTRIBUTE_PREFIX = "default-"  # cannot be "", must be at lesat one char
 
 # System default values
 COCKPITDECKS_DEFAULT_VALUES = {

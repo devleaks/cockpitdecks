@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks.simulator import Dataref, Instruction
+from cockpitdecks.simulators.xplane import Dataref, XPlaneInstruction
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -102,17 +102,18 @@ class Activation:
 
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:
-            self._view = Instruction.new(name=cmdname + ":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
+            self._view = XPlaneInstruction.new(name=cmdname + ":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
+        self.sound = self.get_attribute("sound")
 
         # but could be anything.
         self._long_press = None
         long_press = self._config.get("long-press")
         if long_press is not None:
-            self._long_press = Instruction.new(name=cmdname + ":long-press", command=long_press)  # Optional additional command
+            self._long_press = XPlaneInstruction.new(name=cmdname + ":long-press", command=long_press)  # Optional additional command
 
         # Datarefs
         # Note on set-dataref: The activation will set the dataref value
@@ -250,9 +251,9 @@ class Activation:
     def has_long_press(self) -> bool:
         return self._long_press is not None and self._long_press.is_valid()
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         if self._writable_dataref is not None:
-            return {self._writable_dataref.path}
+            return {self._writable_dataref.name}
         return set()
 
     def long_press(self, event):
@@ -313,6 +314,9 @@ class Activation:
             if self.vibrate is not None and hasattr(self.button.deck, "_vibrate"):
                 self.button.deck._vibrate(self.vibrate)
 
+            if self.sound is not None and hasattr(self.button.deck, "play_sound"):
+                self.button.deck.play_sound(self.sound)
+
         else:
             self.pressed = False
             self.duration = datetime.now().timestamp() - self.last_activated
@@ -352,8 +356,8 @@ class Activation:
         if type(value) is bool:
             value = 1 if value else 0
         self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.path} to activation value {value}")
-        # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.path} to activation value {value}")
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.name} to activation value {value}")
+        # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.name} to activation value {value}")
 
     def view(self):
         if self._view is not None:
@@ -398,14 +402,14 @@ class Activation:
         return self.activation_count
 
     def get_state_variables(self) -> dict:
-        base = Dataref.mk_internal_dataref(self.get_id())
-        drefs = {d.path.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.path.startswith(base), self.button.sim.all_datarefs.values())}
+        base = Dataref.internal_dataref_path(self.get_id())
+        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_data.values())}
         a = {
             "activation_type": type(self).__name__,
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
-            "writable_dataref": self._writable_dataref.path if self._writable_dataref is not None else None,
+            "writable_dataref": self._writable_dataref.name if self._writable_dataref is not None else None,
             ACTIVATION_VALUE: self.get_activation_value(),
         }
         return a | drefs
@@ -695,7 +699,7 @@ class Push(Activation):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = Instruction.new(name=cmdname, command=cmd)
+            self._command = XPlaneInstruction.new(name=cmdname, command=cmd)
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -854,7 +858,7 @@ class BeginEndPress(Push):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = Instruction.new(name=cmdname, command=cmd, longpress=True)
+            self._command = XPlaneInstruction.new(name=cmdname, command=cmd, longpress=True)
 
     def is_valid(self):
         if type(self._command).__name__ != "BeginEndCommand":
@@ -919,7 +923,7 @@ class OnOff(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.onoff_current_value = False  # bool on or off, true = on
@@ -1024,7 +1028,7 @@ class OnOff(Activation):
             ]
         a.append(f"The button does nothing when it is de-activated (released).")
         if self._writable_dataref is not None:
-            a.append(f"The button writes its value in dataref {self._writable_dataref.path}.")
+            a.append(f"The button writes its value in dataref {self._writable_dataref.name}.")
 
         # if self.button.has_external_value():
         #     a.append(f"The button gets its current value from its button value (dataref, or formula).")
@@ -1057,7 +1061,7 @@ class ShortOrLongpress(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.long_time = self._config.get("long-time", 2)
@@ -1127,7 +1131,7 @@ class UpDown(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.go_up = True
@@ -1230,7 +1234,7 @@ class UpDown(Activation):
             a.append(f"The button executes command {self._commands[1]} when it decreases its current value.")
         a.append(f"The button does nothing when it is de-activated (released).")
         if self._writable_dataref is not None:
-            a.append(f"The button writes its value in dataref {self._writable_dataref.path}.")
+            a.append(f"The button writes its value in dataref {self._writable_dataref.name}.")
         a.append(f"The button gets its curent value from an internal counter that increases or decreases by 1 each time it is pressed.")
         a.append(f"The current value is {self.stop_current_value}. Value will {'increase' if self.go_up else 'decrease'}")
         return "\n\r".join(a)
@@ -1257,7 +1261,7 @@ class EncoderProperties:
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [Instruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
 
     @property
     def _turns(self):
@@ -1725,7 +1729,7 @@ class EncoderValue(OnOff, EncoderProperties):
             f"The value remains in the range [{self.value_min}-{self.value_max}].",
         ]
         if self._writable_dataref is not None:
-            a.append(f"The value is written in dataref {self._writable_dataref.path}.")
+            a.append(f"The value is written in dataref {self._writable_dataref.name}.")
         return "\n\r".join(a)
 
 
@@ -1893,7 +1897,7 @@ class EncoderValueExtended(OnOff, EncoderProperties):
             f"The value remains in the range [{self.value_min}-{self.value_max}].",
         ]
         if self._writable_dataref is not None:
-            a.append(f"The value is written in dataref {self._writable_dataref.path}.")
+            a.append(f"The value is written in dataref {self._writable_dataref.name}.")
         return "\n\r".join(a)
 
 
@@ -1964,7 +1968,7 @@ class Slider(Activation):  # Cursor?
             frac = int(frac * nstep) / nstep
         value = self.value_min + frac * (self.value_max - self.value_min)
         self.current_value = value
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.path}")
+        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.name}")
         return True  # normal termination
 
     def get_activation_value(self):
@@ -1979,7 +1983,7 @@ class Slider(Activation):  # Cursor?
             f"The raw value from slider is modified by formula {self.button.formula}.",
         ]
         if self._writable_dataref is not None:
-            a.append(f"The value is written in dataref {self._writable_dataref.path}.")
+            a.append(f"The value is written in dataref {self._writable_dataref.name}.")
         return "\n\r".join(a)
 
 

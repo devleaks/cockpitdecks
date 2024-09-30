@@ -41,7 +41,7 @@ def flush():
     need_flush = False
 
 
-INTERNAL_DATAREF_PREFIX = "data:"
+COCKPITDECKS_DATA_PREFIX = "data:"
 APP_HOST = [os.getenv("APP_HOST", "mac-studio-de-pierre.local"), int(os.getenv("APP_PORT", 7777))]
 
 ws = None
@@ -111,7 +111,7 @@ def get_event(event) -> Tuple[int | None, dict]:
         elif event_type == "DatarefEvent":
             if args.xplane:
                 path = event["path"]
-                if path is not None and (args.internal or not path.startswith(INTERNAL_DATAREF_PREFIX)):
+                if path is not None and (args.internal or not path.startswith(COCKPITDECKS_DATA_PREFIX)):
                     data = {
                         "code": 99,
                         "path": path,

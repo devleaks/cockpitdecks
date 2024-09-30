@@ -25,7 +25,7 @@ from cockpitdecks.resources.iconfonts import (
     DEFAULT_WEATHER_ICON,
 )
 from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
-from cockpitdecks.simulator import Dataref, DatarefListener
+from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
 
 from .draw_animation import DrawAnimation
 
@@ -259,7 +259,7 @@ class WI:
         self.special = special  # 0=none, 1=fog, 2=sandstorm
 
 
-class WeatherMetarIcon(DrawAnimation, DatarefListener):
+class WeatherMetarIcon(DrawAnimation, SimulatorDataListener):
     """
     Depends on avwx-engine
     """
@@ -311,7 +311,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
         self.icao_dataref = None
 
         DrawAnimation.__init__(self, button=button)
-        DatarefListener.__init__(self)
+        SimulatorDataListener.__init__(self)
 
         self.speed = self.CHECK_STATION
 
@@ -330,9 +330,9 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             # toliss_airbus/flightplan/destination_icao
             self.icao_dataref = self.button.sim.get_dataref(self.icao_dataref_path, is_string=True)
             self.icao_dataref.add_listener(self)  # the representation gets notified directly.
-            self.dataref_changed(self.icao_dataref)
+            self.simulator_data_changed(self.icao_dataref)
             self._inited = True
-            logger.debug(f"initialized, waiting for dataref {self.icao_dataref.path}")
+            logger.debug(f"initialized, waiting for dataref {self.icao_dataref.name}")
             return
 
         icao = self.weather.get("station")
@@ -371,15 +371,15 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             )
         return ret
 
-    def get_datarefs(self) -> set:
+    def get_simulator_data(self) -> set:
         ret = {
             "sim/flightmodel/position/latitude",
             "sim/flightmodel/position/longitude",
             "sim/cockpit2/clock_timer/local_time_hours",
-            self.weather_pressure.path,
-            self.weather_wind_speed.path,
-            self.weather_temperature.path,
-            self.weather_dew_point.path,
+            self.weather_pressure.name,
+            self.weather_wind_speed.name,
+            self.weather_temperature.name,
+            self.weather_dew_point.name,
         }
         if self.icao_dataref_path is not None:
             ret.add(self.icao_dataref_path)
@@ -396,11 +396,11 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
     #    # self.update() # not necessary, will run in get_image_for_icon
     #    return super().animate()
 
-    def dataref_changed(self, dataref):
-        # what if Dataref.mk_internal_dataref("weather:*") change?
-        if dataref.path != self.icao_dataref_path:
+    def simulator_data_changed(self, data: SimulatorData):
+        # what if Dataref.internal_dataref_path("weather:*") change?
+        if data.name != self.icao_dataref_path:
             return
-        icao = dataref.value()
+        icao = data.value()
         if icao is None or icao == "":
             return
         if self.station is not None and icao == self.station.icao:
@@ -426,8 +426,8 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
             logger.debug(f"updated  {diff} secs. ago")
 
         # If we are at the default station, we check where we are to see if we moved.
-        lat = self.button.get_dataref_value("sim/flightmodel/position/latitude")
-        lon = self.button.get_dataref_value("sim/flightmodel/position/longitude")
+        lat = self.button.get_simulation_data_value("sim/flightmodel/position/latitude")
+        lon = self.button.get_simulation_data_value("sim/flightmodel/position/longitude")
 
         if lat is None or lon is None:
             logger.warning(f"no coordinates")
@@ -675,7 +675,7 @@ class WeatherMetarIcon(DrawAnimation, DatarefListener):
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
         # Uses the simulator local time
-        hours = self.button.get_dataref_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
+        hours = self.button.get_simulation_data_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
         if self.sun is not None:
             sr = self.sun.get_sunrise_time()
             ss = self.sun.get_sunset_time()
