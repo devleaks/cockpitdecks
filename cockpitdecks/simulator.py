@@ -18,7 +18,7 @@ loggerSimdata = logging.getLogger("SimulatorData")
 
 loggerInstr = logging.getLogger("Instruction")
 # loggerInstr.setLevel(SPAM_LEVEL)
-loggerInstr.setLevel(logging.DEBUG)
+# loggerInstr.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when simulator_data are updated

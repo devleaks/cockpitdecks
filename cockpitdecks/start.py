@@ -140,7 +140,7 @@ XP_HOME = os.getenv("XP_HOME")
 if XP_HOME is None:
     XP_HOME = environment.get("XP_HOME")
 # if defined, must exist.
-if XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
+if not args.demo and XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
     print(f"X-Plane not found in {XP_HOME}")
     sys.exit(1)
 

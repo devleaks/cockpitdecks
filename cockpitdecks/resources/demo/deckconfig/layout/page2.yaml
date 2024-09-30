@@ -57,6 +57,7 @@ buttons:
     name: MASTER WARNING
     type: push
     command: none
+    sound: sonar-ping.wav
     annunciator-animate:
       formula: ${state:activation_count} 2 mod 0 eq
       text: |-

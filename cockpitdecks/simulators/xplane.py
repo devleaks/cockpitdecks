@@ -16,11 +16,10 @@ import base64
 import requests
 
 from datetime import datetime, timedelta, timezone
-from typing import Tuple
 
 from cockpitdecks import SPAM_LEVEL, CONFIG_KW, AIRCRAFT_CHANGE_MONITORING_DATAREF, DEFAULT_FREQUENCY
-from cockpitdecks.simulator import COCKPITDECKS_DATA_PREFIX, INTERNAL_STATE_PREFIX, BUTTON_VARIABLE_PREFIX, PREFIX_SEP
-from cockpitdecks.simulator import Simulator, SimulatorDataType, SimulatorData, CockpitdecksData, Instruction, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.simulator import COCKPITDECKS_DATA_PREFIX
+from cockpitdecks.simulator import Simulator, SimulatorData, CockpitdecksData, Instruction, SimulatorEvent
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
 logger = logging.getLogger(__name__)
@@ -33,6 +32,8 @@ logger = logging.getLogger(__name__)
 #
 # A velue in X-Plane Simulator
 PATTERN_INTDREF = f"\\${{{COCKPITDECKS_DATA_PREFIX}([^\\}}]+?)}}"
+
+MONITOR_DATAREF_USAGE = False
 
 # REST API model keywords
 REST_DATA = "data"
@@ -96,7 +97,7 @@ class Dataref(SimulatorData):
             if not self.is_internal:
                 return self._sim.write_dataref(dataref=self.name, value=self.value())
         else:
-            loggerDataref.warning(f"{self.dataref} not writable")
+            logger.warning(f"{self.dataref} not writable")
         return False
 
     # ##############
@@ -1181,7 +1182,8 @@ class XPlane(Simulator, XPlaneBeacon):
             super().add_simulator_data_to_monitor({dref_ipc.name: dref_ipc})
 
         logger.log(SPAM_LEVEL, f"add_datarefs_to_monitor: added {prnt}")
-        logger.info(f">>>>> monitoring++{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
+        if MONITOR_DATAREF_USAGE:
+            logger.info(f">>>>> monitoring++{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_datarefs_to_monitor(self, datarefs):
         if not self.connected and len(self.simulator_data_to_monitor) > 0:
@@ -1211,7 +1213,8 @@ class XPlane(Simulator, XPlaneBeacon):
 
         logger.debug(f"removed {prnt}")
         super().remove_simulator_data_to_monitor(datarefs)
-        logger.info(f">>>>> monitoring--{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
+        if MONITOR_DATAREF_USAGE:
+            logger.info(f">>>>> monitoring--{len(datarefs)}/{len(self.datarefs)}/{self._max_monitored}")
 
     def remove_all_datarefs(self):
         if not self.connected and len(self.all_simulator_data) > 0:
