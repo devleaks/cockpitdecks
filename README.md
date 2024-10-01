@@ -32,27 +32,18 @@ Create a python environment. Python 3.10 minimum (it is a requirement of an unde
 In that environement, install the following packages:
 
 ```sh
-pip install git+https://github.com/devleaks/cockpitdecks.git
+pip install 'cockpitdecks[weather,streamdeck] @ git+https://github.com/devleaks/cockpitdecks.git'
 ```
 
-If you plan to use weather icons, optionally install the following complements:
-```sh
-pip install avwx-engine scipy suntime timezonefinder metar tabulate
-```
+Valid installable extras (between the `[` `]`, comma separated, no space) are:
 
-If you plan to use Elgato Stream Deck decks, install the following package:
-```sh
-pip install streamdeck
-```
+| Extra         | Content                                                                                                                     |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `weather`     | To load special iconic representation for weather. These icons sometimes fetch information outside of X-Plane. Recommended. |
+| `streamdeck`  | For Elgato Stream Deck decks                                                                                                |
+| `loupedeck`   | For Loupedeck LoupedeckLive, LoupedeckLive.s and Loupedeck CT devices                                                       |
+| `xtouchmini`  | For Berhinger X-Touch Mini device                                                                                           |
+| `development` | For developer only, add testing packages and python types                                                                   |
 
-If you plan to use Loupedeck LoupedeckLive decks, install the following package:
-```sh
-pip install git+https://github.com/devleaks/python-loupedeck-live.git
-```
-
-If you plan to use X-Touch Mini decks, install the following package:
-```sh
-pip install git+https://github.com/devleaks/python-berhinger-xtouchmini.git
-```
 
 Fly safely.
