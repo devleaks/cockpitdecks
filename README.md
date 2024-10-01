@@ -26,8 +26,8 @@ Fly safely.
 
 Read the [documentation](https://devleaks.github.io/cockpitdecks-docs/Installation/).
 
-Create a python environment. Python 3.10 minimum (it is a requirement of an underlying package).
-(Tested in 3.11 and 3.12.)
+Create a python environment. Python 3.10 minimum (it is a requirement of an underlying package,
+Cockpitdecks was developed and tested in 3.11 and 3.12.)
 
 In that environement, install the following packages:
 
