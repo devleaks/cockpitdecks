@@ -686,6 +686,8 @@ class Button(SimulatorDataListener, ValueProvider):
         Called from deck to get what's necessary for displaying this button on the deck.
         It can be an image, a color, a binary value on/off...
         """
+        if self._hardware_representation is None:
+            return None
         if not self._hardware_representation.is_valid():
             logger.warning(f"button {self.name}: hardware representation is not valid")
             return None
