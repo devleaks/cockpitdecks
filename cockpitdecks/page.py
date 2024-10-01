@@ -6,7 +6,7 @@ from typing import Dict
 from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulators.xplane import Dataref
+from cockpitdecks.simulator import SimulatorData
 from .button import Button, DECK_BUTTON_DEFINITION
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class Page:
 
         self.buttons: Dict[str, Button] = {}
         self.button_names: Dict[str, Button] = {}
-        self.simulator_data: Dict[str, Dataref] = {}
+        self.simulator_data: Dict[str, SimulatorData] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
 

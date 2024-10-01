@@ -12,7 +12,8 @@ from datetime import datetime
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks.simulators.xplane import Dataref, XPlaneInstruction
+from cockpitdecks.simulator import CockpitdecksData
+from cockpitdecks.simulators.xplane import XPlaneInstruction
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -147,6 +148,10 @@ class Activation:
     def _config(self):
         # Activation._config = Button._config
         return self.button._config
+
+    @property
+    def sim(self):
+        return self.button.sim
 
     def init(self):  # ~ABC
         pass
@@ -402,7 +407,7 @@ class Activation:
         return self.activation_count
 
     def get_state_variables(self) -> dict:
-        base = Dataref.internal_dataref_path(self.get_id())
+        base = CockpitdecksData(path=self.get_id()).name
         drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_data.values())}
         a = {
             "activation_type": type(self).__name__,

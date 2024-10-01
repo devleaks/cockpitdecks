@@ -9,8 +9,9 @@ import threading
 import logging
 import pickle
 import json
-import pkg_resources
 import importlib
+import pkgutil
+import pkg_resources
 
 from datetime import datetime
 from queue import Queue
@@ -58,7 +59,7 @@ from cockpitdecks import (
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import SimulatorData, SimulatorDataListener
+from cockpitdecks.simulator import SimulatorData, SimulatorDataListener, SimulatorEvent
 from cockpitdecks.simulators.xplane import DatarefEvent
 
 # imports all known decks, if deck driver not available, ignore it
@@ -219,22 +220,22 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         Loads all devices connected to this computer.
         """
-        self.add_extension_path()
+        self.add_extension_paths()
 
-        self.deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
-        logger.info(f"available deck drivers: {self.deck_drivers.keys()}")
+        self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+        logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
 
         self.all_activations = {s.name(): s for s in all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
-        logger.info(f"available activations: {sorted(self.all_activations.keys())}")
+        logger.debug(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
 
         self.all_representations = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
-        logger.info(f"available representations: {sorted(self.all_representations.keys())}")
+        logger.debug(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
 
         self.all_hardware_representations = {s.name(): s for s in all_subclasses(HardwareIcon)}
-        logger.info(f"available hardware representations: {self.all_hardware_representations.keys()}")
+        logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
         self.load_deck_types()
-        self.scan_devices()  # at least once
+        self.scan_devices()
 
     def get_id(self):
         return self.name
@@ -259,8 +260,30 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
 
-    def add_extension_path(self):
-        # never tested (yet)
+    def add_extension_paths(self):
+        # https://stackoverflow.com/questions/3365740/how-to-import-all-submodules
+        def import_submodules(package, recursive=True):
+            """ Import all submodules of a module, recursively, including subpackages
+
+            :param package: package (name or actual module)
+            :type package: str | module
+            :rtype: dict[str, types.ModuleType]
+            """
+            if isinstance(package, str):
+                logger.debug(f"loading package {package}")
+                package = importlib.import_module(package)
+            results = {}
+            for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
+                full_name = package.__name__ + '.' + name
+                try:
+                    results[full_name] = importlib.import_module(full_name)
+                    logger.debug(f"loading module {full_name}")
+                except ModuleNotFoundError:
+                    continue
+                if recursive and is_pkg:
+                    results.update(import_submodules(full_name))
+            return results
+
         if self.extpath is not None:
             paths = self.extpath.split(":")
             packages = []
@@ -273,20 +296,10 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         packages.append(arr[1])
                         logger.info(f"added extension path {pythonpath} to sys.path")
 
-            logger.debug(f"adding extension..")
-            for module_name in packages:
-                parts = module_name.split(".")
-                mod_name = parts[-1]
-                pkg_name = ".".join(parts[:-1])
-                # spec = importlib.util.find_spec(mod_name, package=pkg_name)
-                spec = importlib.util.find_spec(module_name)
-                if spec is not None:
-                    module = importlib.util.module_from_spec(spec)
-                    sys.modules[module_name] = module
-                    spec.loader.exec_module(module)
-                    logger.info(f"module {module_name} added")
-                else:
-                    logger.warning(f"module {module_name} not found ({mod_name, pkg_name})")
+            logger.debug(f"adding packages..")
+            for package in packages:
+                import_submodules(package)
+                logger.info(f"loaded package {package} and all its subpackages/modules (recursively)")
             logger.debug(f"..added")
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
@@ -432,11 +445,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     def scan_devices(self):
         """Scan for hardware devices"""
-        if len(self.deck_drivers) == 0:
+        if len(self.all_deck_drivers) == 0:
             logger.error("no driver")
             return
         driver_info = []
-        for deck_driver in self.deck_drivers:
+        for deck_driver in self.all_deck_drivers:
             desc = f"{deck_driver} (included)"
             try:
                 desc = f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}"
@@ -444,11 +457,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 pass
             driver_info.append(desc)
         if len(driver_info) == 0:
-            logger.warning("no driver for physical decks")
+            logger.warning("no device driver for physical decks")
             return
-        logger.info(f"drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
+        logger.info(f"device drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
         dependencies = []
-        for deck_driver in self.deck_drivers.items():
+        for deck_driver in self.all_deck_drivers.items():
             dep = ""
             try:
                 dep = f"{deck_driver[0].DRIVER_NAME}>={deck_driver[0].MIN_DRIVER_VERSION}"
@@ -466,7 +479,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             logger.info("..terminated")
 
         self.devices = []
-        for deck_driver, builder in self.deck_drivers.items():
+        for deck_driver, builder in self.all_deck_drivers.items():
             if deck_driver == VIRTUAL_DECK_DRIVER:
                 # will be added later, when we have acpath set, in add virtual_decks()
                 continue
@@ -735,7 +748,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             return
         cnt = 0
         virtual_deck_types = {d.name: d for d in filter(lambda d: d.is_virtual_deck(), self.deck_types.values())}
-        builder = self.deck_drivers.get(VIRTUAL_DECK_DRIVER)
+        builder = self.all_deck_drivers.get(VIRTUAL_DECK_DRIVER)
         decks = builder[1]().enumerate(acpath=self.acpath, virtual_deck_types=virtual_deck_types)
         logger.info(f"found {len(decks)} virtual deck(s)")
         for name, device in decks.items():
@@ -824,7 +837,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 continue
 
             deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in self.deck_drivers.keys():
+            if deck_driver not in self.all_deck_drivers.keys():
                 logger.warning(f"invalid deck driver {deck_driver}, ignoring")
                 continue
 
@@ -847,7 +860,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 else:
                     deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.cockpit.keys():
-                    self.cockpit[name] = self.deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+                    self.cockpit[name] = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
                         deck_flat = self.deck_types.get(deck_type).desc()
                         if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
@@ -889,7 +902,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         # }
         for deck in self.devices:
             deckdriver = deck.get(CONFIG_KW.DRIVER.value)
-            if deckdriver not in self.deck_drivers.keys():
+            if deckdriver not in self.all_deck_drivers.keys():
                 logger.warning(f"invalid deck driver {deckdriver}, ignoring")
                 continue
             device = deck[CONFIG_KW.DEVICE.value]
@@ -903,7 +916,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 CONFIG_KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
-            self.cockpit[name] = self.deck_drivers[deckdriver][0](name, config, self, device)
+            self.cockpit[name] = self.all_deck_drivers[deckdriver][0](name, config, self, device)
 
     # #########################################################
     # Cockpit data caches
@@ -1132,7 +1145,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             try:
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
-                if EVENTLOGFILE is not None and (LOG_DATAREF_EVENTS or type(e) is not DatarefEvent) and not e.is_replay():
+                if EVENTLOGFILE is not None and (LOG_DATAREF_EVENTS or not isinstance(e, SimulatorEvent)) and not e.is_replay():
                     # we do not enqueue events that are replayed
                     event_logger.info(e.to_json())
                 e.run(just_do_it=True)
@@ -1360,11 +1373,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     def terminate_devices(self):
         for deck in self.devices:
             deck_driver = deck.get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in self.deck_drivers.keys():
+            if deck_driver not in self.all_deck_drivers.keys():
                 logger.warning(f"invalid deck type {deck_driver}, ignoring")
                 continue
             device = deck[CONFIG_KW.DEVICE.value]
-            self.deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
+            self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
         logger.info("terminating..")

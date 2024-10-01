@@ -13,10 +13,9 @@ from cockpitdecks.simulator import (
     INTERNAL_STATE_PREFIX,
     PATTERN_DOLCB,
     PATTERN_INTSTATE,
+    CockpitdecksData
 )
-from cockpitdecks.simulators.xplane import (
-    Dataref,
-)
+
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
 from .resources.rpc import RPC
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class DatarefValueProvider(ABC):
+class SimulatorDataValueProvider(ABC):
     @abstractmethod
     def get_simulation_data_value(self, name: str):
         pass
@@ -37,7 +36,7 @@ class StateVariableProvider(ABC):
         pass
 
 
-class ValueProvider(DatarefValueProvider, StateVariableProvider):
+class ValueProvider(SimulatorDataValueProvider, StateVariableProvider):
     def __init__(self):
         self.sim = None
 
@@ -163,7 +162,7 @@ class Value:
         # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
             dataref = base.get(attribute)
-            if dataref is not None and Dataref.might_be_simulator_data(dataref):
+            if dataref is not None and CockpitdecksData.might_be_simulator_data(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 
@@ -172,7 +171,7 @@ class Value:
         if datarefs is not None:
             a = []
             for d in datarefs:
-                if Dataref.might_be_simulator_data(d):
+                if CockpitdecksData.might_be_simulator_data(d):
                     r.add(d)
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
@@ -193,7 +192,7 @@ class Value:
             if text is not str:
                 text = str(text)
             datarefs = re.findall(PATTERN_DOLCB, text)
-            datarefs = set(filter(lambda x: Dataref.might_be_simulator_data(x), datarefs))
+            datarefs = set(filter(lambda x: CockpitdecksData.might_be_simulator_data(x), datarefs))
             if len(datarefs) > 0:
                 r = r | datarefs
                 logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")

@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off, is_number
 from cockpitdecks.resources.rpc import RPC
-from cockpitdecks.simulators.xplane import Dataref
+from cockpitdecks.simulator import SimulatorData
 from cockpitdecks.value import Value
 
 from .draw import DrawBase
@@ -451,7 +451,7 @@ class Annunciator(DrawBase):
         if self.model is None:
             logger.error(f"button {self.button.name}: annunciator has no model")
 
-        self.annunciator_datarefs: List[Dataref] | None = None
+        self.annunciator_datarefs: List[SimulatorData] | None = None
         self.annunciator_datarefs = self.get_simulator_data()
 
         DrawBase.__init__(self, button=button)
@@ -484,14 +484,14 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_simulator_data(self) -> Set[Dataref]:
+    def get_simulator_data(self) -> Set[SimulatorData]:
         """
         Complement button datarefs with annunciator special lit datarefs
         """
         if self.annunciator_datarefs is not None:
             # logger.debug(f"button {self.button.name}: returned from cache")
             return self.annunciator_datarefs
-        r: Set[Dataref] = set()
+        r: Set[SimulatorData] = set()
         if self.annunciator_parts is not None:
             for k, v in self.annunciator_parts.items():
                 datarefs = v.get_simulator_data()
