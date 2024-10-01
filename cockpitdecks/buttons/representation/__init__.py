@@ -29,7 +29,7 @@ try:
 except:
     pass
 
-from cockpitdecks import DECK_FEEDBACK, all_subclasses
+from cockpitdecks import DECK_FEEDBACK
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -91,4 +91,3 @@ try:
     logger.info(f"WeatherMetarIcon installed")
 except ImportError:
     logger.warning(f"WeatherMetarIcon not installed")
-

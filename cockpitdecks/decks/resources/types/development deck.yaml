@@ -21,6 +21,7 @@ buttons:
         - 10
         - 10
 background:
+  color: darkblue
   size:
     - 350
     - 240

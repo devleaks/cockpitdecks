@@ -724,7 +724,7 @@ class XPlane(Simulator, XPlaneBeacon):
         self.api_path = environ.get("API_PATH")
 
         Simulator.__init__(self, cockpit=cockpit, environ=environ)
-        self.name = "X-Plane" # defined in Simulator, overwritten here
+        self.name = "X-Plane"  # defined in Simulator, overwritten here
         self.cockpit.set_logging_level(__name__)
 
         XPlaneBeacon.__init__(self)

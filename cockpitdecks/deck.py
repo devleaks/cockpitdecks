@@ -614,7 +614,6 @@ class DeckWithIcons(Deck):
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
         Deck.__init__(self, name=name, config=config, cockpit=cockpit, device=device)
 
-
     def get_default_icon(self):
         icons = self.cockpit.icons
         default_icon_name = self.get_attribute("icon-name", "none.png")

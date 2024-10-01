@@ -873,8 +873,7 @@ class Deck {
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
             // layer.add(deckbg);
         };
-        let image_path = background_image;
-        deckImage.src = image_path;
+        deckImage.src = BACKGROUND_IMAGE_PATH;
         // console.log("set_background_layer", DECK[DECK_TYPE_DESCRIPTION], image_path)
     }
 

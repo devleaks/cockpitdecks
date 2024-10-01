@@ -6,13 +6,7 @@ import logging
 
 from PIL import Image, ImageDraw, ImageFont
 
-from cockpitdecks.resources.color import (
-    TRANSPARENT_PNG_COLOR,
-    convert_color,
-    has_ext,
-    add_ext,
-    DEFAULT_COLOR
-)
+from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, has_ext, add_ext, DEFAULT_COLOR
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_LABEL_POSITION
 from .representation import Representation
 

@@ -29,8 +29,9 @@ TIME_DREFS = {
     "ls": "sim/cockpit2/clock_timer/local_time_seconds",
     "zh": "sim/cockpit2/clock_timer/zulu_time_hours",
     "zm": "sim/cockpit2/clock_timer/zulu_time_minutes",
-    "zs": "sim/cockpit2/clock_timer/zulu_time_seconds"
+    "zs": "sim/cockpit2/clock_timer/zulu_time_seconds",
 }
+
 
 class PythonInterface:
     def __init__(self):
@@ -112,12 +113,12 @@ class PythonInterface:
         yloc = 20
         str = ""
         xp.setGraphicsState(0, 1, 0, 0, 0, 0, 0)
-        xp.drawString(self.color, xloc-3, yloc+30, "TIME OF DAY")
+        xp.drawString(self.color, xloc - 3, yloc + 30, "TIME OF DAY")
         dt = {k: xp.getDatai(v) for k, v in self.clockDrefs.items()}
         lt = f"{dt['lh']:02d}:{dt['lm']:02d}:{dt['ls']:02d}"
-        xp.drawString((1.0, 1.0, 0.0), xloc+5, yloc+15, lt)
+        xp.drawString((1.0, 1.0, 0.0), xloc + 5, yloc + 15, lt)
         zt = f"{dt['zh']:02d}:{dt['zm']:02d}:{dt['zs']:02d}"
-        xp.drawString((1.0, 0.8, 0.0), xloc+5, yloc, zt)
+        xp.drawString((1.0, 0.8, 0.0), xloc + 5, yloc, zt)
 
     def useSystemTime(self, *args, **kwargs):
         # pylint: disable=unused-argument

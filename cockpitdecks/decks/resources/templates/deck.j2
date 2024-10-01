@@ -59,11 +59,24 @@ stage.add(interaction_layer);
 // Deck creation & installation
 //
 // Transfer from Cockpitdecks through Jinja2, nice output
+function getQueryVariable(variable) {
+  var vars = query.split("&");
+  for (var i=0;i<vars.length;i++) {
+    var pair = vars[i].split("=");
+    if (pair[0] == variable) {
+      return pair[1];
+    }
+  } 
+  alert('Query Variable ' + variable + ' not found');
+}
+
 const DECK = {{ deck|tojson(indent=2) }};
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
-const DECK_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image
 const WS_CONNECT_RETRY_TIME = 5000
-deck_elem.style.backgroundImage = "url("+DECK_BACKGROUND_IMAGE+")";
+
+// assumes location of type host:8080/deck/deckname
+const BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
+deck_elem.style.backgroundImage = "url("+BACKGROUND_IMAGE_PATH+")";
 deck_elem.style.backgroundRepeat = "no-repeat";
 
 

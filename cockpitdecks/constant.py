@@ -156,6 +156,7 @@ class ACTIVATION_KW(Enum):
 class DECK_KW(Enum):
     ACTION = "action"
     BACKGROUND = "background"
+    BACKGROUND_IMAGE_PATH = "background-image-path"
     BUTTONS = "buttons"
     DIMENSION = "dimension"
     DRIVER = "driver"

@@ -120,16 +120,20 @@ class Page:
             aty = Button.guess_activation_type(button_config)
             valid_activations = deck_type.valid_activations(idx, source=self.deck.cockpit)
             if aty is None or aty not in valid_activations:
-                logger.error(
-                    f"page {self.name}: button has invalid activation type {aty} not in {valid_activations} for index {idx}, ignoring {button_config}"
-                )
+                logger.error(f"page {self.name}: button has invalid activation type {aty} not in {valid_activations} for index {idx}, ignoring {button_config}")
                 continue
 
             # How the button will be represented, if it is
-            rty = Button.guess_representation_type(button_config, all_representations=self.deck.cockpit.all_representations, all_hardware_representations=self.deck.cockpit.all_hardware_representations)
+            rty = Button.guess_representation_type(
+                button_config,
+                all_representations=self.deck.cockpit.all_representations,
+                all_hardware_representations=self.deck.cockpit.all_hardware_representations,
+            )
             valid_representations = deck_type.valid_representations(idx, source=self.deck.cockpit)
             if rty not in valid_representations:
-                logger.error(f"page {self.name}: button has invalid representation type {rty} not in {valid_representations} for index {idx}, ignoring {button_config}")
+                logger.error(
+                    f"page {self.name}: button has invalid representation type {rty} not in {valid_representations} for index {idx}, ignoring {button_config}"
+                )
                 continue
             if rty == "none":
                 logger.debug(f"page {self.name}: button has no representation but it is ok")

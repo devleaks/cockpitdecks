@@ -11,7 +11,7 @@ from datetime import datetime
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "12.0.1"
+__version__ = "12.1.0"
 
 #
 #
@@ -50,35 +50,6 @@ def to_fl(m, r: int = 10):
 def to_m(fl):
     # Convert flight level to meters, at Patm = 1013 mbar
     return round(fl * 30.48)
-
-
-def all_subclasses(cls) -> list:
-    """Returns the list of all subclasses.
-
-    Recurses through all sub-sub classes
-
-    Returns:
-        [list]: list of all subclasses
-
-    Raises:
-        ValueError: If invalid class found in recursion (types, etc.)
-    """
-    if cls is type:
-        raise ValueError("Invalid class - 'type' is not a class")
-    subclasses = set()
-    stack = []
-    try:
-        stack.extend(cls.__subclasses__())
-    except (TypeError, AttributeError) as ex:
-        raise ValueError("Invalid class" + repr(cls)) from ex
-    while stack:
-        sub = stack.pop()
-        subclasses.add(sub)
-        try:
-            stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
-        except (TypeError, AttributeError):
-            continue
-    return list(subclasses)
 
 
 def parse_options(options: dict | None) -> list:

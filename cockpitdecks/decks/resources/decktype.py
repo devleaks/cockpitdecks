@@ -3,8 +3,12 @@ import logging
 import json
 import glob
 import posixpath
+import importlib
+
 from typing import List, Dict, Tuple
 
+from cockpitdecks.constant import DECK_IMAGES
+from cockpitdecks.decks import resources
 from py3rtree import RTree, Rect
 from PIL import Image
 
@@ -291,6 +295,7 @@ class DeckTypeBase:
         self.driver = self._config.get(DECK_KW.DRIVER.value)
         self.buttons: Dict[str | int, DeckButton] = {}
         self.background = self._config.get(DECK_KW.BACKGROUND.value)
+        self.background_image: str | None = None  # full path to background image
         self._special_displays = None  # cache
         self._map = None  # display layout (RTree)
         self.count = 0
@@ -299,11 +304,21 @@ class DeckTypeBase:
         self.init()
 
     @staticmethod
-    def list(path: str = DECK_TYPE_LOCATION):
-        return glob.glob(os.path.join(path, DECK_TYPE_GLOB))
+    def list(path: str = DECK_TYPE_LOCATION, module: str | None = None) -> List[str]:
+        files = []
+        if path is not None:
+            files = glob.glob(os.path.join(path, DECK_TYPE_GLOB))
+            loggerDeckType.debug(f"{path}: {files}")
+        if module is None:
+            return files
+        rscs = list(
+            str(resource.absolute()) for resource in importlib.resources.files(module).iterdir() if resource.is_file() and resource.name.endswith(".yaml")
+        )
+        loggerDeckType.debug(f"{module}: {rscs}")
+        return files + rscs
 
     @property
-    def store(self):
+    def store(self) -> dict:
         return self._config
 
     def init(self):
@@ -316,8 +331,6 @@ class DeckTypeBase:
         for button_block in self._config[DECK_KW.BUTTONS.value]:
             self.buttons = self.buttons | self.parse_deck_button_block(button_block=button_block)
         loggerDeckType.debug(f"deck type {self.name}: buttons: {self.buttons.keys()}..")
-        loggerDeckType.debug(f"..deck type {self.name} done")
-
         # with open(self.name+".json", "w") as fd:
         #     json.dump(self.desc(), fd, indent=2)
 
@@ -569,7 +582,14 @@ class DeckTypeBase:
             dict: Deck description (DeckType), simply flattened for web decks
         """
         buttons = [b.desc() for b in self.buttons.values()]
-        return {"name": self.name, "driver": self.driver, "background": self.background, "aircraft": self._aircraft, "buttons": buttons}
+        return {
+            DECK_KW.NAME.value: self.name,
+            DECK_KW.DRIVER.value: self.driver,
+            DECK_KW.BACKGROUND.value: self.background,
+            DECK_KW.BACKGROUND_IMAGE_PATH.value: self.background_image,
+            DECK_KW.BUTTONS.value: buttons,
+            "aircraft": self._aircraft,
+        }
 
     def get_button(self, x: int, y: int) -> DeckButton | None:
         # Don't force it. Use a bigger hammer. (/usr/bin/fortune, circa 1980, a motto of mine.)
@@ -594,6 +614,19 @@ class DeckType(DeckTypeBase):
     def __init__(self, filename: str) -> None:
         file = Config(filename=filename)
         DeckTypeBase.__init__(self, config=file.store)
+        self.load_background(filename)
+
+    @property
+    def background_image_name(self):
+        return None if self.background is None else self.background.get(DECK_KW.IMAGE.value)
+
+    def load_background(self, filename: str):
+        if (image := self.background_image_name) is None:
+            return
+        bgfn = os.path.abspath(os.path.join(os.path.split(filename)[0], "..", DECK_IMAGES, image))
+        if not os.path.exists(bgfn):
+            loggerDeckType.warning(f"web deck background image {bgfn} not found")
+        self.background_image = bgfn
 
     def get(self, what: str):
         return self._config.get(what)

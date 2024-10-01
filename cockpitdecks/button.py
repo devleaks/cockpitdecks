@@ -97,7 +97,9 @@ class Button(SimulatorDataListener, ValueProvider):
         self._representation = None
 
         idx = Button.guess_index(config)
-        rtype = Button.guess_representation_type(config, all_representations=self.deck.cockpit.all_representations, all_hardware_representations=self.deck.cockpit.all_hardware_representations)
+        rtype = Button.guess_representation_type(
+            config, all_representations=self.deck.cockpit.all_representations, all_hardware_representations=self.deck.cockpit.all_hardware_representations
+        )
         if rtype is not None and rtype in self.deck.cockpit.all_representations:
             self._representation = self.deck.cockpit.all_representations[rtype](self)
             logger.debug(f"button {self.name} representation {rtype}")

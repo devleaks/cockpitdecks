@@ -21,16 +21,17 @@ import subprocess
 
 from enum import Enum
 
-from flask import Flask, render_template, send_from_directory, request
+from flask import Flask, render_template, send_from_directory, send_file, request, abort
 from simple_websocket import Server, ConnectionClosed
 
 import ruamel
 from ruamel.yaml import YAML
 
 from cockpitdecks.constant import CONFIG_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
-from cockpitdecks.constant import CONFIG_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks.constant import CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
+from cockpitdecks.cockpit import DECK_TYPE_DESCRIPTION
 
 
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
@@ -154,11 +155,14 @@ if XP_HOME is None:
     XP_HOME = environment.get("XP_HOME")
 
 if XP_HOME is not None:
-    if not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)): # if defined, must exist.
+    if not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):  # if defined, must exist.
         print(f"X-Plane not found in {XP_HOME}")
-        sys.exit(1)
-    if VERBOSE:
-        print(f"X-Plane found in {XP_HOME}")
+        XP_HOME = None
+        if not args.demo:
+            sys.exit(1)
+    else:
+        if VERBOSE:
+            print(f"X-Plane found in {XP_HOME}")
 else:
     XP_HOST = environment.get("XP_HOST")
     if XP_HOST is not None:
@@ -171,10 +175,12 @@ else:
         else:
             print("Simulator ignored for demo")
 
+
 # COCKPITDECKS_PATH
 #
 def add_env(env, paths):
     return ":".join(set(env.split(":") + paths)).strip(":")
+
 
 # Strats from environment
 COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")
@@ -265,7 +271,7 @@ WEBDECK_WSURL = "ws_url"
 #
 app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 
-app.logger.setLevel(logging.INFO)
+app.logger.setLevel(logging.WARNING)
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 
 
@@ -420,6 +426,30 @@ def deck(name: str):
     else:
         app.logger.debug(f"deck desc is not a dict {deck_desc}")
     return render_template("deck.j2", deck=deck_desc)
+
+
+@app.route("/deck-bg/<name>")
+def deck_bg(name: str):
+    if name is None or name == "":
+        app.logger.debug(f"no deck name")
+        abort(404)
+    uname = urllib.parse.unquote(name)
+    deck_desc = cockpit.get_virtual_deck_description(uname)
+    if deck_desc is None:
+        app.logger.debug(f"no description")
+        abort(404)
+    deck_flat = deck_desc.get(DECK_TYPE_DESCRIPTION)
+    if deck_flat is None:
+        app.logger.debug(f"no {DECK_TYPE_DESCRIPTION} in description")
+        abort(404)
+    deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_PATH.value)  # can be "background-image": None
+    if deck_img is None:
+        app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
+        abort(404)
+    if deck_img == "":
+        app.logger.debug(f"no background image for {uname}")
+        abort(404)
+    return send_file(deck_img, mimetype="image/png")
 
 
 @app.route("/cockpit", websocket=True)  # How convenient...

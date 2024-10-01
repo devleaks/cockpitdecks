@@ -11,6 +11,7 @@ import pickle
 import json
 import importlib
 import pkgutil
+from typing import Dict
 import pkg_resources
 
 from datetime import datetime
@@ -54,12 +55,11 @@ from cockpitdecks import (
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
     yaml,
-    all_subclasses,
 )
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import SimulatorData, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
 from cockpitdecks.simulators.xplane import DatarefEvent
 
 # imports all known decks, if deck driver not available, ignore it
@@ -147,12 +147,20 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         # Defaults and config
         self._environ = environ
         self.extpath = environ.get(COCKPITDECKS_EXTENSION_PATH)
+        self.all_extensions = set()
         self._startup_time = datetime.now()
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
         self._config = {}  # content of aircraft/deckconfig/config.yaml
         self._secret = {}  # content of aircraft/deckconfig/secret.yaml
         self._reqdfts = set()
+
+        # What's available
+        self.all_simulators: Dict[str, Simulator] = {}
+        self.all_activations: Dict[str, Activation] = {}
+        self.all_representations: Dict[str, Representation] = {}
+        self.all_hardware_representations: Dict[str, Representation] = {}
+        self.all_deck_drivers = {}  # Dict[str, Device], one day
 
         # "Aircraft" name or model...
         self._acpath = None
@@ -222,16 +230,19 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         self.add_extension_paths()
 
-        self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in all_subclasses(Deck) if s.DECK_NAME != "none"}
+        self.all_simulators = {s.name(): s for s in self.all_subclasses(HardwareIcon)}
+        logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
+
+        self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in self.all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
 
-        self.all_activations = {s.name(): s for s in all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
+        self.all_activations = {s.name(): s for s in self.all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
         logger.debug(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
 
-        self.all_representations = {s.name(): s for s in all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
+        self.all_representations = {s.name(): s for s in self.all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
         logger.debug(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
 
-        self.all_hardware_representations = {s.name(): s for s in all_subclasses(HardwareIcon)}
+        self.all_hardware_representations = {s.name(): s for s in self.all_subclasses(HardwareIcon)}
         logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
         self.load_deck_types()
@@ -260,10 +271,38 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
 
+    def all_subclasses(self, cls) -> list:
+        """Returns the list of all subclasses.
+
+        Recurses through all sub-sub classes
+
+        Returns:
+            [list]: list of all subclasses
+
+        Raises:
+            ValueError: If invalid class found in recursion (types, etc.)
+        """
+        if cls is type:
+            raise ValueError("Invalid class - 'type' is not a class")
+        subclasses = set()
+        stack = []
+        try:
+            stack.extend(cls.__subclasses__())
+        except (TypeError, AttributeError) as ex:
+            raise ValueError("Invalid class" + repr(cls)) from ex
+        while stack:
+            sub = stack.pop()
+            subclasses.add(sub)
+            try:
+                stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
+            except (TypeError, AttributeError):
+                continue
+        return list(subclasses)
+
     def add_extension_paths(self):
         # https://stackoverflow.com/questions/3365740/how-to-import-all-submodules
         def import_submodules(package, recursive=True):
-            """ Import all submodules of a module, recursively, including subpackages
+            """Import all submodules of a module, recursively, including subpackages
 
             :param package: package (name or actual module)
             :type package: str | module
@@ -274,7 +313,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 package = importlib.import_module(package)
             results = {}
             for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
-                full_name = package.__name__ + '.' + name
+                full_name = package.__name__ + "." + name
                 try:
                     results[full_name] = importlib.import_module(full_name)
                     logger.debug(f"loading module {full_name}")
@@ -284,23 +323,29 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     results.update(import_submodules(full_name))
             return results
 
+        self.all_extensions.add("cockpitdecks_ext")  # always present
+
         if self.extpath is not None:
             paths = self.extpath.split(":")
-            packages = []
             for path in paths:
                 pythonpath = os.path.abspath(path)
                 if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                     if pythonpath not in sys.path:
                         sys.path.append(pythonpath)
                         arr = os.path.split(pythonpath)
-                        packages.append(arr[1])
+                        self.all_extensions.add(arr[1])
                         logger.info(f"added extension path {pythonpath} to sys.path")
 
-            logger.debug(f"adding packages..")
-            for package in packages:
-                import_submodules(package)
-                logger.info(f"loaded package {package} and all its subpackages/modules (recursively)")
-            logger.debug(f"..added")
+        logger.debug(f"adding packages..")
+        for package in self.all_extensions:
+            import_submodules(package)
+            logger.info(f"loaded package {package} and all its subpackages/modules (recursively)")
+            # p = package + ".decks.resources.types"
+            # logger.info(f"found deck type resources from {p}: {", ".join(resource.name for resource in importlib.resources.files(p).iterdir() if resource.is_file())}")
+            # p = package + ".decks.resources.images"
+            # logger.info(f"found deck image resources from {p}: {", ".join(resource.name for resource in importlib.resources.files(p).iterdir() if resource.is_file())}")
+
+        logger.debug(f"..added")
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
         return [a for a in self.all_activations.values() if action in a.get_required_capability()]
@@ -938,6 +983,18 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     self.deck_types[data.name] = data
                     if data.is_virtual_deck():
                         self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+
+        # 3. Deck types in extension modules:
+        for package in self.all_extensions:
+            for deck_type in DeckType.list(path=None, module=package + ".decks.resources.types"):
+                if deck_type not in self.deck_types:
+                    data = DeckType(deck_type)
+                    self.deck_types[data.name] = data
+                    if data.is_virtual_deck():
+                        self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+                    logger.info(f"package {package}: decktype {deck_type} loaded")
+                else:
+                    logger.info(f"package {package}: decktype {deck_type} already loaded")
 
         logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
 

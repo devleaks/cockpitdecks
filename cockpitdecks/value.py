@@ -9,12 +9,7 @@ from abc import ABC
 import ruamel
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.simulator import (
-    INTERNAL_STATE_PREFIX,
-    PATTERN_DOLCB,
-    PATTERN_INTSTATE,
-    CockpitdecksData
-)
+from cockpitdecks.simulator import INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE, CockpitdecksData
 
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
