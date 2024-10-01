@@ -108,15 +108,28 @@ environment = {}
 if os.path.exists(config_file):
     environment = Config(filename=os.path.abspath(config_file))
     if VERBOSE:
-        print(f"Cockpitdecks loaded environment from file {config_file}")
+        if default_environment_file != config_file:
+            print(f"Cockpitdecks loaded environment from file {config_file}")
+        else:
+            print(f"Cockpitdecks loaded default environment from file {config_file}")
 else:
-    print(f"Cockpitdecks environment file {config_file} not found")
-    if os.path.exists(default_environment_file):
-        environment = Config(filename=default_environment_file)
-        print(f"Cockpitdecks loaded default environment file {default_environment_file} instead")
-    else:
-        print(f"Cockpitdecks defalut environment file {default_environment_file} not found")
+    if default_environment_file != config_file:
+        print(f"Cockpitdecks environment file {config_file} not found")
+        if os.path.exists(default_environment_file):
+            environment = Config(filename=default_environment_file)
+            if VERBOSE:
+                print(f"Cockpitdecks loaded default environment file {default_environment_file} instead")
+        else:
+            print(f"Cockpitdecks default environment file {default_environment_file} not found")
+
+if len(environment) == 0:
+    if not args.demo:
         sys.exit(1)
+    else:
+        print(f"Cockpitdecks starting with default environment values for demo only")
+        environment = {
+            "APP_HOST": ["127.0.0.1", 7777],
+        }
 
 # Debug
 #
@@ -139,27 +152,29 @@ XP_HOME = os.getenv("XP_HOME")
 # Then environment
 if XP_HOME is None:
     XP_HOME = environment.get("XP_HOME")
-# if defined, must exist.
-if not args.demo and XP_HOME is not None and not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):
-    print(f"X-Plane not found in {XP_HOME}")
-    sys.exit(1)
 
-if VERBOSE:
-    if XP_HOME is not None:
+if XP_HOME is not None:
+    if not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)): # if defined, must exist.
+        print(f"X-Plane not found in {XP_HOME}")
+        sys.exit(1)
+    if VERBOSE:
         print(f"X-Plane found in {XP_HOME}")
+else:
+    XP_HOST = environment.get("XP_HOST")
+    if XP_HOST is not None:
+        if VERBOSE:
+            print(f"no XP_HOME, assume remote installation at XP_HOST={XP_HOST}")
     else:
-        XP_HOST = environment.get("XP_HOST")
-        if XP_HOST is None:
-            print(f"X-Plane not found. no folder, no remove host")
+        if not args.demo:
+            print("X-Plane not found. no folder, no remove host")
             sys.exit(1)
         else:
-            print(f"no XP_HOME, assume remote installation at XP_HOST={XP_HOST}")
+            print("Simulator ignored for demo")
 
 # COCKPITDECKS_PATH
 #
 def add_env(env, paths):
     return ":".join(set(env.split(":") + paths)).strip(":")
-
 
 # Strats from environment
 COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")

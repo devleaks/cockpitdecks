@@ -32,18 +32,24 @@ Cockpitdecks was developed and tested in 3.11 and 3.12.)
 In that environement, install the following packages:
 
 ```sh
-pip install 'cockpitdecks[weather,streamdeck] @ git+https://github.com/devleaks/cockpitdecks.git'
+pip install 'cockpitdecks[cockpitdecks_ext,weather,streamdeck] @ git+https://github.com/devleaks/cockpitdecks.git'
 ```
 
 Valid installable extras (between the `[` `]`, comma separated, no space) are:
 
-| Extra         | Content                                                                                                                     |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `weather`     | To load special iconic representation for weather. These icons sometimes fetch information outside of X-Plane. Recommended. |
-| `streamdeck`  | For Elgato Stream Deck decks                                                                                                |
-| `loupedeck`   | For Loupedeck LoupedeckLive, LoupedeckLive.s and Loupedeck CT devices                                                       |
-| `xtouchmini`  | For Berhinger X-Touch Mini device                                                                                           |
-| `development` | For developer only, add testing packages and python types                                                                   |
+| Extra              | Content                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `cockpitdecks_ext` | Add Stream Deck, Loupedeck, and X-Touch capabilities. Highly recommended, almost mandatory                                 |
+| `weather`          | Add special iconic representation for weather. These icons sometimes fetch information outside of X-Plane. Recommended     |
+| `streamdeck`       | For Elgato Stream Deck decks                                                                                               |
+| `loupedeck`        | For Loupedeck LoupedeckLive, LoupedeckLive.s and Loupedeck CT devices                                                      |
+| `xtouchmini`       | For Berhinger X-Touch Mini device                                                                                          |
+| `development`      | For developer only, add testing packages and python types                                                                  |
+
+
+```sh
+cockpitdecks_cli --demo'
+```
 
 
 Fly safely.
