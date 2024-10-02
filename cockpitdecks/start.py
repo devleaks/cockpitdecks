@@ -28,7 +28,7 @@ import ruamel
 from ruamel.yaml import YAML
 
 from cockpitdecks.constant import ENVIRON_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
-from cockpitdecks.constant import CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
 from cockpitdecks.cockpit import DECK_TYPE_DESCRIPTION
 
@@ -133,7 +133,7 @@ if len(environment) == 0:
 
 # Debug
 #
-debug = environment.get("DEBUG", "info").lower()
+debug = environment.get(ENVIRON_KW.DEBUG.value, "info").lower()
 if debug == "debug":
     logging.basicConfig(level=logging.DEBUG)
 elif debug == "warning":
@@ -148,12 +148,12 @@ if VERBOSE:
 # Simulator
 #
 # First try env:
-SIMULATOR_NAME = environment.get("SIMULATOR_NAME")
+SIMULATOR_NAME = environment.get(ENVIRON_KW.SIMULATOR_NAME.value)
 if SIMULATOR_NAME is None:
     print(f"no simulator")
     sys.exit(1)
 
-SIMULATOR_HOME = os.getenv("SIMULATOR_HOME")
+SIMULATOR_HOME = os.getenv(ENVIRON_KW.SIMULATOR_HOME.value)
 # Then environment
 if SIMULATOR_HOME is None:
     SIMULATOR_HOME = environment.get("SIMULATOR_HOME")
@@ -168,10 +168,10 @@ if SIMULATOR_HOME is not None:
         if VERBOSE:
             print(f"X-Plane found in {SIMULATOR_HOME}")
 else:
-    SIMULATOR_HOST = environment.get("SIMULATOR_HOST")
+    SIMULATOR_HOST = environment.get(ENVIRON_KW.SIMULATOR_HOST.value)
     if SIMULATOR_HOST is not None:
         if VERBOSE:
-            print(f"no SIMULATOR_HOME, assume remote installation at SIMULATOR_HOST={SIMULATOR_HOST}")
+            print(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
     else:
         if not args.demo:
             print("X-Plane not found. no folder, no remove host")
@@ -187,10 +187,10 @@ def add_env(env, paths):
 
 
 # Strats from environment
-COCKPITDECKS_PATH = os.getenv("COCKPITDECKS_PATH", "")
+COCKPITDECKS_PATH = os.getenv(ENVIRON_KW.COCKPITDECKS_PATH.value, "")
 
 # Append from environment file
-ENV_PATH = environment.get("COCKPITDECKS_PATH")
+ENV_PATH = environment.get(ENVIRON_KW.COCKPITDECKS_PATH.value)
 if ENV_PATH is not None:
     COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, ENV_PATH)
 
@@ -199,15 +199,15 @@ if SIMULATOR_HOME is not None:
     COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")])
 
 if VERBOSE:
-    print(f"COCKPITDECKS_PATH={COCKPITDECKS_PATH}")
+    print(f"{ENVIRON_KW.COCKPITDECKS_PATH.value}={COCKPITDECKS_PATH}")
 
 # Other environment variables
-APP_HOST = os.getenv("APP_HOST")
+APP_HOST = os.getenv(ENVIRON_KW.APP_HOST.value)
 APP_PORT = 7777
 if APP_HOST is not None:
-    APP_PORT = os.getenv("APP_PORT", 7777)
+    APP_PORT = os.getenv(ENVIRON_KW.APP_PORT.value, 7777)
 else:
-    APP_HOST = environment.get("APP_HOST", ["127.0.0.1", 7777])
+    APP_HOST = environment.get(ENVIRON_KW.APP_HOST.value, ["127.0.0.1", 7777])
 
 if VERBOSE:
     print(f"Cockpitdecks server at {APP_HOST}")
@@ -245,12 +245,12 @@ git = which("git")
 if os.path.exists(".git") and git is not None:
     process = subprocess.Popen([git, "show", "-s", "--format=%ci"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
-    last_commit = stdout.decode("utf-8")[:10].replace("-", "")
+    last_commit = "." + stdout.decode("utf-8")[:10].replace("-", "")
 
-copyrights = f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n"
+copyrights = f"{__NAME__.title()} {__version__}{last_commit} {__COPYRIGHT__}\n{DESC}\n"
 print(copyrights)
 logger.info("Initializing Cockpitdecks..")
-cockpit = Cockpit(SIMULATOR_NAME, environ=environment)
+cockpit = Cockpit(environ=environment)
 logger.info("..initialized\n")
 
 

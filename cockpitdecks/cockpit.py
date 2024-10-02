@@ -28,9 +28,6 @@ from cockpitdecks import (
     ASSETS_FOLDER,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
-    COCKPITDECKS_EXTENSION_PATH,
-    COCKPITDECKS_EXTENSION_NAME,
-    Config,
     CONFIG_FILE,
     CONFIG_FILENAME,
     CONFIG_FOLDER,
@@ -44,6 +41,7 @@ from cockpitdecks import (
     DEFAULT_ATTRIBUTE_PREFIX,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
+    ENVIRON_KW,
     EXCLUDE_DECKS,
     FONTS_FOLDER,
     ICONS_FOLDER,
@@ -55,6 +53,7 @@ from cockpitdecks import (
     SPAM,
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
+    Config,
     yaml,
 )
 from cockpitdecks.constant import TYPES_FOLDER
@@ -141,7 +140,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
 
-    def __init__(self, simulator: str, environ: dict):
+    def __init__(self, environ: Config | dict):
         self._startup_time = datetime.now()
 
         CockpitBase.__init__(self)
@@ -150,14 +149,14 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         # Defaults and config
         self._environ = environ
 
-        self.extension_paths = environ.get(COCKPITDECKS_EXTENSION_PATH, set())
+        self.extension_paths = environ.get(ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value, set())
         if type(self.extension_paths) is str:
             if ":" in self.extension_paths:
                 self.extension_paths = self.extension_paths.split(":")
             else:
                 self.extension_paths = {self.extension_paths}
 
-        self.all_extensions = environ.get(COCKPITDECKS_EXTENSION_NAME, set())
+        self.all_extensions = environ.get(ENVIRON_KW.COCKPITDECKS_EXTENSION_NAME.value, set())
         if type(self.all_extensions) is str:
             self.all_extensions = {self.all_extensions}
 
@@ -207,7 +206,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.event_queue = Queue()
 
         # Simulator
-        self._simname = simulator
+        self._simname = environ.get(ENVIRON_KW.SIMULATOR_NAME.value)
         self._simulator = None
         self.sim = None
 
@@ -264,6 +263,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.scan_devices()
 
     def init_simulator(self):
+        if self._simname is None or self._simname not in self.all_simulators:
+            logger.error("no simulator")
+            sys.exit(1)
         self._simulator = self.all_simulators[self._simname]
         self.sim = self._simulator(self, self._environ)
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
