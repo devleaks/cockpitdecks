@@ -1,0 +1,31 @@
+# ##############################
+#
+# MAIN SYSTEM CONFIGURATION FILE
+#
+# 1. NETWORK SETTING
+#
+# Where X-Plane runs
+#
+SIMULATOR_HOST: "mac-mini-de-pierre.local"
+# X-Plane not on this host
+# SIMULATOR_HOME:
+
+API_HOST:
+# if None, set to self.beacon_data['IP']
+API_PORT: 8080
+API_PATH: /api/v1
+
+#
+# Where Cockpitdecks runs
+#
+APP_HOST: [mac-studio-de-pierre.local, 7777]
+
+# Local resources
+COCKPITDECKS_PATH:
+  - /Users/pierre/X-Plane 12/Aircraft/Extra Aircraft
+  - /Users/pierre/X-Plane 12/Aircraft/Laminar Research
+# Cheat: By specifying a local SIMULATOR_HOME,
+# COCKPITDECKS_PATH will be set on startup
+# SIMULATOR_HOME: /Users/pierre/X-Plane 12
+
+COCKPITDECKS_EXTENSION_PATH: /Users/pierre/Developer/fs/cockpitdecks_ext

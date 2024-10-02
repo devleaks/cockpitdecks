@@ -26,6 +26,7 @@ EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Strea
 DEFAULT_FREQUENCY = 3
 
 # Files
+ENVIRON_FILE = "environ.yaml"
 CONFIG_FOLDER = "deckconfig"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"

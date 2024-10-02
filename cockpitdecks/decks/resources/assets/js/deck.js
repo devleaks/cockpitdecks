@@ -828,8 +828,8 @@ class Deck {
 
         function set_default_size(container, sizes, color) {
             container.style["border"] = "1px solid "+color;
-            const width = sizes == undefined ? DEFAULT_WIDTH : sizes[0]
-            const height = sizes == undefined ? DEFAULT_HEIGHT : sizes[1]
+            const width = sizes == undefined || (sizes.constructor != Array) ? DEFAULT_WIDTH : sizes[0]
+            const height = sizes == undefined || (sizes.constructor != Array) ? DEFAULT_HEIGHT : sizes[1]
             stage.width(width);
             stage.height(height);
             window.resizeTo(width,height + extra_space);

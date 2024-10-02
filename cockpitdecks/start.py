@@ -27,7 +27,7 @@ from simple_websocket import Server, ConnectionClosed
 import ruamel
 from ruamel.yaml import YAML
 
-from cockpitdecks.constant import CONFIG_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
+from cockpitdecks.constant import ENVIRON_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
 from cockpitdecks.simulators import XPlane  # The simulator we talk to
@@ -91,7 +91,7 @@ def which(program):
 #
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
-parser.add_argument("-c", "--config", metavar="config_file", type=str, nargs=1, help="alternate configuration file")
+parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="alternate environment file")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
@@ -102,20 +102,20 @@ VERBOSE = args.verbose
 
 # Environment File
 #
-default_environment_file = os.path.join(COCKPITDECKS_FOLDER, CONFIG_FILE)
-config_file = default_environment_file if args.config is None else args.config[0]
+default_environment_file = os.path.abspath(os.path.join(__file__, "..", ENVIRON_FILE))
+environ_file = default_environment_file if args.env is None else args.env[0]
 
 environment = {}
-if os.path.exists(config_file):
-    environment = Config(filename=os.path.abspath(config_file))
+if os.path.exists(environ_file):
+    environment = Config(filename=os.path.abspath(environ_file))
     if VERBOSE:
-        if default_environment_file != config_file:
-            print(f"Cockpitdecks loaded environment from file {config_file}")
+        if default_environment_file != environ_file:
+            print(f"Cockpitdecks loaded environment from file {environ_file}")
         else:
-            print(f"Cockpitdecks loaded default environment from file {config_file}")
+            print(f"Cockpitdecks loaded default environment from file {environ_file}")
 else:
-    if default_environment_file != config_file:
-        print(f"Cockpitdecks environment file {config_file} not found")
+    if default_environment_file != environ_file:
+        print(f"Cockpitdecks environment file {environ_file} not found")
         if os.path.exists(default_environment_file):
             environment = Config(filename=default_environment_file)
             if VERBOSE:
@@ -353,9 +353,9 @@ def deck_designer():
     deck_config = {"deck-type-flat": {"background": {"image": background_image}, "aircraft": background_image.startswith("/aircraft")}}
 
     designer_config = {}
-    config_file = os.path.abspath(os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
-    if os.path.exists(config_file):
-        with open(config_file, "r") as fp:
+    designer_config_file = os.path.abspath(os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DESIGNER_CONFIG_FILE))
+    if os.path.exists(designer_config_file):
+        with open(designer_config_file, "r") as fp:
             designer_config = yaml.load(fp)
 
     return render_template("deck-designer.j2", deck=deck_config, designer_config=designer_config)
