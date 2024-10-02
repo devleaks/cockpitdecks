@@ -54,6 +54,7 @@ VIRTUAL_DECK_DRIVER = "virtualdeck"
 AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
 COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
+COCKPITDECKS_EXTENSION_NAME = "COCKPITDECKS_EXTENSION_NAME"
 
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, TEMPLATES_FOLDER)
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)

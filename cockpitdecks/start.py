@@ -30,7 +30,6 @@ from ruamel.yaml import YAML
 from cockpitdecks.constant import ENVIRON_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
-from cockpitdecks.simulators import XPlane  # The simulator we talk to
 from cockpitdecks.cockpit import DECK_TYPE_DESCRIPTION
 
 
@@ -146,9 +145,14 @@ if VERBOSE:
     print(f"debug set to {debug}")
 
 
-# X-Plane
+# Simulator
 #
 # First try env:
+SIMULATOR_NAME = environment.get("SIMULATOR_NAME")
+if SIMULATOR_NAME is None:
+    print(f"no simulator")
+    sys.exit(1)
+
 SIMULATOR_HOME = os.getenv("SIMULATOR_HOME")
 # Then environment
 if SIMULATOR_HOME is None:
@@ -246,7 +250,7 @@ if os.path.exists(".git") and git is not None:
 copyrights = f"{__NAME__.title()} {__version__}.{last_commit} {__COPYRIGHT__}\n{DESC}\n"
 print(copyrights)
 logger.info("Initializing Cockpitdecks..")
-cockpit = Cockpit(XPlane, environ=environment)
+cockpit = Cockpit(SIMULATOR_NAME, environ=environment)
 logger.info("..initialized\n")
 
 
@@ -271,7 +275,7 @@ WEBDECK_WSURL = "ws_url"
 #
 app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 
-app.logger.setLevel(logging.WARNING)
+# app.logger.setLevel(logging.DEBUG)
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 
 

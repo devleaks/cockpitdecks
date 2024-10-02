@@ -6,6 +6,7 @@
 #
 # Where X-Plane runs
 #
+SIMULATOR_NAME: X-Plane
 SIMULATOR_HOST: "mac-mini-de-pierre.local"
 # X-Plane not on this host
 # SIMULATOR_HOME:
@@ -29,3 +30,4 @@ COCKPITDECKS_PATH:
 # SIMULATOR_HOME: /Users/pierre/X-Plane 12
 
 COCKPITDECKS_EXTENSION_PATH: /Users/pierre/Developer/fs/cockpitdecks_ext
+# COCKPITDECKS_EXTENSION_NAME: cockpitdecks_ext

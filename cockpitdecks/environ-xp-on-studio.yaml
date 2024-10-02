@@ -6,6 +6,7 @@
 #
 # Where X-Plane runs
 #
+SIMULATOR_NAME: X-Plane
 SIMULATOR_HOST: mac-studio-de-pierre.local
 # X-Plane not on this host
 SIMULATOR_HOME: /Users/pierre/X-Plane 12

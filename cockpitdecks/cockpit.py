@@ -29,6 +29,7 @@ from cockpitdecks import (
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
     COCKPITDECKS_EXTENSION_PATH,
+    COCKPITDECKS_EXTENSION_NAME,
     Config,
     CONFIG_FILE,
     CONFIG_FILENAME,
@@ -140,15 +141,28 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
 
-    def __init__(self, simulator, environ):
+    def __init__(self, simulator: str, environ: dict):
+        self._startup_time = datetime.now()
+
         CockpitBase.__init__(self)
         SimulatorDataListener.__init__(self)
 
         # Defaults and config
         self._environ = environ
-        self.extpath = environ.get(COCKPITDECKS_EXTENSION_PATH)
-        self.all_extensions = set()
-        self._startup_time = datetime.now()
+
+        self.extension_paths = environ.get(COCKPITDECKS_EXTENSION_PATH, set())
+        if type(self.extension_paths) is str:
+            if ":" in self.extension_paths:
+                self.extension_paths = self.extension_paths.split(":")
+            else:
+                self.extension_paths = {self.extension_paths}
+
+        self.all_extensions = environ.get(COCKPITDECKS_EXTENSION_NAME, set())
+        if type(self.all_extensions) is str:
+            self.all_extensions = {self.all_extensions}
+
+        self.cockpitdecks_path = ""
+
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
         self._config = {}  # content of aircraft/deckconfig/config.yaml
@@ -192,8 +206,10 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.event_loop_thread = None
         self.event_queue = Queue()
 
-        self._simulator = simulator
-        self.sim = simulator(self, self._environ)
+        # Simulator
+        self._simname = simulator
+        self._simulator = None
+        self.sim = None
 
         # Internal variables
         self.busy_reloading = False
@@ -202,9 +218,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.theme = None
         self.mode = 0
         self._dark = False
-        self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
-        self._livery_dataref.update_value(new_value=None, cascade=False)  # init
-        self.cockpitdecks_path = ""
+        self._livery_dataref = None # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
 
@@ -215,6 +229,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.global_brightness = 1.0
 
         self.init()
+        self.init_simulator()
 
     @property
     def acpath(self):
@@ -228,7 +243,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         Loads all devices connected to this computer.
         """
-        self.add_extension_paths()
+        self.add_extensions()
 
         self.all_simulators = {s.name: s for s in self.all_subclasses(Simulator)}
         logger.info(f"available simulator: {", ".join(self.all_simulators.keys())}")
@@ -247,6 +262,12 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         self.load_deck_types()
         self.scan_devices()
+
+    def init_simulator(self):
+        self._simulator = self.all_simulators[self._simname]
+        self.sim = self._simulator(self, self._environ)
+        self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
+        self._livery_dataref.update_value(new_value=None, cascade=False)  # init
 
     def get_id(self):
         return self.name
@@ -299,7 +320,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 continue
         return list(subclasses)
 
-    def add_extension_paths(self):
+    def add_extensions(self):
         # https://stackoverflow.com/questions/3365740/how-to-import-all-submodules
         def import_submodules(package, recursive=True):
             """Import all submodules of a module, recursively, including subpackages
@@ -325,9 +346,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         self.all_extensions.add("cockpitdecks_ext")  # always present
 
-        if self.extpath is not None:
-            paths = self.extpath.split(":")
-            for path in paths:
+        if self.extension_paths is not None:
+            for path in self.extension_paths:
                 pythonpath = os.path.abspath(path)
                 if os.path.exists(pythonpath) and os.path.isdir(pythonpath):
                     if pythonpath not in sys.path:
@@ -974,9 +994,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             if data.is_virtual_deck():
                 self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
         # 2. Deck types in extension folder(s)
-        if self.extpath is not None:
-            paths = self.extpath.split(":")
-            for path in paths:
+        if self.extension_paths is not None:
+            for path in self.extension_paths:
                 ext_path = os.path.join(path, DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER)
                 for deck_type in DeckType.list(ext_path):
                     data = DeckType(deck_type)
