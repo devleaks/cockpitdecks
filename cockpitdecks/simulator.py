@@ -318,6 +318,8 @@ class Simulator(ABC):
     Abstract class for execution of operations and collection of data in the simulation software.
     """
 
+    name = "SimulatorABC"
+
     def __init__(self, cockpit, environ):
         self._inited = False
         self._environ = environ
@@ -338,7 +340,7 @@ class Simulator(ABC):
         self.cockpit.set_logging_level(__name__)
 
     @property
-    def api_url(self):
+    def api_url(self) -> str | None:
         return None
 
     def set_simulator_data_roundings(self, simulator_data_roundings):

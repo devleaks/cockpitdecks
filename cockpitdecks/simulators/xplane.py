@@ -698,6 +698,8 @@ class XPlane(Simulator, XPlaneBeacon):
     Use a class to implement RAI Pattern for the UDP socket.
     """
 
+    name = "X-Plane"
+
     # constants
     MCAST_GRP = "239.255.1.1"
     MCAST_PORT = 49707  # (MCAST_PORT was 49000 for XPlane10)
@@ -724,7 +726,7 @@ class XPlane(Simulator, XPlaneBeacon):
         self.api_path = environ.get("API_PATH")
 
         Simulator.__init__(self, cockpit=cockpit, environ=environ)
-        self.name = "X-Plane"  # defined in Simulator, overwritten here
+        self.name = XPlane.name
         self.cockpit.set_logging_level(__name__)
 
         XPlaneBeacon.__init__(self)
@@ -770,12 +772,18 @@ class XPlane(Simulator, XPlaneBeacon):
         self.disconnect()
 
     @property
-    def api_url(self):
+    def api_url(self) -> str | None:
         if self.connected:
+            if self.api_path is None or self.api_port is None:
+                logger.debug("no api connection information provided")
+                return None
             host = self.api_host
             if host is None:
                 host = self.beacon_data["IP"]
-            return f"http://{host}:{self.api_port}/{self.api_path}"
+            url = f"http://{host}:{self.api_port}/{self.api_path}"
+            logger.debug(f"api reachable at {url}")
+            return url
+        logger.debug("no connection")
         return None
 
     def runs_locally(self) -> bool:
@@ -796,7 +804,7 @@ class XPlane(Simulator, XPlaneBeacon):
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the simulator date and time"""
-        if not DATETIME_DATAREFS[0] in self.all_simulator_data.keys():  # hack, means dref not created yet
+        if DATETIME_DATAREFS[0] not in self.all_simulator_data.keys():  # hack, means dref not created yet
             return super().datetime(zulu=zulu, system=system)
         now = datetime.now().astimezone()
         days = self.get_simulation_data_value("sim/time/local_date_days")

@@ -149,25 +149,25 @@ if VERBOSE:
 # X-Plane
 #
 # First try env:
-XP_HOME = os.getenv("XP_HOME")
+SIMULATOR_HOME = os.getenv("SIMULATOR_HOME")
 # Then environment
-if XP_HOME is None:
-    XP_HOME = environment.get("XP_HOME")
+if SIMULATOR_HOME is None:
+    SIMULATOR_HOME = environment.get("SIMULATOR_HOME")
 
-if XP_HOME is not None:
-    if not (os.path.exists(XP_HOME) and os.path.isdir(XP_HOME)):  # if defined, must exist.
-        print(f"X-Plane not found in {XP_HOME}")
-        XP_HOME = None
+if SIMULATOR_HOME is not None:
+    if not (os.path.exists(SIMULATOR_HOME) and os.path.isdir(SIMULATOR_HOME)):  # if defined, must exist.
+        print(f"X-Plane not found in {SIMULATOR_HOME}")
+        SIMULATOR_HOME = None
         if not args.demo:
             sys.exit(1)
     else:
         if VERBOSE:
-            print(f"X-Plane found in {XP_HOME}")
+            print(f"X-Plane found in {SIMULATOR_HOME}")
 else:
-    XP_HOST = environment.get("XP_HOST")
-    if XP_HOST is not None:
+    SIMULATOR_HOST = environment.get("SIMULATOR_HOST")
+    if SIMULATOR_HOST is not None:
         if VERBOSE:
-            print(f"no XP_HOME, assume remote installation at XP_HOST={XP_HOST}")
+            print(f"no SIMULATOR_HOME, assume remote installation at SIMULATOR_HOST={SIMULATOR_HOST}")
     else:
         if not args.demo:
             print("X-Plane not found. no folder, no remove host")
@@ -191,8 +191,8 @@ if ENV_PATH is not None:
     COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, ENV_PATH)
 
 # Append X-Plane regular aircraft paths
-if XP_HOME is not None:
-    COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, [os.path.join(XP_HOME, "Aircraft", "Extra Aircraft"), os.path.join(XP_HOME, "Aircraft", "Laminar Research")])
+if SIMULATOR_HOME is not None:
+    COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")])
 
 if VERBOSE:
     print(f"COCKPITDECKS_PATH={COCKPITDECKS_PATH}")
@@ -226,7 +226,7 @@ if ac is not None:
     mode = CD_MODE.FIXED if args.fixed else CD_MODE.NORMAL
     if VERBOSE:
         print(f"starting aircraft folder {AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'dynamically adjusted to aircraft'}\n")
-elif ac is None and XP_HOME is None and len(COCKPITDECKS_PATH) == 0:
+elif ac is None and SIMULATOR_HOME is None and len(COCKPITDECKS_PATH) == 0:
     mode = CD_MODE.DEMO
     if VERBOSE:
         print("no aircraft, no X-Plane on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
@@ -495,7 +495,7 @@ def main():
     try:
 
         logger.info(f"Starting {AIRCRAFT_DESC}..")
-        if ac is None and XP_HOME is not None:
+        if ac is None and SIMULATOR_HOME is not None:
             logger.info(f"(starting in demonstration mode but will load aircraft if X-Plane is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)")
         cockpit.start_aircraft(acpath=AIRCRAFT_HOME, cdpath=COCKPITDECKS_PATH, release=True, mode=mode.value)
         logger.info("..started")

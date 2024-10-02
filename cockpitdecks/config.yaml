@@ -4,15 +4,15 @@
 #
 # This file is a template.
 # It will work if X-Plane and Cockpitdecks are both running on the same host computer.
-# In which case, only X-Plane home directory should be specified in the XP_HOME variable.
+# In which case, only X-Plane home directory should be specified in the SIMULATOR_HOME variable.
 # The default value will work on Apple MacOS computer with X-Plane installed in the Applications folder.
 #
 # 1. NETWORK SETTING
 #
 # Where X-Plane runs
 #
-XP_HOST: 127.0.0.1
-XP_HOME: /Applications/X-Plane 12
+SIMULATOR_HOST: 127.0.0.1
+SIMULATOR_HOME: /Applications/X-Plane 12
 
 API_HOST: 127.0.0.1
 # if None, set to self.beacon_data['IP']
@@ -23,3 +23,8 @@ API_PATH: /api/v1
 # Where Cockpitdecks runs
 #
 APP_HOST: [127.0.0.1, 7777]
+
+#
+# Extensions
+# COCKPITDECKS_EXTENSION_PATH:
+# COCKPITDECKS_EXTENSION_NAME:

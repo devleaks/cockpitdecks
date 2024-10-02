@@ -230,8 +230,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         self.add_extension_paths()
 
-        self.all_simulators = {s.name(): s for s in self.all_subclasses(HardwareIcon)}
-        logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
+        self.all_simulators = {s.name: s for s in self.all_subclasses(Simulator)}
+        logger.info(f"available simulator: {", ".join(self.all_simulators.keys())}")
 
         self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in self.all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
@@ -992,9 +992,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     self.deck_types[data.name] = data
                     if data.is_virtual_deck():
                         self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-                    logger.info(f"package {package}: decktype {deck_type} loaded")
+                    logger.debug(f"package {package}: decktype {deck_type} loaded")
                 else:
-                    logger.info(f"package {package}: decktype {deck_type} already loaded")
+                    logger.warning(f"package {package}: decktype {deck_type} already loaded")
 
         logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
 
