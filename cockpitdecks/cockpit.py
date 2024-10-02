@@ -245,7 +245,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.add_extensions()
 
         self.all_simulators = {s.name: s for s in self.all_subclasses(Simulator)}
-        logger.info(f"available simulator: {", ".join(self.all_simulators.keys())}")
+        logger.info(f"available simulators: {", ".join(self.all_simulators.keys())}")
 
         self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in self.all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
@@ -263,9 +263,12 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.scan_devices()
 
     def init_simulator(self):
-        if self._simname is None or self._simname not in self.all_simulators:
+        if self._simname is None and len(self.all_simulators) != 1:
             logger.error("no simulator")
             sys.exit(1)
+        if self._simname is None:
+            self._simname = list(self.all_simulators.keys())[0]
+            logger.info(f"simulator set to {self._simname}")
         self._simulator = self.all_simulators[self._simname]
         self.sim = self._simulator(self, self._environ)
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
@@ -617,6 +620,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         self.cockpitdecks_path = cdpath
         self.mode = mode
+        if self.cockpitdecks_path is not None:
+            logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
         self.load_aircraft(acpath)
         self.run(release)
 

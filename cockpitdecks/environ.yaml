@@ -34,10 +34,12 @@ APP_HOST: [127.0.0.1, 7777]
 # Either a colon:separated list of paths, or a list of paths
 #
 # COCKPITDECKS_EXTENSION_NAME:
+# A list of python package names
 
 #
-# 3. 
+# 3. COCKPITDECKS
 #
+# Where to search for aircraft folders?
 # Either a colon:separated list of paths, or a list of paths
 # COCKPITDECKS_PATH:
 #

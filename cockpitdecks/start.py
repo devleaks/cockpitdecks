@@ -89,11 +89,11 @@ def which(program):
 # Command-line arguments
 #
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
-parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
-parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="alternate environment file")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
+parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="alternate environment file")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
+parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 
 args = parser.parse_args()
 
@@ -150,8 +150,11 @@ if VERBOSE:
 # First try env:
 SIMULATOR_NAME = environment.get(ENVIRON_KW.SIMULATOR_NAME.value)
 if SIMULATOR_NAME is None:
-    print(f"no simulator")
-    sys.exit(1)
+    if VERBOSE:
+        print("no simulator")
+    # SIMULATOR_NAME = "X-Plane"
+    # print(f"assuming simulator is {SIMULATOR_NAME}")
+    # sys.exit(1)
 
 SIMULATOR_HOME = os.getenv(ENVIRON_KW.SIMULATOR_HOME.value)
 # Then environment
