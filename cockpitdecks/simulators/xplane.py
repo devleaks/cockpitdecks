@@ -112,11 +112,15 @@ class Dataref(SimulatorData):
             return None
         payload = {"filter[name]": self.name}
         api_url = f"{api_url}/datarefs"
-        response = requests.get(api_url, params=payload)
-        resp = response.json()
-        if REST_DATA in resp:
-            return resp[REST_DATA][0]
-        logger.error(resp)
+        try:
+            response = requests.get(api_url, params=payload)
+            resp = response.json()
+            if REST_DATA in resp:
+                return resp[REST_DATA][0]
+            else:
+                logger.error(resp)
+        except:
+            logger.error(f"no connection to {api_url}")
         return None
 
     def get_index(self, simulator: Simulator) -> int | None:
@@ -140,16 +144,18 @@ class Dataref(SimulatorData):
                 logger.error("could not get XP index")
                 return None
         url = f"{api_url}/datarefs/{self._xpindex}/value"
-        response = requests.get(url)
-        data = response.json()
-        if REST_DATA in data:
-            if self.is_string:
-                if type(data[REST_DATA]) in [str, bytes]:
-                    return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
-                else:
-                    logger.warning(f"value for {self.name} ({data}) is not a string")
-            return data[REST_DATA]
-        logger.error(f"could not get value for {self.name} ({data})")
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if REST_DATA in data:
+                if self.is_string:
+                    if type(data[REST_DATA]) in [str, bytes]:
+                        return base64.b64decode(data[REST_DATA])[:-1].decode("ascii")
+                    else:
+                        logger.warning(f"value for {self.name} ({data}) is not a string")
+                return data[REST_DATA]
+        except:
+            logger.error(f"could not get value for {self.name} ({data})")
         return None
 
     def set_value(self, simulator: Simulator):
@@ -780,7 +786,7 @@ class XPlane(Simulator, XPlaneBeacon):
             host = self.api_host
             if host is None:
                 host = self.beacon_data["IP"]
-            url = f"http://{host}:{self.api_port}/{self.api_path}"
+            url = f"http://{host}:{self.api_port}{self.api_path}"
             logger.debug(f"api reachable at {url}")
             return url
         logger.debug("no connection")
