@@ -160,7 +160,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         if type(self.all_extensions) is str:
             self.all_extensions = {self.all_extensions}
 
-        self.cockpitdecks_path = ""
+        self.cockpitdecks_path = environ.get(ENVIRON_KW.COCKPITDECKS_PATH.value)
 
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
@@ -206,7 +206,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.event_queue = Queue()
 
         # Simulator
-        self._simname = environ.get(ENVIRON_KW.SIMULATOR_NAME.value)
+        self._simulator_name = environ.get(ENVIRON_KW.SIMULATOR_NAME.value)
         self._simulator = None
         self.sim = None
 
@@ -227,8 +227,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.global_luminosity = 1.0
         self.global_brightness = 1.0
 
-        self.init()
-        self.init_simulator()
+        self.init()  # this will install all available simulators
 
     @property
     def acpath(self):
@@ -240,7 +239,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     def init(self):
         """
-        Loads all devices connected to this computer.
+        Loads extensions, then build lists of available resources (simulators, decks, etc.)
         """
         self.add_extensions()
 
@@ -259,20 +258,24 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.all_hardware_representations = {s.name(): s for s in self.all_subclasses(HardwareIcon)}
         logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
+        self.init_simulator()  # this will start the requested one
+
         self.load_deck_types()
         self.scan_devices()
 
     def init_simulator(self):
-        if self._simname is None and len(self.all_simulators) != 1:
+        if self._simulator_name is None and len(self.all_simulators) != 1:
             logger.error("no simulator")
             sys.exit(1)
-        if self._simname is None:
-            self._simname = list(self.all_simulators.keys())[0]
-            logger.info(f"simulator set to {self._simname}")
-        self._simulator = self.all_simulators[self._simname]
+        if self._simulator_name is None:
+            self._simulator_name = list(self.all_simulators.keys())[0]
+            logger.info(f"simulator set to {self._simulator_name}")
+        self._simulator = self.all_simulators[self._simulator_name]
         self.sim = self._simulator(self, self._environ)
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
+        if self.cockpitdecks_path is not None:
+            logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
 
     def get_id(self):
         return self.name
@@ -614,14 +617,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         logger.warning(f"deck {req_serial} not found")
         return None
 
-    def start_aircraft(self, acpath: str, cdpath: str, release: bool = False, mode: int = 0):
+    def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):
         """
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
-        self.cockpitdecks_path = cdpath
         self.mode = mode
-        if self.cockpitdecks_path is not None:
-            logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
         self.load_aircraft(acpath)
         self.run(release)
 

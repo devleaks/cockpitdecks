@@ -201,6 +201,8 @@ if ENV_PATH is not None:
 if SIMULATOR_HOME is not None:
     COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")])
 
+environment[ENVIRON_KW.COCKPITDECKS_PATH.value] = COCKPITDECKS_PATH
+
 if VERBOSE:
     print(f"{ENVIRON_KW.COCKPITDECKS_PATH.value}={COCKPITDECKS_PATH}")
 
@@ -504,7 +506,7 @@ def main():
         logger.info(f"Starting {AIRCRAFT_DESC}..")
         if ac is None and SIMULATOR_HOME is not None:
             logger.info(f"(starting in demonstration mode but will load aircraft if X-Plane is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)")
-        cockpit.start_aircraft(acpath=AIRCRAFT_HOME, cdpath=COCKPITDECKS_PATH, release=True, mode=mode.value)
+        cockpit.start_aircraft(acpath=AIRCRAFT_HOME, release=True, mode=mode.value)
         logger.info("..started")
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():
