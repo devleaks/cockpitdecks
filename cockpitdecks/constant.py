@@ -62,7 +62,6 @@ AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
 #
-DEFAULT_EXTENSION_NAMES = {"cockpitdecks_xp"} # X-Plane always included for now
 COCKPITDECKS_INTERNAL_EXTENSIONS  = {
     "cockpitdecks_xp",
     "cockpitdecks_sd",
