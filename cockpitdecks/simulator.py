@@ -458,6 +458,14 @@ class Simulator(ABC):
         self.simulator_data_to_monitor = {}
         logger.debug(f"..removed")
 
+    @abstractmethod
+    def create_instruction(self, name: str, delay: float = 0.0, condition: str | None = None, button=None):
+        pass
+
+    @abstractmethod
+    def create_replay_event(self, name: str, value):
+        pass
+
     def execute(self, instruction: Instruction):
         instruction.execute(self)
 

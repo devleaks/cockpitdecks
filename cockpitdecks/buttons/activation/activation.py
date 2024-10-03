@@ -13,7 +13,6 @@ from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks.simulator import CockpitdecksData
-from cockpitdecks.simulators.xplane import XPlaneInstruction
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -103,7 +102,7 @@ class Activation:
 
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:
-            self._view = XPlaneInstruction.new(name=cmdname + ":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
+            self._view = self.sim.create_instruction(name=cmdname + ":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press
@@ -114,7 +113,7 @@ class Activation:
         self._long_press = None
         long_press = self._config.get("long-press")
         if long_press is not None:
-            self._long_press = XPlaneInstruction.new(name=cmdname + ":long-press", command=long_press)  # Optional additional command
+            self._long_press = self.sim.create_instruction(name=cmdname + ":long-press", command=long_press)  # Optional additional command
 
         # Datarefs
         # Note on set-dataref: The activation will set the dataref value
@@ -704,7 +703,7 @@ class Push(Activation):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = XPlaneInstruction.new(name=cmdname, command=cmd)
+            self._command = self.sim.create_instruction(name=cmdname, command=cmd)
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -863,7 +862,7 @@ class BeginEndPress(Push):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = XPlaneInstruction.new(name=cmdname, command=cmd, longpress=True)
+            self._command = self.sim.create_instruction(name=cmdname, command=cmd, longpress=True)
 
     def is_valid(self):
         if type(self._command).__name__ != "BeginEndCommand":
@@ -928,7 +927,7 @@ class OnOff(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [self.sim.create_instruction(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.onoff_current_value = False  # bool on or off, true = on
@@ -1066,7 +1065,7 @@ class ShortOrLongpress(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [self.sim.create_instruction(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.long_time = self._config.get("long-time", 2)
@@ -1136,7 +1135,7 @@ class UpDown(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [self.sim.create_instruction(name=cmdname, command=cmd) for cmd in cmds]
 
         # Internal variables
         self.go_up = True
@@ -1266,7 +1265,7 @@ class EncoderProperties:
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [XPlaneInstruction.new(name=cmdname, command=cmd) for cmd in cmds]
+            self._commands = [self.sim.create_instruction(name=cmdname, command=cmd) for cmd in cmds]
 
     @property
     def _turns(self):

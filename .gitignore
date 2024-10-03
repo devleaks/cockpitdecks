@@ -181,3 +181,4 @@ cockpitdecks/config-xp-on-mini.yaml
 real.json
 cockpitdecks/environ-xp-on-studio.yaml
 cockpitdecks/environ-xp-on-mini.yaml
+reset.sh

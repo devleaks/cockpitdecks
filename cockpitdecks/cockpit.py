@@ -61,7 +61,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
-from cockpitdecks.simulators.xplane import DatarefEvent
+# from cockpitdecks.simulators.xplane import DatarefEvent
 
 # imports all known decks, if deck driver not available, ignore it
 import cockpitdecks.decks
@@ -1308,8 +1308,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     def replay_sim_event(self, data: dict):
         path = data.get("path")
         if path is not None:
-            if not Dataref.is_internal_simulator_data(path):
-                e = DatarefEvent(sim=self.sim, dataref=path, value=data.get("value"), cascade=True, autorun=False)
+            if not self.sim.is_internal_simulator_data(path):
+                e = self.sim.create_replay_event(name=path, value=data.get("value"))
                 e._replay = True
                 e.run()  # enqueue after setting the reply flag
         else:
