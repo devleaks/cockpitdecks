@@ -40,6 +40,7 @@ from cockpitdecks import (
     DECKS_FOLDER,
     DEFAULT_ATTRIBUTE_PREFIX,
     DEFAULT_EXTENSION_NAMES,
+    COCKPITDECKS_INTERNAL_EXTENSIONS,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
     ENVIRON_KW,
@@ -156,11 +157,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 self.extension_paths = self.extension_paths.split(":")
             else:
                 self.extension_paths = {self.extension_paths}
-        self.extension_paths.update(DEFAULT_EXTENSION_NAMES)
+        self.extension_paths = set(self.extension_paths)
 
         self.all_extensions = environ.get(ENVIRON_KW.COCKPITDECKS_EXTENSION_NAME.value, set())
         if type(self.all_extensions) is str:
             self.all_extensions = {self.all_extensions}
+        self.all_extensions = set(self.all_extensions)
+        self.all_extensions.update(COCKPITDECKS_INTERNAL_EXTENSIONS)
 
         self.cockpitdecks_path = environ.get(ENVIRON_KW.COCKPITDECKS_PATH.value)
 
@@ -260,15 +263,17 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.all_hardware_representations = {s.name(): s for s in self.all_subclasses(HardwareIcon)}
         logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
-        self.init_simulator()  # this will start the requested one
+        if not self.init_simulator():  # this will start the requested one
+            logger.info("..initialized with error, cannot continue\n")
+            sys.exit(1)
 
         self.load_deck_types()
         self.scan_devices()
 
-    def init_simulator(self):
+    def init_simulator(self) -> bool:
         if self._simulator_name is None and len(self.all_simulators) != 1:
             logger.error("no simulator")
-            sys.exit(1)
+            return False
         if self._simulator_name is None:
             self._simulator_name = list(self.all_simulators.keys())[0]
             logger.info(f"simulator set to {self._simulator_name}")
@@ -278,6 +283,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         if self.cockpitdecks_path is not None:
             logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
+        return True
 
     def get_id(self):
         return self.name
@@ -340,8 +346,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             :rtype: dict[str, types.ModuleType]
             """
             if isinstance(package, str):
-                logger.debug(f"loading package {package}")
-                package = importlib.import_module(package)
+                try:
+                    logger.debug(f"loading package {package}")
+                    package = importlib.import_module(package)
+                except ModuleNotFoundError:
+                    logger.warning(f"package {package} not found, ignored")
+                    return {}
+
             results = {}
             for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
                 full_name = package.__name__ + "." + name
@@ -362,12 +373,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         sys.path.append(pythonpath)
                         arr = os.path.split(pythonpath)
                         self.all_extensions.add(arr[1])
-                        logger.info(f"added extension path {pythonpath} to sys.path")
+                        logger.debug(f"added extension path {pythonpath} to sys.path")
 
-        logger.debug(f"adding packages..")
+        logger.info(f"adding packages.. {self.all_extensions}")
         for package in self.all_extensions:
-            import_submodules(package)
-            logger.info(f"loaded package {package} and all its subpackages/modules (recursively)")
+            test = import_submodules(package)
+            if len(test) > 0:
+                logger.info(f"loaded package {package} and all its subpackages/modules (recursively)")
             # p = package + ".decks.resources.types"
             # logger.info(f"found deck type resources from {p}: {", ".join(resource.name for resource in importlib.resources.files(p).iterdir() if resource.is_file())}")
             # p = package + ".decks.resources.images"

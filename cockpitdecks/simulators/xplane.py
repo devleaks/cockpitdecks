@@ -777,8 +777,8 @@ class XPlane(Simulator, XPlaneBeacon):
             self.add_dataref_to_monitor(next(iter(self.datarefs.values())), freq=0)
         self.disconnect()
 
-    def create_instruction(self, name: str, delay: float = 0.0, condition: str | None = None, button=None):
-        return XPlaneInstruction.new(name=name, delay=delay, condition=condition, button=button)
+    def create_instruction(self, name, **kwargs):
+        return XPlaneInstruction.new(name=name, **kwargs)
 
     def create_replay_event(self, name: str, value):
         return DatarefEvent(sim=self, dataref=name, value=value, cascade=True, autorun=False)

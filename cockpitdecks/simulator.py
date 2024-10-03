@@ -459,7 +459,7 @@ class Simulator(ABC):
         logger.debug(f"..removed")
 
     @abstractmethod
-    def create_instruction(self, name: str, delay: float = 0.0, condition: str | None = None, button=None):
+    def create_instruction(self, name, **kwargs):
         pass
 
     @abstractmethod

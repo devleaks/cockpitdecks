@@ -305,17 +305,29 @@ class DeckTypeBase:
 
     @staticmethod
     def list(path: str = DECK_TYPE_LOCATION, module: str | None = None) -> List[str]:
+        def has_deck_types(pkg) -> bool:
+            try:
+                dummy = importlib.util.find_spec(module)
+                return True
+            except ModuleNotFoundError:
+                return False
+            except:
+                loggerDeckType.warning("import error", exc_info=True)
+                return False
+
         files = []
         if path is not None:
             files = glob.glob(os.path.join(path, DECK_TYPE_GLOB))
             loggerDeckType.debug(f"{path}: {files}")
         if module is None:
             return files
-        rscs = list(
-            str(resource.absolute()) for resource in importlib.resources.files(module).iterdir() if resource.is_file() and resource.name.endswith(".yaml")
-        )
-        loggerDeckType.debug(f"{module}: {rscs}")
-        return files + rscs
+        if has_deck_types(module):
+            rscs = list(
+                str(resource.absolute()) for resource in importlib.resources.files(module).iterdir() if resource.is_file() and resource.name.endswith(".yaml")
+            )
+            loggerDeckType.debug(f"{module}: {rscs}")
+            files = files + rscs
+        return files
 
     @property
     def store(self) -> dict:
