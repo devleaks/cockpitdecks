@@ -46,6 +46,7 @@ weather = ["cockpitdecks_wm @ git+https://github.com/devleaks/cockpitdecks_wm.gi
 streamdeck = ["cockpitdecks_sd @ git+https://github.com/devleaks/cockpitdecks_sd.git"]
 loupedeck = ["cockpitdecks_ld @ git+https://github.com/devleaks/cockpitdecks_ld.git"]
 xtouchmini = ["cockpitdecks_bx @ git+https://github.com/devleaks/cockpitdecks_bx.git"]
+demoext = ["cockpitdecks_ext @ git+https://github.com/devleaks/cockpitdecks_ext.git"]
 development = [
     "types-Flask~=1.1.6",
     "types-Pillow~=10.2.0",
