@@ -59,6 +59,10 @@ ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_F
 
 AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
 
+# the following extensions are supposed to always be available
+# although they strictly are not mandatory for Cockpitdecks to run.
+#
+DEFAULT_EXTENSION_NAMES = {"cockpitdecks_ext"}
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
@@ -127,8 +131,6 @@ class CONFIG_KW(Enum):
     COMMAND = "command"
     COMMANDS = "commands"
     CONDITION = "condition"
-    DATAREF = "dataref"
-    DATAREFS = "multi-datarefs"
     DECKS = "decks"
     DECOR = "decor"
     DELAY = "delay"
@@ -146,13 +148,14 @@ class CONFIG_KW(Enum):
     LABEL = "label"
     LAYOUT = "layout"
     MANAGED = "managed"
-    MULTI_DATAREFS = "multi-datarefs"
     NAME = "name"
     NONE = "none"
     OPTIONS = "options"
     SERIAL = "serial"
-    SET_DATAREF = "set-dataref"
-    STRING_DATAREFS = "string-datarefs"
+    SET_SIM_DATUM = "set-dataref"
+    SIM_DATUM = "dataref"
+    SIM_DATA = "multi-datarefs"
+    STRING_SIM_DATA = "string-datarefs"
     TYPE = "type"
     VIEW = "view"
     VIEW_IF = "view-if"

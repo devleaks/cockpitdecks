@@ -49,7 +49,7 @@ class Value:
         self._button = button
         self.name = name  # for debeging and information purpose
 
-        self._set_dataref = self._config.get(CONFIG_KW.SET_DATAREF.value)
+        self._set_dataref = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
         self._set_dref = None
         if self._set_dataref is not None:
             self._set_dref = self._button.sim.get_dataref(self._set_dataref)
@@ -91,22 +91,22 @@ class Value:
     @property
     def dataref(self) -> str | None:
         # Single datatef
-        return self._config.get(CONFIG_KW.DATAREF.value)
+        return self._config.get(CONFIG_KW.SIM_DATUM.value)
 
     @property
     def set_dataref(self) -> str | None:
         # Single datatef
-        return self._config.get(CONFIG_KW.SET_DATAREF.value)
+        return self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
 
     @property
     def string_datarefs(self) -> set:
         # List of string datarefs
-        return set(self._config.get(CONFIG_KW.STRING_DATAREFS.value, set()))
+        return set(self._config.get(CONFIG_KW.STRING_SIM_DATA.value, set()))
 
     @property
     def datarefs(self) -> list:
         # List of datarefs
-        return self._config.get(CONFIG_KW.MULTI_DATAREFS.value, [])
+        return self._config.get(CONFIG_KW.SIM_DATA.value, [])
 
     @property
     def formula(self) -> str:
@@ -155,14 +155,14 @@ class Value:
         # Direct use of datarefs:
         #
         # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
-        for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
+        for attribute in [CONFIG_KW.SIM_DATUM.value, CONFIG_KW.SET_SIM_DATUM.value]:
             dataref = base.get(attribute)
             if dataref is not None and CockpitdecksData.might_be_simulator_data(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 
         # 1.2 Multiple
-        datarefs = base.get(CONFIG_KW.MULTI_DATAREFS.value)
+        datarefs = base.get(CONFIG_KW.SIM_DATA.value)
         if datarefs is not None:
             a = []
             for d in datarefs:
@@ -211,13 +211,13 @@ class Value:
         # Direct use of datarefs:
         #
         # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
-        for attribute in [CONFIG_KW.DATAREF.value, CONFIG_KW.SET_DATAREF.value]:
+        for attribute in [CONFIG_KW.SIM_DATUM.value, CONFIG_KW.SET_SIM_DATUM.value]:
             dataref = base.get(attribute)
             if dataref is not None:
                 r.add(dataref)
 
         # 1.2 List of datarefs in attributes
-        for attribute in [CONFIG_KW.MULTI_DATAREFS.value, CONFIG_KW.DATAREFS.value]:
+        for attribute in [CONFIG_KW.SIM_DATA.value, CONFIG_KW.SIM_DATA.value]:
             datarefs = base.get(attribute)
             if datarefs is not None:
                 r = r | set(datarefs)

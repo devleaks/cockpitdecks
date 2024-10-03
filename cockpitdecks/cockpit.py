@@ -39,6 +39,7 @@ from cockpitdecks import (
     DECK_TYPES,
     DECKS_FOLDER,
     DEFAULT_ATTRIBUTE_PREFIX,
+    DEFAULT_EXTENSION_NAMES,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
     ENVIRON_KW,
@@ -155,6 +156,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 self.extension_paths = self.extension_paths.split(":")
             else:
                 self.extension_paths = {self.extension_paths}
+        self.extension_paths.update(DEFAULT_EXTENSION_NAMES)
 
         self.all_extensions = environ.get(ENVIRON_KW.COCKPITDECKS_EXTENSION_NAME.value, set())
         if type(self.all_extensions) is str:
@@ -351,8 +353,6 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 if recursive and is_pkg:
                     results.update(import_submodules(full_name))
             return results
-
-        self.all_extensions.add("cockpitdecks_ext")  # always present
 
         if self.extension_paths is not None:
             for path in self.extension_paths:

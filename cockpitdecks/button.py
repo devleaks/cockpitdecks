@@ -116,18 +116,18 @@ class Button(SimulatorDataListener, ValueProvider):
 
         #### Datarefs
         #
-        self.dataref = config.get(CONFIG_KW.DATAREF.value)
+        self.dataref = config.get(CONFIG_KW.SIM_DATUM.value)
         self.formula = config.get(CONFIG_KW.FORMULA.value)
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
-            self.managed = self.manager.get(CONFIG_KW.DATAREF.value)
+            self.managed = self.manager.get(CONFIG_KW.SIM_DATUM.value)
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
         self.guarded = config.get(CONFIG_KW.GUARD.value)
         self._guard_dref = None
         if self.guarded is not None and type(self.guarded) is dict:
-            guard_dref_path = self.guarded.get(CONFIG_KW.DATAREF.value)
+            guard_dref_path = self.guarded.get(CONFIG_KW.SIM_DATUM.value)
             if guard_dref_path is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
             else:
@@ -136,7 +136,7 @@ class Button(SimulatorDataListener, ValueProvider):
                 logger.debug(f"button {self.name} has guard {self._guard_dref.name}")
 
         # String datarefs
-        self.string_datarefs = config.get(CONFIG_KW.STRING_DATAREFS.value, set())
+        self.string_datarefs = config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
         if type(self.string_datarefs) is str:
             if "," in self.string_datarefs:
                 self.string_datarefs = set(self.string_datarefs.replace(" ", "").split(","))
@@ -421,7 +421,7 @@ class Button(SimulatorDataListener, ValueProvider):
         managed = None
         managed_dict = base.get(CONFIG_KW.MANAGED.value)
         if managed_dict is not None:
-            managed = managed_dict.get(CONFIG_KW.DATAREF.value)
+            managed = managed_dict.get(CONFIG_KW.SIM_DATUM.value)
         if managed is not None:
             r.add(managed)
             logger.debug(f"button {self.name}: added managed dataref {managed}")
@@ -430,7 +430,7 @@ class Button(SimulatorDataListener, ValueProvider):
         guarded = None
         guard_dict = base.get(CONFIG_KW.GUARD.value)
         if guard_dict is not None:
-            guarded = guard_dict.get(CONFIG_KW.DATAREF.value)
+            guarded = guard_dict.get(CONFIG_KW.SIM_DATUM.value)
         if guarded is not None:
             r.add(guarded)
             logger.debug(f"button {self.name}: added guarding dataref {guarded}")

@@ -121,7 +121,7 @@ class Activation:
         # to the value of the activatiuon but it will NOT write it the X-Plane
         # Therefore, here, it is not a Instruction SetDataref that is built.
         self._writable_dataref = None
-        set_dataref_path = self._config.get(CONFIG_KW.SET_DATAREF.value)
+        set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
         if set_dataref_path is not None:
             self._writable_dataref = self.button.sim.get_dataref(set_dataref_path)
             self._writable_dataref.writable = True

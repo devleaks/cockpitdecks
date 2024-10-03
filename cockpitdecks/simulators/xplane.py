@@ -411,15 +411,15 @@ class MacroCommand(Instruction):
         self._commands = []
         for c in self.commands:
             if CONFIG_KW.COMMAND.value in c:
-                if CONFIG_KW.SET_DATAREF.value in c:
+                if CONFIG_KW.SET_SIM_DATUM.value in c:
                     loggerInstr.warning(f"Macro command {self.name}: command has both command and set-dataref, ignored")
                     continue
                 self._commands.append(
                     Command(path=c.get(CONFIG_KW.COMMAND.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
                 )
-            elif CONFIG_KW.SET_DATAREF.value in c:
+            elif CONFIG_KW.SET_SIM_DATUM.value in c:
                 self._commands.append(
-                    SetDataref(path=c.get(CONFIG_KW.SET_DATAREF.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
+                    SetDataref(path=c.get(CONFIG_KW.SET_SIM_DATUM.value), delay=c.get(CONFIG_KW.DELAY.value, 0.0), condition=c.get(CONFIG_KW.CONDITION.value))
                 )
 
     def _execute(self, simulator: Simulator):

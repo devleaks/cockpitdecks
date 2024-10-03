@@ -441,7 +441,7 @@ class Annunciator(DrawBase):
             self.model = ctrl[0]
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        # for a in [CONFIG_KW.DATAREF.value, CONFIG_KW.FORMULA.value]:
+        # for a in [CONFIG_KW.SIM_DATUM.value, CONFIG_KW.FORMULA.value]:
         #     if a in button._config:
         #         logger.warning(f"button {self.button.name}: annunciator parent button has property {a}")
 
