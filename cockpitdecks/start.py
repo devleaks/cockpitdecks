@@ -170,6 +170,12 @@ if SIMULATOR_HOME is not None:
     else:
         if VERBOSE:
             print(f"X-Plane found in {SIMULATOR_HOME}")
+            # while we are at it...
+            plugin_location = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "PythonPlugins", "PI_cockpitdecks.py")
+            if os.path.exists(plugin_location):
+                print(f"PI_cockpitdecks plugin found in {plugin_location}")
+            else:
+                print(f"PI_cockpitdecks plugin not found in {plugin_location}")
 else:
     SIMULATOR_HOST = environment.get(ENVIRON_KW.SIMULATOR_HOST.value)
     if SIMULATOR_HOST is not None:
@@ -199,7 +205,9 @@ if ENV_PATH is not None:
 
 # Append X-Plane regular aircraft paths
 if SIMULATOR_HOME is not None:
-    COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")])
+    COCKPITDECKS_PATH = add_env(
+        COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")]
+    )
 
 environment[ENVIRON_KW.COCKPITDECKS_PATH.value] = COCKPITDECKS_PATH
 
@@ -240,6 +248,9 @@ elif ac is None and SIMULATOR_HOME is None and len(COCKPITDECKS_PATH) == 0:
     if VERBOSE:
         print("no aircraft, no X-Plane on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
 
+if VERBOSE:
+    action = "try" if args.fixed else "fly"
+    print(f"let's {action}...\n")
 
 #
 # COCKPITDECKS STARTS HERE, REALLY
@@ -510,8 +521,8 @@ def main():
         logger.info("..started")
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():
-                logger.warning("no web deck, start application server for designer")  # , press CTRL-C ** twice ** to quit
-            logger.info("Starting application server")  # , press CTRL-C ** twice ** to quit
+                logger.warning("no web deck, start application server for designer")
+            logger.info("Starting application server")
             app.run(host="0.0.0.0", port=APP_HOST[1])
 
         # If single CTRL-C pressed, will terminate from here

@@ -32,18 +32,18 @@ Cockpitdecks was developed and tested in 3.11 and 3.12.)
 In that environement, install the following packages:
 
 ```sh
-pip install 'cockpitdecks[cockpitdecks_ext,weather,streamdeck] @ git+https://github.com/devleaks/cockpitdecks.git'
+pip install 'cockpitdecks[demoext,weather,streamdeck] @ git+https://github.com/devleaks/cockpitdecks.git'
 ```
 
 Valid installable extras (between the `[` `]`, comma separated, no space) are:
 
 | Extra              | Content                                                                                                                    |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `cockpitdecks_ext` | Add Stream Deck, Loupedeck, and X-Touch capabilities. Highly recommended, almost mandatory                                 |
+| `demoext`          | Add a few Loupedeck and Stream Deck+ demo extensions. Recommended                                                          |
 | `weather`          | Add special iconic representation for weather. These icons sometimes fetch information outside of X-Plane. Recommended     |
-| `streamdeck`       | For Elgato Stream Deck decks                                                                                               |
+| `streamdeck`       | For Elgato Stream Deck devices                                                                                             |
 | `loupedeck`        | For Loupedeck LoupedeckLive, LoupedeckLive.s and Loupedeck CT devices                                                      |
-| `xtouchmini`       | For Berhinger X-Touch Mini device                                                                                          |
+| `xtouchmini`       | For Berhinger X-Touch Mini devices                                                                                         |
 | `development`      | For developer only, add testing packages and python types                                                                  |
 
 

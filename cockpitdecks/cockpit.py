@@ -61,6 +61,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
+
 # from cockpitdecks.simulators.xplane import DatarefEvent
 
 # imports all known decks, if deck driver not available, ignore it
@@ -221,7 +222,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.theme = None
         self.mode = 0
         self._dark = False
-        self._livery_dataref = None # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
+        self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
 
@@ -239,6 +240,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     @acpath.setter
     def acpath(self, acpath: str | None):
+        if acpath is not None:
+            logger.info(f"aircraft path set to {self._acpath}")
         self._acpath = acpath
 
     def init(self):
@@ -374,17 +377,12 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         self.all_extensions.add(arr[1])
                         logger.debug(f"added extension path {pythonpath} to sys.path")
 
-        logger.info(f"adding packages.. {self.all_extensions}")
+        logger.info(f"loading extensions {", ".join(self.all_extensions)}..")
         for package in self.all_extensions:
             test = import_submodules(package)
             if len(test) > 0:
-                logger.info(f"loaded package {package} and all its subpackages/modules (recursively)")
-            # p = package + ".decks.resources.types"
-            # logger.info(f"found deck type resources from {p}: {", ".join(resource.name for resource in importlib.resources.files(p).iterdir() if resource.is_file())}")
-            # p = package + ".decks.resources.images"
-            # logger.info(f"found deck image resources from {p}: {", ".join(resource.name for resource in importlib.resources.files(p).iterdir() if resource.is_file())}")
-
-        logger.debug(f"..added")
+                logger.info(f"loaded package {package} (recursively)")
+        logger.debug(f"..loaded")
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
         return [a for a in self.all_activations.values() if action in a.get_required_capability()]
@@ -1390,10 +1388,10 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             return
         value = data.value()
         if value is not None and self._livery_path == value:
-            logger.info(f"livery path unchanged {self._livery_path}, doing nothing")
+            logger.info(f"livery path unchanged {self._livery_path}")
             return
         if value is None or type(value) is not str:
-            logger.info(f"livery path invalid value {value}, doing nothing")
+            logger.warning(f"livery path invalid value {value}, ignoring")
             return
 
         self._livery_path = value
@@ -1408,21 +1406,6 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         if self.mode > 0:
             logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
         else:
-            # if self.sim.runs_locally() and XP_HOME is not None:  # attempt to change aircraft if new deckconfig found
-            #     ac_home = self.get_aircraft_home(value)
-            #     new_ac = os.path.join(XP_HOME, ac_home)
-            #     new_cfg = os.path.join(new_ac, CONFIG_FOLDER)
-            #     if os.path.exists(new_cfg) and os.path.isdir(new_cfg):  # let's change
-            #         if self.acpath != new_ac:
-            #             logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
-            #             logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
-            #             self.load_aircraft(acpath=new_ac)
-            #             return  # no additional processing
-            #         else:
-            #             logger.info(f"livery changed to {new_livery} but no aircraft unchanged, aircraft not adjusted")
-            #     else:
-            #         logger.info(f"livery changed to {new_livery} but no {CONFIG_FOLDER} in {new_ac}, aircraft not adjusted")
-            # else:
             new_ac = self.get_aircraft_path(self._acname)
             if new_ac != None and self.acpath != new_ac:
                 logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
@@ -1445,14 +1428,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     def terminate_aircraft(self):
         logger.info("terminating..")
-        # Spit stats, should be on debug
         drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
-        # logger.info("local datarefs: " + json.dumps(drefs, indent=2))
-        # with open("datarefs.json", "w") as fp:
-        #     json.dump(drefs, fp, indent=2)
         with open("datarefs-log.yaml", "w") as fp:
             yaml.dump(drefs, fp)
-
         for deck in self.cockpit.values():
             deck.terminate()
         self.remove_web_decks()

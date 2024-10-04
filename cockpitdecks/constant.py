@@ -62,13 +62,15 @@ AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
 #
-COCKPITDECKS_INTERNAL_EXTENSIONS  = {
+COCKPITDECKS_INTERNAL_EXTENSIONS = {
     "cockpitdecks_xp",
+    "cockpitdecks_ext",
+    "cockpitdecks_wm",
     "cockpitdecks_sd",
     "cockpitdecks_ld",
     "cockpitdecks_bx",
-    "cockpitdecks_ext"
 }
+
 
 class ANNUNCIATOR_STYLES(Enum):
     KORRY = "k"  # k(orry): backlit, glowing
@@ -78,6 +80,7 @@ class ANNUNCIATOR_STYLES(Enum):
 # internals
 ID_SEP = "/"
 DEFAULT_ATTRIBUTE_PREFIX = "default-"  # cannot be "", must be at lesat one char
+
 
 # environment attributes
 class ENVIRON_KW(Enum):
@@ -93,6 +96,7 @@ class ENVIRON_KW(Enum):
     COCKPITDECKS_EXTENSION_NAME = "COCKPITDECKS_EXTENSION_NAME"
     COCKPITDECKS_PATH = "COCKPITDECKS_PATH"
     DEBUG = "DEBUG"
+
 
 # System default values
 COCKPITDECKS_DEFAULT_VALUES = {
