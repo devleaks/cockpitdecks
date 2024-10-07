@@ -120,6 +120,8 @@ class PythonInterface:
                     print(self.Info, f"X-Plane folder path {XPLANE_FOLDER_PATH}")
 
                 # Find all files newer than ts
+                # Name should contain toliss_airbus/iscsinterface/current_sit_name as a prefix...
+                #
                 all_files = glob.glob(os.path.join(XPLANE_FOLDER_PATH, SAVED_SITUATION_FOLDER_PATH, "*.qps"))
                 all_files = all_files + glob.glob(os.path.join(XPLANE_FOLDER_PATH, SAVED_SITUATION_FOLDER_PATH, "*_pilotItems.dat"))
                 files = list(filter(lambda f: os.path.getctime(f) > ts.timestamp(), all_files))

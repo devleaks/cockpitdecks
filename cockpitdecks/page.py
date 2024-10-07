@@ -256,7 +256,7 @@ class Page:
         ):
             self.deck.clean_empty(key)
         # If virtual deck, we also need to fill unused hardware representations
-        if self.deck.is_virtual_deck():
+        if self.deck.is_virtual_deck() and self.deck.is_connected():
             for key in filter(lambda b: b not in self.buttons.keys(), self.deck.deck_type.indices_with_hardware_representations()):
                 self.deck.fill_empty_hardware_representation(key, self)
         logger.debug(f"page {self.name}: ..done")

@@ -2,8 +2,6 @@
 Button display and rendering abstraction.
 """
 
-import logging
-
 from .representation import Representation
 
 # Image/icon based
@@ -22,72 +20,8 @@ from .chart import ChartIcon
 from .gauge import TapeIcon, GaugeIcon
 
 # Special Web Deck represenations for hardware button
-from .hardware import HardwareIcon, VirtualEncoder, VirtualLLColoredButton, VirtualXTMLED, VirtualXTMMCLED
-
-try:
-    from .hardware import VirtualXTMEncoderLED
-except:
-    pass
+from .hardware import HardwareRepresentation, VirtualLED, VirtualEncoder
 
 from cockpitdecks import DECK_FEEDBACK
 
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-
-# ###############################
-# Optional representations
-#
-# Some of these representations require some optional python packages
-# If package is not installed, representation is not loaded.
-
-# X-Plane specific
-from .xp_acf import Aircraft
-
-# Deck specific
-try:
-    from .led import LED, ColoredLED
-
-    logger.info(f"LED, ColoredLED installed")
-except ImportError:
-    logger.warning(f"LED, ColoredLED not installed")
-
-try:
-    from .xtouch import EncoderLEDs
-
-    logger.info(f"EncoderLEDs installed")
-except ImportError:
-    logger.warning(f"EncoderLEDs not installed")
-
-try:
-    from .xp_iconside import IconSide
-
-    logger.info(f"IconSide installed")
-except ImportError:
-    logger.warning(f"IconSide not installed")
-
-try:
-    from .xp_ws import XPWeatherSummaryIcon
-
-    logger.info(f"XPWeatherSummaryIcon installed")
-except ImportError:
-    logger.warning(f"XPWeatherSummaryIcon not installed")
-
-try:
-    from .xp_rw import XPRealWeatherIcon
-
-    logger.info(f"XPRealWeatherIcon installed")
-except ImportError:
-    logger.warning(f"XPRealWeatherIcon not installed")
-
-try:
-    logger.info(f"WeatherMetarIcon installed")
-except ImportError:
-    logger.warning(f"WeatherMetarIcon not installed")
-
-# NOT X-Plane related, uses real life METAR
-try:
-    from .external import WeatherMetarIcon
-
-    logger.info(f"WeatherMetarIcon installed")
-except ImportError:
-    logger.warning(f"WeatherMetarIcon not installed")
+from .led import LED

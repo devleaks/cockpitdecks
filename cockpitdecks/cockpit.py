@@ -72,7 +72,7 @@ import cockpitdecks.decks
 from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import Activation
-from cockpitdecks.buttons.representation import Representation, HardwareIcon
+from cockpitdecks.buttons.representation import Representation, HardwareRepresentation
 
 # #################################
 #
@@ -225,6 +225,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
+        self._monitored_strings = [AIRCRAFT_CHANGE_MONITORING_DATAREF]
 
         #
         # Global parameters that affect colors
@@ -248,7 +249,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         Loads extensions, then build lists of available resources (simulators, decks, etc.)
         """
-        self.add_extensions()
+        self.add_extensions(trace_ext_loading=True)
 
         self.all_simulators = {s.name: s for s in self.all_subclasses(Simulator)}
         logger.info(f"available simulators: {", ".join(self.all_simulators.keys())}")
@@ -262,7 +263,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.all_representations = {s.name(): s for s in self.all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
         logger.debug(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
 
-        self.all_hardware_representations = {s.name(): s for s in self.all_subclasses(HardwareIcon)}
+        self.all_hardware_representations = {s.name(): s for s in self.all_subclasses(HardwareRepresentation)}
         logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
         if not self.init_simulator():  # this will start the requested one
@@ -338,7 +339,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 continue
         return list(subclasses)
 
-    def add_extensions(self):
+    def add_extensions(self, trace_ext_loading: bool = False):
         # https://stackoverflow.com/questions/3365740/how-to-import-all-submodules
         def import_submodules(package, recursive=True):
             """Import all submodules of a module, recursively, including subpackages
@@ -349,7 +350,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             """
             if isinstance(package, str):
                 try:
-                    logger.debug(f"loading package {package}")
+                    if trace_ext_loading:
+                        logger.info(f"loading package {package}")
                     package = importlib.import_module(package)
                 except ModuleNotFoundError:
                     logger.warning(f"package {package} not found, ignored")
@@ -360,8 +362,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 full_name = package.__name__ + "." + name
                 try:
                     results[full_name] = importlib.import_module(full_name)
-                    logger.debug(f"loading module {full_name}")
+                    if trace_ext_loading:
+                        logger.info(f"loading module {full_name}")
                 except ModuleNotFoundError:
+                    logger.warning(f"module {full_name} not found, ignored")
+                    continue
+                except:
+                    logger.warning(f"module {full_name}: error", exc_info=True)
                     continue
                 if recursive and is_pkg:
                     results.update(import_submodules(full_name))
@@ -375,7 +382,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         sys.path.append(pythonpath)
                         arr = os.path.split(pythonpath)
                         self.all_extensions.add(arr[1])
-                        logger.debug(f"added extension path {pythonpath} to sys.path")
+                        if trace_ext_loading:
+                            logger.info(f"added extension path {pythonpath} to sys.path")
 
         logger.info(f"loading extensions {", ".join(self.all_extensions)}..")
         for package in self.all_extensions:
@@ -1383,9 +1391,14 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if not isinstance(data, SimulatorData) or data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
+        if not isinstance(data, SimulatorData) or data.name not in self._monitored_strings:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
+
+        if data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
+            logger.info(f"{data.name}={data.value()}")
+            return
+
         value = data.value()
         if value is not None and self._livery_path == value:
             logger.info(f"livery path unchanged {self._livery_path}")

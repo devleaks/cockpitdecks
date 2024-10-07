@@ -57,10 +57,10 @@ class SimulatorDataType(Enum):
 #
 # A value in the simulator
 class SimulatorData(ABC):
-    def __init__(self, name: str, data_type: str = "float"):
+    def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         self.name = name
         self.data_type = SimulatorDataType(data_type)
-        self.physical_unit = None
+        self.physical_unit = physical_unit
 
         # Stats
         self._last_updated = None
