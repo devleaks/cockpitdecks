@@ -83,8 +83,8 @@ class Deck(ABC):
         if not self.valid:
             logger.warning(f"deck {self.name}: is invalid")
             return
-        self.set_brightness(self.brightness)
         self.set_deck_type()
+        self.set_brightness(self.brightness)
         self.load()  # will load default page if no page found
         self.start()  # Some system may need to start before we can load a page
 
@@ -426,7 +426,7 @@ class Deck(ABC):
             else:
                 logger.debug(f"deck {self.name}: no home page named {self.home_page_name}")
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.debug(f"deck {self.name}: home page {self.home_page.name}")
+            logger.info(f"deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
         """Loads the home page, if any."""

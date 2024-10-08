@@ -944,7 +944,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                             f"only one deck of that type but more than one configuration in config.yaml for decks of that type and no serial number, ignoring"
                         )
                         continue
-                    deck_config[CONFIG_KW.SERIAL.value] = device.get_serial_number()
+                    deck_config[CONFIG_KW.SERIAL.value] = device.get_serial_number()  # issue: might return None?
                     logger.info(f"deck {deck_type} {name} has serial {deck_config[CONFIG_KW.SERIAL.value]}")
                 else:
                     deck_config[CONFIG_KW.SERIAL.value] = serial
@@ -970,11 +970,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     logger.info(f"deck {name} added ({deck_type}, driver {deck_driver}, layout {deck_layout})")
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
-            # else:
-            #    logger.error(f"deck {deck_type} {name} has no serial number, ignoring")
-        # Temporary solution to hand over web decks
-        # with open("vdecks.json", "w") as fp:
-        #     json.dump(self.virtual_deck_list, fp, indent=2)
+            else:
+               logger.error(f"deck {deck_type} {name} has no device, ignoring")
 
     def create_default_decks(self):
         """

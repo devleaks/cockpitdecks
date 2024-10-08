@@ -180,6 +180,13 @@ class SimulatorData(ABC):
             self.listeners.append(obj)
         loggerSimdata.debug(f"{self.name} added listener ({len(self.listeners)})")
 
+    def remove_listener(self, obj):
+        if not isinstance(obj, SimulatorDataListener):
+            loggerSimdata.warning(f"{self.name} not a listener {obj}")
+        if obj in self.listeners:
+            self.listeners.remove(obj)
+        loggerSimdata.debug(f"{self.name} removed listener ({len(self.listeners)})")
+
     def notify(self):
         for lsnr in self.listeners:
             lsnr.simulator_data_changed(self)

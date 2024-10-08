@@ -207,6 +207,19 @@ class Page:
 
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
+    def unregister_simulator_data(self, button: Button):
+        for d in button.get_string_datarefs():
+            ref = self.simulator_data.get(d)
+            if ref is not None:
+                ref.remove_listener(button)
+
+        for d in button.get_simulator_data():
+            ref = self.simulator_data.get(d)
+            if ref is not None:
+                ref.remove_listener(button)
+
+        logger.debug(f"page {self.name}: button {button.name} unregistered")
+
     def find_button(self, button_def):
         btns = list(filter(lambda b: b._def == button_def, self.buttons.values()))
         if len(btns) == 0:
@@ -233,7 +246,7 @@ class Page:
             self.deck.fill_empty(key)
 
         # If virtual deck, we also need to fill unused hardware representations
-        if self.deck.is_virtual_deck():
+        if self.deck.is_virtual_deck() and self.deck.is_connected():
             for key in filter(lambda b: b not in self.buttons.keys(), self.deck.deck_type.indices_with_hardware_representations()):
                 self.deck.fill_empty_hardware_representation(key, self)
 
@@ -268,5 +281,7 @@ class Page:
         if self.is_current_page() and self.sim is not None:
             self.sim.remove_datarefs_to_monitor(self.simulator_data)
         self.clean()
+        for button in self.buttons.values():
+            self.unregister_simulator_data(button)  # otherwise ref to old buttons remain...
         self.buttons = {}
         self.inc(INTERNAL_DATAREF.PAGE_CLEAN.value)
