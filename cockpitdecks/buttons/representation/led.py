@@ -34,8 +34,10 @@ class LED(Representation):
         return (v, self.mode)
 
     def clean(self):
-        self.button.value = 0
+        old_value = self.button.value
+        self.button.value = 0  # switch it off for the clean display
         self.button.render()
+        self.button.value = old_value
 
     def describe(self) -> str:
         """

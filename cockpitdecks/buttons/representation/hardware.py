@@ -143,4 +143,3 @@ class VirtualLED(HardwareRepresentation):
 
     def describe(self) -> str:
         return "The representation return a uniform color icon at the position of the hardware led on or off."
-

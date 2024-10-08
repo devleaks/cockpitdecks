@@ -249,7 +249,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         Loads extensions, then build lists of available resources (simulators, decks, etc.)
         """
-        self.add_extensions(trace_ext_loading=True)
+        self.add_extensions(trace_ext_loading=self._environ.verbose)
 
         self.all_simulators = {s.name: s for s in self.all_subclasses(Simulator)}
         logger.info(f"available simulators: {", ".join(self.all_simulators.keys())}")
@@ -1346,7 +1346,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             self.busy_reloading = True
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
             for name, deck in self.cockpit.items():
-                self.default_pages[name] = deck.current_page.name
+                if deck.current_page is not None:
+                    self.default_pages[name] = deck.current_page.name
             self.load_aircraft(self.acpath)  # will terminate it before loading again
             self.busy_reloading = False
             logger.info("..done")

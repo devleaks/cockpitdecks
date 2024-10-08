@@ -252,6 +252,9 @@ if VERBOSE:
     action = "try" if args.fixed else "fly"
     print(f"let's {action}...\n")
 
+# Transfer from command line...
+environment.verbose = VERBOSE
+
 #
 # COCKPITDECKS STARTS HERE, REALLY
 #
