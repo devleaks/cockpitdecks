@@ -9,33 +9,34 @@
 #
 # 1. NETWORK SETTING
 #
-# Where the simulator runs
+# Which simulator and where it runs
 #
 SIMULATOR_NAME: X-Plane
 SIMULATOR_HOST: 127.0.0.1
 SIMULATOR_HOME: /Applications/X-Plane 12
-
+#
 # Simulator specific attributes (in this case, for X-Plane)
 API_HOST: 127.0.0.1
 # if None, set to self.beacon_data['IP']
 API_PORT: 8086
 API_PATH: /api/v1
-
 #
 # Where Cockpitdecks runs
 #
 # Cockpitdeck hostname or address, and tcp port where communication can occur
 APP_HOST: [127.0.0.1, 7777]
-
+#
 #
 # 2. EXTENSIONS
 #
 # COCKPITDECKS_EXTENSION_PATH:
 # Either a colon:separated list of paths, or a list of paths
+#    - /path-to-developer/extension
 #
 # COCKPITDECKS_EXTENSION_NAME:
 # A list of python package names
-
+#    - extension_name
+#
 #
 # 3. COCKPITDECKS
 #
