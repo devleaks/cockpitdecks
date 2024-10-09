@@ -146,6 +146,9 @@ class Representation:
         # shortcut for representations
         return self.button.value
 
+    def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
+        return self.button._value.get_rescaled_value(range_min=range_min, range_max=range_max, steps=steps)
+
     def get_status(self):
         return {"representation_type": type(self).__name__, "sound": self._vibrate}
 

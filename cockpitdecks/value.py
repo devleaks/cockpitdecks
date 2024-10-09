@@ -4,6 +4,7 @@ from abc import abstractmethod
 from typing import Tuple
 import logging
 import re
+import math
 from abc import ABC
 
 import ruamel
@@ -55,6 +56,14 @@ class Value:
             self._set_dref = self._button.sim.get_dataref(self._set_dataref)
             self._set_dref.writable = True
 
+        # Value domain:
+        self.value_min = self._config.get(CONFIG_KW.VALUE_MIN.value)
+        self.value_max = self._config.get(CONFIG_KW.VALUE_MAX.value)
+        self.value_inc = self._config.get(CONFIG_KW.VALUE_INC.value)
+        self.value_count = self._config.get(CONFIG_KW.VALUE_COUNT.value)
+        if self.value_count is not None:
+            self.value_count = int(self.value_count)
+
         # Used in "value"
         self._datarefs: set | None = None
         self._string_datarefs: set | None = None
@@ -81,6 +90,22 @@ class Value:
                 #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
                 # else:
                 #     logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
+
+        if not self.has_domain:
+            return
+        if self.value_min > self.value_max:
+            tmp = self.value_min
+            self.value_min = self.value_max
+            self.value_max = tmp
+        # we have a domain, do we have a snap?
+        if self.value_inc is not None:
+            cnt = self.value_max - self.value_min
+            if self.value_count is None:
+                self.value_count = cnt
+            elif self.value_count != cnt:
+                logger.warning(f"value domain mismatch: value count {self.value_count} != {cnt}")
+        elif self.value_count is not None and self.value_count > 0:
+            self.value_inc = (self.value_max - self.value_min) / self.value_count
 
     def get_simulation_data_value(self, dataref):
         return self._button.get_simulation_data_value(dataref)
@@ -112,6 +137,10 @@ class Value:
     def formula(self) -> str:
         # Formula
         return self._config.get(CONFIG_KW.FORMULA.value, "")
+
+    @property
+    def has_domain(self) -> bool:
+        return self.value_min is not None and self.value_max is not None
 
     def is_self_modified(self):
         # Determine of the activation of the button directly modifies
@@ -517,6 +546,18 @@ class Value:
     #
     def get_value(self):
         """ """
+
+        def check_domain(val):
+            if not self.has_domain:
+                return val
+            if val < self.value_min:
+                logger.debug(f"value {val} out of domain min, set to {self.value_min}")
+                return self.value_min
+            if val > self.value_max:
+                logger.debug(f"value {val} out of domain max, set to {self.value_max}")
+                return self.value_max
+            return val
+
         formula = self.get_formula()
 
         # 1. If there is a formula, value comes from it
@@ -563,6 +604,27 @@ class Value:
 
         logger.warning(f"value {self.name}: no value")
         return None
+
+    def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
+        value = self.get_value()
+        if value is None:
+            return None
+        if not self.has_domain:
+            logger.warning("no domain for value")
+            return value
+        if value < self.value_min:
+            logger.warning("value too small")
+            return value
+        if value > self.value_max:
+            logger.warning("value too large")
+            return value
+        pct = (value - self.value_min) / (self.value_max - self.value_min)
+        if steps is not None and steps > 0:
+            f = 1 / steps
+            pct = math.floor(pct / f) * f
+
+        newval = range_min + pct * (range_max - range_min)
+        return newval
 
     def save(self):
         # Writes the computed button value to set-dataref

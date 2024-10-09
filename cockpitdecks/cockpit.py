@@ -971,7 +971,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 else:
                     logger.warning(f"deck {name} already exist, ignoring")
             else:
-               logger.error(f"deck {deck_type} {name} has no device, ignoring")
+                logger.error(f"deck {deck_type} {name} has no device, ignoring")
 
     def create_default_decks(self):
         """

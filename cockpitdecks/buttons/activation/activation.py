@@ -261,7 +261,7 @@ class Activation:
         return set()
 
     def long_press(self, event):
-        print(">" * 40, " long_press")
+        logger.debug(">" * 40 + " long_press")
         self._long_press.execute(simulator=self.button.sim)
 
     def is_valid(self) -> bool:
@@ -361,7 +361,6 @@ class Activation:
             value = 1 if value else 0
         self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
         logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.name} to activation value {value}")
-        # print(f"set-dataref>> button {self.button_name()}: {type(self).__name__}: set-dataref {self._writable_dataref.name} to activation value {value}")
 
     def view(self):
         if self._view is not None:
@@ -417,6 +416,9 @@ class Activation:
             ACTIVATION_VALUE: self.get_activation_value(),
         }
         return a | drefs
+
+    def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
+        return self.button._value.get_rescaled_value(range_min=range_min, range_max=range_max, steps=steps)
 
     def describe(self) -> str:
         """
@@ -1325,7 +1327,7 @@ class Encoder(Activation, EncoderProperties):
             self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
         elif event.turned_clockwise:  # rotate right
             self._commands[1].execute(simulator=self.button.sim)
-            self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
+            self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, 1)
             self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
@@ -1966,13 +1968,13 @@ class Slider(Activation):  # Cursor?
         if not self.can_handle(event):
             return False
 
-        frac = abs(event.value - Slider.SLIDER_MAX) / (Slider.SLIDER_MAX - Slider.SLIDER_MIN)
+        pct = abs(event.value - Slider.SLIDER_MIN) / (Slider.SLIDER_MAX - Slider.SLIDER_MIN)
         if self.value_step != 0:
             nstep = (self.value_max - self.value_min) / self.value_step
-            frac = int(frac * nstep) / nstep
-        value = self.value_min + frac * (self.value_max - self.value_min)
+            pct = int(pct * nstep) / nstep
+        value = self.value_min + pct * (self.value_max - self.value_min)
         self.current_value = value
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} written value={value} in {self._writable_dataref.name}")
+        logger.debug(f"button {self.get_id()}: {type(self).__name__} written value={value} in {self._writable_dataref.name}")
         return True  # normal termination
 
     def get_activation_value(self):
