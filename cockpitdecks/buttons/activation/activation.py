@@ -359,7 +359,7 @@ class Activation:
             return
         if type(value) is bool:
             value = 1 if value else 0
-        self._writable_dataref.update_value(new_value=value, cascade=True)  # only updates the value, cascading will be done by button with the BUTTON value
+        self._writable_dataref.update_value(new_value=value, cascade=True)
         logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.name} to activation value {value}")
 
     def view(self):
@@ -1212,7 +1212,7 @@ class UpDown(Activation):
                     self.go_up = False
             else:
                 if self.num_commands() > 1:
-                    self._commands[0].execute(simulator=self.button.sim)  # down
+                    self._commands[1].execute(simulator=self.button.sim)  # down
                 if nextval <= 0:
                     nextval = 0
                     self.go_up = True
