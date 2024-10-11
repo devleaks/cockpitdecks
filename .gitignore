@@ -184,3 +184,11 @@ cockpitdecks/environ-xp-on-mini.yaml
 reset.sh
 blackall.sh
 cockpitdecks/testenv.yaml
+t1.json
+t2.json
+t3.json
+t4.json
+t5.json
+td.json
+td1.json
+tdemo.json
