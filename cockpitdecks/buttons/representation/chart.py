@@ -41,7 +41,7 @@ class ChartData(DrawBase, SimulatorDataListener):
         self.datarefs = None
 
         # values
-        self.value = Value(self.name, config=config, button=chart.button)
+        self.value = Value(self.name, config=config, provider=chart.button)
 
         self.data = []
         self.last_data = now().timestamp()

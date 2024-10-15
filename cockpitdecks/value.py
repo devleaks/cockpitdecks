@@ -20,21 +20,26 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class SimulatorDataValueProvider(ABC):
+class ValueProvider:
+    pass
+
+
+class SimulatorDataValueProvider(ABC, ValueProvider):
     @abstractmethod
-    def get_simulation_data_value(self, name: str):
+    def get_simulator_data_value(self, name: str):
         pass
 
 
-class StateVariableProvider(ABC):
+class StateVariableValueProvider(ABC, ValueProvider):
     @abstractmethod
-    def get_state_value(self, name: str):
+    def get_state_variable_value(self, name: str):
         pass
 
 
-class ValueProvider(SimulatorDataValueProvider, StateVariableProvider):
-    def __init__(self):
-        self.sim = None
+class ActivationValueProvider(ABC, ValueProvider):
+    @abstractmethod
+    def get_activation_value(self, name: str):
+        pass
 
 
 class Value:
@@ -45,16 +50,17 @@ class Value:
     Values DOES not contain the value, only its définition and methods to compute it.
     """
 
-    def __init__(self, name: str, config: dict, button: ValueProvider):
+    def __init__(self, name: str, config: dict, provider: ValueProvider):
         self._config = config
-        self._button = button
+        self._provider = provider
+        self._button = provider
         self.name = name  # for debeging and information purpose
 
-        self._set_dataref = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
-        self._set_dref = None
-        if self._set_dataref is not None:
-            self._set_dref = self._button.sim.get_dataref(self._set_dataref)
-            self._set_dref.writable = True
+        self._set_simdata_path = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
+        self._set_simdata = None
+        if self._set_simdata_path is not None:
+            self._set_simdata = self._button.sim.get_dataref(self._set_simdata_path)
+            self._set_simdata.writable = True
 
         # Value domain:
         self.value_min = self._config.get(CONFIG_KW.VALUE_MIN.value)
@@ -65,20 +71,20 @@ class Value:
             self.value_count = int(self.value_count)
 
         # Used in "value"
-        self._datarefs: set | None = None
-        self._string_datarefs: set | None = None
+        self._simulator_data: set | None = None
+        self._string_simulator_data: set | None = None
         self._known_extras: Tuple[str] = tuple()
         self._formula: str | None = None
 
         self.init()
 
     def init(self):
-        self._string_datarefs = self.string_datarefs
-        if type(self._string_datarefs) is str:
-            if "," in self._string_datarefs:
-                self._string_datarefs = self._string_datarefs.replace(" ", "").split(",")
+        self._string_simulator_data = self.string_datarefs
+        if type(self._string_simulator_data) is str:
+            if "," in self._string_simulator_data:
+                self._string_simulator_data = self._string_simulator_data.replace(" ", "").split(",")
             else:
-                self._string_datarefs = [self._string_datarefs]
+                self._string_simulator_data = [self._string_simulator_data]
 
         # there is a special issue if dataref we get value from is also dataref we set
         # in this case there MUST be a formula to evalute the value before we set it
@@ -107,11 +113,15 @@ class Value:
         elif self.value_count is not None and self.value_count > 0:
             self.value_inc = (self.value_max - self.value_min) / self.value_count
 
-    def get_simulation_data_value(self, dataref):
-        return self._button.get_simulation_data_value(dataref)
+    def get_simulator_data_value(self, dataref):
+        if isinstance(self._provider, SimulatorDataValueProvider):
+            return self._provider.get_simulator_data_value(dataref)
+        return None
 
-    def get_state_value(self, state):
-        return self._button.get_state_value(state)
+    def get_state_variable_value(self, state):
+        if isinstance(self._provider, StateVariableValueProvider):
+            return self._provider.get_state_variable_value(state)
+        return None
 
     @property
     def dataref(self) -> str | None:
@@ -145,14 +155,14 @@ class Value:
     def is_self_modified(self):
         # Determine of the activation of the button directly modifies
         # a dataref used in computation of the value.
-        return self._set_dataref in self._datarefs
+        return self._set_simdata_path in self._simulator_data
 
     def complement_datarefs(self, datarefs: set, reason: str | None = None):
         # Add datarefs to the value for computation purpose
         # Used by activation and representation to add to button datarefs
-        if self._datarefs is None:
-            self._datarefs = set()
-        self._datarefs = self._datarefs | datarefs
+        if self._simulator_data is None:
+            self._simulator_data = set()
+        self._simulator_data = self._simulator_data | datarefs
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
     def get_simulator_data(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
@@ -162,16 +172,16 @@ class Value:
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
         if base is None:  # local, button-level ones
-            if self._datarefs is not None:  # cached if globals (base is None)
-                return self._datarefs
+            if self._simulator_data is not None:  # cached if globals (base is None)
+                return self._simulator_data
             base = self._config
 
-        self._datarefs = self.scan_datarefs(base, extra_keys=extra_keys)
-        logger.debug(f"value {self.name}: found datarefs {self._datarefs}")
-        return self._datarefs
+        self._simulator_data = self.scan_datarefs(base, extra_keys=extra_keys)
+        logger.debug(f"value {self.name}: found datarefs {self._simulator_data}")
+        return self._simulator_data
 
     def get_all_datarefs(self) -> list:
-        return self.get_simulator_data() | self._string_datarefs
+        return self.get_simulator_data() | self._string_simulator_data
 
     def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
@@ -303,6 +313,9 @@ class Value:
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
         """
+        if not isinstance(self._provider, SimulatorDataValueProvider):
+            return
+
         if type(message) is int or type(message) is float:  # probably formula is a constant value
             value_str = message
             if formatting is not None:
@@ -334,7 +347,7 @@ class Value:
         retmsg = message
         cnt = 0
         for dataref_name in dataref_names:
-            value = self.get_simulation_data_value(dataref_name)
+            value = self.get_simulator_data_value(dataref_name)
             value_str = ""
             if formatting is not None and value is not None:
                 if type(formatting) is list:
@@ -354,11 +367,14 @@ class Value:
         return retmsg
 
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
+        if not isinstance(self._provider, StateVariableValueProvider):
+            return
+
         txtcpy = text
         more = re.findall(PATTERN_INTSTATE, txtcpy)
         for name in more:
             state_string = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
-            value = self._button.get_state_value(name)
+            value = self.get_state_variable_value(name)
             logger.debug(f"value {state_string} = {value}")
             if value is not None:
                 txtcpy = txtcpy.replace(state_string, value)
@@ -567,15 +583,15 @@ class Value:
             return ret
 
         # 2. One dataref
-        if self.dataref is not None:
-            # if self._datarefs[0] in self.page.simulator_data.keys():  # unnecessary check
-            ret = self.get_simulation_data_value(self.dataref)
+        if self.dataref is not None and isinstance(self._provider, SimulatorDataValueProvider):
+            # if self._simulator_data[0] in self.page.simulator_data.keys():  # unnecessary check
+            ret = self.get_simulator_data_value(self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
 
         # 3. Activation value
         if self._button._activation is not None:
-            # if self._datarefs[0] in self.page.simulator_data.keys():  # unnecessary check
+            # if self._simulator_data[0] in self.page.simulator_data.keys():  # unnecessary check
             ret = self._button._activation.get_activation_value()
             if ret is not None:
                 if type(ret) is bool:
@@ -586,10 +602,10 @@ class Value:
         # From now on, warning issued since returns non scalar value
         #
         # 4. Multiple datarefs
-        if len(self._datarefs) > 1:
+        if len(self._simulator_data) > 1 and isinstance(self._provider, SimulatorDataValueProvider):
             r = {}
             for d in self.get_all_datarefs():
-                v = self.get_simulation_data_value(d)
+                v = self.get_simulator_data_value(d)
                 r[d] = v
             logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
             return r
@@ -628,11 +644,11 @@ class Value:
 
     def save(self):
         # Writes the computed button value to set-dataref
-        if self._set_dref is not None:
+        if self._set_simdata is not None:
             new_value = self.get_value()
             if new_value is None:
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0
-            self._set_dref.update_value(new_value=new_value, cascade=True)
-            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_dref.name} to button value {new_value}")
-            self._set_dref.save()
+            self._set_simdata.update_value(new_value=new_value, cascade=True)
+            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
+            self._set_simdata.save()

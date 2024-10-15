@@ -80,7 +80,7 @@ class Page:
         if isinstance(ld, dict) and isinstance(attributes, dict):
             setattr(self, ATTRNAME, ld | attributes)
 
-    def get_simulation_data_value(self, dataref, default=None):
+    def get_simulator_data_value(self, dataref, default=None):
         d = self.simulator_data.get(dataref)
         if d is None:
             logger.warning(f"page {self.name}: {dataref} not found")

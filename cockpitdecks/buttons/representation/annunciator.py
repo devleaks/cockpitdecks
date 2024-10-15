@@ -66,7 +66,7 @@ class AnnunciatorPart:
         self.lit = False
         self.color = config.get("color")
 
-        self._value = Value(name, config=config, button=annunciator.button)
+        self._value = Value(name, config=config, provider=annunciator.button)
 
         self._width = None
         self._height = None
