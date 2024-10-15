@@ -26,11 +26,12 @@ sock.setblocking(False)
 
 while 1:
     try:
-        data, addr = sock.recvfrom(1024)
+        data, addr = sock.recvfrom(1472)
     except socket.error as e:
         pass
     else:
         print("Date: ", datetime.now().isoformat())
         print("From: ", addr)
         # print("Data: ", data)
+        print(f"Raw: ({len(data)})", data)
         print(json.dumps(json.loads(data.decode("utf-8")), indent=2))
