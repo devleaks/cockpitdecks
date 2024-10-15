@@ -9,6 +9,7 @@ Press CTRL-C ** once ** to gracefully stop Cockpitdecks. Be patient.
 """
 
 import sys
+import platform
 import os
 import logging
 import time
@@ -86,6 +87,42 @@ def which(program):
     return None
 
 
+def xplane_homes(dirlist: str = "x-plane_install_12.txt") -> str:
+    """
+    retuns a list of X-Plane installation directories
+    dir1
+    dir2
+    """
+    opsys = platform.system()
+    homes = ""
+    if opsys == "Darwin":
+        fn = os.path.join(os.environ["HOME"], "Library", "Preferences", dirlist)
+        if os.path.exists(fn):
+            with open(fn) as fp:
+                homes = fp.read()
+        else:
+            print(f"x-plane installations: {fn} not found")
+    elif opsys == "Linux":
+        fn = os.path.join(os.environ["HOME"], ".x-plane", dirlist)
+        if os.path.exists(fn):
+            with open(fn) as fp:
+                homes = fp.read()
+        else:
+            print(f"x-plane installations: {fn} not found")
+    elif opsys == "Windows":
+        fn = os.path.join(os.environ["HOME"], "AppData", "Local", dirlist)
+        if os.path.exists(fn):
+            with open(fn) as fp:
+                homes = fp.read()
+        else:
+            print(f"x-plane installations: {fn} not found")
+
+    if homes != "":
+        homes = ", ".join(homes.split("\n"))
+
+    return homes
+
+
 # Command-line arguments
 #
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
@@ -148,6 +185,13 @@ if VERBOSE:
 # Simulator
 #
 # First try env:
+if VERBOSE:
+    homes = xplane_homes()
+    if homes != "":
+        print(f"X-Plane located at {homes}")
+    else:
+        print("X-Plane not automagically located on this host")
+
 SIMULATOR_NAME = environment.get(ENVIRON_KW.SIMULATOR_NAME.value)
 if SIMULATOR_NAME is None:
     if VERBOSE:
