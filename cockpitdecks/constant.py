@@ -135,6 +135,7 @@ COCKPITDECKS_DEFAULT_VALUES = {
 # Config.yaml
 #
 class CONFIG_KW(Enum):
+    ACTIONS = "actions"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BUTTONS = "buttons"
@@ -160,6 +161,8 @@ class CONFIG_KW(Enum):
     MANAGED = "managed"
     NAME = "name"
     NONE = "none"
+    OBSERVABLES = "observables"
+    OBSERVABLE = "observable"
     OPTIONS = "options"
     SERIAL = "serial"
     SET_SIM_DATUM = "set-dataref"
