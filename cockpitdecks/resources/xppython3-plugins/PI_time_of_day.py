@@ -8,8 +8,8 @@ from datetime import datetime
 
 import xp
 
-PLUGIN_VERSION = "1.0.0"
-TIME_COMMAND = "xppython3/time_of_day"
+PLUGIN_VERSION = "1.0.1"
+TIME_COMMAND = "xppython3/use_system_time_toggle"
 TIME_COMMAND_DESC = "Toggle use system time"
 TIME_DREF = "sim/time/use_system_time"
 
@@ -59,7 +59,7 @@ class PythonInterface:
             curr = xp.getDatai(self.systemTimeDref)
             self.color = (0.0, 1.0, 0.0) if curr == 1 else (1.0, 0.0, 0.0)
             if self.trace:
-                print(self.Info, f"load: added string dataref {TIME_DREF}")
+                print(self.Info, f"load: added string dataref {TIME_DREF}, value={curr}")
         else:
             print(self.Info, f"load: dataref {TIME_DREF} not found")
 
@@ -89,6 +89,9 @@ class PythonInterface:
         return None
 
     def XPluginEnable(self):
+        if self.systemTimeDref is not None:
+            curr = xp.getDatai(self.systemTimeDref)
+            self.color = (0.0, 1.0, 0.0) if curr == 1 else (1.0, 0.0, 0.0)
         # self.widgetID = xp.createWidget(15, 60, 90, 45, 1, "", 1, 0, xp.WidgetClass_MainWindow)
         self.widgetID = xp.createWidget(5, 58, 15, 18, 1, "", 1, 0, xp.WidgetClass_MainWindow)
         xp.setWidgetProperty(self.widgetID, xp.Property_MainWindowType, xp.MainWindowStyle_Translucent)
