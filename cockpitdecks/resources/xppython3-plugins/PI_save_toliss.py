@@ -8,7 +8,6 @@ from datetime import datetime
 
 import xp
 
-PLUGIN_VERSION = "1.1.0"
 SAVE_TOLISS_COMMAND = "toliss/save_situation_now"
 SAVE_TOLISS_COMMAND_DESC = "Save ToLiss Airbus situation to file with a timestamp"
 
@@ -20,10 +19,11 @@ DATETIME_FORMAT = "%Y%m%d%H%M%S"
 # ###########################################################
 # S A V E   T O L I S S   S I T U A T I O N
 #
-RELEASE = "1.1.0"  # local version number
+PLUGIN_VERSION = "1.2.0"
 #
 # Changelog:
 #
+# 15-OCT-2024: 1.2.0: Force name to USERSAVED_SITUATION-YYYMMDDHHMMSS*
 # 02-SEP-2024: 1.1.0: Add notification on screen that it worked
 # 23-AUG-2024: 1.0.1: Changed date/time format
 # 02-FEB-2024: 1.0.0: Initial version
@@ -107,6 +107,9 @@ class PythonInterface:
                 cmd_ref = xp.findCommand(TOLISS_SAVE_COMMAND)
                 if cmd_ref is None:
                     if self.trace:
+                        self.color = (1.0, 0.0, 0.0)
+                        self.message = "ToLiss save command not found"
+                        self.notify()
                         print(self.Info, f"command '{TOLISS_SAVE_COMMAND}' not found")
                     return 1
 
@@ -116,24 +119,23 @@ class PythonInterface:
                     print(self.Info, f"saved situation at {ts}")
 
                 # 2. Rename the situation files with timestamp
-                if self.trace:
-                    print(self.Info, f"X-Plane folder path {XPLANE_FOLDER_PATH}")
-
                 # Find all files newer than ts
                 # Name should contain toliss_airbus/iscsinterface/current_sit_name as a prefix...
                 #
                 all_files = glob.glob(os.path.join(XPLANE_FOLDER_PATH, SAVED_SITUATION_FOLDER_PATH, "*.qps"))
                 all_files = all_files + glob.glob(os.path.join(XPLANE_FOLDER_PATH, SAVED_SITUATION_FOLDER_PATH, "*_pilotItems.dat"))
                 files = list(filter(lambda f: os.path.getctime(f) > ts.timestamp(), all_files))
-                # print(self.Info, "newer files", files)
+                if self.trace:
+                    print(self.Info, f"files newer than {ts.isoformat()}", files)
                 # Rename those files with <timestamp> added to name
                 newname = ""
                 if len(files) > 0:
                     tstr = ts.strftime(DATETIME_FORMAT)
                     for f in files:
                         fn, fext = os.path.os.path.splitext(f)
-                        newname = os.path.join(fn + "-" + tstr + fext).replace("AUTO", "USER")
+                        newname = os.path.join(os.path.dirname(fn), "USERSAVED_SITUATION-" + tstr + fext)
                         os.rename(f, newname)
+                        self.color = (0.0, 1.0, 0.0)
                         self.message = f"saved situation at {ts} in file {os.path.basename(newname)}"
                         print(self.Info, self.message)
 
