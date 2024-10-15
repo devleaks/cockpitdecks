@@ -287,9 +287,9 @@ class PythonInterface:
         self.run_count = self.run_count + 1
         with self.RLock:  # add a meta data to sync effectively
             try:  # efficent method
-                drefvalues = {"meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+                drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}} | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
             except:  # if one dataref does not work, try one by one, skip those in error
-                drefvalues = {"meta": {"v": RELEASE, "ts": time.time(), "f": self.frequency}}
+                drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}}
                 for d in self.datarefs:
                     try:
                         v = xp.getDatas(self.datarefs[d])
