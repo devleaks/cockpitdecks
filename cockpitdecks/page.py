@@ -80,10 +80,10 @@ class Page:
         if isinstance(ld, dict) and isinstance(attributes, dict):
             setattr(self, ATTRNAME, ld | attributes)
 
-    def get_simulator_data_value(self, dataref, default=None):
-        d = self.simulator_data.get(dataref)
+    def get_simulator_data_value(self, simulator_data, default=None):
+        d = self.simulator_data.get(simulator_data)
         if d is None:
-            logger.warning(f"page {self.name}: {dataref} not found")
+            logger.warning(f"page {self.name}: {simulator_data} not found")
             return None  # should return default?
         return d.value() if d.value() is not None else default
 

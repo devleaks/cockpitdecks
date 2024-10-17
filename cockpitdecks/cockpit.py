@@ -47,6 +47,7 @@ from cockpitdecks import (
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
+    OBSERVABLES_FILE,
     RESOURCES_FOLDER,
     ROOT_DEBUG,
     SECRET_FILE,
@@ -61,6 +62,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.observable import Observables
 
 # from cockpitdecks.simulators.xplane import DatarefEvent
 
@@ -216,6 +218,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.sim = None
 
         # Internal variables
+        self.observables = []
+        self.ac_observables = []
         self.busy_reloading = False
         self.disabled = False
         self.default_pages = None  # current pages on decks when reloading
@@ -685,6 +689,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             self.load_sounds()
             self.create_decks()
             self.load_pages()
+            self.load_observables()
         else:
             if acpath is None:
                 logger.error(f"no aircraft folder")
@@ -1003,6 +1008,23 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
             }
             self.cockpit[name] = self.all_deck_drivers[deckdriver][0](name, config, self, device)
+
+    def load_observables(self):
+        fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
+        if os.path.exists(fn):
+            config = {}
+            with open(fn, "r") as fp:
+                config = yaml.load(fp)
+            self.observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self.observables.observables)} observables")
+
+        fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
+        if os.path.exists(fn):
+            config = {}
+            with open(fn, "r") as fp:
+                config = yaml.load(fp)
+            self.ac_observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self.ac_observables.observables)} aircraft observables")
 
     # #########################################################
     # Cockpit data caches

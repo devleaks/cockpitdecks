@@ -1,0 +1,7 @@
+observables:
+  - name: Aircraft loaded
+    type: onchange
+    dataref: sim/aircraft/view/acf_livery_path
+    actions:
+      - command: COCKPITDECKS:RELOAD
+        delay: 5

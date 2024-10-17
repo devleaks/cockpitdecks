@@ -10,7 +10,7 @@ from abc import ABC
 import ruamel
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.simulator import INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE, CockpitdecksData
+from cockpitdecks.simulator import INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE, CockpitdecksData, Simulator
 
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
@@ -26,7 +26,7 @@ class ValueProvider:
 
 class SimulatorDataValueProvider(ABC, ValueProvider):
     @abstractmethod
-    def get_simulator_data_value(self, name: str):
+    def get_simulator_data_value(self, simulator_data, default=None):
         pass
 
 
@@ -38,7 +38,7 @@ class StateVariableValueProvider(ABC, ValueProvider):
 
 class ActivationValueProvider(ABC, ValueProvider):
     @abstractmethod
-    def get_activation_value(self, name: str):
+    def get_activation_value(self):
         pass
 
 
@@ -113,14 +113,19 @@ class Value:
         elif self.value_count is not None and self.value_count > 0:
             self.value_inc = (self.value_max - self.value_min) / self.value_count
 
-    def get_simulator_data_value(self, dataref):
-        if isinstance(self._provider, SimulatorDataValueProvider):
-            return self._provider.get_simulator_data_value(dataref)
+    def get_simulator_data_value(self, simulator_data, default=None):
+        if isinstance(self._provider, SimulatorDataValueProvider) or isinstance(self._provider, Simulator):
+            return self._provider.get_simulator_data_value(simulator_data=simulator_data, default=default)
         return None
 
     def get_state_variable_value(self, state):
         if isinstance(self._provider, StateVariableValueProvider):
             return self._provider.get_state_variable_value(state)
+        return None
+
+    def get_activation_value(self):
+        if isinstance(self._provider, ActivationValueProvider):
+            return self._button.get_activation_value()
         return None
 
     @property
@@ -304,8 +309,14 @@ class Value:
                 return formula
         if self.formula is not None and self.formula != "":
             return self.formula
-        if self._button.formula is not None and self._button.formula != "" and type(self._button._representation).__name__ != "Annunciator":
-            return self._button.formula
+        if (
+            hasattr(self._provider, "formula")
+            and self._provider.formula is not None
+            and self._provider.formula != ""
+            and hasattr(self._provider, "_representation")
+            and type(self._provider._representation).__name__ != "Annunciator"
+        ):
+            return self._provider.formula
         return None
 
     def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
@@ -313,7 +324,7 @@ class Value:
         Replaces ${dataref} with value of dataref in labels and execution formula.
         @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
         """
-        if not isinstance(self._provider, SimulatorDataValueProvider):
+        if not (isinstance(self._provider, SimulatorDataValueProvider) or isinstance(self._provider, Simulator)):
             return
 
         if type(message) is int or type(message) is float:  # probably formula is a constant value
@@ -347,7 +358,7 @@ class Value:
         retmsg = message
         cnt = 0
         for dataref_name in dataref_names:
-            value = self.get_simulator_data_value(dataref_name)
+            value = self.get_simulator_data_value(simulator_data=dataref_name)
             value_str = ""
             if formatting is not None and value is not None:
                 if type(formatting) is list:
@@ -583,16 +594,16 @@ class Value:
             return ret
 
         # 2. One dataref
-        if self.dataref is not None and isinstance(self._provider, SimulatorDataValueProvider):
+        if self.dataref is not None and (isinstance(self._provider, SimulatorDataValueProvider) or isinstance(self._provider, Simulator)):
             # if self._simulator_data[0] in self.page.simulator_data.keys():  # unnecessary check
-            ret = self.get_simulator_data_value(self.dataref)
+            ret = self.get_simulator_data_value(simulator_data=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
 
         # 3. Activation value
-        if self._button._activation is not None:
+        if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
             # if self._simulator_data[0] in self.page.simulator_data.keys():  # unnecessary check
-            ret = self._button._activation.get_activation_value()
+            ret = self.get_activation_value()
             if ret is not None:
                 if type(ret) is bool:
                     ret = 1 if ret else 0
@@ -602,10 +613,10 @@ class Value:
         # From now on, warning issued since returns non scalar value
         #
         # 4. Multiple datarefs
-        if len(self._simulator_data) > 1 and isinstance(self._provider, SimulatorDataValueProvider):
+        if len(self._simulator_data) > 1 and (isinstance(self._provider, SimulatorDataValueProvider) or isinstance(self._provider, Simulator)):
             r = {}
             for d in self.get_all_datarefs():
-                v = self.get_simulator_data_value(d)
+                v = self.get_simulator_data_value(simulator_data=d)
                 r[d] = v
             logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
             return r
@@ -613,8 +624,8 @@ class Value:
         logger.warning(f"value {self.name}: no formula, no dataref, no activation")
 
         # 4. State variables?
-        if self._button._activation is not None:
-            r = self._button._activation.get_state_variables()
+        if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
+            r = self._provider._activation.get_state_variables()
             logger.info(f"value {self.name}: {r} (from state variables)")
             return r
 

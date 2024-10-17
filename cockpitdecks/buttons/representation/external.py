@@ -426,8 +426,8 @@ class WeatherMetarIcon(DrawAnimation, SimulatorDataListener):
             logger.debug(f"updated  {diff} secs. ago")
 
         # If we are at the default station, we check where we are to see if we moved.
-        lat = self.button.get_simulator_data_value("sim/flightmodel/position/latitude")
-        lon = self.button.get_simulator_data_value("sim/flightmodel/position/longitude")
+        lat = self.button.get_simulator_data_value(simulator_data="sim/flightmodel/position/latitude")
+        lon = self.button.get_simulator_data_value(simulator_data="sim/flightmodel/position/longitude")
 
         if lat is None or lon is None:
             logger.warning(f"no coordinates")
@@ -675,7 +675,7 @@ class WeatherMetarIcon(DrawAnimation, SimulatorDataListener):
 
     def is_day(self, sunrise: int = 5, sunset: int = 19) -> bool:
         # Uses the simulator local time
-        hours = self.button.get_simulator_data_value("sim/cockpit2/clock_timer/local_time_hours", default=12)
+        hours = self.button.get_simulator_data_value(simulator_data="sim/cockpit2/clock_timer/local_time_hours", default=12)
         if self.sun is not None:
             sr = self.sun.get_sunrise_time()
             ss = self.sun.get_sunset_time()

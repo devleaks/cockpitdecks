@@ -11,7 +11,7 @@ from datetime import datetime
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "12.2.0"
+__version__ = "12.2.1"
 
 #
 #
@@ -74,6 +74,14 @@ def parse_options(options: dict | None) -> list:
         old = options
         options = old.strip().replace(" =", "=").replace("= ", "=").replace(" ,", ",").replace(", ", ",")
     return [a.strip() for a in options.split(",")]
+
+
+def get_aliases(data: dict, aliases: list | set | tuple):
+    for a in aliases:
+        v = data.get(a)
+        if v is not None:
+            return v
+    return None
 
 
 # ############################################################

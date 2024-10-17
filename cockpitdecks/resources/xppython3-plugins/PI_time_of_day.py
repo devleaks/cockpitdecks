@@ -8,7 +8,6 @@ from datetime import datetime
 
 import xp
 
-PLUGIN_VERSION = "1.0.1"
 TIME_COMMAND = "xppython3/use_system_time_toggle"
 TIME_COMMAND_DESC = "Toggle use system time"
 TIME_DREF = "sim/time/use_system_time"
@@ -16,7 +15,7 @@ TIME_DREF = "sim/time/use_system_time"
 # ###########################################################
 # S A V E   T O L I S S   S I T U A T I O N
 #
-RELEASE = "1.0.0"  # local version number
+PLUGIN_VERSION = "1.0.1"
 #
 # Changelog:
 #

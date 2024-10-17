@@ -15,7 +15,7 @@ from cockpitdecks.simulator import CockpitdecksData
 from .buttons.activation import ACTIVATION_VALUE
 from .buttons.representation import Annunciator
 from .simulator import SimulatorData, SimulatorDataListener
-from .value import Value, SimulatorDataValueProvider, StateVariableValueProvider
+from .value import Value, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider
 
 from cockpitdecks import (
     ID_SEP,
@@ -33,11 +33,12 @@ logger = logging.getLogger(__name__)
 DECK_BUTTON_DEFINITION = "_deck_def"
 
 
-class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableValueProvider):
+class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider):
     def __init__(self, config: dict, page: "Page"):
         SimulatorDataListener.__init__(self)
         SimulatorDataValueProvider.__init__(self)
         StateVariableValueProvider.__init__(self)
+        ActivationValueProvider.__init__(self)
 
         # Definition and references
         self._config = config
@@ -237,7 +238,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             if "dataref" in what:
                 # logger.info("")
                 for d in self.get_simulator_data():
-                    v = self.get_simulator_data_value(d)
+                    v = self.get_simulator_data_value(simulator_data=d)
                     logger.info(f"    {d} = {v}")
             if "activation" in what or "longpress" in what:
                 logger.info("")
@@ -470,13 +471,13 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         if self.managed is None:
             logger.debug(f"button {self.name}: is managed is none.")
             return False
-        d = self.get_simulator_data_value(self.managed, default=0)
+        d = self.get_simulator_data_value(simulator_data=self.managed, default=0)
         if d != 0:
             logger.debug(f"button {self.name}: is managed ({d}).")
             return True
         logger.debug(f"button {self.name}: is not managed ({d}).")
         return False
-        # return self.managed is not None and self.get_simulator_data_value(dataref=self.managed, default=0) != 0
+        # return self.managed is not None and self.get_simulator_data_value(simulator_data=dataref=self.managed, default=0) != 0
 
     def has_guard(self):
         return self._guard_dref is not None
@@ -513,8 +514,8 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
     def get_dataref(self, dataref):
         return self.page.get_dataref(dataref=dataref)
 
-    def get_simulator_data_value(self, dataref, default=None):
-        return self.page.get_simulator_data_value(dataref=dataref, default=default)
+    def get_simulator_data_value(self, simulator_data, default=None):
+        return self.page.get_simulator_data_value(simulator_data=simulator_data, default=default)
 
     def get_state_variable_value(self, name, default: str = "0"):
         value = None
@@ -539,6 +540,11 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             value = default
         logger.debug(f"button {self.name}: state {name} = {value} (from {source})")
         return value
+
+    def get_activation_value(self):
+        if self._activation is not None:
+            return self._activation.get_activation_value()
+        return None
 
     # ##################################
     # Value substitution

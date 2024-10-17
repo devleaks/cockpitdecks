@@ -25,15 +25,13 @@ ROOT_DEBUG = ""
 EXCLUDE_DECKS: List[str] = []  # list serial numbers of deck not usable by Streadecks
 DEFAULT_FREQUENCY = 3
 
-# Files
+# File & folder names
 ENVIRON_FILE = "environ.yaml"
-CONFIG_FOLDER = "deckconfig"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
+OBSERVABLES_FILE = "observables.yaml"
 
-DEFAULT_LAYOUT = "default"
-DEFAULT_PAGE_NAME = "Default Page"
-
+CONFIG_FOLDER = "deckconfig"
 RESOURCES_FOLDER = "resources"
 FONTS_FOLDER = "fonts"
 SOUNDS_FOLDER = "sounds"
@@ -45,6 +43,9 @@ TYPES_FOLDER = "types"
 
 ASSETS_FOLDER = "assets"
 TEMPLATES_FOLDER = "templates"
+
+DEFAULT_LAYOUT = "default"
+DEFAULT_PAGE_NAME = "Default Page"
 
 ICON_SIZE = 256  # px
 DEFAULT_LABEL_POSITION = "cm"
@@ -163,12 +164,14 @@ class CONFIG_KW(Enum):
     NONE = "none"
     OBSERVABLES = "observables"
     OBSERVABLE = "observable"
+    ONCHANGE = "onchange"
     OPTIONS = "options"
     SERIAL = "serial"
     SET_SIM_DATUM = "set-dataref"
     SIM_DATUM = "dataref"
     SIM_DATA = "multi-datarefs"
     STRING_SIM_DATA = "string-datarefs"
+    TRIGGER = "trigger"
     TYPE = "type"
     VALUE_MIN = "value-min"
     VALUE_MAX = "value-max"
@@ -177,6 +180,7 @@ class CONFIG_KW(Enum):
     VIEW = "view"
     VIEW_IF = "view-if"
     WALLPAPER = "wallpaper"
+    COCKPITDECKS = "COCKPITDECKS"
 
 
 class ACTIVATION_KW(Enum):
