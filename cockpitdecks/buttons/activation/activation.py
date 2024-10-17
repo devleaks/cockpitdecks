@@ -1204,18 +1204,29 @@ class UpDown(Activation):
                 self.go_up = False
             nextval = int(currval + 1 if self.go_up else currval - 1)
             logger.debug(f"{currval}, {nextval}, {self.go_up}")
-            if self.go_up:
-                if self.num_commands() > 0:
-                    self._commands[0].execute(simulator=self.button.sim)  # up
-                if nextval >= (self.stops - 1):
-                    nextval = self.stops - 1
-                    self.go_up = False
+            if self.stops > 2 and self.num_commands() > 2 and self.num_commands() == self.stops:
+                self._commands[nextval].execute(simulator=self.button.sim)
+                if self.go_up:
+                    if nextval >= (self.stops - 1):
+                        nextval = self.stops - 1
+                        self.go_up = False
+                else:
+                    if nextval <= 0:
+                        nextval = 0
+                        self.go_up = True
             else:
-                if self.num_commands() > 1:
-                    self._commands[1].execute(simulator=self.button.sim)  # down
-                if nextval <= 0:
-                    nextval = 0
-                    self.go_up = True
+                if self.go_up:
+                    if self.num_commands() > 0:
+                        self._commands[0].execute(simulator=self.button.sim)  # up
+                    if nextval >= (self.stops - 1):
+                        nextval = self.stops - 1
+                        self.go_up = False
+                else:
+                    if self.num_commands() > 1:
+                        self._commands[1].execute(simulator=self.button.sim)  # down
+                    if nextval <= 0:
+                        nextval = 0
+                        self.go_up = True
             # Update current value and write dataref if present
             self.stop_current_value = nextval
         return True  # normal termination
