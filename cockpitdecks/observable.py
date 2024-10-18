@@ -3,7 +3,8 @@ import logging
 from typing import Set
 
 from cockpitdecks.constant import CONFIG_KW
-from cockpitdecks.simulator import Simulator, SimulatorData, MacroInstruction, SimulatorDataListener
+from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener
+from cockpitdecks.instruction import MacroInstruction
 from cockpitdecks.value import Value
 
 # from cockpitdecks.deck import Deck
@@ -43,7 +44,7 @@ class Observable(SimulatorDataListener):
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self.previous_value = None
         self.current_value = None
-        self._actions = MacroInstruction(type(self).__name__, self._config.get(CONFIG_KW.ACTIONS.value))
+        self._actions = MacroInstruction(name=type(self).__name__, instructions=self._config.get(CONFIG_KW.ACTIONS.value))
         self.init()
 
     @property
@@ -105,4 +106,3 @@ class Observable(SimulatorDataListener):
             if self.has_changed():
                 logger.debug(f"{'>'*20} observable {self.name} executed (changed)")
                 # self._actions.execute(self.sim)
-

@@ -8,8 +8,9 @@ from typing import List, Any
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
 from cockpitdecks.event import Event
+from cockpitdecks.data import Data, DataListener, COCKPITDECKS_DATA_PREFIX
+from cockpitdecks.instruction import Instruction
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 loggerSimdata = logging.getLogger("SimulatorData")
@@ -23,350 +24,6 @@ loggerInstr = logging.getLogger("Instruction")
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when simulator_data are updated
 # logger.setLevel(logging.DEBUG)
-
-
-# ########################################
-# Dataref
-#
-# "internal" simulator_data (not exported to X-Plane) start with that prefix
-COCKPITDECKS_DATA_PREFIX = "data:"
-INTERNAL_STATE_PREFIX = "state:"
-BUTTON_VARIABLE_PREFIX = "button:"
-PREFIX_SEP = ":"
-
-# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
-# ${ ... }: dollar + anything between curly braces, but not start with state: or button: prefix
-# ?: does not return capturing group
-PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
-PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
-PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
-
-
-class SimulatorDataType(Enum):
-    INTEGER = "int"
-    FLOAT = "float"
-    BYTE = "byte"
-    STRING = "string"
-    ARRAY_INTEGERS = "array_int"
-    ARRAY_FLOATS = "array_float"
-    ARRAY_BYTES = "array_byte"
-
-
-# ########################################
-# Dataref
-#
-# A value in the simulator
-class SimulatorData(ABC):
-    def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
-        self.name = name
-        self.data_type = SimulatorDataType(data_type)
-        self.physical_unit = physical_unit
-
-        # Stats
-        self._last_updated = None
-        self._last_changed = None
-        self._updated = 0  # number of time value updated
-        self._changed = 0  # number of time value changed
-
-        # value
-        self._round = None
-        self._update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
-        self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
-
-        self._previous_value = None  # raw values
-        self._current_value = None
-        self.previous_value = None
-        self.current_value: Any | None = None
-        self.current_array: List[float] = []
-
-        self._sim = None
-
-        self.listeners: List[SimulatorDataListener] = []  # buttons using this simulator_data, will get notified if changes.
-
-    @staticmethod
-    def might_be_simulator_data(path: str) -> bool:
-        # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
-        # At the end, we are not sure it is a dataref, but wea re sure non-datarefs are excluded ;-)
-        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
-        for start in PREFIX:
-            if path.startswith(start + PREFIX_SEP):
-                return False
-        return path != CONFIG_KW.FORMULA.value
-
-    @staticmethod
-    def is_internal_simulator_data(path: str) -> bool:
-        return path.startswith(COCKPITDECKS_DATA_PREFIX)
-
-    @property
-    def is_internal(self) -> bool:
-        return self.name.startswith(COCKPITDECKS_DATA_PREFIX)
-
-    @property
-    def is_string(self) -> bool:
-        return self.data_type == SimulatorDataType.STRING
-
-    @property
-    def rounding(self):
-        return self._round
-
-    @rounding.setter
-    def rounding(self, rounding):
-        self._round = rounding
-
-    @property
-    def update_frequency(self):
-        return self._update_frequency
-
-    @update_frequency.setter
-    def update_frequency(self, frequency: int | float = DEFAULT_FREQUENCY):
-        if frequency is not None and type(frequency) in [int, float]:
-            self._update_frequency = frequency
-        else:
-            self._update_frequency = DEFAULT_FREQUENCY
-
-    @property
-    def writable(self) -> bool:
-        return self._writable
-
-    @writable.setter
-    def writable(self, writable: bool):
-        self._writable = writable
-
-    def has_changed(self):
-        if self.previous_value is None and self.current_value is None:
-            return False
-        elif self.previous_value is None and self.current_value is not None:
-            return True
-        elif self.previous_value is not None and self.current_value is None:
-            return True
-        return self.current_value != self.previous_value
-
-    def value(self):
-        return self.current_value
-
-    def update_value(self, new_value, cascade: bool = False) -> bool:
-        # returns whether has changed
-
-        def local_round(new_value):
-            return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
-
-        self._previous_value = self._current_value  # raw
-        self._current_value = new_value  # raw
-        self.previous_value = self.current_value  # exposed
-        if self.is_string:
-            self.current_value = new_value
-        else:
-            self.current_value = local_round(new_value)
-        self._updated = self._updated + 1
-        self._last_updated = now()
-        # self.notify_updated()
-        if self.has_changed():
-            self._changed = self._changed + 1
-            self._last_changed = now()
-            loggerSimdata.log(
-                SPAM_LEVEL,
-                f"dataref {self.name} updated {self.previous_value} -> {self.current_value}",
-            )
-            if cascade:
-                self.notify()
-            return True
-        # loggerSimdata.error(f"dataref {self.name} updated")
-        return False
-
-    def add_listener(self, obj):
-        if not isinstance(obj, SimulatorDataListener):
-            loggerSimdata.warning(f"{self.name} not a listener {obj}")
-        if obj not in self.listeners:
-            self.listeners.append(obj)
-        loggerSimdata.debug(f"{self.name} added listener ({len(self.listeners)})")
-
-    def remove_listener(self, obj):
-        if not isinstance(obj, SimulatorDataListener):
-            loggerSimdata.warning(f"{self.name} not a listener {obj}")
-        if obj in self.listeners:
-            self.listeners.remove(obj)
-        loggerSimdata.debug(f"{self.name} removed listener ({len(self.listeners)})")
-
-    def notify(self):
-        for lsnr in self.listeners:
-            lsnr.simulator_data_changed(self)
-            if hasattr(lsnr, "page") and lsnr.page is not None:
-                loggerSimdata.log(
-                    SPAM_LEVEL,
-                    f"{self.name}: notified {lsnr.page.name}/{lsnr.name}",
-                )
-            else:
-                loggerSimdata.log(
-                    SPAM_LEVEL,
-                    f"{self.name}: notified {lsnr.name} (not on an page)",
-                )
-
-    def save(self):
-        pass
-
-
-class SimulatorDataListener(ABC):
-    # To get notified when a simulator data has changed.
-
-    def __init__(self, name: str = "abstract-simulator-data-listener"):
-        self.name = name
-
-    @abstractmethod
-    def simulator_data_changed(self, data: SimulatorData):
-        pass
-
-
-# "Internal" data, same properties as the simulator data
-# but does not get forwarded to the simulator
-# Mistakenly sometimes called an internal dataref... (historical)
-class CockpitdecksData(SimulatorData):
-
-    def __init__(self, path: str, is_string: bool = False):
-        # Data
-        if not path.startswith(COCKPITDECKS_DATA_PREFIX):
-            path = COCKPITDECKS_DATA_PREFIX + path
-        SimulatorData.__init__(self, name=path, data_type="string" if is_string else "float")
-
-
-# ########################################
-# Command
-#
-class Instruction(ABC):
-    """An Instruction is sent to the Simulator to execute an action."""
-
-    def __init__(self, name: str, delay: float = 0.0, condition: str | None = None, button: "Button" | None = None) -> None:
-        super().__init__()
-        self.name = name
-
-        self.delay = delay
-        self.condition = condition
-
-        self._button = button
-
-        self._timer = None
-
-    @classmethod
-    def new(cls, name, **kwargs):
-        if "cockpit" in kwargs:
-            return CockpitdecksInstruction(
-                name=name,
-                cockpit=kwargs.get("cockpit"),
-                delay=kwargs.get("delay"),
-                condition=kwargs.get("condition"),
-            )
-        elif "button" in kwargs:
-            return ButtonInstruction(
-                name=name,
-                button=kwargs.get("button"),
-                delay=kwargs.get("delay"),
-                condition=kwargs.get("condition"),
-            )
-        else:
-            logger.warning(f"Instruction {name}: invalid argument {kwargs}")
-        return None
-
-    @abstractmethod
-    def _execute(self, simulator: Simulator):
-        self.clean_timer()
-
-    @property
-    def button(self):
-        return self._button
-
-    @button.setter
-    def button(self, button):
-        self._button = button
-
-    def can_execute(self) -> bool:
-        if self.condition is None:
-            return True
-        if self._button is None:
-            loggerInstr.warning(f"instruction {self.name} has condition but no button")
-            return True  # no condition
-        value = self._button._value.execute_formula(self.condition)
-        loggerInstr.debug(f"instruction {self.name}: {self.condition} = {value} ({value != 0})")
-        return value != 0
-
-    def clean_timer(self):
-        if self._timer is not None:
-            self._timer.cancel()
-            self._timer = None
-
-    def execute(self, simulator: Simulator):
-        if not self.can_execute():
-            loggerInstr.debug(f"{self.name} not allowed to run")
-            return
-        if self._timer is None and self.delay > 0:
-            self._timer = threading.Timer(self.delay, self._execute, args=[simulator])
-            self._timer.start()
-            loggerInstr.debug(f"{self.name} will be executed in {self.delay} secs")
-            return
-        self._execute(simulator=simulator)
-
-
-class CockpitdecksInstruction(Instruction):
-    """
-    An Instruction to be performed by Cockpitdekcs itself like:
-    - Change page
-    - Reload decks
-    - Stop
-    ...
-    Instruction is not sent to simulator.
-    """
-    def __init__(self, name: str, cockpit: "Cockpit", delay: float = 0.0, condition: str | None = None) -> None:
-        Instruction.__init__(self, name=name, delay=delay, condition=condition)
-        self._cockpit = cockpit
-
-    @property
-    def cockpit(self):
-        return self._cockpit
-
-    @cockpit.setter
-    def cockpit(self, cockpit):
-        self._cockpit = cockpit
-
-    def _execute(self):
-        self.cockpit.execute(self)
-
-
-class ButtonInstruction(Instruction):
-    def __init__(self, name: str, button: "Button", delay: float = 0.0, condition: str | None = None) -> None:
-        Instruction.__init__(self, name=name, delay=delay, condition=condition)
-        self._button = button
-
-    @property
-    def button(self):
-        return self._button
-
-    @button.setter
-    def button(self, button):
-        self._button = button
-
-    def _execute(self):
-        self._button.sim.execute(self)
-
-
-class MacroInstruction(Instruction):
-    """
-    A Button activation will instruct the simulator software to perform an action.
-    A Command is the message that the simulation sofware is expecting to perform that action.
-    """
-
-    def __init__(self, name: str, instructions: dict):
-        Instruction.__init__(self, name=name)
-        self.instructions = instructions
-        self._instructions = []
-        self.init()
-
-    def __str__(self) -> str:
-        return self.name + f"({', '.join([c.name for c in self._instructions])}"
-
-    def init(self):
-        pass
-
-    def _execute(self, simulator: Simulator):
-        for instruction in self._instructions:
-            instruction.execute(simulator)
 
 
 # ########################################
@@ -548,10 +205,41 @@ class Simulator(ABC):
         pass
 
 
+# ########################################
+# SimulatorData
+#
+# A value in the simulator
+class SimulatorData(Data):
+    def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
+        Data.__init__(self, name=name, data_type=data_type, physical_unit=physical_unit)
+
+
+class SimulatorDataListener(DataListener):
+    # To get notified when a simulator data has changed.
+
+    def __init__(self, name: str = "abstract-simulator-data-listener"):
+        DataListener.__init__(self, name=name)
+
+    def data_changed(self, data: Data):
+        if isinstance(data, SimulatorData):
+            return self.simulator_data_changed(data=data)
+        logger.warning(f"invalid data type for listener {type(data)}")
+        return None
+
+    @abstractmethod
+    def simulator_data_changed(self, data: SimulatorData):
+        pass
+
+
+# ########################################
+# SimulatorInstruction
+#
+# A instruction sent to the simulator
 class SimulatorInstruction(Instruction):
     """
     An Instruction to be submitted to and performed by the simulator:
     """
+
     def __init__(self, name: str, simulator: Simulator, delay: float = 0.0, condition: str | None = None) -> None:
         Instruction.__init__(self, name=name, delay=delay, condition=condition)
         self._simulator = simulator
@@ -564,7 +252,14 @@ class SimulatorInstruction(Instruction):
     def cockpit(self, simulator):
         self._simulator = simulator
 
+    def _execute(self):
+        logger.warning(f"Abstract method cannot execute instruction {self.name}")
 
+
+# ########################################
+# SimulatorEvent
+#
+# An event from the simulator to Cockpitdecks. With love.
 class SimulatorEvent(Event):
     """Simulator event base class.
 

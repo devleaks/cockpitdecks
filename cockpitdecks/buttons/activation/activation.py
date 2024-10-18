@@ -12,7 +12,7 @@ from datetime import datetime
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks.simulator import CockpitdecksData
+from cockpitdecks.data import CockpitdecksData
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -262,7 +262,7 @@ class Activation:
 
     def long_press(self, event):
         logger.debug(">" * 40 + " long_press")
-        self._long_press.execute(simulator=self.button.sim)
+        self._long_press.execute()
 
     def is_valid(self) -> bool:
         if self.button is None:
@@ -453,6 +453,7 @@ class LoadPage(Activation):
         # Activation arguments
         self.page = self._config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = self._config.get("deck")
+        # self.instruction = self.button.deck.cockpit.instruction_factory(name=self.ACTIVATION_NAME)
 
     def is_valid(self):
         if self.page is None:
@@ -786,7 +787,7 @@ class Push(Activation):
             return False
         if event.pressed:
             if not (self.has_long_press() or self.has_beginend_command()):  # we don't have to wait for the release to trigger the command
-                self._command.execute(simulator=self.button.sim)
+                self._command.execute()
             if self.auto_repeat and self.exit is None:
                 self.auto_repeat_start()
         else:
@@ -794,7 +795,7 @@ class Push(Activation):
                 return False
 
             if (self.has_long_press() and not self.long_pressed()) and not self.has_beginend_command():
-                self._command.execute(simulator=self.button.sim)
+                self._command.execute()
             if self.auto_repeat:
                 self.auto_repeat_stop()
         return True  # normal termination
@@ -803,7 +804,7 @@ class Push(Activation):
     def auto_repeat_loop(self):
         self.exit.wait(self.auto_repeat_delay)
         while not self.exit.is_set():
-            self._command.execute(simulator=self.button.sim)
+            self._command.execute()
             self.exit.wait(self.auto_repeat_speed)
         logger.debug("exited")
 
@@ -878,10 +879,10 @@ class BeginEndPress(Push):
         if not super().activate(event):
             return False
         if event.pressed:
-            self._command.execute(simulator=self.button.sim)
+            self._command.execute()
             self.skip_view = True
         else:
-            self._command.execute(simulator=self.button.sim)
+            self._command.execute()
         return True  # normal termination
 
     def inspect(self, what: str | None = None):
@@ -1004,9 +1005,9 @@ class OnOff(Activation):
         if event.pressed:
             if self.num_commands() > 1:
                 if self.is_off():
-                    self._commands[0].execute(simulator=self.button.sim)
+                    self._commands[0].execute()
                 else:
-                    self._commands[1].execute(simulator=self.button.sim)
+                    self._commands[1].execute()
             # Update current value and write dataref if present
             self.onoff_current_value = not self.onoff_current_value
             # self.button.value = self.onoff_current_value  # update internal state
@@ -1080,10 +1081,10 @@ class ShortOrLongpress(Activation):
         if not event.pressed:
             if self.num_commands() > 1:
                 if self.duration < self.long_time:
-                    self._commands[0].execute(simulator=self.button.sim)
+                    self._commands[0].execute()
                     logger.debug(f"short {self.duration}, {self.long_time}")
                 else:
-                    self._commands[1].execute(simulator=self.button.sim)
+                    self._commands[1].execute()
                     logger.debug(f"looooong {self.duration}, {self.long_time}")
         return True  # normal termination
 
@@ -1205,7 +1206,7 @@ class UpDown(Activation):
             nextval = int(currval + 1 if self.go_up else currval - 1)
             logger.debug(f"{currval}, {nextval}, {self.go_up}")
             if self.stops > 2 and self.num_commands() > 2 and self.num_commands() == self.stops:
-                self._commands[nextval].execute(simulator=self.button.sim)
+                self._commands[nextval].execute()
                 if self.go_up:
                     if nextval >= (self.stops - 1):
                         nextval = self.stops - 1
@@ -1217,13 +1218,13 @@ class UpDown(Activation):
             else:
                 if self.go_up:
                     if self.num_commands() > 0:
-                        self._commands[0].execute(simulator=self.button.sim)  # up
+                        self._commands[0].execute()  # up
                     if nextval >= (self.stops - 1):
                         nextval = self.stops - 1
                         self.go_up = False
                 else:
                     if self.num_commands() > 1:
-                        self._commands[1].execute(simulator=self.button.sim)  # down
+                        self._commands[1].execute()  # down
                     if nextval <= 0:
                         nextval = 0
                         self.go_up = True
@@ -1333,11 +1334,11 @@ class Encoder(Activation, EncoderProperties):
         if not super().activate(event):
             return False
         if event.turned_counter_clockwise:  # rotate left
-            self._commands[0].execute(simulator=self.button.sim)
+            self._commands[0].execute()
             self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
             self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
         elif event.turned_clockwise:  # rotate right
-            self._commands[1].execute(simulator=self.button.sim)
+            self._commands[1].execute()
             self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, 1)
             self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
         else:
@@ -1427,32 +1428,32 @@ class EncoderPush(Push, EncoderProperties):
             if event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.longpush:
                     if self.is_pressed():
-                        self._commands[2].execute(simulator=self.button.sim)
+                        self._commands[2].execute()
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                         self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     else:
-                        self._commands[0].execute(simulator=self.button.sim)
+                        self._commands[0].execute()
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                         self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
                 else:
-                    self._commands[1].execute(simulator=self.button.sim)
+                    self._commands[1].execute()
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
             elif event.turned_clockwise:  # rotate clockwise
                 if self.longpush:
                     if self.is_pressed():
-                        self._commands[3].execute(simulator=self.button.sim)
+                        self._commands[3].execute()
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                         self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     else:
-                        self._commands[1].execute(simulator=self.button.sim)
+                        self._commands[1].execute()
                         self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                         self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
                 else:
-                    self._commands[2].execute(simulator=self.button.sim)
+                    self._commands[2].execute()
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                     self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
@@ -1550,35 +1551,35 @@ class EncoderOnOff(OnOff, EncoderProperties):
             if event.turned_clockwise:  # rotate clockwise
                 if self.is_on():
                     if self.dual:
-                        self._commands[2].execute(simulator=self.button.sim)
+                        self._commands[2].execute()
                         self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                     else:
-                        self._commands[2].execute(simulator=self.button.sim)
+                        self._commands[2].execute()
                         self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
                 else:
                     if self.dual:
-                        self._commands[4].execute(simulator=self.button.sim)
+                        self._commands[4].execute()
                     else:
-                        self._commands[2].execute(simulator=self.button.sim)
+                        self._commands[2].execute()
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
             elif event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.is_on():
                     if self.dual:
-                        self._commands[3].execute(simulator=self.button.sim)
+                        self._commands[3].execute()
                         self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                     else:
-                        self._commands[3].execute(simulator=self.button.sim)
+                        self._commands[3].execute()
                         self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
                 else:
                     if self.dual:
-                        self._commands[5].execute(simulator=self.button.sim)
+                        self._commands[5].execute()
                     else:
-                        self._commands[3].execute(simulator=self.button.sim)
+                        self._commands[3].execute()
                     self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                     self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
             return True
@@ -1685,9 +1686,9 @@ class EncoderValue(OnOff, EncoderProperties):
             if event.pressed:
                 if len(self._commands) > 1:
                     if self.is_off():
-                        self._commands[0].execute(simulator=self.button.sim)
+                        self._commands[0].execute()
                     else:
-                        self._commands[1].execute(simulator=self.button.sim)
+                        self._commands[1].execute()
                 else:
                     logger.debug(f"button {self.button_name()} not enough commands {len(self._commands)}/é")
                 # Update current value and write dataref if present
@@ -2090,18 +2091,18 @@ class EncoderToggle(Activation, EncoderProperties):
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
                 if self._on:
-                    self._commands[0].execute(simulator=self.button.sim)
+                    self._commands[0].execute()
                 else:
-                    self._commands[2].execute(simulator=self.button.sim)
+                    self._commands[2].execute()
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                 self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
 
             elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
                 if self._on:
-                    self._commands[1].execute(simulator=self.button.sim)
+                    self._commands[1].execute()
                     self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
                 else:
-                    self._commands[3].execute(simulator=self.button.sim)
+                    self._commands[3].execute()
                     self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                 self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)

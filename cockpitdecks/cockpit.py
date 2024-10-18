@@ -1,5 +1,6 @@
 # Main container for all decks
 #
+from __future__ import annotations
 import sys
 import os
 import io
@@ -62,6 +63,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.instruction import Instruction
 from cockpitdecks.observable import Observables
 
 # from cockpitdecks.simulators.xplane import DatarefEvent
@@ -99,6 +101,54 @@ if EVENTLOGFILE is not None:
     event_logger.addHandler(handler)
     event_logger.propagate = False
 LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
+
+
+class CockpitdecksInstruction(Instruction):
+    """
+    An Instruction to be performed by Cockpitdekcs itself like:
+    - Change page
+    - Reload decks
+    - Stop
+    ...
+    Instruction is not sent to simulator.
+    """
+
+    def __init__(self, name: str, cockpit: Cockpit, delay: float = 0.0, condition: str | None = None) -> None:
+        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+        self._cockpit = cockpit
+
+    # @classmethod
+    # def new(cls, name: str, simulator: XPlane, **kwargs):
+    #     if "cockpit" in kwargs:
+    #         cockpit = kwargs.get("cockpit")
+    #         if type(cmdargs) is str:
+    #             return CockpitdecksInstruction(
+    #                 name=name,
+    #                 cockpit=cockpit,
+    #                 delay=kwargs.get("delay"),
+    #                 condition=kwargs.get("condition"),
+    #             )
+    #     else:
+    #         if not kwargs.get("silence", False):
+    #             logger.warning(f"Instruction {name}: invalid argument {kwargs}")
+    #     return None
+
+    @property
+    def cockpit(self):
+        return self._cockpit
+
+    @cockpit.setter
+    def cockpit(self, cockpit):
+        self._cockpit = cockpit
+
+    def _execute(self):
+        if instruction.name == "reload":
+            self.cockpit.reload_decks()
+        if instruction.name == "stop":
+            self.cockpit.terminate_all()
+        else:
+            logger.warning(f"invalid instruction {self.name}")
+
 
 # #################################
 #
@@ -1869,3 +1919,12 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 return fn
         logger.warning(f"file {filename} not found")
         return None
+
+    def execute(self, instruction: CockpitdecksInstruction):
+        if not isinstance(instruction, CockpitdecksInstruction):
+            logger.warning(f"invalid instruction {instruction.name}")
+            return
+        instruction._execute()
+
+    def instruction_factory(self, name: str, delay: float = 0.0, condition: str | None = None):
+        return CockpitdecksInstruction(name=name, cockpit=self, condition=condition, delay=delay)

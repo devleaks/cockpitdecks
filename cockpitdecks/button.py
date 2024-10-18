@@ -10,7 +10,7 @@ import re
 import logging
 import sys
 
-from cockpitdecks.simulator import CockpitdecksData
+from cockpitdecks.data import CockpitdecksData
 
 from .buttons.activation import ACTIVATION_VALUE
 from .buttons.representation import Annunciator
