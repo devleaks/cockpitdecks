@@ -11,6 +11,7 @@ import ruamel
 
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.simulator import INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE, CockpitdecksData, Simulator
+from cockpitdecks.buttons.activation import Activation
 
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
@@ -21,22 +22,32 @@ logger = logging.getLogger(__name__)
 
 
 class ValueProvider:
-    pass
+    def __init__(self, name: str, provider):
+        self._provider = provider
 
 
 class SimulatorDataValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, simulator: Simulator):
+        ValueProvider.__init__(self, name=name, provider=simulator)
+
     @abstractmethod
     def get_simulator_data_value(self, simulator_data, default=None):
         pass
 
 
 class StateVariableValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, button: Button):
+        ValueProvider.__init__(self, name=name, provider=button)
+
     @abstractmethod
     def get_state_variable_value(self, name: str):
         pass
 
 
 class ActivationValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, activation: "Activation"):
+        ValueProvider.__init__(self, name=name, provider=activation)
+
     @abstractmethod
     def get_activation_value(self):
         pass
@@ -379,7 +390,7 @@ class Value:
 
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
         if not isinstance(self._provider, StateVariableValueProvider):
-            return
+            return text
 
         txtcpy = text
         more = re.findall(PATTERN_INTSTATE, txtcpy)

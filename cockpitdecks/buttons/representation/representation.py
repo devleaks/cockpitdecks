@@ -107,6 +107,9 @@ class Representation:
 
         return default
 
+    def get_state_variables(self) -> dict:
+        return {}
+
     def get_text_detail(self, config, which_text):
         return self.button.get_text_detail(config, which_text)
 

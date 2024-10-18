@@ -245,6 +245,26 @@ class Instruction(ABC):
 
         self._timer = None
 
+    @classmethod
+    def new(cls, name, **kwargs):
+        if "cockpit" in kwargs:
+            return CockpitdecksInstruction(
+                name=name,
+                cockpit=kwargs.get("cockpit"),
+                delay=kwargs.get("delay"),
+                condition=kwargs.get("condition"),
+            )
+        elif "button" in kwargs:
+            return ButtonInstruction(
+                name=name,
+                button=kwargs.get("button"),
+                delay=kwargs.get("delay"),
+                condition=kwargs.get("condition"),
+            )
+        else:
+            logger.warning(f"Instruction {name}: invalid argument {kwargs}")
+        return None
+
     @abstractmethod
     def _execute(self, simulator: Simulator):
         self.clean_timer()
@@ -284,6 +304,48 @@ class Instruction(ABC):
         self._execute(simulator=simulator)
 
 
+class CockpitdecksInstruction(Instruction):
+    """
+    An Instruction to be performed by Cockpitdekcs itself like:
+    - Change page
+    - Reload decks
+    - Stop
+    ...
+    Instruction is not sent to simulator.
+    """
+    def __init__(self, name: str, cockpit: "Cockpit", delay: float = 0.0, condition: str | None = None) -> None:
+        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+        self._cockpit = cockpit
+
+    @property
+    def cockpit(self):
+        return self._cockpit
+
+    @cockpit.setter
+    def cockpit(self, cockpit):
+        self._cockpit = cockpit
+
+    def _execute(self):
+        self.cockpit.execute(self)
+
+
+class ButtonInstruction(Instruction):
+    def __init__(self, name: str, button: "Button", delay: float = 0.0, condition: str | None = None) -> None:
+        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+        self._button = button
+
+    @property
+    def button(self):
+        return self._button
+
+    @button.setter
+    def button(self, button):
+        self._button = button
+
+    def _execute(self):
+        self._button.sim.execute(self)
+
+
 class MacroInstruction(Instruction):
     """
     A Button activation will instruct the simulator software to perform an action.
@@ -298,16 +360,6 @@ class MacroInstruction(Instruction):
 
     def __str__(self) -> str:
         return self.name + f"({', '.join([c.name for c in self._instructions])}"
-
-    @property
-    def button(self):
-        return self._button
-
-    @button.setter
-    def button(self, button):
-        self._button = button
-        for instruction in self._instructions:
-            instruction._button = button
 
     def init(self):
         pass
@@ -423,6 +475,21 @@ class Simulator(ABC):
         return d.current_value if d.current_value is not None else default
 
     # ################################
+    # Factories
+    #
+    @abstractmethod
+    def instruction_factory(self, name, **kwargs):
+        pass
+
+    @abstractmethod
+    def replay_event_factory(self, name: str, value):
+        pass
+
+    @abstractmethod
+    def simulator_data_factory(self, name: str, data_type: str = "float", physical_unit: str = "") -> SimulatorData:
+        pass
+
+    # ################################
     # Cockpit interface
     #
     def clean_simulator_data_to_monitor(self):
@@ -465,14 +532,6 @@ class Simulator(ABC):
         self.simulator_data_to_monitor = {}
         logger.debug(f"..removed")
 
-    @abstractmethod
-    def create_instruction(self, name, **kwargs):
-        pass
-
-    @abstractmethod
-    def create_replay_event(self, name: str, value):
-        pass
-
     def execute(self, instruction: Instruction):
         instruction.execute(self)
 
@@ -487,6 +546,23 @@ class Simulator(ABC):
     @abstractmethod
     def terminate(self):
         pass
+
+
+class SimulatorInstruction(Instruction):
+    """
+    An Instruction to be submitted to and performed by the simulator:
+    """
+    def __init__(self, name: str, simulator: Simulator, delay: float = 0.0, condition: str | None = None) -> None:
+        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+        self._simulator = simulator
+
+    @property
+    def simulator(self):
+        return self._simulator
+
+    @simulator.setter
+    def cockpit(self, simulator):
+        self._simulator = simulator
 
 
 class SimulatorEvent(Event):

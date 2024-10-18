@@ -36,9 +36,6 @@ DECK_BUTTON_DEFINITION = "_deck_def"
 class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider):
     def __init__(self, config: dict, page: "Page"):
         SimulatorDataListener.__init__(self)
-        SimulatorDataValueProvider.__init__(self)
-        StateVariableValueProvider.__init__(self)
-        ActivationValueProvider.__init__(self)
 
         # Definition and references
         self._config = config
@@ -165,6 +162,11 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
         if self.wallpaper is not None:
             self._def.set_block_wallpaper(self.wallpaper)
+
+        # Initialize value providers
+        SimulatorDataValueProvider.__init__(self, name=self.name, simulator=self.sim)
+        StateVariableValueProvider.__init__(self, name=self.name, button=self)
+        ActivationValueProvider.__init__(self, name=self.name, activation=self._activation)
 
         self.init()
 
@@ -669,12 +671,15 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
                 self.render()
 
     def get_state_variables(self):
-        """Scan all datarefs and keep those created here"""
         a = {
             "managed": self.managed,
             "guarded": self.guarded,
         }
-        return a | self._activation.get_state_variables()
+        if self._activation is not None:
+            a = a | self._activation.get_state_variables()
+        if self._representation is not None:
+            a = a | self._representation.get_state_variables()
+        return a
 
     def get_representation(self):
         """

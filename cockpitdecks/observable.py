@@ -80,20 +80,6 @@ class Observable(SimulatorDataListener):
     def disable(self):
         self._enabled = False
 
-    def simulator_data_changed(self, data: SimulatorData):
-        if not self._enabled:
-            logger.warning(f"observable {self.name} disabled")
-            return
-        self.value = self._value.get_value()
-        if self.mode == CONFIG_KW.TRIGGER.value:
-            if self.value != 0:  # 0=False
-                logger.debug(f"observable {self.name} executed (trigger)")
-                # self._actions.execute(self.sim)
-        if self.mode == CONFIG_KW.ONCHANGE.value:
-            if self.has_changed():
-                logger.debug(f"observable {self.name} executed (changed)")
-                # self._actions.execute(self.sim)
-
     def init(self):
         # Register datarefs and ask to be notified
         simdata = self._value.get_simulator_data()
@@ -103,5 +89,20 @@ class Observable(SimulatorDataListener):
                 if ref is not None:
                     ref.add_listener(self)
 
-        logger.debug(f"observable {self.name}: listening to {simdata}")
+        logger.debug(f"{'>'*20} observable {self.name}: listening to {simdata}")
         logger.debug(f"observable {self.name} inited")
+
+    def simulator_data_changed(self, data: SimulatorData):
+        if not self._enabled:
+            logger.warning(f"observable {self.name} disabled")
+            return
+        self.value = self._value.get_value()
+        if self.mode == CONFIG_KW.TRIGGER.value:
+            if self.value != 0:  # 0=False
+                logger.debug(f"{'>'*20} observable {self.name} executed (trigger)")
+                # self._actions.execute(self.sim)
+        if self.mode == CONFIG_KW.ONCHANGE.value:
+            if self.has_changed():
+                logger.debug(f"{'>'*20} observable {self.name} executed (changed)")
+                # self._actions.execute(self.sim)
+
