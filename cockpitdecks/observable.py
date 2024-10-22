@@ -49,10 +49,8 @@ class Observable(SimulatorDataListener):
 
     @property
     def value(self):
-        """
-        Gets the current value, but does not provoke a calculation, just returns the current value.
-        """
-        logger.debug(f"button {self.name}: {self.current_value}")
+        """Gets the current value, but does not provoke a calculation, just returns the current value."""
+        logger.debug(f"observable {self.name}: {self.current_value}")
         return self.current_value
 
     @value.setter
@@ -60,7 +58,7 @@ class Observable(SimulatorDataListener):
         if value != self.current_value:
             self.previous_value = self.current_value
             self.current_value = value
-            logger.debug(f"button {self.name}: {self.current_value}")
+            logger.debug(f"observable {self.name}: {self.current_value}")
 
     def has_changed(self) -> bool:
         if self.previous_value is None and self.current_value is None:
@@ -90,7 +88,7 @@ class Observable(SimulatorDataListener):
                 if ref is not None:
                     ref.add_listener(self)
 
-        logger.debug(f"{'>'*20} observable {self.name}: listening to {simdata}")
+        logger.debug(f"observable {self.name}: listening to {simdata}")
         logger.debug(f"observable {self.name} inited")
 
     def simulator_data_changed(self, data: SimulatorData):
@@ -100,9 +98,9 @@ class Observable(SimulatorDataListener):
         self.value = self._value.get_value()
         if self.mode == CONFIG_KW.TRIGGER.value:
             if self.value != 0:  # 0=False
-                logger.debug(f"{'>'*20} observable {self.name} executed (trigger)")
-                # self._actions.execute(self.sim)
+                logger.debug(f"observable {self.name} executed (conditional trigger)")
+                # self._actions.execute()
         if self.mode == CONFIG_KW.ONCHANGE.value:
             if self.has_changed():
-                logger.debug(f"{'>'*20} observable {self.name} executed (changed)")
-                # self._actions.execute(self.sim)
+                logger.debug(f"observable {self.name} executed (value changed)")
+                # self._actions.execute()

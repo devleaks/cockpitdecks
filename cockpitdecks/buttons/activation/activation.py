@@ -367,7 +367,7 @@ class Activation:
             if self.skip_view:
                 logger.debug(f"button {self.button_name()}: skipping view {self._view}")
                 return
-            self._view.execute(self.button.sim)
+            self._view.execute()
 
     def handle(self, event):
         # Handle event, perform activation
@@ -1159,6 +1159,10 @@ class UpDown(Activation):
                 self.initial_value = value
                 self.stop_current_value = value
             logger.debug(f"button {self.button_name()} initialized stop at {self.stop_current_value} from initial-value")
+        if self.stop_current_value == 0:
+            self.go_up = True
+        elif self.stop_current_value == (self.stops - 1):
+            self.go_up = False
         self._inited = True
 
     def __str__(self):  # print its status
@@ -1685,7 +1689,7 @@ class EncoderValue(OnOff, EncoderProperties):
         if type(event) is PushEvent:
             if event.pressed:
                 if len(self._commands) > 1:
-                    if self.is_off():
+                    if self.is_off():  ## ISSUE: Uses button value to determine on (>=1) or off (-1<v<1)
                         self._commands[0].execute()
                     else:
                         self._commands[1].execute()

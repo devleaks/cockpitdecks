@@ -48,6 +48,7 @@ from cockpitdecks import (
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
+    NAMED_COLORS,
     OBSERVABLES_FILE,
     RESOURCES_FOLDER,
     ROOT_DEBUG,
@@ -268,6 +269,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.sim = None
 
         # Internal variables
+        self.named_colors = NAMED_COLORS
         self.observables = []
         self.ac_observables = []
         self.busy_reloading = False
@@ -931,6 +933,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         if not self._config.is_valid():
             logger.warning(f"no config file {fn}")
             return
+        self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
+        if len(self.named_colors) > 0:
+            logger.info(f"named colors {', '.join(self.named_colors)}")
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
         self._secret = serial_numbers
@@ -942,7 +947,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
         # 2. Create decks
-        decks = self._config.get("decks")
+        decks = self._config.get(CONFIG_KW.DECKS.value)
         if decks is None:
             logger.warning(f"no deck in config file {fn}")
             return
@@ -1027,6 +1032,14 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     logger.warning(f"deck {name} already exist, ignoring")
             else:
                 logger.error(f"deck {deck_type} {name} has no device, ignoring")
+
+    def convert_color(self, instr):
+        """Adds an extra layer of possibilities to define our own color names
+        for styling purposes.
+        """
+        if instr in self.named_colors:
+            return self.named_colors.get(instr)
+        return convert_color(instr=instr)
 
     def create_default_decks(self):
         """

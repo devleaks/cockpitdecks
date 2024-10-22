@@ -8,7 +8,7 @@ from enum import Enum
 from PIL import Image, ImageDraw, ImageFilter
 
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
-from cockpitdecks.resources.color import DEFAULT_COLOR, convert_color, light_off, is_number
+from cockpitdecks.resources.color import convert_color, light_off, is_number
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.simulator import SimulatorData
 from cockpitdecks.value import Value
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # Local default values
 ANNUNCIATOR_DEFAULT_MODEL = "A"
 ANNUNCIATOR_DEFAULT_MODEL_PART = "A0"
-
+ANNUNCIATOR_DEFAULT_TEXT_COLOR = "white"
 DEFAULT_INVERT_COLOR = "white"
 
 
@@ -165,12 +165,7 @@ class AnnunciatorPart:
             color = text_color
             logger.debug(f"button {self.annunciator.button.name}: color not set but text-color set, using color {color}")
         elif color is None:
-            color = self.annunciator.button.get_attribute("text-color")
-            if color is not None:
-                logger.debug(f"button {self.annunciator.button.name}: no color found, using default text color")
-            else:
-                color = DEFAULT_COLOR
-                logger.warning(f"button {self.annunciator.button.name}: no color found, using default")
+            color = ANNUNCIATOR_DEFAULT_TEXT_COLOR
 
         before = color
         if not self.is_lit:

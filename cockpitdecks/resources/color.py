@@ -41,7 +41,7 @@ def is_number(n):
     return is_integer(n) or is_float(n)
 
 
-def convert_color(instr: str | None | tuple | list) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
+def convert_color(instr: str | tuple | list | None) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
     # process either a color name or a color tuple as a string "(1, 2, 3)"
     # and returns a tuple of 3 or 4 integers in range [0,255].
     # If case of failure to convert, returns middle DEFAULT_COLOR values.

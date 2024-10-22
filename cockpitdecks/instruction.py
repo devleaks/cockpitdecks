@@ -50,9 +50,9 @@ class Instruction(ABC):
 
 
 class MacroInstruction(Instruction):
-    """
-    A Button activation will instruct the simulator software to perform an action.
-    A Command is the message that the simulation sofware is expecting to perform that action.
+    """A Macro Instruction is a collection of individual Instruction.
+    Each instruction comes with its condition for execution and delay since activation.
+    (Could have been called Instructions (plural form))
     """
 
     def __init__(self, name: str, instructions: dict):

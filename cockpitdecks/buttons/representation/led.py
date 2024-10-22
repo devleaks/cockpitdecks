@@ -3,10 +3,9 @@ Representation for LED.
 """
 
 import logging
-import colorsys
 
-from cockpitdecks.resources.color import convert_color
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK
+
+from cockpitdecks import DECK_FEEDBACK
 from .representation import Representation
 
 logger = logging.getLogger(__name__)
@@ -43,5 +42,5 @@ class LED(Representation):
         """
         Describe what the button does in plain English
         """
-        a = [f"The representation turns ON or OFF a single LED light"]
+        a = ["The representation turns ON or OFF a single LED light"]
         return "\n\r".join(a)

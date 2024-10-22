@@ -428,20 +428,8 @@ class IconText(IconColor):
     def __init__(self, button: "Button"):
         IconColor.__init__(self, button=button)
 
-        # Handle this presentation structure (text indented)
-        # - index: 9
-        #   typ: push
-        #   name: ATCCLR
-        #   command: AirbusFBW/ATCCodeKeyCLR
-        #   text:
-        #     text: CLR
-        #     text-font: DIN Bold
-        #     text-color: white
-        #     text-size: 24
-        #     text-position: cm
-        self.text_config = self._config.get("text")  # where to get text from
-
-        if type(self.text_config) is not dict:
+        text_config = self._config.get("text")  # where to get text from
+        if type(text_config) is not dict:
             # Handle this presentation structure (legacy, text unindented)
             # - index: 9
             #   typ: push
@@ -452,12 +440,33 @@ class IconText(IconColor):
             #   text-color: white
             #   text-size: 24
             #   text-position: cm
-            self.text_config = self._config
+            text_config = self._config
+        self.text_config = text_config
 
-        self.text = str(self.text_config.get("text"))
-        # Overwrite icon-* with text-bg-*
-        self.icon_color = self.text_config.get("text-bg-color", self.cockpit_color)
-        self.icon_texture = self.text_config.get("text-bg-texture", self.cockpit_texture)
+    @property
+    def text_config(self) -> dict:
+        return self._text_config
+
+    @text_config.setter
+    def text_config(self, text_config):
+        self._text_config = text_config
+
+        # init safe default
+        self.icon_color = self.cockpit_color
+        self.icon_texture = self.cockpit_texture
+
+        if self._text_config is not None:
+            self.text = str(self._text_config.get("text"))
+
+            # Overwrite icon-* with text-bg-*
+            self.bg_color = self._text_config.get("text-bg-color")
+            if self.bg_color is not None:
+                self.icon_color = convert_color(self.bg_color)
+                self.icon_texture = None # if there is a color, we do not use the texture, unless explicitely supplied
+
+            self.bg_texture = self._text_config.get("text-bg-texture")
+            if self.bg_texture is not None:
+                self.icon_texture = self.bg_texture
 
     def get_image(self):
         """

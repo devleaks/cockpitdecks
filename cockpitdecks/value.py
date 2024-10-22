@@ -7,7 +7,7 @@ import re
 import math
 from abc import ABC
 
-import ruamel
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.data import CockpitdecksData, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
@@ -258,7 +258,7 @@ class Value:
 
         return r
 
-    def deepscan(base: dict | ruamel.yaml.comments.CommentedMap | ruamel.yaml.comments.CommentedSeq) -> set:
+    def deepscan(base: dict | CommentedMap | CommentedSeq) -> set:
         # Highly ruamel.yaml specific procedure to scan
         # all dataref in yaml-loaded structure.
         # Returns a list of all ${} elements.
@@ -289,17 +289,17 @@ class Value:
             elif type(value) is list:
                 for v in value:
                     r = r | deepscan(v)
-            elif type(value) is ruamel.yaml.comments.CommentedMap:
+            elif type(value) is CommentedMap:
                 t = {k: v for k, v in value.items()}
                 r = r | deepscan(t)
-            elif type(value) is ruamel.yaml.comments.CommentedSeq:
+            elif type(value) is CommentedSeq:
                 for v in enumerate(value):
                     v1 = v[1]
                     if type(v1) is str and v1 != "":
                         r = r | set(re.findall(PATTERN_DOLCB, v1))
                     elif type(v1) is dict:
                         r = r | deepscan(v[1])
-                    elif type(v1) is ruamel.yaml.comments.CommentedMap:
+                    elif type(v1) is CommentedMap:
                         t = {k: v for k, v in v1.items()}
                         r = r | deepscan(t)
                     else:

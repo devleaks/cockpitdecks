@@ -173,7 +173,7 @@ class Deck(ABC):
             return value
 
         if not silence:
-            logger.info(f"deck {self.name} no value in config")
+            logger.info(f"deck {self.name} no value in deck config")
 
         if propagate:
             if not silence:

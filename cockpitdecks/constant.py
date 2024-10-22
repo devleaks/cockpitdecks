@@ -49,6 +49,7 @@ DEFAULT_PAGE_NAME = "Default Page"
 
 ICON_SIZE = 256  # px
 DEFAULT_LABEL_POSITION = "cm"
+NAMED_COLORS = {}  # name: tuple()
 
 # Virtual decks and web decks
 VIRTUAL_DECK_DRIVER = "virtualdeck"
@@ -102,10 +103,10 @@ class ENVIRON_KW(Enum):
 # System default values
 COCKPITDECKS_DEFAULT_VALUES = {
     "cache-icon": True,
-    "cockpit-color": "cornflowerblue",
+    "system-font": "Monaco.ttf",  # alias
+    "cockpit-color": "cornflowerblue",  # there are no default-* for the following three values
     "cockpit-texture": None,
     "cockpit-theme": "light",
-    "system-font": "Monaco.ttf",  # alias
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.KORRY,
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
@@ -157,10 +158,12 @@ class CONFIG_KW(Enum):
     INDEX = "index"
     INDEX_NUMERIC = "_index"
     INITIAL_VALUE = "initial-value"
+    INTERNAL_KEY = "_key"
     LABEL = "label"
     LAYOUT = "layout"
     MANAGED = "managed"
     NAME = "name"
+    NAMED_COLORS = "named-colors"
     NONE = "none"
     OBSERVABLES = "observables"
     OBSERVABLE = "observable"
@@ -181,6 +184,11 @@ class CONFIG_KW(Enum):
     VIEW_IF = "view-if"
     WALLPAPER = "wallpaper"
     COCKPITDECKS = "COCKPITDECKS"
+
+
+class CONFIG_KW_ALIASES(Enum):
+    SIM_DATUM = {"dataref", "simvar", "simdata"}
+    SIM_DATA = {"multi-datarefs", "multi-simvars", "multi-simdata"}
 
 
 class ACTIVATION_KW(Enum):
@@ -272,11 +280,15 @@ class Config(MutableMapping):
         self.store = dict()
         if os.path.exists(filename):
             filename = os.path.abspath(filename)
-            with open(filename, "r") as fp:
-                self.store = yaml.load(fp)
+            dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
+            try:
+                with open(filename, "r") as fp:
+                    self.store = yaml.load(fp)
+                    self.store[CONFIG_FILENAME] = filename
+                    init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
+            except:
                 self.store[CONFIG_FILENAME] = filename
-                dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
-                init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
+                init_logger.warning(f"error loading config from {os.path.abspath(filename).replace(dirname, '')}", exc_info=True)
         else:
             init_logger.warning(f"no file {filename}")
 

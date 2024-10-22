@@ -210,6 +210,9 @@ class XPWeatherData:
 
         self.init()
 
+    def init(self):
+        self.print(level=logging.DEBUG)  # writes to logger.debug
+
     def collect_weather_datarefs(self, weather_type: str = WEATHER_LOCATION.AIRCRAFT.value, update: bool = False) -> dict:
         if not update and os.path.exists(WEATHER_CACHE_FILE):
             data = {}
@@ -276,9 +279,6 @@ class XPWeatherData:
         self.last_updated = datetime.now().timestamp()
         return weather_datarefs
 
-    def init(self):
-        self.print(level=logging.DEBUG)  # writes to logger.debug
-
     def older_than(self, seconds):
         if self.last_updated is None:
             return True
@@ -288,6 +288,9 @@ class XPWeatherData:
     def guess_location(self):
         logger.info("location not guessed")
 
+    # ################################################
+    #
+    #
     def sort_layers_by_alt(self):
         # only keeps layers with altitude
         cloud_alts = filter(lambda x: x.base is not None, self.cloud_layers)
@@ -315,70 +318,6 @@ class XPWeatherData:
             if alt <= l.alt_msl:
                 return l
         return None
-
-    def make_metar(self, alt=None):
-        metar = self.getStation()
-        metar = metar + " " + self.getTime()
-        metar = metar + " " + self.getAuto()
-        metar = metar + " " + self.getWind()
-        if self.is_cavok():
-            metar = metar + " CAVOK"
-            metar = metar + " " + self.getRVR()
-        else:
-            metar = metar + " " + self.getVisibility()
-            metar = metar + " " + self.getRVR()
-            metar = metar + " " + self.getPhenomenae()
-            metar = metar + " " + self.getClouds()
-        metar = metar + " " + self.getTemperatures()
-        metar = metar + " " + self.getPressure()
-        metar = metar + " " + self.getForecast()
-        metar = metar + " " + self.getRemarks()
-        return re.sub(" +", " ", metar)  # clean multiple spaces
-
-    def print(self, level=logging.INFO):
-        width = 70
-        output = io.StringIO()
-        print("\n", file=output)
-        print("=" * width, file=output)
-        MARK_LIST = ["DATAREF", "VALUE"]
-        table = []
-        csv = []
-
-        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WEATHER
-        DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_CLOUD
-        DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WIND
-
-        for k, v in DATAREF_WEATHER.items():
-            line = (v, getattr(self.weather, k))
-            table.append(line)  # print(v, getattr(self.weather, k))
-            csv.append(line)
-        i = 0
-        for l in self.cloud_layers:
-            for k, v in DATAREF_CLOUD.items():
-                line = (f"{v}[{i}]", getattr(l, k))  # print(f"{v}[{i}]", getattr(l, k))
-                table.append(line)
-                csv.append(line)
-            i = i + 1
-        i = 0
-        for l in self.wind_layers:
-            for k, v in DATAREF_WIND.items():
-                line = (f"{v}[{i}]", getattr(l, k))  # print(f"{v}[{i}]", getattr(l, k))
-                table.append(line)
-                csv.append(line)
-            i = i + 1
-        # table = sorted(table, key=lambda x: x[0])  # absolute emission time
-        print(tabulate(table, headers=MARK_LIST), file=output)
-        print("-" * width, file=output)
-        print(f"reconstructed METAR: {self.make_metar()}", file=output)
-        print("=" * width, file=output)
-
-        # with open(WEATHER_CACHE_FILE, "w") as fp:
-        #     for l in csv:
-        #         print(l[0], l[1], file=fp)
-
-        contents = output.getvalue()
-        output.close()
-        logger.log(level, f"{contents}")
 
     def print_cloud_layers_alt(self):
         i = 0
@@ -593,6 +532,73 @@ class XPWeatherData:
 
     def getRemarks(self):
         return ""
+
+    # ################################################
+    #
+    #
+    def print(self, level=logging.INFO):
+        width = 70
+        output = io.StringIO()
+        print("\n", file=output)
+        print("=" * width, file=output)
+        MARK_LIST = ["DATAREF", "VALUE"]
+        table = []
+        csv = []
+
+        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WEATHER
+        DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_CLOUD
+        DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WIND
+
+        for k, v in DATAREF_WEATHER.items():
+            line = (v, getattr(self.weather, k))
+            table.append(line)  # print(v, getattr(self.weather, k))
+            csv.append(line)
+        i = 0
+        for l in self.cloud_layers:
+            for k, v in DATAREF_CLOUD.items():
+                line = (f"{v}[{i}]", getattr(l, k))  # print(f"{v}[{i}]", getattr(l, k))
+                table.append(line)
+                csv.append(line)
+            i = i + 1
+        i = 0
+        for l in self.wind_layers:
+            for k, v in DATAREF_WIND.items():
+                line = (f"{v}[{i}]", getattr(l, k))  # print(f"{v}[{i}]", getattr(l, k))
+                table.append(line)
+                csv.append(line)
+            i = i + 1
+        # table = sorted(table, key=lambda x: x[0])  # absolute emission time
+        print(tabulate(table, headers=MARK_LIST), file=output)
+        print("-" * width, file=output)
+        print(f"reconstructed METAR: {self.make_metar()}", file=output)
+        print("=" * width, file=output)
+
+        # with open(WEATHER_CACHE_FILE, "w") as fp:
+        #     for l in csv:
+        #         print(l[0], l[1], file=fp)
+
+        contents = output.getvalue()
+        output.close()
+        logger.log(level, f"{contents}")
+
+    def make_metar(self, alt=None):
+        metar = self.getStation()
+        metar = metar + " " + self.getTime()
+        metar = metar + " " + self.getAuto()
+        metar = metar + " " + self.getWind()
+        if self.is_cavok():
+            metar = metar + " CAVOK"
+            metar = metar + " " + self.getRVR()
+        else:
+            metar = metar + " " + self.getVisibility()
+            metar = metar + " " + self.getRVR()
+            metar = metar + " " + self.getPhenomenae()
+            metar = metar + " " + self.getClouds()
+        metar = metar + " " + self.getTemperatures()
+        metar = metar + " " + self.getPressure()
+        metar = metar + " " + self.getForecast()
+        metar = metar + " " + self.getRemarks()
+        return re.sub(" +", " ", metar)  # clean multiple spaces
 
     def get_metar_desc(self, metar=None):
         if metar is None:

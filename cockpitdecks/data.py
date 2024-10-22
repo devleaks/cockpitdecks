@@ -204,10 +204,6 @@ class DataListener(ABC):
         pass
 
 
-
-
-
-
 # "Internal" data, same properties as the simulator data
 # but does not get forwarded to the simulator
 # Mistakenly sometimes called an internal dataref... (historical)
@@ -218,5 +214,3 @@ class CockpitdecksData(Data):
         if not path.startswith(COCKPITDECKS_DATA_PREFIX):
             path = COCKPITDECKS_DATA_PREFIX + path
         Data.__init__(self, name=path, data_type="string" if is_string else "float")
-
-

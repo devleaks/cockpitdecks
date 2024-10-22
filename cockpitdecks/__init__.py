@@ -11,7 +11,7 @@ from datetime import datetime
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "12.3.0"
+__version__ = "12.3.2"
 
 #
 #
@@ -77,9 +77,9 @@ def parse_options(options: dict | None) -> list:
 
 
 def get_aliases(data: dict, aliases: list | set | tuple):
-    for a in aliases:
-        v = data.get(a)
-        if v is not None:
+    # def get_aliases(data: dict, aliases: CONFIG_KW_ALIASES):
+    for a in aliases:  # CONFIG_KW_ALIASES(aliases).value
+        if v := data.get(a) is not None:
             return v
     return None
 

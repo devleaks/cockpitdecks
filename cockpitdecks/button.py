@@ -10,10 +10,10 @@ import re
 import logging
 import sys
 
-from cockpitdecks.data import CockpitdecksData
 
 from .buttons.activation import ACTIVATION_VALUE
 from .buttons.representation import Annunciator
+from .data import CockpitdecksData
 from .simulator import SimulatorData, SimulatorDataListener
 from .value import Value, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider
 
@@ -48,12 +48,16 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
 
         self.deck.cockpit.set_logging_level(__name__)
 
-        self.index = config.get("index")  # button_type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
-        self._key = config.get("_key", self.index)  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
+        self.index = config.get(
+            CONFIG_KW.INDEX.value
+        )  # button_type: button, index: 4 (user friendly) -> _key = B4 (internal, to distinguish from type: push, index: 4).
+        self._key = config.get(
+            CONFIG_KW.INTERNAL_KEY.value, self.index
+        )  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
         self._definition = self.deck.get_deck_type().get_button_definition(self.index)  # kind of meta data capabilties of button
 
-        self.name = config.get("name", str(self.index))
+        self.name = config.get(CONFIG_KW.NAME.value, str(self.index))
         self.num_index = None
         if type(self.index) is str:
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
@@ -624,8 +628,8 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorData):
-            logger.error(f"button {self.name}: not a simulator data")
+        if not isinstance(data, SimulatorData) and not isinstance(data, CockpitdecksData):
+            logger.error(f"button {self.name}: not a simulator data ({type(data).__name__})")
             return
         logger.debug(f"{self.name}: {data.name} changed")
         self.value = self.compute_value()
