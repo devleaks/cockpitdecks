@@ -1660,6 +1660,7 @@ class EncoderValue(OnOff, EncoderProperties):
 
         # Internal variables
         self.encoder_current_value = 0
+        self.onoff_current_value = False
 
         self.init_differed()
 
@@ -1682,6 +1683,11 @@ class EncoderValue(OnOff, EncoderProperties):
             return False
         return super().is_valid()
 
+    def is_on(self):
+        # DO NOT fetch the button's value to determine on/off
+        # On/off is a local state of this activation
+        return self.onoff_current_value
+
     def activate(self, event) -> bool:
         if not self.can_handle(event):
             return False
@@ -1697,6 +1703,7 @@ class EncoderValue(OnOff, EncoderProperties):
                     logger.debug(f"button {self.button_name()} not enough commands {len(self._commands)}/é")
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
+                print(">>>", self.onoff_current_value)
             return True
 
         self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
@@ -1707,12 +1714,12 @@ class EncoderValue(OnOff, EncoderProperties):
             if x is None:  # why?
                 x = 0
             if event.turned_counter_clockwise:  # rotate left
-                x = max(self.value_min, x - self.step)
+                x = min(self.value_max, x + self.step)
                 ok = True
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                 self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
             elif event.turned_clockwise:  # rotate right
-                x = min(self.value_max, x + self.step)
+                x = max(self.value_min, x - self.step)
                 ok = True
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                 self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
@@ -1727,6 +1734,7 @@ class EncoderValue(OnOff, EncoderProperties):
         return False
 
     def get_activation_value(self):
+        # On/Off status accessible through state variable only
         return self.encoder_current_value
 
     def get_state_variables(self) -> dict:
@@ -1738,6 +1746,8 @@ class EncoderValue(OnOff, EncoderProperties):
             INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
             INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
             INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            "on": self.onoff_current_value,
+            "value": self.encoder_current_value
         }
         return a | super().get_state_variables()
 
