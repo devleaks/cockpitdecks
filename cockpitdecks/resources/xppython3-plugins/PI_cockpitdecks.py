@@ -23,10 +23,11 @@ yaml = YAML(typ="safe", pure=True)
 # ###########################################################
 # C O C K P T D E C K S
 #
-RELEASE = "1.1.0"  # local version number
+RELEASE = "1.2.0"  # local version number
 #
 # Changelog:
 #
+# 23-OCT-2024: 1.2.0: Add maximum frequency (~10 secs) for collection, send UDP more frequently
 # 30-SEP-2024: 1.1.2: Add maximum frequency (~10 secs)
 # 23-AUG-2024: 1.1.1: Wrong if/then/else
 # 23-AUG-2024: 1.1.0: Added datarefs to allow for external monitoring
@@ -70,9 +71,11 @@ HDL = "cmdhdl"
 MCAST_GRP = "239.255.1.1"  # same as X-Plane 12
 MCAST_PORT = 49505  # 49707 for XPlane12
 MCAST_TTL = 2
+MAX_PACK_LEN = 1472
 
-FREQUENCY = 5.0  # will run every FREQUENCY seconds at most, never faster
-FREQUENCY_MAX = 10
+COLLECTION_FREQUENCY = 5.0  # will run every COLLECTION_FREQUENCY seconds at most, never faster
+COLLECTION_FREQUENCY_MAX = 10
+EMISSION_FREQUENCY = 1  # seconds
 
 AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
@@ -103,7 +106,8 @@ class PythonInterface:
         self.use_defaults = LOAD_DEFAULT_DATAREFS
         self.run_count = 0
         self.num_collected_drefs = 0
-        self.frequency = FREQUENCY
+        self.frequency = COLLECTION_FREQUENCY
+        self.fma_bytes = bytes()
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MCAST_TTL)
@@ -162,9 +166,13 @@ class PythonInterface:
         return None
 
     def XPluginEnable(self):
-        xp.registerFlightLoopCallback(self.FlightLoopCallback, 1.0, 0)
+        xp.registerFlightLoopCallback(self.CollectDatarefsCB, 1.0, 0)
         if self.trace:
-            print(self.Info, "XPluginEnable: flight loop registered")
+            print(self.Info, "XPluginEnable: collection flight loop registered")
+
+        xp.registerFlightLoopCallback(self.BroadcastDatarefsCB, 1.0, 0)
+        if self.trace:
+            print(self.Info, "XPluginEnable: emission flight loop registered")
 
         if self.isRunningRef is not None:
             for sig in ("com.leecbaker.datareftool", "xplanesdk.examples.DataRefEditor"):
@@ -201,9 +209,12 @@ class PythonInterface:
         return 0
 
     def XPluginDisable(self):
-        xp.unregisterFlightLoopCallback(self.FlightLoopCallback, 0)
+        xp.unregisterFlightLoopCallback(self.BroadcastDatarefsCB, 0)
         if self.trace:
-            print(self.Info, "XPluginDisable: flight loop unregistered")
+            print(self.Info, "XPluginDisable: emission flight loop unregistered")
+        xp.unregisterFlightLoopCallback(self.CollectDatarefsCB, 0)
+        if self.trace:
+            print(self.Info, "XPluginDisable: collection flight loop unregistered")
         self.enabled = False
         if self.trace:
             print(self.Info, "disabled")
@@ -267,31 +278,32 @@ class PythonInterface:
     def getStringDrefCountCallback(self, inRefcon):
         return len(self.datarefs) if self.datarefs is not None else 0
 
-    def FlightLoopCallback(self, elapsedMe, elapsedSim, counter, refcon):
+    def CollectDatarefsCB(self, sinceLast, elapsedSim, counter, refcon):
         if not self.enabled:
             return 0
         if self.run_count % 100 == 0:
-            print(self.Info, f"FlightLoopCallback: is alive ({self.run_count})")
+            print(self.Info, f"CollectDatarefsCB: is alive ({self.run_count})")
         elif self.run_count in CHECK_COUNT:
             if len(self.datarefs) < self.num_collected_drefs and (self.acpath is not None and len(self.acpath) > 0):
                 print(
                     self.Info,
-                    f"FlightLoopCallback: is alive ({self.run_count}), missing string datarefs {len(self.datarefs)}/{self.num_collected_drefs} for {self.acpath}",
+                    f"CollectStringDatarefsCB: is alive ({self.run_count}), missing string datarefs {len(self.datarefs)}/{self.num_collected_drefs} for {self.acpath}",
                 )
                 self.load(acpath=self.acpath)
             else:
                 print(
                     self.Info,
-                    f"FlightLoopCallback: is alive ({self.run_count}), {len(self.datarefs)}/{self.num_collected_drefs} string datarefs for {self.acpath}",
+                    f"CollectStringDatarefsCB: is alive ({self.run_count}), {len(self.datarefs)}/{self.num_collected_drefs} string datarefs for {self.acpath}",
                 )
         self.run_count = self.run_count + 1
+        drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}}
         with self.RLock:  # add a meta data to sync effectively
             try:  # efficent method
                 drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}} | {
                     d: xp.getDatas(self.datarefs[d]) for d in self.datarefs
                 }
             except:  # if one dataref does not work, try one by one, skip those in error
-                drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}}
+                drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}}  # reset it
                 for d in self.datarefs:
                     try:
                         v = xp.getDatas(self.datarefs[d])
@@ -299,19 +311,33 @@ class PythonInterface:
                     except:
                         print(
                             self.Info,
-                            f"FlightLoopCallback: error fetching dataref string {d}, skipping",
+                            f"CollectStringDatarefsCB: error fetching dataref string {d}, skipping",
                         )
-        fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
+        self.fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
         # if self.trace:
         #     print(self.Info, fma_bytes.decode("utf-8"))
-        if len(fma_bytes) > 1472:
+        # if len(fma_bytes) > MAX_PACK_LEN:
+        #     print(
+        #         self.Info,
+        #         f"CollectStringDatarefsCB: returned value too large ({len(fma_bytes)}/{MAX_PACK_LEN})",
+        #     )
+        # else:
+        #     if len(fma_bytes) > 0:
+        #         self.sock.sendto(fma_bytes, (MCAST_GRP, MCAST_PORT))
+        return self.frequency
+
+    def BroadcastDatarefsCB(self, sinceLast, elapsedSim, counter, refcon):
+        if not self.enabled:
+            return 0
+        if len(self.fma_bytes) > MAX_PACK_LEN:
             print(
                 self.Info,
-                f"FlightLoopCallback: returned value too large ({len(fma_bytes)}/1472)",
+                f"BroadcastDatarefsCB: UDP packed too large ({len(self.fma_bytes)}/{MAX_PACK_LEN}), not sent",
             )
         else:
-            self.sock.sendto(fma_bytes, (MCAST_GRP, MCAST_PORT))
-        return self.frequency
+            if len(self.fma_bytes) > 0:
+                self.sock.sendto(self.fma_bytes, (MCAST_GRP, MCAST_PORT))
+        return EMISSION_FREQUENCY
 
     def command(self, command: str, begin: bool) -> int:
         # Execute a long press command
@@ -622,7 +648,7 @@ class PythonInterface:
                 )
             # adjust frequency since operation is expensive
             oldf = self.frequency
-            self.frequency = min(max(FREQUENCY + len(self.datarefs) / 2, FREQUENCY), FREQUENCY_MAX)
+            self.frequency = min(max(COLLECTION_FREQUENCY + len(self.datarefs) / 2, COLLECTION_FREQUENCY), COLLECTION_FREQUENCY_MAX)
             if oldf != self.frequency and self.trace:
                 print(self.Info, f"load: frequency adjusted to {self.frequency}")
 
