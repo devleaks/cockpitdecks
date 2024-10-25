@@ -1747,7 +1747,7 @@ class EncoderValue(OnOff, EncoderProperties):
             INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
             INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
             "on": self.onoff_current_value,
-            "value": self.encoder_current_value
+            "value": self.encoder_current_value,
         }
         return a | super().get_state_variables()
 

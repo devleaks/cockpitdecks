@@ -10,14 +10,20 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
+class InstructionProvider:
+
+    def instruction_factory(self, **kargs) -> Instruction:
+        raise NotImplementedError("Please implement InstructionProvider.instruction_factory method")
+
+
 class Instruction(ABC):
     """An Instruction is sent to the Simulator to execute an action."""
 
-    def __init__(self, name: str, performer=None, delay: float = 0.0, condition: str | None = None) -> None:
+    def __init__(self, name: str, performer: InstructionProvider = None, delay: float = 0.0, condition: str | None = None) -> None:
         super().__init__()
         self.name = name
         self.performer = performer
-        self.delay = delay
+        self.delay = delay if delay is not None else 0
         self.condition = condition
 
         self._timer = None
@@ -42,7 +48,7 @@ class Instruction(ABC):
             logger.debug(f"{self.name} not allowed to run")
             return
         if self._timer is None and self.delay > 0:
-            self._timer = threading.Timer(self.delay, self._execute, args=[simulator])
+            self._timer = threading.Timer(self.delay, self._execute)
             self._timer.start()
             logger.debug(f"{self.name} will be executed in {self.delay} secs")
             return
@@ -55,7 +61,7 @@ class MacroInstruction(Instruction):
     (Could have been called Instructions (plural form))
     """
 
-    def __init__(self, name: str, instructions: dict):
+    def __init__(self, name: str, instructions: dict, **kwargs):
         Instruction.__init__(self, name=name)
         self.instructions = instructions
         self._instructions = []
@@ -65,7 +71,13 @@ class MacroInstruction(Instruction):
         return self.name + f" ({', '.join([c.name for c in self._instructions])}"
 
     def init(self):
-        pass
+        if self.performer is not None:
+            for c in self.instructions:
+                total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
+                if total_delay > 0:
+                    c[CONFIG_KW.DELAY.value]  = total_delay
+                ci = self.performer.instruction_factory(**c)
+                self._instructions.append(ci)
 
     def _check_condition(self):
         # condition checked in each individual instruction

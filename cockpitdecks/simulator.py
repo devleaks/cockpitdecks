@@ -8,9 +8,10 @@ from typing import List, Any
 from abc import ABC, abstractmethod
 from enum import Enum
 
+from cockpitdecks import CONFIG_KW
 from cockpitdecks.event import Event
 from cockpitdecks.data import Data, DataListener, COCKPITDECKS_DATA_PREFIX
-from cockpitdecks.instruction import Instruction
+from cockpitdecks.instruction import InstructionProvider, Instruction
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 loggerSimdata = logging.getLogger("SimulatorData")
@@ -29,7 +30,12 @@ logger = logging.getLogger(__name__)
 # ########################################
 # Simulator
 #
-class Simulator(ABC):
+class SimulatorDataProvider:
+
+    def simulator_data_factory(self, name: str, data_type: str = "float", physical_unit: str = "") -> SimulatorData:
+        raise NotImplementedError("Please implement SimulatorDataProvider.simulator_data_factory method")
+
+class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
@@ -135,15 +141,7 @@ class Simulator(ABC):
     # Factories
     #
     @abstractmethod
-    def instruction_factory(self, name, **kwargs):
-        pass
-
-    @abstractmethod
     def replay_event_factory(self, name: str, value):
-        pass
-
-    @abstractmethod
-    def simulator_data_factory(self, name: str, data_type: str = "float", physical_unit: str = "") -> SimulatorData:
         pass
 
     # ################################
@@ -253,8 +251,43 @@ class SimulatorInstruction(Instruction):
         self._simulator = simulator
 
     def _execute(self):
-        logger.warning(f"Abstract method cannot execute instruction {self.name}")
+        raise NotImplementedError(f"Please implement SimulatorInstruction._execute method ({self.name})")
 
+
+class SimulatorMacroInstruction(SimulatorInstruction):
+    """A Macro Instruction is a collection of individual Instruction.
+    Each instruction comes with its condition for execution and delay since activation.
+    (Could have been called Instructions (plural form))
+    """
+
+    def __init__(self, name: str, simulator: Simulator, instructions: dict):
+        SimulatorInstruction.__init__(self, name=name, simulator=simulator)
+        self.instructions = instructions
+        self._instructions = []
+        self.init()
+
+    def __str__(self) -> str:
+        return self.name + f" ({', '.join([c.name for c in self._instructions])}"
+
+    def init(self):
+        total_delay = 0
+        for c in self.instructions:
+            total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
+            if total_delay > 0:
+                c[CONFIG_KW.DELAY.value]  = total_delay
+            ci = self._simulator.instruction_factory(name=c.get(CONFIG_KW.NAME.value),
+                                                     command=c.get(CONFIG_KW.COMMAND.value),
+                                                     delay=c.get(CONFIG_KW.DELAY.value),
+                                                     condition=c.get(CONFIG_KW.CONDITION.value))
+            self._instructions.append(ci)
+
+    def _check_condition(self):
+        # condition checked in each individual instruction
+        return True
+
+    def _execute(self):
+        for instruction in self._instructions:
+            instruction.execute()
 
 # ########################################
 # SimulatorEvent

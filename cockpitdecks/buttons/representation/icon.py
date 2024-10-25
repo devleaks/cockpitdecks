@@ -462,7 +462,7 @@ class IconText(IconColor):
             self.bg_color = self._text_config.get("text-bg-color")
             if self.bg_color is not None:
                 self.icon_color = convert_color(self.bg_color)
-                self.icon_texture = None # if there is a color, we do not use the texture, unless explicitely supplied
+                self.icon_texture = None  # if there is a color, we do not use the texture, unless explicitely supplied
 
             self.bg_texture = self._text_config.get("text-bg-texture")
             if self.bg_texture is not None:

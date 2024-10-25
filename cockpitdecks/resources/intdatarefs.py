@@ -96,3 +96,7 @@ class INTERNAL_DATAREF(Enum):
     # Zulu diff
     # Time difference between zulu in sim and zulu on cockpitdecks host computer (in seconds and microseconds)
     ZULU_DIFFERENCE = "xplane/timedelay"
+    ZULU_CNT = "xplane/timedelay/cnt"
+    ZULU_AVG = "xplane/timedelay/avg"
+    ZULU_MIN = "xplane/timedelay/min"
+    ZULU_MAX = "xplane/timedelay/max"
