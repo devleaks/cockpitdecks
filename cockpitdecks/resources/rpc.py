@@ -78,6 +78,9 @@ class RPC:
                 angle_in_degrees = stack.pop()
                 angle_in_radians = math.radians(angle_in_degrees)
                 stack.append(math.sin(angle_in_radians))
+            elif isinstance(token, str):
+                print(f"RPC: pushing string {token}")
+                stack.append(token)
             else:
                 print(f"RPC: invalid token {token}")
 
