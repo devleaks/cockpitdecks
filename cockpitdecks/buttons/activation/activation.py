@@ -102,7 +102,7 @@ class Activation:
 
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:
-            self._view = self.sim.instruction_factory(name=cmdname + ":view", command=view, condition=self._config.get(CONFIG_KW.VIEW_IF.value))
+            self._view = self.sim.instruction_factory(name=cmdname + ":view", command=view)
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press

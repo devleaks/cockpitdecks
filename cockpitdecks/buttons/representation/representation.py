@@ -143,6 +143,8 @@ class Representation:
         return default
 
     def get_simulator_data(self) -> set:
+        # The value of the representation, the value the representation will use to drive its display
+        # is the value of the button.
         return set()
 
     def get_button_value(self):

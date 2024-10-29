@@ -228,8 +228,21 @@ class Value:
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
 
-        # 2. In string datarefs (formula, text, etc.)
-        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.VIEW_IF.value, CONFIG_KW.CONDITION.value]
+        # 2. Command with potential conditions
+        for instr_cmd in [CONFIG_KW.COMMAND.value, CONFIG_KW.COMMANDS.value, CONFIG_KW.VIEW.value]:
+            commands = base.get(instr_cmd)
+            if type(commands) is list:
+                for command in commands:
+                    if type(command) is dict:  # command "block"
+                        datarefs = self.scan_datarefs(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
+                        if len(datarefs) > 0:
+                            r = r | datarefs
+                            logger.debug(f"value {self.name}: added datarefs found in {command}: {datarefs}")
+                    # else command is str, no dref to scan for
+            # else: commands is string or None, no dref to scan for
+
+        # 3. In string datarefs (formula, text, etc.)
+        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
         self._known_extras = set(extra_keys + allways_extra)
 
         for key in self._known_extras:

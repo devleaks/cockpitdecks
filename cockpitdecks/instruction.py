@@ -35,7 +35,7 @@ class Instruction(ABC):
         self.clean_timer()
 
     @abstractmethod
-    def _check_condition(self):
+    def _check_condition(self) -> bool:
         return True
 
     def clean_timer(self):
@@ -75,7 +75,7 @@ class MacroInstruction(Instruction):
             for c in self.instructions:
                 total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
                 if total_delay > 0:
-                    c[CONFIG_KW.DELAY.value]  = total_delay
+                    c[CONFIG_KW.DELAY.value] = total_delay
                 ci = self.performer.instruction_factory(**c)
                 self._instructions.append(ci)
 
