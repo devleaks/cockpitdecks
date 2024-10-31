@@ -2,19 +2,20 @@
 #
 from __future__ import annotations
 import sys
+import logging
 import os
 import io
 import glob
 import base64
 import threading
-import logging
 import pickle
 import json
-import importlib
-import pkgutil
-from typing import Dict
-import pkg_resources
 
+import importlib
+import pkg_resources
+import pkgutil
+
+from typing import Dict, Tuple
 from datetime import datetime
 from queue import Queue
 
@@ -33,12 +34,14 @@ from cockpitdecks import (
     CONFIG_FILENAME,
     CONFIG_FOLDER,
     CONFIG_KW,
+    DARK_THEME_NAME,
     DECK_ACTIONS,
     DECK_FEEDBACK,
     DECK_IMAGES,
     DECK_KW,
     DECK_TYPES,
     DECKS_FOLDER,
+    DEFAULT_ATTRIBUTE_NAME,
     DEFAULT_ATTRIBUTE_PREFIX,
     COCKPITDECKS_INTERNAL_EXTENSIONS,
     DEFAULT_FREQUENCY,
@@ -48,6 +51,7 @@ from cockpitdecks import (
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
+    LIGHT_THEME_NAME,
     NAMED_COLORS,
     OBSERVABLES_FILE,
     RESOURCES_FOLDER,
@@ -455,13 +459,28 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         return [a for a in self.all_representations.values() if feedback in a.get_required_capability()]
 
     def defaults_prefix(self):
-        return "dark-" + DEFAULT_ATTRIBUTE_PREFIX if self._dark else DEFAULT_ATTRIBUTE_PREFIX
+        return "-".join([DARK_THEME_NAME, DEFAULT_ATTRIBUTE_NAME]) if self._dark else DEFAULT_ATTRIBUTE_PREFIX
+
+    def get_color(self, color, silence: bool = True) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
+        if type(color) is str and color in self.named_colors:
+            color1 = color
+            color = self.named_colors.get(color)  # named color can be the name of a pillow color...
+            if silence:
+                logger.debug(f"named colors {color1}=>{color}")
+            else:
+                logger.info(f"named colors {color1}=>{color}")
+        return convert_color(color)  # this time, if color is a color name it must be a valid pillow color name
+
+    def convert_if_color_attribute(self, attribute: str, value, silence: bool = True):
+        if type(attribute) is str and "color" in attribute:
+            if silence:
+                logger.debug(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
+            else:
+                logger.info(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
+        return self.get_color(color=value, silence=silence) if type(attribute) is str and "color" in attribute else value
 
     def get_attribute(self, attribute: str, default=None, silence: bool = True):
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
-        def is_color_attribute(a):
-            return "color" in a
-
         def theme_only(a: str) -> bool:
             # Returns whether an attribute can be themed
             # Currently, only color, texture, and fonts
@@ -469,8 +488,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
         self._reqdfts.add(attribute)  # internal stats
 
+        # dealing with themes
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX) or attribute.startswith("cockpit-"):
-            theme_prefix = self._config.get("cockpit-theme", "")  # prefix = "dark", or nothing
+            theme_prefix = self._config.get(CONFIG_KW.COCKPIT_THEME.value, "")  # prefix = "dark", or nothing
             if theme_prefix is not None and theme_prefix not in ["", "default", "cockpit"] and not attribute.startswith(theme_prefix):
                 newattr = "-".join([theme_prefix, attribute])  # dark-default-color
                 value = self.get_attribute(attribute=newattr, default=default, silence=silence)
@@ -480,12 +500,12 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         logger.debug(f"cockpit returning {attribute}={value} (from {newattr})")
                     else:
                         logger.info(f"cockpit returning {attribute}={value} (from {newattr})")
-                    return convert_color(value) if is_color_attribute(attribute) else value
+                    return self.convert_if_color_attribute(attribute=newattr, value=value, silence=silence)
 
                 if theme_only(attribute):  # a theme exist, do not try without theme
                     if not silence:
                         logger.info(f"cockpit themed attribute {newattr} not found, cannot try without theme {theme_prefix}, returning default ({default})")
-                    return convert_color(default) if is_color_attribute(attribute) else default
+                    return self.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
 
         value = self._config.get(attribute)
         if value is not None:
@@ -493,7 +513,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 logger.debug(f"cockpit returning {attribute}={value} (from config)")
             else:
                 logger.info(f"cockpit returning {attribute}={value} (from config)")
-            return convert_color(value) if is_color_attribute(attribute) else value
+            return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         value = self._resources_config.get(attribute)
         if value is not None:
@@ -501,7 +521,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 logger.debug(f"cockpit returning {attribute}={value} (from resources)")
             else:
                 logger.info(f"cockpit returning {attribute}={value} (from resources)")
-            return convert_color(value) if is_color_attribute(attribute) else value
+            return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         ATTRNAME = "_defaults"
         if hasattr(self, ATTRNAME):
@@ -513,7 +533,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                         logger.debug(f"cockpit returning {attribute}={value} (from internal default)")
                     else:
                         logger.info(f"cockpit returning {attribute}={value} (from internal default)")
-                    return convert_color(value) if is_color_attribute(attribute) else value
+                    return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position", "texture"]:
             logger.warning(f"no attribute {attribute}")
@@ -541,7 +561,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         #
         # barbie-default-label-color: pink
         #
-        val = self.get_attribute("cockpit-theme")
+        val = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
         self._dark = val is not None and val in ["dark", "night"]
         return self._dark
 
@@ -934,8 +954,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             logger.warning(f"no config file {fn}")
             return
         self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
-        if len(self.named_colors) > 0:
-            logger.info(f"named colors {', '.join(self.named_colors)}")
+        if (n := len(self.named_colors)) > 0:
+            logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
         self._secret = serial_numbers
@@ -952,7 +972,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             logger.warning(f"no deck in config file {fn}")
             return
 
-        logger.info(f"cockpit is {'dark' if self.is_dark() else 'light'}, theme is {self.get_attribute('cockpit-theme')}")  # debug?
+        logger.info(
+            f"cockpit is {DARK_THEME_NAME if self.is_dark() else LIGHT_THEME_NAME}, theme is {self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)}"
+        )  # debug?
 
         # init
         deck_count_by_type = {ty.get(CONFIG_KW.NAME.value): 0 for ty in self.deck_types.values()}
@@ -1586,7 +1608,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 self.handle_code(code=4, name="init")  # wake up proxy
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
-            logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers)")
+            logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
             logger.info("..started")
             if not release or not self.has_web_decks():
                 logger.info(f"serving {self.name}")

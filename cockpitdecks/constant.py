@@ -81,7 +81,13 @@ class ANNUNCIATOR_STYLES(Enum):
 
 # internals
 ID_SEP = "/"
-DEFAULT_ATTRIBUTE_PREFIX = "default-"  # cannot be "", must be at lesat one char
+DEFAULT_ATTRIBUTE_NAME = "default"
+DEFAULT_ATTRIBUTE_PREFIX = DEFAULT_ATTRIBUTE_NAME + "-"  # cannot be "", must be at lesat one char
+DARK_THEME_NAME = "dark"
+DARK_THEME_PREFIX = DARK_THEME_NAME + "-"  # night
+LIGHT_THEME_NAME = "light"
+LIGHT_THEME_PREFIX = LIGHT_THEME_NAME + "-"  # day
+# dusk/dawn?
 
 
 # environment attributes
@@ -141,6 +147,7 @@ class CONFIG_KW(Enum):
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BUTTONS = "buttons"
+    COCKPIT_THEME = "cockpit-theme"
     COMMAND = "command"
     COMMANDS = "commands"
     CONDITION = "condition"

@@ -285,7 +285,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
                 logger.debug(f"button {self.name} returning {attribute}={value}")
             else:
                 logger.info(f"button {self.name} returning {attribute}={value}")
-            return value
+            return self.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         if propagate:
             if not silence:
@@ -295,7 +295,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         if not silence:
             logger.warning(f"button {self.name}: attribute not found {attribute}, returning default ({default})")
 
-        return default
+        return self.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
 
     def on_current_page(self):
         """

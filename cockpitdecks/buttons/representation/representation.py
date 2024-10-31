@@ -95,7 +95,7 @@ class Representation:
                 logger.debug(f"button {self.button_name()} representation returning {attribute}={value}")
             else:
                 logger.info(f"button {self.button_name()} representation returning {attribute}={value}")
-            return value
+            return self.button.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         if propagate:  # we just look at the button level if allowed, not above.
             if not silence:
@@ -105,7 +105,7 @@ class Representation:
         if not silence:
             logger.warning(f"button {self.button_name()}: representation attribute not found {attribute}, returning default ({default})")
 
-        return default
+        return self.button.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
 
     def get_state_variables(self) -> dict:
         return {}

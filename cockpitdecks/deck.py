@@ -156,7 +156,7 @@ class Deck(ABC):
                 logger.debug(f"deck {self.name} returning {attribute}={value} (from layout)")
             else:
                 logger.info(f"deck {self.name} returning {attribute}={value} (from layout)")
-            return value
+            return self.cockpit.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         if not silence:
             logger.info(f"deck {self.name} no value in layout {self.layout} ({self._layout_config.get('__filename__')})")
@@ -170,7 +170,7 @@ class Deck(ABC):
                 logger.debug(f"deck {self.name} returning {attribute}={value} (from deck)")
             else:
                 logger.info(f"deck {self.name} returning {attribute}={value} (from deck)")
-            return value
+            return self.cockpit.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         if not silence:
             logger.info(f"deck {self.name} no value in deck config")
@@ -183,7 +183,7 @@ class Deck(ABC):
         if not silence:
             logger.warning(f"deck {self.name}: attribute not found {attribute}, returning default ({default})")
 
-        return default
+        return self.cockpit.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
 
     def get_index_prefix(self, index):
         """Returns the prefix of a button index for this deck."""
@@ -300,6 +300,10 @@ class Deck(ABC):
 
             display_fn = fn.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
             logger.debug(f"loading page {page_name} (from file {display_fn})..")
+
+            doc = page_config.get("info")
+            if doc is not None:
+                logger.info(f"page {page_name}: {doc}")
 
             this_page = Page(page_name, page_config.store, self)
             self.pages[page_name] = this_page
