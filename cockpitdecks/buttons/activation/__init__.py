@@ -3,12 +3,12 @@ Button action and activation abstraction
 """
 
 from .activation import Activation, ACTIVATION_VALUE
-from .activation import LoadPage, Reload, Inspect, Stop
-from .activation import Push, OnOff, UpDown
-from .activation import BeginEndPress
-from .activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue, EncoderToggle
-from .activation import EncoderValueExtended
-from .activation import Slider, Swipe
+from .cockpit_activation import LoadPage, Reload, Inspect, Stop
+from .deck_activation import Push, OnOff, UpDown
+from .deck_activation import BeginEndPress
+from .deck_activation import Encoder, EncoderPush, EncoderOnOff, EncoderValue, EncoderToggle
+from .deck_activation import EncoderValueExtended
+from .deck_activation import Slider, Swipe
 
 from cockpitdecks import DECK_ACTIONS
 

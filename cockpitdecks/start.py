@@ -573,7 +573,7 @@ def main():
             app.run(host="0.0.0.0", port=APP_HOST[1])
 
         # If single CTRL-C pressed, will terminate from here
-        logger.warning("terminating (please wait)..")
+        logger.info("terminating (please wait)..")
         cockpit.terminate_all(threads=1)  # [MainThread]
         logger.info(f"..{AIRCRAFT_DESC} terminated.")
 
@@ -585,7 +585,7 @@ def main():
                 print(f"\r{c}", end="")
                 time.sleep(0.1)
 
-        logger.warning("terminating (please wait)..")
+        logger.info("terminating (please wait)..")
         thread = threading.Thread(target=spin)
         thread.daemon = True
         thread.name = "spinner"

@@ -121,25 +121,28 @@ class CockpitInstruction(Instruction):
     Instruction is not sent to simulator.
     """
 
+    PREFIX = "cockpitdecks-"
+
     def __init__(self, name: str, cockpit: Cockpit) -> None:
         Instruction.__init__(self, name=name)
         self._cockpit = cockpit
 
-    # @classmethod
-    # def new(cls, name: str, simulator: XPlane, **kwargs):
-    #     if "cockpit" in kwargs:
-    #         cockpit = kwargs.get("cockpit")
-    #         if type(cmdargs) is str:
-    #             return CockpitInstruction(
-    #                 name=name,
-    #                 cockpit=cockpit,
-    #                 delay=kwargs.get("delay"),
-    #                 condition=kwargs.get("condition"),
-    #             )
-    #     else:
-    #         if not kwargs.get("silence", False):
-    #             logger.warning(f"Instruction {name}: invalid argument {kwargs}")
-    #     return None
+    @classmethod
+    def new(cls, name: str, cockpit: Cockpit, **kwargs: dict):
+        instr = name.replace(CockpitInstruction.PREFIX, "")
+
+        if instr == CockpitReloadInstruction.CDI_NAME:
+            return CockpitReloadInstruction(cockpit=cockpit)
+        elif instr == CockpitReloadOneDeckInstruction.CDI_NAME:
+            return CockpitReloadOneDeckInstruction(deck=kwargs.get(CONFIG_KW.DECK.value), cockpit=cockpit)
+        elif instr == CockpitChangeThemeInstruction.CDI_NAME:
+            return CockpitChangeThemeInstruction(theme=kwargs.get(CONFIG_KW.THEME.value), cockpit=cockpit)
+        elif instr == CockpitStopInstruction.CDI_NAME:
+            return CockpitStopInstruction(cockpit=cockpit)
+        elif instr == CockpitInfoInstruction.CDI_NAME:
+            return CockpitInfoInstruction(message=kwargs.get("message"), cockpit=cockpit)
+
+        return None
 
     @property
     def cockpit(self):
@@ -193,19 +196,6 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
         self.cockpit.reload_decks()
 
 
-class CockpitChangeAircraftInstruction(CockpitInstruction):
-
-    CDI_NAME = "acpath"
-
-    def __init__(self, aircraft: str, cockpit: Cockpit) -> None:
-        self.aircraft = aircraft
-        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
-
-    def _execute(self):
-        self.cockpit._config[CONFIG_KW.COCKPIT_THEME.value] = self.theme
-        self.cockpit.reload_decks()
-
-
 class CockpitStopInstruction(CockpitInstruction):
 
     CDI_NAME = "stop"
@@ -226,7 +216,7 @@ class CockpitInfoInstruction(CockpitInstruction):
         self.message = kwargs.get("message", "Hello, world!")
 
     def _execute(self):
-        logger.info(f"Messge from the Cockpit: {self.message}")
+        logger.info(f"Message from the Cockpit: {self.message}")
 
 
 # #################################
@@ -1654,14 +1644,14 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             name = str(data.value())
             if int(data.value()) < len(FLIGHT_PHASE_ECAM):
                 name = FLIGHT_PHASE_ECAM[int(data.value())]
-            logger.info(f"{'>'*30}ECAM flight phase changed to {name}")
+            logger.info(f"ECAM flight phase changed to {name}")
             return
 
         if data.name == "AirbusFBW/QPACFlightPhase":
             name = str(data.value())
             if int(data.value()) < len(FLIGHT_PHASE_QPAC):
                 name = FLIGHT_PHASE_QPAC[int(data.value())]
-            logger.info(f"QPAC flight phase changed to {data.value()}")
+            logger.info(f"QPAC flight phase changed to {data.value()} (don't know what it means...)")
             return
 
         value = data.value()
