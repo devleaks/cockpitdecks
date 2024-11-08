@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class InstructionProvider:
 
-    def instruction_factory(self, **kargs) -> Instruction:
+    def instruction_factory(self, **kwargs) -> Instruction:
         raise NotImplementedError("Please implement InstructionProvider.instruction_factory method")
 
 

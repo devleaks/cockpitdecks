@@ -120,6 +120,10 @@ class Data(ABC):
     def writable(self, writable: bool):
         self._writable = writable
 
+    @property
+    def has_value(self) -> bool:
+        return self._updated > 0 or self._changed > 0
+
     def has_changed(self):
         if self.previous_value is None and self.current_value is None:
             return False

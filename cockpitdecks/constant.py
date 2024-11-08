@@ -49,6 +49,7 @@ DEFAULT_PAGE_NAME = "Default Page"
 
 ICON_SIZE = 256  # px
 DEFAULT_LABEL_POSITION = "cm"
+DEFAULT_LABEL_SIZE = 12
 NAMED_COLORS = {}  # name: tuple()
 
 # Virtual decks and web decks
@@ -60,6 +61,7 @@ TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCE
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
 
 AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
+MONITOR_DATAREF_USAGE = True
 
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
@@ -151,6 +153,7 @@ class CONFIG_KW(Enum):
     COMMAND = "command"
     COMMANDS = "commands"
     CONDITION = "condition"
+    DECK = "deck"
     DECKS = "decks"
     DECOR = "decor"
     DELAY = "delay"
@@ -181,6 +184,7 @@ class CONFIG_KW(Enum):
     SIM_DATUM = "dataref"
     SIM_DATA = "multi-datarefs"
     STRING_SIM_DATA = "string-datarefs"
+    THEME = "theme"
     TRIGGER = "trigger"
     TYPE = "type"
     VALUE_MIN = "value-min"
@@ -259,6 +263,41 @@ class DECK_FEEDBACK(Enum):
     ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
     VIBRATE = "vibrate"
 
+
+#
+# Flight Phases
+#
+FLIGHT_PHASE_ECAM = [
+    "OFF",  # 0
+    "ELEC POWER",
+    "FIRST ENG STARTED",
+    "FIRST ENG TO POWER",
+    "80KT",
+    "LIFT OFF",
+    "1500 FT",
+    "800 FT",
+    "TOUCHDOWN",
+    "80KT",
+    "2ND ENG SHUTDOWN",
+    "5 MIN AFTER",  # 10
+]
+
+FLIGHT_PHASE_QPAC = [
+    "OFF",  # 0
+    "ELEC POWER",
+    "SECOND ENGINE START",
+    "FIRST ENG T.O. POWER",
+    "70KT",
+    "LIFT OFF",
+    "LIST OFF + 1 MINUTE OR 400FT",
+    "1000FT",
+    "1000FT",
+    "400FT",
+    "TOUCH DOWN",
+    "70KT",
+    "FIRST ENG SHUTDOWN",
+    "5 MINUTES AFTER SECOND ENG SHUT DOWN",  # 13
+]
 
 # ############################################################
 #

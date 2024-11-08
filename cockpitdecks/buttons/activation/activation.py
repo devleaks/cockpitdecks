@@ -152,6 +152,10 @@ class Activation:
     def sim(self):
         return self.button.sim
 
+    @property
+    def cockpit(self):
+        return self.button.deck.cockpit
+
     def init(self):  # ~ABC
         pass
 
@@ -498,16 +502,31 @@ class Reload(Activation):
     ACTIVATION_NAME = "reload"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {}
+    PARAMETERS = {
+        "deck": {
+            "type": "string",
+            "prompt": "Deck",
+        }
+    }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
+        self.instruction = None
+        self.deck = self._config.get("deck")
+        if self.deck is None:
+            self.instruction = self.cockpit.instruction_factory(name="reload")
+        else:
+            self.instruction = self.cockpit.instruction_factory(name="reload_one", deck=self.deck)
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
             return False
         if not event.pressed:  # trigger on button "release"
-            self.button.deck.cockpit.reload_decks()
+            self.instruction.execute()
+            # if self.deck is not None:
+            #     self.button.deck.cockpit.reload_deck(deck_name=self.deck)
+            # else:
+            #     self.button.deck.cockpit.reload_decks()
         return True
 
     def describe(self) -> str:
@@ -537,15 +556,21 @@ class ChangeTheme(Activation):
 
         # Activation arguments
         self.theme = self._config.get("theme")
+        self.instruction = self.cockpit.instruction_factory(name="theme", theme=self.theme)
+
+    def is_valid(self):
+        if self.theme is None:
+            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no theme")
+            return False
+        return super().is_valid()
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
             return False
+        if not self.is_valid():
+            return False
         if not event.pressed:  # trigger on button "release"
-            COCKPIT_THEME = "cockpit-theme"
-            cockpit = self.button.deck.cockpit
-            cockpit._config[COCKPIT_THEME] = self.theme
-            cockpit.reload_decks()
+            self.instruction.execute()
         return True  # normal termination
 
     def describe(self) -> str:
@@ -611,6 +636,7 @@ class Stop(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
+        self.instruction = self.cockpit.instruction_factory(name="stop")
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
@@ -622,14 +648,14 @@ class Stop(Activation):
 
         if not self.is_guarded():
             if not event.pressed:  # trigger on button "release"
-                self.button.deck.cockpit.stop_decks()
+                self.instruction.execute()
         return True  # normal termination
 
     def describe(self) -> str:
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join([f"The button stops Cockpitdecks and terminates gracefully."])
+        return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])
 
 
 class Random(Activation):
@@ -1703,7 +1729,6 @@ class EncoderValue(OnOff, EncoderProperties):
                     logger.debug(f"button {self.button_name()} not enough commands {len(self._commands)}/é")
                 # Update current value and write dataref if present
                 self.onoff_current_value = not self.onoff_current_value
-                print(">>>", self.onoff_current_value)
             return True
 
         self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called

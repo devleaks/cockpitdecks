@@ -60,7 +60,6 @@ class Page:
                 logger.info(f"page {self.name} returning {attribute}={value}")
             return self.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
-
         if propagate:
             if not silence:
                 logger.info(f"page {self.name} propagate to deck for {attribute}")
@@ -70,7 +69,6 @@ class Page:
             logger.warning(f"page {self.name}: attribute not found {attribute}")
 
         return self.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
-
 
     def merge_attributes(self, attributes):
         # mainly aimed at merging includes' attributes to page's

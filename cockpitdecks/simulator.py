@@ -10,7 +10,7 @@ from typing import List, Any
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from cockpitdecks import CONFIG_KW
+from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
 from cockpitdecks.data import Data, DataListener, COCKPITDECKS_DATA_PREFIX, PATTERN_DOLCB
 from cockpitdecks.instruction import InstructionProvider, Instruction
@@ -68,6 +68,9 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
     @property
     def api_url(self) -> str | None:
         return None
+
+    def get_version(self) -> list:
+        return [f"{type(self).__name__} {__version__}"]
 
     def set_simulator_data_roundings(self, simulator_data_roundings):
         self.roundings = self.roundings | simulator_data_roundings

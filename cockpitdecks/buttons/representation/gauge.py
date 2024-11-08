@@ -342,43 +342,43 @@ class GaugeIcon(DrawBase):
 
         self.scale = 1
         self.offset = 0
-        self.gauge_size = self.get_attribute("gauge-size", int(ICON_SIZE / 2))
+        self.gauge_size = self.get_attribute("gauge-size", default=int(ICON_SIZE / 2))
         self.num_ticks = self.gauge.get("ticks", 8)
 
         # Ticks
-        self.tick_from = self.get_attribute("tick-from", -90)
-        self.tick_to = self.get_attribute("tick-to", 90)
+        self.tick_from = self.get_attribute("tick-from", default=-90)
+        self.tick_to = self.get_attribute("tick-to", default=90)
         self.angle = self.gauge.get("angle", self.tick_to - self.tick_from)
 
-        self.tick_space = self.get_attribute("tick-space", 10)
-        self.tick_length = self.get_attribute("tick-length", 16)
-        self.tick_width = self.get_attribute("tick-width", 4)
-        self.tick_color = self.get_attribute("tick-color", TICK_COLOR)
+        self.tick_space = self.get_attribute("tick-space", default=10)
+        self.tick_length = self.get_attribute("tick-length", default=16)
+        self.tick_width = self.get_attribute("tick-width", default=4)
+        self.tick_color = self.get_attribute("tick-color", default=TICK_COLOR)
         self.tick_color = convert_color(self.tick_color)
-        self.tick_underline_color = self.get_attribute("tick-underline-color", TICK_COLOR)
+        self.tick_underline_color = self.get_attribute("tick-underline-color", default=TICK_COLOR)
         self.tick_underline_color = convert_color(self.tick_underline_color)
         self.tick_underline_width = self.get_attribute("tick-underline-width", 4)
 
         # Labels
         self.tick_labels = self.gauge.get("tick-labels", {})
-        self.tick_label_space = self.get_attribute("tick-label-space", 10)
-        self.tick_label_font = self.get_attribute("tick-label-font", self.get_attribute("label-font"))
-        self.tick_label_size = self.get_attribute("tick-label-size", 32)
-        self.tick_label_color = self.get_attribute("tick-label-color", LABEL_COLOR)
+        self.tick_label_space = self.get_attribute("tick-label-space", default=10)
+        self.tick_label_font = self.get_attribute("tick-label-font", default=self.get_attribute("label-font"))
+        self.tick_label_size = self.get_attribute("tick-label-size", default=32)
+        self.tick_label_color = self.get_attribute("tick-label-color", default=LABEL_COLOR)
         self.tick_label_color = convert_color(self.tick_label_color)
 
         # Handle needle
-        self.needle_width = self.get_attribute("needle-width", 8)
-        self.needle_start = self.get_attribute("needle-start", 10)  # from center of button
-        self.needle_length = self.get_attribute("needle-length", 50)  # end = start + length
+        self.needle_width = self.get_attribute("needle-width", default=8)
+        self.needle_start = self.get_attribute("needle-start", default=10)  # from center of button
+        self.needle_length = self.get_attribute("needle-length", default=50)  # end = start + length
         self.needle_tip = self.gauge.get("needle-tip")  # arro, arri, ball
-        self.needle_tip_size = self.get_attribute("needle-tip-size", 5)
+        self.needle_tip_size = self.get_attribute("needle-tip-size", default=5)
         # self.needle_length = int(self.needle_length * self.button_size / 200)
-        self.needle_color = self.get_attribute("needle-color", NEEDLE_COLOR)
+        self.needle_color = self.get_attribute("needle-color", default=NEEDLE_COLOR)
         self.needle_color = convert_color(self.needle_color)
         # Options
-        self.needle_underline_width = self.get_attribute("needle-underline-width", 4)
-        self.needle_underline_color = self.get_attribute("needle-underline-color", NEEDLE_UNDERLINE_COLOR)
+        self.needle_underline_width = self.get_attribute("needle-underline-width", default=4)
+        self.needle_underline_color = self.get_attribute("needle-underline-color", default=NEEDLE_UNDERLINE_COLOR)
         self.needle_underline_color = convert_color(self.needle_underline_color)
 
         self._gauge = None

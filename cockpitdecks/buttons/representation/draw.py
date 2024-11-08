@@ -81,14 +81,6 @@ class DrawBase(IconBase):
         bg.alpha_composite(image)
         return bg
 
-    def graphic_default(self, attribute, default=None):
-        dflt = self.button.deck.cockpit.defaults_prefix()
-        attrname = f"{dflt}{attribute}"
-        value = self.button.get_attribute(attrname)
-        if value is None:
-            logger.debug(f"no default value {attrname}, using hardcoded default")
-        return value if value is not None else default
-
 
 #
 # ###############################

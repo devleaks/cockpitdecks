@@ -43,11 +43,14 @@ from cockpitdecks import (
     DECKS_FOLDER,
     DEFAULT_ATTRIBUTE_NAME,
     DEFAULT_ATTRIBUTE_PREFIX,
+    DEFAULT_LABEL_SIZE,
     COCKPITDECKS_INTERNAL_EXTENSIONS,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
     ENVIRON_KW,
     EXCLUDE_DECKS,
+    FLIGHT_PHASE_ECAM,
+    FLIGHT_PHASE_QPAC,
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
@@ -108,7 +111,7 @@ if EVENTLOGFILE is not None:
 LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
 
 
-class CockpitdecksInstruction(Instruction):
+class CockpitInstruction(Instruction):
     """
     An Instruction to be performed by Cockpitdekcs itself like:
     - Change page
@@ -118,8 +121,8 @@ class CockpitdecksInstruction(Instruction):
     Instruction is not sent to simulator.
     """
 
-    def __init__(self, name: str, cockpit: Cockpit, delay: float = 0.0, condition: str | None = None) -> None:
-        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+    def __init__(self, name: str, cockpit: Cockpit) -> None:
+        Instruction.__init__(self, name=name)
         self._cockpit = cockpit
 
     # @classmethod
@@ -127,7 +130,7 @@ class CockpitdecksInstruction(Instruction):
     #     if "cockpit" in kwargs:
     #         cockpit = kwargs.get("cockpit")
     #         if type(cmdargs) is str:
-    #             return CockpitdecksInstruction(
+    #             return CockpitInstruction(
     #                 name=name,
     #                 cockpit=cockpit,
     #                 delay=kwargs.get("delay"),
@@ -146,13 +149,84 @@ class CockpitdecksInstruction(Instruction):
     def cockpit(self, cockpit):
         self._cockpit = cockpit
 
+    def _check_condition(self):
+        # condition checked in each individual instruction
+        return True
+
     def _execute(self):
-        if instruction.name == "reload":
-            self.cockpit.reload_decks()
-        if instruction.name == "stop":
-            self.cockpit.terminate_all()
-        else:
-            logger.warning(f"invalid instruction {self.name}")
+        raise NotImplementedError(f"Please implement CockpitInstruction._execute method ({self.name})")
+
+
+class CockpitReloadInstruction(CockpitInstruction):
+
+    CDI_NAME = "reload"
+
+    def __init__(self, cockpit: Cockpit) -> None:
+        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit.reload_decks()
+
+
+class CockpitReloadOneDeckInstruction(CockpitInstruction):
+
+    CDI_NAME = "reload1"
+
+    def __init__(self, deck: str, cockpit: Cockpit) -> None:
+        self.deck = deck
+        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit.reload_deck(self.deck)
+
+
+class CockpitChangeThemeInstruction(CockpitInstruction):
+
+    CDI_NAME = "theme"
+
+    def __init__(self, theme: str, cockpit: Cockpit) -> None:
+        self.theme = theme
+        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit._config[CONFIG_KW.COCKPIT_THEME.value] = self.theme
+        self.cockpit.reload_decks()
+
+
+class CockpitChangeAircraftInstruction(CockpitInstruction):
+
+    CDI_NAME = "acpath"
+
+    def __init__(self, aircraft: str, cockpit: Cockpit) -> None:
+        self.aircraft = aircraft
+        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit._config[CONFIG_KW.COCKPIT_THEME.value] = self.theme
+        self.cockpit.reload_decks()
+
+
+class CockpitStopInstruction(CockpitInstruction):
+
+    CDI_NAME = "stop"
+
+    def __init__(self, cockpit: Cockpit) -> None:
+        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit.terminate_all()
+
+
+class CockpitInfoInstruction(CockpitInstruction):
+
+    CDI_NAME = "info"
+
+    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
+        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+        self.message = kwargs.get("message", "Hello, world!")
+
+    def _execute(self):
+        logger.info(f"Messge from the Cockpit: {self.message}")
 
 
 # #################################
@@ -281,11 +355,10 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
         self.mode = 0
-        self._dark = False
         self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
-        self._monitored_strings = [AIRCRAFT_CHANGE_MONITORING_DATAREF]
+        self._simulator_data_names = [AIRCRAFT_CHANGE_MONITORING_DATAREF, "AirbusFBW/QPACFlightPhase", "AirbusFBW/ECAMFlightPhase"]
 
         #
         # Global parameters that affect colors
@@ -342,6 +415,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             logger.info(f"simulator set to {self._simulator_name}")
         self._simulator = self.all_simulators[self._simulator_name]
         self.sim = self._simulator(self, self._environ)
+        logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
         self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         if self.cockpitdecks_path is not None:
@@ -452,14 +526,18 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                 logger.info(f"loaded package {package} (recursively)")
         logger.debug(f"..loaded")
 
+    def get_simulator_data(self) -> list:
+        """Returns the list of datarefs for which the cockpit wants to be notified.
+
+        [description]
+        """
+        return self._simulator_data_names
+
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
         return [a for a in self.all_activations.values() if action in a.get_required_capability()]
 
     def get_representations_for(self, feedback: DECK_FEEDBACK):
         return [a for a in self.all_representations.values() if feedback in a.get_required_capability()]
-
-    def defaults_prefix(self):
-        return "-".join([DARK_THEME_NAME, DEFAULT_ATTRIBUTE_NAME]) if self._dark else DEFAULT_ATTRIBUTE_PREFIX
 
     def get_color(self, color, silence: bool = True) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
         if type(color) is str and color in self.named_colors:
@@ -472,7 +550,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         return convert_color(color)  # this time, if color is a color name it must be a valid pillow color name
 
     def convert_if_color_attribute(self, attribute: str, value, silence: bool = True):
-        if type(attribute) is str and "color" in attribute:
+        if type(attribute) is str and "color" in attribute and type(value) is str:
             if silence:
                 logger.debug(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
             else:
@@ -481,89 +559,96 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
     def get_attribute(self, attribute: str, default=None, silence: bool = True):
         # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
-        def theme_only(a: str) -> bool:
+        # Assumes attributes are-kebab-case.
+        def is_themable_attribute(a: str) -> bool:
             # Returns whether an attribute can be themed
             # Currently, only color, texture, and fonts
-            return a.endswith("color") or a.endswith("texture") or "font" in a
+            return self.theme is not None and (a.endswith("color") or a.endswith("texture") or ("font" in a) or a.startswith("cockpit-"))
+
+        def is_themed_attribute(a: str) -> bool:
+            return self.theme is not None and a.startswith(self.theme)
+
+        def is_default_attribute(a: str) -> bool:
+            return a.startswith(DEFAULT_ATTRIBUTE_PREFIX) or a.startswith("cockpit-")  # or "default" in a?
+
+        def stripfirst(a):
+            return "-".join(a.split("-")[1:])
+
+        def addfirst(a, s):
+            return "-".join([s, a])
+
+        def trace_debug(s):
+            logger.debug(s) if silence else logger.info(s)
 
         self._reqdfts.add(attribute)  # internal stats
 
-        # dealing with themes
-        if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX) or attribute.startswith("cockpit-"):
-            theme_prefix = self._config.get(CONFIG_KW.COCKPIT_THEME.value, "")  # prefix = "dark", or nothing
-            if theme_prefix is not None and theme_prefix not in ["", "default", "cockpit"] and not attribute.startswith(theme_prefix):
-                newattr = "-".join([theme_prefix, attribute])  # dark-default-color
-                value = self.get_attribute(attribute=newattr, default=default, silence=silence)
+        trace_debug(f"searching for {attribute}")
 
-                if value is not None:  # found!
-                    if silence:
-                        logger.debug(f"cockpit returning {attribute}={value} (from {newattr})")
-                    else:
-                        logger.info(f"cockpit returning {attribute}={value} (from {newattr})")
-                    return self.convert_if_color_attribute(attribute=newattr, value=value, silence=silence)
+        # 1. First, if allowed, we try it in a theme
+        if is_themable_attribute(attribute) and not is_themed_attribute(attribute):
+            newattr = addfirst(attribute, self.theme)
+            trace_debug(f"searching for {attribute}, first trying with theme {self.theme}")
+            value = self.get_attribute(attribute=newattr, default=default, silence=silence)
+            if not silence:
+                logger.info(f"tried themed {newattr}, value {value}")
+            if value is not None:
+                return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
-                if theme_only(attribute):  # a theme exist, do not try without theme
-                    if not silence:
-                        logger.info(f"cockpit themed attribute {newattr} not found, cannot try without theme {theme_prefix}, returning default ({default})")
-                    return self.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
-
+        trace_debug(f"trying normal {attribute}")
+        # 2. Then Let's first try the attribute as requested...
+        # 2.1. From the aircraft config (custom, from the user)
         value = self._config.get(attribute)
+        if not silence:
+            logger.info(f"tried normal (config) {attribute}, value {value}")
         if value is not None:
-            if silence:
-                logger.debug(f"cockpit returning {attribute}={value} (from config)")
-            else:
-                logger.info(f"cockpit returning {attribute}={value} (from config)")
+            trace_debug(f"cockpit returning {attribute}={value} (from config)")
             return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
+        # 2.2 From Cockpitdekcs resources (config, fixed)
         value = self._resources_config.get(attribute)
+        if not silence:
+            logger.info(f"trying normal (resources) {attribute}, value {value}")
         if value is not None:
-            if silence:
-                logger.debug(f"cockpit returning {attribute}={value} (from resources)")
-            else:
-                logger.info(f"cockpit returning {attribute}={value} (from resources)")
+            trace_debug(f"cockpit returning {attribute}={value} (from resources)")
             return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
+        # 3.2 From internal values (fixed)
         ATTRNAME = "_defaults"
         if hasattr(self, ATTRNAME):
             ld = getattr(self, ATTRNAME)
             if isinstance(ld, dict):
                 value = ld.get(attribute)
+                if not silence:
+                    logger.info(f"tried (internal defaults) {attribute}, value {value}")
                 if value is not None:
-                    if silence:
-                        logger.debug(f"cockpit returning {attribute}={value} (from internal default)")
-                    else:
-                        logger.info(f"cockpit returning {attribute}={value} (from internal default)")
+                    trace_debug(f"cockpit returning {attribute}={value} (from internal default)")
                     return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
-        if not silence and "-" in attribute and attribute.split("-")[-1] not in ["font", "size", "color", "position", "texture"]:
-            logger.warning(f"no attribute {attribute}")
+        # If we're here haven't found the themed attribute either
+        # Second, we'll try with default-
+        if not (is_default_attribute(attribute) or is_themed_attribute(attribute)):  # we cannot add default-
+            newattr = addfirst(attribute, DEFAULT_ATTRIBUTE_NAME)
+            trace_debug(f"no value for {attribute}, trying default-")
+            value = self.get_attribute(attribute=newattr, default=default, silence=silence)
+            if not silence:
+                logger.info(f"tried {newattr}, value {value}")
+            if value is not None:
+                return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
-        if not silence:
-            logger.info(f"cockpit attribute {attribute} not found, returning default ({default})")
+        if is_themed_attribute(attribute):
+            # no theme-attribute or theme-default-attribute
+            # in this case, we do not return the default,
+            # but we notify we did not find a themed value
+            # by returning None
+            return None
 
-        if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
-            # we did not search for a default-*, now we do:
-            default_attribute = DEFAULT_ATTRIBUTE_PREFIX + attribute
-            return self.get_attribute(attribute=default_attribute, default=default, silence=silence)
+        # no default-attribute
+        # No attribute we return the default carried over so far
+        if not is_default_attribute(attribute):
+            logger.warning(f"returning default value of non default attribute ({default})")
 
-        return default
-
-    def is_dark(self):
-        # Could also determine this from simulator time...
-        # Always evaluates cockpit attribute since its value can be updated
-        # by page changes
-        #
-        # Note: Theming could be extended to any "string" like:
-        #
-        # cockpit-theme: barbie
-        #
-        # and defaults as
-        #
-        # barbie-default-label-color: pink
-        #
-        val = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
-        self._dark = val is not None and val in ["dark", "night"]
-        return self._dark
+        trace_debug(f"no value for {attribute}, returning default ({default})")
+        return self.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -802,7 +887,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
 
             # 1. Try "system" font
             try:
-                test = ImageFont.truetype(fontname, self.get_attribute("label-size"))
+                test = ImageFont.truetype(fontname, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
                 logger.debug(f"font {fontname} found in computer system fonts")
                 return fontname
             except:
@@ -812,7 +897,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("label-size"))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
                 logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
@@ -822,7 +907,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("label-size"))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
                 logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
@@ -956,6 +1041,13 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
         if (n := len(self.named_colors)) > 0:
             logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
+
+        self.theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
+        # self.theme = self._config.get(CONFIG_KW.COCKPIT_THEME.value, "")  # prefix = "dark", or nothing
+        if self.theme is not None and self.theme in ["", "default", "cockpit"]:
+            self.theme = None
+        logger.info(f"theme is {self.theme}")
+
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
         self._secret = serial_numbers
@@ -971,10 +1063,6 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         if decks is None:
             logger.warning(f"no deck in config file {fn}")
             return
-
-        logger.info(
-            f"cockpit is {DARK_THEME_NAME if self.is_dark() else LIGHT_THEME_NAME}, theme is {self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)}"
-        )  # debug?
 
         # init
         deck_count_by_type = {ty.get(CONFIG_KW.NAME.value): 0 for ty in self.deck_types.values()}
@@ -1243,10 +1331,10 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size"))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
                             self.fonts[i] = fn
                         except:
-                            logger.warning(f"default font file {fn} not loaded")
+                            logger.warning(f"font file {fn} not loaded")
                     else:
                         logger.debug(f"font {i} already loaded")
 
@@ -1259,7 +1347,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     if i not in self.fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size"))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
                             self.fonts[i] = fn
                         except:
                             logger.warning(f"custom font file {fn} not loaded")
@@ -1341,6 +1429,9 @@ class Cockpit(SimulatorDataListener, CockpitBase):
                     self.stop_event_loop()
                 elif e == "reload":
                     self.reload_decks(just_do_it=True)
+                elif e.startswith("reload:"):
+                    deck = e.replace("reload:", "")
+                    self.reload_deck(deck, just_do_it=True)
                 elif e == "stop":
                     self.stop_decks(just_do_it=True)
                 self.inc("event_count_" + e)
@@ -1439,6 +1530,65 @@ class Cockpit(SimulatorDataListener, CockpitBase):
     # #########################################################
     # Other
     #
+    def reload_deck(self, deck_name: str, just_do_it: bool = False):
+        """
+        Development function to reload page yaml without leaving the page
+        for one deck only .Should not be used in production.
+        """
+        # A security... if we get called we must ensure reloader is running...
+        if just_do_it:
+            deck = self.cockpit.get(deck_name)
+            if deck is None:
+                logger.info(f"deck {deck_name} not found")
+                return
+            logger.info(f"reloading deck {deck.name}..")
+            self.busy_reloading = True
+            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
+            if deck.current_page is not None:
+                self.default_pages[deck.name] = deck.current_page.name
+
+            # self.load_aircraft(self.acpath)  # will terminate it before loading again
+            logger.debug("..terminating current version..")
+            deck.terminate()
+            logger.debug("..creating new version..")
+            name = deck.name
+            # find deck in config.yaml.decks
+            deck_config = None
+            all_decks = self._config.get(CONFIG_KW.DECKS.value)
+            i = 0
+            while deck_config is None and i < len(all_decks):
+                if all_decks[i].get(CONFIG_KW.NAME.value, "") == name:
+                    deck_config = all_decks[i]
+                i = i + 1
+            if deck_config is None:
+                logger.info(f"deck {deck_name} not found in cockpit")
+                return
+            # get details
+            serial = deck_config.get(CONFIG_KW.SERIAL.value)
+            deck_type = deck_config.get(CONFIG_KW.TYPE.value)
+            if deck_type not in self.deck_types.keys():
+                logger.warning(f"invalid deck type {deck_type}, ignoring")
+                return
+            deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
+            device = self.get_device(req_driver=deck_driver, req_serial=serial)
+            # recreate
+            deck = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+            del self.cockpit[name]
+            self.cockpit[name] = deck
+
+            # reload
+            if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:
+                deck.change_page(self.default_pages[name])
+                self.default_pages = {}
+            else:
+                deck.change_page()
+
+            self.busy_reloading = False
+            logger.info("..done")
+        else:
+            self.event_queue.put(f"reload:{deck_name}")
+            logger.info("enqueued")
+
     def reload_decks(self, just_do_it: bool = False):
         """
         Development function to reload page yaml without leaving the page
@@ -1496,12 +1646,22 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if not isinstance(data, SimulatorData) or data.name not in self._monitored_strings:
+        if not isinstance(data, SimulatorData) or data.name not in self._simulator_data_names:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
 
-        if data.name != AIRCRAFT_CHANGE_MONITORING_DATAREF:
-            logger.info(f"{data.name}={data.value()}")
+        if data.name == "AirbusFBW/ECAMFlightPhase":
+            name = str(data.value())
+            if int(data.value()) < len(FLIGHT_PHASE_ECAM):
+                name = FLIGHT_PHASE_ECAM[int(data.value())]
+            logger.info(f"{'>'*30}ECAM flight phase changed to {name}")
+            return
+
+        if data.name == "AirbusFBW/QPACFlightPhase":
+            name = str(data.value())
+            if int(data.value()) < len(FLIGHT_PHASE_QPAC):
+                name = FLIGHT_PHASE_QPAC[int(data.value())]
+            logger.info(f"QPAC flight phase changed to {data.value()}")
             return
 
         value = data.value()
@@ -1570,6 +1730,7 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
+        logger.info("\n")
         logger.info("terminating..")
         # Stop processing events
         if self.event_loop_run:
@@ -1955,11 +2116,20 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         logger.warning(f"file {filename} not found")
         return None
 
-    def execute(self, instruction: CockpitdecksInstruction):
-        if not isinstance(instruction, CockpitdecksInstruction):
+    def execute(self, instruction: CockpitInstruction):
+        if not isinstance(instruction, CockpitInstruction):
             logger.warning(f"invalid instruction {instruction.name}")
             return
         instruction._execute()
 
-    def instruction_factory(self, name: str, delay: float = 0.0, condition: str | None = None):
-        return CockpitdecksInstruction(name=name, cockpit=self, condition=condition, delay=delay)
+    def instruction_factory(self, name: str, **kwargs):
+        if name == "reload_one":
+            deck = kwargs.get(CONFIG_KW.DECK.value)
+            return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
+        elif name == "theme":
+            theme = kwargs.get(CONFIG_KW.THEME.value)
+            return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
+        elif name == "reload":
+            return CockpitReloadInstruction(cockpit=self)
+        elif name == "stop":
+            return CockpitStopInstruction(cockpit=self)
