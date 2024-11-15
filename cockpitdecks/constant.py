@@ -184,6 +184,7 @@ class CONFIG_KW(Enum):
     SIM_DATUM = "dataref"
     SIM_DATA = "multi-datarefs"
     STRING_SIM_DATA = "string-datarefs"
+    STRING_PREFIX = "string:"
     THEME = "theme"
     TRIGGER = "trigger"
     TYPE = "type"

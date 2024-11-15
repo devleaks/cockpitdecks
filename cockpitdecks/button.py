@@ -642,21 +642,21 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         else:
             logger.debug(f"button {self.name}: no change")
 
-    def activate(self, event):
+    def activate(self, event) -> bool:
         """
         @todo: Return a status from activate()
         """
         if self._activation is not None:
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
-                return
+                return False
             # self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
             try:
                 self._activation.handle(event)
             except:
                 logger.warning(f"button {self.name}: problem during activation", exc_info=True)
                 logger.warning(f"button {self.name}: not completing activation/rendering")
-                return
+                return False
         else:
             logger.debug(f"button {self.name}: no activation")
 
@@ -673,6 +673,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             logger.debug(f"button {self.name}: no change")
             if self.deck.is_virtual_deck():  # representation has not changed, but hardware representation might have
                 self.render()
+        return True
 
     def get_state_variables(self):
         a = {

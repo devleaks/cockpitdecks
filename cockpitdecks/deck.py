@@ -358,7 +358,7 @@ class Deck(ABC):
             # self.load_default_page()
         else:
             self.set_home_page()
-            logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}")
+            logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}: {', '.join(self.pages.keys())}.")
 
     def change_page(self, page: str | None = None):
         """Change the deck's page to the one supplied as argument.

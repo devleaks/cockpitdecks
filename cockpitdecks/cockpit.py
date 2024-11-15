@@ -25,6 +25,7 @@ from PIL import Image, ImageFont
 
 from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
+    # Constants, keywords
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
     ASSETS_FOLDER,
@@ -34,7 +35,6 @@ from cockpitdecks import (
     CONFIG_FILENAME,
     CONFIG_FOLDER,
     CONFIG_KW,
-    DARK_THEME_NAME,
     DECK_ACTIONS,
     DECK_FEEDBACK,
     DECK_IMAGES,
@@ -54,7 +54,6 @@ from cockpitdecks import (
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
-    LIGHT_THEME_NAME,
     NAMED_COLORS,
     OBSERVABLES_FILE,
     RESOURCES_FOLDER,
@@ -64,6 +63,7 @@ from cockpitdecks import (
     SPAM,
     SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
+    # Classes
     Config,
     yaml,
 )
@@ -71,7 +71,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
-from cockpitdecks.instruction import Instruction
+from cockpitdecks.instruction import Instruction, InstructionProvider
 from cockpitdecks.observable import Observables
 
 # from cockpitdecks.simulators.xplane import DatarefEvent
@@ -121,6 +121,7 @@ class CockpitInstruction(Instruction):
     Instruction is not sent to simulator.
     """
 
+    INSTRUCTION_NAME = "cockpitdecks-instruction"
     PREFIX = "cockpitdecks-"
 
     def __init__(self, name: str, cockpit: Cockpit) -> None:
@@ -130,18 +131,10 @@ class CockpitInstruction(Instruction):
     @classmethod
     def new(cls, name: str, cockpit: Cockpit, **kwargs: dict):
         instr = name.replace(CockpitInstruction.PREFIX, "")
+        all_cockpit_instructions = {s.name(): s for s in Cockpit.all_subclasses(CockpitInstruction)}
 
-        if instr == CockpitReloadInstruction.CDI_NAME:
-            return CockpitReloadInstruction(cockpit=cockpit)
-        elif instr == CockpitReloadOneDeckInstruction.CDI_NAME:
-            return CockpitReloadOneDeckInstruction(deck=kwargs.get(CONFIG_KW.DECK.value), cockpit=cockpit)
-        elif instr == CockpitChangeThemeInstruction.CDI_NAME:
-            return CockpitChangeThemeInstruction(theme=kwargs.get(CONFIG_KW.THEME.value), cockpit=cockpit)
-        elif instr == CockpitStopInstruction.CDI_NAME:
-            return CockpitStopInstruction(cockpit=cockpit)
-        elif instr == CockpitInfoInstruction.CDI_NAME:
-            return CockpitInfoInstruction(message=kwargs.get("message"), cockpit=cockpit)
-
+        if instr in all_cockpit_instructions:
+            return all_cockpit_instructions[instr](cockpit=cockpit, **kwargs)
         return None
 
     @property
@@ -162,10 +155,10 @@ class CockpitInstruction(Instruction):
 
 class CockpitReloadInstruction(CockpitInstruction):
 
-    CDI_NAME = "reload"
+    INSTRUCTION_NAME = "reload"
 
     def __init__(self, cockpit: Cockpit) -> None:
-        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
 
     def _execute(self):
         self.cockpit.reload_decks()
@@ -173,23 +166,44 @@ class CockpitReloadInstruction(CockpitInstruction):
 
 class CockpitReloadOneDeckInstruction(CockpitInstruction):
 
-    CDI_NAME = "reload1"
+    INSTRUCTION_NAME = "reload1"
 
     def __init__(self, deck: str, cockpit: Cockpit) -> None:
         self.deck = deck
-        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
 
     def _execute(self):
         self.cockpit.reload_deck(self.deck)
 
 
+class CockpitChangePageInstruction(CockpitInstruction):
+
+    INSTRUCTION_NAME = "page"
+
+    def __init__(self, deck: str, page: str, cockpit: Cockpit) -> None:
+        self.deck = deck
+        self.page = page
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        deck = self.cockpit.cockpit.get(self.deck)
+        if deck is not None:
+            if self.page == CONFIG_KW.BACKPAGE or self.page in deck.pages:
+                logger.debug(f"{type(self).__name__} change page to {self.page}")
+                new_name = deck.change_page(self.page)
+            else:
+                logger.warning(f"{type(self).__name__}: page not found {self.page} on deck {self.deck}")
+        else:
+            logger.warning(f"{type(self).__name__}: deck not found {self.deck}")
+
+
 class CockpitChangeThemeInstruction(CockpitInstruction):
 
-    CDI_NAME = "theme"
+    INSTRUCTION_NAME = "theme"
 
     def __init__(self, theme: str, cockpit: Cockpit) -> None:
         self.theme = theme
-        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
 
     def _execute(self):
         self.cockpit._config[CONFIG_KW.COCKPIT_THEME.value] = self.theme
@@ -198,10 +212,10 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
 
 class CockpitStopInstruction(CockpitInstruction):
 
-    CDI_NAME = "stop"
+    INSTRUCTION_NAME = "stop"
 
     def __init__(self, cockpit: Cockpit) -> None:
-        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
 
     def _execute(self):
         self.cockpit.terminate_all()
@@ -209,10 +223,10 @@ class CockpitStopInstruction(CockpitInstruction):
 
 class CockpitInfoInstruction(CockpitInstruction):
 
-    CDI_NAME = "info"
+    INSTRUCTION_NAME = "info"
 
     def __init__(self, cockpit: Cockpit, **kwargs) -> None:
-        CockpitInstruction.__init__(self, name=self.CDI_NAME, cockpit=cockpit)
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
         self.message = kwargs.get("message", "Hello, world!")
 
     def _execute(self):
@@ -257,7 +271,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(SimulatorDataListener, CockpitBase):
+class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     """
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
@@ -348,7 +362,11 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
-        self._simulator_data_names = [AIRCRAFT_CHANGE_MONITORING_DATAREF, "AirbusFBW/QPACFlightPhase", "AirbusFBW/ECAMFlightPhase"]
+        self._simulator_data_names = [
+            CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF,
+            "AirbusFBW/QPACFlightPhase",
+            "AirbusFBW/ECAMFlightPhase",
+        ]
 
         #
         # Global parameters that affect colors
@@ -374,19 +392,19 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         """
         self.add_extensions(trace_ext_loading=self._environ.verbose)
 
-        self.all_simulators = {s.name: s for s in self.all_subclasses(Simulator)}
+        self.all_simulators = {s.name: s for s in Cockpit.all_subclasses(Simulator)}
         logger.info(f"available simulators: {", ".join(self.all_simulators.keys())}")
 
-        self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in self.all_subclasses(Deck) if s.DECK_NAME != "none"}
+        self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in Cockpit.all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
 
-        self.all_activations = {s.name(): s for s in self.all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
+        self.all_activations = {s.name(): s for s in Cockpit.all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
         logger.debug(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
 
-        self.all_representations = {s.name(): s for s in self.all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
+        self.all_representations = {s.name(): s for s in Cockpit.all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
         logger.debug(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
 
-        self.all_hardware_representations = {s.name(): s for s in self.all_subclasses(HardwareRepresentation)}
+        self.all_hardware_representations = {s.name(): s for s in Cockpit.all_subclasses(HardwareRepresentation)}
         logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
         if not self.init_simulator():  # this will start the requested one
@@ -435,7 +453,8 @@ class Cockpit(SimulatorDataListener, CockpitBase):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
 
-    def all_subclasses(self, cls) -> list:
+    @staticmethod
+    def all_subclasses(cls) -> list:
         """Returns the list of all subclasses.
 
         Recurses through all sub-sub classes
@@ -2112,14 +2131,22 @@ class Cockpit(SimulatorDataListener, CockpitBase):
             return
         instruction._execute()
 
-    def instruction_factory(self, name: str, **kwargs):
-        if name == "reload_one":
-            deck = kwargs.get(CONFIG_KW.DECK.value)
-            return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
-        elif name == "theme":
-            theme = kwargs.get(CONFIG_KW.THEME.value)
-            return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
-        elif name == "reload":
-            return CockpitReloadInstruction(cockpit=self)
-        elif name == "stop":
-            return CockpitStopInstruction(cockpit=self)
+    def instruction_factory(self, **kwargs):
+        # Should be the top-most instruction factory.
+        # Delegates to simulator if not capable of building instruction
+        name = kwargs.get("name")
+        if name is not None and name.startswith(CockpitInstruction.PREFIX):
+            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
+            if instruction is not None:
+                return instruction
+        return self.sim.instruction_factory(**kwargs)
+        # if name == "reload_one":
+        #     deck = kwargs.get(CONFIG_KW.DECK.value)
+        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
+        # elif name == "theme":
+        #     theme = kwargs.get(CONFIG_KW.THEME.value)
+        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
+        # elif name == "reload":
+        #     return CockpitReloadInstruction(cockpit=self)
+        # elif name == "stop":
+        #     return CockpitStopInstruction(cockpit=self)

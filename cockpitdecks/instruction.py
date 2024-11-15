@@ -19,6 +19,8 @@ class InstructionProvider:
 class Instruction(ABC):
     """An Instruction is sent to the Simulator to execute an action."""
 
+    INSTRUCTION_NAME = "undefined"
+
     def __init__(self, name: str, performer: InstructionProvider = None, delay: float = 0.0, condition: str | None = None) -> None:
         super().__init__()
         self.name = name
@@ -27,6 +29,10 @@ class Instruction(ABC):
         self.condition = condition
 
         self._timer = None
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.INSTRUCTION_NAME
 
     @abstractmethod
     def _execute(self):

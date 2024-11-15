@@ -9,12 +9,14 @@ from cockpitdecks.event import PushEvent
 from cockpitdecks import DECK_ACTIONS
 from .activation import Activation
 
-# from .cockpit import CockpitInstruction
+# from ...cockpit import CockpitInstruction
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
+
+INSTRUCTION_PREFIX = "cockpitdecks-"
 
 
 class LoadPage(Activation):
@@ -38,7 +40,9 @@ class LoadPage(Activation):
         # Activation arguments
         self.page = self._config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = self._config.get("deck")
-        # self.instruction = self.button.deck.cockpit.instruction_factory(name=self.ACTIVATION_NAME)
+        self.instruction = self.cockpit.instruction_factory(
+            name=INSTRUCTION_PREFIX + "page", page=self.page, deck=self.remote_deck if self.remote_deck is not None else self.button.deck.name
+        )
 
     def is_valid(self):
         if self.page is None:
@@ -46,25 +50,13 @@ class LoadPage(Activation):
             return False
         return super().is_valid()
 
-    def activate(self, event: PushEvent):
+    def activate(self, event: PushEvent) -> bool:
         if not self.can_handle(event):
             return False
         if not super().activate(event):
             return False
-        decks = self.button.deck.cockpit.cockpit
-        if self.remote_deck is not None and self.remote_deck not in decks.keys():
-            logger.warning(f"{type(self).__name__}: deck not found {self.remote_deck}")
-            self.remote_deck = None
         if event.pressed:
-            deck = self.button.deck
-            if self.remote_deck is not None and self.remote_deck in decks.keys():
-                deck = decks[self.remote_deck]
-
-            if self.page == LoadPage.KW_BACKPAGE or self.page in deck.pages.keys():
-                logger.debug(f"{type(self).__name__} change page to {self.page}")
-                new_name = deck.change_page(self.page)
-            else:
-                logger.warning(f"{type(self).__name__}: page not found {self.page}")
+            self.instruction.execute()
         return True  # Normal termination
 
     def describe(self) -> str:
@@ -92,12 +84,12 @@ class Reload(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
-        self.instruction = None
         self.deck = self._config.get("deck")
+        self.instruction = None
         if self.deck is None:
-            self.instruction = self.cockpit.instruction_factory(name="reload")
+            self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "reload")
         else:
-            self.instruction = self.cockpit.instruction_factory(name="reload_one", deck=self.deck)
+            self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "reload1", deck=self.deck)
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
@@ -137,7 +129,7 @@ class ChangeTheme(Activation):
 
         # Activation arguments
         self.theme = self._config.get("theme")
-        self.instruction = self.cockpit.instruction_factory(name="theme", theme=self.theme)
+        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "theme", theme=self.theme)
 
     def is_valid(self):
         if self.theme is None:
@@ -217,7 +209,7 @@ class Stop(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
-        self.instruction = self.cockpit.instruction_factory(name="stop")
+        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "stop")
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
