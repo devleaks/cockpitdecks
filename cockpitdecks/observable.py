@@ -26,7 +26,6 @@ class Observables:
         self._config = config
         self.sim = simulator
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
-        self.simulator_data = None
 
     def enable(self, name):
         ok = False

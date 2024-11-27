@@ -220,7 +220,7 @@ class CockpitObservableInstruction(CockpitInstruction):
         self.action = kwargs.get(CONFIG_KW.ACTION.value, "toggle")
 
     def _execute(self):
-        o = self._cockpit.observables.get_observable(self.observable)
+        o = self._cockpit.get_observable(self.observable)
         if o is not None:
             if self.action == "toggle":
                 if o._enabled:
@@ -379,7 +379,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         # Internal variables
         self.named_colors = NAMED_COLORS
-        self.observables = []
+        self.cd_observables = []
         self.ac_observables = []
         self.busy_reloading = False
         self.disabled = False
@@ -412,6 +412,15 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if acpath is not None:
             logger.info(f"aircraft path set to {self._acpath}")
         self._acpath = acpath
+
+    @property
+    def observables(self) -> list:
+        ret = []
+        if type(self.cd_observables) is Observables:
+            ret = ret + self.cd_observables.observables
+        if type(self.ac_observables) is Observables:
+            ret = ret + self.ac_observables.observables
+        return ret
 
     def init(self):
         """
@@ -883,9 +892,9 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             self.load_icons()
             self.load_fonts()
             self.load_sounds()
+            self.load_observables()
             self.create_decks()
             self.load_pages()
-            self.load_observables()
         else:
             if acpath is None:
                 logger.error(f"no aircraft folder")
@@ -1227,8 +1236,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            self.observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self.observables.observables)} observables")
+            self.cd_observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self.cd_observables.observables)} observables")
 
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
@@ -1237,6 +1246,12 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 config = yaml.load(fp)
             self.ac_observables = Observables(config=config, simulator=self.sim)
             logger.info(f"loaded {len(self.ac_observables.observables)} aircraft observables")
+
+    def get_observable(self, name) -> Observable | None:
+        for o in self.observables:
+            if o.name == name:
+                return o
+        return None
 
     # #########################################################
     # Cockpit data caches
