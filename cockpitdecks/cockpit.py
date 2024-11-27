@@ -210,6 +210,33 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
         self.cockpit.reload_decks()
 
 
+class CockpitObservableInstruction(CockpitInstruction):
+
+    INSTRUCTION_NAME = "obs"
+
+    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+        self.observable = kwargs.get(CONFIG_KW.OBSERVABLE.value)
+        self.action = kwargs.get(CONFIG_KW.ACTION.value, "toggle")
+
+    def _execute(self):
+        o = self._cockpit.observables.get_observable(self.observable)
+        if o is not None:
+            if self.action == "toggle":
+                if o._enabled:
+                    o.disable()
+                else:
+                    o.enable()
+            elif self.action == "enable":
+                o.enable()
+            elif self.action == "disable":
+                o.disable()
+            else:
+                logger.warning(f"observable {self.observable} invalid action {self.action} (must be enable, disable, or toggle)")
+        else:
+            logger.warning(f"observable {self.observable} not found")
+
+
 class CockpitStopInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "stop"
@@ -260,10 +287,10 @@ class CockpitBase:
 
     def set_logging_level(self, name):
         if name in self._debug:
-            l = logging.getLogger(name)
-            if l is not None:
-                l.setLevel(logging.DEBUG)
-                l.info(f"set_logging_level: {name} set to debug")
+            mylog = logging.getLogger(name)
+            if mylog is not None:
+                mylog.setLevel(logging.DEBUG)
+                mylog.info(f"set_logging_level: {name} set to debug")
             else:
                 logger.warning(f"logger {name} not found")
 
@@ -528,12 +555,15 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                         if trace_ext_loading:
                             logger.info(f"added extension path {pythonpath} to sys.path")
 
-        logger.info(f"loading extensions {", ".join(self.all_extensions)}..")
+        logger.debug(f"loading extensions {", ".join(self.all_extensions)}..")
+        loaded = []
         for package in self.all_extensions:
             test = import_submodules(package)
             if len(test) > 0:
-                logger.info(f"loaded package {package} (recursively)")
+                logger.debug(f"loaded package {package}") #  (recursively)
+                loaded.append(package)
         logger.debug(f"..loaded")
+        logger.info(f"loaded extensions {", ".join(loaded)}")
 
     def get_simulator_data(self) -> list:
         """Returns the list of datarefs for which the cockpit wants to be notified.

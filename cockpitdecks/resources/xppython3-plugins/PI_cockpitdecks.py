@@ -74,8 +74,9 @@ MCAST_TTL = 2
 MAX_PACK_LEN = 1472
 
 COLLECTION_FREQUENCY = 5.0  # will run every COLLECTION_FREQUENCY seconds at most, never faster
-COLLECTION_FREQUENCY_MAX = 10
-EMISSION_FREQUENCY = 1  # seconds
+COLLECTION_FREQUENCY_MAX = 10  # will run at least every COLLECTION_FREQUENCY_MAX seconds, never slower
+EMISSION_FREQUENCY = 1  # seconds, sends UDP packet often so that Cockpitdecks does not wait to get data.
+# note: sending a single UDP package (often) is cheap (cpu, resources), even for X-Plane.
 
 AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
@@ -616,7 +617,6 @@ class PythonInterface:
 
         # install this aircraft's set
         datarefs = self.get_string_datarefs(acpath)
-        self.num_collected_drefs = len(datarefs)
 
         if len(datarefs) == 0:
             print(self.Info, f"load: no string datarefs")
@@ -627,6 +627,8 @@ class PythonInterface:
             if self.use_defaults:
                 datarefs = datarefs.union(DEFAULT_STRING_DATAREFS)
                 print(self.Info, f"load: added default datarefs")
+
+        self.num_collected_drefs = len(datarefs)
 
         # Find the data refs we want to record.
         for dataref in datarefs:

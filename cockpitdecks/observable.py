@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import Set
 
-from cockpitdecks.constant import CONFIG_KW
+from cockpitdecks.constant import CONFIG_KW, ID_SEP
 from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener
 from cockpitdecks.instruction import MacroInstruction
 from cockpitdecks.value import Value
@@ -28,6 +28,30 @@ class Observables:
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
         self.simulator_data = None
 
+    def enable(self, name):
+        ok = False
+        for o in self.observables:
+            if o.name == name:
+                o.enable()
+                ok = True
+        if not ok:
+            logger.warning(f"observable {name} not found")
+
+    def disable(self, name):
+        ok = False
+        for o in self.observables:
+            if o.name == name:
+                o.disable()
+                ok = True
+        if not ok:
+            logger.warning(f"observable {name} not found")
+
+    def get_observable(self, name) -> Observable | None:
+        for o in self.observables:
+            if o.name == name:
+                return o
+        return None
+
 
 class Observable(SimulatorDataListener):
     """Individual observable.
@@ -40,7 +64,12 @@ class Observable(SimulatorDataListener):
         self.name = config.get(CONFIG_KW.NAME.value)
         self.mode = config.get(CONFIG_KW.TYPE.value, CONFIG_KW.TRIGGER.value)
         self.sim = simulator
-        self._enabled = True
+        self._enabled = False  # config.get(CONFIG_KW.ENABLED.value, True)
+        # Create a data "internal:observable:name" is enabled or disabled
+        self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
+        print(">>>>1", ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name]))
+        self._enabled_data = self.sim.get_internal_dataref(self._enabled_data_name)
+        self._enabled_data.update_value(new_value=0)
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self.previous_value = None
         self.current_value = None
@@ -73,11 +102,15 @@ class Observable(SimulatorDataListener):
     def trigger(self):
         return self._config.get(CONFIG_KW.FORMULA.value)
 
-    def enabled(self):
+    def enable(self):
         self._enabled = True
+        self._enabled_data.update_value(new_value=1, cascade=True)
+        logger.info(f"observable {self.name} enabled")
 
     def disable(self):
         self._enabled = False
+        self._enabled_data.update_value(new_value=0, cascade=True)
+        logger.info(f"observable {self.name} disabled")
 
     def init(self):
         # Register datarefs and ask to be notified
@@ -89,18 +122,30 @@ class Observable(SimulatorDataListener):
                     ref.add_listener(self)
 
         logger.debug(f"observable {self.name}: listening to {simdata}")
-        logger.debug(f"observable {self.name} inited")
+        # logger.debug(f"observable {self.name} inited")
 
     def simulator_data_changed(self, data: SimulatorData):
-        if not self._enabled:
-            logger.warning(f"observable {self.name} disabled")
-            return
+        # if not self._enabled:
+        #     logger.warning(f"observable {self.name} disabled")
+        #     return
         self.value = self._value.get_value()
         if self.mode == CONFIG_KW.TRIGGER.value:
             if self.value != 0:  # 0=False
-                logger.debug(f"observable {self.name} executed (conditional trigger)")
-                # self._actions.execute()
+                logger.debug(f"observable {self.name} executing (conditional trigger)..")
+                if self._enabled:
+                    self._actions.execute()
+                else:
+                    logger.info(f"observable {self.name} not enabled")
+                logger.debug(f"..observable {self.name} executed")
+            else:
+                logger.debug(f"observable {self.name} condition is false ({self.value})")
         if self.mode == CONFIG_KW.ONCHANGE.value:
             if self.has_changed():
-                logger.debug(f"observable {self.name} executed (value changed)")
-                # self._actions.execute()
+                logger.debug(f"observable {self.name} executing (value changed)..")
+                if self._enabled:
+                    self._actions.execute()
+                else:
+                    logger.info(f"observable {self.name} not enabled")
+                logger.debug(f"..observable {self.name} executed")
+            else:
+                logger.debug(f"observable {self.name} value unchanged ({self.value})")

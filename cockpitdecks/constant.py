@@ -146,6 +146,7 @@ COCKPITDECKS_DEFAULT_VALUES = {
 #
 class CONFIG_KW(Enum):
     ACTIONS = "actions"
+    ACTION = "action"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BUTTONS = "buttons"

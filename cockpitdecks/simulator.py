@@ -39,6 +39,14 @@ class SimulatorDataProvider:
         raise NotImplementedError("Please implement SimulatorDataProvider.simulator_data_factory method")
 
 
+class SimulatorDataConsumer(ABC):
+    # To get notified when a simulator data has changed.
+
+    @abstractmethod
+    def get_simulator_data(self) -> set:
+        return set()
+
+
 class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
     """
     Abstract class for execution of operations and collection of data in the simulation software.

@@ -6,7 +6,7 @@ import logging
 import random
 
 from cockpitdecks.event import PushEvent
-from cockpitdecks import DECK_ACTIONS
+from cockpitdecks import DECK_ACTIONS, CONFIG_KW, ID_SEP
 from .activation import Activation
 
 # from ...cockpit import CockpitInstruction
@@ -229,6 +229,60 @@ class Stop(Activation):
         Describe what the button does in plain English
         """
         return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])
+
+
+class Obs(Activation):
+    """
+    Stops all decks.
+    """
+
+    ACTIVATION_NAME = "obs"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {
+        "observable": {
+            "type": "string",
+            "prompt": "Observable",
+        },
+        "action": {
+            "type": "choice",
+            "prompt": "Action",
+            "default-value": "toggle",
+            "choices": ["toggle", "enable", "disable"],
+        },
+    }
+
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
+        self.observable = self._config.get(CONFIG_KW.OBSERVABLE.value)
+        self.instruction = self.cockpit.instruction_factory(
+            name=INSTRUCTION_PREFIX + "obs", observable=self.observable, action=self._config.get(CONFIG_KW.ACTION.value, "toggle")
+        )
+
+    def get_simulator_data(self) -> set:
+        if self.observable is not None:
+            print(">>>>2", ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.observable]))
+            return {ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.observable])}
+        return set()
+
+    def activate(self, event) -> bool:
+        if not self.can_handle(event):
+            return False
+
+        # Guard handling
+        if not super().activate(event):
+            return False
+
+        if not self.is_guarded():
+            if not event.pressed:  # trigger on button "release"
+                self.instruction.execute()
+        return True  # normal termination
+
+    def describe(self) -> str:
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join(["The button enable, disable, or toggle (enable/disable) an observable."])
 
 
 class Random(Activation):

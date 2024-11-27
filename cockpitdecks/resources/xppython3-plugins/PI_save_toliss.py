@@ -8,6 +8,8 @@ from datetime import datetime
 
 import xp
 
+AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
+
 SAVE_TOLISS_COMMAND = "toliss/save_situation_now"
 SAVE_TOLISS_COMMAND_DESC = "Save ToLiss Airbus situation to file with a timestamp"
 
@@ -19,10 +21,11 @@ DATETIME_FORMAT = "%Y%m%d%H%M%S"
 # ###########################################################
 # S A V E   T O L I S S   S I T U A T I O N
 #
-PLUGIN_VERSION = "1.2.0"
+PLUGIN_VERSION = "1.3.0"
 #
 # Changelog:
 #
+# 15-OCT-2024: 1.3.0: Prepend aircraft ICAO name A339_... A321_...
 # 15-OCT-2024: 1.2.0: Force name to USERSAVED_SITUATION-YYYMMDDHHMMSS*
 # 02-SEP-2024: 1.1.0: Add notification on screen that it worked
 # 23-AUG-2024: 1.0.1: Changed date/time format
@@ -103,6 +106,12 @@ class PythonInterface:
 
         if command_phase == 0:
             try:
+                # 0. Find aircraft ICAO name
+                dref = xp.findDataRef(AIRCRAFT_DATAREF)
+                ac_icao = "ZZZZ"
+                if dref is not None:
+                    ac_icao = xp.getDatas(dref, count=4)  # count=-1 gets error
+
                 # 1. Save the situation (2 files)
                 cmd_ref = xp.findCommand(TOLISS_SAVE_COMMAND)
                 if cmd_ref is None:
@@ -133,7 +142,7 @@ class PythonInterface:
                     tstr = ts.strftime(DATETIME_FORMAT)
                     for f in files:
                         fn, fext = os.path.os.path.splitext(f)
-                        newname = os.path.join(os.path.dirname(fn), "USERSAVED_SITUATION-" + tstr + fext)
+                        newname = os.path.join(os.path.dirname(fn), f"{ac_icao}_USERSAVED_SITUATION-" + tstr + fext)
                         os.rename(f, newname)
                         self.color = (0.0, 1.0, 0.0)
                         self.message = f"saved situation at {ts} in file {os.path.basename(newname)}"

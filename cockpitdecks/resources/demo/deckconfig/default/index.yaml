@@ -1,0 +1,19 @@
+---
+aircraft: all
+description: Default index page for default layout
+version: 1.0.0
+last-updated: 31-OCT-2024
+#
+# CHANGELOG
+#
+# 31-OCT-2024: 1.0.0: Initial release
+#
+# PAGE
+#
+# Button with index 0, if any, is assigned to toggle
+# X-Plane map display on or off.
+buttons:
+  - index: 0
+    type: push
+    command: sim/map/toggle_map_display
+    icon: map
