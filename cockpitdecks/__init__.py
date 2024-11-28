@@ -8,12 +8,21 @@ __path__ = __import__("pkgutil").extend_path(__path__, __name__)  # Aum
 import re
 from datetime import datetime
 
+#
+# ##############################################################
+# References used throughout Cockpitdecks
+#
+from .constant import *  # noqa: F403
+
+#
+# ##############################################################
+# Version and information
+#
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "12.7.0"
+__version__ = "12.7.1"
 
-#
 #
 # ##########################################################################
 # Logging
@@ -22,14 +31,8 @@ SPAM_LEVEL = 15
 SPAM = "SPAM"
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
-#
-# ##############################################################
-# References used throughout Cockpitdecks
-#
-from .constant import *
 
 
-#
 #
 # ##########################################################################
 # Utility functions

@@ -569,7 +569,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         for package in self.all_extensions:
             test = import_submodules(package)
             if len(test) > 0:
-                logger.debug(f"loaded package {package}") #  (recursively)
+                logger.debug(f"loaded package {package}")  #  (recursively)
                 loaded.append(package)
         logger.debug(f"..loaded")
         logger.info(f"loaded extensions {", ".join(loaded)}")

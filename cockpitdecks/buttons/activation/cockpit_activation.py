@@ -4,6 +4,7 @@ Button action and activation abstraction
 
 import logging
 import random
+import subprocess
 
 from cockpitdecks.event import PushEvent
 from cockpitdecks import DECK_ACTIONS, CONFIG_KW, ID_SEP
@@ -209,7 +210,7 @@ class Stop(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
-        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "stop")
+        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + self.ACTIVATION_NAME)
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
@@ -222,6 +223,43 @@ class Stop(Activation):
         if not self.is_guarded():
             if not event.pressed:  # trigger on button "release"
                 self.instruction.execute()
+        return True  # normal termination
+
+    def describe(self) -> str:
+        """
+        Describe what the button does in plain English
+        """
+        return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])
+
+
+class StartSimulator(Activation):
+    """
+    Starts local copy of simulator software if not running.
+    """
+
+    ACTIVATION_NAME = "simulator"
+    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
+
+    PARAMETERS = {}
+
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
+
+    def activate(self, event) -> bool:
+        if not self.can_handle(event):
+            return False
+
+        # Guard handling
+        if not super().activate(event):
+            return False
+
+        if not self.is_guarded():
+            if not event.pressed:  # os dependent
+                # 1. Should check it is already running, may be remote?
+                # 2. Start it locally at least:
+                # 2.a: build path from environ (SIM_HOME) and exe name (to be guesses or hardcoded)
+                p = subprocess.Popen(["open", "/Users/pierre/X-Plane 12/X-Plane.app"])
+
         return True  # normal termination
 
     def describe(self) -> str:
