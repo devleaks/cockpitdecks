@@ -6,6 +6,7 @@
 #
 import os
 import glob
+from re import split
 import socket
 import time
 import json
@@ -23,10 +24,11 @@ yaml = YAML(typ="safe", pure=True)
 # ###########################################################
 # C O C K P T D E C K S
 #
-RELEASE = "1.2.0"  # local version number
+RELEASE = "1.3.0"  # local version number
 #
 # Changelog:
 #
+# 28-OCT-2024: 1.3.0: Added code to split large quantities of string into acceptable UDP packets
 # 23-OCT-2024: 1.2.0: Add maximum frequency (~10 secs) for collection, send UDP more frequently
 # 30-SEP-2024: 1.1.2: Add maximum frequency (~10 secs)
 # 23-AUG-2024: 1.1.1: Wrong if/then/else
@@ -88,6 +90,42 @@ LOAD_DEFAULT_DATAREFS = True
 CHECK_COUNT = [5, 20]
 
 
+def split_dict(indict, packet_max_size: int = MAX_PACK_LEN) -> list:
+    """Split large dictionary into smaller ones.
+       Returns a list of dictionaries, each len(json.dumps(dict)) < packet_max_size
+    """
+    # quick check
+    if len(json.dumps(indict)) < packet_max_size:
+        return [indict]
+    # too large, split it
+    a = indict.copy()
+    i = 0
+    bag = []
+    b = {}
+    while a:
+        v = ()
+        s = json.dumps(b)
+        while a and len(s) < packet_max_size:
+            v = a.popitem()
+            t = json.dumps({v[0]: v[1]})  # check if individual string is not too big...
+            if len(t) > packet_max_size:
+                print(f"Cockpitdecks Helper (rel. {RELEASE}): split_dict: ignoring {v} ({len(t)} > {packet_max_size})")
+                continue
+            b[v[0]] = v[1]
+            s = json.dumps(b)
+
+        if a:
+            if len(v) > 0 and v[0] in b:
+                del b[v[0]]
+            s = json.dumps(b)
+            bag.append(b)
+            i = i + 1
+            b = {}
+            b[v[0]] = v[1]
+    bag.append(b)  # last one
+    return bag
+
+
 #
 # ###########################################################
 # PLUG IN PythonInterface
@@ -108,7 +146,7 @@ class PythonInterface:
         self.run_count = 0
         self.num_collected_drefs = 0
         self.frequency = COLLECTION_FREQUENCY
-        self.fma_bytes = bytes()
+        self.str_bytes = []
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MCAST_TTL)
@@ -297,14 +335,12 @@ class PythonInterface:
                     f"CollectStringDatarefsCB: is alive ({self.run_count}), {len(self.datarefs)}/{self.num_collected_drefs} string datarefs for {self.acpath}",
                 )
         self.run_count = self.run_count + 1
-        drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}}
-        with self.RLock:  # add a meta data to sync effectively
+        drefvalues = {}
+        with self.RLock:
             try:  # efficent method
-                drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}} | {
-                    d: xp.getDatas(self.datarefs[d]) for d in self.datarefs
-                }
+                drefvalues = {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
             except:  # if one dataref does not work, try one by one, skip those in error
-                drefvalues = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": self.frequency}}  # reset it
+                drefvalues = {}  # reset it
                 for d in self.datarefs:
                     try:
                         v = xp.getDatas(self.datarefs[d])
@@ -314,30 +350,31 @@ class PythonInterface:
                             self.Info,
                             f"CollectStringDatarefsCB: error fetching dataref string {d}, skipping",
                         )
-        self.fma_bytes = bytes(json.dumps(drefvalues), "utf-8")  # no time to think. serialize as json
-        # if self.trace:
-        #     print(self.Info, fma_bytes.decode("utf-8"))
-        # if len(fma_bytes) > MAX_PACK_LEN:
-        #     print(
-        #         self.Info,
-        #         f"CollectStringDatarefsCB: returned value too large ({len(fma_bytes)}/{MAX_PACK_LEN})",
-        #     )
-        # else:
-        #     if len(fma_bytes) > 0:
-        #         self.sock.sendto(fma_bytes, (MCAST_GRP, MCAST_PORT))
+            # build packets of bytes
+            metainfo = {"meta": {"v": RELEASE, "ts": round(time.time(), 3), "f": round(self.frequency, 1)}}
+            metalen = len(json.dumps(metainfo))
+            self.str_bytes = [bytes(json.dumps(metainfo | p), "utf-8") for p in split_dict(drefvalues, packet_max_size=MAX_PACK_LEN - metalen)]
+
         return self.frequency
 
     def BroadcastDatarefsCB(self, sinceLast, elapsedSim, counter, refcon):
         if not self.enabled:
             return 0
-        if len(self.fma_bytes) > MAX_PACK_LEN:
-            print(
-                self.Info,
-                f"BroadcastDatarefsCB: UDP packed too large ({len(self.fma_bytes)}/{MAX_PACK_LEN}), not sent",
-            )
-        else:
-            if len(self.fma_bytes) > 0:
-                self.sock.sendto(self.fma_bytes, (MCAST_GRP, MCAST_PORT))
+        with self.RLock:
+            if len(self.str_bytes) > 0:
+                for b in self.str_bytes:
+                    if len(b) > MAX_PACK_LEN:
+                        print(
+                            self.Info,
+                            f"BroadcastDatarefsCB: UDP packed too large ({len(b)}/{MAX_PACK_LEN}), not sent",
+                        )
+                    elif len(b) > 0:
+                        self.sock.sendto(b, (MCAST_GRP, MCAST_PORT))
+                    else:
+                        print(
+                            self.Info,
+                            f"BroadcastDatarefsCB: UDP packed size is zero, not sent",
+                        )
         return EMISSION_FREQUENCY
 
     def command(self, command: str, begin: bool) -> int:

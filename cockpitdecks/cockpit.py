@@ -188,11 +188,11 @@ class CockpitChangePageInstruction(CockpitInstruction):
     def _execute(self):
         deck = self.cockpit.cockpit.get(self.deck)
         if deck is not None:
-            if self.page == CONFIG_KW.BACKPAGE or self.page in deck.pages:
+            if self.page == CONFIG_KW.BACKPAGE.value or self.page in deck.pages:
                 logger.debug(f"{type(self).__name__} change page to {self.page}")
                 new_name = deck.change_page(self.page)
             else:
-                logger.warning(f"{type(self).__name__}: page not found {self.page} on deck {self.deck}")
+                logger.warning(f"{type(self).__name__}: page '{self.page}' not found on deck {self.deck}")
         else:
             logger.warning(f"{type(self).__name__}: deck not found {self.deck}")
 
@@ -389,11 +389,11 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
-        self._simulator_data_names = [
+        self._simulator_data_names = {
             CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF,
             "AirbusFBW/QPACFlightPhase",
             "AirbusFBW/ECAMFlightPhase",
-        ]
+        }
 
         #
         # Global parameters that affect colors
@@ -416,10 +416,17 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     @property
     def observables(self) -> list:
         ret = []
+
         if type(self.cd_observables) is Observables:
             ret = ret + self.cd_observables.observables
+        elif type(self.cd_observables) in [list, set, tuple]:
+            ret = ret + self.cd_observables
+
         if type(self.ac_observables) is Observables:
             ret = ret + self.ac_observables.observables
+        elif type(self.ac_observables) in [list, set, tuple]:
+            ret = ret + self.ac_observables
+
         return ret
 
     def init(self):
@@ -574,12 +581,16 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         logger.debug(f"..loaded")
         logger.info(f"loaded extensions {", ".join(loaded)}")
 
-    def get_simulator_data(self) -> list:
+    def get_simulator_data(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified.
 
         [description]
         """
-        return self._simulator_data_names
+        ret = self._simulator_data_names
+        if len(self.observables) > 0:
+            for o in self.observables:
+                ret = ret | o.get_simulator_data()
+        return ret
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
         return [a for a in self.all_activations.values() if action in a.get_required_capability()]

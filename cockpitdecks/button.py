@@ -43,10 +43,8 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         self.page: "Page" = page
         self.mosaic = self._def.is_tile()
         self._part_of_multi = False
-        self.deck = page.deck
-        self.sim = self.deck.cockpit.sim  # shortcut alias
 
-        self.deck.cockpit.set_logging_level(__name__)
+        self.cockpit.set_logging_level(__name__)
 
         self.index = config.get(
             CONFIG_KW.INDEX.value
@@ -196,6 +194,18 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         else:
             logger.warning(f"multiple representations {a} found in {config}")
         return CONFIG_KW.NONE.value
+
+    @property
+    def deck(self):
+        return self.page.deck
+
+    @property
+    def cockpit(self):
+        return self.page.deck.cockpit
+
+    @property
+    def sim(self):
+        return self.page.deck.cockpit.sim
 
     def button_name(self):
         return self.name

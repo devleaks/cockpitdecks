@@ -235,6 +235,7 @@ class Stop(Activation):
 class StartSimulator(Activation):
     """
     Starts local copy of simulator software if not running.
+    Currently only works on MacOS.
     """
 
     ACTIVATION_NAME = "simulator"
@@ -299,7 +300,6 @@ class Obs(Activation):
 
     def get_simulator_data(self) -> set:
         if self.observable is not None:
-            print(">>>>2", ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.observable]))
             return {ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.observable])}
         return set()
 

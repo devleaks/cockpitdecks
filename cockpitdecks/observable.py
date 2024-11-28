@@ -27,6 +27,12 @@ class Observables:
         self.sim = simulator
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
 
+    def get_simulator_data(self) -> set:
+        ret = set()
+        for o in self.observables:
+            ret = ret | o.get_simulator_data()
+        return ret
+
     def enable(self, name):
         ok = False
         for o in self.observables:
@@ -66,7 +72,6 @@ class Observable(SimulatorDataListener):
         self._enabled = False  # config.get(CONFIG_KW.ENABLED.value, True)
         # Create a data "internal:observable:name" is enabled or disabled
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
-        print(">>>>1", ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name]))
         self._enabled_data = self.sim.get_internal_dataref(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
         self._value = Value(name=self.name, config=self._config, provider=simulator)
@@ -122,6 +127,9 @@ class Observable(SimulatorDataListener):
 
         logger.debug(f"observable {self.name}: listening to {simdata}")
         # logger.debug(f"observable {self.name} inited")
+
+    def get_simulator_data(self) -> set:
+        return self._value.get_simulator_data()
 
     def simulator_data_changed(self, data: SimulatorData):
         # if not self._enabled:
