@@ -625,6 +625,9 @@ class DeckType(DeckTypeBase):
 
     def __init__(self, filename: str) -> None:
         file = Config(filename=filename)
+        if not file.is_valid():
+            loggerDeckType.error(f"could not load configuration file {filename}")
+            raise ValueError
         DeckTypeBase.__init__(self, config=file.store)
         self.load_background(filename)
 
