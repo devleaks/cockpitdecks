@@ -360,4 +360,4 @@ class Config(MutableMapping):
         return key
 
     def is_valid(self) -> bool:
-        return self.store is not None and len(self.store) > 1
+        return self.store is not None and len(self.store) > 1 # because there always is self.store[CONFIG_FILENAME]

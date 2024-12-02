@@ -255,17 +255,11 @@ class Deck(ABC):
         if CONFIG_FILE in pages:  # first load config
             self._layout_config = Config(os.path.join(dn, CONFIG_FILE))
             if not self._layout_config.is_valid():
-                logger.debug(f"no layout config file")
-            else:
-                tempvar = self.get_attribute("home-page-name")
-                if tempvar is not None:
-                    self.home_page_name = tempvar
-                tempvar = self.get_attribute("logo")
-                if tempvar is not None:
-                    self.logo = tempvar
-                tempvar = self.get_attribute("wallpaper")
-                if tempvar is not None:
-                    self.wallpaper = tempvar
+                logger.debug("no layout config file")
+            else: # get new value if it exists
+                self.home_page_name = self.get_attribute("home-page-name", self.home_page_name)
+                self.logo = self.get_attribute("logo", self.logo)
+                self.wallpaper = self.get_attribute("wallpaper", self.wallpaper)
 
         for p in pages:
             if p == CONFIG_FILE:
@@ -281,7 +275,7 @@ class Deck(ABC):
             # if os.path.exists(fn):  # we know the file should exists...
             page_config = Config(fn)
             if not page_config.is_valid():
-                logger.warning(f"file {p} not found")
+                logger.warning(f"file {p} not found or invalid")
                 continue
 
             verbose = page_config.get("verbose", False)
@@ -340,7 +334,7 @@ class Deck(ABC):
                             ipb = len(this_page.buttons) - before
                         del inc_config.store[CONFIG_KW.BUTTONS.value]
                     else:
-                        logger.warning(f"includes: {inc}: file {fni} not found")
+                        logger.warning(f"includes: {inc}: file {fni} is invalid")
                 display_fni = fni.replace(
                     os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep),
                     "..",
