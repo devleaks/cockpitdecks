@@ -92,7 +92,7 @@ CHECK_COUNT = [5, 20]
 
 def split_dict(indict, packet_max_size: int = MAX_PACK_LEN) -> list:
     """Split large dictionary into smaller ones.
-       Returns a list of dictionaries, each len(json.dumps(dict)) < packet_max_size
+    Returns a list of dictionaries, each len(json.dumps(dict)) < packet_max_size
     """
     # quick check
     if len(json.dumps(indict)) < packet_max_size:
