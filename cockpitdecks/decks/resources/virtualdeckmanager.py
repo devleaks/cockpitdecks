@@ -26,16 +26,19 @@ class VirtualDeckManager:
     virtual_decks: Dict[str, VirtualDeck] = {}
 
     @staticmethod
-    def virtual_deck_types(acpath: str = None) -> Dict[str, DeckType]:
+    def virtual_deck_types(acpath: str|None = None) -> Dict[str, DeckType]:
         """Returns the list of virtual deck types.
 
         Returns:
             Dict[str, DeckType]: [description]
         """
+        # 1. Standard deck types, provided by Cockpitdecks
         deck_types = [DeckType(filename=deck_type) for deck_type in DeckType.list()]
+        # 2. Additional deck types, provided by aircraft deckconfig designer
         if acpath is not None:
             aircraft_deck_types = os.path.abspath(os.path.join(acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
             deck_types = deck_types + [DeckType(filename=deck_type) for deck_type in DeckType.list(aircraft_deck_types)]
+        # 3. Make sure we only keep "virtual" web decks
         virtual_deck_types = filter(lambda d: d.is_virtual_deck(), deck_types)
         return {d.name: d for d in virtual_deck_types}
 
@@ -51,16 +54,13 @@ class VirtualDeckManager:
             virtual_deck_types = VirtualDeckManager.virtual_deck_types(acpath=acpath)
         fn = os.path.join(acpath, CONFIG_FOLDER, CONFIG_FILE)
         config = Config(fn)
-        fn = os.path.join(acpath, CONFIG_FOLDER, SECRET_FILE)
-        serials = Config(fn)
         decks = config.get(CONFIG_KW.DECKS.value, {})
         for deck in decks:
-            disabled = deck.get(CONFIG_KW.DISABLED.value, False)
-            if disabled:
+            if deck.get(CONFIG_KW.DISABLED.value, False):
                 continue
             deck_type = deck.get(CONFIG_KW.TYPE.value)
             if deck_type in virtual_deck_types:
                 name = deck.get(DECK_KW.NAME.value)
                 VirtualDeckManager.virtual_decks[name] = VirtualDeck(name=name, definition=virtual_deck_types.get(deck_type), config=deck)
-                VirtualDeckManager.virtual_decks[name].set_serial_number(serials.get(name))
+                VirtualDeckManager.virtual_decks[name].set_serial_number(name)
         return VirtualDeckManager.virtual_decks
