@@ -159,11 +159,11 @@ else:
         else:
             print(f"Cockpitdecks default environment file {default_environment_file} not found")
 
-if len(environment) == 0:
+if len(environment) == 0 or (type(environment) is Config and not environment.is_valid()):
     if not args.demo:
         sys.exit(1)
     else:
-        print(f"Cockpitdecks starting with default environment values for demo only")
+        print("Cockpitdecks starting with default environment values for demo only")
         environment = {
             "APP_HOST": ["127.0.0.1", 7777],
         }
