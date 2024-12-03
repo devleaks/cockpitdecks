@@ -105,46 +105,49 @@ class Page:
     def load_buttons(self, buttons: dict, deck_type: DeckType, add_to_page: bool = True) -> list:
         built = []
         for button_config in buttons:
-            button = None
+            try:
+                button = None
 
-            # Where to place the button
-            idx = Button.guess_index(button_config)
-            if idx is None:
-                logger.error(f"page {self.name}: button has no index, ignoring {button_config}")
-                continue
-            if idx not in deck_type.valid_indices():
-                logger.error(f"page {self.name}: button has invalid index '{idx}' (valid={deck_type.valid_indices()}), ignoring '{button_config}'")
-                continue
+                # Where to place the button
+                idx = Button.guess_index(button_config)
+                if idx is None:
+                    logger.error(f"page {self.name}: button has no index, ignoring {button_config}")
+                    continue
+                if idx not in deck_type.valid_indices():
+                    logger.error(f"page {self.name}: button has invalid index '{idx}' (valid={deck_type.valid_indices()}), ignoring '{button_config}'")
+                    continue
 
-            # How the button will behave, it is does something
-            aty = Button.guess_activation_type(button_config)
-            valid_activations = deck_type.valid_activations(idx, source=self.deck.cockpit)
-            if aty is None or aty not in valid_activations:
-                logger.error(f"page {self.name}: button has invalid activation type {aty} not in {valid_activations} for index {idx}, ignoring {button_config}")
-                continue
+                # How the button will behave, it is does something
+                aty = Button.guess_activation_type(button_config)
+                valid_activations = deck_type.valid_activations(idx, source=self.deck.cockpit)
+                if aty is None or aty not in valid_activations:
+                    logger.error(f"page {self.name}: button has invalid activation type {aty} not in {valid_activations} for index {idx}, ignoring {button_config}")
+                    continue
 
-            # How the button will be represented, if it is
-            rty = Button.guess_representation_type(
-                button_config,
-                all_representations=self.deck.cockpit.all_representations,
-                all_hardware_representations=self.deck.cockpit.all_hardware_representations,
-            )
-            valid_representations = deck_type.valid_representations(idx, source=self.deck.cockpit)
-            if rty not in valid_representations:
-                logger.error(
-                    f"page {self.name}: button has invalid representation type {rty} not in {valid_representations} for index {idx}, ignoring {button_config}"
+                # How the button will be represented, if it is
+                rty = Button.guess_representation_type(
+                    button_config,
+                    all_representations=self.deck.cockpit.all_representations,
+                    all_hardware_representations=self.deck.cockpit.all_hardware_representations,
                 )
-                continue
-            if rty == "none":
-                logger.debug(f"page {self.name}: button has no representation but it is ok")
+                valid_representations = deck_type.valid_representations(idx, source=self.deck.cockpit)
+                if rty not in valid_representations:
+                    logger.error(
+                        f"page {self.name}: button has invalid representation type {rty} not in {valid_representations} for index {idx}, ignoring {button_config}"
+                    )
+                    continue
+                if rty == "none":
+                    logger.debug(f"page {self.name}: button has no representation but it is ok")
 
-            button_config[DECK_BUTTON_DEFINITION] = deck_type.get_button_definition(idx)
-            button = Button(config=button_config, page=self)
-            if button is not None:
-                if add_to_page:
-                    self.add_button(idx, button)
-                built.append(button)
-                logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
+                button_config[DECK_BUTTON_DEFINITION] = deck_type.get_button_definition(idx)
+                button = Button(config=button_config, page=self)
+                if button is not None:
+                    if add_to_page:
+                        self.add_button(idx, button)
+                    built.append(button)
+                    logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
+            except:
+                logger.warning(f"page {self.name}: could not add button button ({button_config}), ignored", exc_info=True)
         return built
 
     def inspect(self, what: str | None = None):

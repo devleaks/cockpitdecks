@@ -39,6 +39,7 @@ class Representation:
         return r if type(r) in [list, tuple] else [r]
 
     def __init__(self, button: "Button"):
+        self._inited = False
         self.button = button
         self._representation_config = button._config.get(self.name(), {})
         if type(self._representation_config) is not dict:  # repres: something -> {"repres": something}
@@ -63,7 +64,7 @@ class Representation:
         return self.button._config
 
     def init(self):  # ~ABC
-        pass
+        self._inited = True
 
     def clean_cache(self):
         self._cached = None
