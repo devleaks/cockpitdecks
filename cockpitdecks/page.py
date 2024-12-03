@@ -121,7 +121,9 @@ class Page:
                 aty = Button.guess_activation_type(button_config)
                 valid_activations = deck_type.valid_activations(idx, source=self.deck.cockpit)
                 if aty is None or aty not in valid_activations:
-                    logger.error(f"page {self.name}: button has invalid activation type {aty} not in {valid_activations} for index {idx}, ignoring {button_config}")
+                    logger.error(
+                        f"page {self.name}: button has invalid activation type {aty} not in {valid_activations} for index {idx}, ignoring {button_config}"
+                    )
                     continue
 
                 # How the button will be represented, if it is
