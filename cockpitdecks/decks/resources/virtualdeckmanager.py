@@ -26,7 +26,7 @@ class VirtualDeckManager:
     virtual_decks: Dict[str, VirtualDeck] = {}
 
     @staticmethod
-    def virtual_deck_types(acpath: str|None = None) -> Dict[str, DeckType]:
+    def virtual_deck_types(acpath: str | None = None) -> Dict[str, DeckType]:
         """Returns the list of virtual deck types.
 
         Returns:
