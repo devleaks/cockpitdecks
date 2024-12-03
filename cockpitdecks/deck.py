@@ -256,7 +256,7 @@ class Deck(ABC):
             self._layout_config = Config(os.path.join(dn, CONFIG_FILE))
             if not self._layout_config.is_valid():
                 logger.debug("no layout config file")
-            else: # get new value if it exists
+            else:  # get new value if it exists
                 self.home_page_name = self.get_attribute("home-page-name", self.home_page_name)
                 self.logo = self.get_attribute("logo", self.logo)
                 self.wallpaper = self.get_attribute("wallpaper", self.wallpaper)
