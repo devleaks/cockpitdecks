@@ -442,7 +442,6 @@ class IconText(IconColor):
             #   text-position: cm
             text_config = self._config
         self.text_config = text_config
-        self.notify = self._config.get("notify")
 
     @property
     def text_config(self) -> dict:
@@ -451,6 +450,7 @@ class IconText(IconColor):
     @text_config.setter
     def text_config(self, text_config):
         self._text_config = text_config
+        self.notify = self._text_config.get("notify")
 
         # init safe default
         self.icon_color = self.cockpit_color
@@ -477,7 +477,7 @@ class IconText(IconColor):
         """
         image = super().get_image()
         if self.notify is not None:
-            logger.info(f"{self.notify} {self._text_config.get(CONFIG_KW.TEXT.value)}")
+            logger.info(f"notification from {self.button.button_name()}: {self.notify} {self._text_config.get(CONFIG_KW.TEXT.value)}")
         return self.overlay_text(image, CONFIG_KW.TEXT.value, self.text_config)
 
     def describe(self) -> str:
