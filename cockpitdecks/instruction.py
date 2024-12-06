@@ -5,6 +5,8 @@ import threading
 import logging
 from abc import ABC, abstractmethod
 
+from cockpitdecks import CONFIG_KW
+
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when simulator_data are updated
 # logger.setLevel(logging.DEBUG)
@@ -21,12 +23,13 @@ class Instruction(ABC):
 
     INSTRUCTION_NAME = "undefined"
 
-    def __init__(self, name: str, performer: InstructionProvider = None, delay: float = 0.0, condition: str | None = None) -> None:
+    def __init__(self, name: str, **kwargs) -> None:
         super().__init__()
         self.name = name
-        self.performer = performer
+        self.performer = kwargs.get("performer")
+        delay = kwargs.get("delay")
         self.delay = delay if delay is not None else 0
-        self.condition = condition
+        self.condition = kwargs.get("condition")
 
         self._timer = None
 
@@ -97,27 +100,34 @@ class MacroInstruction(Instruction):
     """
 
     def __init__(self, name: str, instructions: dict, **kwargs):
-        Instruction.__init__(self, name=name)
+        Instruction.__init__(self, name=name, **kwargs)
         self.instructions = instructions
         self._instructions = []
         self.init()
 
     def __str__(self) -> str:
-        return self.name + f" ({', '.join([c.name for c in self._instructions])}"
+        return self.name + f" ({', '.join([c.name for c in self._instructions])})"
 
     def init(self):
+        total_delay = 0
+        count = 0
         if self.performer is not None:
             for c in self.instructions:
                 total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
                 if total_delay > 0:
                     c[CONFIG_KW.DELAY.value] = total_delay
-                ci = self.performer.instruction_factory(**c)
+                ci = self.performer.instruction_factory(name=c[CONFIG_KW.COMMAND.value], **c)
                 self._instructions.append(ci)
+                count = count + 1
+        else:
+            logger.warning(f"{self.name} has no performer")
 
     def _check_condition(self):
         # condition checked in each individual instruction
         return True
 
     def _execute(self):
+        print(">>>>>>> executing", self.name)
         for instruction in self._instructions:
+            print(">>>>>>> sub-executing", instruction.name)
             instruction.execute()

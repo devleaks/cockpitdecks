@@ -77,7 +77,9 @@ class Observable(SimulatorDataListener):
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self.previous_value = None
         self.current_value = None
-        self._actions = MacroInstruction(name=type(self).__name__, instructions=self._config.get(CONFIG_KW.ACTIONS.value))
+        self._actions = MacroInstruction(
+            name=config.get(CONFIG_KW.NAME.value, type(self).__name__), instructions=self._config.get(CONFIG_KW.ACTIONS.value), performer=simulator.cockpit
+        )
         self.init()
 
     @property
