@@ -186,6 +186,7 @@ class CONFIG_KW(Enum):
     SIM_DATA = "multi-datarefs"
     STRING_SIM_DATA = "string-datarefs"
     STRING_PREFIX = "string:"
+    TEXT = "text"
     THEME = "theme"
     TRIGGER = "trigger"
     TYPE = "type"
@@ -292,8 +293,8 @@ FLIGHT_PHASE_QPAC = [
     "70KT",
     "LIFT OFF",
     "LIST OFF + 1 MINUTE OR 400FT",
-    "1000FT",
-    "1000FT",
+    "1000FTUP",
+    "1000FTDW",
     "400FT",
     "TOUCH DOWN",
     "70KT",
