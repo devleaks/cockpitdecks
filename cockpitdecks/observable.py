@@ -14,7 +14,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class Observables:
-    """Collection of observables."""
+    """Collection of observables from global configuration"""
 
     def __init__(self, config: dict, simulator: Simulator):
         """Deck event
@@ -69,7 +69,7 @@ class Observable(SimulatorDataListener):
         self.name = config.get(CONFIG_KW.NAME.value)
         self.mode = config.get(CONFIG_KW.TYPE.value, CONFIG_KW.TRIGGER.value)
         self.sim = simulator
-        self._enabled = False  # config.get(CONFIG_KW.ENABLED.value, True)
+        self._enabled = config.get(CONFIG_KW.ENABLED.value, False)
         # Create a data "internal:observable:name" is enabled or disabled
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
         self._enabled_data = self.sim.get_internal_dataref(self._enabled_data_name)
