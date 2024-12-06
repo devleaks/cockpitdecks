@@ -196,7 +196,7 @@ class IconBase(Representation):
         if text is None:
             return image
 
-        if self.button.is_managed() and which_text == "text":
+        if self.button.is_managed() and which_text == CONFIG_KW.TEXT.value:
             txtmod = self.button.manager.get(f"text-modifier", "dot").lower()
             if txtmod in ["std", "standard"]:  # QNH Std
                 text_font = "AirbusFCU"  # hardcoded
@@ -428,7 +428,7 @@ class IconText(IconColor):
     def __init__(self, button: "Button"):
         IconColor.__init__(self, button=button)
 
-        text_config = self._config.get("text")  # where to get text from
+        text_config = self._config.get(CONFIG_KW.TEXT.value)  # where to get text from
         if type(text_config) is not dict:
             # Handle this presentation structure (legacy, text unindented)
             # - index: 9
@@ -442,6 +442,7 @@ class IconText(IconColor):
             #   text-position: cm
             text_config = self._config
         self.text_config = text_config
+        self.notify = self._config.get("notify")
 
     @property
     def text_config(self) -> dict:
@@ -456,7 +457,7 @@ class IconText(IconColor):
         self.icon_texture = self.cockpit_texture
 
         if self._text_config is not None:
-            self.text = str(self._text_config.get("text"))
+            self.text = str(self._text_config.get(CONFIG_KW.TEXT.value))
 
             # Overwrite icon-* with text-bg-*
             self.bg_color = self._text_config.get("text-bg-color")
@@ -475,7 +476,9 @@ class IconText(IconColor):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         image = super().get_image()
-        return self.overlay_text(image, "text", self.text_config)
+        if self.notify is not None:
+            logger.info(f"{self.notify} {self._text_config.get(CONFIG_KW.TEXT.value)}")
+        return self.overlay_text(image, CONFIG_KW.TEXT.value, self.text_config)
 
     def describe(self) -> str:
         return "The representation places an icon with optional text and label overlay."
@@ -501,12 +504,7 @@ class MultiTexts(IconText):
 
     def __init__(self, button: "Button"):
         IconText.__init__(self, button=button)
-
-        self.multi_texts = self._config.get("text-animate")
-        if self.multi_texts is None:
-            self.multi_texts = self._config.get("multi-texts", [])
-        else:
-            logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_texts)}")
+        self.multi_texts = self._config.get("multi-texts", [])
 
     def get_simulator_data(self) -> set:
         datarefs = set()
