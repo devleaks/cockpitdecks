@@ -1816,6 +1816,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
             return
         value = data.value()
+        print(">>>>>>>>>>>>>", AIRCRAFT_CHANGE_MONITORING_DATAREF, value)
         if value is not None and self._livery_path == value:
             logger.info(f"livery path unchanged {self._livery_path}")
             return
@@ -1859,28 +1860,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if not isinstance(data, SimulatorData) or data.name not in self._simulator_data_names:
+        if not isinstance(data, SimulatorData) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_data_names]:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
 
-        # if data.name == "AirbusFBW/ECAMFlightPhase":
-        #     name = str(data.value())
-        #     if int(data.value()) < len(FLIGHT_PHASE_ECAM):
-        #         name = FLIGHT_PHASE_ECAM[int(data.value())]
-        #     logger.info(f"ECAM flight phase changed to {name}")
-        #     return
-
-        # if data.name == "AirbusFBW/QPACFlightPhase":
-        #     name = str(data.value())
-        #     if int(data.value()) < len(FLIGHT_PHASE_QPAC):
-        #         name = FLIGHT_PHASE_QPAC[int(data.value())]
-        #     logger.info(f"QPAC flight phase changed to {data.value()} ({name}?)")
-        #     return
-
-        print(">>>>>>>>>>>>>>>>>>>", data.name, data.value())
-
-        if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
-            self.change_aircraft()
+        # Now performed by observable
+        # if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
+        #     self.change_aircraft()
 
     def terminate_aircraft(self):
         logger.info("terminating..")
