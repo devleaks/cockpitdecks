@@ -16,6 +16,7 @@ from .buttons.representation import Annunciator
 from .data import CockpitdecksData
 from .simulator import SimulatorData, SimulatorDataListener
 from .value import Value, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider
+from .instruction import Instruction
 
 from cockpitdecks import (
     ID_SEP,
@@ -778,3 +779,41 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         # self.inc(INTERNAL_DATAREF.BUTTON_CLEAN.value, cascade=False)
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
+
+
+class ButtonInstruction(Instruction):
+    """
+    An Instruction to be performed by a button.
+    Opens door to all custom instructions.
+    Button has access to deck, cockpit, simulator...
+    """
+
+    INSTRUCTION_NAME = "button-instruction"
+    PREFIX = "button-"
+
+    def __init__(self, name: str, button: Button) -> None:
+        Instruction.__init__(self, name=name)
+        self._button = button
+
+    @classmethod
+    def new(cls, name: str, button: Button, **kwargs: dict):
+        instr = name.replace(ButtonInstruction.PREFIX, "")
+        all_cockpit_instructions = {s.name(): s for s in Instruction.all_subclasses(ButtonInstruction)}
+        if instr in all_cockpit_instructions:
+            return all_cockpit_instructions[instr](button=button, **kwargs)
+        return None
+
+    @property
+    def button(self):
+        return self._button
+
+    @button.setter
+    def button(self, button):
+        self._button = button
+
+    def _check_condition(self):
+        # condition checked in each individual instruction
+        return True
+
+    def _execute(self):
+        raise NotImplementedError(f"Please implement ButtonInstruction._execute method ({self.name})")
