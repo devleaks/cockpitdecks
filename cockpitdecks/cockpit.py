@@ -20,8 +20,7 @@ from datetime import datetime
 from queue import Queue
 
 from PIL import Image, ImageFont
-
-# from cairosvg import svg2png
+from cairosvg import svg2png
 
 from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
@@ -154,6 +153,7 @@ class CockpitInstruction(Instruction):
 
 
 class CockpitReloadInstruction(CockpitInstruction):
+    """Instruction to reload all decks from initialisation (full unload/reload)"""
 
     INSTRUCTION_NAME = "reload"
 
@@ -165,6 +165,7 @@ class CockpitReloadInstruction(CockpitInstruction):
 
 
 class CockpitReloadOneDeckInstruction(CockpitInstruction):
+    """Instruction to reload one deck"""
 
     INSTRUCTION_NAME = "reload1"
 
@@ -177,6 +178,7 @@ class CockpitReloadOneDeckInstruction(CockpitInstruction):
 
 
 class CockpitChangePageInstruction(CockpitInstruction):
+    """Instruction to change page on a deck"""
 
     INSTRUCTION_NAME = "page"
 
@@ -197,7 +199,20 @@ class CockpitChangePageInstruction(CockpitInstruction):
             logger.warning(f"{type(self).__name__}: deck not found {self.deck}")
 
 
+class CockpitChangeAircraftInstruction(CockpitInstruction):
+    """Instruction to change page on a deck"""
+
+    INSTRUCTION_NAME = "aircraft"
+
+    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit.change_aircraft()
+
+
 class CockpitChangeThemeInstruction(CockpitInstruction):
+    """Instruction to change 'global) theme for Cockpit"""
 
     INSTRUCTION_NAME = "theme"
 
@@ -211,6 +226,7 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
 
 
 class CockpitObservableInstruction(CockpitInstruction):
+    """Instruction to toggle Observable enable/disable"""
 
     INSTRUCTION_NAME = "obs"
 
@@ -238,6 +254,7 @@ class CockpitObservableInstruction(CockpitInstruction):
 
 
 class CockpitStopInstruction(CockpitInstruction):
+    """Instruction to stop Cockpitdecks"""
 
     INSTRUCTION_NAME = "stop"
 
@@ -249,6 +266,7 @@ class CockpitStopInstruction(CockpitInstruction):
 
 
 class CockpitInfoInstruction(CockpitInstruction):
+    """Instruction to display information line on console"""
 
     INSTRUCTION_NAME = "info"
 
@@ -276,6 +294,10 @@ DECK_TYPE_DESCRIPTION = "deck-type-flat"
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 RELOAD_ON_LIVERY_CHANGE = False
 AIRCRAFT = "_livery"  # dataref name is data:_livery
+
+AIRCRAF_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF}
+
+PERMANENT_SIMULATOR_DATA = AIRCRAF_CHANGE_SIMULATOR_DATA
 
 
 class CockpitBase:
@@ -343,9 +365,14 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.all_deck_drivers = {}  # Dict[str, Device], one day
 
         # "Aircraft" name or model...
+        self._ac_ready = False
         self._acpath = None
         self.name = "Cockpitdecks"
         self.icao = "ZZZZ"
+
+        # Global parameters that affect colors and deck LCD backlight
+        self.global_luminosity = 1.0
+        self.global_brightness = 1.0
 
         # Decks
         self.cockpit = {}  # all decks: { deckname: deck }
@@ -361,11 +388,20 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.vd_errs = []
 
         # Content
+        self._cd_fonts = {}
+        self._cd_sounds = {}
+        self._cd_icons = {}
+        self._ac_fonts = {}
+        self._ac_sounds = {}
+        self._ac_icons = {}
+        self._cd_observables = []
+        self._ac_observables = []
+
+        # these are _cd_ (permanent) | _ac_ (changing)
         self.fonts = {}
         self.sounds = {}
-
-        self.icon_folder = None
         self.icons = {}
+        self.observables = {}
 
         # Main event look
         self.event_loop_run = False
@@ -376,11 +412,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._simulator_name = environ.get(ENVIRON_KW.SIMULATOR_NAME.value)
         self._simulator = None
         self.sim = None
+        self._simulator_data_names = PERMANENT_SIMULATOR_DATA
 
         # Internal variables
         self.named_colors = NAMED_COLORS
-        self.cd_observables = []
-        self.ac_observables = []
         self.busy_reloading = False
         self.disabled = False
         self.default_pages = None  # current pages on decks when reloading
@@ -389,17 +424,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
-        self._simulator_data_names = {
-            CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF,
-            "AirbusFBW/QPACFlightPhase",
-            "AirbusFBW/ECAMFlightPhase",
-        }
-
-        #
-        # Global parameters that affect colors
-        # and deck LCD backlight
-        self.global_luminosity = 1.0
-        self.global_brightness = 1.0
 
         self.init()  # this will install all available simulators
 
@@ -414,20 +438,19 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._acpath = acpath
 
     @property
-    def observables(self) -> list:
-        ret = []
+    def fonts2(self) -> list:
+        return self._cd_fonts | self._ac_fonts
 
-        if type(self.cd_observables) is Observables:
-            ret = ret + self.cd_observables.observables
-        elif type(self.cd_observables) in [list, set, tuple]:
-            ret = ret + self.cd_observables
+    @property
+    def icons2(self) -> list:
+        return self._cd_icons | self._ac_icons
 
-        if type(self.ac_observables) is Observables:
-            ret = ret + self.ac_observables.observables
-        elif type(self.ac_observables) in [list, set, tuple]:
-            ret = ret + self.ac_observables
+    @property
+    def sounds2(self) -> list:
+        return self._cd_sounds | self._ac_sounds
 
-        return ret
+    def aircraft_ready(self) -> bool:
+        return self._ac_ready
 
     def init(self):
         """
@@ -454,6 +477,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.info("..initialized with error, cannot continue\n")
             sys.exit(1)
 
+        self.load_cd_resources()
         self.load_deck_types()
         self.scan_devices()
 
@@ -588,7 +612,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         """
         ret = self._simulator_data_names
         if len(self.observables) > 0:
-            for o in self.observables:
+            for o in self.observables.values():
                 ret = ret | o.get_simulator_data()
         return ret
 
@@ -862,12 +886,16 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.load_aircraft(acpath)
         self.run(release)
 
-    def load_aircraft(self, acpath: str):
+    def load_aircraft(self, acpath: str | None):
         """
         Loads decks for aircraft in supplied path.
+        First unloads a previously loaded aircraft if any
         """
         if self.disabled:
             logger.warning("Cockpitdecks is disabled")
+            return
+        if acpath is None:
+            logger.warning("no new aircraft path to load, not unloading current one")
             return
         # Reset, if new aircraft
         if len(self.cockpit) > 0:
@@ -883,7 +911,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         logger.info(f"starting {os.path.basename(acpath)} " + "=" * 50)
 
-        self.cockpit = {}
         self.icons = {}
         # self.fonts = {}
         self.acpath = None
@@ -900,12 +927,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 logger.warning(f"no device")
                 return
 
-            self.load_icons()
-            self.load_fonts()
-            self.load_sounds()
-            self.load_observables()
+            self.load_ac_resources()
             self.create_decks()
             self.load_pages()
+            self._ac_ready = True
         else:
             if acpath is None:
                 logger.error(f"no aircraft folder")
@@ -978,6 +1003,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         # 0. Some variables defaults
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
         self._resources_config = Config(fn)
+        if not self._resources_config.is_valid():
+            logger.error(f"configuration file {fn} is not valid")
 
         # Load global defaults from resources/config.yaml file or use application default
         self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
@@ -1095,7 +1122,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         self._config = Config(fn)
         if not self._config.is_valid():
-            logger.warning(f"no config file {fn}")
+            logger.warning(f"no config file {fn} or file is invalid")
             return
         self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
         if (n := len(self.named_colors)) > 0:
@@ -1109,7 +1136,11 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
-        self._secret = serial_numbers
+        if not serial_numbers.is_valid():
+            self._secret = {}
+            logger.warning(f"secret file {sn} is not valid")
+        else:
+            self._secret = serial_numbers
 
         # 1. Adjust some settings in global config file.
         if self.sim is not None:
@@ -1160,8 +1191,11 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 continue
 
             serial = deck_config.get(CONFIG_KW.SERIAL.value)
-            if serial is None:  # get it from the secret file
-                serial = serial_numbers.get(name)
+            if serial is None:
+                if deck_driver == VIRTUAL_DECK_DRIVER:
+                    serial = name
+                else:  # get it from the secret file
+                    serial = serial_numbers.get(name)
 
             # if serial is not None:
             device = self.get_device(req_driver=deck_driver, req_serial=serial)
@@ -1241,28 +1275,29 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             }
             self.cockpit[name] = self.all_deck_drivers[deckdriver][0](name, config, self, device)
 
-    def load_observables(self):
+    def load_cd_observables(self):
         fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            self.cd_observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self.cd_observables.observables)} observables")
+            self._cd_observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self._cd_observables.observables)} observables")
+            self.observables = {o.name: o for o in self._cd_observables.observables}
 
+    def load_ac_observables(self):
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            self.ac_observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self.ac_observables.observables)} aircraft observables")
+            self._ac_observables = Observables(config=config, simulator=self.sim)
+            self.observables = self.observables | {o.name: o for o in self._ac_observables.observables}
+            logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
+            logger.info(f"{len(self.observables)} observables")
 
     def get_observable(self, name) -> Observable | None:
-        for o in self.observables:
-            if o.name == name:
-                return o
-        return None
+        return self.observables.get(name)
 
     # #########################################################
     # Cockpit data caches
@@ -1270,10 +1305,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def load_deck_types(self):
         # 1. "System" types
         for deck_type in DeckType.list():
-            data = DeckType(deck_type)
-            self.deck_types[data.name] = data
-            if data.is_virtual_deck():
-                self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+            try:
+                data = DeckType(deck_type)
+                self.deck_types[data.name] = data
+                if data.is_virtual_deck():
+                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+            except ValueError:  # this is one of ours, this is an error, not a warning.
+                logger.error(f"could not load deck type {deck_type}, ignoring")
         # 2. Deck types in extension folder(s)
         if self.extension_paths is not None:
             for path in self.extension_paths:
@@ -1305,67 +1343,118 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             b = os.path.basename(deck_type)
             if b in [CONFIG_FILE, "designer.yaml"]:
                 continue
-            data = DeckType(deck_type)
-            data._aircraft = True  # mark as non-system deck type
-            self.deck_types[data.name] = data
-            if data.is_virtual_deck():
-                self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-            added.append(data.name)
+            try:
+                data = DeckType(deck_type)
+                data._aircraft = True  # mark as non-system deck type
+                self.deck_types[data.name] = data
+                if data.is_virtual_deck():
+                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+                added.append(data.name)
+            except ValueError:
+                logger.warning(f"could not load deck type {deck_type}, ignoring")
         logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
 
     def get_deck_type(self, name: str):
         return self.deck_types.get(name)
 
-    def load_icons(self):
-        # Loading icons
+    def load_cd_icons(self):
+        # Loading default icons
         #
         cache_icon = self.get_attribute("cache-icon")
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
+        dn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
         if os.path.exists(dn):
-            self.icon_folder = dn
             cache = os.path.join(dn, "_icon_cache.pickle")
             if os.path.exists(cache) and cache_icon:
                 with open(cache, "rb") as fp:
-                    self.icons = pickle.load(fp)
-                logger.info(f"{len(self.icons)} icons loaded from cache")
+                    self._cd_icons = pickle.load(fp)
+                logger.info(f"{len(self._cd_icons)} icons loaded from cache")
             else:
-                # # Global, resource folder icons
-                # #                                   # #
-                # # THEY ARE NOW LOADED IN LOAD_DEFAULTS # #
-                # #                                   # #
-                # rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
-                # if os.path.exists(rf):
-                #    icons = os.listdir(rf)
-                #    for i in icons:
-                #        if has_ext(i, "png"):  # later, might load JPG as well.
-                #            fn = os.path.join(rf, i)
-                #            image = Image.open(fn)
-                #            self.icons[i] = image
-
-                # Aircraft specific folder icons
                 icons = os.listdir(dn)
                 for i in icons:
+                    fn = os.path.join(dn, i)
                     if has_ext(i, "png"):  # later, might load JPG as well.
-                        fn = os.path.join(dn, i)
                         image = Image.open(fn)
-                        self.icons[i] = image
+                        self._cd_icons[i] = image
                     elif has_ext(i, "svg"):  # Wow.
                         try:
                             fn = os.path.join(dn, i)
                             fout = fn.replace(".svg", ".png")
                             svg2png(url=fn, write_to=fout)
                             image = Image.open(fout)
-                            self.icons[i] = image
+                            self._cd_icons[i] = image
                         except:
                             logger.warning(f"could not load icon {fn}")
                             pass  # no cairosvg
 
                 if cache_icon:  # we cache both folders of icons
                     with open(cache, "wb") as fp:
-                        pickle.dump(self.icons, fp)
-                    logger.info(f"{len(self.icons)} icons cached")
+                        pickle.dump(self._cd_icons, fp)
+                    logger.info(f"{len(self._cd_icons)} icons cached")
                 else:
-                    logger.info(f"{len(self.icons)} icons loaded")
+                    logger.info(f"{len(self._cd_icons)} icons loaded")
+
+        dftname = self.get_attribute("icon-name")
+        if dftname in self._cd_icons.keys():
+            logger.debug(f"default icon name {dftname} found")
+        else:
+            logger.warning(f"default icon name {dftname} not found in default icons")
+
+    def load_cd_resources(self):
+        self.load_cd_fonts()
+        self.load_cd_sounds()
+        self.load_cd_icons()
+        self.load_cd_observables()
+
+    def load_ac_resources(self):
+        self.load_ac_fonts()
+        self.load_ac_sounds()
+        self.load_ac_icons()
+        self.load_ac_observables()
+
+    def load_ac_icons(self):
+        # Loading aircraft icons
+        #
+        cache_icon = self.get_attribute("cache-icon")
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
+        if os.path.exists(dn):
+            cache = os.path.join(dn, "_icon_cache.pickle")
+            if os.path.exists(cache) and cache_icon:
+                with open(cache, "rb") as fp:
+                    self._ac_icons = pickle.load(fp)
+                logger.info(f"{len(self._ac_icons)} aircraft icons loaded from cache")
+            else:
+                icons = os.listdir(dn)
+                for i in icons:
+                    fn = os.path.join(dn, i)
+                    if has_ext(i, "png"):  # later, might load JPG as well.
+                        image = Image.open(fn)
+                        self._ac_icons[i] = image
+                    elif has_ext(i, "svg"):  # Wow.
+                        try:
+                            fn = os.path.join(dn, i)
+                            fout = fn.replace(".svg", ".png")
+                            svg2png(url=fn, write_to=fout)
+                            image = Image.open(fout)
+                            self._ac_icons[i] = image
+                        except:
+                            logger.warning(f"could not load icon {fn}")
+                            pass  # no cairosvg
+
+                if cache_icon:  # we cache both folders of icons
+                    with open(cache, "wb") as fp:
+                        pickle.dump(self._ac_icons, fp)
+                    logger.info(f"{len(self._ac_icons)} aircraft icons cached")
+                else:
+                    logger.info(f"{len(self._ac_icons)} aircraft icons loaded")
+
+        self.icons = self._cd_icons | self._ac_icons
+        logger.info(f"{len(self.icons)} icons available")
+
+        dftname = self.get_attribute("icon-name")
+        if dftname in self.icons.keys():
+            logger.debug(f"default icon name {dftname} found")
+        else:
+            logger.warning(f"default icon name {dftname} not found")  # that's ok
 
     def get_icon(self, candidate_icon):
         for ext in ["", ".png", ".jpg", ".jpeg"]:
@@ -1379,7 +1468,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def get_icon_image(self, icon):
         return self.icons.get(icon)
 
-    def load_fonts(self):
+    def load_cd_fonts(self):
         # Loading fonts.
         # For custom fonts (fonts found in the fonts config folder),
         # we supply the full path for font definition to ImageFont.
@@ -1387,79 +1476,93 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         # If the font is not found by ImageFont, we ignore it.
         # So self.icons is a list of properly located usable fonts.
         #
-        # 1. Load fonts supplied by Cockpitdeck in its resource folder
         rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER)
         if os.path.exists(rn):
             fonts = os.listdir(rn)
             for i in fonts:
                 if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    if i not in self.fonts.keys():
+                    if i not in self._cd_fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
                             test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                            self.fonts[i] = fn
+                            self._cd_fonts[i] = fn
                         except:
                             logger.warning(f"font file {fn} not loaded")
                     else:
                         logger.debug(f"font {i} already loaded")
 
-        # 2. Load fonts supplied by the user in the configuration
+        logger.info(
+            f"{len(self._cd_fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
+        )
+
+    def load_ac_fonts(self):
+        # Loading fonts.
+        # For custom fonts (fonts found in the fonts config folder),
+        # we supply the full path for font definition to ImageFont.
+        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
+        # If the font is not found by ImageFont, we ignore it.
+        # So self.icons is a list of properly located usable fonts.
+        #
         dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, FONTS_FOLDER)
         if os.path.exists(dn):
             fonts = os.listdir(dn)
             for i in fonts:
                 if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    if i not in self.fonts.keys():
+                    if i not in self._ac_fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
                             test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                            self.fonts[i] = fn
+                            self._ac_fonts[i] = fn
                         except:
-                            logger.warning(f"custom font file {fn} not loaded")
+                            logger.warning(f"aircraft font file {fn} not loaded")
                     else:
-                        logger.debug(f"font {i} already loaded")
+                        logger.debug(f"aircraft font {i} already loaded")
 
-        # 3. DEFAULT_LABEL_FONT and DEFAULT_SYSTEM_FONT loaded in load_defaults()
-        logger.info(
-            f"{len(self.fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
-        )
+        logger.info(f"{len(self._ac_fonts)} aircraft fonts loaded")
+        self.fonts = self._cd_fonts | self._ac_fonts
+        logger.info(f"{len(self.fonts)} fonts available")
 
-    def load_sounds(self):
+    def load_cd_sounds(self):
         # Loading sounds.
         #
-        # 1. Load sounds supplied by Cockpitdeck in its resource folder
         rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, SOUNDS_FOLDER)
         if os.path.exists(rn):
             sounds = os.listdir(rn)
             for i in sounds:
                 if has_ext(i, ".wav") or has_ext(i, ".mp3"):
-                    if i not in self.sounds.keys():
+                    if i not in self._cd_sounds.keys():
                         fn = os.path.join(rn, i)
                         try:
                             with open(fn, mode="rb") as file:  # b is important -> binary
-                                self.sounds[i] = file.read()
+                                self._cd_sounds[i] = file.read()
                         except:
                             logger.warning(f"default sound file {fn} not loaded")
                     else:
                         logger.debug(f"sound {i} already loaded")
 
-        # 2. Load fonts supplied by the user in the configuration
+        logger.info(f"{len(self._cd_sounds)} sounds loaded")
+
+    def load_ac_sounds(self):
+        # Loading sounds.
+        #
         dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
         if os.path.exists(dn):
             sounds = os.listdir(dn)
             for i in sounds:
                 if has_ext(i, ".wav") or has_ext(i, ".mp3"):
-                    if i not in self.sounds.keys():
+                    if i not in self._ac_sounds.keys():
                         fn = os.path.join(dn, i)
                         try:
                             with open(fn, mode="rb") as file:  # b is important -> binary
-                                self.sounds[i] = file.read()
+                                self._ac_sounds[i] = file.read()
                         except:
                             logger.warning(f"custom sound file {fn} not loaded")
                     else:
                         logger.debug(f"sound {i} already loaded")
 
-        logger.info(f"{len(self.sounds)} sounds loaded")
+        logger.info(f"{len(self._ac_sounds)} aircraft sounds loaded")
+        self.sounds = self._cd_sounds | self._ac_sounds
+        logger.info(f"{len(self.sounds)} sounds available")
 
     # #########################################################
     # Cockpit start/stop/event/reload procedures
@@ -1707,28 +1810,11 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
 
-    def simulator_data_changed(self, data: SimulatorData):
-        """
-        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
-        """
-        if not isinstance(data, SimulatorData) or data.name not in self._simulator_data_names:
-            logger.warning(f"unhandled {data.name}={data.value()}")
+    def change_aircraft(self):
+        data = self.sim.all_simulator_data.get(AIRCRAFT_CHANGE_MONITORING_DATAREF)
+        if data is None:
+            logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
             return
-
-        if data.name == "AirbusFBW/ECAMFlightPhase":
-            name = str(data.value())
-            if int(data.value()) < len(FLIGHT_PHASE_ECAM):
-                name = FLIGHT_PHASE_ECAM[int(data.value())]
-            logger.info(f"ECAM flight phase changed to {name}")
-            return
-
-        if data.name == "AirbusFBW/QPACFlightPhase":
-            name = str(data.value())
-            if int(data.value()) < len(FLIGHT_PHASE_QPAC):
-                name = FLIGHT_PHASE_QPAC[int(data.value())]
-            logger.info(f"QPAC flight phase changed to {data.value()} (don't know what it means...)")
-            return
-
         value = data.value()
         if value is not None and self._livery_path == value:
             logger.info(f"livery path unchanged {self._livery_path}")
@@ -1769,6 +1855,33 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             if RELOAD_ON_LIVERY_CHANGE:
                 self.reload_decks()
 
+    def simulator_data_changed(self, data: SimulatorData):
+        """
+        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
+        """
+        if not isinstance(data, SimulatorData) or data.name not in self._simulator_data_names:
+            logger.warning(f"unhandled {data.name}={data.value()}")
+            return
+
+        # if data.name == "AirbusFBW/ECAMFlightPhase":
+        #     name = str(data.value())
+        #     if int(data.value()) < len(FLIGHT_PHASE_ECAM):
+        #         name = FLIGHT_PHASE_ECAM[int(data.value())]
+        #     logger.info(f"ECAM flight phase changed to {name}")
+        #     return
+
+        # if data.name == "AirbusFBW/QPACFlightPhase":
+        #     name = str(data.value())
+        #     if int(data.value()) < len(FLIGHT_PHASE_QPAC):
+        #         name = FLIGHT_PHASE_QPAC[int(data.value())]
+        #     logger.info(f"QPAC flight phase changed to {data.value()} ({name}?)")
+        #     return
+
+        print(">>>>>>>>>>>>>>>>>>>", data.name, data.value())
+
+        if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
+            self.change_aircraft()
+
     def terminate_aircraft(self):
         logger.info("terminating..")
         drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
@@ -1778,12 +1891,16 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             deck.terminate()
         self.remove_web_decks()
         self.cockpit = {}
+        self._ac_fonts = {}
+        self._ac_icons = {}
+        self._ac_sounds = {}
         nt = len(threading.enumerate())
         if nt > 1:
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info("..done")
         logger.info(f"{os.path.basename(self.acpath)} terminated " + "=" * 50)
+        self._ac_ready = False
 
     def terminate_devices(self):
         for deck in self.devices:
@@ -2192,6 +2309,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         # Delegates to simulator if not capable of building instruction
         name = kwargs.get("name")
         if name is not None and name.startswith(CockpitInstruction.PREFIX):
+            logger.debug(f"creating {name}")
             instruction = CockpitInstruction.new(cockpit=self, **kwargs)
             if instruction is not None:
                 return instruction
