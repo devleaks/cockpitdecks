@@ -13,13 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 class InstructionProvider:
+    """An InstructionProvider is an entity capable of generating instructions
+    Often, the entity generates instruction it will perform.
+    """
 
     def instruction_factory(self, **kwargs) -> Instruction:
         raise NotImplementedError("Please implement InstructionProvider.instruction_factory method")
 
 
 class Instruction(ABC):
-    """An Instruction is sent to the Simulator to execute an action."""
+    """An Instruction to execute an action by a Performer.
+    Often, the Performer is an InstructionProvider and generates the Instruction it will later execute.
+    """
 
     INSTRUCTION_NAME = "undefined"
 
@@ -127,7 +132,5 @@ class MacroInstruction(Instruction):
         return True
 
     def _execute(self):
-        print(">>>>>>> executing", self.name)
         for instruction in self._instructions:
-            print(">>>>>>> sub-executing", instruction.name)
             instruction.execute()

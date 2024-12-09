@@ -261,7 +261,7 @@ class Page:
     def print(self):
         self.deck.print_page(self)
 
-    def clean(self):
+    def clean(self, disconnected: bool = False):
         """
         Ask each button to stop rendering and clean its mess.
         """
@@ -279,13 +279,14 @@ class Page:
                 self.deck.fill_empty_hardware_representation(key, self)
         logger.debug(f"page {self.name}: ..done")
 
-    def terminate(self):
+    def terminate(self, disconnected: bool = False):
         """
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
             self.sim.remove_datarefs_to_monitor(self.simulator_data)
-        self.clean()
+        if not disconnected:
+            self.clean()
         for button in self.buttons.values():
             self.unregister_simulator_data(button)  # otherwise ref to old buttons remain...
         self.buttons = {}

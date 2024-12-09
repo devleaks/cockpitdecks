@@ -59,8 +59,8 @@ class Observables:
 
 
 class Observable(SimulatorDataListener):
-    """Individual observable.
-    Triggered by a formula that returns True or False.
+    """An Observable is a Value that is monitored for changes.
+       When the data changes, associated Instructions are performed (in sequence).
     Executes actions in list.
     """
 

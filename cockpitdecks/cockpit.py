@@ -22,6 +22,9 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
+from usbmonitor import USBMonitor
+from usbmonitor.attributes import ID_SERIAL
+
 from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
     # Constants, keywords
@@ -382,6 +385,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.virtual_deck_list = {}
         self.virtual_decks_added = False
 
+        self.usb_monitor = USBMonitor()
         self.devices = []
 
         self.vd_ws_conn = {}
@@ -909,7 +913,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         else:
             logger.debug("simulator already running")
 
-        logger.info(f"starting {os.path.basename(acpath)} " + "=" * 50)
+        logger.info(f"starting {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
 
         self.icons = {}
         # self.fonts = {}
@@ -1565,6 +1569,36 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         logger.info(f"{len(self.sounds)} sounds available")
 
     # #########################################################
+    # Cockpit instructions
+    #
+    def execute(self, instruction: CockpitInstruction):
+        if not isinstance(instruction, CockpitInstruction):
+            logger.warning(f"invalid instruction {instruction.name}")
+            return
+        instruction._execute()
+
+    def instruction_factory(self, **kwargs):
+        # Should be the top-most instruction factory.
+        # Delegates to simulator if not capable of building instruction
+        name = kwargs.get("name")
+        if name is not None and name.startswith(CockpitInstruction.PREFIX):
+            logger.debug(f"creating {name}")
+            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
+            if instruction is not None:
+                return instruction
+        return self.sim.instruction_factory(**kwargs)
+        # if name == "reload_one":
+        #     deck = kwargs.get(CONFIG_KW.DECK.value)
+        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
+        # elif name == "theme":
+        #     theme = kwargs.get(CONFIG_KW.THEME.value)
+        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
+        # elif name == "reload":
+        #     return CockpitReloadInstruction(cockpit=self)
+        # elif name == "stop":
+        #     return CockpitStopInstruction(cockpit=self)
+
+    # #########################################################
     # Cockpit start/stop/event/reload procedures
     #
     # Note: Reloading the deck is done from a separate (dedicated) thread through a queue.
@@ -1626,6 +1660,49 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.debug("stopped")
         else:
             logger.warning("not running")
+
+    # #########################################################
+    # Cockpit instructions
+    #
+    def on_usb_connect(self, device_id, device_info):
+        s = device_info.get(ID_SERIAL)
+        serial = ""
+        if s is not None:
+            if s.startswith("A00"):
+                s = s.replace("A00", "")
+            serial = f" (serial# {s})"
+        logger.info(f"new usb device {device_id} {serial}")
+        inv = {v: k for k, v in self._secret.items()}
+        if s in inv:
+            logger.warning(f"starting deck {inv.get(s)}..")
+            logger.warning("it is currently not possible to start a single deck -- please reload all decks to take new deck into account")
+        else:
+            logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks ({', '.join(inv.keys())})")
+
+    def on_usb_disconnect(self, device_id, device_info):
+        s = device_info.get(ID_SERIAL)
+        serial = ""
+        if s is not None:
+            if s.startswith("A00"):
+                s = s.replace("A00", "")
+            serial = f" (serial# {s})"
+        logger.warning(f"usb device {device_id}{serial} was removed")
+        inv = {d.serial: d for d in self.cockpit.values()}
+        if s in inv:
+            deck_name = inv.get(s).name
+            logger.warning(f"terminating deck {deck_name}..")
+            deck = self.cockpit.get(deck_name)
+            if deck is not None:
+                try:
+                    deck.terminate(disconnected=True)  # cannot close the device since it is unplugged
+                except:
+                    logger.warning(f"..issues terminating deck {deck_name} (can be ignored)..")
+                del self.cockpit[deck_name]
+                logger.warning(f"..terminated deck {deck_name}")
+            else:
+                logger.warning(f"no deck named {deck_name} in cockpit")
+        else:
+            logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks (registered serial numbers are: {', '.join(inv.keys())})")
 
     # #########################################################
     # Cockpit start/stop/handle procedures for virtual decks
@@ -1816,12 +1893,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
             return
         value = data.value()
-        print(">>>>>>>>>>>>>", AIRCRAFT_CHANGE_MONITORING_DATAREF, value)
-        if value is not None and self._livery_path == value:
-            logger.info(f"livery path unchanged {self._livery_path}")
-            return
+        print(">>>>>>>>>>>>>", AIRCRAFT_CHANGE_MONITORING_DATAREF, value, data, data.data_type, data.previous_value, data.current_value, data._updated)
         if value is None or type(value) is not str:
             logger.warning(f"livery path invalid value {value}, ignoring")
+            return
+
+        if self._livery_path == value:
+            logger.info(f"livery path unchanged {self._livery_path}")
             return
 
         self._livery_path = value
@@ -1863,7 +1941,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if not isinstance(data, SimulatorData) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_data_names]:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
-
         # Now performed by observable
         # if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
         #     self.change_aircraft()
@@ -1873,6 +1950,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
         with open("datarefs-log.yaml", "w") as fp:
             yaml.dump(drefs, fp)
+        self._ac_ready = False
         for deck in self.cockpit.values():
             deck.terminate()
         self.remove_web_decks()
@@ -1880,13 +1958,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._ac_fonts = {}
         self._ac_icons = {}
         self._ac_sounds = {}
+        self._ac_observables = {}
         nt = len(threading.enumerate())
         if nt > 1:
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
         logger.info("..done")
-        logger.info(f"{os.path.basename(self.acpath)} terminated " + "=" * 50)
-        self._ac_ready = False
+        logger.info(f"{os.path.basename(self.acpath)} terminated " + "✈ " * 30)
 
     def terminate_devices(self):
         for deck in self.devices:
@@ -1916,6 +1994,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             self.sim = None
             logger.debug("..connection to simulator deleted..")
         logger.info("..terminating devices..")
+        self.usb_monitor.stop_monitoring()
+        logger.info("..usb monitoring stopped..")
         self.terminate_devices()
         logger.info("..done")
         left = len(threading.enumerate())
@@ -1930,6 +2010,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             # Start reload loop
             logger.info("starting..")
             self.sim.connect()
+            logger.info("..usb monitoring started..")
+            self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
             logger.info("..connect to simulator loop started..")
             self.start_event_loop()
             logger.info("..event loop started..")
@@ -2283,30 +2365,3 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 return fn
         logger.warning(f"file {filename} not found")
         return None
-
-    def execute(self, instruction: CockpitInstruction):
-        if not isinstance(instruction, CockpitInstruction):
-            logger.warning(f"invalid instruction {instruction.name}")
-            return
-        instruction._execute()
-
-    def instruction_factory(self, **kwargs):
-        # Should be the top-most instruction factory.
-        # Delegates to simulator if not capable of building instruction
-        name = kwargs.get("name")
-        if name is not None and name.startswith(CockpitInstruction.PREFIX):
-            logger.debug(f"creating {name}")
-            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
-            if instruction is not None:
-                return instruction
-        return self.sim.instruction_factory(**kwargs)
-        # if name == "reload_one":
-        #     deck = kwargs.get(CONFIG_KW.DECK.value)
-        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
-        # elif name == "theme":
-        #     theme = kwargs.get(CONFIG_KW.THEME.value)
-        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
-        # elif name == "reload":
-        #     return CockpitReloadInstruction(cockpit=self)
-        # elif name == "stop":
-        #     return CockpitStopInstruction(cockpit=self)

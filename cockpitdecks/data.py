@@ -4,6 +4,8 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from abc import ABC, abstractmethod
+import traceback
+
 
 from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
@@ -138,7 +140,6 @@ class Data(ABC):
 
     def update_value(self, new_value, cascade: bool = False) -> bool:
         # returns whether has changed
-
         def local_round(new_value):
             return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
 
@@ -198,7 +199,9 @@ class Data(ABC):
 
 
 class DataListener(ABC):
-    # To get notified when a simulator data has changed.
+    """A DataListener is an entity that is interested in being notified
+    when a data changes.
+    """
 
     def __init__(self, name: str = "abstract-data-listener"):
         self.name = name
@@ -208,10 +211,10 @@ class DataListener(ABC):
         pass
 
 
-# "Internal" data, same properties as the simulator data
-# but does not get forwarded to the simulator
-# Mistakenly sometimes called an internal dataref... (historical)
 class CockpitdecksData(Data):
+    """A CocpydecksData is a data internal to Cockpitdecks.
+    It is used internally, but it can be used by Value.
+    """
 
     def __init__(self, path: str, is_string: bool = False):
         # Data

@@ -56,11 +56,10 @@ class ActivationValueProvider(ABC, ValueProvider):
 
 
 class Value:
-    """Value class.
+    """A Value is a typed value used by Cockpitdecks entities.
 
-    Defines a value used by Cockpitdecks which is based on datarefs and button state variables.
-    Value needs a pointer to the button to get the values of datarefs and state variables.
-    Values DOES not contain the value, only its définition and methods to compute it.
+    A Value can be a simple Data (either CockpitdecksData or SimulatorDate) or a formula that
+    combines several Data.
     """
 
     def __init__(self, name: str, config: dict, provider: ValueProvider):

@@ -517,12 +517,12 @@ class Deck(ABC):
         """
         pass
 
-    def terminate(self):
+    def terminate(self, disconnected: bool = False):
         """Called at end of use of deck to cleanly reset all buttons to a default, neutral state
         and stop deck interaction,
         """
         for p in self.pages.values():
-            p.terminate()
+            p.terminate(disconnected)
         self.pages = {}
 
     # ##################################################
