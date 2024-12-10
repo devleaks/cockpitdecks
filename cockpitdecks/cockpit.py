@@ -224,7 +224,9 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
         CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
 
     def _execute(self):
-        self.cockpit._config[CONFIG_KW.COCKPIT_THEME.value] = self.theme
+        before = self.cockpit.theme
+        self.cockpit.theme = self.theme
+        logger.info(f"theme changed to {self.theme}")
         self.cockpit.reload_decks()
 
 
@@ -387,6 +389,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         self.usb_monitor = USBMonitor()
         self.devices = []
+        self._device_scanned = False
 
         self.vd_ws_conn = {}
         self.vd_errs = []
@@ -839,6 +842,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                     }
                 )
             logger.debug(f"using {len(decks)} {deck_driver}")
+        self._device_scanned = True
         logger.debug(f"..scanned")
 
     def get_device(self, req_driver: str, req_serial: str | None):
@@ -905,7 +909,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if len(self.cockpit) > 0:
             self.terminate_aircraft()
             # self.sim.clean_datarefs_to_monitor()
-            logger.info(f"{os.path.basename(self.acpath)} unloaded")
+            logger.debug(f"{os.path.basename(self.acpath)} unloaded")
 
         if self.sim is None:
             logger.info("..starting simulator..")
@@ -913,13 +917,11 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         else:
             logger.debug("simulator already running")
 
+        if not self._device_scanned:
+            self.scan_devices()
+
         logger.info(f"starting {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
-
-        self.icons = {}
-        # self.fonts = {}
         self.acpath = None
-
-        self.load_defaults()
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
@@ -1111,7 +1113,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
     def remove_web_decks(self):
         if not self.virtual_decks_added:
-            logger.info(f"virtual decks not added")
+            logger.info("virtual decks not added")
             return
         to_remove = []
         for device in self.devices:
@@ -1132,11 +1134,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if (n := len(self.named_colors)) > 0:
             logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
 
-        self.theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
-        # self.theme = self._config.get(CONFIG_KW.COCKPIT_THEME.value, "")  # prefix = "dark", or nothing
-        if self.theme is not None and self.theme in ["", "default", "cockpit"]:
-            self.theme = None
-        logger.info(f"theme is {self.theme}")
+        before = self.theme
+        theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
+        if self.theme is None:
+            self.theme = theme
+        elif self.theme in ["", "default", "cockpit"]:
+            self.theme = theme
+        logger.info(f"theme is {self.theme} (was {before})")
 
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
@@ -1208,7 +1212,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 if serial is None:
                     if deck_count_by_type[deck_type] > 1:
                         logger.warning(
-                            f"only one deck of that type but more than one configuration in config.yaml for decks of that type and no serial number, ignoring"
+                            "only one deck of that type but more than one configuration in config.yaml for decks of that type and no serial number, ignoring"
                         )
                         continue
                     deck_config[CONFIG_KW.SERIAL.value] = device.get_serial_number()  # issue: might return None?
@@ -1405,14 +1409,15 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
     def load_cd_resources(self):
         self.load_cd_fonts()
-        self.load_cd_sounds()
         self.load_cd_icons()
+        self.load_cd_sounds()
         self.load_cd_observables()
+        self.load_defaults()
 
     def load_ac_resources(self):
         self.load_ac_fonts()
-        self.load_ac_sounds()
         self.load_ac_icons()
+        self.load_ac_sounds()
         self.load_ac_observables()
 
     def load_ac_icons(self):
@@ -1664,24 +1669,49 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     # #########################################################
     # Cockpit instructions
     #
+    def get_corresponding_serial(self, serial_in) -> str:
+        """Serial numbers returned by ioreg -p IOUSB do not match serial number returned by devices.
+        This does hardcoded case by case correspondance between both.
+        See https://www.computerpi.com/the-truth-about-usb-device-serial-numbers-and-the-lies-your-tools-tell/
+
+        """
+        if serial_in is None:
+            return ""
+        if serial_in.startswith("A00"):
+            return s.replace("A00", "")
+        if serial_in == "1.0.1":
+            return "X-TOUCH MINI"
+
     def on_usb_connect(self, device_id, device_info):
-        s = device_info.get(ID_SERIAL)
-        serial = ""
-        if s is not None:
-            if s.startswith("A00"):
-                s = s.replace("A00", "")
+        """Starting a device when it is connected is tricky and difficult.
+        If non existent before, device has first to be added to the list of devices through scanning
+        with available "drivers". If it was existent before (disconnected/reconnected) we have to reset it.
+        If the device was added and we have its serial number, we have to find if there is a config for
+        it in deckconfig. If we find one, we can create it, start it, and add it to the list of decks
+        in the Cockpit.
+        """
+        s_orig = device_info.get(ID_SERIAL)
+        s = self.get_corresponding_serial(s_orig)
+        serial = "unknown"
+        if s_orig is not None:
             serial = f" (serial# {s})"
         logger.info(f"new usb device {device_id} {serial}")
         inv = {v: k for k, v in self._secret.items()}
         if s in inv:
             logger.warning(f"starting deck {inv.get(s)}..")
             logger.warning("it is currently not possible to start a single deck -- please reload all decks to take new deck into account")
+            # self._device_scanned = False
         else:
             logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks ({', '.join(inv.keys())})")
 
     def on_usb_disconnect(self, device_id, device_info):
-        s = device_info.get(ID_SERIAL)
-        serial = ""
+        """Stopping and removing a device always works.
+        Sometimes, Cockpitdecks still attempts to stop/talk the device
+        and this generates an error that can safely be ignorer, hence the try/except block.
+        """
+        s_orig = device_info.get(ID_SERIAL)
+        s = self.get_corresponding_serial(s_orig)
+        serial = "unknown"
         if s is not None:
             if s.startswith("A00"):
                 s = s.replace("A00", "")
@@ -1893,7 +1923,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
             return
         value = data.value()
-        print(">>>>>>>>>>>>>", AIRCRAFT_CHANGE_MONITORING_DATAREF, value, data, data.data_type, data.previous_value, data.current_value, data._updated)
         if value is None or type(value) is not str:
             logger.warning(f"livery path invalid value {value}, ignoring")
             return
