@@ -2,11 +2,9 @@
 # Buttons that are drawn on render()
 #
 import logging
-import time
+from functools import reduce
 
-from PIL import Image, ImageDraw
-
-from cockpitdecks import ICON_SIZE
+from cockpitdecks import ICON_SIZE, yaml
 from cockpitdecks.constant import CONFIG_KW
 
 from .draw_animation import DrawAnimation
@@ -17,67 +15,71 @@ logger = logging.getLogger(__name__)
 
 #
 # ###############################
-# DRAWN REPRESENTATION (using Pillow, continued)
 #
+# SOLARIS SPLIT FLAPS DISPLAY
 #
-#
-# ###############################
-# DRAWN REPRESENTATION (using Pillow, continued)
-#
-#
-CHARACTER_LIST = sorted([i for i in range(ord("0"), ord("9")+1)] + [i for i in range(ord("A"), ord("Z")+1)] +[ord(c) for c in ":/-"])
+CHARACTER_LIST = sorted({i for i in range(ord("0"), ord("9") + 1)} | {i for i in range(ord("A"), ord("Z") + 1)} | {ord(c) for c in " *:/-"})
+START_CHAR = chr(CHARACTER_LIST[0])
+SIMULTANEOUS = "simultaneous"
+AS_ONE = "one"
+ADD_DELAY = True
 
-print(CHARACTER_LIST)
-def solari(text, last_text: str = None, mode: str = "one"):
-    start_char = "0" * len(text) if (last_text is None or len(text) != len(last_text)) else last_text
+
+def solari(text, last_text: str | None = None, mode: str = AS_ONE):
+    def bad(c: int):
+        return (32 < c < 42) or (42 < c < 48) or (57 < c < 65) or (c > 96)
+
+    start_char = START_CHAR * len(text) if (last_text is None or len(text) != len(last_text)) else last_text
     screen = [" " for i in range(len(text))]
     j = 0
-    if mode == "one":
+    if mode == AS_ONE:
         for c in text:
             start = ord(start_char[j])
             end = ord(c) + 1
             if start < end:
                 for i in range(start, end):
-                    if (i > 57 and i < 65) or (i > 96):  # only keep number and letters
+                    if bad(i):  # only keep number and letters
                         continue
                     screen[j] = chr(i)
                     # playsound("/Users/pierre/Developer/fs/cockpitdecks/cockpitdecks/resources/sounds/clic.mp3")
                     yield "".join(screen)
                 j = j + 1
             else:
-                for i in range(start, ord("Z")+1):
-                    if (i > 57 and i < 65) or (i > 96):  # only keep number and letters
+                for i in range(start, ord("Z") + 1):
+                    if bad(i):  # only keep number and letters
                         continue
                     screen[j] = chr(i)
                     # playsound("/Users/pierre/Developer/fs/cockpitdecks/cockpitdecks/resources/sounds/clic.mp3")
                     yield "".join(screen)
-                for i in range(ord("0"), end):
-                    if (i > 57 and i < 65) or (i > 96):  # only keep number and letters
+                for i in range(ord(START_CHAR), end):
+                    if bad(i):  # only keep number and letters
                         continue
                     screen[j] = chr(i)
                     # playsound("/Users/pierre/Developer/fs/cockpitdecks/cockpitdecks/resources/sounds/clic.mp3")
                     yield "".join(screen)
                 j = j + 1
-    elif mode == "simultaneous":
-        start = min([ord(c) for c in last_text])
+    elif mode == SIMULTANEOUS:
+        start = min([ord(c) for c in start_char])
         end = max([ord(c) for c in text]) + 1
-        if start > end:
-            start = ord("0")
-        for i in range(start, end):
-            if (i > 57 and i < 65) or (i > 96):  # only keep number and letters
+        for i in range(start, ord("Z") + 1):
+            if bad(i):  # only keep number and letters
                 continue
             for j in range(len(text)):
-                if i <= ord(text[j]):
+                if screen[j] != text[j]:
                     screen[j] = chr(i)
-                else:
-                    screen[j] = text[j]
+            # playsound("/Users/pierre/Developer/fs/cockpitdecks/cockpitdecks/resources/sounds/clic.mp3")
+            yield "".join(screen)
+        for i in range(ord(START_CHAR), end):
+            if bad(i):  # only keep number and letters
+                continue
+            for j in range(len(text)):
+                if screen[j] != text[j]:
+                    screen[j] = chr(i)
             # playsound("/Users/pierre/Developer/fs/cockpitdecks/cockpitdecks/resources/sounds/clic.mp3")
             yield "".join(screen)
 
-
 class SolariIcon(DrawAnimation):
-    """Display up to 2 lines of 3 characters in a split flap/solari animation
-    """
+    """Display up to 2 lines of 3 characters in a split flap/solari animation"""
 
     REPRESENTATION_NAME = "solari"
 
@@ -85,10 +87,15 @@ class SolariIcon(DrawAnimation):
         "text": {"type": "string", "prompt": "Characters (up to 6)"},
     }
 
+    NUM_LINES = 2
+    NUM_CHARS = 3
+
+    LINE_SPACE = 120
+
     def __init__(self, button: "Button"):
         DrawAnimation.__init__(self, button=button)
         self.speed = self._representation_config.get("speed", 0.08)
-        self.display = self._representation_config.get("display", "one") # alt: line, lineend
+        self.display = self._representation_config.get("display", SIMULTANEOUS)  # alt: one, simultaneous
         self.color = self._representation_config.get("text-color", "black")
 
         self.bg = self.button.deck.get_icon_background(
@@ -101,41 +108,45 @@ class SolariIcon(DrawAnimation):
             who="Solari",
         )
         self.font = self.get_font("Skyfont.otf", 160)
-        self._cached = None # complete unchanged image
+        self.base_line = [70 + i * self.LINE_SPACE for i in range(self.NUM_LINES)]
 
-        self.base_line = [70, 190]
+        self._cached = None  # complete unchanged image
 
+        # Text: from last_text to text
         text = self._representation_config.get(CONFIG_KW.TEXT.value, "      ")
         if len(text) < 6:
-            text = text + " "*(6 - len(text))
+            text = text + " " * (6 - len(text))
         self.text = [text[:3], text[3:]]
-        self.last_text = ["000" for i in range(len(self.text))]
-        self.solari = [solari(text=self.text[i], last_text=self.last_text[i], mode="simultaneous") for i in range(len(self.text))]
-        self.completed = [False for text in self.text]
+        self.last_text = [START_CHAR * 3 for i in range(len(self.text))]
+        self.solari = [solari(text=self.text[i], last_text=self.last_text[i], mode=self.display) for i in range(len(self.text))]
+        self.completed = [False for i in range(len(self.text))]
 
+        # Start delay if display one by one
         self.start_delay = self._representation_config.get("start-delay", [0 for i in range(len(self.text))])
-        if len(self.start_delay) != len(self.text):
+        if self.display == SIMULTANEOUS:
+            self.start_delay = [0 for i in range(len(self.text))]
+        elif len(self.start_delay) != len(self.text):
             logger.warning("invalid start delay array size, ignored")
             self.start_delay = [0 for i in range(len(self.text))]
 
     def should_run(self):
         return False in self.completed
 
-    def restart(self):
+    def change_text(self, text):
+        if len(text) < 6:
+            text = text + " " * (6 - len(text))
+        self.text = [text[:3], text[3:]]
         self.solari = [solari(text=self.text[i], last_text=self.last_text[i]) for i in range(len(self.text))]
         self.completed = [False for text in self.text]
 
     def animate(self):
-        if not False in self.completed:
-            return self._cached
-
         image, draw = self.double_icon()
         for i in range(len(self.text)):
             if self.start_delay[i] > 0:
                 self.start_delay[i] = self.start_delay[i] - 1
                 draw.text(
                     (6, self.base_line[i]),
-                    text=" "*len(self.text[i]),
+                    text=" " * len(self.text[i]),
                     font=self.font,
                     anchor="lm",
                     align="center",
@@ -172,5 +183,33 @@ class SolariIcon(DrawAnimation):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        return self._cached
+        return self._cached if self._cached is not None else self.bg
 
+# def make_solari(text):
+#     def ticks(s, e):
+#         return abs(CHARACTER_LIST.index(ord(e)) - CHARACTER_LIST.index(ord(s)))
+#
+#     lines = []
+#     for line in text.split("\n"):
+#         if len(line) < 24:
+#             line = line + " " * (24 - len(line))
+#         else:
+#             line = line[:24]
+#         lines.append(line)
+#     start_delays = [[[0, 0]] for i in range(4)]
+#     buttons = []
+#     for i in range(32):
+#         l0 = int(i / 8)
+#         l = l0 * 2
+#         j0 = i % 8
+#         j = j0 * 3
+#         s0 = lines[l][j : j + 3]
+#         m0 = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s0])
+#         s1 = lines[l + 1][j : j + 3]
+#         m1 = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s1])
+#         delay = start_delays[l0][-1] if ADD_DELAY else [0, 0]
+#         start_delays[l0].append([delay[0] + m0, delay[1] + m1])
+#         buttons.append({"index": i, "solari": {"text": s0 + s1, "start-delay": delay}})
+#     buttons[31]["type"] = "reload"
+#     with open("solary.yaml", "w") as fp:
+#         yaml.dump({"buttons": buttons}, fp)
