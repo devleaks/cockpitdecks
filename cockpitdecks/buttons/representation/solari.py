@@ -78,25 +78,40 @@ def solari(text, last_text: str | None = None, mode: str = AS_ONE):
             # playsound("/Users/pierre/Developer/fs/cockpitdecks/cockpitdecks/resources/sounds/clic.mp3")
             yield "".join(screen)
 
+
 class SolariIcon(DrawAnimation):
     """Display up to 2 lines of 3 characters in a split flap/solari animation"""
 
     REPRESENTATION_NAME = "solari"
 
+    # Number of characters on display
+    # Per "deck"
+    NUM_WIDTH = 8
+    NUM_HEIGHT = 4
+    OFFSET_WIDTH = 0
+    OFFSET_HEIGHT = 0
+    # Per "cell"
+    NUM_LINES = 3
+    NUM_CHARS = 5
+    LINE_OFFSET = 44
+    LINE_OFFSET_X = 10
+    LINE_SPACE = 84
+    FONT = "Skyfont.otf"
+    FONT_SIZE = 100
+    SPEED = 0.08
+    COLOR = "darkblue"
+
     PARAMETERS = {
-        "text": {"type": "string", "prompt": "Characters (up to 6)"},
+        "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
     }
 
-    NUM_LINES = 2
-    NUM_CHARS = 3
-
-    LINE_SPACE = 120
-
     def __init__(self, button: "Button"):
+
         DrawAnimation.__init__(self, button=button)
-        self.speed = self._representation_config.get("speed", 0.08)
+
+        self.speed = self._representation_config.get("speed", self.SPEED)
         self.display = self._representation_config.get("display", SIMULTANEOUS)  # alt: one, simultaneous
-        self.color = self._representation_config.get("text-color", "black")
+        self.color = self._representation_config.get("text-color", self.COLOR)
 
         self.bg = self.button.deck.get_icon_background(
             name=self.button_name(),
@@ -107,45 +122,49 @@ class SolariIcon(DrawAnimation):
             use_texture=True,
             who="Solari",
         )
-        self.font = self.get_font("Skyfont.otf", 160)
-        self.base_line = [70 + i * self.LINE_SPACE for i in range(self.NUM_LINES)]
+        self.font = self.get_font(self.FONT, self.FONT_SIZE)
+        self.base_line = [self.LINE_OFFSET + i * self.LINE_SPACE for i in range(self.NUM_LINES)]
 
         self._cached = None  # complete unchanged image
 
         # Text: from last_text to text
         text = self._representation_config.get(CONFIG_KW.TEXT.value, "      ")
-        if len(text) < 6:
-            text = text + " " * (6 - len(text))
-        self.text = [text[:3], text[3:]]
-        self.last_text = [START_CHAR * 3 for i in range(len(self.text))]
-        self.solari = [solari(text=self.text[i], last_text=self.last_text[i], mode=self.display) for i in range(len(self.text))]
-        self.completed = [False for i in range(len(self.text))]
+        char_count = self.NUM_LINES * self.NUM_CHARS
+        if len(text) < char_count:
+            text = text + " " * (char_count - len(text))
+        self.text = [text[0 + i : self.NUM_CHARS + i] for i in range(0, len(text), self.NUM_CHARS)]
+        self.last_text = [START_CHAR * self.NUM_CHARS for i in range(self.NUM_LINES)]
+        self.solari = [solari(text=self.text[i], last_text=self.last_text[i], mode=self.display) for i in range(self.NUM_LINES)]
+        self.completed = [False for i in range(self.NUM_LINES)]
 
         # Start delay if display one by one
-        self.start_delay = self._representation_config.get("start-delay", [0 for i in range(len(self.text))])
+        self.start_delay = self._representation_config.get("start-delay", [0 for i in range(self.NUM_LINES)])
         if self.display == SIMULTANEOUS:
-            self.start_delay = [0 for i in range(len(self.text))]
-        elif len(self.start_delay) != len(self.text):
+            self.start_delay = [0 for i in range(self.NUM_LINES)]
+        elif len(self.start_delay) != self.NUM_LINES:
             logger.warning("invalid start delay array size, ignored")
-            self.start_delay = [0 for i in range(len(self.text))]
+            self.start_delay = [0 for i in range(self.NUM_LINES)]
+
+        # logger.debug(f"solari: {self.NUM_WIDTH}×{self.NUM_HEIGHT} × {self.NUM_CHARS}×{self.NUM_LINES} = {self.NUM_WIDTH * self.NUM_CHARS} × {self.NUM_HEIGHT * self.NUM_LINES}")
 
     def should_run(self):
         return False in self.completed
 
     def change_text(self, text):
-        if len(text) < 6:
-            text = text + " " * (6 - len(text))
-        self.text = [text[:3], text[3:]]
-        self.solari = [solari(text=self.text[i], last_text=self.last_text[i]) for i in range(len(self.text))]
+        char_count = self.NUM_LINES * self.NUM_CHARS
+        if len(text) < char_count:
+            text = text + " " * (char_count - len(text))
+        self.text = [text[0 + i : self.NUM_CHARS + i] for i in range(0, len(text), self.NUM_CHARS)]
+        self.solari = [solari(text=self.text[i], last_text=self.last_text[i]) for i in range(self.NUM_LINES)]
         self.completed = [False for text in self.text]
 
     def animate(self):
         image, draw = self.double_icon()
-        for i in range(len(self.text)):
+        for i in range(self.NUM_LINES):
             if self.start_delay[i] > 0:
                 self.start_delay[i] = self.start_delay[i] - 1
                 draw.text(
-                    (6, self.base_line[i]),
+                    (self.LINE_OFFSET_X, self.base_line[i]),
                     text=" " * len(self.text[i]),
                     font=self.font,
                     anchor="lm",
@@ -156,7 +175,7 @@ class SolariIcon(DrawAnimation):
             try:
                 text = next(self.solari[i])
                 draw.text(
-                    (6, self.base_line[i]),
+                    (self.LINE_OFFSET_X, self.base_line[i]),
                     text=text,
                     font=self.font,
                     anchor="lm",
@@ -165,7 +184,7 @@ class SolariIcon(DrawAnimation):
                 )
             except StopIteration:
                 draw.text(
-                    (6, self.base_line[i]),
+                    (self.LINE_OFFSET_X, self.base_line[i]),
                     text=self.text[i],
                     font=self.font,
                     anchor="lm",
@@ -184,6 +203,7 @@ class SolariIcon(DrawAnimation):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         return self._cached if self._cached is not None else self.bg
+
 
 # def make_solari(text):
 #     def ticks(s, e):

@@ -14,34 +14,63 @@ SIMULTANEOUS = "simultaneous"
 AS_ONE = "one"
 ADD_DELAY = True
 
+# Number of characters on display
+# Per "deck"
+NUM_WIDTH = 8
+NUM_HEIGHT = 4
+OFFSET_WIDTH = 0
+OFFSET_HEIGHT = 0
+# Per "cell"
+NUM_LINES = 3
+NUM_CHARS = 5
+LINE_OFFSET = 44
+LINE_OFFSET_X = 10
+LINE_SPACE = 84
+FONT = "Skyfont.otf"
+FONT_SIZE = 100
+SPEED = 0.08
+COLOR = "darkblue"
+
+
 def make_solari(text):
     def ticks(s, e):
         return abs(CHARACTER_LIST.index(ord(e)) - CHARACTER_LIST.index(ord(s)))
 
     lines = []
+    line_length = NUM_CHARS * NUM_WIDTH
     for line in text.split("\n"):
-        if len(line) < 24:
-            line = line + " " * (24 - len(line))
+        if len(line) < line_length:
+            line = line + " " * (line_length - len(line))
         else:
-            line = line[:24]
+            line = line[:line_length]
         lines.append(line)
-    start_delays = [[[0, 0]] for i in range(4)]
+    num_lines = NUM_HEIGHT * NUM_LINES
+    if len(lines) < num_lines:
+        while len(lines) < num_lines:
+            lines.append(" "*(NUM_WIDTH*NUM_CHARS))
+    start_delays = [[[0 for j in range(NUM_LINES)]] for i in range(NUM_HEIGHT)]
     buttons = []
-    for i in range(32):
-        l0 = int(i / 8)
-        l = l0 * 2
-        j0 = i % 8
-        j = j0 * 3
-        s0 = lines[l][j : j + 3]
-        m0 = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s0])
-        s1 = lines[l + 1][j : j + 3]
-        m1 = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s1])
-        delay = start_delays[l0][-1] if ADD_DELAY else [0, 0]
-        start_delays[l0].append([delay[0] + m0, delay[1] + m1])
-        buttons.append({"index": i, "solari": {"text": s0 + s1, "start-delay": delay}})
-    buttons[31]["type"] = "reload"
+    num_cells = NUM_WIDTH * NUM_HEIGHT
+    for i in range(num_cells):
+        l0 = int(i / NUM_WIDTH)
+        l = l0 * NUM_LINES
+        j0 = i % NUM_WIDTH
+        j = j0 * NUM_CHARS
+
+        delay = start_delays[l0][-1] if ADD_DELAY else [0 for i in range(NUM_LINES)]
+        new_delay = []
+        total_s = ""
+        for k in range(NUM_LINES):
+            s = lines[l+k][j : j + NUM_CHARS]
+            total_s = total_s + s
+            m = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s])
+            new_delay.append(m + delay[k])
+        start_delays[l0].append(new_delay)
+        buttons.append({"index": i, "solari": {"text": total_s, "start-delay": new_delay}})
+    buttons[-1]["type"] = "reload"
     with open("solary.yaml", "w") as fp:
         yaml.dump({"buttons": buttons}, fp)
+
 
 # 3ABC123ABC123ABC123ABC
 # -----123ABC123ABC123ABC123ABC
