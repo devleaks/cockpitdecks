@@ -18,6 +18,7 @@ from .switch import Switch, CircularSwitch, PushSwitch, Knob
 from .data import DataIcon
 from .chart import ChartIcon
 from .gauge import TapeIcon, GaugeIcon
+from .solari import SolariIcon
 
 # Special Web Deck represenations for hardware button
 from .hardware import HardwareRepresentation, VirtualLED, VirtualEncoder

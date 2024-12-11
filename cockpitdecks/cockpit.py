@@ -1678,7 +1678,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if serial_in is None:
             return ""
         if serial_in.startswith("A00"):
-            return s.replace("A00", "")
+            return serial_in.replace("A00", "")
         if serial_in == "1.0.1":
             return "X-TOUCH MINI"
 

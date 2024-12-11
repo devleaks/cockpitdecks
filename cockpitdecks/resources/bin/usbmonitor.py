@@ -20,6 +20,9 @@ print(json.dumps(connected, indent=2))
 monitor.start_monitoring(on_connect=on_connect, on_disconnect=on_disconnect)
 
 # ... Rest of your code ...
-sleep(30)
+delay = 30
+print(f"test for {delay}secs: plug and unplug usb devices")
+sleep(delay)
+
 # If you don't need it anymore stop the daemon
 monitor.stop_monitoring()

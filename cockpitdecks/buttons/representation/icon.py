@@ -117,7 +117,7 @@ class IconBase(Representation):
         if f is not None:
             return ImageFont.truetype(f, fontsize)
 
-        logger.error(f"no font, using pillow default")
+        logger.error("no font, using pillow default")
         return ImageFont.load_default()
 
     def get_image_for_icon(self):
