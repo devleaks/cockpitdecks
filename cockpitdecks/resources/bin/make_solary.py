@@ -14,26 +14,33 @@ SIMULTANEOUS = "simultaneous"
 AS_ONE = "one"
 ADD_DELAY = True
 
-# Number of characters on display
+# Display sizes
+
 # Per "deck"
-NUM_WIDTH = 8
-NUM_HEIGHT = 4
-OFFSET_WIDTH = 0
-OFFSET_HEIGHT = 0
+NUM_WIDTH = 7
+NUM_HEIGHT = 3
+OFFSET_WIDTH = 1
+OFFSET_HEIGHT = 1
+
 # Per "cell"
 NUM_LINES = 3
 NUM_CHARS = 5
-LINE_OFFSET = 44
+
+LINE_OFFSET = 44  # inside icon px
 LINE_OFFSET_X = 10
 LINE_SPACE = 84
-FONT = "Skyfont.otf"
+
+FONT = "Skyfont.otf"  # appearance
 FONT_SIZE = 100
-SPEED = 0.08
 COLOR = "darkblue"
 
+SPEED = 0.08  # behavior
 
 def make_solari(text):
+    """Make deckconfig button portions for solari display"""
+
     def ticks(s, e):
+        """Number of ticks to run from char s to char e"""
         return abs(CHARACTER_LIST.index(ord(e)) - CHARACTER_LIST.index(ord(s)))
 
     lines = []
@@ -47,7 +54,7 @@ def make_solari(text):
     num_lines = NUM_HEIGHT * NUM_LINES
     if len(lines) < num_lines:
         while len(lines) < num_lines:
-            lines.append(" "*(NUM_WIDTH*NUM_CHARS))
+            lines.append(" " * (NUM_WIDTH * NUM_CHARS))
     start_delays = [[[0 for j in range(NUM_LINES)]] for i in range(NUM_HEIGHT)]
     buttons = []
     num_cells = NUM_WIDTH * NUM_HEIGHT
@@ -60,13 +67,20 @@ def make_solari(text):
         delay = start_delays[l0][-1] if ADD_DELAY else [0 for i in range(NUM_LINES)]
         new_delay = []
         total_s = ""
+
         for k in range(NUM_LINES):
-            s = lines[l+k][j : j + NUM_CHARS]
+            s = lines[l + k][j : j + NUM_CHARS]
             total_s = total_s + s
             m = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s])
             new_delay.append(m + delay[k])
+
         start_delays[l0].append(new_delay)
-        buttons.append({"index": i, "solari": {"text": total_s, "start-delay": new_delay}})
+
+        column = OFFSET_WIDTH + i % NUM_WIDTH
+        line =  OFFSET_HEIGHT + l0
+        index = column + line * (OFFSET_WIDTH + NUM_WIDTH)
+        buttons.append({"index": index, "solari": {"text": total_s, "start-delay": delay, "bg-color": "black"}})
+
     buttons[-1]["type"] = "reload"
     with open("solary.yaml", "w") as fp:
         yaml.dump({"buttons": buttons}, fp)

@@ -229,8 +229,8 @@ class DataIcon(DrawBase):
             name=self.button_name(),
             width=ICON_SIZE,
             height=ICON_SIZE,
-            texture_in=self.icon_color,
-            color_in=self.icon_texture,
+            texture_in=self.icon_texture,
+            color_in=self.icon_color,
             use_texture=True,
             who="Data",
         )

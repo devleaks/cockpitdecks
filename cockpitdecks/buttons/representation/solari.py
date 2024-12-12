@@ -86,10 +86,10 @@ class SolariIcon(DrawAnimation):
 
     # Number of characters on display
     # Per "deck"
-    NUM_WIDTH = 8
-    NUM_HEIGHT = 4
-    OFFSET_WIDTH = 0
-    OFFSET_HEIGHT = 0
+    NUM_WIDTH = 7
+    NUM_HEIGHT = 3
+    OFFSET_WIDTH = 1
+    OFFSET_HEIGHT = 1
     # Per "cell"
     NUM_LINES = 3
     NUM_CHARS = 5
@@ -98,8 +98,10 @@ class SolariIcon(DrawAnimation):
     LINE_SPACE = 84
     FONT = "Skyfont.otf"
     FONT_SIZE = 100
-    SPEED = 0.08
-    COLOR = "darkblue"
+    # FONT = "SplitFlapTV-Regular.otf"
+    # FONT_SIZE = 50
+    SPEED = 0.005
+    COLOR = "black"
 
     PARAMETERS = {
         "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
@@ -110,15 +112,19 @@ class SolariIcon(DrawAnimation):
         DrawAnimation.__init__(self, button=button)
 
         self.speed = self._representation_config.get("speed", self.SPEED)
-        self.display = self._representation_config.get("display", SIMULTANEOUS)  # alt: one, simultaneous
+        self.display = self._representation_config.get("display", AS_ONE)  # alt: one, simultaneous
         self.color = self._representation_config.get("text-color", self.COLOR)
+        self.bg_color = self._representation_config.get("bg-color", "white")
+        self.bg_texture = self._representation_config.get("bg-texture")
+
+        print(self.icon_color, self._representation_config)
 
         self.bg = self.button.deck.get_icon_background(
             name=self.button_name(),
             width=ICON_SIZE,
             height=ICON_SIZE,
-            texture_in=self.icon_color,
-            color_in=self.icon_texture,
+            texture_in=self.bg_texture,
+            color_in=self.bg_color,
             use_texture=True,
             who="Solari",
         )
