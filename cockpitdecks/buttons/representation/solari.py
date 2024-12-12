@@ -85,12 +85,14 @@ class SolariIcon(DrawAnimation):
     REPRESENTATION_NAME = "solari"
 
     # Number of characters on display
-    # Per "deck"
+
+    # Deck icons
     NUM_WIDTH = 7
     NUM_HEIGHT = 3
     OFFSET_WIDTH = 1
     OFFSET_HEIGHT = 1
-    # Per "cell"
+
+    # Icon
     NUM_LINES = 3
     NUM_CHARS = 5
     LINE_OFFSET = 44
@@ -100,8 +102,17 @@ class SolariIcon(DrawAnimation):
     FONT_SIZE = 100
     # FONT = "SplitFlapTV-Regular.otf"
     # FONT_SIZE = 50
+    LETTER_COLOR = "white"
+    FLAP_BG_COLOR = "black"
+
     SPEED = 0.005
-    COLOR = "black"
+    FILENAME = "solary.yaml"
+
+    CHARACTER_LIST = sorted({i for i in range(ord("0"), ord("9") + 1)} | {i for i in range(ord("A"), ord("Z") + 1)} | {ord(c) for c in " *:/-"})
+    START_CHAR = chr(CHARACTER_LIST[0])
+    SIMULTANEOUS = "simultaneous"
+    AS_ONE = "one"
+    ADD_DELAY = True
 
     PARAMETERS = {
         "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
@@ -113,11 +124,12 @@ class SolariIcon(DrawAnimation):
 
         self.speed = self._representation_config.get("speed", self.SPEED)
         self.display = self._representation_config.get("display", AS_ONE)  # alt: one, simultaneous
-        self.color = self._representation_config.get("text-color", self.COLOR)
-        self.bg_color = self._representation_config.get("bg-color", "white")
-        self.bg_texture = self._representation_config.get("bg-texture")
 
-        print(self.icon_color, self._representation_config)
+        self.color = self._representation_config.get("text-color", self.LETTER_COLOR)
+        self.flap_bg_color = self._representation_config.get("flap-bg-color", self.FLAP_BG_COLOR)
+
+        self.bg_color = self._representation_config.get("bg-color", [40, 40, 40])
+        self.bg_texture = self._representation_config.get("bg-texture")
 
         self.bg = self.button.deck.get_icon_background(
             name=self.button_name(),
@@ -165,37 +177,68 @@ class SolariIcon(DrawAnimation):
         self.completed = [False for text in self.text]
 
     def animate(self):
+        def minbbox(b, s):
+            # reduces bbox b by s
+            return [b[0]+s, b[1]+s, b[2]-s, b[3]-s]
+
         image, draw = self.double_icon()
         for i in range(self.NUM_LINES):
             if self.start_delay[i] > 0:
                 self.start_delay[i] = self.start_delay[i] - 1
+                bbox = draw.textbbox(
+                    (self.LINE_OFFSET_X, self.base_line[i]),
+                    text=" " * len(self.text[i]),
+                    font=self.font,
+                    anchor="lm",
+                    align="center",
+                )
+                bbox = minbbox(bbox, 5)
+                draw.rectangle(bbox, fill=self.color, width=0)
                 draw.text(
                     (self.LINE_OFFSET_X, self.base_line[i]),
                     text=" " * len(self.text[i]),
                     font=self.font,
                     anchor="lm",
                     align="center",
-                    fill=self.color,
+                    fill=self.flap_bg_color,
                 )
                 continue
             try:
                 text = next(self.solari[i])
+                bbox = draw.textbbox(
+                    (self.LINE_OFFSET_X, self.base_line[i]),
+                    text=text,
+                    font=self.font,
+                    anchor="lm",
+                    align="center",
+                )
+                bbox = minbbox(bbox, 5)
+                draw.rectangle(bbox, fill=self.color, width=0)
                 draw.text(
                     (self.LINE_OFFSET_X, self.base_line[i]),
                     text=text,
                     font=self.font,
                     anchor="lm",
                     align="center",
-                    fill=self.color,
+                    fill=self.flap_bg_color,
                 )
             except StopIteration:
+                bbox = draw.textbbox(
+                    (self.LINE_OFFSET_X, self.base_line[i]),
+                    text=self.text[i],
+                    font=self.font,
+                    anchor="lm",
+                    align="center",
+                )
+                bbox = minbbox(bbox, 5)
+                draw.rectangle(bbox, fill=self.color, width=0)
                 draw.text(
                     (self.LINE_OFFSET_X, self.base_line[i]),
                     text=self.text[i],
                     font=self.font,
                     anchor="lm",
                     align="center",
-                    fill=self.color,
+                    fill=self.flap_bg_color,
                 )
                 self.last_text[i] = self.text[i]
                 self.completed[i] = True
@@ -209,6 +252,58 @@ class SolariIcon(DrawAnimation):
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
         return self._cached if self._cached is not None else self.bg
+
+    @staticmethod
+    def make_solari(text):
+        """Make deckconfig button portions for solari display"""
+
+        def ticks(s, e):
+            """Number of ticks to run from char s to char e"""
+            return abs(SolariIcon.CHARACTER_LIST.index(ord(e)) - SolariIcon.CHARACTER_LIST.index(ord(s)))
+
+        lines = []
+        line_length = SolariIcon.NUM_CHARS * SolariIcon.NUM_WIDTH
+        for line in text.split("\n"):
+            if len(line) < line_length:
+                line = line + " " * (line_length - len(line))
+            else:
+                line = line[:line_length]
+            lines.append(line)
+        num_lines = SolariIcon.NUM_HEIGHT * SolariIcon.NUM_LINES
+        if len(lines) < num_lines:
+            while len(lines) < num_lines:
+                lines.append(" " * (SolariIcon.NUM_WIDTH * SolariIcon.NUM_CHARS))
+        start_delays = [[[0 for j in range(SolariIcon.NUM_LINES)]] for i in range(SolariIcon.NUM_HEIGHT)]
+        buttons = []
+        num_cells = SolariIcon.NUM_WIDTH * SolariIcon.NUM_HEIGHT
+        for i in range(num_cells):
+            l0 = int(i / SolariIcon.NUM_WIDTH)
+            l = l0 * SolariIcon.NUM_LINES
+            j0 = i % SolariIcon.NUM_WIDTH
+            j = j0 * SolariIcon.NUM_CHARS
+
+            delay = start_delays[l0][-1] if SolariIcon.ADD_DELAY else [0 for i in range(SolariIcon.NUM_LINES)]
+            new_delay = []
+            total_s = ""
+
+            for k in range(SolariIcon.NUM_LINES):
+                s = lines[l + k][j : j + SolariIcon.NUM_CHARS]
+                total_s = total_s + s
+                m = reduce(lambda a, b: a + b, [ticks(c, SolariIcon.START_CHAR) for c in s])
+                new_delay.append(m + delay[k])
+
+            start_delays[l0].append(new_delay)
+
+            column = SolariIcon.OFFSET_WIDTH + i % SolariIcon.NUM_WIDTH
+            line = SolariIcon.OFFSET_HEIGHT + l0
+            index = column + line * (SolariIcon.OFFSET_WIDTH + SolariIcon.NUM_WIDTH)
+            buttons.append({"index": index, "solari": {"text": total_s, "start-delay": delay, "bg-color": "black"}})
+
+        buttons[-1]["type"] = "reload"
+        with open(SolariIcon.FILENAME, "w") as fp:
+            yaml.dump({"buttons": buttons}, fp)
+
+
 
 
 # def make_solari(text):

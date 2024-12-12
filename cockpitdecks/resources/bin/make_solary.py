@@ -36,6 +36,7 @@ COLOR = "darkblue"
 
 SPEED = 0.08  # behavior
 
+
 def make_solari(text):
     """Make deckconfig button portions for solari display"""
 
@@ -77,7 +78,7 @@ def make_solari(text):
         start_delays[l0].append(new_delay)
 
         column = OFFSET_WIDTH + i % NUM_WIDTH
-        line =  OFFSET_HEIGHT + l0
+        line = OFFSET_HEIGHT + l0
         index = column + line * (OFFSET_WIDTH + NUM_WIDTH)
         buttons.append({"index": index, "solari": {"text": total_s, "start-delay": delay, "bg-color": "black"}})
 
