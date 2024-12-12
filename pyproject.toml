@@ -35,7 +35,7 @@ dependencies = [
     "requests~=2.32.3",
     "py3rtree @ git+https://github.com/drwelby/py3rtree",
     "jsonlines~=4.0.0",
-    "usb-monitor~=1"
+    "usb-monitor~=1.23"
 ]
 
 dynamic = [

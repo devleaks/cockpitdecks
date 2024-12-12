@@ -17,10 +17,14 @@ ADD_DELAY = True
 # Display sizes
 
 # Per "deck"
+MAX_WIDTH = 8
+MAX_HEIGHT = 4
+# Using:
 NUM_WIDTH = 7
 NUM_HEIGHT = 3
-OFFSET_WIDTH = 1
-OFFSET_HEIGHT = 1
+# At:
+OFFSET_WIDTH = 0
+OFFSET_HEIGHT = 0
 
 # Per "cell"
 NUM_LINES = 3
@@ -79,7 +83,7 @@ def make_solari(text):
 
         column = OFFSET_WIDTH + i % NUM_WIDTH
         line = OFFSET_HEIGHT + l0
-        index = column + line * (OFFSET_WIDTH + NUM_WIDTH)
+        index = column + line * MAX_WIDTH
         buttons.append({"index": index, "solari": {"text": total_s, "start-delay": delay, "bg-color": "black"}})
 
     buttons[-1]["type"] = "reload"

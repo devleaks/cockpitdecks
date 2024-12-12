@@ -24,7 +24,6 @@ SIMULTANEOUS = "simultaneous"
 AS_ONE = "one"
 ADD_DELAY = True
 
-
 def solari(text, last_text: str | None = None, mode: str = AS_ONE):
     def bad(c: int):
         return (32 < c < 42) or (42 < c < 48) or (57 < c < 65) or (c > 96)
@@ -84,13 +83,24 @@ class SolariIcon(DrawAnimation):
 
     REPRESENTATION_NAME = "solari"
 
-    # Number of characters on display
+    # Generator
+    CHARACTER_LIST = sorted({i for i in range(ord("0"), ord("9") + 1)} | {i for i in range(ord("A"), ord("Z") + 1)} | {ord(c) for c in " *:/-"})
+    START_CHAR = chr(CHARACTER_LIST[0])
+    SIMULTANEOUS = "simultaneous"
+    AS_ONE = "one"
+    ADD_DELAY = True
+
+    FILENAME = "solary.yaml"
 
     # Deck icons
+    MAX_WIDTH = 8
+    MAX_HEIGHT = 4
+    # Used
     NUM_WIDTH = 7
     NUM_HEIGHT = 3
-    OFFSET_WIDTH = 1
-    OFFSET_HEIGHT = 1
+    # At
+    OFFSET_WIDTH = 0
+    OFFSET_HEIGHT = 0
 
     # Icon
     NUM_LINES = 3
@@ -102,17 +112,11 @@ class SolariIcon(DrawAnimation):
     FONT_SIZE = 100
     # FONT = "SplitFlapTV-Regular.otf"
     # FONT_SIZE = 50
+
     LETTER_COLOR = "white"
     FLAP_BG_COLOR = "black"
 
     SPEED = 0.005
-    FILENAME = "solary.yaml"
-
-    CHARACTER_LIST = sorted({i for i in range(ord("0"), ord("9") + 1)} | {i for i in range(ord("A"), ord("Z") + 1)} | {ord(c) for c in " *:/-"})
-    START_CHAR = chr(CHARACTER_LIST[0])
-    SIMULTANEOUS = "simultaneous"
-    AS_ONE = "one"
-    ADD_DELAY = True
 
     PARAMETERS = {
         "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
@@ -123,7 +127,7 @@ class SolariIcon(DrawAnimation):
         DrawAnimation.__init__(self, button=button)
 
         self.speed = self._representation_config.get("speed", self.SPEED)
-        self.display = self._representation_config.get("display", AS_ONE)  # alt: one, simultaneous
+        self.display = self._representation_config.get("display", SIMULTANEOUS)  # alt: one, simultaneous
 
         self.color = self._representation_config.get("text-color", self.LETTER_COLOR)
         self.flap_bg_color = self._representation_config.get("flap-bg-color", self.FLAP_BG_COLOR)
@@ -296,41 +300,19 @@ class SolariIcon(DrawAnimation):
 
             column = SolariIcon.OFFSET_WIDTH + i % SolariIcon.NUM_WIDTH
             line = SolariIcon.OFFSET_HEIGHT + l0
-            index = column + line * (SolariIcon.OFFSET_WIDTH + SolariIcon.NUM_WIDTH)
+            index = column + line * SolariIcon.MAX_WIDTH
             buttons.append({"index": index, "solari": {"text": total_s, "start-delay": delay, "bg-color": "black"}})
 
         buttons[-1]["type"] = "reload"
         with open(SolariIcon.FILENAME, "w") as fp:
             yaml.dump({"buttons": buttons}, fp)
 
-
-
-
-# def make_solari(text):
-#     def ticks(s, e):
-#         return abs(CHARACTER_LIST.index(ord(e)) - CHARACTER_LIST.index(ord(s)))
-#
-#     lines = []
-#     for line in text.split("\n"):
-#         if len(line) < 24:
-#             line = line + " " * (24 - len(line))
-#         else:
-#             line = line[:24]
-#         lines.append(line)
-#     start_delays = [[[0, 0]] for i in range(4)]
-#     buttons = []
-#     for i in range(32):
-#         l0 = int(i / 8)
-#         l = l0 * 2
-#         j0 = i % 8
-#         j = j0 * 3
-#         s0 = lines[l][j : j + 3]
-#         m0 = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s0])
-#         s1 = lines[l + 1][j : j + 3]
-#         m1 = reduce(lambda a, b: a + b, [ticks(c, START_CHAR) for c in s1])
-#         delay = start_delays[l0][-1] if ADD_DELAY else [0, 0]
-#         start_delays[l0].append([delay[0] + m0, delay[1] + m1])
-#         buttons.append({"index": i, "solari": {"text": s0 + s1, "start-delay": delay}})
-#     buttons[31]["type"] = "reload"
-#     with open("solary.yaml", "w") as fp:
-#         yaml.dump({"buttons": buttons}, fp)
+# SolariIcon.make_solari("""TEST                 ***
+# MINI*COCKPIT ROCKS
+# BRUSSELS     1450 ON TIM
+# TOULOUSE     1510 DELAYE
+# HAMBURG      1520 DELAYE
+# ZURICH       1540 ON TIM
+# DOHA         1600 ON TIM
+# MUNICH       1610 DELAYE"""
+# )
