@@ -23,6 +23,7 @@ buttons:
         text-size: 14
         text-font: D-DIN-Bold
         text-position: cb
+        text-bg-texture: xplane-empty.png
       - text: |+
           CONNECTING...
 
@@ -30,6 +31,7 @@ buttons:
         text-color: orange
         text-font: D-DIN-Bold
         text-position: cb
+        text-bg-texture: xplane-empty.png
       - text: |+
           CONNECTING...
 
@@ -37,6 +39,7 @@ buttons:
         text-color: orange
         text-font: D-DIN-Bold
         text-position: cb
+        text-bg-texture: xplane-empty.png
       - text: |+
           CONNECTING...
 
@@ -44,6 +47,7 @@ buttons:
         text-color: orange
         text-font: D-DIN-Bold
         text-position: cb
+        text-bg-texture: xplane-empty.png
       - text: |+
           CONNECTED
 
@@ -51,6 +55,7 @@ buttons:
         text-size: 14
         text-font: D-DIN-Bold
         text-position: cb
+        text-bg-texture: xplane-empty.png
     text-bg-texture: xplane-empty.png
     formula: ${data:_connection_status}
   - index: 1

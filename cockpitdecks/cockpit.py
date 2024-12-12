@@ -444,18 +444,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.info(f"aircraft path set to {self._acpath}")
         self._acpath = acpath
 
-    @property
-    def fonts2(self) -> list:
-        return self._cd_fonts | self._ac_fonts
-
-    @property
-    def icons2(self) -> list:
-        return self._cd_icons | self._ac_icons
-
-    @property
-    def sounds2(self) -> list:
-        return self._cd_sounds | self._ac_sounds
-
     def aircraft_ready(self) -> bool:
         return self._ac_ready
 
@@ -1006,13 +994,12 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.debug(f"font {fontname} not found")
             return None
 
-        # 0. Some variables defaults
+        # Load global defaults from resources/config.yaml file or use application default
         fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
         self._resources_config = Config(fn)
         if not self._resources_config.is_valid():
             logger.error(f"configuration file {fn} is not valid")
 
-        # Load global defaults from resources/config.yaml file or use application default
         self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
         self.set_logging_level(__name__)
 
@@ -1020,48 +1007,50 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             self.sim.set_simulator_data_roundings(self._resources_config.get("dataref-roundings", {}))
             self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
 
-        # 1. Load global icons
-        #   (They are never cached when loaded without aircraft.)
-        rf = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
-        if os.path.exists(rf):
-            icons = os.listdir(rf)
-            for i in icons:
-                if has_ext(i, "png"):  # later, might load JPG as well.
-                    fn = os.path.join(rf, i)
-                    image = Image.open(fn)
-                    self.icons[i] = image
-
-        # 1.2 Do we have a default icon with proper name?
+        # XXX
+        # Check availability of expected default fonts
         dftname = self.get_attribute("icon-name")
         if dftname in self.icons.keys():
             logger.debug(f"default icon name {dftname} found")
         else:
             logger.warning(f"default icon name {dftname} not found")
 
-        # 2. Finding a default font for Pillow
+        # Default font for Pillow
         #   WE MUST find a default, system font at least
-
-        # 2.1 We try the requested "default label font"
         default_label_font = self.get_attribute("label-font")
-        if default_label_font is not None and default_label_font not in self.fonts.keys():
-            f = locate_font(default_label_font)
-            if f is not None:  # found one, perfect
-                self.fonts[default_label_font] = f
-                self.set_default("default-font", default_label_font)
-                logger.debug(f"default font set to {default_label_font}")
-                logger.debug(f"default label font set to {default_label_font}")
+        if default_label_font is not None:
+            if default_label_font not in self._cd_fonts.keys():
+                f = locate_font(default_label_font)
+                if f is not None:  # found one, perfect
+                    self._cd_fonts[default_label_font] = f
+                    self.set_default("default-font", default_label_font)
+                    logger.debug(f"default font set to {default_label_font}")
+                    logger.debug(f"default label font set to {default_label_font}")
+                    logger.info(f"added default label font {default_label_font}")
+            else:
+                logger.debug(f"default label font is {default_label_font}")
+        else:
+            logger.warning("no default label font specified")
 
-        # 2.3 We try the "default system font"
         default_system_font = self.get_attribute("system-font")
         if default_system_font is not None:
-            f = locate_font(default_system_font)
-            if f is not None:  # found it, perfect, keep it as default font for all purposes
-                self.fonts[default_system_font] = f
-                self.set_default("default-font", default_system_font)
-                logger.debug(f"default font set to {default_system_font}")
-                if default_label_font is None:  # additionnally, if we don't have a default label font, use it
-                    self.set_default("default-label-font", default_system_font)
-                    logger.debug(f"default label font set to {default_system_font}")
+            if default_system_font not in self._cd_fonts.keys():
+                f = locate_font(default_system_font)
+                if f is not None:  # found it, perfect, keep it as default font for all purposes
+                    self._cd_fonts[default_system_font] = f
+                    self.set_default("default-font", default_system_font)
+                    logger.debug(f"default font set to {default_system_font}")
+                    if default_label_font is None:  # additionnally, if we don't have a default label font, use it
+                        self.set_default("default-label-font", default_system_font)
+                        logger.debug(f"default label font set to {default_system_font}")
+                    logger.info(f"added default system font is {default_system_font}")
+            else:
+                logger.debug(f"default system font is {default_system_font}")
+        else:
+            logger.warning("no default system font specified")
+
+        # rebuild font list
+        self.fonts = self._cd_fonts | self._ac_fonts
 
         if default_label_font is None and len(self.fonts) > 0:
             first_one = list(self.fonts.keys())[0]
@@ -1291,7 +1280,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 config = yaml.load(fp)
             self._cd_observables = Observables(config=config, simulator=self.sim)
             logger.info(f"loaded {len(self._cd_observables.observables)} observables")
-            self.observables = {o.name: o for o in self._cd_observables.observables}
+            if self._ac_observables is not None and hasattr(self._ac_observables, "observables"):
+                self.observables = {o.name: o for o in self._dc_observables.observables} | {o.name: o for o in self._ac_observables.observables}
+            else:
+                self.observables = {o.name: o for o in self._cd_observables.observables}
 
     def load_ac_observables(self):
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
@@ -1300,7 +1292,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._ac_observables = Observables(config=config, simulator=self.sim)
-            self.observables = self.observables | {o.name: o for o in self._ac_observables.observables}
+            self.observables = {o.name: o for o in self._dc_observables.observables} | {o.name: o for o in self._ac_observables.observables}
             logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
             logger.info(f"{len(self.observables)} observables")
 
@@ -1401,6 +1393,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 else:
                     logger.info(f"{len(self._cd_icons)} icons loaded")
 
+        self.icons = self._cd_icons | self._ac_icons
+
         dftname = self.get_attribute("icon-name")
         if dftname in self._cd_icons.keys():
             logger.debug(f"default icon name {dftname} found")
@@ -1500,6 +1494,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                     else:
                         logger.debug(f"font {i} already loaded")
 
+        self.fonts = self._cd_fonts | self._ac_fonts
         logger.info(
             f"{len(self._cd_fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
         )
@@ -1549,6 +1544,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                     else:
                         logger.debug(f"sound {i} already loaded")
 
+        self.sounds = self._cd_sounds | self._ac_sounds
         logger.info(f"{len(self._cd_sounds)} sounds loaded")
 
     def load_ac_sounds(self):

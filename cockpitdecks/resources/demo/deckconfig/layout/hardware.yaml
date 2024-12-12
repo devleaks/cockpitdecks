@@ -1,9 +1,10 @@
 # Hardware button demo
 buttons:
   - index: b2
-    type: push
+    type: onoff
     colored-led: [255, 128, 0]
-    formula: ${state:activation_count} 2 %
+    dataref: data:b2-onoff
+    set-dataref: data:b2-onoff
   - index: e4
     name: encoder4
     type: encoder-value

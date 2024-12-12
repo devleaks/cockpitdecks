@@ -200,6 +200,7 @@ buttons:
     weather-metar:
       weather-font: D-DINCondensed.otf
       weather-size: 28
+      weather-color: white
       icon-color: paleturquoise
   - index: 10
     name: FollowTheGreensAnimation

@@ -1062,12 +1062,12 @@ class EncoderValue(OnOff, EncoderProperties):
             if x is None:  # why?
                 x = 0
             if event.turned_counter_clockwise:  # rotate left
-                x = min(self.value_max, x + self.step)
+                x = max(self.value_min, x - self.step)
                 ok = True
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
                 self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
             elif event.turned_clockwise:  # rotate right
-                x = max(self.value_min, x - self.step)
+                x = min(self.value_max, x + self.step)
                 ok = True
                 self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
                 self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)

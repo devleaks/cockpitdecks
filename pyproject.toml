@@ -26,7 +26,7 @@ classifiers = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "cockpitdecks_xp @ git+https://github.com/devleaks/cockpitdecks_xp.git",
+    "cockpitdecks_xp @ git+https://github.com/devleaks/cockpitdecks_xp.git",  # remove this line for pip install -e .
     "CairoSVG~=2.7.1",
     "Flask~=3.1.0",
     "pillow~=11.0.0",

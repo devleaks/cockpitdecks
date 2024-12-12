@@ -24,6 +24,7 @@ SIMULTANEOUS = "simultaneous"
 AS_ONE = "one"
 ADD_DELAY = True
 
+
 def solari(text, last_text: str | None = None, mode: str = AS_ONE):
     def bad(c: int):
         return (32 < c < 42) or (42 < c < 48) or (57 < c < 65) or (c > 96)
@@ -183,7 +184,7 @@ class SolariIcon(DrawAnimation):
     def animate(self):
         def minbbox(b, s):
             # reduces bbox b by s
-            return [b[0]+s, b[1]+s, b[2]-s, b[3]-s]
+            return [b[0] + s, b[1] + s, b[2] - s, b[3] - s]
 
         image, draw = self.double_icon()
         for i in range(self.NUM_LINES):
@@ -306,6 +307,7 @@ class SolariIcon(DrawAnimation):
         buttons[-1]["type"] = "reload"
         with open(SolariIcon.FILENAME, "w") as fp:
             yaml.dump({"buttons": buttons}, fp)
+
 
 # SolariIcon.make_solari("""TEST                 ***
 # MINI*COCKPIT ROCKS

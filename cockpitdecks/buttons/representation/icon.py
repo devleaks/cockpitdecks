@@ -72,7 +72,6 @@ class IconBase(Representation):
         """
         Helper function to get valid font, depending on button or global preferences
         """
-        page = self.button.page
         deck = self.button.deck
         cockpit = deck.cockpit
         all_fonts = cockpit.fonts
@@ -427,6 +426,8 @@ class IconText(IconColor):
 
     def __init__(self, button: "Button"):
         IconColor.__init__(self, button=button)
+
+        self.bg_texture = None
 
         text_config = self._config.get(CONFIG_KW.TEXT.value)  # where to get text from
         if type(text_config) is not dict:
