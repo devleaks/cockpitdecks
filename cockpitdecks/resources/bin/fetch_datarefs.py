@@ -64,7 +64,7 @@ class DatarefFetcher(SimulatorDataListener, CockpitBase):
             return
         coll = {}
         for d in self._list:
-            dref = self.sim.get_dataref(d)
+            dref = self.sim.get_data(d)
             dref.add_listener(self)
             coll[d] = dref
         self.sim.add_datarefs_to_monitor(coll)

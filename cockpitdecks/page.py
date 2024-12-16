@@ -36,7 +36,7 @@ class Page:
         return ID_SEP.join([self.deck.get_id(), self.name])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_current_page(self):
         """
@@ -180,7 +180,7 @@ class Page:
         # If they are later used (in expression), at least they were created with STRING type first.
         for d in button.get_string_datarefs():
             if d not in self.simulator_data:
-                ref = self.sim.get_dataref(d, is_string=True)  # creates or return already defined dataref
+                ref = self.sim.get_data(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
                     self.simulator_data[d] = ref
                     self.simulator_data[d].add_listener(button)
@@ -198,7 +198,7 @@ class Page:
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref
         for d in button.get_simulator_data():
             if d not in self.simulator_data:
-                ref = self.sim.get_dataref(d)  # creates or return already defined dataref
+                ref = self.sim.get_data(d)  # creates or return already defined dataref
                 if ref is not None:
                     self.simulator_data[d] = ref
                     self.simulator_data[d].add_listener(button)

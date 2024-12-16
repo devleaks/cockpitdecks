@@ -72,7 +72,7 @@ class Observable(SimulatorDataListener):
         self._enabled = config.get(CONFIG_KW.ENABLED.value, False)
         # Create a data "internal:observable:name" is enabled or disabled
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
-        self._enabled_data = self.sim.get_internal_dataref(self._enabled_data_name)
+        self._enabled_data = self.sim.get_internal_data(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self.previous_value = None
@@ -123,7 +123,7 @@ class Observable(SimulatorDataListener):
         simdata = self._value.get_simulator_data()
         if simdata is not None:
             for s in simdata:
-                ref = self.sim.get_dataref(s)
+                ref = self.sim.get_data(s)
                 if ref is not None:
                     ref.add_listener(self)
 

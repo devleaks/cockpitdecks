@@ -13,7 +13,7 @@ import sys
 
 from .buttons.activation import ACTIVATION_VALUE
 from .buttons.representation import Annunciator
-from .data import CockpitdecksData
+from .data import InternalData
 from .simulator import SimulatorData, SimulatorDataListener
 from .value import Value, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider
 from .instruction import Instruction
@@ -135,7 +135,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             if guard_dref_path is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
             else:
-                self._guard_dref = self.sim.get_dataref(guard_dref_path)
+                self._guard_dref = self.sim.get_data(guard_dref_path)
                 self._guard_dref.update_value(new_value=0, cascade=False)  # need initial value,  especially for internal drefs
                 logger.debug(f"button {self.name} has guard {self._guard_dref.name}")
 
@@ -215,7 +215,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         return ID_SEP.join([self.page.get_id(), str(self.index)])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def get_button_value(self, name):
         # Parses name into cockpit:deck:page:button and see if button is self
@@ -529,7 +529,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
     # Value provider
     #
     def get_dataref(self, dataref):
-        return self.page.get_dataref(dataref=dataref)
+        return self.page.get_data(dataref=dataref)
 
     def get_simulator_data_value(self, simulator_data, default=None):
         return self.page.get_simulator_data_value(simulator_data=simulator_data, default=default)
@@ -639,7 +639,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorData) and not isinstance(data, CockpitdecksData):
+        if not isinstance(data, SimulatorData) and not isinstance(data, InternalData):
             logger.error(f"button {self.name}: not a simulator data ({type(data).__name__})")
             return
         logger.debug(f"{self.name}: {data.name} changed")

@@ -81,7 +81,7 @@ class ChartData(DrawBase, SimulatorDataListener):
                 self.keep = math.ceil(self.time_width / self.update)
         if not self.auto_update:
             for d in self.get_simulator_data():
-                dref = self.chart.button.sim.get_dataref(d)
+                dref = self.chart.button.sim.get_data(d)
                 dref.add_listener(self)
             logger.debug(f"chart {self.name}: installed listener on {self.get_simulator_data()}")
 

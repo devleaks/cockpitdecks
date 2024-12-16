@@ -9,7 +9,7 @@ from datetime import datetime
 
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import PushEvent
-from cockpitdecks.data import CockpitdecksData
+from cockpitdecks.data import InternalData
 from cockpitdecks import CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
 
@@ -119,7 +119,7 @@ class Activation:
         self._writable_dataref = None
         set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
         if set_dataref_path is not None:
-            self._writable_dataref = self.button.sim.get_dataref(set_dataref_path)
+            self._writable_dataref = self.button.sim.get_data(set_dataref_path)
             self._writable_dataref.writable = True
         self.activation_requires_modification_set_dataref = True
 
@@ -216,7 +216,7 @@ class Activation:
         return default
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
-        self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=False)
+        self.button.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=False)
 
     def is_guarded(self):
         # Check this before activating in subclasses if necessary
@@ -277,7 +277,7 @@ class Activation:
     @property
     def activation_count(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ACTIVATION_COUNT.value])
-        dref = self.button.sim.get_internal_dataref(path)
+        dref = self.button.sim.get_internal_data(path)
         value = dref.value()
         return 0 if value is None else value
 
@@ -406,7 +406,7 @@ class Activation:
         return self.activation_count
 
     def get_state_variables(self) -> dict:
-        base = CockpitdecksData(path=self.get_id()).name
+        base = InternalData(path=self.get_id()).name
         drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_data.values())}
         a = {
             "activation_type": type(self).__name__,

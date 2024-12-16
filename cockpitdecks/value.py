@@ -10,7 +10,7 @@ from abc import ABC
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.data import CockpitdecksData, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from cockpitdecks.data import InternalData, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
 from cockpitdecks.simulator import Simulator
 
 from cockpitdecks.buttons.activation import Activation
@@ -58,7 +58,7 @@ class ActivationValueProvider(ABC, ValueProvider):
 class Value:
     """A Value is a typed value used by Cockpitdecks entities.
 
-    A Value can be a simple Data (either CockpitdecksData or SimulatorDate) or a formula that
+    A Value can be a simple Data (either InternalData or SimulatorDate) or a formula that
     combines several Data.
     """
 
@@ -71,7 +71,7 @@ class Value:
         self._set_simdata_path = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
         self._set_simdata = None
         if self._set_simdata_path is not None:
-            self._set_simdata = self._button.sim.get_dataref(self._set_simdata_path)
+            self._set_simdata = self._button.sim.get_data(self._set_simdata_path)
             self._set_simdata.writable = True
 
         # Value domain:
@@ -213,7 +213,7 @@ class Value:
         # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.SIM_DATUM.value, CONFIG_KW.SET_SIM_DATUM.value]:
             dataref = base.get(attribute)
-            if dataref is not None and CockpitdecksData.might_be_simulator_data(dataref):
+            if dataref is not None and InternalData.might_be_simulator_data(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 
@@ -222,7 +222,7 @@ class Value:
         if datarefs is not None:
             a = []
             for d in datarefs:
-                if CockpitdecksData.might_be_simulator_data(d):
+                if InternalData.might_be_simulator_data(d):
                     r.add(d)
                     a.append(d)
             logger.debug(f"value {self.name}: added multiple datarefs {a}")
@@ -256,7 +256,7 @@ class Value:
             if text is not str:
                 text = str(text)
             datarefs = re.findall(PATTERN_DOLCB, text)
-            datarefs = set(filter(lambda x: CockpitdecksData.might_be_simulator_data(x), datarefs))
+            datarefs = set(filter(lambda x: InternalData.might_be_simulator_data(x), datarefs))
             if len(datarefs) > 0:
                 r = r | datarefs
                 logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")

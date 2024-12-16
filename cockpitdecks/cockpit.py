@@ -72,7 +72,7 @@ from cockpitdecks import (
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.simulator import Simulator, NoSimulator, SimulatorData, SimulatorDataListener, SimulatorEvent
 from cockpitdecks.instruction import Instruction, InstructionProvider
 from cockpitdecks.observable import Observables
 
@@ -428,9 +428,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
         self.mode = 0
-        self._livery_dataref = None  # self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
+        self._livery_dataref = None  # self.sim.get_internal_data(AIRCRAFT, is_string=True)
         self._acname = ""
         self._livery_path = ""
+        self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
         self.init()  # this will install all available simulators
 
@@ -440,9 +441,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
     @acpath.setter
     def acpath(self, acpath: str | None):
-        if acpath is not None:
-            logger.info(f"aircraft path set to {self._acpath}")
         self._acpath = acpath
+        logger.info(f"aircraft path set to {acpath}")
 
     def aircraft_ready(self) -> bool:
         return self._ac_ready
@@ -477,8 +477,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.scan_devices()
 
     def init_simulator(self) -> bool:
-        if self._simulator_name is None and len(self.all_simulators) != 1:
+        if len(self.all_simulators) == 1:
             logger.error("no simulator")
+            self._simulator_name = NoSimulator.name
+            self.sim = NoSimulator
+            return True
+        if self._simulator_name is None and len(self.all_simulators) >= 1:
+            logger.error("ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity")
             return False
         if self._simulator_name is None:
             self._simulator_name = list(self.all_simulators.keys())[0]
@@ -486,7 +491,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._simulator = self.all_simulators[self._simulator_name]
         self.sim = self._simulator(self, self._environ)
         logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
-        self._livery_dataref = self.sim.get_internal_dataref(AIRCRAFT, is_string=True)
+        self._livery_dataref = self.sim.get_internal_data(AIRCRAFT, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         if self.cockpitdecks_path is not None:
             logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
@@ -498,7 +503,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         # Here, it is purely statistics
         if self.sim is not None:
-            self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+            self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
         if not dflt.startswith(DEFAULT_ATTRIBUTE_PREFIX):
@@ -913,12 +918,14 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
+            self._acname = self.get_aircraft_name_from_aircraft_path(acpath)
+            logger.info(f"aircraft name set to {self._acname}")
 
             self.load_aircraft_deck_types()
             self.scan_web_decks()
 
             if len(self.devices) == 0:
-                logger.warning(f"no device")
+                logger.warning("no device")
                 return
 
             self.load_ac_resources()
@@ -1292,7 +1299,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._ac_observables = Observables(config=config, simulator=self.sim)
-            self.observables = {o.name: o for o in self._dc_observables.observables} | {o.name: o for o in self._ac_observables.observables}
+            self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self._ac_observables.observables}
             logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
             logger.info(f"{len(self.observables)} observables")
 
@@ -1409,6 +1416,17 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.load_defaults()
 
     def load_ac_resources(self):
+        # currently, nothing is not with this config, but it is loaded if it exists
+        livery = self._livery_dataref.value()
+        if self.acpath is not None and livery is not None and livery != "":
+            fn = os.path.join(self.acpath, "liveries", livery, CONFIG_FOLDER, CONFIG_FILE)
+            if os.path.exists(fn):
+                self._livery_config = Config(filename=fn)
+                logger.info(f"loaded livery configuration from {fn}")
+            else:
+                logger.info("livery has no configuration")
+        else:
+            logger.info("no livery path")
         self.load_ac_fonts()
         self.load_ac_icons()
         self.load_ac_sounds()
@@ -1791,7 +1809,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def replay_sim_event(self, data: dict):
         path = data.get("path")
         if path is not None:
-            if not self.sim.is_internal_simulator_data(path):
+            if not self.sim.is_internal_simulator(path):
                 e = self.sim.create_replay_event(name=path, value=data.get("value"))
                 e._replay = True
                 e.run()  # enqueue after setting the reply flag
@@ -1898,9 +1916,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def get_aircraft_home(self, path: str) -> str:
         return os.path.normpath(os.path.join(path, "..", ".."))
 
-    def get_aircraft(self, path: str) -> str:
+    def get_aircraft_name_from_livery_path(self, path: str) -> str:
         # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
         return os.path.split(os.path.normpath(os.path.join(path, "..", "..")))[1]
+
+    def get_aircraft_name_from_aircraft_path(self, path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/
+        return os.path.basename(path)
 
     def get_aircraft_path(self, aircraft) -> str | None:
         for base in self.cockpitdecks_path.split(":"):
@@ -1918,6 +1940,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if data is None:
             logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
             return
+
         value = data.value()
         if value is None or type(value) is not str:
             logger.warning(f"livery path invalid value {value}, ignoring")
@@ -1927,37 +1950,53 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.info(f"livery path unchanged {self._livery_path}")
             return
 
-        self._livery_path = value
-        acname = self.get_aircraft(value)
+        if self.mode > 0 and not RELOAD_ON_LIVERY_CHANGE:
+            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
+            return
+
+        acname = self.get_aircraft_name_from_livery_path(value)
+        new_livery = self.get_livery(value)
+        if self.mode > 0 and RELOAD_ON_LIVERY_CHANGE:  # only change livery and reloads
+            if self._acname != acname:
+                # ac has changed, refused
+                logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
+                return
+            # ac has not changed, livery has
+            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted but livery changed")
+            self._livery_path = value
+            # Adjustment of livery
+            old_livery = self._livery_dataref.value()
+            if old_livery is None:
+                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+                logger.info(f"initial aircraft livery set to {new_livery}")
+            elif old_livery != new_livery:
+                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+                logger.info(f"new aircraft livery {new_livery} (former was {old_livery})")
+            self.reload_decks()
+            return
+
         if self._acname != acname:
+            # change livery
+            self._livery_path = value
+            old_livery = self._livery_dataref.value()
+            if old_livery is None or old_livery == "":
+                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+                logger.info(f"initial aircraft livery set to {new_livery}")
+            else:
+                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
+                logger.info(f"new aircraft livery {new_livery} (former was {old_livery})")
+            # change aircraft
+            old_acname = self._acname
             self._acname = acname
             logger.info(f"aircraft name set to {self._acname}")
-
-        new_livery = self.get_livery(value)
-
-        # Automatic reloading of aircraft
-        if self.mode > 0:
-            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
-        else:
             new_ac = self.get_aircraft_path(self._acname)
-            if new_ac != None and self.acpath != new_ac:
-                logger.debug(f"aircraft path: current {self.acpath}, new {new_ac}")
+            if new_ac is not None and self.acpath != new_ac:
+                logger.debug(f"aircraft path: current {self.acpath}, new {new_ac} (former was {old_acname})")
                 logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
                 self.load_aircraft(acpath=new_ac)
-                return  # no additional processing
-            else:
-                logger.info("aircraft path not found, aircraft not adjusted")
+        else:
+            logger.info(f"aircraft unchanged ({self._acname}, {self.acpath})")
 
-        # Adjustment of livery
-        old_livery = self._livery_dataref.value()
-        if old_livery is None:
-            self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-            logger.info(f"initial aircraft livery set to {new_livery}")
-        elif old_livery != new_livery:
-            self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-            logger.info(f"new aircraft livery {new_livery} (former was {old_livery})")
-            if RELOAD_ON_LIVERY_CHANGE:
-                self.reload_decks()
 
     def simulator_data_changed(self, data: SimulatorData):
         """
@@ -2001,8 +2040,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     def terminate_all(self, threads: int = 1):
-        logger.info("\n")
-        logger.info("terminating..")
+        logger.info("terminating cockpit..")
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
@@ -2028,12 +2066,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.error(f"{left} threads remaining")
             logger.error(f"{[t.name for t in threading.enumerate()]}")
         # logger.info(self._reqdfts)
+        logger.info("..cockpit terminated")
 
     def run(self, release: bool = False):
         if len(self.cockpit) > 0:
             # Each deck should have been started
             # Start reload loop
-            logger.info("starting..")
+            logger.info("starting cockpit..")
             self.sim.connect()
             logger.info("..usb monitoring started..")
             self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
@@ -2045,7 +2084,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.info(f"{len(threading.enumerate())} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
-            logger.info("..started")
+            logger.info("..cockpit started")
             if not release or not self.has_web_decks():
                 logger.info(f"serving {self.name}")
                 for t in threading.enumerate():

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Data conventions
 #
 # "internal" simulator_data (not exported to X-Plane) start with that prefix
-COCKPITDECKS_DATA_PREFIX = "data:"
+INTERNAL_DATA_PREFIX = "data:"
 INTERNAL_STATE_PREFIX = "state:"
 BUTTON_VARIABLE_PREFIX = "button:"
 PREFIX_SEP = ":"
@@ -32,7 +32,7 @@ PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
 PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
 
 
-class CockpitdecksDataType(Enum):
+class InternalDataType(Enum):
     INTEGER = "int"
     FLOAT = "float"
     BYTE = "byte"
@@ -49,7 +49,7 @@ class Data(ABC):
 
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         self.name = name
-        self.data_type = CockpitdecksDataType(data_type)
+        self.data_type = InternalDataType(data_type)
         self.physical_unit = physical_unit
 
         # Stats
@@ -84,16 +84,22 @@ class Data(ABC):
         return path != CONFIG_KW.FORMULA.value
 
     @staticmethod
-    def is_internal_simulator_data(path: str) -> bool:
-        return path.startswith(COCKPITDECKS_DATA_PREFIX)
+    def is_internal_data(path: str) -> bool:
+        return path.startswith(INTERNAL_DATA_PREFIX)
+
+    @staticmethod
+    def internal_data_name(path: str) -> str:
+        if not Data.is_internal_data(path):  # prevent duplicate prepend
+            return INTERNAL_DATA_PREFIX + path
+        return path  # already startswith INTERNAL_DATA_PREFIX
 
     @property
     def is_internal(self) -> bool:
-        return self.name.startswith(COCKPITDECKS_DATA_PREFIX)
+        return self.name.startswith(INTERNAL_DATA_PREFIX)
 
     @property
     def is_string(self) -> bool:
-        return self.data_type == CockpitdecksDataType.STRING
+        return self.data_type == InternalDataType.STRING
 
     @property
     def rounding(self):
@@ -211,13 +217,12 @@ class DataListener(ABC):
         pass
 
 
-class CockpitdecksData(Data):
-    """A CocpydecksData is a data internal to Cockpitdecks.
+class InternalData(Data):
+    """A InternalData is a data internal to Cockpitdecks.
     It is used internally, but it can be used by Value.
     """
 
     def __init__(self, path: str, is_string: bool = False):
-        # Data
-        if not path.startswith(COCKPITDECKS_DATA_PREFIX):
-            path = COCKPITDECKS_DATA_PREFIX + path
+        if not path.startswith(INTERNAL_DATA_PREFIX):
+            path = INTERNAL_DATA_PREFIX + path
         Data.__init__(self, name=path, data_type="string" if is_string else "float")

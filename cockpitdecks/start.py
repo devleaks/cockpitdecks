@@ -1,7 +1,7 @@
 """Main startup script for Cockpitdecks
 
 Starts up Cockpitdecks. Process command line arguments, load Cockpitdecks with proper simulator.
-Starts listening to events from both X-Plane and decks connected to the computer.
+Starts listening to events from both simulator and decks connected to the computer.
 Starts web server to serve web decks, designer, and button editor.
 Starts WebSocket listener to collect events from web decks.
 
@@ -95,6 +95,7 @@ def xplane_homes(dirlist: str = "x-plane_install_12.txt") -> str:
     """
     opsys = platform.system()
     homes = ""
+
     if opsys == "Darwin":
         fn = os.path.join(os.environ["HOME"], "Library", "Preferences", dirlist)
         if os.path.exists(fn):
@@ -120,7 +121,7 @@ def xplane_homes(dirlist: str = "x-plane_install_12.txt") -> str:
     if homes != "":
         homes = ", ".join(homes.split("\n"))
 
-    return homes
+    return homes.strip(", ")  # for extra \n in file
 
 
 # Command-line arguments
@@ -190,7 +191,7 @@ if VERBOSE:
     if homes != "":
         print(f"X-Plane located at {homes}")
     else:
-        print("X-Plane not automagically located on this host")
+        print(f"X-Plane not automagically located on this host")
 
 SIMULATOR_NAME = environment.get(ENVIRON_KW.SIMULATOR_NAME.value)
 if SIMULATOR_NAME is None:
@@ -207,13 +208,13 @@ if SIMULATOR_HOME is None:
 
 if SIMULATOR_HOME is not None:
     if not (os.path.exists(SIMULATOR_HOME) and os.path.isdir(SIMULATOR_HOME)):  # if defined, must exist.
-        print(f"X-Plane not found in {SIMULATOR_HOME}")
+        print(f"{SIMULATOR_NAME} not found in {SIMULATOR_HOME}")
         SIMULATOR_HOME = None
         if not args.demo:
             sys.exit(1)
     else:
         if VERBOSE:
-            print(f"X-Plane found in {SIMULATOR_HOME}")
+            print(f"{SIMULATOR_NAME} found in {SIMULATOR_HOME}")
             # while we are at it...
             plugin_location = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "PythonPlugins", "PI_cockpitdecks.py")
             if os.path.exists(plugin_location):
@@ -227,7 +228,7 @@ else:
             print(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
     else:
         if not args.demo:
-            print("X-Plane not found. no folder, no remove host")
+            print(f"{SIMULATOR_NAME} not found. no folder, no remove host")
             sys.exit(1)
         else:
             print("Simulator ignored for demo")
@@ -248,7 +249,7 @@ if ENV_PATH is not None:
     COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, ENV_PATH)
 
 # Append X-Plane regular aircraft paths
-if SIMULATOR_HOME is not None:
+if SIMULATOR_HOME is not None and SIMULATOR_NAME == "X-Plane":
     COCKPITDECKS_PATH = add_env(
         COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")]
     )
@@ -290,7 +291,7 @@ if ac is not None:
 elif ac is None and SIMULATOR_HOME is None and len(COCKPITDECKS_PATH) == 0:
     mode = CD_MODE.DEMO
     if VERBOSE:
-        print("no aircraft, no X-Plane on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
+        print(f"no aircraft, no {SIMULATOR_NAME} on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
 
 if VERBOSE:
     action = "try" if args.fixed else "fly"
@@ -563,19 +564,23 @@ def main():
 
         logger.info(f"Starting {AIRCRAFT_DESC}..")
         if ac is None and SIMULATOR_HOME is not None:
-            logger.info(f"(starting in demonstration mode but will load aircraft if X-Plane is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)")
+            logger.info(
+                f"(starting in demonstration mode but will load aircraft if {SIMULATOR_NAME} is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)"
+            )
         cockpit.start_aircraft(acpath=AIRCRAFT_HOME, release=True, mode=mode.value)
-        logger.info("..started")
+        logger.info(f"..{AIRCRAFT_DESC} running..")
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():
                 logger.warning("no web deck, start application server for designer")
-            logger.info("Starting application server")
+            logger.info("starting application server..")
             app.run(host="0.0.0.0", port=APP_HOST[1])
 
         # If single CTRL-C pressed, will terminate from here
-        logger.info("terminating (please wait)..")
+        # logger.info("terminating (please wait)..")
+        print("")  # to highlight CTRL-C in log window
+        logger.info("..application server terminated")
         cockpit.terminate_all(threads=1)  # [MainThread]
-        logger.info(f"..{AIRCRAFT_DESC} terminated.")
+        logger.info(f"..{cockpit._acname} terminated.")
 
     except KeyboardInterrupt:
 

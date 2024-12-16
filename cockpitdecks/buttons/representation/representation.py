@@ -80,7 +80,7 @@ class Representation:
         return ID_SEP.join([self.button.get_id(), type(self).__name__])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
-        self.button.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.button.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def button_name(self):
         return self.button.name if self.button is not None else "no button"

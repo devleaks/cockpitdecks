@@ -637,21 +637,21 @@ class EncoderProperties:
     @property
     def _turns(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_TURNS.value])
-        dref = self.button.sim.get_internal_dataref(path)
+        dref = self.button.sim.get_internal_data(path)
         value = dref.value()
         return 0 if value is None else value
 
     @property
     def _cw(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_CLOCKWISE.value])
-        dref = self.button.sim.get_internal_dataref(path)
+        dref = self.button.sim.get_internal_data(path)
         value = dref.value()
         return 0 if value is None else value
 
     @property
     def _ccw(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value])
-        dref = self.button.sim.get_internal_dataref(path)
+        dref = self.button.sim.get_internal_data(path)
         value = dref.value()
         return 0 if value is None else value
 
@@ -1161,7 +1161,7 @@ class EncoderValueExtended(OnOff, EncoderProperties):
         self._local_dataref = None
         local_dataref = button._config.get("dataref", None)  # "local-dataref"
         if local_dataref is not None:
-            self._local_dataref = self.button.sim.get_internal_dataref(local_dataref)
+            self._local_dataref = self.button.sim.get_internal_data(local_dataref)
 
         self.init_differed()
 

@@ -98,7 +98,7 @@ class Deck(ABC):
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        self.sim.inc_internal_dataref(path=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_virtual_deck(self) -> bool:
         return self.deck_type.is_virtual_deck()

@@ -12,7 +12,7 @@ from enum import Enum
 
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
-from cockpitdecks.data import Data, DataListener, COCKPITDECKS_DATA_PREFIX, PATTERN_DOLCB
+from cockpitdecks.data import Data, DataListener, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
 from cockpitdecks.instruction import InstructionProvider, Instruction
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
@@ -130,7 +130,7 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
 
     def register(self, simulator_data):
         if simulator_data.name is None:
-            logger.warning(f"invalid simulator_data path {simulator_data.name}")
+            logger.warning(f"invalid simulator_data name {simulator_data.name}")
             return None
         if simulator_data.name not in self.all_simulator_data:
             simulator_data._sim = self
@@ -138,7 +138,7 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
             self.set_frequency(simulator_data)
             self.all_simulator_data[simulator_data.name] = simulator_data
         else:
-            logger.debug(f"simulator_data path {simulator_data.name} already registered")
+            logger.debug(f"simulator_data name {simulator_data.name} already registered")
         return simulator_data
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
@@ -151,6 +151,39 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
             logger.warning(f"{simulator_data} not found")
             return None
         return d.current_value if d.current_value is not None else default
+
+    # Shortcuts
+    def get_data(self, name: str, is_string: bool = False) -> InternalData | Dataref:
+        """Returns data or create a new one, internal if path requires it"""
+        if name in self.all_simulator_data.keys():
+            return self.all_simulator_data[name]
+        if Data.is_internal_data(path=name):
+            return self.register(simulator_data=InternalData(name=name, is_string=is_string))
+        return self.register(simulator_data=Data(name=name, is_string=is_string))
+
+    def get_internal_data(self, name: str, is_string: bool = False):
+        return self.get_data(name=Data.internal_data_name(name), is_string=is_string)
+
+    def set_internal_data(self, name: str, value: float, cascade: bool):
+        if not Data.is_internal_data(path=name):
+            name = Data.internal_data_name(path=name)
+        if cascade:
+            e = DataEvent(sim=self, name=name, value=value, cascade=cascade)
+        else:  # just save the value right away, do not cascade
+            data = self.get_data(name=name)
+            data.update_value(new_value=value, cascade=cascade)
+
+    def inc_internal_data(self, name: str, amount: float, cascade: bool = False):
+        data = self.get_internal_data(name=name)
+        curr = data.value()
+        if curr is None:
+            curr = 0
+        newvalue = curr + amount
+        self.set_internal_data(name=name, value=newvalue, cascade=cascade)
+
+    def inc(self, path: str, amount: float = 1.0, cascade: bool = False):
+        # shortcut alias
+        self.inc_internal_data(name=path, amount=amount, cascade=cascade)
 
     # ################################
     # Factories
@@ -168,7 +201,7 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
     def add_simulator_data_to_monitor(self, simulator_data: dict):
         prnt = []
         for d in simulator_data.values():
-            if d.name.startswith(COCKPITDECKS_DATA_PREFIX):
+            if d.name.startswith(INTERNAL_DATA_PREFIX):
                 logger.debug(f"local simulator_data {d.name} is not monitored")
                 continue
             if d.name not in self.simulator_data_to_monitor.keys():
@@ -182,7 +215,7 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
     def remove_simulator_data_to_monitor(self, simulator_data):
         prnt = []
         for d in simulator_data.values():
-            if d.name.startswith(COCKPITDECKS_DATA_PREFIX):
+            if d.name.startswith(INTERNAL_DATA_PREFIX):
                 logger.debug(f"local simulator_data {d.name} is not monitored")
                 continue
             if d.name in self.simulator_data_to_monitor.keys():
@@ -215,6 +248,26 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
 
     @abstractmethod
     def terminate(self):
+        pass
+
+
+class NoSimulator(Simulator):
+
+    name = "NoSimulator"
+
+    def __init__(self, cockpit, environ):
+        super().__init__(cockpit, environ)
+
+    def replay_event_factory(self, name: str, value):
+        pass
+
+    def runs_locally(self) -> bool:
+        return True
+
+    def start(self):
+        pass
+
+    def terminates(self):
         pass
 
 
@@ -406,3 +459,46 @@ class SimulatorEvent(Event):
             self.sim.cockpit.event_queue.put(self)
         else:
             logger.warning("no simulator")
+
+
+class DataEvent(SimulatorEvent):
+    """Data Update Event"""
+
+    def __init__(self, sim: Simulator, name: str, value: float | str, cascade: bool, autorun: bool = True):
+        """Dataref Update Event.
+
+        Args:
+        """
+        self.name = name
+        self.value = value
+        self.cascade = cascade
+        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
+
+    def __str__(self):
+        return f"{self.sim.name}:{self.name}={self.value}:{self.timestamp}"
+
+    def info(self):
+        return super().info() | {"path": self.name, "value": self.value, "cascade": self.cascade}
+
+    def run(self, just_do_it: bool = False) -> bool:
+        if just_do_it:
+            if self.sim is None:
+                logger.warning("no simulator")
+                return False
+            data = self.sim.all_simulator_data.get(self.name)
+            if data is None:
+                logger.debug(f"dataref {self.name} not found in database")
+                return False
+            try:
+                logger.debug(f"updating {data.name}..")
+                self.handling()
+                data.update_value(self.value, cascade=self.cascade)
+                self.handled()
+                logger.debug(f"..updated")
+            except:
+                logger.warning(f"..updated with error", exc_info=True)
+                return False
+        else:
+            self.enqueue()
+            logger.debug(f"enqueued")
+        return True
