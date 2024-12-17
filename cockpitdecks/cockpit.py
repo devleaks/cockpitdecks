@@ -12,7 +12,7 @@ import pickle
 import json
 
 import importlib
-import pkg_resources
+from importlib.metadata import version, requires
 import pkgutil
 
 from typing import Dict, Tuple
@@ -781,7 +781,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         for deck_driver in self.all_deck_drivers:
             desc = f"{deck_driver} (included)"
             try:
-                desc = f"{deck_driver} {pkg_resources.get_distribution(deck_driver).version}"
+                desc = f"{deck_driver} {version(deck_driver)}"
             except:
                 pass
             driver_info.append(desc)
@@ -799,7 +799,9 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             if dep != "":
                 dependencies.append(dep)
         logger.debug(f"dependencies: {dependencies}")
-        pkg_resources.require(dependencies)
+        print("*******************", dependencies)
+        if len(dependencies) > 0:
+            requires(dependencies)
 
         # If there are already some devices, we need to terminate/kill them first
         if len(self.devices) > 0:
@@ -813,7 +815,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 # will be added later, when we have acpath set, in add virtual_decks()
                 continue
             decks = builder[1]().enumerate()
-            logger.info(f"found {len(decks)} {deck_driver}")  # " ({deck_driver} {pkg_resources.get_distribution(deck_driver).version})")
+            logger.info(f"found {len(decks)} {deck_driver}")
             for name, device in enumerate(decks):
                 device.open()
                 serial = device.get_serial_number()
