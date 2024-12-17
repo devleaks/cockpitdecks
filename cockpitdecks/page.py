@@ -284,7 +284,7 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
-            self.sim.remove_datarefs_to_monitor(self.simulator_data)
+            self.sim.remove_simulator_data_to_monitor(self.simulator_data)
         if not disconnected:
             self.clean()
         for button in self.buttons.values():

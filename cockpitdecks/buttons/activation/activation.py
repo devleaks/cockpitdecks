@@ -406,7 +406,7 @@ class Activation:
         return self.activation_count
 
     def get_state_variables(self) -> dict:
-        base = InternalData(path=self.get_id()).name
+        base = InternalData(name=self.get_id()).name
         drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_data.values())}
         a = {
             "activation_type": type(self).__name__,

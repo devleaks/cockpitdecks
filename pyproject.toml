@@ -43,11 +43,16 @@ dynamic = [
 ]
 
 [project.optional-dependencies]
+# Simulators
+xplane = ["cockpitdecks_xp @ git+https://github.com/devleaks/cockpitdecks_xp.git"]
+# Extensions
 weather = ["cockpitdecks_wm @ git+https://github.com/devleaks/cockpitdecks_wm.git"]
+demoext = ["cockpitdecks_ext @ git+https://github.com/devleaks/cockpitdecks_ext.git"]
+# Decks
 streamdeck = ["cockpitdecks_sd @ git+https://github.com/devleaks/cockpitdecks_sd.git"]
 loupedeck = ["cockpitdecks_ld @ git+https://github.com/devleaks/cockpitdecks_ld.git"]
 xtouchmini = ["cockpitdecks_bx @ git+https://github.com/devleaks/cockpitdecks_bx.git"]
-demoext = ["cockpitdecks_ext @ git+https://github.com/devleaks/cockpitdecks_ext.git"]
+# For developer only
 development = [
     "types-click",
     "types-Flask",

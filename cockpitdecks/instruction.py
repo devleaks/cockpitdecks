@@ -134,3 +134,24 @@ class MacroInstruction(Instruction):
     def _execute(self):
         for instruction in self._instructions:
             instruction.execute()
+
+
+class NoOperation(Instruction):
+
+    def __init__(self, **kwargs):
+        name = kwargs.get(CONFIG_KW.NAME.value)
+        if name is None:
+            name = "no operation"
+        else:
+            del kwargs[CONFIG_KW.NAME.value]
+        Instruction.__init__(self, name=name, kwargs=kwargs)
+
+    def __str__(self) -> str:
+        return self.name + f" (no operation)"
+
+    def _check_condition(self):
+        # condition checked in each individual instruction
+        return True
+
+    def _execute(self):
+        logger.warning(f"{self.name} born to do nothing")

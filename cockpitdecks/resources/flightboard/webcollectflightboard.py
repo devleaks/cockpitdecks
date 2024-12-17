@@ -144,7 +144,7 @@ class DatarefCollector:
         self.tcas = [
             TCASEntry(
                 {
-                    "index": i+1,
+                    "index": i + 1,
                     "icao24": a["sim/cockpit2/tcas/targets/modeS_id"][i],
                     "flight_id": a["sim/cockpit2/tcas/targets/flight_id"][i],
                     "squawk": a["sim/cockpit2/tcas/targets/modeC_code"][i],

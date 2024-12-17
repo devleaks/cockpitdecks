@@ -222,7 +222,7 @@ class InternalData(Data):
     It is used internally, but it can be used by Value.
     """
 
-    def __init__(self, path: str, is_string: bool = False):
-        if not path.startswith(INTERNAL_DATA_PREFIX):
-            path = INTERNAL_DATA_PREFIX + path
-        Data.__init__(self, name=path, data_type="string" if is_string else "float")
+    def __init__(self, name: str, is_string: bool = False):
+        if not name.startswith(INTERNAL_DATA_PREFIX):
+            name = INTERNAL_DATA_PREFIX + name
+        Data.__init__(self, name=name, data_type="string" if is_string else "float")

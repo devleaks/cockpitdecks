@@ -12,8 +12,8 @@ from enum import Enum
 
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
-from cockpitdecks.data import Data, DataListener, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
-from cockpitdecks.instruction import InstructionProvider, Instruction
+from cockpitdecks.data import Data, DataListener, InternalData, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
+from cockpitdecks.instruction import InstructionProvider, Instruction, NoOperation
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
@@ -159,7 +159,7 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
             return self.all_simulator_data[name]
         if Data.is_internal_data(path=name):
             return self.register(simulator_data=InternalData(name=name, is_string=is_string))
-        return self.register(simulator_data=Data(name=name, is_string=is_string))
+        return self.register(simulator_data=Data(name=name, data_type="string" if is_string else "float"))
 
     def get_internal_data(self, name: str, is_string: bool = False):
         return self.get_data(name=Data.internal_data_name(name), is_string=is_string)
@@ -256,7 +256,18 @@ class NoSimulator(Simulator):
     name = "NoSimulator"
 
     def __init__(self, cockpit, environ):
-        super().__init__(cockpit, environ)
+        Simulator.__init__(self, cockpit, environ)
+
+    def instruction_factory(self, **kwargs) -> Instruction:
+        logger.warning("NoSimulator executes no instruction")
+        logger.debug(f"({kwargs})")
+        return NoOperation(kwargs=kwargs)
+
+    def add_simulator_data_to_monitor(self, simulator_data):
+        logger.warning("NoSimulator monitors no data")
+
+    def remove_simulator_data_to_monitor(self, simulator_data):
+        logger.warning("NoSimulator monitors no data")
 
     def replay_event_factory(self, name: str, value):
         pass
@@ -264,11 +275,14 @@ class NoSimulator(Simulator):
     def runs_locally(self) -> bool:
         return True
 
-    def start(self):
-        pass
+    def connect(self):
+        logger.info("simulator connected")
 
-    def terminates(self):
-        pass
+    def start(self):
+        logger.info("simulator started")
+
+    def terminate(self):
+        logger.info("simulator terminated")
 
 
 # ########################################

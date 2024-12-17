@@ -205,7 +205,7 @@ SIMULATOR_HOME = os.getenv(ENVIRON_KW.SIMULATOR_HOME.value)
 # Then environment
 if SIMULATOR_HOME is None:
     SIMULATOR_HOME = environment.get("SIMULATOR_HOME")
-
+print(SIMULATOR_NAME, SIMULATOR_HOME)
 if SIMULATOR_HOME is not None:
     if not (os.path.exists(SIMULATOR_HOME) and os.path.isdir(SIMULATOR_HOME)):  # if defined, must exist.
         print(f"{SIMULATOR_NAME} not found in {SIMULATOR_HOME}")
@@ -228,7 +228,7 @@ else:
             print(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
     else:
         if not args.demo:
-            print(f"{SIMULATOR_NAME} not found. no folder, no remove host")
+            print(f"{SIMULATOR_NAME} not found. no folder, no remote host")
             sys.exit(1)
         else:
             print("Simulator ignored for demo")

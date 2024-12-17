@@ -477,15 +477,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.scan_devices()
 
     def init_simulator(self) -> bool:
-        if len(self.all_simulators) == 1:
-            logger.error("no simulator")
-            self._simulator_name = NoSimulator.name
-            self.sim = NoSimulator
-            return True
         if self._simulator_name is None and len(self.all_simulators) >= 1:
             logger.error("ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity")
             return False
-        if self._simulator_name is None:
+        if len(self.all_simulators) == 1 or self._simulator_name is None:
             self._simulator_name = list(self.all_simulators.keys())[0]
             logger.info(f"simulator set to {self._simulator_name}")
         self._simulator = self.all_simulators[self._simulator_name]
@@ -1996,7 +1991,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 self.load_aircraft(acpath=new_ac)
         else:
             logger.info(f"aircraft unchanged ({self._acname}, {self.acpath})")
-
 
     def simulator_data_changed(self, data: SimulatorData):
         """

@@ -39,7 +39,7 @@ class DatarefFetcher(SimulatorDataListener, CockpitBase):
         pass
 
     def reload_pages(self):
-        logger.debug(f"reloading pages..")
+        logger.debug("reloading pages..")
         self.sim.clean_datarefs_to_monitor()
         self.fetch_datarefs(self._list)
         self.sim.add_all_datarefs_to_monitor()
@@ -67,7 +67,7 @@ class DatarefFetcher(SimulatorDataListener, CockpitBase):
             dref = self.sim.get_data(d)
             dref.add_listener(self)
             coll[d] = dref
-        self.sim.add_datarefs_to_monitor(coll)
+        self.sim.add_simulator_data_to_monitor(coll)
 
     def run(self):
         # Start reload loop
