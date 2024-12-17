@@ -478,7 +478,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
     def init_simulator(self) -> bool:
         if self._simulator_name is None and len(self.all_simulators) >= 1:
-            logger.error("ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity")
+            logger.error(f"ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity, available: {', '.join(self.all_simulators.keys())}")
             return False
         if len(self.all_simulators) == 1 or self._simulator_name is None:
             self._simulator_name = list(self.all_simulators.keys())[0]
@@ -1400,7 +1400,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         dftname = self.get_attribute("icon-name")
         if dftname in self._cd_icons.keys():
-            logger.debug(f"default icon name {dftname} found")
+            logger.info(f"default icon name {dftname} found")
         else:
             logger.warning(f"default icon name {dftname} not found in default icons")
 
