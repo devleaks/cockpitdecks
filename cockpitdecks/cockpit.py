@@ -799,7 +799,6 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             if dep != "":
                 dependencies.append(dep)
         logger.debug(f"dependencies: {dependencies}")
-        print("*******************", dependencies)
         if len(dependencies) > 0:
             requires(dependencies)
 
