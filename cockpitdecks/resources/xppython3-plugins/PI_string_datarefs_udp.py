@@ -261,7 +261,7 @@ class PythonInterface:
         strings = []
         with open(config_fn, "r", encoding="utf-8") as config_fp:
             config = yaml.load(config_fp)
-            self.use_defaults = config.get("use-default-string-datarefs", False)
+            self.use_defaults = config.get("use-permanent-string-datarefs", False)
             ret = config.get("string-datarefs", [])
             if self.trace:
                 print(

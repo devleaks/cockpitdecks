@@ -84,8 +84,8 @@ AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
 
 # default is to return these if asked for default dataref
-DEFAULT_STRING_DATAREFS = [AIRCRAFT_DATAREF, AIRCRAFT_LIVERY, CDH_RELEASE]  # dataref that gets updated if new aircraft loaded
-LOAD_DEFAULT_DATAREFS = True
+PERMANENT_STRING_DATAREFS = [AIRCRAFT_DATAREF, AIRCRAFT_LIVERY, CDH_RELEASE]  # dataref that gets updated if new aircraft loaded
+LOAD_PERMANENT_DATAREFS = True
 
 CHECK_COUNT = [5, 20]
 
@@ -142,7 +142,7 @@ class PythonInterface:
         self.acpath = ""
         self.datarefs = {}
         self.commands = {}
-        self.use_defaults = LOAD_DEFAULT_DATAREFS
+        self.use_defaults = LOAD_PERMANENT_DATAREFS
         self.run_count = 0
         self.num_collected_drefs = 0
         self.frequency = COLLECTION_FREQUENCY
@@ -555,7 +555,7 @@ class PythonInterface:
         strings = []
         with open(config_fn, "r", encoding="utf-8") as config_fp:
             config = yaml.load(config_fp)
-            self.use_defaults = config.get("use-default-string-datarefs", LOAD_DEFAULT_DATAREFS)
+            self.use_defaults = config.get("use-permanent-string-datarefs", LOAD_PERMANENT_DATAREFS)
             ret = config.get("string-datarefs", [])
             if self.trace:
                 print(
@@ -658,11 +658,11 @@ class PythonInterface:
         if len(datarefs) == 0:
             print(self.Info, f"load: no string datarefs")
             if self.use_defaults:
-                datarefs = DEFAULT_STRING_DATAREFS
+                datarefs = PERMANENT_STRING_DATAREFS
                 print(self.Info, f"load: using defaults only")
         else:
             if self.use_defaults:
-                datarefs = datarefs.union(DEFAULT_STRING_DATAREFS)
+                datarefs = datarefs.union(PERMANENT_STRING_DATAREFS)
                 print(self.Info, f"load: added default datarefs")
 
         self.num_collected_drefs = len(datarefs)
