@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<style type="text/css" >
+   <![CDATA[
+     @keyframes wiggle {
+       0% {-webkit-transform: rotate(0deg); transform: rotate(0deg)}
+       33% {-webkit-transform: rotate(-12deg); transform: rotate(-12deg)}
+       66% {-webkit-transform: rotate(10deg); transform: rotate(10deg)}
+       100% {-webkit-transform: rotate(0deg); transform: rotate(0deg)}
+     }
+
+     .wiggle {
+        -webkit-transform-origin: center;
+        transform-origin: center;           
+        -webkit-animation: wiggle 3s normal linear infinite;
+        animation: wiggle 3s normal linear infinite;
+     }
+   ]]>
+</style>   
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+  <path d="m19.681 4.4735a2.8909 2.6997 2.0644 0 0-0.56332 0.11556 2.8909 2.6997 2.0644 0 0-1.811 1.6573 2.6834 2.7058 86.379 0 0-0.55397 0.11777 2.6834 2.7058 86.379 0 0-1.7252 3.3892 2.6834 2.7058 86.379 0 0 3.4156 1.7076 2.6834 2.7058 86.379 0 0 1.1315-0.72216 2.9849 3.7885 71.908 0 0 4.1 0.87546 2.9849 3.7885 71.908 0 0 2.6635-4.0177 2.9849 3.7885 71.908 0 0-3.8368-1.8227 2.8909 2.6997 2.0644 0 0-2.8203-1.3005z" fill="#fff" style="paint-order:normal"/>
+  <path class="wiggle" fill="#ffb300" d="m12.06 3.1404a10.583 10.583 0 0 0-8.8056 9.4543 10.583 10.583 0 0 0 9.559 11.517 10.583 10.583 0 0 0 10.435-5.7873 9.5656 9.5656 0 0 1-5.2074 0.99903 9.5656 9.5656 0 0 1-8.64-10.409 9.5656 9.5656 0 0 1 2.6589-5.7737z" stroke-width="1.0583"/>
+</svg>

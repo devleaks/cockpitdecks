@@ -58,7 +58,7 @@ if LOGFILE is not None:
 #
 # No aircraft supplied starts the demo version.
 DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
-DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "demo")
+DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "DEMO")
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 COCKPITDECKS_FOLDER = "cockpitdecks"
@@ -226,12 +226,12 @@ else:
     if SIMULATOR_HOST is not None:
         if VERBOSE:
             print(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
-    else:
-        if not args.demo:
-            print(f"{SIMULATOR_NAME} not found. no folder, no remote host")
-            sys.exit(1)
-        else:
-            print("Simulator ignored for demo")
+    # else:
+    #     if not args.demo:
+    #         print(f"{SIMULATOR_NAME} not found. no folder, no remote host")
+    #         sys.exit(1)
+    #     else:
+    #         print("Simulator ignored for demo")
 
 
 # COCKPITDECKS_PATH
@@ -291,7 +291,7 @@ if ac is not None:
 elif ac is None and SIMULATOR_HOME is None and len(COCKPITDECKS_PATH) == 0:
     mode = CD_MODE.DEMO
     if VERBOSE:
-        print(f"no aircraft, no {SIMULATOR_NAME} on this host, COCKPITDECKS_PATH not defined: starting in demo mode")
+        print(f"no aircraft, no {SIMULATOR_NAME} on this host, COCKPITDECKS_PATH not defined: starting in demonstration mode")
 
 if VERBOSE:
     action = "try" if args.fixed else "fly"

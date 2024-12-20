@@ -49,7 +49,7 @@ DATAREF_TIME = {
     "zulu_hours": "sim/cockpit2/clock_timer/zulu_time_hours",
     "zulu_minutes": "sim/cockpit2/clock_timer/zulu_time_minutes",
     "day_of_month": "sim/cockpit2/clock_timer/current_day",
-    "day_of_year": "sim/time/local_date_days",
+    "day_of_year": "sim/time/local_date_days"
 }
 
 DATAREF_LOCATION = {"latitude": "sim/flightmodel/position/latitude", "longitude": "sim/flightmodel/position/longitude"}
@@ -133,9 +133,9 @@ DATAREF_REGION_WIND = {
 #
 # ######################################################################################
 
-
-AIRCRAFT_DATAREFS = DATAREF_TIME | DATAREF_AIRCRAFT_WEATHER | DATAREF_AIRCRAFT_CLOUD | DATAREF_AIRCRAFT_WIND
-REGION_DATAREFS = DATAREF_TIME | DATAREF_REGION_WEATHER | DATAREF_REGION_CLOUD | DATAREF_REGION_WIND
+# Flavor
+AIRCRAFT_DATAREFS = DATAREF_TIME | DATAREF_LOCATION | DATAREF_AIRCRAFT_WEATHER | DATAREF_AIRCRAFT_CLOUD | DATAREF_AIRCRAFT_WIND
+REGION_DATAREFS = DATAREF_TIME | DATAREF_LOCATION | DATAREF_REGION_WEATHER | DATAREF_REGION_CLOUD | DATAREF_REGION_WIND
 
 
 class DatarefAccessor:
@@ -192,7 +192,7 @@ class XPWeatherData:
 
         self.weather_type = weather_type
 
-        DATAREF_WEATHER = DATAREF_AIRCRAFT_WEATHER if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WEATHER
+        DATAREF_WEATHER = AIRCRAFT_DATAREFS if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else REGION_DATAREFS
         DATAREF_CLOUD = DATAREF_AIRCRAFT_CLOUD if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_CLOUD
         DATAREF_WIND = DATAREF_AIRCRAFT_WIND if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value else DATAREF_REGION_WIND
 
@@ -332,7 +332,10 @@ class XPWeatherData:
             i = i + 1
 
     def getStation(self):
-        return "ICAO" if self.station is None else self.station.icao
+        lat = self.weather.latitude
+        lon = self.weather.longitude
+        (nearest, coords) = Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
+        return "ICAO" if nearest is None else nearest.icao
 
     def setStation(self, station: Station):
         self.station = station
@@ -385,7 +388,7 @@ class XPWeatherData:
         i = 0
         while nocov and i < len(self.cloud_layers):
             cl = self.cloud_layers[i]
-            nocov = cl.coverage is None or cl.coverage < 0.125  # 1/8
+            nocov = cl.coverage is None or cl.coverage < 0.125  # 1/8, some say < 0.05
             i = i + 1
         return dist > 9999 and nocov
 
@@ -448,12 +451,13 @@ class XPWeatherData:
         phenomenon = ""
         self.sort_layers_by_alt()
         vis = 9999
-        if self.weather.visibility is not None:
-            vis = round(self.weather.precipitations)  ## m
-        water = 0
-        if self.weather.visibility is not None:
-            water = round(self.weather.precipitations)  ## m
-        lc = self.cloud_layers[0]
+        if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
+            if self.weather.visibility is not None:
+                vis = round(self.weather.precipitations)  ## m
+            water = 0
+            if self.weather.visibility is not None:
+                water = round(self.weather.precipitations)  ## m
+            lc = self.cloud_layers[0]
 
         # Mist or fog
         # Water saturation 100%, temp <= dew point temp
@@ -494,7 +498,7 @@ class XPWeatherData:
                     s = "OVC"
                 if s != "":
                     alt = to_fl(l.base, 5)
-                    local = f"{s}{alt}"
+                    local = f"{s}{alt:03d}"
                 last = cov
             clouds = clouds + " " + local
         return clouds.strip()
@@ -507,16 +511,16 @@ class XPWeatherData:
             t1 = round(self.weather.temperature_msl)
         temp = ""
         if t1 < 0:
-            temp = f"M{abs(t1)}/"
+            temp = f"M{abs(t1):02d}/"
         else:
-            temp = f"{t1}"
+            temp = f"{t1:02d}"
         self.sort_layers_by_alt()
         l = self.wind_layers[0]
         t1 = round(l.dew_point)
         if t1 < 0:
-            temp = temp + "/" + f"M{abs(t1)}/"
+            temp = temp + "/" + f"M{abs(t1):02d}/"
         else:
-            temp = temp + "/" + f"{t1}"
+            temp = temp + "/" + f"{t1:02d}"
         return temp
 
     def getPressure(self):

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="svg6" width="100" height="100" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
+<style type="text/css" >
+   <![CDATA[
+     @keyframes wiggle {
+       0% {-webkit-transform: rotate(0deg); transform: rotate(0deg)}
+       33% {-webkit-transform: rotate(-12deg); transform: rotate(-12deg)}
+       66% {-webkit-transform: rotate(10deg); transform: rotate(10deg)}
+       100% {-webkit-transform: rotate(0deg); transform: rotate(0deg)}
+     }
+
+     .wiggle {
+        -webkit-transform-origin: center;
+        transform-origin: center;           
+        -webkit-animation: wiggle 3s normal linear infinite;
+        animation: wiggle 3s normal linear infinite;
+     }
+   ]]>
+</style>       
+  <path class="wiggle" fill="#ffb300" d="m12.06 3.1404a10.583 10.583 0 0 0-8.8056 9.4543 10.583 10.583 0 0 0 9.559 11.517 10.583 10.583 0 0 0 10.435-5.7873 9.5656 9.5656 0 0 1-5.2074 0.99903 9.5656 9.5656 0 0 1-8.64-10.409 9.5656 9.5656 0 0 1 2.6589-5.7737z" stroke-width="1.0583"/>
+
+ <path d="m12.009 10.155a6.0863 5.6902 2.0986 0 0-1.186 0.24357 6.0863 5.6902 2.0986 0 0-3.8128 3.4931 5.6559 5.6966 85.819 0 0-1.1663 0.24822 5.6559 5.6966 85.819 0 0-3.6322 7.1434 5.6559 5.6966 85.819 0 0 7.191 3.5991 5.6559 5.6966 85.819 0 0 2.3821-1.5221 6.2907 7.977 71.827 0 0 8.6321 1.8452 6.2907 7.977 71.827 0 0 5.6077-8.468 6.2907 7.977 71.827 0 0-8.0778-3.8417 6.0863 5.6902 2.0986 0 0-5.9378-2.741z" fill="#fff" style="paint-order:normal"/>
+</svg>

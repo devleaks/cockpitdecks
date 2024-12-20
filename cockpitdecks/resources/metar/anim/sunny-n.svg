@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <style type="text/css" >
+      <![CDATA[
+        @keyframes wiggle {
+          0% {-webkit-transform: rotate(0deg); transform: rotate(0deg)}
+          33% {-webkit-transform: rotate(-12deg); transform: rotate(-12deg)}
+          66% {-webkit-transform: rotate(10deg); transform: rotate(10deg)}
+          100% {-webkit-transform: rotate(0deg); transform: rotate(0deg)}
+        }
+
+        .wiggle {
+           -webkit-transform-origin: center;
+           transform-origin: center;           
+           -webkit-animation: wiggle 3s normal linear infinite;
+           animation: wiggle 3s normal linear infinite;
+        }
+      ]]>
+  </style>    
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g fill="#ffb300" stroke-linecap="square" stroke-linejoin="round">
+  <path class="wiggle" d="m12.06 3.1404a10.583 10.583 0 0 0-8.8056 9.4543 10.583 10.583 0 0 0 9.559 11.517 10.583 10.583 0 0 0 10.435-5.7873 9.5656 9.5656 0 0 1-5.2074 0.99903 9.5656 9.5656 0 0 1-8.64-10.409 9.5656 9.5656 0 0 1 2.6589-5.7737z" stroke-width="1.0583"/>
+  <path transform="matrix(.42097 .3774 -.3774 .42097 3.9394 -25.934)" d="m69.117 32.186c-0.49261 0.45701-3.7049-1.9458-4.3763-1.971-0.67149-0.02517-4.0546 2.1304-4.5116 1.6378-0.45701-0.49261 1.9458-3.7049 1.971-4.3763 0.02517-0.67149-2.1304-4.0546-1.6378-4.5116 0.49261-0.45701 3.7049 1.9458 4.3763 1.971 0.67149 0.02517 4.0546-2.1304 4.5116-1.6378s-1.9458 3.7049-1.971 4.3763c-0.02517 0.67149 2.1304 4.0546 1.6378 4.5116z" stroke-width="1.8719"/>
+  <path transform="matrix(.20629 .18494 -.18494 .20629 7.8878 -13.606)" d="m69.117 32.186c-0.49261 0.45701-3.7049-1.9458-4.3763-1.971-0.67149-0.02517-4.0546 2.1304-4.5116 1.6378-0.45701-0.49261 1.9458-3.7049 1.971-4.3763 0.02517-0.67149-2.1304-4.0546-1.6378-4.5116 0.49261-0.45701 3.7049 1.9458 4.3763 1.971 0.67149 0.02517 4.0546-2.1304 4.5116-1.6378s-1.9458 3.7049-1.971 4.3763c-0.02517 0.67149 2.1304 4.0546 1.6378 4.5116z" stroke-width="3.82"/>
+ </g>
+</svg>

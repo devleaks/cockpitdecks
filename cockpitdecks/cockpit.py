@@ -298,8 +298,9 @@ DECK_TYPE_DESCRIPTION = "deck-type-flat"
 # (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 RELOAD_ON_LIVERY_CHANGE = False
-AIRCRAFT = "_livery"  # dataref name is data:_livery
+INTERNAL_AIRCRAFT_CHANGE_DATAREF = "_livery"  # dataref name is data:_livery
 
+# Little internal kitchen for internal datarefs
 AIRCRAF_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF}
 
 PERMANENT_SIMULATOR_DATA = AIRCRAF_CHANGE_SIMULATOR_DATA
@@ -428,7 +429,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
         self.mode = 0
-        self._livery_dataref = None  # self.sim.get_internal_data(AIRCRAFT, is_string=True)
+        self._livery_dataref = None  # self.sim.get_internal_data(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
         self._acname = ""
         self._livery_path = ""
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
@@ -486,7 +487,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._simulator = self.all_simulators[self._simulator_name]
         self.sim = self._simulator(self, self._environ)
         logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
-        self._livery_dataref = self.sim.get_internal_data(AIRCRAFT, is_string=True)
+        self._livery_dataref = self.sim.get_internal_data(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         if self.cockpitdecks_path is not None:
             logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
@@ -601,14 +602,12 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         logger.info(f"loaded extensions {", ".join(loaded)}")
 
     def get_simulator_data(self) -> set:
-        """Returns the list of datarefs for which the cockpit wants to be notified.
-
-        [description]
-        """
+        """Returns the list of datarefs for which the cockpit wants to be notified."""
         ret = self._simulator_data_names
-        if len(self.observables) > 0:
-            for o in self.observables.values():
-                ret = ret | o.get_simulator_data()
+        # Observables gets notified themselves
+        # if len(self.observables) > 0:
+        #     for o in self.observables.values():
+        #         ret = ret | o.get_simulator_data()
         return ret
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
@@ -788,7 +787,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if len(driver_info) == 0:
             logger.warning("no device driver for physical decks")
             return
-        logger.info(f"device drivers installed for {', '.join(driver_info)}; scanning for decks and initializing them (this may take a few seconds)..")
+
+        logger.info(f"device drivers installed for {', '.join(driver_info)}")
+        logger.info("scanning for decks and initializing them (this may take a few seconds)..")
+
         dependencies = []
         for deck_driver in self.all_deck_drivers.items():
             dep = ""
@@ -804,9 +806,10 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         # If there are already some devices, we need to terminate/kill them first
         if len(self.devices) > 0:
-            logger.info("new scan for devices, terminating devices..")
+            logger.info("new scan for devices, terminating previous devices..")
             self.terminate_devices()
-            logger.info("..terminated")
+            self._device_scanned = False
+            logger.info("..previous devices terminated")
 
         self.devices = []
         for deck_driver, builder in self.all_deck_drivers.items():
@@ -832,6 +835,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 )
             logger.debug(f"using {len(decks)} {deck_driver}")
         self._device_scanned = True
+
         logger.debug(f"..scanned")
 
     def get_device(self, req_driver: str, req_serial: str | None):
@@ -909,7 +913,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if not self._device_scanned:
             self.scan_devices()
 
-        logger.info(f"starting {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
+        logger.info(f"starting aircraft {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
         self.acpath = None
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
@@ -936,6 +940,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             else:
                 logger.error(f"no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
             self.create_default_decks()
+        logger.info(f"..aircraft {os.path.basename(acpath)} started")
 
     def load_pages(self):
         if self.default_pages is not None:
@@ -1046,7 +1051,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                     if default_label_font is None:  # additionnally, if we don't have a default label font, use it
                         self.set_default("default-label-font", default_system_font)
                         logger.debug(f"default label font set to {default_system_font}")
-                    logger.info(f"added default system font is {default_system_font}")
+                    logger.info(f"added default system font {default_system_font}")
             else:
                 logger.debug(f"default system font is {default_system_font}")
         else:
@@ -1337,7 +1342,9 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                 else:
                     logger.warning(f"package {package}: decktype {deck_type} already loaded")
 
-        logger.info(f"loaded {len(self.deck_types)} deck types ({', '.join(self.deck_types.keys())}), {len(self.virtual_deck_types)} are virtual deck types")
+        real_decks = [k for k, v in self.deck_types.items() if not v.is_virtual_deck()]
+        logger.info(f"loaded {len(real_decks)} deck types ({', '.join(real_decks)})")
+        logger.info(f"loaded {len(self.virtual_deck_types)} virtual deck types ({', '.join(self.virtual_deck_types.keys())})")
 
     def load_aircraft_deck_types(self):
         aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
@@ -1999,20 +2006,26 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         """
         if not isinstance(data, SimulatorData) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_data_names]:
             logger.warning(f"unhandled {data.name}={data.value()}")
+            print(">>>>", [l.name for l in data.listeners])
             return
         # Now performed by observable
         # if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
         #     self.change_aircraft()
 
     def terminate_aircraft(self):
-        logger.info("terminating..")
+        logger.info("terminating aircraft..")
         drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
-        with open("datarefs-log.yaml", "w") as fp:
+        fn = "datarefs-log.yaml"
+        with open(fn, "w") as fp:
             yaml.dump(drefs, fp)
+            logger.debug(f"..simulator data values saved in {fn} file")
+        logger.info("..terminating decks..")
         self._ac_ready = False
         for deck in self.cockpit.values():
             deck.terminate()
+        logger.info("..terminating web decks..")
         self.remove_web_decks()
+        logger.info("..removing aircraft resources..")
         self.cockpit = {}
         self._ac_fonts = {}
         self._ac_icons = {}
@@ -2022,8 +2035,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if nt > 1:
             logger.info(f"{nt} threads")
             logger.info(f"{[t.name for t in threading.enumerate()]}")
-        logger.info("..done")
-        logger.info(f"{os.path.basename(self.acpath)} terminated " + "✈ " * 30)
+        logger.info(f"..aircraft {os.path.basename(self.acpath)} terminated " + "✈ " * 30)
 
     def terminate_devices(self):
         for deck in self.devices:
@@ -2047,6 +2059,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         if self.sim is not None:
             logger.info("..terminating connection to simulator..")
             self.sim.terminate()
+            logger.info("..connection to simulator terminated..")
             logger.debug("..deleting connection to simulator..")
             del self.sim
             self.sim = None

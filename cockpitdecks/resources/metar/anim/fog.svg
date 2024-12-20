@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
+ <style type="text/css"><![CDATA[
+     @keyframes shifting {
+       0%, 100% {
+         opacity: 1;
+       }
+       50% {
+         opacity: .5;
+       }
+     }
+
+    .shifting {   
+        -webkit-transform-origin: center;
+        transform-origin: center;               
+       -webkit-animation: shifting 2s normal linear infinite;
+       animation: shifting 2s normal linear infinite;
+    }
+
+    .shifting1 {
+      animation-delay: 500ms;
+      -webkit-animation-delay: 500ms;
+    }
+
+    .shifting2 {
+      animation-delay: 1s;
+      -webkit-animation-delay: 1s;
+    }
+
+    .shifting3 {
+      animation-delay: 1500ms;
+      -webkit-animation-delay: 1500ms;
+    }
+  ]]></style>    
+ <path class="shifting shifting1" d="m20.579 19.711h-14.699" fill="none" stroke="#80b2de" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3229"/>
+ <path d="m11.216 2.9462a5.8547 5.4675 2.0644 0 0-1.1409 0.23406 5.8547 5.4675 2.0644 0 0-3.6677 3.3562 5.4347 5.48 86.379 0 0-1.1219 0.23853 5.4347 5.48 86.379 0 0-3.494 6.8641 5.4347 5.48 86.379 0 0 6.9175 3.4583 5.4347 5.48 86.379 0 0 2.2916-1.4626 6.045 7.6726 71.908 0 0 8.3034 1.773 6.045 7.6726 71.908 0 0 5.3944-8.1367 6.045 7.6726 71.908 0 0-7.7705-3.6911 5.8547 5.4675 2.0644 0 0-5.7119-2.6338z" fill="#fff" style="paint-order:normal"/>
+ <path class="shifting shifting2" d="m20.579 22.357h-14.699" fill="none" stroke="#80b2de" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3229"/>
+</svg>

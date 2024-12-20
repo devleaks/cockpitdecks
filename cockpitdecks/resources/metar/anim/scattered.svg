@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <style type="text/css"><![CDATA[
+         @keyframes rotate {
+           0% {
+             -webkit-transform: rotate(0deg);
+             transform: rotate(0deg);
+           }
+           25% {
+             -webkit-transform: rotate(90deg);
+             transform: rotate(90deg);
+           }
+           50% {
+             -webkit-transform: rotate(180deg);
+             transform: rotate(180deg);
+           }
+           75% {
+             -webkit-transform: rotate(270deg);
+             transform: rotate(270deg);
+           }
+           100% {
+             -webkit-transform: rotate(360deg);
+             transform: rotate(360deg);
+           }
+         }
+
+        .rotate {
+           -webkit-transform-origin: center;
+           transform-origin: center;           
+           -webkit-animation: rotate 15s normal linear infinite;
+           animation: rotate 15s normal linear infinite;
+        }
+      ]]></style>
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g class="rotate" fill="#ffb300" shape-rendering="auto">
+  <path d="m4.0081 10.088a0.52989 0.53081 60 0 0-0.11827 1.0409l2.8975 0.77651a0.53085 0.53177 60 1 0 0.27883-1.0254l-2.9014-0.77259a0.52989 0.53081 60 0 0-0.15664-0.01952z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m19.737 14.286a0.52989 0.53081 60 0 0-0.11827 1.0448l2.9014 0.77259a0.53035 0.53126 60 1 0 0.27491-1.0254l-2.9014-0.77259a0.52989 0.53081 60 0 0-0.15664-0.01952z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m16.632 18.311a0.52989 0.53081 60 0 0-0.43531 0.80248l1.502 2.5971a0.52989 0.53081 60 1 0 0.91682-0.52893l-1.4981-2.6009a0.52989 0.53081 60 0 0-0.48543-0.26963z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m8.5006 4.2265a0.52989 0.53081 60 0 0-0.43531 0.80248l1.5019 2.601a0.52989 0.53081 60 1 0 0.91684-0.5328l-1.4981-2.6009a0.52989 0.53081 60 0 0-0.48539-0.26971z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m7.5598 15.892a0.52989 0.53081 60 0 0-0.23503 0.07453l-2.6055 1.5045a0.53098 0.5319 60 1 0 0.53193 0.91915l2.6015-1.5045a0.52989 0.53081 60 0 0-0.293-0.99371z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m21.669 7.7461a0.52989 0.53081 60 0 0-0.23503 0.074529l-2.6055 1.5045a0.53001 0.53093 60 1 0 0.52801 0.91915l2.6055-1.5045a0.52989 0.53081 60 0 0-0.29298-0.99367z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m15.817 3.2584a0.52989 0.53081 60 0 0-0.48592 0.39947l-0.7776 2.9001a0.52989 0.53081 60 1 0 1.022 0.27314l0.78152-2.9001a0.52989 0.53081 60 0 0-0.53995-0.67262z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+  <path d="m11.591 18.98a0.52989 0.53081 60 0 0-0.48593 0.39947l-0.78152 2.9001a0.53035 0.53126 60 1 0 1.0259 0.27314l0.78152-2.9001a0.52989 0.53081 60 0 0-0.53995-0.67262z" color="#000000" color-rendering="auto" dominant-baseline="auto" image-rendering="auto" solid-color="#000000" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;isolation:auto;mix-blend-mode:normal;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal"/>
+ </g>
+ <path transform="scale(.26458)" d="m47.469 32.781c-1.54 0.27088-3.024 0.75657-4.4199 1.4258-1.6094 2.8543-2.0499 6.3405-0.93555 9.7012 2.1122 6.3702 8.9971 9.8198 15.443 7.7148 0.88042-0.2902 1.7229-0.67916 2.5098-1.1543-5.5226-0.48609-10.517-4.1541-12.357-9.707-0.88723-2.6755-0.90752-5.4304-0.24023-7.9805zm-9.6016 5.2598c-5.9462 6.4738-6.0259 16.523 0.046874 23.072 6.3929 6.8942 17.177 7.2965 24.086 0.89844 2.3048-2.138 3.9444-4.8462 4.793-7.8027-1.0477-0.6612-2.0226-1.4207-2.9023-2.2832-1.5682 1.3269-3.1794 2.6355-5.1445 3.2832h-0.007813c-8.3758 2.7406-17.45-1.7877-20.211-10.113-0.77885-2.3487-0.97196-4.7517-0.66016-7.0547zm29.582 10.955c-0.30424 0.18469-0.61572 0.35693-0.9375 0.50976 0.29197 0.275 0.59926 0.53795 0.92188 0.78711 0.019748-0.43062 0.028822-0.86273 0.015625-1.2969z" fill="#ffb300" style="paint-order:normal"/>
+ <path d="m17.096 4.4803a3.9935 3.7294 2.0644 0 0-0.77819 0.15964 3.9935 3.7294 2.0644 0 0-2.5018 2.2894 3.707 3.7378 86.379 0 0-0.76527 0.16269 3.707 3.7378 86.379 0 0-2.3833 4.6819 3.707 3.7378 86.379 0 0 4.7184 2.3589 3.707 3.7378 86.379 0 0 1.563-0.99762 4.1235 5.2335 71.908 0 0 5.6639 1.2094 4.1235 5.2335 71.908 0 0 3.6795-5.5501 4.1235 5.2335 71.908 0 0-5.3002-2.5179 3.9935 3.7294 2.0644 0 0-3.8961-1.7965z" fill="#fff" style="paint-order:normal"/>
+</svg>

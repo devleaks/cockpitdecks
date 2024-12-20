@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <path d="m11.216 2.1524a5.8547 5.4675 2.0644 0 0-1.1409 0.23406 5.8547 5.4675 2.0644 0 0-3.6677 3.3562 5.4347 5.48 86.379 0 0-1.1219 0.23853 5.4347 5.48 86.379 0 0-3.494 6.8641 5.4347 5.48 86.379 0 0 6.9175 3.4583 5.4347 5.48 86.379 0 0 2.2916-1.4626 6.045 7.6726 71.908 0 0 8.3034 1.773 6.045 7.6726 71.908 0 0 5.3944-8.1367 6.045 7.6726 71.908 0 0-7.7705-3.6911 5.8547 5.4675 2.0644 0 0-5.7119-2.6338z" fill="#fff" style="paint-order:normal"/>
+ <path d="m8.2478 17.963-0.015525 2.7031" fill="#fff" stroke="#80b2de" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.001"/>
+ <circle cx="8.24" cy="23.178" r=".95294" fill="#80b2de"/>
+ <path d="m11.574 17.963-0.01553 4.8198" fill="#fff" stroke="#80b2de" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.001"/>
+ <circle cx="11.566" cy="25.294" r=".95294" fill="#80b2de"/>
+ <path d="m14.9 17.963-0.01553 2.7031" fill="#fff" stroke="#80b2de" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.001"/>
+ <circle cx="14.892" cy="23.178" r=".95294" fill="#80b2de"/>
+ <path d="m18.226 17.963-0.01553 4.8198" fill="#fff" stroke="#80b2de" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.001"/>
+ <circle cx="18.218" cy="25.294" r=".95294" fill="#80b2de"/>
+</svg>
