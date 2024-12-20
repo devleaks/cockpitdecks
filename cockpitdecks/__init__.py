@@ -21,7 +21,7 @@ from .constant import *  # noqa: F403
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 
-__version__ = "12.10.4"
+__version__ = "12.11.0"
 
 #
 # ##########################################################################
