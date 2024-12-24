@@ -196,3 +196,8 @@ t.json
 gitall.sh
 cockpitdecks/environ-test.yaml
 cockpitdecks/resources/docs/device-list.json
+cockpitdecks/resources/flightboard/livetraffic board.png
+cockpitdecks/resources/fonts/solari-platform.ttf
+cockpitdecks/resources/fonts/Solari.ttf
+cockpitdecks/resources/fonts/SplitFlapTV-Regular.otf
+cockpitdecks/resources/fonts/SplitFlapTVBlackLine-Regular.otf
