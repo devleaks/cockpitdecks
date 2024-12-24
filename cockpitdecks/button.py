@@ -54,7 +54,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             CONFIG_KW.INTERNAL_KEY.value, self.index
         )  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
-        self._definition = self.deck.get_deck_type().get_button_definition(self.index)  # kind of meta data capabilties of button
+        self._definition = self.deck.deck_type.get_button_definition(self.index)  # kind of meta data capabilties of button
 
         self.name = config.get(CONFIG_KW.NAME.value, str(self.index))
         self.num_index = None

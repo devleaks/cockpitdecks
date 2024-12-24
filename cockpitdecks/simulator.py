@@ -128,7 +128,15 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
         else:
             simulator_data.update_frequency = self.simulator_data_frequencies.get(simulator_data.name)
 
-    def register(self, simulator_data):
+    def register(self, simulator_data: rData) -> Data:
+        """Registers a SimulatorData to be monitored by Cockpitdecks.
+
+        Args:
+            simulator_data ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
         if simulator_data.name is None:
             logger.warning(f"invalid simulator_data name {simulator_data.name}")
             return None
@@ -142,10 +150,18 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
         return simulator_data
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
-        """Returns the simulator date and time"""
+        """Returns the current simulator date and time"""
         return datetime.now().astimezone()
 
-    def get_simulator_data_value(self, simulator_data, default=None):
+    def get_simulator_data_value(self, simulator_data, default=None) -> Any | None:
+        """Gets the value of a SimulatorData monitored by Cockpitdecks
+        Args:
+            simulator_data ([type]): [description]
+            default ([type]): [description] (default: `None`)
+
+        Returns:
+            [type]: [description]
+        """
         d = self.all_simulator_data.get(simulator_data)
         if d is None:
             logger.warning(f"{simulator_data} not found")
@@ -161,10 +177,20 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
             return self.register(simulator_data=InternalData(name=name, is_string=is_string))
         return self.register(simulator_data=Data(name=name, data_type="string" if is_string else "float"))
 
-    def get_internal_data(self, name: str, is_string: bool = False):
+    def get_internal_data(self, name: str, is_string: bool = False) -> Data:
+        """Returns the InternalData or creates it if it is the first time it is accessed.
+        Args:
+            name (str): [description]
+            is_string (bool): [description] (default: `False`)
+
+        Returns:
+            [type]: [description]
+        """
         return self.get_data(name=Data.internal_data_name(name), is_string=is_string)
 
     def set_internal_data(self, name: str, value: float, cascade: bool):
+        """Sets the value of an InternalData. If the data does not exist, it is created first.
+        """
         if not Data.is_internal_data(path=name):
             name = Data.internal_data_name(path=name)
         if cascade:
@@ -174,6 +200,12 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
             data.update_value(new_value=value, cascade=cascade)
 
     def inc_internal_data(self, name: str, amount: float, cascade: bool = False):
+        """Incretement an InternalData
+        Args:
+            name (str): [description]
+            amount (float): [description]
+            cascade (bool): [description] (default: `False`)
+        """
         data = self.get_internal_data(name=name)
         curr = data.value()
         if curr is None:
@@ -182,6 +214,13 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
         self.set_internal_data(name=name, value=newvalue, cascade=cascade)
 
     def inc(self, path: str, amount: float = 1.0, cascade: bool = False):
+        """Increment a SimulatorData
+
+        Args:
+            path (str): [description]
+            amount (float): [description] (default: `1.0`)
+            cascade (bool): [description] (default: `False`)
+        """
         # shortcut alias
         self.inc_internal_data(name=path, amount=amount, cascade=cascade)
 
@@ -190,15 +229,25 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
     #
     @abstractmethod
     def replay_event_factory(self, name: str, value):
+        """Recreates an Event from data included in the value.
+
+        Args:
+            name (str): [description]
+            value ([type]): [description]
+        """
         pass
 
     # ################################
     # Cockpit interface
     #
     def clean_simulator_data_to_monitor(self):
+        """Removes all data from Simulator monitoring.
+        """
         self.simulator_data_to_monitor = {}
 
     def add_simulator_data_to_monitor(self, simulator_data: dict):
+        """Adds supplied data to Simulator monitoring.
+        """
         prnt = []
         for d in simulator_data.values():
             if d.name.startswith(INTERNAL_DATA_PREFIX):
@@ -213,6 +262,8 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
         logger.debug(f"currently monitoring {self.simulator_data_to_monitor}")
 
     def remove_simulator_data_to_monitor(self, simulator_data):
+        """Removes supplied data from Simulator monitoring.
+        """
         prnt = []
         for d in simulator_data.values():
             if d.name.startswith(INTERNAL_DATA_PREFIX):
@@ -230,28 +281,42 @@ class Simulator(ABC, InstructionProvider, SimulatorDataProvider):
         logger.debug(f"currently monitoring {self.simulator_data_to_monitor}")
 
     def remove_all_simulator_data(self):
+        """Removes all data from Simulator.
+        """
         logger.debug(f"removing..")
         self.all_simulator_data = {}
         self.simulator_data_to_monitor = {}
         logger.debug(f"..removed")
 
     def execute(self, instruction: Instruction):
+        """Executes a SimulatorInstruction
+        """
         instruction.execute(self)
 
     @abstractmethod
     def runs_locally(self) -> bool:
+        """Returns whether Cockpitdecks runs on the same computer as the Simulator software
+        """
         return False
 
     @abstractmethod
     def start(self):
+        """Starts Cockpitdecks Simulator class, that is start data monitoring and instruction
+           execution if instructed to do so.
+        """
         pass
 
     @abstractmethod
     def terminate(self):
+        """Terminates Cockpitdecks Simulator class, stop monitoring SimulatorData and stop issuing
+           instructionsto the simulator..
+        """
         pass
 
 
 class NoSimulator(Simulator):
+    """Dummy place holder Simulator class for demonstration purposes
+    """
 
     name = "NoSimulator"
 
@@ -290,6 +355,8 @@ class NoSimulator(Simulator):
 #
 # A value in the simulator
 class SimulatorData(Data):
+    """A specialised data to monitor inside the simulator
+    """
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         Data.__init__(self, name=name, data_type=data_type, physical_unit=physical_unit)
 
@@ -456,8 +523,8 @@ class SimulatorEvent(Event):
         """Simulator event
 
         Args:
-            action (DECK_ACTIONS): Action produced by this event (~ DeckEvent type)
-            deck (Deck): Deck that produced the event
+            sim (Simulator): Simulator that produced the event
+            autorun (bool): Whether to run the event
         """
         self.sim = sim
         Event.__init__(self, autorun=autorun)

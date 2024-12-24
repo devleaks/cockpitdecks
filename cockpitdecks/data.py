@@ -44,7 +44,11 @@ class InternalDataType(Enum):
 
 class Data(ABC):
     """An Data is a typed value holder for Cockpitdecks.
-    Value is alive, it changes, gets updated, notifies those who depend on it, etc.
+    All data are kept inside the Simulator:
+       - Simulator Data
+       - Internal Data
+    This eases data mangement, all data is at the same place.
+    The value of a data is "alive", it changes, gets updated, notifies those who depend on it, etc.
     """
 
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):

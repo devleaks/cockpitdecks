@@ -3,13 +3,14 @@
 import os
 import logging
 
-from typing import Dict, List
+from typing import Dict, List, Any
 from abc import ABC, abstractmethod
 
 from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT, DEFAULT_ATTRIBUTE_PREFIX
+from cockpitdecks.decks.resources.decktype import DeckButton
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color
 
 from cockpitdecks.decks.resources import DeckType
@@ -25,8 +26,10 @@ logger = logging.getLogger(__name__)
 
 class Deck(ABC):
     """
-    Loads the configuration of a Deck.
+    A Deck represents a physical device or a virtual web deck.
     A Deck has a collection of Pages, and knows which one is currently being displayed.
+    It maintains a link to the physical device driver and dispatches instruction to the driver
+    to make representation work.
     """
 
     DECK_NAME = "none"
@@ -103,14 +106,14 @@ class Deck(ABC):
     def is_virtual_deck(self) -> bool:
         return self.deck_type.is_virtual_deck()
 
-    def get_deck_button_definition(self, idx):
+    def get_deck_button_definition(self, idx) -> DeckButton:
         """Returns a deck's button definition from the deck type.
 
         Args:
             idx ([strıint]): Button index on deck
 
         Returns:
-            [ButtonType]: The button type at index.
+            [DeckButton | None]: The button type at index.
         """
         return self.deck_type.get_button_definition(idx)
 
@@ -121,15 +124,7 @@ class Deck(ABC):
         if self.deck_type is None:
             logger.error(f"no deck definition for {deck_type}")
 
-    def get_deck_type(self) -> DeckType:
-        """Returns the deck's type
-
-        Returns:
-            DeckType: the deck's type
-        """
-        return self.deck_type
-
-    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
+    def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True) -> Any or None:
         """Returns the default attribute value
 
         ..if avaialble at the deck level.
@@ -140,7 +135,7 @@ class Deck(ABC):
             silence (bool): Whether to complain if defalut value is not found (default: `False`)
 
         Returns:
-            [type]: [description]
+            [Any or None]: Value of attribute
         """
         default_attribute = attribute
         if not attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
@@ -354,12 +349,12 @@ class Deck(ABC):
             self.set_home_page()
             logger.info(f"deck {self.name}: loaded {len(self.pages)} pages from layout {self.layout}: {', '.join(self.pages.keys())}.")
 
-    def change_page(self, page: str | None = None):
+    def change_page(self, page: str | None = None) -> str | None:
         """Change the deck's page to the one supplied as argument.
            If none supplied, load the default page.
 
         Args:
-            page| None ([str]): Name of page to load (default: `None`)
+            page ([str | None]): Name of page to load (default: `None`)
 
         Returns:
             [str | None]: Name of page loaded or None.
@@ -445,7 +440,7 @@ class Deck(ABC):
     #
     # Deck Specific Functions : Usage
     #
-    def get_button_value(self, name):
+    def get_button_value(self, name) -> Any:
         """Get the value of a button from its internal identifier name
 
         [description]
@@ -454,7 +449,7 @@ class Deck(ABC):
             name ([type]): [description]
 
         Returns:
-            [type]: [description]
+            [Any]: [description]
         """
         a = name.split(ID_SEP)
         if len(a) > 0:

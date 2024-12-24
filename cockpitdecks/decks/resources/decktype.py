@@ -255,7 +255,7 @@ class DeckButton:
             return None
         return (self.position[0], self.position[1], self.position[0] + sizes[0], self.position[1] + sizes[1])
 
-    def desc(self):
+    def desc(self) -> dict:
         """Returns a flattened description of the button
 
         Ready to be used by web deck
@@ -480,7 +480,7 @@ class DeckTypeBase:
     # Is the deck's button capable (from its definition)
     # to satify the button's definition.
     #
-    def get_button_definition(self, index):
+    def get_button_definition(self, index) -> DeckButton | None:
         if type(index) is int:
             index = str(index)
         # 1. search in all mosaic first...
@@ -585,13 +585,13 @@ class DeckTypeBase:
         # loggerDeckType.debug(f"filter {query} returns {res}")
         return res
 
-    def desc(self):
+    def desc(self) -> dict:
         """Returns a flattened description of the deck
 
         Ready to be used by web deck
 
         Returns:
-            dict: Deck description (DeckType), simply flattened for web decks
+            [dict]: Deck description (DeckType), simply flattened for web decks
         """
         buttons = [b.desc() for b in self.buttons.values()]
         return {
