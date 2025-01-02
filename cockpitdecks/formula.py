@@ -1,19 +1,18 @@
+# A Formula is an expression using one or more variables
+#
+#
+# WORK IN PROGRESS
+#
+#
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Tuple
 import logging
 import re
 import math
-from abc import ABC
-
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.variable import InternalVariable, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from cockpitdecks.variable import Variable, InternalVariable, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
 from cockpitdecks.simulator import Simulator
-
-from cockpitdecks.buttons.activation import Activation
 
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
@@ -23,56 +22,25 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class ValueProvider:
-    def __init__(self, name: str, provider):
-        self._provider = provider
+class Formula(Variable):
+    """A Formula is a typed value made of one or more Variables.
 
-
-class SimulatorVariableValueProvider(ABC, ValueProvider):
-    def __init__(self, name: str, simulator: Simulator):
-        ValueProvider.__init__(self, name=name, provider=simulator)
-
-    @abstractmethod
-    def get_simulator_variable_value(self, simulator_variable, default=None):
-        pass
-
-
-class StateVariableValueProvider(ABC, ValueProvider):
-    def __init__(self, name: str, button: Button):
-        ValueProvider.__init__(self, name=name, provider=button)
-
-    @abstractmethod
-    def get_state_variable_value(self, name: str):
-        pass
-
-
-class ActivationValueProvider(ABC, ValueProvider):
-    def __init__(self, name: str, activation: "Activation"):
-        ValueProvider.__init__(self, name=name, provider=activation)
-
-    @abstractmethod
-    def get_activation_value(self):
-        pass
-
-
-class Value:
-    """A Value is a typed value used by Cockpitdecks entities.
-
-    A Value can be a simple Data (either InternalVariable or SimulatorDate) or a formula that
-    combines several Data.
+    A Formula can be a simple Variable (either InternalVariable or SimulatorVariable)
+    or an expression that combines several variables.
     """
 
-    def __init__(self, name: str, config: dict, provider: ValueProvider):
+    def __init__(self, name: str, config: dict, value_provider):
+        self.name = name  # for debuging and information purpose
         self._config = config
-        self._provider = provider
-        self._button = provider
-        self.name = name  # for debeging and information purpose
+        self._provider = value_provider
+        self._inited = False
+        Variable.__init__(self, name=name, data_type=self._config.get(CONFIG_KW.DATA_TYPE.value, "float"))
 
-        self._set_simdata_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
-        self._set_simdata = None
-        if self._set_simdata_path is not None:
-            self._set_simdata = self._button.sim.get_variable(self._set_simdata_path)
-            self._set_simdata.writable = True
+        # Used in formula
+        self._string_variables: set | None = None
+        self._variables: set | None = None
+        self._tokens = {}  # variable name= token in string
+        self._internal_type = 0
 
         # Value domain:
         self.value_min = self._config.get(CONFIG_KW.VALUE_MIN.value)
@@ -82,63 +50,17 @@ class Value:
         if self.value_count is not None:
             self.value_count = int(self.value_count)
 
-        # Used in "value"
-        self._simulator_variable: set | None = None
-        self._string_simulator_variable: set | None = None
-        self._known_extras: Tuple[str] = tuple()
-        self._formula: str | None = None
+        # Value range:
+        # Formula has no range, since built from several values
+
+        # Value to set on change
+        self._set_variable_name = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
+        self._set_variable = None
+        if self._set_variable_name is not None:
+            self._set_variable = self._provider.get_variable(self._set_variable_name)
+            self._set_variable.writable = True
 
         self.init()
-
-    def init(self):
-        self._string_simulator_variable = self.string_datarefs
-        if type(self._string_simulator_variable) is str:
-            if "," in self._string_simulator_variable:
-                self._string_simulator_variable = self._string_simulator_variable.replace(" ", "").split(",")
-            else:
-                self._string_simulator_variable = [self._string_simulator_variable]
-
-        # there is a special issue if dataref we get value from is also dataref we set
-        # in this case there MUST be a formula to evalute the value before we set it
-        if self.dataref is not None and self.set_dataref is not None:
-            if self.dataref == self.set_dataref:
-                if self.formula == "":
-                    logger.debug(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
-                # if formula is None:
-                #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
-                # else:
-                #     logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
-
-        if not self.has_domain:
-            return
-        if self.value_min > self.value_max:
-            tmp = self.value_min
-            self.value_min = self.value_max
-            self.value_max = tmp
-        # we have a domain, do we have a snap?
-        if self.value_inc is not None:
-            cnt = self.value_max - self.value_min
-            if self.value_count is None:
-                self.value_count = cnt
-            elif self.value_count != cnt:
-                logger.warning(f"value domain mismatch: value count {self.value_count} != {cnt}")
-        elif self.value_count is not None and self.value_count > 0:
-            self.value_inc = (self.value_max - self.value_min) / self.value_count
-
-    def get_simulator_variable_value(self, simulator_variable, default=None):
-        if isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator):
-            return self._provider.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
-        return None
-
-    def get_state_variable_value(self, state):
-        if isinstance(self._provider, StateVariableValueProvider):
-            return self._provider.get_state_variable_value(state)
-        return None
-
-    def get_activation_value(self):
-        if isinstance(self._provider, ActivationValueProvider):
-            return self._button.get_activation_value()
-        return None
 
     @property
     def dataref(self) -> str | None:
@@ -169,164 +91,6 @@ class Value:
     def has_domain(self) -> bool:
         return self.value_min is not None and self.value_max is not None
 
-    def is_self_modified(self):
-        # Determine of the activation of the button directly modifies
-        # a dataref used in computation of the value.
-        return self._set_simdata_path in self._simulator_variable
-
-    def add_variables(self, datarefs: set, reason: str | None = None):
-        # Add datarefs to the value for computation purpose
-        # Used by activation and representation to add to button datarefs
-        if self._simulator_variable is None:
-            self._simulator_variable = set()
-        self._simulator_variable = self._simulator_variable | datarefs
-        logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
-
-    def get_simulator_variable(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
-        """
-        Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
-        listed dataref and datarefs attributes.
-        This can be applied to the entire button or to a subset (for annunciator parts)
-        """
-        if base is None:  # local, button-level ones
-            if self._simulator_variable is not None:  # cached if globals (base is None)
-                return self._simulator_variable
-            base = self._config
-
-        self._simulator_variable = self.scan_datarefs(base, extra_keys=extra_keys)
-        logger.debug(f"value {self.name}: found datarefs {self._simulator_variable}")
-        return self._simulator_variable
-
-    def get_all_datarefs(self) -> list:
-        return self.get_simulator_variable() | self._string_simulator_variable
-
-    def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
-        """
-        scan all datarefs in texts, computed datarefs, or explicitely listed.
-        This is applied to the entire button or to a subset (for annunciator parts for example).
-        String datarefs are treated separately.
-        """
-        r = set()
-
-        # Direct use of datarefs:
-        #
-        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
-        for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
-            dataref = base.get(attribute)
-            if dataref is not None and InternalVariable.may_be_non_internal_variable(dataref):
-                r.add(dataref)
-                logger.debug(f"value {self.name}: added single dataref {dataref}")
-
-        # 1.2 Multiple
-        datarefs = base.get(CONFIG_KW.SIM_DATA.value)
-        if datarefs is not None:
-            a = []
-            for d in datarefs:
-                if InternalVariable.may_be_non_internal_variable(d):
-                    r.add(d)
-                    a.append(d)
-            logger.debug(f"value {self.name}: added multiple datarefs {a}")
-
-        # 2. Command with potential conditions
-        for instr_cmd in [CONFIG_KW.COMMAND.value, CONFIG_KW.COMMANDS.value, CONFIG_KW.VIEW.value]:
-            commands = base.get(instr_cmd)
-            if type(commands) is list:
-                for command in commands:
-                    if type(command) is dict:  # command "block"
-                        datarefs = self.scan_datarefs(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
-                        if len(datarefs) > 0:
-                            r = r | datarefs
-                            logger.debug(f"value {self.name}: added datarefs found in {command}: {datarefs}")
-                    # else command is str, no dref to scan for
-            # else: commands is string or None, no dref to scan for
-
-        # 3. In string datarefs (formula, text, etc.)
-        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
-        self._known_extras = set(extra_keys + allways_extra)
-
-        for key in self._known_extras:
-            text = base.get(key)
-            if text is None:
-                continue
-            if type(text) is dict:
-                datarefs = self.scan_datarefs(base=text, extra_keys=extra_keys)
-                if len(datarefs) > 0:
-                    r = r | datarefs
-                continue
-            if text is not str:
-                text = str(text)
-            datarefs = re.findall(PATTERN_DOLCB, text)
-            datarefs = set(filter(lambda x: InternalVariable.may_be_non_internal_variable(x), datarefs))
-            if len(datarefs) > 0:
-                r = r | datarefs
-                logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
-
-        # Clean up
-        # text: ${formula} replaces text with result of formula
-        if CONFIG_KW.FORMULA.value in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
-            r.remove(CONFIG_KW.FORMULA.value)
-        if None in r:
-            r.remove(None)
-
-        return r
-
-    def deepscan(base: dict | CommentedMap | CommentedSeq) -> set:
-        # Highly ruamel.yaml specific procedure to scan
-        # all dataref in yaml-loaded structure.
-        # Returns a list of all ${} elements.
-        #
-        r = set()
-
-        # Direct use of datarefs:
-        #
-        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
-        for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
-            dataref = base.get(attribute)
-            if dataref is not None:
-                r.add(dataref)
-
-        # 1.2 List of datarefs in attributes
-        for attribute in [CONFIG_KW.SIM_DATA.value, CONFIG_KW.SIM_DATA.value]:
-            datarefs = base.get(attribute)
-            if datarefs is not None:
-                r = r | set(datarefs)
-
-        # 2. In string datarefs (formula, text, etc.)
-        #    Crawl down in dict attribute values
-        for key, value in base.items():
-            if type(value) is str and value != "":
-                r = r | set(re.findall(PATTERN_DOLCB, value))
-            elif type(value) is dict:
-                r = r | deepscan(value)
-            elif type(value) is list:
-                for v in value:
-                    r = r | deepscan(v)
-            elif type(value) is CommentedMap:
-                t = {k: v for k, v in value.items()}
-                r = r | deepscan(t)
-            elif type(value) is CommentedSeq:
-                for v in enumerate(value):
-                    v1 = v[1]
-                    if type(v1) is str and v1 != "":
-                        r = r | set(re.findall(PATTERN_DOLCB, v1))
-                    elif type(v1) is dict:
-                        r = r | deepscan(v[1])
-                    elif type(v1) is CommentedMap:
-                        t = {k: v for k, v in v1.items()}
-                        r = r | deepscan(t)
-                    else:
-                        logger.warning("unprocessed: {v}, {type(v1)}, {v1}")
-
-        if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
-            r.remove("formula")
-        if None in r:
-            r.remove(None)
-
-        return r
-
-    # ##################################
-    # Formula value substitution
-    #
     def get_formula(self, base: dict | None = None) -> str | None:
         if base is not None:
             formula = base.get(CONFIG_KW.FORMULA.value)
@@ -344,6 +108,157 @@ class Value:
             return self._provider.formula
         return None
 
+    def init(self):
+        if self._inited:
+            return
+
+        # String variables
+        self._string_variables = self.string_datarefs
+        if type(self._string_variables) is str:
+            if "," in self._string_variables:
+                self._string_variables = self._string_variables.replace(" ", "").split(",")
+            else:
+                self._string_variables = [self._string_variables]
+
+        # Other variables
+        self._variables = self.scan_variables()  # default to scanning base=self._config
+
+        # Set Variable (variable to set after computation)
+        # there is a special issue if dataref we get value from is also dataref we set
+        # in this case there MUST be a formula to evalute the value before we set it
+        if self.dataref is not None and self.set_dataref is not None:
+            if self.dataref == self.set_dataref:
+                if self.formula == "":
+                    logger.debug(f"formula {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
+                # if formula is None:
+                #     logger.warning(f"formula {self.name}: has no formula, get/set are identical")
+                # else:
+                #     logger.warning(f"formula {self.name}: formula {formula} evaluated before set-dataref")
+
+        if not self.has_domain:
+            return
+        if self.value_min > self.value_max:
+            tmp = self.value_min
+            self.value_min = self.value_max
+            self.value_max = tmp
+        # we have a domain, do we have a snap?
+        if self.value_inc is not None:
+            cnt = self.value_max - self.value_min
+            if self.value_count is None:
+                self.value_count = cnt
+            elif self.value_count != cnt:
+                logger.warning(f"value domain mismatch: value count {self.value_count} != {cnt}")
+        elif self.value_count is not None and self.value_count > 0:
+            self.value_inc = (self.value_max - self.value_min) / self.value_count
+
+    def add_variables(self, variables: set, reason: str | None = None):
+        # Add variables to the value for computation purpose
+        # Used by activation and representation to add to button datarefs
+        if self._variables is None:
+            self._variables = set()
+        self._variables = self._variables | variables
+        logger.debug(f"formula {self.name}: added {len(variables)} variables ({reason})")
+
+    def get_variables(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+        """
+        Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
+        listed dataref and datarefs attributes.
+        This can be applied to the entire button or to a subset (for annunciator parts)
+        """
+        if base is None:  # local, button-level ones
+            if self._variables is not None:  # cached if globals (base is None)
+                return self._variables
+            base = self._config
+
+        self._variables = self.scan_variables(base, extra_keys=extra_keys)
+        logger.debug(f"formula {self.name}: found datarefs {self._variables}")
+        return self._variables
+
+    def get_all_variables(self) -> set:
+        return self._variables | self._string_variables
+
+    def is_self_modified(self):
+        # Determine of the activation of the button directly modifies
+        # a dataref used in computation of the value.
+        return self._set_variable_name in self._variables
+
+    def scan_variables(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+        """
+        scan all datarefs in texts, computed datarefs, or explicitely listed.
+        This is applied to the entire button or to a subset (for annunciator parts for example).
+        String datarefs are treated separately.
+        """
+        r = set()
+
+        # Direct use of datarefs:
+        #
+        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
+        for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
+            dataref = base.get(attribute)
+            if dataref is not None and InternalVariable.may_be_non_internal_variable(dataref):
+                r.add(dataref)
+                logger.debug(f"formula {self.name}: added single dataref {dataref}")
+                self._internal_type = 1
+
+        # 1.2 Multiple
+        datarefs = base.get(CONFIG_KW.SIM_DATA.value)
+        if datarefs is not None:
+            a = []
+            for d in datarefs:
+                if InternalVariable.may_be_non_internal_variable(d):
+                    r.add(d)
+                    a.append(d)
+            logger.debug(f"formula {self.name}: added multiple datarefs {a}")
+            self._internal_type = 2
+
+        # 2. Command with potential conditions
+        for instr_cmd in [CONFIG_KW.COMMAND.value, CONFIG_KW.COMMANDS.value, CONFIG_KW.VIEW.value]:
+            commands = base.get(instr_cmd)
+            if type(commands) is list:
+                for command in commands:
+                    if type(command) is dict:  # command "block"
+                        datarefs = self.scan_variables(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
+                        if len(datarefs) > 0:
+                            r = r | datarefs
+                            logger.debug(f"formula {self.name}: added datarefs found in {command}: {datarefs}")
+                            self._internal_type = 3
+                    # else command is str, no dref to scan for
+            # else: commands is string or None, no dref to scan for
+
+        # 3. In string datarefs (formula, text, etc.)
+        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
+        known_extras = set(extra_keys + allways_extra)
+
+        for key in known_extras:
+            text = base.get(key)
+            if text is None:
+                continue
+            if type(text) is dict:
+                datarefs = self.scan_variables(base=text, extra_keys=extra_keys)
+                if len(datarefs) > 0:
+                    r = r | datarefs
+                continue
+            if text is not str:
+                text = str(text)
+            datarefs = re.findall(PATTERN_DOLCB, text)
+            datarefs = set(filter(lambda x: InternalVariable.may_be_non_internal_variable(x), datarefs))
+            if len(datarefs) > 0:
+                r = r | datarefs
+                logger.debug(f"formula {self.name}: added datarefs found in {key}: {datarefs}")
+                self._internal_type = 4
+
+        # Clean up
+        # text: ${formula} replaces text with result of formula
+        if CONFIG_KW.FORMULA.value in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
+            r.remove(CONFIG_KW.FORMULA.value)
+        if None in r:
+            r.remove(None)
+
+        return r
+
+    # ##################################
+    # Formula value substitution
+    #
     def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
         """
         Replaces ${dataref} with value of dataref in labels and execution formula.
@@ -383,7 +298,7 @@ class Value:
         retmsg = message
         cnt = 0
         for dataref_name in dataref_names:
-            value = self.get_simulator_variable_value(simulator_variable=dataref_name)
+            value = self.get_variable_value(simulator_variable=dataref_name)
             value_str = ""
             if formatting is not None and value is not None:
                 if type(formatting) is list:
@@ -472,7 +387,7 @@ class Value:
         Returns formula result.
         """
         expr = self.substitute_values(text=formula, default=str(default))
-        logger.debug(f"value {self.name}: {formula} => {expr}")
+        logger.debug(f"formula {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
         logger.debug(
@@ -615,46 +530,46 @@ class Value:
         # 1. If there is a formula, value comes from it
         if formula is not None and formula != "":
             ret = self.execute_formula(formula=formula)
-            logger.debug(f"value {self.name}: {ret} (from formula)")
+            logger.debug(f"formula {self.name}: {ret} (from formula)")
             return ret
 
         # 2. One dataref
         if self.dataref is not None and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
-            # if self._simulator_variable[0] in self.page.simulator_variable.keys():  # unnecessary check
-            ret = self.get_simulator_variable_value(simulator_variable=self.dataref)
-            logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
+            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
+            ret = self.get_variable_value(simulator_variable=self.dataref)
+            logger.debug(f"formula {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
 
         # 3. Activation value
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
-            # if self._simulator_variable[0] in self.page.simulator_variable.keys():  # unnecessary check
+            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_activation_value()
             if ret is not None:
                 if type(ret) is bool:
                     ret = 1 if ret else 0
-                logger.debug(f"value {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
+                logger.debug(f"formula {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
                 return ret
 
         # From now on, warning issued since returns non scalar value
         #
         # 4. Multiple datarefs
-        if len(self._simulator_variable) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
+        if len(self._variables) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
             r = {}
-            for d in self.get_all_datarefs():
-                v = self.get_simulator_variable_value(simulator_variable=d)
+            for d in self.get_all_variables():
+                v = self.get_variable_value(simulator_variable=d)
                 r[d] = v
-            logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
+            logger.info(f"formula {self.name}: {r} (no formula, no dataref, returning all datarefs)")
             return r
 
-        logger.warning(f"value {self.name}: no formula, no dataref, no activation")
+        logger.warning(f"formula {self.name}: no formula, no dataref, no activation")
 
         # 4. State variables?
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
             r = self._provider._activation.get_state_variables()
-            logger.info(f"value {self.name}: {r} (from state variables)")
+            logger.info(f"formula {self.name}: {r} (from state variables)")
             return r
 
-        logger.warning(f"value {self.name}: no value")
+        logger.warning(f"formula {self.name}: no value")
         return None
 
     def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
@@ -680,11 +595,68 @@ class Value:
 
     def save(self):
         # Writes the computed button value to set-dataref
-        if self._set_simdata is not None:
+        if self._set_variable is not None:
             new_value = self.get_value()
             if new_value is None:
-                logger.warning(f"value {self.name}: value is None, set to 0")
+                logger.warning(f"formula {self.name}: value is None, set to 0")
                 new_value = 0
-            self._set_simdata.update_value(new_value=new_value, cascade=True)
-            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
-            self._set_simdata.save()
+            self._set_variable.update_value(new_value=new_value, cascade=True)
+            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_variable.name} to button value {new_value}")
+            self._set_variable.save()
+
+    @staticmethod
+    def deepscan(base: dict | CommentedMap | CommentedSeq) -> set:
+        # Highly ruamel.yaml specific procedure to scan
+        # all dataref in yaml-loaded structure.
+        # Returns a list of all ${} elements.
+        #
+        from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
+        r = set()
+
+        # Direct use of datarefs:
+        #
+        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
+        for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
+            dataref = base.get(attribute)
+            if dataref is not None:
+                r.add(dataref)
+
+        # 1.2 List of datarefs in attributes
+        for attribute in [CONFIG_KW.SIM_DATA.value, CONFIG_KW.SIM_DATA.value]:
+            datarefs = base.get(attribute)
+            if datarefs is not None:
+                r = r | set(datarefs)
+
+        # 2. In string datarefs (formula, text, etc.)
+        #    Crawl down in dict attribute values
+        for key, value in base.items():
+            if type(value) is str and value != "":
+                r = r | set(re.findall(PATTERN_DOLCB, value))
+            elif type(value) is dict:
+                r = r | deepscan(value)
+            elif type(value) is list:
+                for v in value:
+                    r = r | deepscan(v)
+            elif type(value) is CommentedMap:
+                t = {k: v for k, v in value.items()}
+                r = r | deepscan(t)
+            elif type(value) is CommentedSeq:
+                for v in enumerate(value):
+                    v1 = v[1]
+                    if type(v1) is str and v1 != "":
+                        r = r | set(re.findall(PATTERN_DOLCB, v1))
+                    elif type(v1) is dict:
+                        r = r | deepscan(v[1])
+                    elif type(v1) is CommentedMap:
+                        t = {k: v for k, v in v1.items()}
+                        r = r | deepscan(t)
+                    else:
+                        logger.warning("unprocessed: {v}, {type(v1)}, {v1}")
+
+        if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
+            r.remove("formula")
+        if None in r:
+            r.remove(None)
+
+        return r

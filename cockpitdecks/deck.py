@@ -101,7 +101,7 @@ class Deck(ABC):
         return ID_SEP.join([self.cockpit.get_id(), self.name, l])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_virtual_deck(self) -> bool:
         return self.deck_type.is_virtual_deck()
@@ -376,7 +376,7 @@ class Deck(ABC):
             if self.current_page is not None:
                 logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
                 logger.debug("..unloading datarefs..")
-                self.cockpit.sim.remove_simulator_data_to_monitor(self.current_page.simulator_data)
+                self.cockpit.sim.remove_simulator_variable_to_monitor(self.current_page.simulator_variable)
                 logger.debug("..cleaning page..")
                 self.current_page.clean()
                 logger.debug(f"..reset device {self.name}..")
@@ -387,7 +387,7 @@ class Deck(ABC):
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
             logger.debug("..loading datarefs..")
-            self.cockpit.sim.add_simulator_data_to_monitor(self.current_page.simulator_data)  # set which datarefs to monitor
+            self.cockpit.sim.add_simulator_variable_to_monitor(self.current_page.simulator_variable)  # set which datarefs to monitor
             logger.debug("..rendering page..")
             self.current_page.render()
             logger.debug(f"deck {self.name} ..done")
@@ -419,7 +419,7 @@ class Deck(ABC):
             else:
                 logger.debug(f"deck {self.name}: no home page named {self.home_page_name}")
                 self.home_page = self.pages[list(self.pages.keys())[0]]  # first page
-            logger.info(f"deck {self.name}: home page {self.home_page.name}")
+            logger.debug(f"deck {self.name}: home page {self.home_page.name}")
 
     def load_home_page(self):
         """Loads the home page, if any."""

@@ -11,7 +11,7 @@ from datetime import datetime
 from queue import Queue
 
 from cockpitdecks import __COPYRIGHT__, FORMAT
-from cockpitdecks.simulator import SimulatorDataListener, SimulatorData
+from cockpitdecks.simulator import SimulatorVariableListener, SimulatorVariable
 from cockpitdecks import CockpitBase
 from cockpitdecks.simulators import XPlane
 
@@ -21,7 +21,7 @@ __version__ = "0.0.1"
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
-class DatarefFetcher(SimulatorDataListener, CockpitBase):
+class DatarefFetcher(SimulatorVariableListener, CockpitBase):
     """Dummy"""
 
     def __init__(self, simulator):
@@ -33,7 +33,7 @@ class DatarefFetcher(SimulatorDataListener, CockpitBase):
 
         self._list = None
         CockpitBase.__init__(self)
-        SimulatorDataListener.__init__(self)
+        SimulatorVariableListener.__init__(self)
 
     def set_logging_level(self, name):
         pass
@@ -44,7 +44,7 @@ class DatarefFetcher(SimulatorDataListener, CockpitBase):
         self.fetch_datarefs(self._list)
         self.sim.add_all_datarefs_to_monitor()
 
-    def simulator_data_changed(self, data: SimulatorData):
+    def simulator_variable_changed(self, data: SimulatorVariable):
         """Core function
 
         Should register dataref changes and store them in some structure.
@@ -64,10 +64,10 @@ class DatarefFetcher(SimulatorDataListener, CockpitBase):
             return
         coll = {}
         for d in self._list:
-            dref = self.sim.get_data(d)
+            dref = self.sim.get_variable(d)
             dref.add_listener(self)
             coll[d] = dref
-        self.sim.add_simulator_data_to_monitor(coll)
+        self.sim.add_simulator_variable_to_monitor(coll)
 
     def run(self):
         # Start reload loop

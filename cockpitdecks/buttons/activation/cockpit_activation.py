@@ -298,7 +298,7 @@ class Obs(Activation):
             name=INSTRUCTION_PREFIX + "obs", observable=self.observable, action=self._config.get(CONFIG_KW.ACTION.value, "toggle")
         )
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         if self.observable is not None:
             return {ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.observable])}
         return set()

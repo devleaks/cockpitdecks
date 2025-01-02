@@ -17,7 +17,7 @@ from .iconfonts import (
     DEFAULT_WEATHER_ICON,
 )
 
-from cockpitdecks.simulator import SimulatorData
+from cockpitdecks.simulator import SimulatorVariable
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -275,14 +275,14 @@ class StationCollector:
         self._inited = True
         pass
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         ret = {LATITUDE, LONGITUDE}
         if self.icao_dataref_path is not None:
             ret.add(self.icao_dataref_path)
         return ret
 
-    def simulator_data_changed(self, data: SimulatorData):
-        # what if Dataref.internal_dataref_path("weather:*") change?
+    def simulator_variable_changed(self, data: SimulatorVariable):
+        # what if Dataref.internal_variableref_path("weather:*") change?
         if self.icao_dataref_path is not None:
             if data.name != self.icao_dataref_path:
                 return
@@ -296,8 +296,8 @@ class StationCollector:
             return
         # then check with lat/lon
         # If we are at the default station, we check where we are to see if we moved.
-        lat = self.cockpit.get_simulator_data_value(LATITUDE)
-        lon = self.cockpit.get_simulator_data_value(LONGITUDE)
+        lat = self.cockpit.get_simulator_variable_value(LATITUDE)
+        lon = self.cockpit.get_simulator_variable_value(LONGITUDE)
 
         if lat is not None and lon is not None:
             (nearest, coords) = Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)

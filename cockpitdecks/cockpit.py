@@ -51,8 +51,6 @@ from cockpitdecks import (
     DEFAULT_LAYOUT,
     ENVIRON_KW,
     EXCLUDE_DECKS,
-    FLIGHT_PHASE_ECAM,
-    FLIGHT_PHASE_QPAC,
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
@@ -72,7 +70,8 @@ from cockpitdecks import (
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import Simulator, NoSimulator, SimulatorData, SimulatorDataListener, SimulatorEvent
+from cockpitdecks.variable import InternalVariable, Variable
+from cockpitdecks.simulator import Simulator, NoSimulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
 from cockpitdecks.instruction import Instruction, InstructionProvider
 from cockpitdecks.observable import Observables
 
@@ -326,7 +325,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
+class Cockpit(SimulatorVariableListener, InstructionProvider, CockpitBase):
     """
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
@@ -336,7 +335,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._startup_time = datetime.now()
 
         CockpitBase.__init__(self)
-        SimulatorDataListener.__init__(self)
+        SimulatorVariableListener.__init__(self)
 
         # Defaults and config
         self._environ = environ
@@ -369,6 +368,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.all_representations: Dict[str, Representation] = {}
         self.all_hardware_representations: Dict[str, Representation] = {}
         self.all_deck_drivers = {}  # Dict[str, Device], one day
+
+        self.all_variable = {}
 
         # "Aircraft" name or model...
         self._ac_ready = False
@@ -420,7 +421,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._simulator_name = environ.get(ENVIRON_KW.SIMULATOR_NAME.value)
         self._simulator = None
         self.sim = None
-        self._simulator_data_names = PERMANENT_SIMULATOR_DATA
+        self._simulator_variable_names = PERMANENT_SIMULATOR_DATA
 
         # Internal variables
         self.named_colors = NAMED_COLORS
@@ -429,7 +430,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.default_pages = None  # current pages on decks when reloading
         self.theme = None
         self.mode = 0
-        self._livery_dataref = None  # self.sim.get_internal_data(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
+        self._livery_dataref = None  # self.sim.get_internal_variable(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
         self._acname = ""
         self._livery_path = ""
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
@@ -487,7 +488,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self._simulator = self.all_simulators[self._simulator_name]
         self.sim = self._simulator(self, self._environ)
         logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
-        self._livery_dataref = self.sim.get_internal_data(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
+        self._livery_dataref = self.sim.get_internal_variable(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
         self._livery_dataref.update_value(new_value=None, cascade=False)  # init
         if self.cockpitdecks_path is not None:
             logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
@@ -499,7 +500,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         # Here, it is purely statistics
         if self.sim is not None:
-            self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+            self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def set_default(self, dflt, value):
         if not dflt.startswith(DEFAULT_ATTRIBUTE_PREFIX):
@@ -515,6 +516,52 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
     def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
+
+    def register(self, variable: Variable) -> Variable:
+        """Registers a Variable
+
+        Args:
+            variable ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        if variable.name is None:
+            logger.warning(f"invalid variable name {variable.name}, not registered")
+            return None
+        if variable.name not in self.all_variable:
+            # variable._sim = self
+            # self.set_rounding(variable)
+            # self.set_frequency(variable)
+            self.all_variable[variable.name] = variable
+        else:
+            logger.debug(f"variable name {variable.name} already registered")
+        return variable
+
+    def get_variable(self, name: str, factory, is_string: bool = False) -> Variable:
+        """Returns data or create a new one, internal if path requires it"""
+        if name in self.all_variable.keys():
+            return self.all_variable[name]
+        return self.register(variable=factory.variable_factory(name=name, is_string=is_string))
+
+    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+        """Returns data or create a new one, internal if path requires it"""
+        return InternalVariable(name=name, is_string=is_string)
+
+    def get_variable_value(self, name, default=None) -> Any | None:
+        """Gets the value of a Variable monitored by Cockpitdecks
+        Args:
+            simulator_variable ([type]): [description]
+            default ([type]): [description] (default: `None`)
+
+        Returns:
+            [type]: [description]
+        """
+        v = self.all_variable.get(name)
+        if v is None:
+            logger.warning(f"{name} not found")
+            return None
+        return v.current_value if v.current_value is not None else default
 
     @staticmethod
     def all_subclasses(cls) -> list:
@@ -601,13 +648,13 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         logger.debug(f"..loaded")
         logger.info(f"loaded extensions {", ".join(loaded)}")
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified."""
-        ret = self._simulator_data_names
+        ret = self._simulator_variable_names
         # Observables gets notified themselves
         # if len(self.observables) > 0:
         #     for o in self.observables.values():
-        #         ret = ret | o.get_simulator_data()
+        #         ret = ret | o.get_simulator_variable()
         return ret
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
@@ -759,7 +806,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
     def inspect_datarefs(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
-            for dref in self.sim.all_simulator_data.values():
+            for dref in self.sim.all_simulator_variable.values():
                 logger.info(f"{dref.name} = {dref.value()} ({len(dref.listeners)} lsnrs)")
                 if what.endswith("listener"):
                     for l in dref.listeners:
@@ -768,7 +815,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
             logger.info("to do")
 
     def inspect_monitored(self, what: str | None = None):
-        for dref in self.sim.simulator_data.values():
+        for dref in self.sim.simulator_variable.values():
             logger.info(f"{dref}")
 
     def scan_devices(self):
@@ -1012,8 +1059,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         self.set_logging_level(__name__)
 
         if self.sim is not None:
-            self.sim.set_simulator_data_roundings(self._resources_config.get("dataref-roundings", {}))
-            self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
+            self.sim.set_simulator_variable_roundings(self._resources_config.get("dataref-roundings", {}))
+            self.sim.set_simulator_variable_frequencies(simulator_variable_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # XXX
         # Check availability of expected default fonts
@@ -1149,8 +1196,8 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
         # 1. Adjust some settings in global config file.
         if self.sim is not None:
-            self.sim.set_simulator_data_roundings(self._config.get("dataref-roundings", {}))
-            self.sim.set_simulator_data_frequencies(simulator_data_frequencies=self._config.get("dataref-fetch-frequencies", {}))
+            self.sim.set_simulator_variable_roundings(self._config.get("dataref-roundings", {}))
+            self.sim.set_simulator_variable_frequencies(simulator_variable_frequencies=self._config.get("dataref-fetch-frequencies", {}))
             self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
         # 2. Create decks
@@ -1939,7 +1986,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         return None
 
     def change_aircraft(self):
-        data = self.sim.all_simulator_data.get(AIRCRAFT_CHANGE_MONITORING_DATAREF)
+        data = self.sim.all_simulator_variable.get(AIRCRAFT_CHANGE_MONITORING_DATAREF)
         if data is None:
             logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
             return
@@ -2000,13 +2047,12 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
         else:
             logger.info(f"aircraft unchanged ({self._acname}, {self.acpath})")
 
-    def simulator_data_changed(self, data: SimulatorData):
+    def simulator_variable_changed(self, data: SimulatorVariable):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if not isinstance(data, SimulatorData) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_data_names]:
+        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
             logger.warning(f"unhandled {data.name}={data.value()}")
-            print(">>>>", [l.name for l in data.listeners])
             return
         # Now performed by observable
         # if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
@@ -2014,7 +2060,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
 
     def terminate_aircraft(self):
         logger.info("terminating aircraft..")
-        drefs = {d.name: d.value() for d in self.sim.all_simulator_data.values()}  #  if d.is_internal
+        drefs = {d.name: d.value() for d in self.sim.all_simulator_variable.values()}  #  if d.is_internal
         fn = "datarefs-log.yaml"
         with open(fn, "w") as fp:
             yaml.dump(drefs, fp)
@@ -2157,7 +2203,7 @@ class Cockpit(SimulatorDataListener, InstructionProvider, CockpitBase):
                     client_list.remove(ws)
         else:
             if deck not in self.vd_errs:
-                logger.warning(f"no client for {deck}")
+                logger.debug(f"no client for {deck}")  # warning
                 self.vd_errs.append(deck)
         return sent
 

@@ -154,6 +154,7 @@ class CONFIG_KW(Enum):
     COMMAND = "command"
     COMMANDS = "commands"
     CONDITION = "condition"
+    DATA_TYPE = "data-type"
     DECK = "deck"
     DECKS = "decks"
     DECOR = "decor"
@@ -181,8 +182,8 @@ class CONFIG_KW(Enum):
     ONCHANGE = "onchange"
     OPTIONS = "options"
     SERIAL = "serial"
-    SET_SIM_DATUM = "set-dataref"
-    SIM_DATUM = "dataref"
+    SET_SIM_VARIABLE = "set-dataref"
+    SIM_VARIABLE = "dataref"
     SIM_DATA = "multi-datarefs"
     STRING_SIM_DATA = "string-datarefs"
     STRING_PREFIX = "string:"
@@ -201,7 +202,7 @@ class CONFIG_KW(Enum):
 
 
 class CONFIG_KW_ALIASES(Enum):
-    SIM_DATUM = {"dataref", "simvar", "simdata"}
+    SIM_VARIABLE = {"dataref", "simvar", "simdata"}
     SIM_DATA = {"multi-datarefs", "multi-simvars", "multi-simdata"}
 
 
@@ -267,41 +268,6 @@ class DECK_FEEDBACK(Enum):
     VIBRATE = "vibrate"
 
 
-#
-# Flight Phases
-#
-FLIGHT_PHASE_ECAM = [
-    "OFF",  # 0
-    "ELEC POWER",
-    "FIRST ENG STARTED",
-    "FIRST ENG TO POWER",
-    "80KT",
-    "LIFT OFF",
-    "1500 FT",
-    "800 FT",
-    "TOUCHDOWN",
-    "80KT",
-    "2ND ENG SHUTDOWN",
-    "5 MIN AFTER",  # 10
-]
-
-FLIGHT_PHASE_QPAC = [
-    "OFF",  # 0
-    "ELEC POWER",
-    "SECOND ENGINE START",
-    "FIRST ENG T.O. POWER",
-    "70KT",
-    "LIFT OFF",
-    "LIST OFF + 1 MINUTE OR 400FT",
-    "1000FTUP",
-    "1000FTDW",
-    "400FT",
-    "TOUCH DOWN",
-    "70KT",
-    "FIRST ENG SHUTDOWN",
-    "5 MINUTES AFTER SECOND ENG SHUT DOWN",  # 13
-]
-
 # ############################################################
 #
 # Prevent aliasing
@@ -311,7 +277,7 @@ ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 
-init_logger = logging.getLogger("init/common")
+init_logger = logging.getLogger(__name__)
 init_logger.setLevel(logging.WARNING)
 
 #

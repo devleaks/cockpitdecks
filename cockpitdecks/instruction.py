@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from cockpitdecks import CONFIG_KW
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(SPAM_LEVEL)  # To see when simulator_data are updated
+# logger.setLevel(SPAM_LEVEL)  # To see when simulator_variable are updated
 # logger.setLevel(logging.DEBUG)
 
 

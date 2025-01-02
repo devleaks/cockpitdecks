@@ -58,6 +58,13 @@ class INTERNAL_DATAREF(Enum):
     # U D P
     #
     INTDREF_CONNECTION_STATUS = "_connection_status"
+    # Status value:
+    # 0: Nothing running
+    # 1: Connection monitor running
+    # 2: Connection to X-Plane but no more
+    # 3: UDP listener running (no timeout)
+    # 4: Event forwarder running
+
     # Number of UDP packet received
     UDP_BEACON_RCV = "udp_beacon_received"
     UDP_BEACON_TIMEOUT = "udp_beacon_timeout"

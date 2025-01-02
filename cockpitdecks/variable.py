@@ -1,4 +1,4 @@
-# Base classes for interface with the simulation software
+# Base classes for variables, either internal or from the simulator
 #
 from __future__ import annotations
 import logging
@@ -11,14 +11,14 @@ from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(SPAM_LEVEL)  # To see when simulator_data are updated
+# logger.setLevel(SPAM_LEVEL)  # To see when simulator_variable are updated
 # logger.setLevel(logging.DEBUG)
 
 
 # ########################################
-# Data conventions
+# Variable conventions
 #
-# "internal" simulator_data (not exported to X-Plane) start with that prefix
+# "internal" simulator_variable (not exported to X-Plane) start with that prefix
 INTERNAL_DATA_PREFIX = "data:"
 INTERNAL_STATE_PREFIX = "state:"
 BUTTON_VARIABLE_PREFIX = "button:"
@@ -32,7 +32,7 @@ PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
 PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
 
 
-class InternalDataType(Enum):
+class InternalVariableType(Enum):
     INTEGER = "int"
     FLOAT = "float"
     BYTE = "byte"
@@ -42,18 +42,18 @@ class InternalDataType(Enum):
     ARRAY_BYTES = "array_byte"
 
 
-class Data(ABC):
-    """An Data is a typed value holder for Cockpitdecks.
+class Variable(ABC):
+    """An Variable is a typed value holder for Cockpitdecks.
     All data are kept inside the Simulator:
-       - Simulator Data
-       - Internal Data
+       - Simulator Variable
+       - Internal Variable
     This eases data mangement, all data is at the same place.
     The value of a data is "alive", it changes, gets updated, notifies those who depend on it, etc.
     """
 
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         self.name = name
-        self.data_type = InternalDataType(data_type)
+        self.data_type = InternalVariableType(data_type)
         self.physical_unit = physical_unit
 
         # Stats
@@ -75,10 +75,10 @@ class Data(ABC):
 
         self._sim = None
 
-        self.listeners: List[DataListener] = []  # buttons using this simulator_data, will get notified if changes.
+        self.listeners: List[VariableListener] = []  # buttons using this simulator_variable, will get notified if changes.
 
     @staticmethod
-    def might_be_simulator_data(path: str) -> bool:
+    def may_be_non_internal_variable(path: str) -> bool:
         # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
         # At the end, we are not sure it is a dataref, but wea re sure non-datarefs are excluded ;-)
         PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
@@ -88,12 +88,12 @@ class Data(ABC):
         return path != CONFIG_KW.FORMULA.value
 
     @staticmethod
-    def is_internal_data(path: str) -> bool:
+    def is_internal_variable(path: str) -> bool:
         return path.startswith(INTERNAL_DATA_PREFIX)
 
     @staticmethod
-    def internal_data_name(path: str) -> str:
-        if not Data.is_internal_data(path):  # prevent duplicate prepend
+    def internal_variable_name(path: str) -> str:
+        if not Variable.is_internal_variable(path):  # prevent duplicate prepend
             return INTERNAL_DATA_PREFIX + path
         return path  # already startswith INTERNAL_DATA_PREFIX
 
@@ -103,7 +103,7 @@ class Data(ABC):
 
     @property
     def is_string(self) -> bool:
-        return self.data_type == InternalDataType.STRING
+        return self.data_type == InternalVariableType.STRING
 
     @property
     def rounding(self):
@@ -177,14 +177,14 @@ class Data(ABC):
         return False
 
     def add_listener(self, obj):
-        if not isinstance(obj, DataListener):
+        if not isinstance(obj, VariableListener):
             logger.warning(f"{self.name} not a listener {obj}")
         if obj not in self.listeners:
             self.listeners.append(obj)
         logger.debug(f"{self.name} added listener ({len(self.listeners)})")
 
     def remove_listener(self, obj):
-        if not isinstance(obj, DataListener):
+        if not isinstance(obj, VariableListener):
             logger.warning(f"{self.name} not a listener {obj}")
         if obj in self.listeners:
             self.listeners.remove(obj)
@@ -192,7 +192,7 @@ class Data(ABC):
 
     def notify(self):
         for lsnr in self.listeners:
-            lsnr.simulator_data_changed(self)
+            lsnr.variable_changed(self)
             if hasattr(lsnr, "page") and lsnr.page is not None:
                 logger.log(
                     SPAM_LEVEL,
@@ -208,8 +208,8 @@ class Data(ABC):
         pass
 
 
-class DataListener(ABC):
-    """A DataListener is an entity that is interested in being notified
+class VariableListener(ABC):
+    """A VariableListener is an entity that is interested in being notified
     when a data changes.
     """
 
@@ -217,16 +217,16 @@ class DataListener(ABC):
         self.name = name
 
     @abstractmethod
-    def data_changed(self, data: Data):
+    def variable_changed(self, data: Variable):
         pass
 
 
-class InternalData(Data):
-    """A InternalData is a data internal to Cockpitdecks.
+class InternalVariable(Variable):
+    """A InternalVariable is a data internal to Cockpitdecks.
     It is used internally, but it can be used by Value.
     """
 
     def __init__(self, name: str, is_string: bool = False):
         if not name.startswith(INTERNAL_DATA_PREFIX):
             name = INTERNAL_DATA_PREFIX + name
-        Data.__init__(self, name=name, data_type="string" if is_string else "float")
+        Variable.__init__(self, name=name, data_type="string" if is_string else "float")
