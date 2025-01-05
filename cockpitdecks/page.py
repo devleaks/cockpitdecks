@@ -5,7 +5,7 @@ from typing import Dict
 
 from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from cockpitdecks.simulator import SimulatorVariable
 from .button import Button, DECK_BUTTON_DEFINITION
 

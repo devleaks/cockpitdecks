@@ -16,7 +16,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_co
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.representation import IconBase
 from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from .page import Page
 from .button import Button
 
@@ -375,7 +375,7 @@ class Deck(ABC):
         if page in self.pages.keys():
             if self.current_page is not None:
                 logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
-                logger.debug("..unloading datarefs..")
+                logger.debug("..unloading simulator variables..")
                 self.cockpit.sim.remove_simulator_variable_to_monitor(self.current_page.simulator_variable)
                 logger.debug("..cleaning page..")
                 self.current_page.clean()
@@ -386,8 +386,8 @@ class Deck(ABC):
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
-            logger.debug("..loading datarefs..")
-            self.cockpit.sim.add_simulator_variable_to_monitor(self.current_page.simulator_variable)  # set which datarefs to monitor
+            logger.debug("..loading simulator variables..")
+            self.cockpit.sim.add_simulator_variable_to_monitor(self.current_page.simulator_variable)  # set simulator variables to monitor
             logger.debug("..rendering page..")
             self.current_page.render()
             logger.debug(f"deck {self.name} ..done")

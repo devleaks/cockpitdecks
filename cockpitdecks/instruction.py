@@ -12,18 +12,18 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class InstructionProvider:
-    """An InstructionProvider is an entity capable of generating instructions
+class InstructionFactory:
+    """An InstructionFactory is an entity capable of generating instructions
     Often, the entity generates instruction it will perform.
     """
 
     def instruction_factory(self, **kwargs) -> Instruction:
-        raise NotImplementedError("Please implement InstructionProvider.instruction_factory method")
+        raise NotImplementedError("Please implement InstructionFactory.instruction_factory method")
 
 
 class Instruction(ABC):
     """An Instruction to execute an action by a Performer.
-    Often, the Performer is an InstructionProvider and generates the Instruction it will later execute.
+    Often, the Performer is an InstructionFactory and generates the Instruction it will later execute.
     """
 
     INSTRUCTION_NAME = "undefined"

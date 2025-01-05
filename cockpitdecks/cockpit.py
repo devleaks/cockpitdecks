@@ -69,10 +69,10 @@ from cockpitdecks import (
 )
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from cockpitdecks.variable import InternalVariable, Variable
 from cockpitdecks.simulator import Simulator, NoSimulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
-from cockpitdecks.instruction import Instruction, InstructionProvider
+from cockpitdecks.instruction import Instruction, InstructionFactory
 from cockpitdecks.observable import Observables
 
 # from cockpitdecks.simulators.xplane import DatarefEvent
@@ -325,7 +325,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(SimulatorVariableListener, InstructionProvider, CockpitBase):
+class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     """
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.

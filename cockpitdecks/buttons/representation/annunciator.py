@@ -9,7 +9,6 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import convert_color, light_off, is_number
-from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.simulator import SimulatorVariable
 from cockpitdecks.value import Value
 

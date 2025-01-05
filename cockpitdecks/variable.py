@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # "internal" simulator_variable (not exported to X-Plane) start with that prefix
 INTERNAL_DATA_PREFIX = "data:"
 INTERNAL_STATE_PREFIX = "state:"
-BUTTON_VARIABLE_PREFIX = "button:"
+BUTTON_PREFIX = "button:"
 PREFIX_SEP = ":"
 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
@@ -29,7 +29,7 @@ PREFIX_SEP = ":"
 # ?: does not return capturing group
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
-PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
+PATTERN_BUTTONVAR = f"\\${{{BUTTON_PREFIX}([^\\}}]+?)}}"
 
 
 class InternalVariableType(Enum):
@@ -80,8 +80,8 @@ class Variable(ABC):
     @staticmethod
     def may_be_non_internal_variable(path: str) -> bool:
         # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
-        # At the end, we are not sure it is a dataref, but wea re sure non-datarefs are excluded ;-)
-        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
+        # At the end, we are not sure it is a dataref, but we are sure non-datarefs are excluded ;-)
+        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_PREFIX[:-1]]
         for start in PREFIX:
             if path.startswith(start + PREFIX_SEP):
                 return False
@@ -90,6 +90,10 @@ class Variable(ABC):
     @staticmethod
     def is_internal_variable(path: str) -> bool:
         return path.startswith(INTERNAL_DATA_PREFIX)
+
+    @staticmethod
+    def is_internal_state_variable(path: str) -> bool:
+        return path.startswith(INTERNAL_STATE_PREFIX)
 
     @staticmethod
     def internal_variable_name(path: str) -> str:
@@ -168,12 +172,12 @@ class Variable(ABC):
             self._last_changed = now()
             logger.log(
                 SPAM_LEVEL,
-                f"dataref {self.name} updated {self.previous_value} -> {self.current_value}",
+                f"variable {self.name} updated {self.previous_value} -> {self.current_value}",
             )
             if cascade:
                 self.notify()
             return True
-        # logger.error(f"dataref {self.name} updated")
+        # logger.error(f"variable {self.name} updated")
         return False
 
     def add_listener(self, obj):
@@ -219,6 +223,14 @@ class VariableListener(ABC):
     @abstractmethod
     def variable_changed(self, data: Variable):
         pass
+
+
+class VariableFactory:
+    """A VariableFactory has a function to generate variable for its own use."""
+
+    @abstractmethod
+    def variable_factory(self, name: str, factory, is_string: bool = False) -> Variable:
+        raise NotImplemented
 
 
 class InternalVariable(Variable):

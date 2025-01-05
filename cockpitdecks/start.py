@@ -539,7 +539,7 @@ def cockpit_wshandler():
                 deck = data.get("deck")
                 if deck is None:  # sim event
                     cockpit.replay_sim_event(data=data)
-                    # app.logger.info(f"dataref event processed, data={data}")
+                    # app.logger.info(f"event processed, data={data}")
                 else:
                     key = data.get("key")
                     event = data.get("event")

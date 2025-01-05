@@ -12,7 +12,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 
 from cockpitdecks import DEFAULT_PAGE_NAME
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
 

@@ -11,7 +11,7 @@ from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable
 from cockpitdecks import CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM

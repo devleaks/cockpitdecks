@@ -13,7 +13,7 @@ from enum import Enum
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
 from cockpitdecks.variable import Variable, VariableListener, InternalVariable, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
-from cockpitdecks.instruction import InstructionProvider, Instruction, NoOperation
+from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
@@ -33,10 +33,10 @@ logger = logging.getLogger(__name__)
 # ########################################
 # Simulator
 #
-class SimulatorVariableProvider:
+class SimulatorVariableFactory:
 
     def simulator_variable_factory(self, name: str, data_type: str = "float", physical_unit: str = "") -> SimulatorVariable:
-        raise NotImplementedError("Please implement SimulatorVariableProvider.simulator_variable_factory method")
+        raise NotImplementedError("Please implement SimulatorVariableFactory.simulator_variable_factory method")
 
 
 class SimulatorVariableConsumer(ABC):
@@ -47,7 +47,7 @@ class SimulatorVariableConsumer(ABC):
         return set()
 
 
-class Simulator(ABC, InstructionProvider, SimulatorVariableProvider):
+class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
@@ -178,7 +178,7 @@ class Simulator(ABC, InstructionProvider, SimulatorVariableProvider):
             return self.all_simulator_variable[name]
         if Variable.is_internal_variable(path=name):
             return self.register(simulator_variable=InternalVariable(name=name, is_string=is_string))
-        return self.register(simulator_variable=Variable(name=name, data_type="string" if is_string else "float"))
+        return self.register(simulator_variable=SimulatorVariable(name=name, data_type="string" if is_string else "float"))
 
     def get_internal_variable(self, name: str, is_string: bool = False) -> Variable:
         """Returns the InternalVariable or creates it if it is the first time it is accessed.
@@ -321,7 +321,7 @@ class NoSimulator(Simulator):
         Simulator.__init__(self, cockpit, environ)
 
     def instruction_factory(self, **kwargs) -> Instruction:
-        logger.warning("NoSimulator executes no instruction")
+        # logger.warning("NoSimulator executes no instruction")
         logger.debug(f"({kwargs})")
         return NoOperation(kwargs=kwargs)
 

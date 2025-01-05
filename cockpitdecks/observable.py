@@ -119,7 +119,7 @@ class Observable(SimulatorVariableListener):
         logger.info(f"observable {self.name} disabled")
 
     def init(self):
-        # Register datarefs and ask to be notified
+        # Register simulator variables and ask to be notified
         simdata = self._value.get_simulator_variable()
         if simdata is not None:
             for s in simdata:
