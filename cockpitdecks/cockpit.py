@@ -2077,10 +2077,10 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self._ac_icons = {}
         self._ac_sounds = {}
         self._ac_observables = {}
-        nt = len(threading.enumerate())
-        if nt > 1:
-            logger.info(f"{nt} threads")
-            logger.info(f"{[t.name for t in threading.enumerate()]}")
+        nt = threading.enumerate()
+        if len(nt) > 1:
+            logger.info(f"{len(nt)} threads")
+            logger.info(f"{[t.name for t in nt]}")
         logger.info(f"..aircraft {os.path.basename(self.acpath)} terminated " + "✈ " * 30)
 
     def terminate_devices(self):
@@ -2115,11 +2115,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         logger.info("..usb monitoring stopped..")
         self.terminate_devices()
         logger.info("..done")
-        left = len(threading.enumerate())
-        if left > threads:  # [MainThread and spinner]
-            logger.error(f"{left} threads remaining")
-            logger.error(f"{[t.name for t in threading.enumerate()]}")
-        # logger.info(self._reqdfts)
+        nt = threading.enumerate()
+        if len(nt) > 1:
+            logger.error(f"{len(nt)} threads remaining")
+            logger.error(f"{[t.name for t in nt]}")
+        else:
+            logger.info("no pending thread")
         logger.info("..cockpit terminated")
 
     def run(self, release: bool = False):

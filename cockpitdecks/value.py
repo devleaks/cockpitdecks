@@ -18,7 +18,6 @@ from cockpitdecks.buttons.activation import Activation
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
 from .resources.rpc import RPC
-from .formula import Formula
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -109,11 +108,6 @@ class Value:
                 #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
                 # else:
                 #     logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
-
-        # TEST
-        if type(self._button).__name__ == "Button" and self._button._config.get(CONFIG_KW.FORMULA.value) is not None:
-            self._test_formula = Formula(self._button)
-        # TEST
 
         if not self.has_domain:
             return

@@ -9,10 +9,14 @@ import re
 from cockpitdecks.constant import CONFIG_KW
 from cockpitdecks.variable import Variable, VariableListener, PATTERN_DOLCB, INTERNAL_DATA_PREFIX, INTERNAL_STATE_PREFIX
 
+# from cockpitdecks.value import SimulatorVariableValueProvider, StateVariableValueProvider, ActivationValueProvider
+
 from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+FORMULA_NS = uuid.uuid4()
 
 
 class Formula(Variable, VariableListener):
@@ -22,12 +26,20 @@ class Formula(Variable, VariableListener):
     or an expression that combines several variables.
     """
 
-    def __init__(self, button, data_type: str = "float", default_value=0.0, format_str: str = None):
-        name = f"{button.get_id()}|{uuid.uuid4()}"  # one button may have several formulas like annunciators that can have up to 4
+    def __init__(self, owner, formula: str | None = None, data_type: str = "float", default_value=0.0, format_str: str | None = None):
+        key = ""
+        if formula is None and type(owner).__name__ == "Button":
+            formula = owner._config.get(CONFIG_KW.FORMULA.value)
+        if formula is None:
+            logger.warning(f"{owner.get_id()}: no formula")
+            key = uuid.uuid4()
+        else:
+            key = uuid.uuid3(namespace=FORMULA_NS, name=str(formula))
+        name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
         Variable.__init__(self, name=name, data_type=data_type)
         self.default_value = default_value
         self.format_str = format_str
-        self.button = button
+        self.owner = owner
 
         # Used in formula
         self._tokens = {}  # "${path}": path
@@ -39,7 +51,7 @@ class Formula(Variable, VariableListener):
         if len(self._variables) > 0:
             logger.debug(f"formula {self.display_name}: using variables {', '.join(self._tokens.values())}")
             for varname in self._tokens.values():
-                v = self.button.sim.get_variable(varname)
+                v = self.owner.sim.get_variable(varname)
                 v.add_listener(self)
         # else:
         #     logger.debug(f"formula {self.display_name}: constant {self.formula}")
@@ -52,7 +64,25 @@ class Formula(Variable, VariableListener):
     @property
     def formula(self):
         """we remain read-only here"""
-        return self.button._config.get(CONFIG_KW.FORMULA.value)
+        return self.owner._config.get(CONFIG_KW.FORMULA.value)
+
+    def get_simulator_variable_value(self, simulator_variable, default=None):
+        if hasattr(self.owner, "get_simulator_variable_value"):
+            return self.owner.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
+        logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
+        return None
+
+    def get_state_variable_value(self, state):
+        if hasattr(self.owner, "get_state_variable_value"):
+            return self.owner.get_state_variable_value(state)
+        logger.warning(f"formula {self.display_name}: no get_state_variable_value for {state}")
+        return None
+
+    def get_activation_value(self):
+        if hasattr(self.owner, "get_activation_value"):
+            return self.owner.get_activation_value()
+        logger.warning(f"formula {self.display_name}: no get_activation_value")
+        return None
 
     def compute(self):
         value = self.execute_formula()
@@ -106,9 +136,9 @@ class Formula(Variable, VariableListener):
         for token in self._tokens:
             value = self.default_value
             if token.startswith(INTERNAL_DATA_PREFIX):
-                value = self.button.get_variable_value(token)
+                value = self.owner.get_variable_value(token)
             elif token.startswith(INTERNAL_STATE_PREFIX):
-                value = self.button.get_state_variable_value(token)
+                value = self.owner.get_state_variable_value(token)
             text = text.replace(token, str(value))
         return text
 

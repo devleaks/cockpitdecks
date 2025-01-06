@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-DECK_BUTTON_DEFINITION = "_deck_def"
+DECK_BUTTON_DEFINITION = "_deck_def"  # warning: this attribute MUST match an attribute in JSON/JavaScript object in jinja templates
 
 
 class Button(SimulatorVariableListener, SimulatorVariableValueProvider, StateVariableValueProvider, ActivationValueProvider):

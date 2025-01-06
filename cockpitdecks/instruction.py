@@ -6,6 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from cockpitdecks import CONFIG_KW
+from cockpitdecks.formula import Formula
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when simulator_variable are updated
@@ -29,18 +30,18 @@ class Instruction(ABC):
     INSTRUCTION_NAME = "undefined"
 
     def __init__(self, name: str, **kwargs) -> None:
-        super().__init__()
         self.name = name
         self.performer = kwargs.get("performer")
-        delay = kwargs.get("delay")
-        self.delay = delay if delay is not None else 0
+        self.delay = kwargs.get("delay", 0)
         self.condition = kwargs.get("condition")
-
         self._timer = None
 
     @classmethod
     def name(cls) -> str:
         return cls.INSTRUCTION_NAME
+
+    def __str__(self) -> str:
+        return f"{self.INSTRUCTION_NAME} {self.name}"
 
     @staticmethod
     def all_subclasses(cls) -> list:
@@ -104,6 +105,8 @@ class MacroInstruction(Instruction):
     (Could have been called Instructions (plural form))
     """
 
+    INSTRUCTION_NAME = "macro"
+
     def __init__(self, name: str, instructions: dict, **kwargs):
         Instruction.__init__(self, name=name, **kwargs)
         self.instructions = instructions
@@ -111,7 +114,7 @@ class MacroInstruction(Instruction):
         self.init()
 
     def __str__(self) -> str:
-        return self.name + f" ({', '.join([c.name for c in self._instructions])})"
+        return f"{super()} ({', '.join([c.name for c in self._instructions])})"
 
     def init(self):
         total_delay = 0
@@ -138,16 +141,15 @@ class MacroInstruction(Instruction):
 
 class NoOperation(Instruction):
 
+    INSTRUCTION_NAME = "no-op"
+
     def __init__(self, **kwargs):
         name = kwargs.get(CONFIG_KW.NAME.value)
         if name is None:
-            name = "no operation"
+            name = self.INSTRUCTION_NAME
         else:
             del kwargs[CONFIG_KW.NAME.value]
         Instruction.__init__(self, name=name, kwargs=kwargs)
-
-    def __str__(self) -> str:
-        return self.name + f" (no operation)"
 
     def _check_condition(self):
         # condition checked in each individual instruction
