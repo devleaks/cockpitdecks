@@ -76,7 +76,7 @@ class Push(Activation):
                 self.onoff_current_value = self.initial_value != 0
 
     def __str__(self):  # print its status
-        return super() + "\n" + ", ".join([f"command: {self._command}", f"is_valid: {self.is_valid()}"])
+        return str(super()) + "\n" + ", ".join([f"command: {self._command}", f"is_valid: {self.is_valid()}"])
 
     def set_auto_repeat(self):
         if not self.auto_repeat:
@@ -1544,7 +1544,7 @@ class Mosaic(Activation):
         self.pressed = False  # True while the button is pressed, False when released
 
     def __str__(self):  # print its status
-        return super() + "\n" + f", is_valid: {self.is_valid()}"
+        return str(super()) + "\n" + f", is_valid: {self.is_valid()}"
 
     def is_valid(self):
         return super().is_valid()

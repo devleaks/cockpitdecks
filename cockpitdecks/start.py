@@ -283,6 +283,7 @@ if args.install_plugin:
 # We do not do anthing else when installing the plugin, which should only occurs once
 # or when the plugin is upgraded
 
+
 # COCKPITDECKS_PATH
 #
 def add_env(env, paths):

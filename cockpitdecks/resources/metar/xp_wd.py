@@ -7,6 +7,8 @@
 #
 # Script contains a __main__ section to test it in place.
 #
+# The name xp_wd.py stands for X-Plane Weather Data.
+#
 import os
 import io
 import re
@@ -24,13 +26,8 @@ from metar import Metar
 from avwx import Station
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("mkmetar")
+logger = logging.getLogger("make_metar")
 logger.setLevel(logging.DEBUG)
-
-# «HARDCODED» values for testing locally
-# XP_API_URL = "http://192.168.1.141:8080/api/v1"
-WEATHER_CACHE_FILE = "weather.json"
-API_URL = "http://192.168.1.140:8080/api/v1/datarefs"
 
 
 def distance(origin, destination):
@@ -74,6 +71,8 @@ class WEATHER_LOCATION(Enum):
     AIRCRAFT = "aircraft"
     REGION = "region"
 
+
+CLOUD_TYPE = ["Cirrus", "Stratus", "Cumulus", "Cumulo-nimbus"]
 
 # ######################################################################################
 # Mapping between python class instance attributes and datarefs:
@@ -223,14 +222,22 @@ class XPWeatherData:
     CLOUD_LAYERS = 3
     WIND_LAYERS = 13
 
-    def __init__(self, weather_type: str = WEATHER_LOCATION.REGION.value, update: bool = False):
+    def __init__(self, api_url: str, weather_type: str = WEATHER_LOCATION.REGION.value, update: bool = False):
         self.station = None
         self.weather_type = weather_type
+        self.last_updated: datetime | None = None
+        self.api_url = api_url
+        self.generated_metar = None
         self.weather: Weather | None = None
         self.wind_layers: List[WindLayer] = []  #  Defined wind layers. Not all layers are always defined. up to 13 layers(!)
         self.cloud_layers: List[CloudLayer] = []  #  Defined cloud layers. Not all layers are always defined. up to 3 layers
 
         self.update_weather(update=update)
+
+    @property
+    def cache_filename(self) -> str:
+        s = self.station.icao if self.station is not None else "ICAO"
+        return f"weather-{s}-{self.weather_type}.json"
 
     def update(self):
         if self.further_than(kilometers=50):
@@ -258,13 +265,19 @@ class XPWeatherData:
 
     def collect_weather_datarefs(self, update: bool = True, position_only: bool = False) -> dict:
         if not update:
-            if os.path.exists(WEATHER_CACHE_FILE):
+            if os.path.exists(self.cache_filename):
                 data = {}
-                with open(WEATHER_CACHE_FILE) as fp:
+                with open(self.cache_filename) as fp:
                     data = json.load(fp)
-                    logger.info("weather file loaded")
-                    self.last_updated = os.path.getmtime(WEATHER_CACHE_FILE)
-                return data
+                    self.last_updated = os.path.getmtime(self.cache_filename)
+                    if "meta" in data and data["meta"].get("mode") == self.weather_type:
+                        t = data["meta"].get("mode")
+                        logger.info(f"weather file loaded (mode {t})")
+                        del data["meta"]
+                        return data
+                    else:
+                        t = data["meta"].get("mode") if "meta" in data else "no mode"
+                        logger.warning(f"weather file mode {t} not same mode {self.weather_type}")
             else:
                 logger.warning("weather file not found")
 
@@ -272,7 +285,7 @@ class XPWeatherData:
         IDENT = "id"
 
         def get_dataref_specs(path: str) -> dict | None:
-            api_url = API_URL
+            api_url = self.api_url
             payload = {"filter[name]": path}
             response = requests.get(api_url, params=payload)
             resp = response.json()
@@ -293,7 +306,7 @@ class XPWeatherData:
             if dref is None or IDENT not in dref:
                 logger.error(f"error for {path}")
                 return None
-            url = f"{API_URL}/{dref[IDENT]}/value"
+            url = f"{self.api_url}/{dref[IDENT]}/value"
             response = requests.get(url)
             data = response.json()
             if DATA in data:
@@ -305,7 +318,7 @@ class XPWeatherData:
         if position_only:
             WEATHER_DATAFEFS = DATAREF_LOCATION
 
-        logger.info("weather: collecting weather datarefs..")
+        logger.info(f"collecting {self.weather_type} weather datarefs..")
         weather_datarefs = {}
         for d in WEATHER_DATAFEFS.values():
             v = get_dataref_value(d)
@@ -318,11 +331,13 @@ class XPWeatherData:
             if type(v) is list:  # "dataref": [value, value, ...]
                 weather_datarefs = weather_datarefs | {f"{d}[{i}]": v[i] for i in range(len(v))}  # "dataref[i]": value(i)
 
-        if os.path.exists(WEATHER_CACHE_FILE):
+        if os.path.exists(self.cache_filename):
             logger.warning("weather file already exists, overwritten")
-        with open(WEATHER_CACHE_FILE, "w") as fp:
+        with open(self.cache_filename, "w") as fp:
+            weather_datarefs["meta"] = {"mode": self.weather_type, "last-updated": self.last_updated, "generated-metar": self.generated_metar}
             json.dump(weather_datarefs, fp)
-            logger.info("weather file written")
+            del weather_datarefs["meta"]
+            logger.info(f"weather file {os.path.abspath(self.cache_filename)} written")
 
         self.last_updated = datetime.now().timestamp()
         return weather_datarefs
@@ -349,8 +364,16 @@ class XPWeatherData:
     def guess_location(self):
         logger.info("location not guessed")
 
+    def get_station(self) -> Station:
+        lat = self.weather.latitude
+        lon = self.weather.longitude
+        return Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
+
+    def setStation(self, station: Station):
+        self.station = station
+
     # ################################################
-    #
+    # Layer utility functions
     #
     def sort_layers_by_alt(self):
         # only keeps layers with altitude
@@ -380,66 +403,52 @@ class XPWeatherData:
                 return l
         return None
 
+    def rnd(self, value):
+        if value is not None:
+            return round(value, 0)
+        return None
+
     def print_cloud_layers_alt(self):
         i = 0
         for l in self.cloud_layers:
-            print(f"[{i}]", getattr(l, "base"), getattr(l, "tops"))
+            print(f"[{i}]", self.rnd(getattr(l, "base")), self.rnd(getattr(l, "tops")))
             i = i + 1
 
     def print_wind_layers_alt(self):
         i = 0
         for l in self.wind_layers:
-            print(f"[{i}]", getattr(l, "alt_msl"))
+            print(f"[{i}]", self.rnd(getattr(l, "alt_msl")))
             i = i + 1
 
-    def getStation(self):
-        lat = self.weather.latitude
-        lon = self.weather.longitude
-        return Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
-
-    def getStationICAO(self, remember: bool = False):
-        (nearest, coords) = self.getStation()
-        if nearest is not None and remember:
-            self.setStation(nearest)
-        return "ICAO" if nearest is None else nearest.icao
-
-    def setStation(self, station: Station):
-        self.station = station
-
-    def getTime(self):
-        t = datetime.now().astimezone(tz=timezone.utc)
-        m = "00"
-        if t.minute > 30:
-            m = "30"
-        return t.strftime(f"%d%H{m}Z")
-
-    def getAuto(self):
-        return "AUTO"
-
-    def getWind(self):
-        ret = "00000KT"
+    # ################################################
+    # Weather values
+    #
+    def weather_wind(self) -> tuple:  # tuple can be (None, None)
+        speed = None
+        direct = None
         if len(self.wind_layers) > 0:
             hasalt = list(filter(lambda x: x.alt_msl is not None, self.wind_layers))
             if len(hasalt) > 0:
                 lb = sorted(hasalt, key=lambda x: x.alt_msl, reverse=True)
                 lowest = lb[0]
-                speed = 0
-                direct = None
                 if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
                     speed = round(lowest.speed_kts)
                     direct = lowest.direction
                 else:
                     speed = round(lowest.wind_speed * 1.943844)
                     direct = lowest.wind_dir
-                if direct is None:
-                    ret = f"{speed:02d}VRBKT"
-                else:
-                    direct = round(direct)
-                    ret = f"{direct:03d}{speed:02d}KT"
-                # @todo add gusting later
+                if speed < 0:  # -1: speed not available
+                    speed = None
             else:
                 logger.warning("no wind layer with altitude")
-        return ret
+        return (speed, direct)
+
+    def weather_visibility(self) -> int | float | None:
+        # We use SI, no statute miles
+        if self.weather.visibility is None:
+            return None
+        dist = round(self.weather.visibility * 1609)  ## m
+        return 9999 if dist > 9999 else 100 * round(dist / 100)
 
     def is_cavok(self) -> bool:
         # needs refining according to METAR conventions
@@ -458,7 +467,81 @@ class XPWeatherData:
             i = i + 1
         return dist > 9999 and nocov
 
-    def getVisibility(self):
+    def weather_temperatures(self) -> tuple:  # tuple can be (None, None)
+        # Temperature
+        t1 = None
+        if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
+            if hasattr(self.weather, "temp") and self.weather.temp is not None:
+                t1 = self.weather.temp
+        else:
+            if hasattr(self.weather, "temperature_msl") and self.weather.temperature_msl is not None:
+                t1 = self.weather.temperature_msl
+        # Dew point of lowest wind layer
+        self.sort_layers_by_alt()
+        l = self.wind_layers[0]
+        t2 = None
+        if hasattr(l, "dew_point") and l.dew_point is not None:
+            t2 = l.dew_point
+        return (t1, t2)
+
+    def weather_pressure(self) -> str:
+        t1 = None
+        if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
+            if hasattr(self.weather, "qnh") and self.weather.qnh is not None:
+                t1 = self.weather.qnh
+        else:
+            if hasattr(self.weather, "qnh_pas") and self.weather.qnh_pas is not None:
+                t1 = self.weather.qnh_pas
+        return t1
+
+    # ################################################
+    # METAR Groups
+    #
+    def metar_group_station_icao(self, remember: bool = False) -> str:
+        (nearest, coords) = self.get_station()
+        if nearest is not None and remember:
+            self.setStation(nearest)
+        return "ICAO" if nearest is None else nearest.icao
+
+    def metar_group_time(self) -> str:
+        t = datetime.now().astimezone(tz=timezone.utc)
+        m = "00"
+        if t.minute > 30:
+            m = "30"
+        return t.strftime(f"%d%H{m}Z")
+
+    def metar_group_auto(self) -> str:
+        return "AUTO"
+
+    def metar_group_wind(self) -> str:
+        ret = "00000KT"
+        if len(self.wind_layers) > 0:
+            hasalt = list(filter(lambda x: x.alt_msl is not None, self.wind_layers))
+            if len(hasalt) > 0:
+                lb = sorted(hasalt, key=lambda x: x.alt_msl, reverse=True)
+                lowest = lb[0]
+                speed = 0
+                direct = None
+                if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
+                    speed = round(lowest.speed_kts)
+                    direct = lowest.direction
+                else:
+                    speed = round(lowest.wind_speed * 1.943844)
+                    direct = lowest.wind_dir
+                if direct is None:
+                    ret = "VRB"
+                else:
+                    ret = f"{round(direct):03d}"
+                if speed < 0:  # -1: speed not available
+                    ret = ret + "//KT"
+                else:
+                    ret = ret + f"{speed:02d}KT"
+                # @todo add gusting later
+            else:
+                logger.warning("no wind layer with altitude")
+        return ret
+
+    def metar_group_visibility(self) -> str:
         # We use SI, no statute miles
         if self.weather.visibility is not None:
             dist = round(self.weather.visibility * 1609)  ## m
@@ -469,11 +552,11 @@ class XPWeatherData:
         else:
             return "NOVIS"
 
-    def getRVR(self):
+    def metar_group_rvr(self) -> str:
         # if station is an airport and airport has runways
         return ""
 
-    def getPhenomenae(self):
+    def metar_group_phenomenae(self) -> str:
         # hardest: From
         # 1 Does it rain, snow? does water come down?
         # 2 Surface wind
@@ -535,7 +618,7 @@ class XPWeatherData:
 
         return phenomenon
 
-    def getClouds(self):
+    def metar_group_clouds(self) -> str:
 
         def to_fl(m, r: int = 10):
             # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar
@@ -569,7 +652,7 @@ class XPWeatherData:
             clouds = clouds + " " + local
         return clouds.strip()
 
-    def getTemperatures(self) -> str:
+    def metar_group_temperatures(self) -> str:
         def negtemp(temp):
             # format negative temperature (celsius)
             # no temperature is //
@@ -602,7 +685,7 @@ class XPWeatherData:
         temp = temp + "/" + negtemp(t1)
         return temp
 
-    def getPressure(self):
+    def metar_group_pressure(self) -> str:
         press = None
         if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
             press = f"{round(self.weather.qnh/100)}"
@@ -610,15 +693,113 @@ class XPWeatherData:
             press = f"{round(self.weather.qnh_pas/100)}"
         return press
 
-    def getForecast(self):
+    def metar_group_forecast(self) -> str:
         return ""
 
-    def getRemarks(self):
+    def metar_group_remarks(self) -> str:
         return ""
 
     # ################################################
+    # Summary output
     #
-    #
+    def make_metar(self, alt=None):
+        metar = self.metar_group_station_icao(remember=self.station is None)
+        metar = metar + " " + self.metar_group_time()
+        metar = metar + " " + self.metar_group_auto()
+        metar = metar + " " + self.metar_group_wind()
+        if self.is_cavok():
+            metar = metar + " CAVOK"
+            metar = metar + " " + self.metar_group_rvr()
+        else:
+            metar = metar + " " + self.metar_group_visibility()
+            metar = metar + " " + self.metar_group_rvr()
+            metar = metar + " " + self.metar_group_phenomenae()
+            metar = metar + " " + self.metar_group_clouds()
+        metar = metar + " " + self.metar_group_temperatures()
+        metar = metar + " " + self.metar_group_pressure()
+        metar = metar + " " + self.metar_group_forecast()
+        metar = metar + " " + self.metar_group_remarks()
+        self.generated_metar = re.sub(" +", " ", metar)  # clean multiple spaces
+        return self.generated_metar
+
+    def get_metar_lines(self, layer_index: int = 0) -> list:
+        lines = []
+
+        if self.weather is None:
+            lines.append(f"Mode: {self.weather_type}")
+            lines.append("No weather")
+            return lines
+
+        dt = "NO TIME"
+        if self.last_updated is not None:
+            dt = datetime.fromtimestamp(self.last_updated).strftime("%d %H:%M")
+        lines.append(f"{dt} /M:{self.weather_type[0:4]}")
+
+        press = self.weather_pressure()
+        press = f"{round(press/100)}" if press is not None else "no pressure"
+        lines.append(f"Press: {press}")
+
+        temp, dewp = self.weather_temperatures()
+        temp = f"{round(temp)}" if temp is not None else "no temperature"
+        lines.append(f"Temp: {temp}")
+
+        vis = self.weather_visibility()
+        vis = round(vis, 1) if vis is not None else "no visibility info"
+        lines.append(f"Vis: {vis} sm")
+
+        # Wind layer info
+        widx = layer_index % len(self.wind_layers)
+        currwl = self.wind_layers[widx]
+
+        dewp = round(currwl.dew_point, 1)
+        lines.append(f"DewP:{dewp} (W{widx})")
+
+        if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
+            speed = round(currwl.speed_kts)
+            direct = currwl.direction
+        else:
+            speed = round(currwl.wind_speed * 1.943844)
+            direct = currwl.wind_dir
+        if direct is None:
+            wind_direct_str = "variable"
+        else:
+            wind_direct_str = f"{round(direct):03d}"
+        if speed < 0:  # -1: speed not available
+            wind_speed_str = "// kt"
+        else:
+            wind_speed_str = f"{speed:02d} kt"
+        lines.append(f"Winds: {wind_speed_str} {wind_direct_str}° (W{widx})")
+
+        # Cloud layer info
+        cidx = layer_index % len(self.cloud_layers)
+        currcl = self.cloud_layers[cidx]
+        covr8 = int(currcl.coverage * 8)
+        covcode = "SKC"
+        if 0.5 < covr8 <= 2:
+            covcode = "FEW"
+        elif 2 < covr8 <= 4:
+            covcode = "SCT"
+        elif 4 < covr8 <= 7:
+            covcode = "BKN"
+        else:
+            covcode = "OVC"
+        lines.append(f"Clouds:{covr8}/8 {covcode} {CLOUD_TYPE[int(currcl.cloud_type)]} (C{cidx})")
+
+        return lines
+
+    def get_metar_desc(self, metar=None):
+        if metar is None:
+            if self.generated_metar is None:
+                metar = self.make_metar()
+            else:
+                metar = self.generated_metar
+        try:
+            obs = Metar.Metar(metar)
+            return obs.string()
+        except:
+            logger.warning(f"failed to parse METAR {metar}", exc_info=True)
+            return f"METAR parsing failed ({metar})"
+
     def print(self, level=logging.INFO):
         width = 70
         output = io.StringIO()
@@ -656,7 +837,7 @@ class XPWeatherData:
         print(f"reconstructed METAR: {self.make_metar()}", file=output)
         print("=" * width, file=output)
 
-        # with open(WEATHER_CACHE_FILE, "w") as fp:
+        # with open(self.cache_filename, "w") as fp:
         #     for l in csv:
         #         print(l[0], l[1], file=fp)
 
@@ -664,49 +845,11 @@ class XPWeatherData:
         output.close()
         logger.log(level, f"{contents}")
 
-    def make_metar(self, alt=None):
-        metar = self.getStationICAO(remember=self.station is None)
-        metar = metar + " " + self.getTime()
-        metar = metar + " " + self.getAuto()
-        metar = metar + " " + self.getWind()
-        if self.is_cavok():
-            metar = metar + " CAVOK"
-            metar = metar + " " + self.getRVR()
-        else:
-            metar = metar + " " + self.getVisibility()
-            metar = metar + " " + self.getRVR()
-            metar = metar + " " + self.getPhenomenae()
-            metar = metar + " " + self.getClouds()
-        metar = metar + " " + self.getTemperatures()
-        metar = metar + " " + self.getPressure()
-        metar = metar + " " + self.getForecast()
-        metar = metar + " " + self.getRemarks()
-        return re.sub(" +", " ", metar)  # clean multiple spaces
-
-    def get_metar_desc(self, metar=None):
-        if metar is None:
-            metar = self.make_metar()
-        try:
-            obs = Metar.Metar(metar)
-            return obs.string()
-        except:
-            logger.warning(f"failed to parse METAR {metar}", exc_info=True)
-            return f"METAR parsing failed ({metar})"
-
 
 # Tests
 if __name__ == "__main__":
-    # drefs = {}
-    # fn = os.path.join("..", "..", "..", "aircrafts", "tests", "metar", "weather.json")
-    # if os.path.exists(fn):
-    #     with open(fn) as fp:
-    #         drefs = json.load(fp)
-
-    # # flatten arrays
-    # for d, v in drefs.items():
-    #     if type(v) is list:  # "dataref": [value, value, ...]
-    #         drefs = drefs | {f"{d}[{i}]": v[i] for i in range(len(v))} # "dataref[i]": value(i)
-    w = XPWeatherData(weather_type=WEATHER_LOCATION.REGION.value, update=True)
+    api_url = "http://192.168.1.140:8080/api/v1/datarefs"
+    w = XPWeatherData(api_url=api_url, weather_type=WEATHER_LOCATION.REGION.value, update=True)
     w.print(level=logging.DEBUG)  # writes to logger.debug
 
     w.print_cloud_layers_alt()
@@ -727,4 +870,4 @@ if __name__ == "__main__":
     print("generated metar")
     print(w.get_metar_desc())
 
-    w.update()
+    # w.update()

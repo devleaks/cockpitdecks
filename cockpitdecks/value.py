@@ -12,6 +12,7 @@ from cockpitdecks import CONFIG_KW
 from cockpitdecks.variable import InternalVariable, ValueProvider, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
 from cockpitdecks.simulator import Simulator, SimulatorVariableValueProvider
 from cockpitdecks.buttons.activation import ActivationValueProvider
+
 # from cockpitdecks.button import StateVariableValueProvider
 
 from .resources.iconfonts import ICON_FONTS
@@ -99,7 +100,7 @@ class Value:
 
     def get_state_variable_value(self, state):
         if not hasattr(self._provider, "get_state_variable_value"):
-#         if isinstance(self._provider, StateVariableValueProvider):
+            #         if isinstance(self._provider, StateVariableValueProvider):
             return self._provider.get_state_variable_value(state)
         return None
 
