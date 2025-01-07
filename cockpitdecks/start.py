@@ -19,6 +19,8 @@ import json
 import urllib.parse
 import argparse
 import subprocess
+import shutil
+import filecmp
 
 from enum import Enum
 
@@ -131,6 +133,7 @@ parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="alternate environment file")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
+parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 
 args = parser.parse_args()
@@ -233,6 +236,52 @@ else:
     #     else:
     #         print("Simulator ignored for demo")
 
+# Install plugin
+#
+if args.install_plugin:
+    print("installing Cockpitdecks plugin in XXPython3")
+    if SIMULATOR_NAME != "X-Plane":
+        print(f"Cockpitdecks plugin is for X-Plane flight simulator only (simulator is {SIMULATOR_NAME})")
+        sys.exit(1)
+    if SIMULATOR_HOME is None:
+        print("no simulator home directory, cannot install")
+        sys.exit(1)
+    dest = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "PythonPlugins")
+    if not (os.path.exists(dest) and os.path.isdir(dest)):
+        print("no PythonPlugins directory, cannot install")
+        dest = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "XPPython3")
+        if not (os.path.exists(dest) and os.path.isdir(dest)):
+            print("no XPPython3 directory, is XPPython3 installed?")
+            print("it can be downloaded from https://xppython3.readthedocs.io/")
+        sys.exit(1)
+    src = os.path.join(os.path.dirname(__file__), "resources", "xppython3-plugins", "PI_cockpitdecks.py")
+    src = os.path.abspath(src)
+    if not os.path.exists(src):
+        print(f"plugin file not found ({src})")
+        sys.exit(1)
+    dest2 = os.path.join(dest, "PI_cockpitdecks.py")
+    if os.path.exists(dest2):
+        print(f"plugin file already exists ({dest2})")
+        if filecmp.cmp(src, dest2):
+            print("plugin files are the same")
+        else:
+            print("plugin files are the different")
+            if not args.fixed:
+                print(f"remove existing file {dest2} first and run installation again to overwrite")
+                # print(f"use --fixed to overwrite")
+        if not args.fixed:
+            sys.exit(1)
+        else:
+            print("fixed. overwriting")
+    if args.verbose:
+        print(f"copying {src} to {dest2}..")
+    shutil.copy(src, dest2)
+    if args.verbose:
+        print("..copied")
+    print("plugin installed")
+    sys.exit(0)
+# We do not do anthing else when installing the plugin, which should only occurs once
+# or when the plugin is upgraded
 
 # COCKPITDECKS_PATH
 #
