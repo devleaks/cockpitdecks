@@ -6,16 +6,19 @@ Manage interaction with X-Plane, fetch or write datarefs.
 Maintain a "value", and some internal attributes.
 """
 
+from __future__ import annotations
+
 import re
 import logging
 import sys
+from abc import ABC, abstractmethod
 
 
-from .buttons.activation import ACTIVATION_VALUE
+from .buttons.activation import ACTIVATION_VALUE, ActivationValueProvider
 from .buttons.representation import Annunciator
-from .variable import InternalVariable
-from .simulator import SimulatorVariable, SimulatorVariableListener
-from .value import Value, SimulatorVariableValueProvider, StateVariableValueProvider, ActivationValueProvider
+from .variable import ValueProvider, InternalVariable
+from .simulator import SimulatorVariable, SimulatorVariableListener, SimulatorVariableValueProvider
+from .value import Value
 from .instruction import Instruction
 
 from cockpitdecks import (
@@ -32,6 +35,15 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 DECK_BUTTON_DEFINITION = "_deck_def"  # warning: this attribute MUST match an attribute in JSON/JavaScript object in jinja templates
+
+
+class StateVariableValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, button: Button):
+        ValueProvider.__init__(self, name=name, provider=button)
+
+    @abstractmethod
+    def get_state_variable_value(self, name: str):
+        pass
 
 
 class Button(SimulatorVariableListener, SimulatorVariableValueProvider, StateVariableValueProvider, ActivationValueProvider):
@@ -528,9 +540,6 @@ class Button(SimulatorVariableListener, SimulatorVariableValueProvider, StateVar
     # ##################################
     # Value provider
     #
-    def get_dataref(self, dataref):
-        return self.page.get_variable(dataref=dataref)
-
     def get_simulator_variable_value(self, simulator_variable, default=None):
         return self.page.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
 

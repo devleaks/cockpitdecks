@@ -12,7 +12,7 @@ from enum import Enum
 
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
-from cockpitdecks.variable import Variable, VariableListener, InternalVariable, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
+from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
 from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation
 from cockpitdecks.resources.rpc import RPC
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
@@ -33,21 +33,7 @@ logger = logging.getLogger(__name__)
 # ########################################
 # Simulator
 #
-class SimulatorVariableFactory:
-
-    def simulator_variable_factory(self, name: str, data_type: str = "float", physical_unit: str = "") -> SimulatorVariable:
-        raise NotImplementedError("Please implement SimulatorVariableFactory.simulator_variable_factory method")
-
-
-class SimulatorVariableConsumer(ABC):
-    # To get notified when a simulator data has changed.
-
-    @abstractmethod
-    def get_simulator_variable(self) -> set:
-        return set()
-
-
-class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
+class Simulator(ABC, InstructionFactory, VariableFactory):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
@@ -68,6 +54,7 @@ class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
 
         self.roundings = {}  # name: int
         self.simulator_variable_frequencies = {}  # name: int
+        self.physics = {}  # name: physical_unit
 
         self._startup = True
 
@@ -82,6 +69,9 @@ class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
 
     def set_simulator_variable_roundings(self, simulator_variable_roundings):
         self.roundings = self.roundings | simulator_variable_roundings
+
+    def set_simulator_variable_physics(self, simulator_variable_physics):
+        self.physics = self.physics | simulator_variable_physics
 
     def get_rounding(self, simulator_variable_name: str) -> float | None:
         if not simulator_variable_name.find("[") > 0:
@@ -128,7 +118,7 @@ class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
         else:
             simulator_variable.update_frequency = self.simulator_variable_frequencies.get(simulator_variable.name)
 
-    def register(self, simulator_variable: Variable) -> Variable:
+    def register(self, variable: Variable) -> Variable:
         """Registers a SimulatorVariable to be monitored by Cockpitdecks.
 
         Args:
@@ -137,17 +127,17 @@ class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
         Returns:
             [type]: [description]
         """
-        if simulator_variable.name is None:
-            logger.warning(f"invalid simulator_variable name {simulator_variable.name}")
+        if variable.name is None:
+            logger.warning(f"invalid variable name {variable.name}")
             return None
-        if simulator_variable.name not in self.all_simulator_variable:
-            simulator_variable._sim = self
-            self.set_rounding(simulator_variable)
-            self.set_frequency(simulator_variable)
-            self.all_simulator_variable[simulator_variable.name] = simulator_variable
+        if variable.name not in self.all_simulator_variable:
+            variable._sim = self
+            self.set_rounding(variable)
+            self.set_frequency(variable)
+            self.all_simulator_variable[variable.name] = variable
         else:
-            logger.debug(f"simulator_variable name {simulator_variable.name} already registered")
-        return simulator_variable
+            logger.debug(f"variable name {variable.name} already registered")
+        return variable
 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the current simulator date and time"""
@@ -170,15 +160,24 @@ class Simulator(ABC, InstructionFactory, SimulatorVariableFactory):
 
     # Shortcuts
     def variable_factory(self, name: str, is_string: bool = False) -> Variable:
-        return SimulatorVariable(name=name, is_string=is_string)
+        # here is the place to inject a physical type if any, may be from a list
+        # like for roundings and frequencies?
+        # dataref-physical:
+        #     sim/cockpit/autopilot/heading: degrees
+        #     sim/weather/region/wind_altitude_msl_m[*]: meter
+        #     sim/weather/region/wind_direction_degt[*]: degree
+        #     sim/weather/region/wind_speed_msc[*]: meter/second
+        # ...
+        physical_unit = self.physics.get(name)
+        return SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
 
-    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | Dataref:
+    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
         """Returns data or create a new one, internal if path requires it"""
         if name in self.all_simulator_variable.keys():
             return self.all_simulator_variable[name]
         if Variable.is_internal_variable(path=name):
-            return self.register(simulator_variable=InternalVariable(name=name, is_string=is_string))
-        return self.register(simulator_variable=SimulatorVariable(name=name, data_type="string" if is_string else "float"))
+            return self.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
+        return self.register(variable=self.variable_factory(name=name, is_string=is_string))
 
     def get_internal_variable(self, name: str, is_string: bool = False) -> Variable:
         """Returns the InternalVariable or creates it if it is the first time it is accessed.
@@ -352,10 +351,13 @@ class NoSimulator(Simulator):
 #
 # A value in the simulator
 class SimulatorVariable(Variable):
-    """A specialised data to monitor inside the simulator"""
+    """A specialised variable to monitor in the simulator"""
 
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         Variable.__init__(self, name=name, data_type=data_type, physical_unit=physical_unit)
+
+    # def __init__(self, name: str, is_string: bool = False):
+    #     Variable.__init__(self, name=name, data_type="string" if is_string else "float")
 
 
 class SimulatorVariableListener(VariableListener):
@@ -580,3 +582,12 @@ class SimulatorVariableEvent(SimulatorEvent):
             self.enqueue()
             logger.debug(f"enqueued")
         return True
+
+
+class SimulatorVariableValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, simulator: Simulator):
+        ValueProvider.__init__(self, name=name, provider=simulator)
+
+    @abstractmethod
+    def get_simulator_variable_value(self, simulator_variable, default=None):
+        pass

@@ -2,7 +2,7 @@
 Button action and activation abstraction
 """
 
-from .activation import Activation, ACTIVATION_VALUE
+from .activation import Activation, ActivationValueProvider, ACTIVATION_VALUE
 from .cockpit_activation import LoadPage, Reload, Inspect, Stop
 from .deck_activation import Push, OnOff, UpDown
 from .deck_activation import BeginEndPress

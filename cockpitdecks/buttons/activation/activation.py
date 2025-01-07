@@ -9,7 +9,7 @@ from datetime import datetime
 
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import PushEvent
-from cockpitdecks.variable import InternalVariable
+from cockpitdecks.variable import InternalVariable, ValueProvider
 from cockpitdecks import CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 
@@ -426,3 +426,12 @@ class Activation:
         Describe what the button does in plain English
         """
         return "\n\r".join([f"The button does nothing."])
+
+
+class ActivationValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, activation: Activation):
+        ValueProvider.__init__(self, name=name, provider=activation)
+
+    @abstractmethod
+    def get_activation_value(self):
+        pass

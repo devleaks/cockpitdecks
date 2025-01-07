@@ -9,7 +9,9 @@ import re
 from cockpitdecks.constant import CONFIG_KW
 from cockpitdecks.variable import Variable, VariableListener, PATTERN_DOLCB, INTERNAL_DATA_PREFIX, INTERNAL_STATE_PREFIX
 
-# from cockpitdecks.value import SimulatorVariableValueProvider, StateVariableValueProvider, ActivationValueProvider
+# from cockpitdecks.button import StateVariableValueProvider
+# from cockpitdecks.button.activation import ActivationValueProvider
+# from cockpitdecks.simulator import SimulatorVariableValueProvider
 
 from .resources.rpc import RPC
 
@@ -66,36 +68,85 @@ class Formula(Variable, VariableListener):
         """we remain read-only here"""
         return self.owner._config.get(CONFIG_KW.FORMULA.value)
 
+    def get_internal_variable_value(self, internal_variable, default=None):
+        """Get internal variable value from owner
+
+        Owner should be a InternalVariableValueProvider.
+
+        Returns:
+            [type]: [value from internam variable]
+        """
+        if hasattr(self.owner, "get_simulator_variable_value"):
+            return self.owner.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
+        logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
+        return None
+
     def get_simulator_variable_value(self, simulator_variable, default=None):
+        """Get simulator variable value from owner
+
+        Owner should be a SimulatorVariableValueProvider.
+
+        Returns:
+            [type]: [value from simulator variable]
+        """
         if hasattr(self.owner, "get_simulator_variable_value"):
             return self.owner.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
         logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
         return None
 
     def get_state_variable_value(self, state):
+        """Get button state variable value from owner
+
+        Owner should be a StateVariableValueProvider.
+
+        Returns:
+            [type]: [value from state variable]
+        """
         if hasattr(self.owner, "get_state_variable_value"):
             return self.owner.get_state_variable_value(state)
         logger.warning(f"formula {self.display_name}: no get_state_variable_value for {state}")
         return None
 
     def get_activation_value(self):
+        """Get activation value from owner
+
+        Owner should be a ActivationValueProvider.
+
+        Returns:
+            [type]: [value from activation]
+        """
         if hasattr(self.owner, "get_activation_value"):
             return self.owner.get_activation_value()
         logger.warning(f"formula {self.display_name}: no get_activation_value")
         return None
 
     def compute(self):
+        """Compute new formula value and save result"""
         value = self.execute_formula()
         value2 = self.format_value(value)
         self.update_value(new_value=value2, cascade=False)  # False for now
 
     def variable_changed(self, data: Variable):
-        old_value = self.current_value
+        """Called when a constituing variable has changed.
+
+        Recompute its value, and notifies listener of change if any.
+
+        Args:
+            data (Variable): [variable that has changed]
+        """
+        old_value = self.current_value  # kept for debug
         logger.debug(f"formula {self.display_name}: {data.name} changed, recomputing..")
         self.compute()
         logger.debug(f"formula {self.display_name}: ..done (new value: {self.current_value})")
 
     def get_variables(self) -> set:
+        """Returns list of variables used by this formula
+
+        [description]
+
+        Returns:
+            set: [list of variables used by formula]
+        """
         if self._variables is not None:
             return self._variables
 
@@ -132,6 +183,13 @@ class Formula(Variable, VariableListener):
         return self._variables
 
     def substitute_values(self) -> str:
+        """Substitute values for each variable.
+
+        Vamue can come from cockpit, simulator, button internal state or activation.
+
+        Returns:
+            str: [Formula string with substitutions]
+        """
         text = self.formula
         for token in self._tokens:
             value = self.default_value
@@ -143,9 +201,10 @@ class Formula(Variable, VariableListener):
         return text
 
     def execute_formula(self):
-        """
-        replace datarefs variables with their (numeric) value and execute formula.
-        Returns formula result.
+        """replace datarefs variables with their value and execute formula.
+
+        Returns:
+            [type]: [formula result]
         """
         expr = self.substitute_values()
         logger.debug(f"formula {self.display_name}: {self.formula} => {expr}")
@@ -157,6 +216,14 @@ class Formula(Variable, VariableListener):
         return value
 
     def format_value(self, value) -> str:
+        """Format value is format is supplied
+
+        Args:
+            value ([any]): [value to format]
+
+        Returns:
+            str: [formatted value, or string versionof value if no format supplied]
+        """
         if self.format_str is not None:
             if type(value) in [int, float]:  # probably formula is a constant value
                 value_str = self.format_str.format(value)

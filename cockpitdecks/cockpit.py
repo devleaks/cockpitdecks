@@ -70,7 +70,7 @@ from cockpitdecks import (
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
-from cockpitdecks.variable import InternalVariable, Variable
+from cockpitdecks.variable import Variable, VariableFactory, InternalVariable
 from cockpitdecks.simulator import Simulator, NoSimulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
 from cockpitdecks.instruction import Instruction, InstructionFactory
 from cockpitdecks.observable import Observables
@@ -538,14 +538,14 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.debug(f"variable name {variable.name} already registered")
         return variable
 
-    def get_variable(self, name: str, factory, is_string: bool = False) -> Variable:
+    def get_variable(self, name: str, factory: VariableFactory, is_string: bool = False) -> Variable:
         """Returns data or create a new one, internal if path requires it"""
         if name in self.all_variable.keys():
             return self.all_variable[name]
         return self.register(variable=factory.variable_factory(name=name, is_string=is_string))
 
     def variable_factory(self, name: str, is_string: bool = False) -> Variable:
-        """Returns data or create a new one, internal if path requires it"""
+        """Returns data or create a new internal variable"""
         return InternalVariable(name=name, is_string=is_string)
 
     def get_variable_value(self, name, default=None) -> Any | None:

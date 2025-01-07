@@ -1,0 +1,26 @@
+sim/operation/sound/weather_volume_ratio
+Volume level for weather sound effects, ratio from 0 (silent) to 1 (max loudness)
+
+sim/weather/microburst_probability
+[0.0 - 1.0] The probability of a microburst occurring.
+
+sim/weather/rate_change_percent
+[-1.0 - 1.0] How fast weather is improving or degenerating.- -1.0 means degenerating, 1.0 means improving.
+
+sim/weather/region/change_mode
+How the weather is changing. 0 = Rapidly Improving, 1 = Improving, 2 = Gradually Improving, 3 = Static, 4 = Gradually Deteriorating, 5 = Deteriorating, 6 = Rapidly Deteriorating, 7 = Using Real Weather
+
+sim/weather/region/update_immediately
+If this is true, any weather region changes EXCEPT CLOUDS will take place immediately instead of at the next update interval (currently 60 seconds).
+
+sim/weather/region/variability_pct
+How randomly variable the weather is over distance. Range 0 - 1.
+
+sim/weather/region/weather_preset
+Read the UI weather preset that is closest to the current conditions, or set an UI preset. Clear(0), VFR Few(1), VFR Scattered(2), VFR Broken(3), VFR Marginal(4), IFR Non-precision(5), IFR Precision(6), Convective(7), Large-cell Storms(8)
+
+sim/weather/region/weather_source
+What system is currently controlling the weather. 0 = Preset, 1 = Real Weather, 2 = Controlpad, 3 = Plugin.
+
+
+When you absolutely, positively got to kill every cumulonimbus in the room, you can use the sim/operation/regen_weather command to trigger an immediate full reset of the current weather.

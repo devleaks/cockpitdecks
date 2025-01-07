@@ -5,15 +5,14 @@ from typing import Tuple
 import logging
 import re
 import math
-from abc import ABC
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.variable import InternalVariable, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
-from cockpitdecks.simulator import Simulator
-
-from cockpitdecks.buttons.activation import Activation
+from cockpitdecks.variable import InternalVariable, ValueProvider, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from cockpitdecks.simulator import Simulator, SimulatorVariableValueProvider
+from cockpitdecks.buttons.activation import ActivationValueProvider
+# from cockpitdecks.button import StateVariableValueProvider
 
 from .resources.iconfonts import ICON_FONTS
 from .resources.color import convert_color
@@ -21,38 +20,6 @@ from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-
-class ValueProvider:
-    def __init__(self, name: str, provider):
-        self._provider = provider
-
-
-class SimulatorVariableValueProvider(ABC, ValueProvider):
-    def __init__(self, name: str, simulator: Simulator):
-        ValueProvider.__init__(self, name=name, provider=simulator)
-
-    @abstractmethod
-    def get_simulator_variable_value(self, simulator_variable, default=None):
-        pass
-
-
-class StateVariableValueProvider(ABC, ValueProvider):
-    def __init__(self, name: str, button: Button):
-        ValueProvider.__init__(self, name=name, provider=button)
-
-    @abstractmethod
-    def get_state_variable_value(self, name: str):
-        pass
-
-
-class ActivationValueProvider(ABC, ValueProvider):
-    def __init__(self, name: str, activation: "Activation"):
-        ValueProvider.__init__(self, name=name, provider=activation)
-
-    @abstractmethod
-    def get_activation_value(self):
-        pass
 
 
 class Value:
@@ -131,7 +98,8 @@ class Value:
         return None
 
     def get_state_variable_value(self, state):
-        if isinstance(self._provider, StateVariableValueProvider):
+        if not hasattr(self._provider, "get_state_variable_value"):
+#         if isinstance(self._provider, StateVariableValueProvider):
             return self._provider.get_state_variable_value(state)
         return None
 
@@ -403,8 +371,10 @@ class Value:
         return retmsg
 
     def substitute_state_values(self, text, default: str = "0.0", formatting=None):
-        if not isinstance(self._provider, StateVariableValueProvider):
+        if not hasattr(self._provider, "get_state_variable_value"):
             return text
+        # if not isinstance(self._provider, StateVariableValueProvider):
+        #     return text
 
         txtcpy = text
         more = re.findall(PATTERN_INTSTATE, txtcpy)

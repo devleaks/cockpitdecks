@@ -229,7 +229,7 @@ class VariableFactory:
     """A VariableFactory has a function to generate variable for its own use."""
 
     @abstractmethod
-    def variable_factory(self, name: str, factory, is_string: bool = False) -> Variable:
+    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
         raise NotImplemented
 
 
@@ -242,3 +242,17 @@ class InternalVariable(Variable):
         if not name.startswith(INTERNAL_DATA_PREFIX):
             name = INTERNAL_DATA_PREFIX + name
         Variable.__init__(self, name=name, data_type="string" if is_string else "float")
+
+
+class ValueProvider:
+    def __init__(self, name: str, provider):
+        self._provider = provider
+
+
+class InternalVariableValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, cockpit: Cockpit):
+        ValueProvider.__init__(self, name=name, provider=cockpit)
+
+    @abstractmethod
+    def get_internal_variable_value(self, name: str):
+        pass
