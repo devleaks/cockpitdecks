@@ -256,3 +256,24 @@ class InternalVariableValueProvider(ABC, ValueProvider):
     @abstractmethod
     def get_internal_variable_value(self, name: str):
         pass
+
+
+class VariableDatabase:
+
+    def __init__(self) -> None:
+        self.database = {}
+
+    def register(self, variable: Variable) -> Variable:
+        if variable.name is None:
+            logger.warning(f"invalid variable name {variable.name}, not stored")
+            return variable
+        if variable.name not in self.database:
+            self.database[variable.name] = variable
+        else:
+            logger.debug(f"variable {variable.name} already registered")
+        return variable
+
+    def get(self, name: str) -> Variable | None:
+        if name not in self.database:
+            logger.debug(f"variable {name} not found")
+        return self.database.get(name)

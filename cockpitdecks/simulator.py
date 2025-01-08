@@ -118,6 +118,20 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         else:
             simulator_variable.update_frequency = self.simulator_variable_frequencies.get(simulator_variable.name)
 
+    def set_physics(self, variable):
+        if variable.name.find("[") > 0:
+            unit = self.physics.get(variable.name)
+            if unit is not None:
+                variable.physical_unit = unit
+            else:
+                idx = variable.name.find("[")
+                base = variable.name[:idx]
+                unit = self.physics.get(base + "[*]")
+                if unit is not None:
+                    variable.physical_unit = unit
+        else:
+            variable.physical_unit = self.physics.get(variable.name)
+
     def register(self, variable: Variable) -> Variable:
         """Registers a SimulatorVariable to be monitored by Cockpitdecks.
 
@@ -169,7 +183,9 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         #     sim/weather/region/wind_speed_msc[*]: meter/second
         # ...
         physical_unit = self.physics.get(name)
-        return SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
+        variable = SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
+        variable._sim = self
+        return variable
 
     def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
         """Returns data or create a new one, internal if path requires it"""
