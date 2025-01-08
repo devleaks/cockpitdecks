@@ -9,7 +9,7 @@ from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from .activation import Activation
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ class Push(Activation):
                 self.onoff_current_value = self.initial_value != 0
 
     def __str__(self):  # print its status
-        return super() + "\n" + ", ".join([f"command: {self._command}", f"is_valid: {self.is_valid()}"])
+        return str(super()) + "\n" + ", ".join([f"command: {self._command}", f"is_valid: {self.is_valid()}"])
 
     def set_auto_repeat(self):
         if not self.auto_repeat:
@@ -637,21 +637,21 @@ class EncoderProperties:
     @property
     def _turns(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_TURNS.value])
-        dref = self.button.sim.get_internal_data(path)
+        dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
 
     @property
     def _cw(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_CLOCKWISE.value])
-        dref = self.button.sim.get_internal_data(path)
+        dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
 
     @property
     def _ccw(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value])
-        dref = self.button.sim.get_internal_data(path)
+        dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
 
@@ -1161,7 +1161,7 @@ class EncoderValueExtended(OnOff, EncoderProperties):
         self._local_dataref = None
         local_dataref = button._config.get("dataref", None)  # "local-dataref"
         if local_dataref is not None:
-            self._local_dataref = self.button.sim.get_internal_data(local_dataref)
+            self._local_dataref = self.button.sim.get_internal_variable(local_dataref)
 
         self.init_differed()
 
@@ -1544,7 +1544,7 @@ class Mosaic(Activation):
         self.pressed = False  # True while the button is pressed, False when released
 
     def __str__(self):  # print its status
-        return super() + "\n" + f", is_valid: {self.is_valid()}"
+        return str(super()) + "\n" + f", is_valid: {self.is_valid()}"
 
     def is_valid(self):
         return super().is_valid()

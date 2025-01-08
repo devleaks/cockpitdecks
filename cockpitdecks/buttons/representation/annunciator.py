@@ -9,8 +9,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import convert_color, light_off, is_number
-from cockpitdecks.resources.rpc import RPC
-from cockpitdecks.simulator import SimulatorData
+from cockpitdecks.simulator import SimulatorVariable
 from cockpitdecks.value import Value
 
 from .draw import DrawBase
@@ -98,9 +97,9 @@ class AnnunciatorPart:
     def center_h(self):
         return self._center_h
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         if self.datarefs is None:
-            self.datarefs = self._value.get_simulator_data(extra_keys=["text"])
+            self.datarefs = self._value.get_simulator_variable(extra_keys=["text"])
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
@@ -436,7 +435,7 @@ class Annunciator(DrawBase):
             self.model = ctrl[0]
             self.annunciator_parts = dict([(k, AnnunciatorPart(name=k, config=v, annunciator=self)) for k, v in parts.items()])
 
-        # for a in [CONFIG_KW.SIM_DATUM.value, CONFIG_KW.FORMULA.value]:
+        # for a in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.FORMULA.value]:
         #     if a in button._config:
         #         logger.warning(f"button {self.button.name}: annunciator parent button has property {a}")
 
@@ -446,8 +445,8 @@ class Annunciator(DrawBase):
         if self.model is None:
             logger.error(f"button {self.button.name}: annunciator has no model")
 
-        self.annunciator_datarefs: List[SimulatorData] | None = None
-        self.annunciator_datarefs = self.get_simulator_data()
+        self.annunciator_datarefs: List[SimulatorVariable] | None = None
+        self.annunciator_datarefs = self.get_simulator_variable()
 
         DrawBase.__init__(self, button=button)
 
@@ -479,17 +478,17 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_simulator_data(self) -> Set[SimulatorData]:
+    def get_simulator_variable(self) -> Set[SimulatorVariable]:
         """
         Complement button datarefs with annunciator special lit datarefs
         """
         if self.annunciator_datarefs is not None:
             # logger.debug(f"button {self.button.name}: returned from cache")
             return self.annunciator_datarefs
-        r: Set[SimulatorData] = set()
+        r: Set[SimulatorVariable] = set()
         if self.annunciator_parts is not None:
             for k, v in self.annunciator_parts.items():
-                datarefs = v.get_simulator_data()
+                datarefs = v.get_simulator_variable()
                 if len(datarefs) > 0:
                     r = r | datarefs
                     logger.debug(f"button {self.button.name}: added {k} datarefs {datarefs}")

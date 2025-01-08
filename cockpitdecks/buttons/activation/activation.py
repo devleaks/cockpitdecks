@@ -9,9 +9,9 @@ from datetime import datetime
 
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import PushEvent
-from cockpitdecks.data import InternalData
+from cockpitdecks.variable import InternalVariable, ValueProvider
 from cockpitdecks import CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -117,9 +117,9 @@ class Activation:
         # to the value of the activatiuon but it will NOT write it the X-Plane
         # Therefore, here, it is not a Instruction SetDataref that is built.
         self._writable_dataref = None
-        set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_DATUM.value)
+        set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         if set_dataref_path is not None:
-            self._writable_dataref = self.button.sim.get_data(set_dataref_path)
+            self._writable_dataref = self.button.sim.get_variable(set_dataref_path)
             self._writable_dataref.writable = True
         self.activation_requires_modification_set_dataref = True
 
@@ -216,7 +216,7 @@ class Activation:
         return default
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
-        self.button.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=False)
+        self.button.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=False)
 
     def is_guarded(self):
         # Check this before activating in subclasses if necessary
@@ -256,7 +256,7 @@ class Activation:
     def has_long_press(self) -> bool:
         return self._long_press is not None and self._long_press.is_valid()
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         if self._writable_dataref is not None:
             return {self._writable_dataref.name}
         return set()
@@ -277,7 +277,7 @@ class Activation:
     @property
     def activation_count(self):
         path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ACTIVATION_COUNT.value])
-        dref = self.button.sim.get_internal_data(path)
+        dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
 
@@ -406,8 +406,8 @@ class Activation:
         return self.activation_count
 
     def get_state_variables(self) -> dict:
-        base = InternalData(name=self.get_id()).name
-        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_data.values())}
+        base = InternalVariable(name=self.get_id()).name
+        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_variable.values())}
         a = {
             "activation_type": type(self).__name__,
             "last_activated": self.last_activated,
@@ -426,3 +426,12 @@ class Activation:
         Describe what the button does in plain English
         """
         return "\n\r".join([f"The button does nothing."])
+
+
+class ActivationValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, activation: Activation):
+        ValueProvider.__init__(self, name=name, provider=activation)
+
+    @abstractmethod
+    def get_activation_value(self):
+        pass

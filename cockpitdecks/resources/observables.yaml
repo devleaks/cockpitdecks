@@ -6,3 +6,12 @@ observables:
     actions:
       - command: cockpitdecks-aircraft
         delay: 5
+  # - name: METAR Station
+  #   type: onchange
+  #   enabled: True
+  #   datarefs:
+  #     - sim/flightmodel/position/latitude
+  #     - sim/flightmodel/position/longitude
+  #   actions:
+  #     - set-dataref: data:station_icao
+  #       delay: 5

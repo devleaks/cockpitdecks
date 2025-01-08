@@ -5,8 +5,8 @@ from typing import Dict
 
 from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
-from cockpitdecks.simulator import SimulatorData
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.simulator import SimulatorVariable
 from .button import Button, DECK_BUTTON_DEFINITION
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class Page:
 
         self.buttons: Dict[str, Button] = {}
         self.button_names: Dict[str, Button] = {}
-        self.simulator_data: Dict[str, SimulatorData] = {}
+        self.simulator_variable: Dict[str, SimulatorVariable] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
 
@@ -36,7 +36,7 @@ class Page:
         return ID_SEP.join([self.deck.get_id(), self.name])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def is_current_page(self):
         """
@@ -80,10 +80,10 @@ class Page:
         if isinstance(ld, dict) and isinstance(attributes, dict):
             setattr(self, ATTRNAME, ld | attributes)
 
-    def get_simulator_data_value(self, simulator_data, default=None):
-        d = self.simulator_data.get(simulator_data)
+    def get_simulator_variable_value(self, simulator_variable, default=None):
+        d = self.simulator_variable.get(simulator_variable)
         if d is None:
-            logger.warning(f"page {self.name}: {simulator_data} not found")
+            logger.warning(f"page {self.name}: {simulator_variable} not found")
             return None  # should return default?
         return d.value() if d.value() is not None else default
 
@@ -175,51 +175,51 @@ class Page:
         self.button_names[button.name] = button
         logger.debug(f"page {self.name}: button {idx} {button.name} added")
 
-    def register_simulator_data(self, button: Button):
+    def register_simulator_variable(self, button: Button):
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
         for d in button.get_string_datarefs():
-            if d not in self.simulator_data:
-                ref = self.sim.get_data(d, is_string=True)  # creates or return already defined dataref
+            if d not in self.simulator_variable:
+                ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
-                    self.simulator_data[d] = ref
-                    self.simulator_data[d].add_listener(button)
+                    self.simulator_variable[d] = ref
+                    self.simulator_variable[d].add_listener(button)
                     self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
-                self.simulator_data[d].add_listener(button)
+                self.simulator_variable[d].add_listener(button)
                 logger.debug(
-                    f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.simulator_data[d].is_string})"
+                    f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.simulator_variable[d].is_string})"
                 )
 
         # Possible issue if a dataref is created here below and is a string dataref
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref
-        for d in button.get_simulator_data():
-            if d not in self.simulator_data:
-                ref = self.sim.get_data(d)  # creates or return already defined dataref
+        for d in button.get_simulator_variable():
+            if d not in self.simulator_variable:
+                ref = self.sim.get_variable(d)  # creates or return already defined dataref
                 if ref is not None:
-                    self.simulator_data[d] = ref
-                    self.simulator_data[d].add_listener(button)
+                    self.simulator_variable[d] = ref
+                    self.simulator_variable[d].add_listener(button)
                     self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
-                self.simulator_data[d].add_listener(button)
+                self.simulator_variable[d].add_listener(button)
                 logger.debug(f"page {self.name}: button {button.name} registered for existing dataref {d}")
 
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
-    def unregister_simulator_data(self, button: Button):
+    def unregister_simulator_variable(self, button: Button):
         for d in button.get_string_datarefs():
-            ref = self.simulator_data.get(d)
+            ref = self.simulator_variable.get(d)
             if ref is not None:
                 ref.remove_listener(button)
 
-        for d in button.get_simulator_data():
-            ref = self.simulator_data.get(d)
+        for d in button.get_simulator_variable():
+            ref = self.simulator_variable.get(d)
             if ref is not None:
                 ref.remove_listener(button)
 
@@ -284,10 +284,10 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
-            self.sim.remove_simulator_data_to_monitor(self.simulator_data)
+            self.sim.remove_simulator_variable_to_monitor(self.simulator_variable)
         if not disconnected:
             self.clean()
         for button in self.buttons.values():
-            self.unregister_simulator_data(button)  # otherwise ref to old buttons remain...
+            self.unregister_simulator_variable(button)  # otherwise ref to old buttons remain...
         self.buttons = {}
         self.inc(INTERNAL_DATAREF.PAGE_CLEAN.value)

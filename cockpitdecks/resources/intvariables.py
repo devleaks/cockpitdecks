@@ -1,4 +1,4 @@
-# Internal datarefs (stats, performance)
+# Internal variables (stats, performance)
 from enum import Enum
 
 
@@ -58,6 +58,13 @@ class INTERNAL_DATAREF(Enum):
     # U D P
     #
     INTDREF_CONNECTION_STATUS = "_connection_status"
+    # Status value:
+    # 0: Nothing running
+    # 1: Connection monitor running
+    # 2: Connection to X-Plane but no more
+    # 3: UDP listener running (no timeout)
+    # 4: Event forwarder running
+
     # Number of UDP packet received
     UDP_BEACON_RCV = "udp_beacon_received"
     UDP_BEACON_TIMEOUT = "udp_beacon_timeout"
@@ -75,8 +82,8 @@ class INTERNAL_DATAREF(Enum):
     # Time sice last read
     UDP_CYCLE = "cockpitdecks/udp/cycle"
 
-    # Average number of dataref values recevied per seconds (last two minutes)
-    UDP_DATAREFS_PERSEC = "cockpitdecks/udp/datarefs_persec"
+    # Average number of simulator variable values received per seconds (last two minutes)
+    UDP_DATAREFS_PERSEC = "cockpitdecks/udp/datarefs-persec"
 
     # Total number of dataref values recevied
     UDP_DATAREF_COUNT = "cockpitdecks/udp/dataref-count"

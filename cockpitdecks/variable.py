@@ -1,9 +1,10 @@
-# Base classes for interface with the simulation software
+# Base classes for variables, either internal or from the simulator
 #
 from __future__ import annotations
 import logging
 from enum import Enum
 from abc import ABC, abstractmethod
+from typing import Dict
 import traceback
 
 
@@ -11,17 +12,17 @@ from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(SPAM_LEVEL)  # To see when simulator_data are updated
+# logger.setLevel(SPAM_LEVEL)  # To see when simulator_variable are updated
 # logger.setLevel(logging.DEBUG)
 
 
 # ########################################
-# Data conventions
+# Variable conventions
 #
-# "internal" simulator_data (not exported to X-Plane) start with that prefix
+# "internal" simulator_variable (not exported to X-Plane) start with that prefix
 INTERNAL_DATA_PREFIX = "data:"
 INTERNAL_STATE_PREFIX = "state:"
-BUTTON_VARIABLE_PREFIX = "button:"
+BUTTON_PREFIX = "button:"
 PREFIX_SEP = ":"
 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
@@ -29,10 +30,10 @@ PREFIX_SEP = ":"
 # ?: does not return capturing group
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
 PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
-PATTERN_BUTTONVAR = f"\\${{{BUTTON_VARIABLE_PREFIX}([^\\}}]+?)}}"
+PATTERN_BUTTONVAR = f"\\${{{BUTTON_PREFIX}([^\\}}]+?)}}"
 
 
-class InternalDataType(Enum):
+class InternalVariableType(Enum):
     INTEGER = "int"
     FLOAT = "float"
     BYTE = "byte"
@@ -42,18 +43,18 @@ class InternalDataType(Enum):
     ARRAY_BYTES = "array_byte"
 
 
-class Data(ABC):
-    """An Data is a typed value holder for Cockpitdecks.
+class Variable(ABC):
+    """An Variable is a typed value holder for Cockpitdecks.
     All data are kept inside the Simulator:
-       - Simulator Data
-       - Internal Data
+       - Simulator Variable
+       - Internal Variable
     This eases data mangement, all data is at the same place.
     The value of a data is "alive", it changes, gets updated, notifies those who depend on it, etc.
     """
 
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         self.name = name
-        self.data_type = InternalDataType(data_type)
+        self.data_type = InternalVariableType(data_type)
         self.physical_unit = physical_unit
 
         # Stats
@@ -75,25 +76,29 @@ class Data(ABC):
 
         self._sim = None
 
-        self.listeners: List[DataListener] = []  # buttons using this simulator_data, will get notified if changes.
+        self.listeners: List[VariableListener] = []  # buttons using this simulator_variable, will get notified if changes.
 
     @staticmethod
-    def might_be_simulator_data(path: str) -> bool:
+    def may_be_non_internal_variable(path: str) -> bool:
         # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
-        # At the end, we are not sure it is a dataref, but wea re sure non-datarefs are excluded ;-)
-        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_VARIABLE_PREFIX[:-1]]
+        # At the end, we are not sure it is a dataref, but we are sure non-datarefs are excluded ;-)
+        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_PREFIX[:-1]]
         for start in PREFIX:
             if path.startswith(start + PREFIX_SEP):
                 return False
         return path != CONFIG_KW.FORMULA.value
 
     @staticmethod
-    def is_internal_data(path: str) -> bool:
+    def is_internal_variable(path: str) -> bool:
         return path.startswith(INTERNAL_DATA_PREFIX)
 
     @staticmethod
-    def internal_data_name(path: str) -> str:
-        if not Data.is_internal_data(path):  # prevent duplicate prepend
+    def is_internal_state_variable(path: str) -> bool:
+        return path.startswith(INTERNAL_STATE_PREFIX)
+
+    @staticmethod
+    def internal_variable_name(path: str) -> str:
+        if not Variable.is_internal_variable(path):  # prevent duplicate prepend
             return INTERNAL_DATA_PREFIX + path
         return path  # already startswith INTERNAL_DATA_PREFIX
 
@@ -103,7 +108,7 @@ class Data(ABC):
 
     @property
     def is_string(self) -> bool:
-        return self.data_type == InternalDataType.STRING
+        return self.data_type == InternalVariableType.STRING
 
     @property
     def rounding(self):
@@ -168,23 +173,23 @@ class Data(ABC):
             self._last_changed = now()
             logger.log(
                 SPAM_LEVEL,
-                f"dataref {self.name} updated {self.previous_value} -> {self.current_value}",
+                f"variable {self.name} updated {self.previous_value} -> {self.current_value}",
             )
             if cascade:
                 self.notify()
             return True
-        # logger.error(f"dataref {self.name} updated")
+        # logger.error(f"variable {self.name} updated")
         return False
 
     def add_listener(self, obj):
-        if not isinstance(obj, DataListener):
+        if not isinstance(obj, VariableListener):
             logger.warning(f"{self.name} not a listener {obj}")
         if obj not in self.listeners:
             self.listeners.append(obj)
         logger.debug(f"{self.name} added listener ({len(self.listeners)})")
 
     def remove_listener(self, obj):
-        if not isinstance(obj, DataListener):
+        if not isinstance(obj, VariableListener):
             logger.warning(f"{self.name} not a listener {obj}")
         if obj in self.listeners:
             self.listeners.remove(obj)
@@ -192,7 +197,7 @@ class Data(ABC):
 
     def notify(self):
         for lsnr in self.listeners:
-            lsnr.simulator_data_changed(self)
+            lsnr.variable_changed(self)
             if hasattr(lsnr, "page") and lsnr.page is not None:
                 logger.log(
                     SPAM_LEVEL,
@@ -208,8 +213,8 @@ class Data(ABC):
         pass
 
 
-class DataListener(ABC):
-    """A DataListener is an entity that is interested in being notified
+class VariableListener(ABC):
+    """A VariableListener is an entity that is interested in being notified
     when a data changes.
     """
 
@@ -217,16 +222,59 @@ class DataListener(ABC):
         self.name = name
 
     @abstractmethod
-    def data_changed(self, data: Data):
+    def variable_changed(self, data: Variable):
         pass
 
 
-class InternalData(Data):
-    """A InternalData is a data internal to Cockpitdecks.
+class VariableFactory:
+    """A VariableFactory has a function to generate variable for its own use."""
+
+    @abstractmethod
+    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+        raise NotImplemented
+
+
+class InternalVariable(Variable):
+    """A InternalVariable is a data internal to Cockpitdecks.
     It is used internally, but it can be used by Value.
     """
 
     def __init__(self, name: str, is_string: bool = False):
         if not name.startswith(INTERNAL_DATA_PREFIX):
             name = INTERNAL_DATA_PREFIX + name
-        Data.__init__(self, name=name, data_type="string" if is_string else "float")
+        Variable.__init__(self, name=name, data_type="string" if is_string else "float")
+
+
+class ValueProvider:
+    def __init__(self, name: str, provider):
+        self._provider = provider
+
+
+class InternalVariableValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, cockpit: Cockpit):
+        ValueProvider.__init__(self, name=name, provider=cockpit)
+
+    @abstractmethod
+    def get_internal_variable_value(self, name: str):
+        pass
+
+
+class VariableDatabase:
+
+    def __init__(self) -> None:
+        self.database: Dict[str, Variable] = {}
+
+    def register(self, variable: Variable) -> Variable:
+        if variable.name is None:
+            logger.warning(f"invalid variable name {variable.name}, not stored")
+            return variable
+        if variable.name not in self.database:
+            self.database[variable.name] = variable
+        else:
+            logger.debug(f"variable {variable.name} already registered")
+        return variable
+
+    def get(self, name: str) -> Variable | None:
+        if name not in self.database:
+            logger.debug(f"variable {name} not found")
+        return self.database.get(name)

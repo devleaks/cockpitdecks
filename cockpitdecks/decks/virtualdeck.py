@@ -12,7 +12,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 
 from cockpitdecks import DEFAULT_PAGE_NAME
-from cockpitdecks.resources.intdatarefs import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
 
@@ -75,7 +75,7 @@ class VirtualDeck(DeckWithIcons):
         if self.current_page is not None:
             logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
             logger.debug("..unloading simulator data..")
-            self.cockpit.sim.remove_simulator_data_to_monitor(self.current_page.simulator_data)
+            self.cockpit.sim.remove_simulator_variable_to_monitor(self.current_page.simulator_variable)
             logger.debug("..cleaning page..")
             self.current_page.clean()
         else:

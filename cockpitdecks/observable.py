@@ -3,7 +3,7 @@ import logging
 from typing import Set
 
 from cockpitdecks.constant import CONFIG_KW, ID_SEP
-from cockpitdecks.simulator import Simulator, SimulatorData, SimulatorDataListener
+from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener
 from cockpitdecks.instruction import MacroInstruction
 from cockpitdecks.value import Value
 
@@ -27,10 +27,10 @@ class Observables:
         self.sim = simulator
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         ret = set()
         for o in self.observables:
-            ret = ret | o.get_simulator_data()
+            ret = ret | o.get_simulator_variable()
         return ret
 
     def enable(self, name):
@@ -58,7 +58,7 @@ class Observables:
         return None
 
 
-class Observable(SimulatorDataListener):
+class Observable(SimulatorVariableListener):
     """An Observable is a Value that is monitored for changes.
        When the data changes, associated Instructions are performed (in sequence).
     Executes actions in list.
@@ -72,8 +72,7 @@ class Observable(SimulatorDataListener):
         self._enabled = config.get(CONFIG_KW.ENABLED.value, False)
         # Create a data "internal:observable:name" is enabled or disabled
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
-        print(self.sim)
-        self._enabled_data = self.sim.get_internal_data(self._enabled_data_name)
+        self._enabled_data = self.sim.get_internal_variable(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self.previous_value = None
@@ -120,21 +119,21 @@ class Observable(SimulatorDataListener):
         logger.info(f"observable {self.name} disabled")
 
     def init(self):
-        # Register datarefs and ask to be notified
-        simdata = self._value.get_simulator_data()
+        # Register simulator variables and ask to be notified
+        simdata = self._value.get_simulator_variable()
         if simdata is not None:
             for s in simdata:
-                ref = self.sim.get_data(s)
+                ref = self.sim.get_variable(s)
                 if ref is not None:
                     ref.add_listener(self)
 
         logger.debug(f"observable {self.name}: listening to {simdata}")
         # logger.debug(f"observable {self.name} inited")
 
-    def get_simulator_data(self) -> set:
-        return self._value.get_simulator_data()
+    def get_simulator_variable(self) -> set:
+        return self._value.get_simulator_variable()
 
-    def simulator_data_changed(self, data: SimulatorData):
+    def simulator_variable_changed(self, data: SimulatorVariable):
         # if not self._enabled:
         #     logger.warning(f"observable {self.name} disabled")
         #     return

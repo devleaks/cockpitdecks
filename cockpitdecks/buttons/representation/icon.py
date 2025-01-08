@@ -507,7 +507,7 @@ class MultiTexts(IconText):
         IconText.__init__(self, button=button)
         self.multi_texts = self._config.get("multi-texts", [])
 
-    def get_simulator_data(self) -> set:
+    def get_simulator_variable(self) -> set:
         datarefs = set()
         for text in self.multi_texts:
             drefs = self.button.scan_datarefs(text)

@@ -6,16 +6,19 @@ Manage interaction with X-Plane, fetch or write datarefs.
 Maintain a "value", and some internal attributes.
 """
 
+from __future__ import annotations
+
 import re
 import logging
 import sys
+from abc import ABC, abstractmethod
 
 
-from .buttons.activation import ACTIVATION_VALUE
+from .buttons.activation import ACTIVATION_VALUE, ActivationValueProvider
 from .buttons.representation import Annunciator
-from .data import InternalData
-from .simulator import SimulatorData, SimulatorDataListener
-from .value import Value, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider
+from .variable import ValueProvider, InternalVariable
+from .simulator import SimulatorVariable, SimulatorVariableListener, SimulatorVariableValueProvider
+from .value import Value
 from .instruction import Instruction
 
 from cockpitdecks import (
@@ -31,12 +34,21 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-DECK_BUTTON_DEFINITION = "_deck_def"
+DECK_BUTTON_DEFINITION = "_deck_def"  # warning: this attribute MUST match an attribute in JSON/JavaScript object in jinja templates
 
 
-class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableValueProvider, ActivationValueProvider):
+class StateVariableValueProvider(ABC, ValueProvider):
+    def __init__(self, name: str, button: Button):
+        ValueProvider.__init__(self, name=name, provider=button)
+
+    @abstractmethod
+    def get_state_variable_value(self, name: str):
+        pass
+
+
+class Button(SimulatorVariableListener, SimulatorVariableValueProvider, StateVariableValueProvider, ActivationValueProvider):
     def __init__(self, config: dict, page: "Page"):
-        SimulatorDataListener.__init__(self)
+        SimulatorVariableListener.__init__(self)
 
         # Definition and references
         self._config = config
@@ -120,22 +132,22 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
 
         #### Datarefs
         #
-        self.dataref = config.get(CONFIG_KW.SIM_DATUM.value)
+        self.dataref = config.get(CONFIG_KW.SIM_VARIABLE.value)
         self.formula = config.get(CONFIG_KW.FORMULA.value)
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
-            self.managed = self.manager.get(CONFIG_KW.SIM_DATUM.value)
+            self.managed = self.manager.get(CONFIG_KW.SIM_VARIABLE.value)
             if self.managed is None:
                 logger.warning(f"button {self.name} has manager but no dataref")
 
         self.guarded = config.get(CONFIG_KW.GUARD.value)
         self._guard_dref = None
         if self.guarded is not None and type(self.guarded) is dict:
-            guard_dref_path = self.guarded.get(CONFIG_KW.SIM_DATUM.value)
+            guard_dref_path = self.guarded.get(CONFIG_KW.SIM_VARIABLE.value)
             if guard_dref_path is None:
                 logger.warning(f"button {self.name} has guard but no dataref")
             else:
-                self._guard_dref = self.sim.get_data(guard_dref_path)
+                self._guard_dref = self.sim.get_variable(guard_dref_path)
                 self._guard_dref.update_value(new_value=0, cascade=False)  # need initial value,  especially for internal drefs
                 logger.debug(f"button {self.name} has guard {self._guard_dref.name}")
 
@@ -154,9 +166,9 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
 
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
-        self.all_datarefs = self.get_simulator_data()  # this does not add string datarefs
+        self.all_datarefs = self.get_simulator_variable()  # this does not add string datarefs
         if len(self.all_datarefs) > 0:
-            self.page.register_simulator_data(self)  # when the button's page is loaded, we monitor these datarefs
+            self.page.register_simulator_variable(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
 
         # collection in single set
@@ -167,7 +179,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             self._def.set_block_wallpaper(self.wallpaper)
 
         # Initialize value providers
-        SimulatorDataValueProvider.__init__(self, name=self.name, simulator=self.sim)
+        SimulatorVariableValueProvider.__init__(self, name=self.name, simulator=self.sim)
         StateVariableValueProvider.__init__(self, name=self.name, button=self)
         ActivationValueProvider.__init__(self, name=self.name, activation=self._activation)
 
@@ -215,7 +227,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         return ID_SEP.join([self.page.get_id(), str(self.index)])
 
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        self.sim.inc_internal_data(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+        self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
     def get_button_value(self, name):
         # Parses name into cockpit:deck:page:button and see if button is self
@@ -254,8 +266,8 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             logger.info(f"Button {self.name} -- {what}")
             if "dataref" in what:
                 # logger.info("")
-                for d in self.get_simulator_data():
-                    v = self.get_simulator_data_value(simulator_data=d)
+                for d in self.get_simulator_variable():
+                    v = self.get_simulator_variable_value(simulator_variable=d)
                     logger.info(f"    {d} = {v}")
             if "activation" in what or "longpress" in what:
                 logger.info("")
@@ -424,7 +436,7 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
-    def get_simulator_data(self, base: dict | None = None) -> set:
+    def get_simulator_variable(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -436,13 +448,13 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.get_simulator_data(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
+        r = self._value.get_simulator_variable(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
 
         # 1b. Managed values
         managed = None
         managed_dict = base.get(CONFIG_KW.MANAGED.value)
         if managed_dict is not None:
-            managed = managed_dict.get(CONFIG_KW.SIM_DATUM.value)
+            managed = managed_dict.get(CONFIG_KW.SIM_VARIABLE.value)
         if managed is not None:
             r.add(managed)
             logger.debug(f"button {self.name}: added managed dataref {managed}")
@@ -451,25 +463,25 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         guarded = None
         guard_dict = base.get(CONFIG_KW.GUARD.value)
         if guard_dict is not None:
-            guarded = guard_dict.get(CONFIG_KW.SIM_DATUM.value)
+            guarded = guard_dict.get(CONFIG_KW.SIM_VARIABLE.value)
         if guarded is not None:
             r.add(guarded)
             logger.debug(f"button {self.name}: added guarding dataref {guarded}")
 
         # Activation datarefs
         if self._activation is not None:
-            datarefs = self._activation.get_simulator_data()
+            datarefs = self._activation.get_simulator_variable()
             if datarefs is not None:
                 r = r | datarefs
-                self._value.complement_datarefs(r, reason="activation")
+                self._value.add_variables(r, reason="activation")
                 logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
 
         # Representation datarefs
         if self._representation is not None:
-            datarefs = self._representation.get_simulator_data()
+            datarefs = self._representation.get_simulator_variable()
             if datarefs is not None:
                 r = r | datarefs
-                self._value.complement_datarefs(r, reason="representation")
+                self._value.add_variables(r, reason="representation")
                 logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
 
         return r  # removes duplicates
@@ -488,13 +500,13 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
         if self.managed is None:
             logger.debug(f"button {self.name}: is managed is none.")
             return False
-        d = self.get_simulator_data_value(simulator_data=self.managed, default=0)
+        d = self.get_simulator_variable_value(simulator_variable=self.managed, default=0)
         if d != 0:
             logger.debug(f"button {self.name}: is managed ({d}).")
             return True
         logger.debug(f"button {self.name}: is not managed ({d}).")
         return False
-        # return self.managed is not None and self.get_simulator_data_value(simulator_data=dataref=self.managed, default=0) != 0
+        # return self.managed is not None and self.get_simulator_variable_value(simulator_variable=dataref=self.managed, default=0) != 0
 
     def has_guard(self):
         return self._guard_dref is not None
@@ -528,11 +540,8 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
     # ##################################
     # Value provider
     #
-    def get_dataref(self, dataref):
-        return self.page.get_data(dataref=dataref)
-
-    def get_simulator_data_value(self, simulator_data, default=None):
-        return self.page.get_simulator_data_value(simulator_data=simulator_data, default=default)
+    def get_simulator_variable_value(self, simulator_variable, default=None):
+        return self.page.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
 
     def get_state_variable_value(self, name, default: str = "0"):
         value = None
@@ -635,11 +644,11 @@ class Button(SimulatorDataListener, SimulatorDataValueProvider, StateVariableVal
     # ##################################
     # External API
     #
-    def simulator_data_changed(self, data: SimulatorData):
+    def simulator_variable_changed(self, data: SimulatorVariable):
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorData) and not isinstance(data, InternalData):
+        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable):
             logger.error(f"button {self.name}: not a simulator data ({type(data).__name__})")
             return
         logger.debug(f"{self.name}: {data.name} changed")
