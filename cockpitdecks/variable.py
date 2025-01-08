@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from abc import ABC, abstractmethod
+from typing import Dict
 import traceback
 
 
@@ -261,7 +262,7 @@ class InternalVariableValueProvider(ABC, ValueProvider):
 class VariableDatabase:
 
     def __init__(self) -> None:
-        self.database = {}
+        self.database: Dict[str, Variable] = {}
 
     def register(self, variable: Variable) -> Variable:
         if variable.name is None:
