@@ -27,10 +27,10 @@ from avwx import Station
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("make_metar")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
-def distance(origin, destination):
+def distance(origin: tuple, destination: tuple) -> float:
     """
     Calculate the Haversine distance.
 
@@ -72,7 +72,68 @@ class WEATHER_LOCATION(Enum):
     REGION = "region"
 
 
+# ######################################################################################
+# Enumerations for datarefs
+#
 CLOUD_TYPE = ["Cirrus", "Stratus", "Cumulus", "Cumulo-nimbus"]
+
+WEATHER_PRESETS = ["Clear", "VFR Few", "VFR Scattered", "VFR Broken", "VFR Marginal", "IFR Non-precision", "IFR Precision", "Convective", "Large-cell Storms"]
+
+WEATHER_SOURCES = ["Preset", "Real Weather", "Controlpad", "Plugin"]
+
+RUNWAY_FRICTION = {"dry": (0 - 0), "wet": (1 - 3), "puddly": (4 - 6), "snowy": (7 - 9), "icy": (10 - 12), "snowy/icy": (13 - 15)}
+
+CONDITIONS = [
+    {"name": "DRY", "desc": "Normal runway conditions - Standard braking performance and handling characteristics", "coef": "1.00"},
+    # Wet conditions
+    {"name": "WET Light", "desc": "Slightly wet surface - Minor reduction in braking effectiveness, exercise normal caution", "coef": "0.85"},
+    {"name": "WET Medium", "desc": "Wet surface with reduced braking - Increased stopping distance, firm brake pressure needed", "coef": "0.70"},
+    {
+        "name": "WET Maximum",
+        "desc": "Very wet with significantly reduced braking - Considerable increase in stopping distance, potential for hydroplaning at high speeds",
+        "coef": "0.55",
+    },
+    # Standing Water
+    {
+        "name": "Standing Water Light",
+        "desc": "Shallow puddles present - Early hydroplaning possible above 100 knots, directional control becomes sensitive",
+        "coef": "0.45",
+    },
+    {
+        "name": "Standing Water Medium",
+        "desc": "Significant puddles with high hydroplaning risk - Use reduced landing speeds, expect poor braking effectiveness",
+        "coef": "0.35",
+    },
+    {
+        "name": "Standing Water Maximum",
+        "desc": "Deep water with severe hydroplaning risk - Consider alternate runway, extreme caution required during landing roll",
+        "coef": "0.25",
+    },
+    # Snow conditions
+    {
+        "name": "SNOW Light",
+        "desc": "Light snow coverage - Reduced friction, careful control inputs needed, watch for snow banks near runway edges",
+        "coef": "0.40",
+    },
+    {
+        "name": "SNOW Medium",
+        "desc": "Moderate snow with significantly reduced friction - Steering effectiveness decreased, plan for longer stopping distance",
+        "coef": "0.30",
+    },
+    {
+        "name": "SNOW Maximum",
+        "desc": "Heavy snow coverage - Very poor braking action, consider wind effects on loose snow, significant stopping distance increase",
+        "coef": "0.20",
+    },
+    # Ice conditions
+    {"name": "ICE Light", "desc": "Patches of ice present - Unpredictable braking performance, careful rudder inputs required", "coef": "0.15"},
+    {"name": "ICE Medium", "desc": "Significant ice coverage - Very limited braking action, extreme caution during turn-off", "coef": "0.10"},
+    {"name": "ICE Maximum", "desc": "Complete ice coverage - Minimal effective braking, risk of complete directional control loss", "coef": "0.05"},
+    # Snow and Ice
+    {"name": "SNOW/ICE Light", "desc": "Light snow over ice - Very poor friction, unpredictable surface changes, exercise extreme caution", "coef": "0.12"},
+    {"name": "SNOW/ICE Medium", "desc": "Moderate snow over ice - Severe braking limitations, high risk of directional control loss", "coef": "0.08"},
+    {"name": "SNOW/ICE Maximum", "desc": "Heavy snow over ice - Most hazardous condition, consider runway closure conditions, extreme risk", "coef": "0.04"},
+]
 
 # ######################################################################################
 # Mapping between python class instance attributes and datarefs:
@@ -184,10 +245,11 @@ class DatarefAccessor:
 
     def __getattr__(self, name: str):
         # print("converting", name)
+        src = name
         name = f"{self.attr_db[name]}"
         if self.__drefidx__ is not None:
             name = name + f"[{self.__drefidx__}]"
-        # print("getting", name)
+        # print("getting", src, " > ", name, "=", self.__datarefs__.get(name))
         # return dref.value() if dref is not None else None # if dict values are datarefs, not values
         return self.__datarefs__.get(name)
 
@@ -196,10 +258,43 @@ class WindLayer(DatarefAccessor):
     def __init__(self, attr_db: dict, drefs: dict, index):
         DatarefAccessor.__init__(self, attr_db=attr_db, drefs=drefs, index=index)
 
+    def __str__(self):
+        wind_dir = 0
+        try:
+            wind_dir = self.wind_dir
+        except:
+            wind_dir = self.direction
+
+        wind_speed = 0
+        try:
+            wind_speed = self.wind_speed
+            wind_speed = wind_speed * 1.943844
+        except:
+            wind_speed = self.speed_kts
+
+        return f"wind: {round(self.alt_msl)}m {round(wind_dir)}° {round(wind_speed)} kt"
+
 
 class CloudLayer(DatarefAccessor):
     def __init__(self, attr_db: dict, drefs: dict, index):
         DatarefAccessor.__init__(self, attr_db=attr_db, drefs=drefs, index=index)
+
+    def __str__(self):
+        cov = int(self.coverage / 0.125) if self.coverage is not None else None
+        if cov is None:
+            return f"cloud: {self.cloud_type} /// {round(self.base)}-{round(self.tops)}"
+        # alt = to_fl(l.base, 5)
+        # print(l.base, l.base * 3.042, ":", cov)
+        s = ""
+        if cov > 0 and cov <= 2:
+            s = "FEW"
+        elif cov > 2 and cov <= 4:
+            s = "SCT"
+        elif cov > 4 and cov <= 7:
+            s = "BKN"
+        elif cov > 7:
+            s = "OVC"
+        return f"cloud: {round(self.cloud_type, 2)} {s} ({round(self.coverage, 2)}) {round(self.base)}m-{round(self.tops)}m"
 
 
 class Weather(DatarefAccessor):
@@ -262,6 +357,8 @@ class XPWeatherData:
 
         for i in range(self.WIND_LAYERS):
             self.wind_layers.append(WindLayer(DATAREF_WIND, drefs, i))
+
+        self.sort_layers_by_alt()
 
     def collect_weather_datarefs(self, update: bool = True, position_only: bool = False) -> dict:
         if not update:
@@ -342,7 +439,7 @@ class XPWeatherData:
         self.last_updated = datetime.now().timestamp()
         return weather_datarefs
 
-    def older_than(self, seconds):
+    def older_than(self, seconds: int) -> bool:
         if self.last_updated is None:
             logger.info("no data")
             return True
@@ -350,7 +447,7 @@ class XPWeatherData:
         logger.info(f"older: {round(now - self.last_updated, 2)} vs {seconds}secs.")
         return now - self.last_updated > seconds
 
-    def further_than(self, kilometers):
+    def further_than(self, kilometers: int) -> bool:
         if self.station is None:
             logger.info("no station")
             return True
@@ -361,13 +458,15 @@ class XPWeatherData:
         logger.info(f"further: {round(dist, 1)} vs {kilometers}km")
         return dist > kilometers
 
-    def guess_location(self):
-        logger.info("location not guessed")
-
-    def get_station(self) -> Station:
+    def guess_location(self) -> Station:
         lat = self.weather.latitude
         lon = self.weather.longitude
         return Station.nearest(lat=lat, lon=lon, max_coord_distance=150000)
+
+    def get_station(self) -> Station:
+        if self.station is None:
+            return self.guess_location()
+        return self.station
 
     def setStation(self, station: Station):
         self.station = station
@@ -388,7 +487,6 @@ class XPWeatherData:
 
     def cloud_layer_at(self, alt=0) -> CloudLayer | None:
         # Returns cloud layer at altitude alt (MSL)
-        self.sort_layers_by_alt()
         for l in self.cloud_layers:
             if alt <= l.base:
                 return l
@@ -397,7 +495,6 @@ class XPWeatherData:
     def wind_layer_at(self, alt=0) -> WindLayer | None:
         # Returns wind layer at altitude alt (MSL)
         # Collect level bases with index
-        self.sort_layers_by_alt()
         for l in self.wind_layers:
             if alt <= l.alt_msl:
                 return l
@@ -412,12 +509,14 @@ class XPWeatherData:
         i = 0
         for l in self.cloud_layers:
             print(f"[{i}]", self.rnd(getattr(l, "base")), self.rnd(getattr(l, "tops")))
+            print(l)
             i = i + 1
 
     def print_wind_layers_alt(self):
         i = 0
         for l in self.wind_layers:
             print(f"[{i}]", self.rnd(getattr(l, "alt_msl")))
+            print(l)
             i = i + 1
 
     # ################################################
@@ -459,7 +558,6 @@ class XPWeatherData:
             dist = round(self.weather.visibility * 1609)  ## m
             nocov = True
         # 2. look at each cloud layer coverage
-        self.sort_layers_by_alt()
         i = 0
         while nocov and i < len(self.cloud_layers):
             cl = self.cloud_layers[i]
@@ -477,7 +575,6 @@ class XPWeatherData:
             if hasattr(self.weather, "temperature_msl") and self.weather.temperature_msl is not None:
                 t1 = self.weather.temperature_msl
         # Dew point of lowest wind layer
-        self.sort_layers_by_alt()
         l = self.wind_layers[0]
         t2 = None
         if hasattr(l, "dew_point") and l.dew_point is not None:
@@ -518,7 +615,7 @@ class XPWeatherData:
         if len(self.wind_layers) > 0:
             hasalt = list(filter(lambda x: x.alt_msl is not None, self.wind_layers))
             if len(hasalt) > 0:
-                lb = sorted(hasalt, key=lambda x: x.alt_msl, reverse=True)
+                lb = sorted(hasalt, key=lambda x: x.alt_msl)
                 lowest = lb[0]
                 speed = 0
                 direct = None
@@ -531,6 +628,7 @@ class XPWeatherData:
                 if direct is None:
                     ret = "VRB"
                 else:
+                    direct = 10 * round(direct / 10)
                     ret = f"{round(direct):03d}"
                 if speed < 0:  # -1: speed not available
                     ret = ret + "//KT"
@@ -554,17 +652,21 @@ class XPWeatherData:
 
     def metar_group_rvr(self) -> str:
         # if station is an airport and airport has runways
+        # difficult to go to each location (runway extremities?) and make METAR...
+        # may be one day
         return ""
 
     def metar_group_phenomenae(self) -> str:
-        # hardest: From
-        # 1 Does it rain, snow? does water come down?
-        # 2 Surface wind
-        # 3 Cloud type, coverage and base of lowest layer
-        # 4 Visibility
-        # Determine:
-        # Heavy/Moderate/Light
-        # Weather::
+        ### Table 4678: Weather Codes
+        #
+        ### Intensity:
+        # - Light
+        # + Heavy
+        #
+        ### Vicinity:
+        # VC in the Vicinty (8 to 16 km around location)
+        #
+        ### Descriptor:
         # BC Patches
         # BL Blowing
         # DL Distant lightning
@@ -574,31 +676,48 @@ class XPWeatherData:
         # PR Partial
         # SH Showers
         # TS Thunderstorm
-        # VC in the Vicinty
-        # Phenomenae::
-        # BR Mist
-        # DU Dust
-        # DS Duststorm
+        #
+        ### Precipitation:
         # DZ Drizzle
-        # FC Funnel cloud
-        # FG Fog
-        # FU Smoke
-        # GR Hail
-        # GS Small hail/snow pellets
-        # HZ Haze
-        # PL Ice pellets
-        # PO Dust devil
         # RA Rain
-        # SA Sand
         # SG Snow grains
         # SN Snow
-        # SQ Squall
-        # SS Sandstorm
-        # VA Volcanic ash
+        # IC Ice cristals or powder
+        # PL Ice pellets
+        # GR Hail
+        # GS Small hail/snow pellets
         # UP Unidentified precipitation
         #
+        ### Reduced visibility:
+        # BR Mist
+        # FG Fog
+        # FU Smoke
+        # VA Volcanic ash
+        # DU Dust
+        # SA Sand
+        # HZ Haze
+        #
+        ### Other:
+        # PO Dust devil
+        # SQ Squall
+        # FC Funnel cloud
+        # SS Sandstorm
+        # DS Duststorm
+        #
+        ### Information from X-Plane Weather
+        #
+        ###
+        # 0 From
+
+        # 1 Does it rain, snow? does water come down?
+
+        # 2 Surface wind
+
+        # 3 Cloud type, coverage and base of lowest layer
+
+        # 4 Visibility
+
         phenomenon = ""
-        self.sort_layers_by_alt()
         vis = 9999
         if self.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
             if self.weather.visibility is not None:
@@ -628,7 +747,7 @@ class XPWeatherData:
             return fl
 
         clouds = ""
-        self.sort_layers_by_alt()
+        i = 0
         last = -1
         for l in self.cloud_layers:
             local = ""
@@ -649,7 +768,10 @@ class XPWeatherData:
                     alt = to_fl(l.base, 5)
                     local = f"{s}{alt:03d}"
                 last = cov
+            else:
+                logger.debug(f"cloud layer {i}: coverage {cov} not larger than {last}")
             clouds = clouds + " " + local
+            i = i + 1
         return clouds.strip()
 
     def metar_group_temperatures(self) -> str:
@@ -674,7 +796,6 @@ class XPWeatherData:
                 t1 = "//"
         temp = negtemp(t1)
         # Dew point of lowest wind layer
-        self.sort_layers_by_alt()
         l = self.wind_layers[0]
         t1 = None
         if hasattr(l, "dew_point") and l.dew_point is not None:
@@ -781,7 +902,7 @@ class XPWeatherData:
             covcode = "SCT"
         elif 4 < covr8 <= 7:
             covcode = "BKN"
-        else:
+        elif covr8 > 7:
             covcode = "OVC"
         lines.append(f"Clouds:{covr8}/8 {covcode} {CLOUD_TYPE[int(currcl.cloud_type)]} (C{cidx})")
 
@@ -850,24 +971,26 @@ class XPWeatherData:
 if __name__ == "__main__":
     api_url = "http://192.168.1.140:8080/api/v1/datarefs"
     w = XPWeatherData(api_url=api_url, weather_type=WEATHER_LOCATION.REGION.value, update=True)
-    w.print(level=logging.DEBUG)  # writes to logger.debug
+    # w.print(level=logging.DEBUG)  # writes to logger.debug
 
-    w.print_cloud_layers_alt()
-    print("cl base", w.cloud_layer_at(0).base)
+    # w.print_cloud_layers_alt()
+    # print("cl base", w.cloud_layer_at(0).base)
 
-    w.print_wind_layers_alt()
-    print("wl base", w.wind_layer_at(0).alt_msl)
+    # w.print_wind_layers_alt()
+    # print("wl base", w.wind_layer_at(0).alt_msl)
 
-    print("sample values")
-    if w.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
-        print("baro", w.weather.baro)
-        print("qnh", w.weather.qnh)
-    else:
-        print("qnh base", w.weather.qnh_pas)
-    print("cloud type", w.cloud_layers[2].cloud_type)
-    print("wind layer alt", w.wind_layers[7].alt_msl)
-
+    # print("sample values")
+    # if w.weather_type == WEATHER_LOCATION.AIRCRAFT.value:
+    #     print("baro", w.weather.baro)
+    #     print("qnh", w.weather.qnh)
+    # else:
+    #     print("qnh base", w.weather.qnh_pas)
+    # print("cloud type", w.cloud_layers[2].cloud_type)
+    # print("wind layer alt", w.wind_layers[7].alt_msl)
     print("generated metar")
     print(w.get_metar_desc())
+
+    print("-- icon:")
+    print("\n".join(w.get_metar_lines()))
 
     # w.update()

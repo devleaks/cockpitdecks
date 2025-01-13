@@ -24,10 +24,11 @@ yaml = YAML(typ="safe", pure=True)
 # ###########################################################
 # C O C K P T D E C K S
 #
-RELEASE = "1.3.0"  # local version number
+RELEASE = "1.3.1"  # local version number
 #
 # Changelog:
 #
+# 09-JAN-2025: 1.3.1: Added explicit command begin-end-command in search
 # 28-OCT-2024: 1.3.0: Added code to split large quantities of string into acceptable UDP packets
 # 23-OCT-2024: 1.2.0: Add maximum frequency (~10 secs) for collection, send UDP more frequently
 # 30-SEP-2024: 1.1.2: Add maximum frequency (~10 secs)
@@ -59,7 +60,7 @@ CDH_DATAREFS = [CDH_IS_RUNNING, CDH_RELEASE, CDH_LPCOMMANDS, CDH_STRINGDREF]
 #
 # Commands extracted from these button types
 # will get a command/begin command/end helper command.
-NOTICABLE_BUTTON_TYPES = ["long-press", "longpress"]
+NOTICABLE_BUTTON_TYPES = ["long-press", "longpress", "begin-end-command"]
 #
 REF = "cmdref"
 FUN = "cmdfun"

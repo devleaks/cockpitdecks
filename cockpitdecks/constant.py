@@ -61,6 +61,8 @@ TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCE
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
 
 AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
+AIRCRAFT_ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
+
 MONITOR_DATAREF_USAGE = True
 
 # the following extensions are supposed to always be available

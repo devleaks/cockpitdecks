@@ -22,6 +22,7 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
+from cockpitdecks.aircraft import Aircraft
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_SERIAL
 
@@ -30,6 +31,7 @@ from cockpitdecks import (
     # Constants, keywords
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
+    AIRCRAFT_ICAO_DATAREF,
     ASSETS_FOLDER,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
@@ -86,6 +88,8 @@ from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import Activation
 from cockpitdecks.buttons.representation import Representation, HardwareRepresentation
+
+from cockpitdecks.aircraft import Aircraft
 
 # #################################
 #
@@ -300,7 +304,7 @@ RELOAD_ON_LIVERY_CHANGE = False
 INTERNAL_AIRCRAFT_CHANGE_DATAREF = "_livery"  # dataref name is data:_livery
 
 # Little internal kitchen for internal datarefs
-AIRCRAF_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF}
+AIRCRAF_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF, CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_ICAO_DATAREF}
 
 PERMANENT_SIMULATOR_DATA = AIRCRAF_CHANGE_SIMULATOR_DATA
 
@@ -436,6 +440,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
         self.init()  # this will install all available simulators
+
+        self.aircraft = Aircraft(acpath=self._acpath, cockpit=self)
 
     @property
     def acpath(self):
@@ -2003,6 +2009,26 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         if self.mode > 0 and not RELOAD_ON_LIVERY_CHANGE:
             logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
             return
+
+        data = self.sim.all_simulator_variable.get(AIRCRAFT_ICAO_DATAREF)
+        if data is None:
+            logger.warning(f"no dataref {AIRCRAFT_ICAO_DATAREF}, ignoring")
+            return
+
+        acicao = data.value()
+        if acicao is None or type(acicao) is not str:
+            logger.warning(f"aircraft icao invalid value {acicao}, ignoring")
+            return
+
+        if self.icao == acicao:
+            logger.info(f"aircraft icao unchanged {self.icao}")
+            return
+
+        if self.mode > 0 and not RELOAD_ON_LIVERY_CHANGE:
+            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
+            return
+
+        logger.info(f"aircraft icao {acicao}")
 
         acname = self.get_aircraft_name_from_livery_path(value)
         new_livery = self.get_livery(value)
