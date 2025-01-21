@@ -19,6 +19,8 @@ from .data import DataIcon
 from .chart import ChartIcon
 from .gauge import TapeIcon, GaugeIcon
 from .solari import SolariIcon
+from .weather import WeatherBaseIcon
+from .weatherstationplot import WeatherStationPlot
 
 # Special Web Deck represenations for hardware button
 from .hardware import HardwareRepresentation, VirtualLED, VirtualEncoder

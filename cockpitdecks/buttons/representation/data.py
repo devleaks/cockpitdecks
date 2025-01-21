@@ -53,7 +53,7 @@ class DataIcon(DrawBase):
         DrawBase.__init__(self, button=button)
         self.data = self._config[self.REPRESENTATION_NAME]
 
-    def get_simulator_variable(self) -> set:
+    def get_variables(self) -> set:
         if self.datarefs is None:
             if self.data is not None:
                 self.datarefs = self.button.scan_datarefs(base=self.data)

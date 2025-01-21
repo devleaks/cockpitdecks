@@ -210,6 +210,8 @@ class Variable(ABC):
                 )
 
     def save(self):
+        # raise NotImplementedError
+        # logger.warning(f"{self.name} nothing to save")
         pass
 
 
@@ -223,7 +225,7 @@ class VariableListener(ABC):
 
     @abstractmethod
     def variable_changed(self, data: Variable):
-        pass
+        raise NotImplementedError
 
 
 class VariableFactory:

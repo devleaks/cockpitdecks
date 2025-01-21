@@ -32,7 +32,7 @@ from ruamel.yaml import YAML
 
 from cockpitdecks.constant import ENVIRON_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, Config
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
 from cockpitdecks.cockpit import DECK_TYPE_DESCRIPTION
 
 
@@ -59,7 +59,8 @@ if LOGFILE is not None:
 # COMMAND LINE PARSING
 #
 # No aircraft supplied starts the demo version.
-DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
+# DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
+DESC = __DESCRIPTION__
 DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "DEMO")
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"

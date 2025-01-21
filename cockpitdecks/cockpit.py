@@ -624,7 +624,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                     if trace_ext_loading:
                         logger.info(f"loading module {full_name}")
                 except ModuleNotFoundError:
-                    logger.warning(f"module {full_name} not found, ignored")
+                    logger.warning(f"module {full_name} not found, ignored", exc_info=True)
                     continue
                 except:
                     logger.warning(f"module {full_name}: error", exc_info=True)
@@ -654,13 +654,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         logger.debug(f"..loaded")
         logger.info(f"loaded extensions {", ".join(loaded)}")
 
-    def get_simulator_variable(self) -> set:
+    def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified."""
         ret = self._simulator_variable_names
         # Observables gets notified themselves
         # if len(self.observables) > 0:
         #     for o in self.observables.values():
-        #         ret = ret | o.get_simulator_variable()
+        #         ret = ret | o.get_variables()
         return ret
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:

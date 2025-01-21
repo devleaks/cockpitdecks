@@ -256,7 +256,7 @@ class Activation:
     def has_long_press(self) -> bool:
         return self._long_press is not None and self._long_press.is_valid()
 
-    def get_simulator_variable(self) -> set:
+    def get_variables(self) -> set:
         if self._writable_dataref is not None:
             return {self._writable_dataref.name}
         return set()

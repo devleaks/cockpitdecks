@@ -203,3 +203,4 @@ cockpitdecks/resources/fonts/SplitFlapTV-Regular.otf
 cockpitdecks/resources/fonts/SplitFlapTVBlackLine-Regular.otf
 weather-ICAO-aircraft.json
 weather-ICAO-region.json
+*.sqlite

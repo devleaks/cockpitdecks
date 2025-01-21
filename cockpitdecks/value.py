@@ -99,8 +99,8 @@ class Value:
         return None
 
     def get_state_variable_value(self, state):
-        if not hasattr(self._provider, "get_state_variable_value"):
-            #         if isinstance(self._provider, StateVariableValueProvider):
+        if hasattr(self._provider, "get_state_variable_value"):
+            # if isinstance(self._provider, StateVariableValueProvider):
             return self._provider.get_state_variable_value(state)
         return None
 
@@ -151,7 +151,7 @@ class Value:
         self._simulator_variable = self._simulator_variable | datarefs
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
-    def get_simulator_variable(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+    def get_variables(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
@@ -167,7 +167,7 @@ class Value:
         return self._simulator_variable
 
     def get_all_datarefs(self) -> list:
-        return self.get_simulator_variable() | self._string_simulator_variable
+        return self.get_variables() | self._string_simulator_variable
 
     def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """

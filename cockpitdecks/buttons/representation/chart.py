@@ -80,12 +80,12 @@ class ChartData(DrawBase, SimulatorVariableListener):
             if self.auto_update and self.keep == 0:
                 self.keep = math.ceil(self.time_width / self.update)
         if not self.auto_update:
-            for d in self.get_simulator_variable():
+            for d in self.get_variables():
                 dref = self.chart.button.sim.get_variable(d)
                 dref.add_listener(self)
-            logger.debug(f"chart {self.name}: installed listener on {self.get_simulator_variable()}")
+            logger.debug(f"chart {self.name}: installed listener on {self.get_variables()}")
 
-    def get_simulator_variable(self) -> set:
+    def get_variables(self) -> set:
         if self.datarefs is None:
             if self.chart is not None:
                 self.datarefs = self.chart.button.scan_datarefs(base=self.chart_config)
@@ -291,12 +291,12 @@ class ChartIcon(DrawAnimation):
                 i = i + 1
         self.charts = {d["name"]: ChartData(chart=self, config=d) for d in self.chart_configs[:MAX_SPARKLINES]}
 
-    def get_simulator_variable(self):
+    def get_variables(self):
         # Collects datarefs in each chart
         if self.datarefs is None:
             datarefs = set()
             for c in self.charts.values():
-                datarefs = datarefs | c.get_simulator_variable()
+                datarefs = datarefs | c.get_variables()
             self.datarefs = datarefs
         return self.datarefs
 

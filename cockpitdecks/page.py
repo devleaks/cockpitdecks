@@ -196,7 +196,7 @@ class Page:
 
         # Possible issue if a dataref is created here below and is a string dataref
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref
-        for d in button.get_simulator_variable():
+        for d in button.get_variables():
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d)  # creates or return already defined dataref
                 if ref is not None:
@@ -218,7 +218,7 @@ class Page:
             if ref is not None:
                 ref.remove_listener(button)
 
-        for d in button.get_simulator_variable():
+        for d in button.get_variables():
             ref = self.simulator_variable.get(d)
             if ref is not None:
                 ref.remove_listener(button)

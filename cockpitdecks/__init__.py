@@ -20,8 +20,9 @@ from .constant import *  # noqa: F403
 #
 __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
+__DESCRIPTION__ = "Desk and web decks to X-Plane 12.1+"
 
-__version__ = "13.1.1"
+__version__ = "13.2.0"
 
 #
 # ##########################################################################

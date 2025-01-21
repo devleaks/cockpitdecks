@@ -27,10 +27,10 @@ class Observables:
         self.sim = simulator
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
 
-    def get_simulator_variable(self) -> set:
+    def get_variables(self) -> set:
         ret = set()
         for o in self.observables:
-            ret = ret | o.get_simulator_variable()
+            ret = ret | o.get_variables()
         return ret
 
     def enable(self, name):
@@ -120,7 +120,7 @@ class Observable(SimulatorVariableListener):
 
     def init(self):
         # Register simulator variables and ask to be notified
-        simdata = self._value.get_simulator_variable()
+        simdata = self._value.get_variables()
         if simdata is not None:
             for s in simdata:
                 ref = self.sim.get_variable(s)
@@ -130,8 +130,8 @@ class Observable(SimulatorVariableListener):
         logger.debug(f"observable {self.name}: listening to {simdata}")
         # logger.debug(f"observable {self.name} inited")
 
-    def get_simulator_variable(self) -> set:
-        return self._value.get_simulator_variable()
+    def get_variables(self) -> set:
+        return self._value.get_variables()
 
     def simulator_variable_changed(self, data: SimulatorVariable):
         # if not self._enabled:

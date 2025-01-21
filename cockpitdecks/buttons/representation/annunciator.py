@@ -97,9 +97,9 @@ class AnnunciatorPart:
     def center_h(self):
         return self._center_h
 
-    def get_simulator_variable(self) -> set:
+    def get_variables(self) -> set:
         if self.datarefs is None:
-            self.datarefs = self._value.get_simulator_variable(extra_keys=["text"])
+            self.datarefs = self._value.get_variables(extra_keys=["text"])
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
@@ -446,7 +446,7 @@ class Annunciator(DrawBase):
             logger.error(f"button {self.button.name}: annunciator has no model")
 
         self.annunciator_datarefs: List[SimulatorVariable] | None = None
-        self.annunciator_datarefs = self.get_simulator_variable()
+        self.annunciator_datarefs = self.get_variables()
 
         DrawBase.__init__(self, button=button)
 
@@ -478,7 +478,7 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_simulator_variable(self) -> Set[SimulatorVariable]:
+    def get_variables(self) -> Set[SimulatorVariable]:
         """
         Complement button datarefs with annunciator special lit datarefs
         """
@@ -488,7 +488,7 @@ class Annunciator(DrawBase):
         r: Set[SimulatorVariable] = set()
         if self.annunciator_parts is not None:
             for k, v in self.annunciator_parts.items():
-                datarefs = v.get_simulator_variable()
+                datarefs = v.get_variables()
                 if len(datarefs) > 0:
                     r = r | datarefs
                     logger.debug(f"button {self.button.name}: added {k} datarefs {datarefs}")
