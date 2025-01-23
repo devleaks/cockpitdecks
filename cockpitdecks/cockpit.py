@@ -1777,7 +1777,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning("it is currently not possible to start a single deck -- please reload all decks to take new deck into account")
             # self._device_scanned = False
         else:
-            logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks ({', '.join(inv.keys())})")
+            logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks ({', '.join([str(s) for s in inv.keys()])})")
 
     def on_usb_disconnect(self, device_id, device_info):
         """Stopping and removing a device always works.

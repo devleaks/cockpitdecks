@@ -39,7 +39,7 @@ class WeatherData(ABC):
         self._station: Any
         self._weather: Any
 
-        self._check_freq = 60 # seconds
+        self._check_freq = 60  # seconds
 
         self._station_check_freq = 2 * 60  # seconds
         self._weather_check_freq = 10 * 60  # seconds

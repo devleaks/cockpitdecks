@@ -61,6 +61,9 @@ class WeatherStationPlot(WeatherBaseIcon):
     # #############################################
     # Cockpitdecks Representation interface
     #
+    def get_lines(self):
+        return ["No weather"]
+
     def make_weather_image(self):
         # See:
         # https://geo.libretexts.org/Bookshelves/Meteorology_and_Climate_Science/Practical_Meteorology_(Stull)/09%3A_Weather_Reports_and_Map_Analysis/9.02%3A_Synoptic_Weather_Maps
@@ -93,7 +96,8 @@ class WeatherStationPlot(WeatherBaseIcon):
         station_plot_data = self.collect_station_plot_data()
         if station_plot_data is None:
             logger.warning("no weather data")
-            return image
+            super().make_weather_image()  # displays text returned by get_lines() if no data
+            return
 
         # #########################
         # DRAW procedure
