@@ -6,37 +6,32 @@
 #
 from __future__ import annotations
 import logging
-from threading import RLock
-from datetime import datetime
-
-from avwx import Station
+from datetime import datetime, timedelta
+from threading import Lock
+from typing import Tuple
 
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.iconfonts import (
-    WEATHER_ICONS,
-    WEATHER_ICON_FONT,
-    DEFAULT_WEATHER_ICON,
-)
+from cockpitdecks.resources.iconfonts import WEATHER_ICON_FONT
 from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.resources.weather import WeatherData, WeatherDataListener
-from cockpitdecks.resources.weathericon import WeatherIcon
 from cockpitdecks.buttons.representation.draw_animation import DrawAnimation
+from cockpitdecks.simulator import SimulatorVariable, SimulatorVariableListener
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
 
-class WeatherBaseIcon(DrawAnimation, WeatherDataListener):
+class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListener):
     """Base class for all weather iconic representations.
     Subclasses produce different iconic representations: Simple text, pages of text, station plot...
     This base class proposes a simple textual display of lines returned by the get_lines() function.
     Internally, the weather-type class is responsible for fetching weather data
     """
 
-    REPRESENTATION_NAME = "weather-base-icon"
+    REPRESENTATION_NAME = "weather-icon-base"
 
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
@@ -53,46 +48,61 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener):
             button._config["animation"] = {}
             self.weather = {}
 
-        # Weather image management
-        self._cache = None
-        self._busy_updating = False  # need this for race condition during update (anim loop)
-
         # Working variables
-        self.weather_data: WeatherData
-        self.weather_icon: str | None = None
-        self.weather_icon_factory = WeatherIcon()  # decorating weather icon image
+        self._weather_data: WeatherData
+        self._last_updated = datetime.now().astimezone() - timedelta(seconds=3600)
+
+        # Weather image management
+        self.protection = Lock()
+
+        # Following parameters are overwritten by config
+        self.icao_dataref_path = button._config.get("string-dataref")
+        self.icao_dataref = None
 
         DrawAnimation.__init__(self, button=button)
-        # Following parameters are overwritten by config
 
         icao = self.weather.get("station", self.DEFAULT_STATION)
         self.set_label(icao)
 
         # "Animation" (refresh) rate
-        speed = self.weather.get("refresh", 30)  # minutes, should be ~30 minutes
+        speed = self.weather.get("refresh", 10)  # minutes, should be ~30 minutes
         self.speed = int(speed) * 60  # minutes
 
         # This is for the weather icon in the background
         self.icon_color = self.weather.get("icon-color", self.get_attribute("text-color"))
 
-    def __enter__(self):
-        self._busy_updating = True
-        logger.debug("updating..")
-
-    def __exit__(self, type, value, traceback):
-        self._busy_updating = False
-        logger.debug("..updated")
 
     def init(self):
-        if not self._inited:
-            super().init()
+        if self._inited:
+            return
+        if self.icao_dataref_path is not None:
+            # toliss_airbus/flightplan/departure_icao
+            # toliss_airbus/flightplan/destination_icao
+            self.icao_dataref = self.button.sim.get_variable(self.icao_dataref_path, is_string=True)
+            self.icao_dataref.add_listener(self)  # the representation gets notified directly.
+            self.simulator_variable_changed(self.icao_dataref)
             self._inited = True
+            logger.debug(f"initialized, waiting for dataref {self.icao_dataref.name}")
+        self._inited = True
 
     # #############################################
     # Weather data interface
     #
+    @property
+    def weather_data(self) -> WeatherData:
+        return self._weather_data
+
+    @weather_data.setter
+    def weather_data(self, weather_data: WeatherData):
+        self._weather_data = weather_data
+        self.weather_changed()
+
     def weather_changed(self):
+        self.set_label(self.weather_data.label)
         self.button.render()
+
+    def has_weather(self) -> bool:
+        return getattr(self, "weather_data", None) is not None
 
     # #############################################
     # Cockpitdecks Representation interface
@@ -104,24 +114,37 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener):
         """
         return self._inited and self.button.on_current_page()
 
-    def start(self):
-        super().start()
-        logger.info("starting weather surveillance")
-        self.weather_data.start()
+    def anim_start(self):
+        super().anim_start()
+        if self.has_weather():
+            logger.info("starting weather surveillance")
+            self.weather_data.start()
+        else:
+            logger.info(f"no weather surveillance {self.button.button_name()}")
 
-    def stop(self):
-        super().stop()
-        logger.info("stopping weather surveillance")
-        self.weather_data.stop()
+    def anim_stop(self):
+        super().anim_stop()
+        if self.weather_data is not None:
+            logger.info("stopping weather surveillance")
+            self.weather_data.stop()
+        else:
+            logger.info("no weather surveillance")
+
+    def animate(self):
+        if self.has_weather():
+            if not self.weather_data.is_running:
+                self.weather_data.start()
+        else:
+            logger.info(f"no weather surveillance {self.button.button_name()}")
 
     def updated(self) -> bool:
-        return False
+        """Determine if cached icon reflects weather data or needs redoing"""
+        if self.weather_data.last_updated is None:
+            return False
+        return self.weather_data.last_updated > self._last_updated
 
     def set_label(self, label: str = "Weather"):
         self.button._config["label"] = label if label is not None else "Weather"
-
-    def get_lines(self) -> list | None:
-        return None
 
     def get_image_for_icon(self):
         """
@@ -129,11 +152,26 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        with self:
-            if self.updated() or self._cache is None:
+        with self.protection:
+            if self.updated() or self._cached is None:
                 self.make_weather_image()
 
-        return self._cache
+        return self._cached
+
+    def simulator_variable_changed(self, data: SimulatorVariable):
+        # what if Dataref.internal_variableref_path("weather:*") change?
+        if data.name != self.icao_dataref_path:
+            return
+        icao = data.value()
+        if icao is None or icao == "":  # no new station, stick or current
+            return
+        self.weather_data.station =icao
+
+    # #############################################
+    # Cockpitdecks Representation interface
+    #
+    def get_lines(self) -> list | None:
+        return None
 
     def make_weather_image(self):
         # Generic display text in small font on icon
@@ -149,26 +187,19 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener):
         inside = round(0.04 * image.width + 0.5)
         w = image.width / 2
         h = image.height / 2
-        logger.debug(f"weather icon: {self.weather_icon}")
-        icon_text = WEATHER_ICONS.get(self.weather_icon)
-        final_icon = self.weather_icon
-        if icon_text is None:
-            logger.warning(f"weather icon '{self.weather_icon}' not found, using default ({DEFAULT_WEATHER_ICON})")
-            final_icon = DEFAULT_WEATHER_ICON
-            icon_text = WEATHER_ICONS.get(DEFAULT_WEATHER_ICON)
-            if icon_text is None:
-                logger.warning(f"default weather icon {DEFAULT_WEATHER_ICON} not found, using hardcoded default (wi_day_sunny)")
-                final_icon = "wi_day_sunny"
-                icon_text = "\uf00d"
-        logger.info(f"weather icon: {final_icon} ({self.speed})")
-        draw.text(
-            (w, h),
-            text=icon_text,
-            font=font,
-            anchor="mm",
-            align="center",
-            fill=light_off(icon_color, 0.8),
-        )
+        weather_icon, icon_text = self.weather_data.get_icon()
+        if weather_icon is not None:
+            logger.debug(f"weather icon: {weather_icon}")
+            draw.text(
+                (w, h),
+                text=icon_text,
+                font=font,
+                anchor="mm",
+                align="center",
+                fill=light_off(icon_color, 0.8),
+            )
+        else:
+            logger.debug("no weather icon")
 
         # Weather Data
         lines = self.get_lines()
@@ -211,4 +242,5 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener):
             who="Weather",
         )
         bg.alpha_composite(image)
-        self._cache = bg
+        self._last_updated = datetime.now().astimezone()
+        self._cached = bg

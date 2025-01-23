@@ -467,10 +467,15 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in Cockpit.all_subclasses(Deck) if s.DECK_NAME != "none"}
         logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
 
-        self.all_activations = {s.name(): s for s in Cockpit.all_subclasses(Activation)} | {DECK_ACTIONS.NONE.value: Activation}
+        # classes with NAME that ends with "-base" are considered "base" classes and should not be instancieted.
+        self.all_activations = {s.name(): s for s in Cockpit.all_subclasses(Activation) if not s.name().endswith("-base")} | {
+            DECK_ACTIONS.NONE.value: Activation
+        }
         logger.debug(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
 
-        self.all_representations = {s.name(): s for s in Cockpit.all_subclasses(Representation)} | {DECK_FEEDBACK.NONE.value: Representation}
+        self.all_representations = {s.name(): s for s in Cockpit.all_subclasses(Representation) if not s.name().endswith("-base")} | {
+            DECK_FEEDBACK.NONE.value: Representation
+        }
         logger.debug(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
 
         self.all_hardware_representations = {s.name(): s for s in Cockpit.all_subclasses(HardwareRepresentation)}

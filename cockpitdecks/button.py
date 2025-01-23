@@ -117,7 +117,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             config, all_representations=self.deck.cockpit.all_representations, all_hardware_representations=self.deck.cockpit.all_hardware_representations
         )
         if rtype is not None and rtype in self.deck.cockpit.all_representations:
-            self._representation = self.deck.cockpit.all_representations[rtype](self)
+            self._representation = self.deck.cockpit.all_representations[rtype](button=self)
             logger.debug(f"button {self.name} representation {rtype}")
         else:
             logger.info(f"button {self.name} has no representation defined, using default representation 'none'")
@@ -680,7 +680,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 return False
         else:
             logger.debug(f"button {self.name}: no activation")
-
 
         self.value = self.compute_value()
         self._value.save()  # write set-dataref with the button value and cascade effects

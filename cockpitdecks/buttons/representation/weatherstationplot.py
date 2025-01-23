@@ -10,7 +10,6 @@ from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
 
 from .weather import WeatherBaseIcon
-from cockpitdecks.resources.weather import WeatherData
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -24,7 +23,7 @@ class WeatherStationPlot(WeatherBaseIcon):
     Depends on avwx-engine
     """
 
-    REPRESENTATION_NAME = "live-station"
+    REPRESENTATION_NAME = "station-plot-base"
 
     DEFAULT_STATION = "EBBR"
 
@@ -53,36 +52,16 @@ class WeatherStationPlot(WeatherBaseIcon):
         self.good_color = "lime"
         self.disabled_color = "grey"
 
-    def update(self) -> bool:
-        return False
-
     @property
     def plot_data(self):
         if hasattr(self, "weather_data") and self.weather_data is not None:
             return self.weather_data.weather
         return None
 
-    def start(self):
-        super().start()
-        logger.info("starting weather surveillance")
-        self.weather_data.start()
-
-    def stop(self):
-        super().stop()
-        logger.info("stopping weather surveillance")
-        self.weather_data.stop()
-
     # #############################################
     # Cockpitdecks Representation interface
     #
-    def get_image_for_icon(self):
-        with self:
-            if self.updated() or self._cache is None:
-                self.make_station_plot()
-
-        return self._cache
-
-    def make_station_plot(self):
+    def make_weather_image(self):
         # See:
         # https://geo.libretexts.org/Bookshelves/Meteorology_and_Climate_Science/Practical_Meteorology_(Stull)/09%3A_Weather_Reports_and_Map_Analysis/9.02%3A_Synoptic_Weather_Maps
         # https://en.wikipedia.org/wiki/Station_model
@@ -666,31 +645,11 @@ class WeatherStationPlot(WeatherBaseIcon):
 
         logger.debug(f"..plot updated")
         # logger.setLevel(logging.INFO)
-        self._cache = bg
+        self._cached = bg
 
     # #############################################
-    # Metar update and utility function
-    # - because time update
-    # - because station changed (because aircraft movement)
+    # Weather data collection
     #
-    # Time-related Metars
-    # Past
-    def get_clouds_at(self, alt: str) -> list:
-        clouds = self.plot_data.data.clouds
-        if clouds is None or len(clouds) == 0:
-            return []
-        altmin = 0
-        altmax = CLOUD_BASE_CODES[0]
-        if alt[:3] == "mid":
-            altmin = CLOUD_BASE_CODES[0]
-            altmax = CLOUD_BASE_CODES[1]
-        elif alt == "high":
-            altmin = CLOUD_BASE_CODES[1]
-            altmax = 1000
-        clouds = list(filter(lambda c: altmin <= int(c.base) < altmax, clouds))
-        logger.debug(f"clouds at {alt}: {clouds}")
-        return clouds
-
     def collect_station_plot_data(self, at_random: bool = False) -> dict | None:
         def to_1690(alt: float) -> str:  # code
             code = 0
@@ -705,6 +664,22 @@ class WeatherStationPlot(WeatherBaseIcon):
                 logger.warning(f"code 1690: invalid code {code}")
                 return 0
             return 30 * int(code)
+
+        def get_clouds_at(alt: str) -> list:
+            clouds = self.plot_data.data.clouds
+            if clouds is None or len(clouds) == 0:
+                return []
+            altmin = 0
+            altmax = CLOUD_BASE_CODES[0]
+            if alt[:3] == "mid":
+                altmin = CLOUD_BASE_CODES[0]
+                altmax = CLOUD_BASE_CODES[1]
+            elif alt == "high":
+                altmin = CLOUD_BASE_CODES[1]
+                altmax = 1000
+            clouds = list(filter(lambda c: altmin <= int(c.base) < altmax, clouds))
+            logger.debug(f"clouds at {alt}: {clouds}")
+            return clouds
 
         # #########################
         # Information/value collection procedures
@@ -741,7 +716,7 @@ class WeatherStationPlot(WeatherBaseIcon):
         # center:
         def get_plot_clouds(alt: str):
             # gets the TYPE of cloud to make an icon
-            clouds = list(self.get_clouds_at(alt=alt))
+            clouds = list(get_clouds_at(alt=alt))
             if len(clouds) > 0:
                 for cloud in clouds:
                     if cloud.modifier is not None:
@@ -765,7 +740,7 @@ class WeatherStationPlot(WeatherBaseIcon):
             return get_plot_clouds(alt="low")
 
         def get_plot_low_clouds_cover():
-            clouds = list(self.get_clouds_at(alt="low"))
+            clouds = list(get_clouds_at(alt="low"))
             cloud = clouds[0] if len(clouds) > 0 else None
             if cloud is None:
                 return None
@@ -784,7 +759,7 @@ class WeatherStationPlot(WeatherBaseIcon):
             return None
 
         def get_plot_low_clouds_base():
-            clouds = list(self.get_clouds_at(alt="low"))
+            clouds = list(get_clouds_at(alt="low"))
             return int(clouds[0].base) * 30 if len(clouds) > 0 else None
 
         def get_plot_waves():
@@ -943,10 +918,14 @@ class WeatherStationPlot(WeatherBaseIcon):
 
 
 # #############################################
+#
+# Reference Data and Lists
+#
+# #############################################
 # Clouds
 #
-CLOUD_BASES = [3000, 6000]  # meters, low=ground-3000, mid=3000-6000, high=6000+
-CLOUD_BASE_CODES = [100, 200]  # meters, low=-100, mid=100-200, high=200+
+CLOUD_BASES = [3000, 6000]  # meters, low=ground-3000, mid=3000-6000, high=6000+ (meters)
+CLOUD_BASE_CODES = [100, 200]  # meters, low=100, mid=100-200, high=200+ (=feet/100, i.e. FL)
 CLOUD_TYPES = {
     "CI": {"name": "Cirrus", "wmo_code_low": 0},
     "CC": {"name": "Cirrocumulus", "wmo_code_low": 0},
@@ -969,8 +948,6 @@ CLOUD_TYPES = {
 # Present weather (from manned (code 4677) and automatic (4680) stations):
 # WMO code 4677: Present weather reported from a manned station.
 # WMO code 4680: Present weather reported from an automatic station.
-
-
 class CodePointMapping:
     """Map integer values to font code points."""
 

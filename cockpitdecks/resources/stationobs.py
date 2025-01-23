@@ -7,10 +7,11 @@ from cockpitdecks.variable import Variable
 
 WEATHER_STATION_VARIABLE = "weather-station-icao"
 
+
 class StationObservable(Observable):
     """Special observable that monitor the aircraft position
-       and update the closest weather/airport station every check_time seconds
-       if necessary.
+    and update the closest weather/airport station every check_time seconds
+    if necessary.
     """
 
     def __init__(self, config: dict, simulator: Simulator):

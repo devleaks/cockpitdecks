@@ -42,6 +42,9 @@ KW_CAVOK = "clear"  # Special keyword for CAVOK day or night
 CAVOK_DAY = "wi_day_sunny"
 CAVOK_NIGHT = "wi_night_clear"
 
+HARDCODED_DEFAULT = "wi_day_sunny"
+HARDCODED_ICON = "\uf00d"
+
 
 #
 # Weather icon
@@ -357,24 +360,22 @@ class WeatherIcon:
         logger.debug(f"found {dft_name}")
         return dft_name
 
-    def select_weather_icon(self, metar, station, at_random: bool = False):
+    def select_weather_icon(self, metar: str | None, station, at_random: bool = False):
         # Needs improvement
         # Stolen from https://github.com/flybywiresim/efb
         if at_random:
-            return random.choice(list(WEATHER_ICONS.values()))
+            return random.choice(list(WEATHER_ICONS.keys()))
 
-        icon = "wi_cloud"
+        if metar is None:
+            logger.warning("no metar")
+            return DEFAULT_WEATHER_ICON
 
         if station is not None:
             self.sun = Sun(station.latitude, station.longitude)
         else:
             logger.warning("no station, cannot determine lat/lon or sun time")
 
-        if metar is None:
-            logger.warning("no metar")
-            return icon
-
-        rawtext = metar.raw[13:]  # strip ICAO DDHHMMZ
+        rawtext = metar.raw[13:]  # strip ICAO DDHHMMZ, should do a much clever substring removal based on regex
         logger.debug(f"METAR {rawtext}")
         # Precipitations
         precip = re.match("RA|SN|DZ|SG|PE|GR|GS", rawtext)
@@ -428,6 +429,7 @@ class WeatherIcon:
         #                  WeatherIcon.DB))
         # logger.debug(f"STEP 1 {findIcon}")
 
+        icon = DEFAULT_WEATHER_ICON
         l = len(findIcon)
         if l == 1:
             icon = findIcon[0]["iconName"]
@@ -456,3 +458,14 @@ class WeatherIcon:
         daynight_icon = daynight_icon.replace("-", "_")  # ! Important
         logger.debug(f"day/night version: {day}: {daynight_icon}")
         return daynight_icon
+
+    def get_icon(self, name) -> str:
+        icon_char = WEATHER_ICONS.get(name)
+        if icon_char is None:
+            logger.warning(f"weather icon '{name}' not found, using default ({DEFAULT_WEATHER_ICON})")
+            name = DEFAULT_WEATHER_ICON
+            icon_char = WEATHER_ICONS.get(DEFAULT_WEATHER_ICON)
+            if icon_char is None:
+                logger.warning(f"default weather icon {DEFAULT_WEATHER_ICON} not found, using hardcoded default ({HARDCODED_DEFAULT})")
+                icon_char = HARDCODED_ICON
+        return icon_char

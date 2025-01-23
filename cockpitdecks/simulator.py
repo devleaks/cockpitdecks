@@ -385,7 +385,8 @@ class SimulatorVariableListener(VariableListener):
     def variable_changed(self, data: Variable):
         if isinstance(data, SimulatorVariable):
             self.simulator_variable_changed(data=data)
-        logger.warning(f"non simulator variable for listener ({data.name}, {type(data)}), ignored")
+        else:
+            logger.warning(f"non simulator variable for listener ({data.name}, {type(data)}), ignored")
 
     @abstractmethod
     def simulator_variable_changed(self, data: SimulatorVariable):
