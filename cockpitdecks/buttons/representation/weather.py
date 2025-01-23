@@ -21,7 +21,7 @@ from cockpitdecks.simulator import SimulatorVariable, SimulatorVariableListener
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListener):
@@ -95,7 +95,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
     #
     @property
     def weather_data(self) -> WeatherData:
-        return self._weather_data
+        return getattr(self, "_weather_data", None)
 
     @weather_data.setter
     def weather_data(self, weather_data: WeatherData):
@@ -170,7 +170,9 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
         icao = data.value()
         if icao is None or icao == "":  # no new station, stick or current
             return
-        self.weather_data.set_station(station=icao)
+        self.set_label(icao)
+        if self.weather_data is not None:
+            self.weather_data.set_station(station=icao)
 
     # #############################################
     # Cockpitdecks Representation interface

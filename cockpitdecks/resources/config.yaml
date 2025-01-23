@@ -3,8 +3,39 @@
 # This file should not contain any customization of appearance like color, image, icon, etc.
 # since it should be usable by all aircrafts.
 ---
+# ##################################################
+# Application values
+#
 cache-icon: True
 default-icon-name: none.png
+# debug: cockpitdecks.deck
+#
+# ##################################################
+# Default color and themes
+#
+# cockpit-theme: dark
+#
+# cockpit-theme: dark
+# Color (16, 16, 32) is close to
+# average texture color TEXTURE_NIGHT.
+#
+# dark-cockpit-color: [16, 16, 32]
+# dark-default-icon-color: [16, 16, 32]
+# dark-default-annunciator-style: k
+# dark-default-label-color: coral
+# dark-default-light-off-intensity: 4
+# dark-default-text-color: coral
+# dark-default-text-position: cm
+# dark-default-tick-color: coral
+# dark-default-tick-label-color: coral
+# dark-default-tick-underline-color: coral
+#
+# ##################################################
+# Dataref roundings and reading frequencies (if non standard)
+#
+dataref-fetch-frequencies:
+  sim/flightmodel/position/latitude: 1
+  sim/flightmodel/position/longitude: 1
 dataref-roundings:
   sim/cockpit/autopilot/heading_mag: 2
   # used in Weather button 3 or 4 decimals sufficient...
@@ -89,7 +120,3 @@ dataref-roundings:
   sim/weather/aircraft/wind_now_z_msc: 1
   sim/weather/aircraft/wind_speed_kts[*]: 1
   sim/weather/aircraft/wind_speed_msc: 1
-dataref-fetch-frequencies:
-  sim/flightmodel/position/latitude: 1
-  sim/flightmodel/position/longitude: 1
-  # debug: cockpitdecks.deck

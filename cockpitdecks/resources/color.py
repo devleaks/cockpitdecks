@@ -21,6 +21,10 @@ DEFAULT_COLOR_NAME = "grey"
 DEFAULT_COLOR = (128, 128, 128)
 
 
+def grey(i: int):
+    return (i, i, i)
+
+
 def is_integer(s) -> bool:
     try:
         int(s)

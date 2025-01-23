@@ -3,11 +3,12 @@
 #
 import logging
 import re
+from dataclasses import dataclass
 
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
+from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, grey
 
 from .weather import WeatherBaseIcon
 
@@ -16,6 +17,21 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 FLIGHT_RULES = {"VFR": "green", "MVFR": "blue", "IFR": "red", "LIFR": "purple"}
+
+
+@dataclass
+class Dracula:
+    background = [40, 42, 54]  # almost black
+    current_line = [68, 71, 90]  # dark grey
+    foreground = [248, 248, 242]  # almost white
+    comment = [98, 114, 164]  # medium, blueish grey
+    cyan = [139, 233, 253]
+    green = [80, 250, 123]
+    orange = [255, 184, 108]
+    pink = [255, 121, 198]
+    purple = [189, 147, 249]
+    red = [255, 85, 85]
+    yellow = [241, 250, 140]
 
 
 class WeatherStationPlot(WeatherBaseIcon):
@@ -36,21 +52,37 @@ class WeatherStationPlot(WeatherBaseIcon):
         WeatherBaseIcon.__init__(self, button=button)
 
         # Plot specific attributes and defaults
-        self.plot_style = "bw"  # | "color"
-        self.plot_color = "black"
-        self.barb_color = (160, 160, 160)
-        self.text_color = "black"
-        self.text_alt_color = "grey"
-        self.text_past_color = "blue"
-        self.plot_inverse = "white"  # | self.icon_color
-        self.plot_text_font = "B612-Regular.ttf"
-        self.plot_wmo_font = "wx_symbols.ttf"
-        # for color plot (experimental)
-        self.info_color = "blue"
-        self.warn_color = "darkorange"
-        self.alert_color = "red"
-        self.good_color = "lime"
-        self.disabled_color = "grey"
+        self.plot_style = self.get_attribute(
+            "plot-style", default="bw"
+        )  # |color|dracula, color mode is, as a shortcut, also synonym of non-standard, fancier plot, with additional data
+        self.plot_color = self.get_attribute("plot-color", default="black")
+        self.barb_color = self.get_attribute("plot-wind-barb-color", default=grey(160))
+        self.text_color = self.get_attribute("plot-text-color", default="black")
+        self.text_alt_color = self.get_attribute("plot-text-alt-color", default="grey")
+        self.text_past_color = self.get_attribute(
+            "plot-text-past-color", default="blue"
+        )  # past in time, future info has color green/amber/red depending on severity (for aeronautics)
+        self.plot_inverse = self.get_attribute("plot-inverse-color", default="white")  # | self.icon_color
+
+        self.plot_text_font = self.get_attribute("plot-text-font", default="B612-Regular.ttf")
+        self.plot_wmo_font = self.get_attribute("plot-symbol-font", default="wx_symbols.ttf")
+
+        # For color plot (experimental, fancy, non standard) (Bootstrap vocabulary)
+        self.primary_color = self.get_attribute("plot-info-color", default="blue")
+        self.secondary_color = self.get_attribute("plot-secondary-color", default="purple")
+        self.success_color = self.get_attribute("plot-success-color", default="lime")
+        self.danger_color = self.get_attribute("plot-danger-color", default="red")
+        self.warning_color = self.get_attribute("plot-warning-color", default="darkorange")
+        self.info_color = self.get_attribute("plot-info-color", default="blue")
+        self.light_color = self.get_attribute("plot-light-color", default="coral")
+        self.dark_color = self.get_attribute("plot-dark-color", default="navy")
+        self.muted_color = self.get_attribute("plot-muted-color", default="grey")
+        self.white_color = self.get_attribute("plot-white-color", default="bisque")
+        self.inverse_color = self.get_attribute("plot-inverse-color", default="lightgrey")
+        # Synonyms
+        self.warn_color = self.get_attribute("plot-warn-color", default="darkorange")
+        self.alert_color = self.get_attribute("plot-alert-color", default="red")
+        self.disabled_color = self.get_attribute("plot-disabled-color", default="grey")
 
     @property
     def plot_data(self):
@@ -168,14 +200,7 @@ class WeatherStationPlot(WeatherBaseIcon):
             if text is None:
                 logger.warning(f"current_weather: {int(code)} leads to invalid character")
                 return
-            draw.text(
-                cell_center(2, 3),
-                text=text,
-                font=wmofont,
-                anchor="mm",
-                align="center",
-                fill=self.text_color,
-            )
+            draw.text(cell_center(2, 3), text=text, font=wmofont, anchor="mm", align="center", fill=self.text_color, outline=self.yellow, width=1)
 
         def draw_dew_point():
             temp = station_plot_data["dew_point"]

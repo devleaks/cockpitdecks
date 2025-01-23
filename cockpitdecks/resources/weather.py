@@ -56,6 +56,11 @@ class WeatherData(ABC):
 
         self.weather_icon_factory = WeatherIcon()  # decorating weather icon image
 
+        # Debugging values
+        # self._check_freq = 30 # seconds
+        # self._station_check_freq = 60  # seconds
+        # self._weather_check_freq = 90  # seconds
+
     @property
     def station(self) -> Any:
         return getattr(self, "_station", None)
@@ -142,7 +147,6 @@ class WeatherData(ABC):
 
     def loop(self):
         logger.debug("started")
-        now = datetime.now().astimezone()
         while self.is_running:
             logger.debug(f"checking for {self.name}")
             if self.check_station():

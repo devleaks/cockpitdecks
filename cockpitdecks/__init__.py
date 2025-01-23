@@ -6,7 +6,7 @@
 #
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)  # Aum
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 #
 # ##############################################################
@@ -22,7 +22,7 @@ __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 __DESCRIPTION__ = "Desk and web decks to X-Plane 12.1+"
 
-__version__ = "13.2.2"
+__version__ = "13.2.3"
 
 #
 # ##########################################################################
@@ -42,6 +42,8 @@ FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%
 def now():
     return datetime.now().astimezone()
 
+def nowutc() -> datetime:
+    return datetime.now(timezone.utc)
 
 def to_fl(m, r: int = 10):
     # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar
