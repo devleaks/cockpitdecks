@@ -599,7 +599,7 @@ def cockpit_wshandler():
                 # app.logger.info(f"event processed deck={deck}, event={event} data={payload}")
     except ConnectionClosed:
         app.logger.debug("connection closed")
-        cockpit.remove(ws)
+        cockpit.remove_client(ws)
         app.logger.debug("client removed")
     return ""
 

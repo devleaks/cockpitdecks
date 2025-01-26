@@ -72,7 +72,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable
-from cockpitdecks.simulator import Simulator, NoSimulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
+from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
 from cockpitdecks.instruction import Instruction, InstructionFactory
 from cockpitdecks.observable import Observables
 
@@ -87,8 +87,7 @@ from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import Activation
 from cockpitdecks.buttons.representation import Representation, HardwareRepresentation
-
-# from cockpitdecks.aircraft import Aircraft
+from cockpitdecks.aircraft import Aircraft
 
 # #################################
 #
@@ -440,7 +439,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
         self.init()  # this will install all available simulators
 
-        # self.aircraft = Aircraft(acpath=self._acpath, cockpit=self)
+        self.aircraft = Aircraft(acpath=self._acpath, cockpit=self)
 
     @property
     def acpath(self):
@@ -557,6 +556,27 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     def variable_factory(self, name: str, is_string: bool = False) -> Variable:
         """Returns data or create a new internal variable"""
         return InternalVariable(name=name, is_string=is_string)
+
+    def instruction_factory(self, **kwargs):
+        # Should be the top-most instruction factory.
+        # Delegates to simulator if not capable of building instruction
+        name = kwargs.get("name")
+        if name is not None and name.startswith(CockpitInstruction.PREFIX):
+            logger.debug(f"creating {name}")
+            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
+            if instruction is not None:
+                return instruction
+        return self.sim.instruction_factory(**kwargs)
+        # if name == "reload_one":
+        #     deck = kwargs.get(CONFIG_KW.DECK.value)
+        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
+        # elif name == "theme":
+        #     theme = kwargs.get(CONFIG_KW.THEME.value)
+        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
+        # elif name == "reload":
+        #     return CockpitReloadInstruction(cockpit=self)
+        # elif name == "stop":
+        #     return CockpitStopInstruction(cockpit=self)
 
     def get_variable_value(self, name, default=None) -> Any | None:
         """Gets the value of a Variable monitored by Cockpitdecks
@@ -1648,36 +1668,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         logger.info(f"{len(self.sounds)} sounds available")
 
     # #########################################################
-    # Cockpit instructions
-    #
-    def execute(self, instruction: CockpitInstruction):
-        if not isinstance(instruction, CockpitInstruction):
-            logger.warning(f"invalid instruction {instruction.name}")
-            return
-        instruction._execute()
-
-    def instruction_factory(self, **kwargs):
-        # Should be the top-most instruction factory.
-        # Delegates to simulator if not capable of building instruction
-        name = kwargs.get("name")
-        if name is not None and name.startswith(CockpitInstruction.PREFIX):
-            logger.debug(f"creating {name}")
-            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
-            if instruction is not None:
-                return instruction
-        return self.sim.instruction_factory(**kwargs)
-        # if name == "reload_one":
-        #     deck = kwargs.get(CONFIG_KW.DECK.value)
-        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
-        # elif name == "theme":
-        #     theme = kwargs.get(CONFIG_KW.THEME.value)
-        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
-        # elif name == "reload":
-        #     return CockpitReloadInstruction(cockpit=self)
-        # elif name == "stop":
-        #     return CockpitStopInstruction(cockpit=self)
-
-    # #########################################################
     # Cockpit start/stop/event/reload procedures
     #
     # Note: Reloading the deck is done from a separate (dedicated) thread through a queue.
@@ -1743,6 +1733,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     # #########################################################
     # Cockpit instructions
     #
+    def execute(self, instruction: CockpitInstruction):
+        if not isinstance(instruction, CockpitInstruction):
+            logger.warning(f"invalid instruction {instruction.name}")
+            return
+        instruction._execute()
+
     def get_corresponding_serial(self, serial_in) -> str:
         """Serial numbers returned by ioreg -p IOUSB do not match serial number returned by devices.
         This does hardcoded case by case correspondance between both.
@@ -1807,74 +1803,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 logger.warning(f"no deck named {deck_name} in cockpit")
         else:
             logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks (registered serial numbers are: {', '.join(inv.keys())})")
-
-    # #########################################################
-    # Cockpit start/stop/handle procedures for virtual decks
-    #
-    def has_web_decks(self) -> bool:
-        for device in self.devices:
-            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
-                return True
-        return False
-
-    def get_web_decks(self):
-        return self.virtual_deck_list
-
-    def get_virtual_deck_description(self, deck):
-        return self.virtual_deck_list.get(deck)
-
-    def get_virtual_deck_defaults(self):
-        return self.get_attribute("web-deck-defaults")
-
-    def handle_code(self, code: int, name: str):
-        logger.debug(f"received code {name}:{code}")
-        if code == 1:
-            deck = self.cockpit.get(name)
-            if deck is None:
-                logger.warning(f"handle code: deck {name} not found (code {code})")
-                return
-            deck.add_client()
-            logger.debug(f"{name} opened")
-            deck.reload_page()
-            logger.debug(f"{name} reloaded")
-        if code == 2:
-            deck = self.cockpit.get(name)
-            if deck is None:
-                logger.warning(f"handle code: deck {name} not found (code {code})")
-                return
-            deck.remove_client()
-            logger.debug(f"{name} closed")
-        elif code in [4, 5]:
-            payload = {
-                "code": code,
-                "deck": name,
-                "meta": {"ts": datetime.now().timestamp()},
-            }
-            self.send(deck=self.name, payload=payload)
-
-    def process_event(self, deck_name, key, event, data, replay: bool = False):
-        deck = self.cockpit.get(deck_name)
-        logger.debug(f"received {deck_name}: key={key}, event={event}")
-        if deck is None:
-            logger.warning(f"handle event: deck {deck_name} not found")
-            return
-        if not replay:
-            if deck.deck_type.is_virtual_deck():
-                deck.key_change_callback(key=key, state=event, data=data)
-            else:
-                deck.key_change_callback(deck=deck.device, key=key, state=event)
-            return
-        deck.replay(key=key, state=event, data=data)
-
-    def replay_sim_event(self, data: dict):
-        path = data.get("path")
-        if path is not None:
-            if not self.sim.is_internal_simulator(path):
-                e = self.sim.create_replay_event(name=path, value=data.get("value"))
-                e._replay = True
-                e.run()  # enqueue after setting the reply flag
-        else:
-            logger.warning(f"path not found")
 
     # #########################################################
     # Other
@@ -2184,6 +2112,75 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             if self.acpath is not None:
                 self.terminate_all()
 
+    # ###############################################################
+    # Web/Virtual decks
+    #
+    #
+    def has_web_decks(self) -> bool:
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                return True
+        return False
+
+    def get_web_decks(self):
+        return self.virtual_deck_list
+
+    def get_virtual_deck_description(self, deck):
+        return self.virtual_deck_list.get(deck)
+
+    def get_virtual_deck_defaults(self):
+        return self.get_attribute("web-deck-defaults")
+
+    def handle_code(self, code: int, name: str):
+        logger.debug(f"received code {name}:{code}")
+        if code == 1:
+            deck = self.cockpit.get(name)
+            if deck is None:
+                logger.warning(f"handle code: deck {name} not found (code {code})")
+                return
+            deck.add_client()
+            logger.debug(f"{name} opened")
+            deck.reload_page()
+            logger.debug(f"{name} reloaded")
+        if code == 2:
+            deck = self.cockpit.get(name)
+            if deck is None:
+                logger.warning(f"handle code: deck {name} not found (code {code})")
+                return
+            deck.remove_client()
+            logger.debug(f"{name} closed")
+        elif code in [4, 5]:
+            payload = {
+                "code": code,
+                "deck": name,
+                "meta": {"ts": datetime.now().timestamp()},
+            }
+            self.send(deck=self.name, payload=payload)
+
+    def process_event(self, deck_name, key, event, data, replay: bool = False):
+        deck = self.cockpit.get(deck_name)
+        logger.debug(f"received {deck_name}: key={key}, event={event}")
+        if deck is None:
+            logger.warning(f"handle event: deck {deck_name} not found")
+            return
+        if not replay:
+            if deck.deck_type.is_virtual_deck():
+                deck.key_change_callback(key=key, state=event, data=data)
+            else:
+                deck.key_change_callback(deck=deck.device, key=key, state=event)
+            return
+        deck.replay(key=key, state=event, data=data)
+
+    def replay_sim_event(self, data: dict):
+        path = data.get("path")
+        if path is not None:
+            if not self.sim.is_internal_simulator(path):
+                e = self.sim.create_replay_event(name=path, value=data.get("value"))
+                e._replay = True
+                e.run()  # enqueue after setting the reply flag
+        else:
+            logger.warning(f"path not found")
+
     def err_clear(self):
         self.vd_errs = []
 
@@ -2198,7 +2195,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     def is_closed(self, ws):
         return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # there must be a better way to do this...
 
-    def remove(self, websocket):
+    def remove_client(self, websocket):
         # we unfortunately have to scan all decks to find the ws to remove
         #
         for deck in self.vd_ws_conn:

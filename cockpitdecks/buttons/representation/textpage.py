@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class TextPageIcon(DrawBase):
-    """Display text in pages, pressing icon flip pages
-    """
+    """Display text in pages, pressing icon flip pages"""
 
     REPRESENTATION_NAME = "textpage"
 
@@ -50,9 +49,9 @@ class TextPageIcon(DrawBase):
         npages = ceil(len(all_lines) / self.lines)
         l = (page % npages) * self.lines
         if self.pagenum:
-            return [f"Page {1 + (page % npages)} / {npages}"] + all_lines[l:l+self.lines]
+            return [f"Page {1 + (page % npages)} / {npages}"] + all_lines[l : l + self.lines]
         else:
-            return all_lines[l:l+self.lines]
+            return all_lines[l : l + self.lines]
 
     def get_image_for_icon(self):
         """
