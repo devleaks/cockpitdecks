@@ -22,7 +22,6 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-# from cockpitdecks.aircraft import Aircraft
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_SERIAL
 
@@ -89,7 +88,7 @@ from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import Activation
 from cockpitdecks.buttons.representation import Representation, HardwareRepresentation
 
-from cockpitdecks.aircraft import Aircraft
+# from cockpitdecks.aircraft import Aircraft
 
 # #################################
 #
@@ -441,7 +440,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
         self.init()  # this will install all available simulators
 
-        self.aircraft = Aircraft(acpath=self._acpath, cockpit=self)
+        # self.aircraft = Aircraft(acpath=self._acpath, cockpit=self)
 
     @property
     def acpath(self):
