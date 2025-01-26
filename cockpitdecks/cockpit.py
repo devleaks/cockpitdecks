@@ -22,7 +22,7 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-from cockpitdecks.aircraft import Aircraft
+# from cockpitdecks.aircraft import Aircraft
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_SERIAL
 
