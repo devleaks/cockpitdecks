@@ -16,22 +16,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-FLIGHT_RULES = {"VFR": "green", "MVFR": "blue", "IFR": "red", "LIFR": "purple"}
-
-
-@dataclass
-class Dracula:
-    background = [40, 42, 54]  # almost black
-    current_line = [68, 71, 90]  # dark grey
-    foreground = [248, 248, 242]  # almost white
-    comment = [98, 114, 164]  # medium, blueish grey
-    cyan = [139, 233, 253]
-    green = [80, 250, 123]
-    orange = [255, 184, 108]
-    pink = [255, 121, 198]
-    purple = [189, 147, 249]
-    red = [255, 85, 85]
-    yellow = [241, 250, 140]
+FLIGHT_RULES = {"VFR": "green", "MVFR": "blue", "IFR": "red", "LIFR": "purple"}  # fairly standard colors
 
 
 class WeatherStationPlot(WeatherBaseIcon):
