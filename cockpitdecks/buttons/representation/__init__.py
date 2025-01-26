@@ -14,6 +14,7 @@ from .mosaic import Mosaic, MultiButtons
 from .annunciator import Annunciator, AnnunciatorAnimate
 from .draw import Decor, DrawBase
 from .draw_animation import DrawAnimation, DrawAnimationFTG
+from .textpage import TextPageIcon
 from .switch import Switch, CircularSwitch, PushSwitch, Knob
 from .data import DataIcon
 from .chart import ChartIcon

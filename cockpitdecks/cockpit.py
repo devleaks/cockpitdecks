@@ -1189,13 +1189,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         if (n := len(self.named_colors)) > 0:
             logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
 
-        before = self.theme
+        before = f" (was {self.theme})" if self.theme is not None else ""
         theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
         if self.theme is None:
             self.theme = theme
         elif self.theme in ["", "default", "cockpit"]:
             self.theme = theme
-        logger.info(f"theme is {self.theme} (was {before})")
+        logger.info(f"theme is {self.theme}{before}")
 
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)
