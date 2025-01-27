@@ -1,12 +1,9 @@
 # Aircraft configuration
 #
-from __future__ import annotations
 import logging
 import os
 import threading
 import pickle
-
-from typing import Dict, Tuple
 
 from PIL import Image, ImageFont
 from cairosvg import svg2png
@@ -17,7 +14,6 @@ from cockpitdecks import (
     AIRCRAFT_CHANGE_MONITORING_DATAREF,
     COCKPITDECKS_ASSET_PATH,
     CONFIG_FILE,
-    CONFIG_FILENAME,
     CONFIG_FOLDER,
     CONFIG_KW,
     DECK_KW,
@@ -30,13 +26,10 @@ from cockpitdecks import (
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
-    NAMED_COLORS,
     OBSERVABLES_FILE,
     RESOURCES_FOLDER,
     SECRET_FILE,
     SOUNDS_FOLDER,
-    SPAM,
-    SPAM_LEVEL,
     VIRTUAL_DECK_DRIVER,
     # Classes
     Config,
@@ -80,16 +73,17 @@ class Aircraft:
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
 
-    def __init__(self, acpath: str, cockpit: "Cockpit"):
+    def __init__(self, cockpit: "Cockpit"):
         self.cockpit = cockpit
 
         self._config = {}  # content of aircraft/deckconfig/config.yaml
         self._secret = {}  # content of aircraft/deckconfig/secret.yaml
 
         # "Aircraft" name or model...
-        self._ac_ready = False
         self.name = "Aircraft"
         self.icao = "ZZZZ"
+        self._acname = ""
+        self._ac_ready = False
 
         # Decks
         self.decks = {}  # all decks: { deckname: deck }
@@ -100,19 +94,12 @@ class Aircraft:
         self._ac_fonts = {}
         self._ac_sounds = {}
         self._ac_icons = {}
-        self._ac_observables = []
+        self._ac_observables: Observables | None = None
 
         # Internal variables
-        self._livery_dataref = None  # self.sim.get_internal_variable(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
-        self._acname = ""
-        self._livery_path = ""
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
         self.default_pages = None  # current pages on decks when reloading
-
-        self.acpath = acpath
-
-        self.init()  # this will install all available simulators
 
     @property
     def acpath(self):
@@ -123,13 +110,46 @@ class Aircraft:
         self._acpath = acpath
         logger.info(f"aircraft path set to {acpath}")
 
-    def aircraft_ready(self) -> bool:
+    def is_ready(self) -> bool:
         return self._ac_ready
 
-    def init(self):
-        if self.acpath is not None:
-            self.load_ac_resources()
+    # Shortcuts
+    @property
+    def sim(self):
+        return self.cockpit.sim
 
+    @property
+    def all_deck_drivers(self):
+        return self.cockpit.all_deck_drivers
+
+    @property
+    def devices(self):
+        return self.cockpit.devices
+
+    @property
+    def deck_types(self):
+        return self.cockpit.deck_types
+
+    @property
+    def virtual_deck_types(self):
+        return self.cockpit.virtual_deck_types
+
+    @property
+    def named_colors(self):
+        return self.cockpit.named_colors
+
+    @property
+    def theme(self):
+        return self.cockpit.theme
+
+    @theme.setter
+    def theme(self, theme: str):
+        self.cockpit.theme = theme
+
+    def get_attribute(self, attribute: str, default=None, silence: bool = True):
+        return self.cockpit.get_attribute(attribute=attribute, default=default, silence=silence)
+
+    # Attributes
     def get_button_value(self, name):
         a = name.split(ID_SEP)
         if len(a) > 0:
@@ -169,119 +189,6 @@ class Aircraft:
         self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
         for name, deck in self.decks.items():
             deck.reload_page()
-
-    def load_defaults(self):
-        """
-        Loads default values for font, icon, etc. They will be used if no layout is found.
-        """
-
-        def locate_font(fontname: str) -> str | None:
-            if fontname in self.fonts.keys():
-                logger.debug(f"font {fontname} already loaded")
-                return fontname
-
-            # 1. Try "system" font
-            try:
-                test = ImageFont.truetype(fontname, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                logger.debug(f"font {fontname} found in computer system fonts")
-                return fontname
-            except:
-                logger.debug(f"font {fontname} not found in computer system fonts")
-
-            # 2. Try font in resources folder
-            fn = None
-            try:
-                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
-                return fn
-            except:
-                logger.debug(f"font {fontname} not found locally ({RESOURCES_FOLDER} folder)")
-
-            # 3. Try font in resources/fonts folder
-            fn = None
-            try:
-                fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
-                return fn
-            except:
-                logger.debug(f"font {fontname} not found locally ({FONTS_FOLDER} folder)")
-
-            logger.debug(f"font {fontname} not found")
-            return None
-
-        # Load global defaults from resources/config.yaml file or use application default
-        fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, CONFIG_FILE)
-        self._resources_config = Config(fn)
-        if not self._resources_config.is_valid():
-            logger.error(f"configuration file {fn} is not valid")
-
-        self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
-        self.set_logging_level(__name__)
-
-        if self.sim is not None:
-            self.sim.set_simulator_variable_roundings(self._resources_config.get("dataref-roundings", {}))
-            self.sim.set_simulator_variable_frequencies(simulator_variable_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
-
-        # XXX
-        # Check availability of expected default fonts
-        dftname = self.get_attribute("icon-name")
-        if dftname in self.icons.keys():
-            logger.debug(f"default icon name {dftname} found")
-        else:
-            logger.warning(f"default icon name {dftname} not found")
-
-        # Default font for Pillow
-        #   WE MUST find a default, system font at least
-        default_label_font = self.get_attribute("label-font")
-        if default_label_font is not None:
-            if default_label_font not in self._cd_fonts.keys():
-                f = locate_font(default_label_font)
-                if f is not None:  # found one, perfect
-                    self._cd_fonts[default_label_font] = f
-                    self.set_default("default-font", default_label_font)
-                    logger.debug(f"default font set to {default_label_font}")
-                    logger.debug(f"default label font set to {default_label_font}")
-                    logger.info(f"added default label font {default_label_font}")
-            else:
-                logger.debug(f"default label font is {default_label_font}")
-        else:
-            logger.warning("no default label font specified")
-
-        default_system_font = self.get_attribute("system-font")
-        if default_system_font is not None:
-            if default_system_font not in self._cd_fonts.keys():
-                f = locate_font(default_system_font)
-                if f is not None:  # found it, perfect, keep it as default font for all purposes
-                    self._cd_fonts[default_system_font] = f
-                    self.set_default("default-font", default_system_font)
-                    logger.debug(f"default font set to {default_system_font}")
-                    if default_label_font is None:  # additionnally, if we don't have a default label font, use it
-                        self.set_default("default-label-font", default_system_font)
-                        logger.debug(f"default label font set to {default_system_font}")
-                    logger.info(f"added default system font {default_system_font}")
-            else:
-                logger.debug(f"default system font is {default_system_font}")
-        else:
-            logger.warning("no default system font specified")
-
-        # rebuild font list
-        self.fonts = self._cd_fonts | self._ac_fonts
-
-        if default_label_font is None and len(self.fonts) > 0:
-            first_one = list(self.fonts.keys())[0]
-            self.set_default("default-label-font", first_one)
-            self.set_default("default-font", first_one)
-            logger.debug(f"no default font found, using first available font ({first_one})")
-
-        if default_label_font is None:
-            logger.error(f"no default font")
-
-        # 4. report summary if debugging
-        logger.debug(
-            f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
-        )
 
     def scan_web_decks(self):
         """Virtual decks are declared in the cockpit configuration
@@ -412,7 +319,7 @@ class Aircraft:
                     serial = serial_numbers.get(name)
 
             # if serial is not None:
-            device = self.get_device(req_driver=deck_driver, req_serial=serial)
+            device = self.cockpit.get_device(req_driver=deck_driver, req_serial=serial)
             if device is not None:
                 #
                 if serial is None:
@@ -426,7 +333,7 @@ class Aircraft:
                 else:
                     deck_config[CONFIG_KW.SERIAL.value] = serial
                 if name not in self.decks.keys():
-                    self.decks[name] = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+                    self.decks[name] = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self.cockpit, device=device)
                     if deck_driver == VIRTUAL_DECK_DRIVER:
                         deck_flat = self.deck_types.get(deck_type).desc()
                         if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
@@ -509,9 +416,9 @@ class Aircraft:
             fn = os.path.join(self.acpath, "liveries", livery, CONFIG_FOLDER, CONFIG_FILE)
             if os.path.exists(fn):
                 self._livery_config = Config(filename=fn)
-                logger.info(f"loaded livery configuration from {fn}")
+                logger.info(f"loaded livery configuration from {fn}, currently unused...")
             else:
-                logger.info("livery has no configuration")
+                logger.debug("livery has no additional configuration")
         else:
             logger.info("no livery path")
         self.load_ac_deck_types()
@@ -519,6 +426,7 @@ class Aircraft:
         self.load_ac_icons()
         self.load_ac_sounds()
         self.load_ac_observables()
+        self.cockpit.add_aircraft_resources()
 
     def load_ac_icons(self):
         # Loading aircraft icons
@@ -556,15 +464,6 @@ class Aircraft:
                 else:
                     logger.info(f"{len(self._ac_icons)} aircraft icons loaded")
 
-        self.icons = self._cd_icons | self._ac_icons
-        logger.info(f"{len(self.icons)} icons available")
-
-        dftname = self.get_attribute("icon-name")
-        if dftname in self.icons.keys():
-            logger.debug(f"default icon name {dftname} found")
-        else:
-            logger.warning(f"default icon name {dftname} not found")  # that's ok
-
     def load_ac_fonts(self):
         # Loading fonts.
         # For custom fonts (fonts found in the fonts config folder),
@@ -587,10 +486,7 @@ class Aircraft:
                             logger.warning(f"aircraft font file {fn} not loaded")
                     else:
                         logger.debug(f"aircraft font {i} already loaded")
-
         logger.info(f"{len(self._ac_fonts)} aircraft fonts loaded")
-        self.fonts = self._cd_fonts | self._ac_fonts
-        logger.info(f"{len(self.fonts)} fonts available")
 
     def load_ac_sounds(self):
         # Loading sounds.
@@ -611,8 +507,6 @@ class Aircraft:
                         logger.debug(f"sound {i} already loaded")
 
         logger.info(f"{len(self._ac_sounds)} aircraft sounds loaded")
-        self.sounds = self._cd_sounds | self._ac_sounds
-        logger.info(f"{len(self.sounds)} sounds available")
 
     def load_ac_observables(self):
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
@@ -621,9 +515,7 @@ class Aircraft:
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._ac_observables = Observables(config=config, simulator=self.sim)
-            self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self._ac_observables.observables}
             logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
-            logger.info(f"{len(self.observables)} observables")
 
     # #########################################################
     # Other
@@ -668,9 +560,9 @@ class Aircraft:
                 logger.warning(f"invalid deck type {deck_type}, ignoring")
                 return
             deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            device = self.get_device(req_driver=deck_driver, req_serial=serial)
+            device = self.cockpit.get_device(req_driver=deck_driver, req_serial=serial)
             # recreate
-            deck = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+            deck = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self.cockpit, device=device)
             del self.decks[name]
             self.decks[name] = deck
 
@@ -719,76 +611,27 @@ class Aircraft:
             self.event_queue.put("stop")
             logger.debug("enqueued")
 
-    def get_livery(self, path: str) -> str:
-        return os.path.basename(os.path.normpath(path))
-
-    def get_aircraft_home(self, path: str) -> str:
-        return os.path.normpath(os.path.join(path, "..", ".."))
-
-    def get_aircraft_name_from_livery_path(self, path: str) -> str:
-        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
-        return os.path.split(os.path.normpath(os.path.join(path, "..", "..")))[1]
-
-    def get_aircraft_name_from_aircraft_path(self, path: str) -> str:
-        # Path is like Aircraft/Extra Aircraft/ToLiss A321/
-        return os.path.basename(path)
-
-    def get_aircraft_path(self, aircraft) -> str | None:
-        for base in self.cockpit.cockpitdecks_path.split(":"):
-            ac = os.path.join(base, aircraft)
-            if os.path.exists(ac) and os.path.isdir(ac):
-                ac_cfg = os.path.join(ac, CONFIG_FOLDER)
-                if os.path.exists(ac_cfg) and os.path.isdir(ac_cfg):
-                    logger.info(f"aircraft path found in COCKPITDECKS_PATH: {ac}, with deckconfig")
-                    return ac
-        logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpit.cockpitdecks_path}")
-        return None
-
     # #########################################################
     # Load, start and terminates
     #
-    def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):
-        """
-        Loads decks for aircraft in supplied path and start listening for key presses.
-        """
-        self.mode = mode
-        self.load_aircraft(acpath)
-
-    def load_aircraft(self, acpath: str | None):
+    def load(self, acpath: str):
         """
         Loads decks for aircraft in supplied path.
         First unloads a previously loaded aircraft if any
         """
-        if self.disabled:
-            logger.warning("Cockpitdecks is disabled")
-            return
         if acpath is None:
             logger.warning("no new aircraft path to load, not unloading current one")
             return
-        # Reset, if new aircraft
-        if len(self.decks) > 0:
-            self.terminate_aircraft()
-            # self.sim.clean_datarefs_to_monitor()
-            logger.debug(f"{os.path.basename(self.acpath)} unloaded")
-
-        if self.sim is None:
-            logger.info("..starting simulator..")
-            self.sim = self._simulator(self, self._environ)
-        else:
-            logger.debug("simulator already running")
-
-        if not self._device_scanned:
-            self.scan_devices()
 
         logger.info(f"starting aircraft {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
         self.acpath = None
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
-            self._acname = self.get_aircraft_name_from_aircraft_path(acpath)
+            self._acname = self.cockpit.get_aircraft_name_from_aircraft_path(acpath)
             logger.info(f"aircraft name set to {self._acname}")
 
-            self.load_aircraft_deck_types()
+            self.load_ac_deck_types()
             self.scan_web_decks()
 
             if len(self.devices) == 0:
@@ -809,69 +652,10 @@ class Aircraft:
             self.create_default_decks()
         logger.info(f"..aircraft {os.path.basename(acpath)} started")
 
-    def change_aircraft(self):
-        data = self.sim.all_simulator_variable.get(AIRCRAFT_CHANGE_MONITORING_DATAREF)
-        if data is None:
-            logger.warning(f"no dataref {AIRCRAFT_CHANGE_MONITORING_DATAREF}, ignoring")
+    def terminate(self):
+        if not self.is_ready():
+            logger.info("aircraft not ready, no termination necessary")
             return
-
-        value = data.value()
-        if value is None or type(value) is not str:
-            logger.warning(f"livery path invalid value {value}, ignoring")
-            return
-
-        if self._livery_path == value:
-            logger.info(f"livery path unchanged {self._livery_path}")
-            return
-
-        if self.mode > 0 and not RELOAD_ON_LIVERY_CHANGE:
-            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
-            return
-
-        acname = self.get_aircraft_name_from_livery_path(value)
-        new_livery = self.get_livery(value)
-        if self.mode > 0 and RELOAD_ON_LIVERY_CHANGE:  # only change livery and reloads
-            if self._acname != acname:
-                # ac has changed, refused
-                logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted")
-                return
-            # ac has not changed, livery has
-            logger.info("Cockpitdecks in demontration mode or aircraft fixed, aircraft not adjusted but livery changed")
-            self._livery_path = value
-            # Adjustment of livery
-            old_livery = self._livery_dataref.value()
-            if old_livery is None:
-                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-                logger.info(f"initial aircraft livery set to {new_livery}")
-            elif old_livery != new_livery:
-                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-                logger.info(f"new aircraft livery {new_livery} (former was {old_livery})")
-            self.reload_decks()
-            return
-
-        if self._acname != acname:
-            # change livery
-            self._livery_path = value
-            old_livery = self._livery_dataref.value()
-            if old_livery is None or old_livery == "":
-                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-                logger.info(f"initial aircraft livery set to {new_livery}")
-            else:
-                self._livery_dataref.update_value(new_value=new_livery, cascade=True)
-                logger.info(f"new aircraft livery {new_livery} (former was {old_livery})")
-            # change aircraft
-            old_acname = self._acname
-            self._acname = acname
-            logger.info(f"aircraft name set to {self._acname}")
-            new_ac = self.get_aircraft_path(self._acname)
-            if new_ac is not None and self.acpath != new_ac:
-                logger.debug(f"aircraft path: current {self.acpath}, new {new_ac} (former was {old_acname})")
-                logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
-                self.load_aircraft(acpath=new_ac)
-        else:
-            logger.info(f"aircraft unchanged ({self._acname}, {self.acpath})")
-
-    def terminate_aircraft(self):
         logger.info("terminating aircraft..")
         drefs = {d.name: d.value() for d in self.sim.all_simulator_variable.values()}  #  if d.is_internal
         fn = "datarefs-log.yaml"
@@ -889,7 +673,7 @@ class Aircraft:
         self._ac_fonts = {}
         self._ac_icons = {}
         self._ac_sounds = {}
-        self._ac_observables = {}
+        self._ac_observables = None
         nt = threading.enumerate()
         if len(nt) > 1:
             logger.info(f"{len(nt)} threads")

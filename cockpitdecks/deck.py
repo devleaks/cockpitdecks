@@ -240,7 +240,7 @@ class Deck(ABC):
             self.make_default_page()
             return
 
-        dn = os.path.join(self.cockpit.acpath, CONFIG_FOLDER, self.layout)
+        dn = os.path.join(self.cockpit.aircraft.acpath, CONFIG_FOLDER, self.layout)
         if not os.path.exists(dn):
             logger.warning(f"deck {self.name} has no layout folder '{self.layout}', loading default page")
             self.make_default_page()
@@ -287,7 +287,7 @@ class Deck(ABC):
                 logger.error(f"{page_name} has no button definition '{CONFIG_KW.BUTTONS.value}', ignoring")
                 continue
 
-            display_fn = fn.replace(os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep), "..")
+            display_fn = fn.replace(os.path.join(self.cockpit.aircraft.acpath, CONFIG_FOLDER + os.sep), "..")
             logger.debug(f"loading page {page_name} (from file {display_fn})..")
 
             doc = page_config.get("info")
@@ -331,7 +331,7 @@ class Deck(ABC):
                     else:
                         logger.warning(f"includes: {inc}: file {fni} is invalid")
                 display_fni = fni.replace(
-                    os.path.join(self.cockpit.acpath, CONFIG_FOLDER + os.sep),
+                    os.path.join(self.cockpit.aircraft.acpath, CONFIG_FOLDER + os.sep),
                     "..",
                 )
                 if verbose:
@@ -665,11 +665,11 @@ class DeckWithIcons(Deck):
             dirs = []
             dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER))
             dirs.append(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER))
-            if self.cockpit.acpath is not None:  # add to search path
-                dirs.append(os.path.join(self.cockpit.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+            if self.cockpit.aircraft.acpath is not None:  # add to search path
+                dirs.append(os.path.join(self.cockpit.aircraft.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
                 dirs.append(
                     os.path.join(
-                        self.cockpit.acpath,
+                        self.cockpit.aircraft.acpath,
                         CONFIG_FOLDER,
                         RESOURCES_FOLDER,
                         ICONS_FOLDER,

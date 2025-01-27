@@ -185,7 +185,9 @@ class WeatherStationPlot(WeatherBaseIcon):
             if text is None:
                 logger.warning(f"current_weather: {int(code)} leads to invalid character")
                 return
-            draw.text(cell_center(2, 3), text=text, font=wmofont, anchor="mm", align="center", fill=self.text_color, outline=self.yellow, width=1)
+            draw.text(
+                cell_center(2, 3), text=text, font=wmofont, anchor="mm", align="center", fill=self.text_color, stroke_fill=self.text_alt_color, stroke_width=2
+            )
 
         def draw_dew_point():
             temp = station_plot_data["dew_point"]

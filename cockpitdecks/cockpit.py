@@ -192,7 +192,7 @@ class CockpitChangePageInstruction(CockpitInstruction):
         CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
 
     def _execute(self):
-        deck = self.cockpit.cockpit.get(self.deck)
+        deck = self.cockpit.decks.get(self.deck)
         if deck is not None:
             if self.page == CONFIG_KW.BACKPAGE.value or self.page in deck.pages:
                 logger.debug(f"{type(self).__name__} change page to {self.page}")
@@ -334,6 +334,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     """
 
     def __init__(self, environ: Config | dict):
+        self.name = "Cockpitdecks"
         self._startup_time = datetime.now()
 
         CockpitBase.__init__(self)
@@ -360,8 +361,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
         self._defaults = COCKPITDECKS_DEFAULT_VALUES
         self._resources_config = {}  # content of resources/config.yaml
-        self._config = {}  # content of aircraft/deckconfig/config.yaml
-        self._secret = {}  # content of aircraft/deckconfig/secret.yaml
         self._reqdfts = set()
 
         # What's available
@@ -373,40 +372,31 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
         self.all_variable = {}
 
-        # "Aircraft" name or model...
-        self._ac_ready = False
-        self._acpath = None
-        self.name = "Cockpitdecks"
-        self.icao = "ZZZZ"
-
         # Global parameters that affect colors and deck LCD backlight
         self.global_luminosity = 1.0
         self.global_brightness = 1.0
 
         # Decks
-        self.cockpit = {}  # all decks: { deckname: deck }
         self.deck_types = {}
         self.deck_types_new = {}
         self.virtual_deck_types = {}
         self.virtual_deck_list = {}
         self.virtual_decks_added = False
 
+        # Devices
         self.usb_monitor = USBMonitor()
         self.devices = []
         self._device_scanned = False
 
+        # Virtual/Web devices
         self.vd_ws_conn = {}
         self.vd_errs = []
 
-        # Content
+        # Content (global, cockpit level)
         self._cd_fonts = {}
         self._cd_sounds = {}
         self._cd_icons = {}
-        self._ac_fonts = {}
-        self._ac_sounds = {}
-        self._ac_icons = {}
         self._cd_observables = []
-        self._ac_observables = []
 
         # these are _cd_ (permanent) | _ac_ (changing)
         self.fonts = {}
@@ -425,6 +415,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.sim = None
         self._simulator_variable_names = PERMANENT_SIMULATOR_DATA
 
+        # "Aircraft" name or model...
+        self.aircraft = Aircraft(cockpit=self)
+
         # Internal variables
         self.named_colors = NAMED_COLORS
         self.busy_reloading = False
@@ -439,19 +432,18 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
         self.init()  # this will install all available simulators
 
-        self.aircraft = Aircraft(acpath=self._acpath, cockpit=self)
+    # From the separation between cockpit/aircraft
+    @property
+    def decks(self):
+        return self.aircraft.decks
 
     @property
-    def acpath(self):
-        return self._acpath
+    def _config(self):
+        return self.aircraft._config
 
-    @acpath.setter
-    def acpath(self, acpath: str | None):
-        self._acpath = acpath
-        logger.info(f"aircraft path set to {acpath}")
-
-    def aircraft_ready(self) -> bool:
-        return self._ac_ready
+    @property
+    def _secret(self):
+        return self.aircraft._secret
 
     def init(self):
         """
@@ -484,114 +476,10 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             sys.exit(1)
 
         self.load_cd_resources()
-        self.load_deck_types()
         self.scan_devices()
-
-    def init_simulator(self) -> bool:
-        if self._simulator_name is None and len(self.all_simulators) >= 1:
-            logger.error(f"ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity, available: {', '.join(self.all_simulators.keys())}")
-            return False
-        if len(self.all_simulators) == 1 or self._simulator_name is None:
-            self._simulator_name = list(self.all_simulators.keys())[0]
-            logger.info(f"simulator set to {self._simulator_name}")
-        self._simulator = self.all_simulators[self._simulator_name]
-        self.sim = self._simulator(self, self._environ)
-        logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
-        self._livery_dataref = self.sim.get_internal_variable(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
-        self._livery_dataref.update_value(new_value=None, cascade=False)  # init
-        if self.cockpitdecks_path is not None:
-            logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
-        return True
 
     def get_id(self):
         return self.name
-
-    def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
-        # Here, it is purely statistics
-        if self.sim is not None:
-            self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
-
-    def set_default(self, dflt, value):
-        if not dflt.startswith(DEFAULT_ATTRIBUTE_PREFIX):
-            logger.warning(f"default variable {dflt} does not start with {DEFAULT_ATTRIBUTE_PREFIX}")
-        ATTRNAME = "_defaults"
-        if not hasattr(self, ATTRNAME):
-            setattr(self, ATTRNAME, dict())
-        ld = getattr(self, ATTRNAME)
-        if isinstance(ld, dict):
-            ld[dflt] = value
-        logger.debug(f"set default {dflt} to {value}")
-
-    def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
-        self.global_luminosity = luminosity
-        self.global_brightness = brightness
-
-    def register(self, variable: Variable) -> Variable:
-        """Registers a Variable
-
-        Args:
-            variable ([type]): [description]
-
-        Returns:
-            [type]: [description]
-        """
-        if variable.name is None:
-            logger.warning(f"invalid variable name {variable.name}, not registered")
-            return None
-        if variable.name not in self.all_variable:
-            # variable._sim = self
-            # self.set_rounding(variable)
-            # self.set_frequency(variable)
-            self.all_variable[variable.name] = variable
-        else:
-            logger.debug(f"variable name {variable.name} already registered")
-        return variable
-
-    def get_variable(self, name: str, factory: VariableFactory, is_string: bool = False) -> Variable:
-        """Returns data or create a new one, internal if path requires it"""
-        if name in self.all_variable.keys():
-            return self.all_variable[name]
-        return self.register(variable=factory.variable_factory(name=name, is_string=is_string))
-
-    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
-        """Returns data or create a new internal variable"""
-        return InternalVariable(name=name, is_string=is_string)
-
-    def instruction_factory(self, **kwargs):
-        # Should be the top-most instruction factory.
-        # Delegates to simulator if not capable of building instruction
-        name = kwargs.get("name")
-        if name is not None and name.startswith(CockpitInstruction.PREFIX):
-            logger.debug(f"creating {name}")
-            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
-            if instruction is not None:
-                return instruction
-        return self.sim.instruction_factory(**kwargs)
-        # if name == "reload_one":
-        #     deck = kwargs.get(CONFIG_KW.DECK.value)
-        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
-        # elif name == "theme":
-        #     theme = kwargs.get(CONFIG_KW.THEME.value)
-        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
-        # elif name == "reload":
-        #     return CockpitReloadInstruction(cockpit=self)
-        # elif name == "stop":
-        #     return CockpitStopInstruction(cockpit=self)
-
-    def get_variable_value(self, name, default=None) -> Any | None:
-        """Gets the value of a Variable monitored by Cockpitdecks
-        Args:
-            simulator_variable ([type]): [description]
-            default ([type]): [description] (default: `None`)
-
-        Returns:
-            [type]: [description]
-        """
-        v = self.all_variable.get(name)
-        if v is None:
-            logger.warning(f"{name} not found")
-            return None
-        return v.current_value if v.current_value is not None else default
 
     @staticmethod
     def all_subclasses(cls) -> list:
@@ -678,176 +566,29 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         logger.debug(f"..loaded")
         logger.info(f"loaded extensions {", ".join(loaded)}")
 
-    def get_variables(self) -> set:
-        """Returns the list of datarefs for which the cockpit wants to be notified."""
-        ret = self._simulator_variable_names
-        # Observables gets notified themselves
-        # if len(self.observables) > 0:
-        #     for o in self.observables.values():
-        #         ret = ret | o.get_variables()
-        return ret
-
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
         return [a for a in self.all_activations.values() if action in a.get_required_capability()]
 
     def get_representations_for(self, feedback: DECK_FEEDBACK):
         return [a for a in self.all_representations.values() if feedback in a.get_required_capability()]
 
-    def get_color(self, color, silence: bool = True) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
-        if type(color) is str and color in self.named_colors:
-            color1 = color
-            color = self.named_colors.get(color)  # named color can be the name of a pillow color...
-            if silence:
-                logger.debug(f"named colors {color1}=>{color}")
-            else:
-                logger.info(f"named colors {color1}=>{color}")
-        return convert_color(color)  # this time, if color is a color name it must be a valid pillow color name
+    def init_simulator(self) -> bool:
+        if self._simulator_name is None and len(self.all_simulators) >= 1:
+            logger.error(f"ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity, available: {', '.join(self.all_simulators.keys())}")
+            return False
+        if len(self.all_simulators) == 1 or self._simulator_name is None:
+            self._simulator_name = list(self.all_simulators.keys())[0]
+            logger.info(f"simulator set to {self._simulator_name}")
+        self._simulator = self.all_simulators[self._simulator_name]
+        self.sim = self._simulator(self, self._environ)
+        logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
+        self._livery_dataref = self.sim.get_internal_variable(INTERNAL_AIRCRAFT_CHANGE_DATAREF, is_string=True)
+        self._livery_dataref.update_value(new_value=None, cascade=False)  # init
+        if self.cockpitdecks_path is not None:
+            logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
+        return True
 
-    def convert_if_color_attribute(self, attribute: str, value, silence: bool = True):
-        if type(attribute) is str and "color" in attribute and type(value) is str:
-            if silence:
-                logger.debug(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
-            else:
-                logger.info(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
-        return self.get_color(color=value, silence=silence) if type(attribute) is str and "color" in attribute else value
-
-    def get_attribute(self, attribute: str, default=None, silence: bool = True):
-        # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
-        # Assumes attributes are-kebab-case.
-        def is_themable_attribute(a: str) -> bool:
-            # Returns whether an attribute can be themed
-            # Currently, only color, texture, and fonts
-            return self.theme is not None and (a.endswith("color") or a.endswith("texture") or ("font" in a) or a.startswith("cockpit-"))
-
-        def is_themed_attribute(a: str) -> bool:
-            return self.theme is not None and a.startswith(self.theme)
-
-        def is_default_attribute(a: str) -> bool:
-            return a.startswith(DEFAULT_ATTRIBUTE_PREFIX) or a.startswith("cockpit-")  # or "default" in a?
-
-        def stripfirst(a):
-            return "-".join(a.split("-")[1:])
-
-        def addfirst(a, s):
-            return "-".join([s, a])
-
-        def trace_debug(s):
-            logger.debug(s) if silence else logger.info(s)
-
-        self._reqdfts.add(attribute)  # internal stats
-
-        trace_debug(f"searching for {attribute}")
-
-        # 1. First, if allowed, we try it in a theme
-        if is_themable_attribute(attribute) and not is_themed_attribute(attribute):
-            newattr = addfirst(attribute, self.theme)
-            trace_debug(f"searching for {attribute}, first trying with theme {self.theme}")
-            value = self.get_attribute(attribute=newattr, default=default, silence=silence)
-            if not silence:
-                logger.info(f"tried themed {newattr}, value {value}")
-            if value is not None:
-                return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
-
-        trace_debug(f"trying normal {attribute}")
-        # 2. Then Let's first try the attribute as requested...
-        # 2.1. From the aircraft config (custom, from the user)
-        value = self._config.get(attribute)
-        if not silence:
-            logger.info(f"tried normal (config) {attribute}, value {value}")
-        if value is not None:
-            trace_debug(f"cockpit returning {attribute}={value} (from config)")
-            return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
-
-        # 2.2 From Cockpitdekcs resources (config, fixed)
-        value = self._resources_config.get(attribute)
-        if not silence:
-            logger.info(f"trying normal (resources) {attribute}, value {value}")
-        if value is not None:
-            trace_debug(f"cockpit returning {attribute}={value} (from resources)")
-            return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
-
-        # 3.2 From internal values (fixed)
-        ATTRNAME = "_defaults"
-        if hasattr(self, ATTRNAME):
-            ld = getattr(self, ATTRNAME)
-            if isinstance(ld, dict):
-                value = ld.get(attribute)
-                if not silence:
-                    logger.info(f"tried (internal defaults) {attribute}, value {value}")
-                if value is not None:
-                    trace_debug(f"cockpit returning {attribute}={value} (from internal default)")
-                    return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
-
-        # If we're here haven't found the themed attribute either
-        # Second, we'll try with default-
-        if not (is_default_attribute(attribute) or is_themed_attribute(attribute)):  # we cannot add default-
-            newattr = addfirst(attribute, DEFAULT_ATTRIBUTE_NAME)
-            trace_debug(f"no value for {attribute}, trying default-")
-            value = self.get_attribute(attribute=newattr, default=default, silence=silence)
-            if not silence:
-                logger.info(f"tried {newattr}, value {value}")
-            if value is not None:
-                return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
-
-        if is_themed_attribute(attribute):
-            # no theme-attribute or theme-default-attribute
-            # in this case, we do not return the default,
-            # but we notify we did not find a themed value
-            # by returning None
-            return None
-
-        # no default-attribute
-        # No attribute we return the default carried over so far
-        if not is_default_attribute(attribute):
-            logger.warning(f"returning default value of non default attribute ({default})")
-
-        trace_debug(f"no value for {attribute}, returning default ({default})")
-        return self.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
-
-    def get_button_value(self, name):
-        a = name.split(ID_SEP)
-        if len(a) > 0:
-            if a[0] == self.name:
-                if a[1] in self.cockpit.keys():
-                    return self.cockpit[a[1]].get_button_value(ID_SEP.join(a[1:]))
-                else:
-                    logger.warning(f"so such deck {a[1]}")
-            else:
-                logger.warning(f"no such cockpit {a[0]}")
-        else:
-            logger.warning(f"invalid name {name}")
-        return None
-
-    def inspect(self, what: str | None = None):
-        """
-        This function is called on all instances of Deck.
-        """
-        logger.info(f"Cockpitdecks Rel. {__version__} -- {what}")
-
-        if what is not None and "thread" in what:
-            logger.info(f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
-        elif what is not None and what.startswith("datarefs"):
-            self.inspect_datarefs(what)
-        elif what == "monitored":
-            self.inspect_monitored(what)
-        else:
-            for v in self.cockpit.values():
-                v.inspect(what)
-
-    def inspect_datarefs(self, what: str | None = None):
-        if what is not None and what.startswith("datarefs"):
-            for dref in self.sim.all_simulator_variable.values():
-                logger.info(f"{dref.name} = {dref.value()} ({len(dref.listeners)} lsnrs)")
-                if what.endswith("listener"):
-                    for l in dref.listeners:
-                        logger.info(f"  {l.name}")
-        else:
-            logger.info("to do")
-
-    def inspect_monitored(self, what: str | None = None):
-        for dref in self.sim.simulator_variable.values():
-            logger.info(f"{dref}")
-
+    # Devices
     def scan_devices(self):
         """Scan for hardware devices"""
         if len(self.all_deck_drivers) == 0:
@@ -956,89 +697,437 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         logger.warning(f"deck {req_serial} not found")
         return None
 
-    def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):
-        """
-        Loads decks for aircraft in supplied path and start listening for key presses.
-        """
-        self.mode = mode
-        self.load_aircraft(acpath)
-        self.run(release)
+    # Variables
+    def register(self, variable: Variable) -> Variable:
+        """Registers a Variable
 
-    def load_aircraft(self, acpath: str | None):
-        """
-        Loads decks for aircraft in supplied path.
-        First unloads a previously loaded aircraft if any
-        """
-        if self.disabled:
-            logger.warning("Cockpitdecks is disabled")
-            return
-        if acpath is None:
-            logger.warning("no new aircraft path to load, not unloading current one")
-            return
-        # Reset, if new aircraft
-        if len(self.cockpit) > 0:
-            self.terminate_aircraft()
-            # self.sim.clean_datarefs_to_monitor()
-            logger.debug(f"{os.path.basename(self.acpath)} unloaded")
+        Args:
+            variable ([type]): [description]
 
-        if self.sim is None:
-            logger.info("..starting simulator..")
-            self.sim = self._simulator(self, self._environ)
+        Returns:
+            [type]: [description]
+        """
+        if variable.name is None:
+            logger.warning(f"invalid variable name {variable.name}, not registered")
+            return None
+        if variable.name not in self.all_variable:
+            # variable._sim = self
+            # self.set_rounding(variable)
+            # self.set_frequency(variable)
+            self.all_variable[variable.name] = variable
         else:
-            logger.debug("simulator already running")
+            logger.debug(f"variable name {variable.name} already registered")
+        return variable
 
-        if not self._device_scanned:
-            self.scan_devices()
+    def get_variable(self, name: str, factory: VariableFactory, is_string: bool = False) -> Variable:
+        """Returns data or create a new one, internal if path requires it"""
+        if name in self.all_variable.keys():
+            return self.all_variable[name]
+        return self.register(variable=factory.variable_factory(name=name, is_string=is_string))
 
-        logger.info(f"starting aircraft {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
-        self.acpath = None
+    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+        """Returns data or create a new internal variable"""
+        return InternalVariable(name=name, is_string=is_string)
 
-        if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
-            self.acpath = acpath
-            self._acname = self.get_aircraft_name_from_aircraft_path(acpath)
-            logger.info(f"aircraft name set to {self._acname}")
+    def get_variable_value(self, name, default=None) -> Any | None:
+        """Gets the value of a Variable monitored by Cockpitdecks
+        Args:
+            simulator_variable ([type]): [description]
+            default ([type]): [description] (default: `None`)
 
-            self.load_aircraft_deck_types()
-            self.scan_web_decks()
+        Returns:
+            [type]: [description]
+        """
+        v = self.all_variable.get(name)
+        if v is None:
+            logger.warning(f"{name} not found")
+            return None
+        return v.current_value if v.current_value is not None else default
 
-            if len(self.devices) == 0:
-                logger.warning("no device")
-                return
+    def get_variables(self) -> set:
+        """Returns the list of datarefs for which the cockpit wants to be notified."""
+        ret = self._simulator_variable_names
+        # Observables gets notified themselves
+        # if len(self.observables) > 0:
+        #     for o in self.observables.values():
+        #         ret = ret | o.get_variables()
+        return ret
 
-            self.load_ac_resources()
-            self.create_decks()
-            self.load_pages()
-            self._ac_ready = True
-        else:
-            if acpath is None:
-                logger.error(f"no aircraft folder")
-            elif not os.path.exists(acpath):
-                logger.error(f"no aircraft folder {acpath}")
+    # Instruction
+    def instruction_factory(self, **kwargs):
+        # Should be the top-most instruction factory.
+        # Delegates to simulator if not capable of building instruction
+        name = kwargs.get("name")
+        if name is not None and name.startswith(CockpitInstruction.PREFIX):
+            logger.debug(f"creating {name}")
+            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
+            if instruction is not None:
+                return instruction
+        return self.sim.instruction_factory(**kwargs)
+        # if name == "reload_one":
+        #     deck = kwargs.get(CONFIG_KW.DECK.value)
+        #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)
+        # elif name == "theme":
+        #     theme = kwargs.get(CONFIG_KW.THEME.value)
+        #     return CockpitChangeThemeInstruction(theme=theme, cockpit=self)
+        # elif name == "reload":
+        #     return CockpitReloadInstruction(cockpit=self)
+        # elif name == "stop":
+        #     return CockpitStopInstruction(cockpit=self)
+
+    # Attribute defaults
+    def get_color(self, color, silence: bool = True) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
+        if type(color) is str and color in self.named_colors:
+            color1 = color
+            color = self.named_colors.get(color)  # named color can be the name of a pillow color...
+            if silence:
+                logger.debug(f"named colors {color1}=>{color}")
             else:
-                logger.error(f"no Cockpitdecks folder '{CONFIG_FOLDER}' in aircraft folder {acpath}")
-            self.create_default_decks()
-        logger.info(f"..aircraft {os.path.basename(acpath)} started")
+                logger.info(f"named colors {color1}=>{color}")
+        return convert_color(color)  # this time, if color is a color name it must be a valid pillow color name
 
-    def load_pages(self):
-        if self.default_pages is not None:
-            logger.debug(f"default_pages {self.default_pages.keys()}")
-            for name, deck in self.cockpit.items():
-                if name in self.default_pages.keys():
-                    if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
-                        deck.change_page(self.default_pages[name])
-                    else:
-                        deck.change_page()
-            self.default_pages = None
+    def convert_color(self, instr):
+        """Adds an extra layer of possibilities to define our own color names
+        for styling purposes.
+        """
+        if instr in self.named_colors:
+            return self.named_colors.get(instr)
+        return convert_color(instr=instr)
+
+    def convert_if_color_attribute(self, attribute: str, value, silence: bool = True):
+        if type(attribute) is str and "color" in attribute and type(value) is str:
+            if silence:
+                logger.debug(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
+            else:
+                logger.info(f"convert color {attribute}={value}, {type(attribute)}, {self.named_colors.get(value)}")
+        return self.get_color(color=value, silence=silence) if type(attribute) is str and "color" in attribute else value
+
+    def set_default(self, dflt, value):
+        if not dflt.startswith(DEFAULT_ATTRIBUTE_PREFIX):
+            logger.warning(f"default variable {dflt} does not start with {DEFAULT_ATTRIBUTE_PREFIX}")
+        ATTRNAME = "_defaults"
+        if not hasattr(self, ATTRNAME):
+            setattr(self, ATTRNAME, dict())
+        ld = getattr(self, ATTRNAME)
+        if isinstance(ld, dict):
+            ld[dflt] = value
+        logger.debug(f"set default {dflt} to {value}")
+
+    def get_attribute(self, attribute: str, default=None, silence: bool = True):
+        # Attempts to provide a dark/light theme alternative, fall back on light(=normal)
+        # Assumes attributes are-kebab-case.
+        def is_themable_attribute(a: str) -> bool:
+            # Returns whether an attribute can be themed
+            # Currently, only color, texture, and fonts
+            return self.theme is not None and (a.endswith("color") or a.endswith("texture") or ("font" in a) or a.startswith("cockpit-"))
+
+        def is_themed_attribute(a: str) -> bool:
+            return self.theme is not None and a.startswith(self.theme)
+
+        def is_default_attribute(a: str) -> bool:
+            return a.startswith(DEFAULT_ATTRIBUTE_PREFIX) or a.startswith("cockpit-")  # or "default" in a?
+
+        def stripfirst(a):
+            return "-".join(a.split("-")[1:])
+
+        def addfirst(a, s):
+            return "-".join([s, a])
+
+        def trace_debug(s):
+            logger.debug(s) if silence else logger.info(s)
+
+        self._reqdfts.add(attribute)  # internal stats
+
+        trace_debug(f"searching for {attribute}")
+
+        # 1. First, if allowed, we try it in a theme
+        if is_themable_attribute(attribute) and not is_themed_attribute(attribute):
+            newattr = addfirst(attribute, self.theme)
+            trace_debug(f"searching for {attribute}, first trying with theme {self.theme}")
+            value = self.get_attribute(attribute=newattr, default=default, silence=silence)
+            if not silence:
+                logger.info(f"tried themed {newattr}, value {value}")
+            if value is not None:
+                return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
+
+        trace_debug(f"trying normal {attribute}")
+        # 2. Then Let's first try the attribute as requested...
+        # 2.1. From the aircraft config (custom, from the user)
+        value = self._config.get(attribute)
+        if not silence:
+            logger.info(f"tried normal (config) {attribute}, value {value}")
+        if value is not None:
+            trace_debug(f"cockpit returning {attribute}={value} (from config)")
+            return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
+
+        # 2.2 From Cockpitdekcs resources (config, fixed)
+        value = self._resources_config.get(attribute)
+        if not silence:
+            logger.info(f"trying normal (resources) {attribute}, value {value}")
+        if value is not None:
+            trace_debug(f"cockpit returning {attribute}={value} (from resources)")
+            return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
+
+        # 3.2 From internal values (fixed)
+        ATTRNAME = "_defaults"
+        if hasattr(self, ATTRNAME):
+            ld = getattr(self, ATTRNAME)
+            if isinstance(ld, dict):
+                value = ld.get(attribute)
+                if not silence:
+                    logger.info(f"tried (internal defaults) {attribute}, value {value}")
+                if value is not None:
+                    trace_debug(f"cockpit returning {attribute}={value} (from internal default)")
+                    return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
+
+        # If we're here haven't found the themed attribute either
+        # Second, we'll try with default-
+        if not (is_default_attribute(attribute) or is_themed_attribute(attribute)):  # we cannot add default-
+            newattr = addfirst(attribute, DEFAULT_ATTRIBUTE_NAME)
+            trace_debug(f"no value for {attribute}, trying default-")
+            value = self.get_attribute(attribute=newattr, default=default, silence=silence)
+            if not silence:
+                logger.info(f"tried {newattr}, value {value}")
+            if value is not None:
+                return self.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
+
+        if is_themed_attribute(attribute):
+            # no theme-attribute or theme-default-attribute
+            # in this case, we do not return the default,
+            # but we notify we did not find a themed value
+            # by returning None
+            return None
+
+        # no default-attribute
+        # No attribute we return the default carried over so far
+        if not is_default_attribute(attribute):
+            logger.warning(f"returning default value of non default attribute ({default})")
+
+        trace_debug(f"no value for {attribute}, returning default ({default})")
+        return self.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
+
+    def get_button_value(self, name):
+        a = name.split(ID_SEP)
+        if len(a) > 0:
+            if a[0] == self.name:
+                if a[1] in self.decks.keys():
+                    return self.decks[a[1]].get_button_value(ID_SEP.join(a[1:]))
+                else:
+                    logger.warning(f"so such deck {a[1]}")
+            else:
+                logger.warning(f"no such cockpit {a[0]}")
         else:
-            for deck in self.cockpit.values():
-                deck.change_page()
+            logger.warning(f"invalid name {name}")
+        return None
 
-    def reload_pages(self):
-        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
-        for name, deck in self.cockpit.items():
-            deck.reload_page()
+    # Cockpitdecks instpection
+    def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
+        # Here, it is purely statistics
+        if self.sim is not None:
+            self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
-    def load_defaults(self):
+    def inspect(self, what: str | None = None):
+        """
+        This function is called on all instances of Deck.
+        """
+        logger.info(f"Cockpitdecks Rel. {__version__} -- {what}")
+
+        if what is not None and "thread" in what:
+            logger.info(f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
+        elif what is not None and what.startswith("datarefs"):
+            self.inspect_datarefs(what)
+        elif what == "monitored":
+            self.inspect_monitored(what)
+        else:
+            for v in self.decks.values():
+                v.inspect(what)
+
+    def inspect_datarefs(self, what: str | None = None):
+        if what is not None and what.startswith("datarefs"):
+            for dref in self.sim.all_simulator_variable.values():
+                logger.info(f"{dref.name} = {dref.value()} ({len(dref.listeners)} lsnrs)")
+                if what.endswith("listener"):
+                    for l in dref.listeners:
+                        logger.info(f"  {l.name}")
+        else:
+            logger.info("to do")
+
+    def inspect_monitored(self, what: str | None = None):
+        for dref in self.sim.simulator_variable.values():
+            logger.info(f"{dref}")
+
+    # #########################################################
+    # Cockpit data caches
+    #
+    def load_cd_resources(self):
+        self.load_cd_fonts()
+        self.load_cd_icons()
+        self.load_cd_sounds()
+        self.load_cd_observables()
+        self.load_cd_deck_types()
+        self.load_cd_defaults()
+
+    def load_cd_deck_types(self):
+        # 1. "System" types
+        for deck_type in DeckType.list():
+            try:
+                data = DeckType(deck_type)
+                self.deck_types[data.name] = data
+                if data.is_virtual_deck():
+                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+            except ValueError:  # this is one of ours, this is an error, not a warning.
+                logger.error(f"could not load deck type {deck_type}, ignoring")
+        # 2. Deck types in extension folder(s)
+        if self.extension_paths is not None:
+            for path in self.extension_paths:
+                ext_path = os.path.join(path, DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER)
+                for deck_type in DeckType.list(ext_path):
+                    data = DeckType(deck_type)
+                    self.deck_types[data.name] = data
+                    if data.is_virtual_deck():
+                        self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+
+        # 3. Deck types in extension modules:
+        for package in self.all_extensions:
+            for deck_type in DeckType.list(path=None, module=package + ".decks.resources.types"):
+                if deck_type not in self.deck_types:
+                    data = DeckType(deck_type)
+                    self.deck_types[data.name] = data
+                    if data.is_virtual_deck():
+                        self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+                    logger.debug(f"package {package}: decktype {deck_type} loaded")
+                else:
+                    logger.warning(f"package {package}: decktype {deck_type} already loaded")
+
+        real_decks = [k for k, v in self.deck_types.items() if not v.is_virtual_deck()]
+        logger.info(f"loaded {len(real_decks)} deck types ({', '.join(real_decks)})")
+        logger.info(f"loaded {len(self.virtual_deck_types)} virtual deck types ({', '.join(self.virtual_deck_types.keys())})")
+
+    def get_deck_type(self, name: str):
+        return self.deck_types.get(name)
+
+    def load_cd_observables(self):
+        fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
+        if os.path.exists(fn):
+            config = {}
+            with open(fn, "r") as fp:
+                config = yaml.load(fp)
+            self._cd_observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self._cd_observables.observables)} observables")
+            if self.aircraft._ac_observables is not None and hasattr(self.aircraft._ac_observables, "observables"):
+                self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self._ac_observables.observables}
+            else:
+                self.observables = {o.name: o for o in self._cd_observables.observables}
+
+    def get_observable(self, name) -> Observable | None:
+        return self.observables.get(name)
+
+    def load_cd_icons(self):
+        # Loading default icons
+        #
+        cache_icon = self.get_attribute("cache-icon")
+        dn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
+        if os.path.exists(dn):
+            cache = os.path.join(dn, "_icon_cache.pickle")
+            if os.path.exists(cache) and cache_icon:
+                with open(cache, "rb") as fp:
+                    self._cd_icons = pickle.load(fp)
+                logger.info(f"{len(self._cd_icons)} icons loaded from cache")
+            else:
+                icons = os.listdir(dn)
+                for i in icons:
+                    fn = os.path.join(dn, i)
+                    if has_ext(i, "png"):  # later, might load JPG as well.
+                        image = Image.open(fn)
+                        self._cd_icons[i] = image
+                    elif has_ext(i, "svg"):  # Wow.
+                        try:
+                            fn = os.path.join(dn, i)
+                            fout = fn.replace(".svg", ".png")
+                            svg2png(url=fn, write_to=fout)
+                            image = Image.open(fout)
+                            self._cd_icons[i] = image
+                        except:
+                            logger.warning(f"could not load icon {fn}")
+                            pass  # no cairosvg
+
+                if cache_icon:  # we cache both folders of icons
+                    with open(cache, "wb") as fp:
+                        pickle.dump(self._cd_icons, fp)
+                    logger.info(f"{len(self._cd_icons)} icons cached")
+                else:
+                    logger.info(f"{len(self._cd_icons)} icons loaded")
+
+        self.icons = self._cd_icons | self.aircraft._ac_icons
+
+        dftname = self.get_attribute("icon-name")
+        if dftname in self._cd_icons.keys():
+            logger.info(f"default icon name {dftname} found")
+        else:
+            logger.warning(f"default icon name {dftname} not found in default icons")
+
+    def get_icon(self, candidate_icon):
+        for ext in ["", ".png", ".jpg", ".jpeg"]:
+            fn = add_ext(candidate_icon, ext)
+            if fn in self.icons.keys():
+                logger.debug(f"Cockpit: icon {fn} found")
+                return fn
+        logger.warning(f"Cockpit: icon not found {candidate_icon}")  # , available={self.icons.keys()}
+        return None
+
+    def get_icon_image(self, icon):
+        return self.icons.get(icon)
+
+    def load_cd_fonts(self):
+        # Loading fonts.
+        # For custom fonts (fonts found in the fonts config folder),
+        # we supply the full path for font definition to ImageFont.
+        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
+        # If the font is not found by ImageFont, we ignore it.
+        # So self.icons is a list of properly located usable fonts.
+        #
+        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER)
+        if os.path.exists(rn):
+            fonts = os.listdir(rn)
+            for i in fonts:
+                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
+                    if i not in self._cd_fonts.keys():
+                        fn = os.path.join(rn, i)
+                        try:
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                            self._cd_fonts[i] = fn
+                        except:
+                            logger.warning(f"font file {fn} not loaded")
+                    else:
+                        logger.debug(f"font {i} already loaded")
+
+        self.fonts = self._cd_fonts | self.aircraft._ac_fonts
+        logger.info(
+            f"{len(self._cd_fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
+        )
+
+    def load_cd_sounds(self):
+        # Loading sounds.
+        #
+        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, SOUNDS_FOLDER)
+        if os.path.exists(rn):
+            sounds = os.listdir(rn)
+            for i in sounds:
+                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
+                    if i not in self._cd_sounds.keys():
+                        fn = os.path.join(rn, i)
+                        try:
+                            with open(fn, mode="rb") as file:  # b is important -> binary
+                                self._cd_sounds[i] = file.read()
+                        except:
+                            logger.warning(f"default sound file {fn} not loaded")
+                    else:
+                        logger.debug(f"sound {i} already loaded")
+
+        self.sounds = self._cd_sounds | self.aircraft._ac_sounds
+        logger.info(f"{len(self._cd_sounds)} sounds loaded")
+
+    def load_cd_defaults(self):
         """
         Loads default values for font, icon, etc. They will be used if no layout is found.
         """
@@ -1135,7 +1224,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning("no default system font specified")
 
         # rebuild font list
-        self.fonts = self._cd_fonts | self._ac_fonts
+        self.fonts = self._cd_fonts | self.aircraft._ac_fonts
 
         if default_label_font is None and len(self.fonts) > 0:
             first_one = list(self.fonts.keys())[0]
@@ -1144,528 +1233,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.debug(f"no default font found, using first available font ({first_one})")
 
         if default_label_font is None:
-            logger.error(f"no default font")
+            logger.error("no default font")
 
         # 4. report summary if debugging
         logger.debug(
             f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
         )
-
-    def scan_web_decks(self):
-        """Virtual decks are declared in the cockpit configuration
-        Therefore it is necessary to have an aircraft folder.
-
-        [description]
-        """
-        if self.acpath is None:
-            logger.warning(f"no aircraft folder, cannot load virtual decks")
-            return
-        if self.virtual_decks_added:
-            logger.info(f"virtual decks already added")
-            return
-        cnt = 0
-        virtual_deck_types = {d.name: d for d in filter(lambda d: d.is_virtual_deck(), self.deck_types.values())}
-        builder = self.all_deck_drivers.get(VIRTUAL_DECK_DRIVER)
-        decks = builder[1]().enumerate(acpath=self.acpath, virtual_deck_types=virtual_deck_types)
-        logger.info(f"found {len(decks)} virtual deck(s)")
-        for name, device in decks.items():
-            serial = device.get_serial_number()
-            if serial in EXCLUDE_DECKS:
-                logger.warning(f"deck {serial} excluded")
-                del decks[name]
-            logger.info(f"added virtual deck {name}, type {device.virtual_deck_config.get('type', 'type-not-found')}, serial {serial})")
-            self.devices.append(
-                {
-                    CONFIG_KW.DRIVER.value: VIRTUAL_DECK_DRIVER,
-                    CONFIG_KW.DEVICE.value: device,
-                    CONFIG_KW.SERIAL.value: serial,
-                }
-            )
-            cnt = cnt + 1
-        self.virtual_decks_added = True
-        logger.debug(f"added {cnt} virtual decks")
-
-    def remove_web_decks(self):
-        if not self.virtual_decks_added:
-            logger.info("virtual decks not added")
-            return
-        to_remove = []
-        for device in self.devices:
-            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
-                to_remove.append(device)
-        for device in to_remove:
-            self.devices.remove(device)
-        self.virtual_decks_added = False
-        logger.info(f"removed {len(to_remove)} virtual decks")
-
-    def create_decks(self):
-        fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
-        self._config = Config(fn)
-        if not self._config.is_valid():
-            logger.warning(f"no config file {fn} or file is invalid")
-            return
-        self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
-        if (n := len(self.named_colors)) > 0:
-            logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
-
-        before = f" (was {self.theme})" if self.theme is not None else ""
-        theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
-        if self.theme is None:
-            self.theme = theme
-        elif self.theme in ["", "default", "cockpit"]:
-            self.theme = theme
-        logger.info(f"theme is {self.theme}{before}")
-
-        sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
-        serial_numbers = Config(sn)
-        if not serial_numbers.is_valid():
-            self._secret = {}
-            logger.warning(f"secret file {sn} is not valid")
-        else:
-            self._secret = serial_numbers
-
-        # 1. Adjust some settings in global config file.
-        if self.sim is not None:
-            self.sim.set_simulator_variable_roundings(self._config.get("dataref-roundings", {}))
-            self.sim.set_simulator_variable_frequencies(simulator_variable_frequencies=self._config.get("dataref-fetch-frequencies", {}))
-            self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("dataref-fetch-frequency", DEFAULT_FREQUENCY)
-
-        # 2. Create decks
-        decks = self._config.get(CONFIG_KW.DECKS.value)
-        if decks is None:
-            logger.warning(f"no deck in config file {fn}")
-            return
-
-        # init
-        deck_count_by_type = {ty.get(CONFIG_KW.NAME.value): 0 for ty in self.deck_types.values()}
-        # tally
-        for deck in decks:
-            ty = deck.get(CONFIG_KW.TYPE.value)
-            if ty in deck_count_by_type:
-                deck_count_by_type[ty] = deck_count_by_type[ty] + 1
-            else:
-                deck_count_by_type[ty] = 1
-
-        cnt = 0
-        self.virtual_deck_list = {}
-
-        for deck_config in decks:
-            name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
-
-            disabled = deck_config.get(CONFIG_KW.DISABLED.value)
-            if type(disabled) is not bool:
-                if type(disabled) is str:
-                    disabled = disabled.upper() in ["YES", "TRUE"]
-                elif type(disabled) in [int, float]:
-                    disabled = int(disabled) != 0
-            if disabled:
-                logger.info(f"deck {name} disabled, ignoring")
-                continue
-
-            deck_type = deck_config.get(CONFIG_KW.TYPE.value)
-            if deck_type not in self.deck_types.keys():
-                logger.warning(f"invalid deck type {deck_type}, ignoring")
-                continue
-
-            deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in self.all_deck_drivers.keys():
-                logger.warning(f"invalid deck driver {deck_driver}, ignoring")
-                continue
-
-            serial = deck_config.get(CONFIG_KW.SERIAL.value)
-            if serial is None:
-                if deck_driver == VIRTUAL_DECK_DRIVER:
-                    serial = name
-                else:  # get it from the secret file
-                    serial = serial_numbers.get(name)
-
-            # if serial is not None:
-            device = self.get_device(req_driver=deck_driver, req_serial=serial)
-            if device is not None:
-                #
-                if serial is None:
-                    if deck_count_by_type[deck_type] > 1:
-                        logger.warning(
-                            "only one deck of that type but more than one configuration in config.yaml for decks of that type and no serial number, ignoring"
-                        )
-                        continue
-                    deck_config[CONFIG_KW.SERIAL.value] = device.get_serial_number()  # issue: might return None?
-                    logger.info(f"deck {deck_type} {name} has serial {deck_config[CONFIG_KW.SERIAL.value]}")
-                else:
-                    deck_config[CONFIG_KW.SERIAL.value] = serial
-                if name not in self.cockpit.keys():
-                    self.cockpit[name] = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
-                    if deck_driver == VIRTUAL_DECK_DRIVER:
-                        deck_flat = self.deck_types.get(deck_type).desc()
-                        if DECK_KW.BACKGROUND.value in deck_flat and DECK_KW.IMAGE.value in deck_flat[DECK_KW.BACKGROUND.value]:
-                            background = deck_flat[DECK_KW.BACKGROUND.value]
-                            fn = background[DECK_KW.IMAGE.value]
-                            if self.deck_types.get(deck_type)._aircraft:
-                                if not fn.startswith(AIRCRAFT_ASSET_PATH):
-                                    background[DECK_KW.IMAGE.value] = AIRCRAFT_ASSET_PATH + fn
-                            else:
-                                if not fn.startswith(COCKPITDECKS_ASSET_PATH):
-                                    background[DECK_KW.IMAGE.value] = COCKPITDECKS_ASSET_PATH + fn
-                        self.virtual_deck_list[name] = deck_config | {
-                            DECK_TYPE_ORIGINAL: self.deck_types.get(deck_type).store,
-                            DECK_TYPE_DESCRIPTION: deck_flat,
-                        }
-                    cnt = cnt + 1
-                    deck_layout = deck_config.get(DECK_KW.LAYOUT.value, DEFAULT_LAYOUT)
-                    logger.info(f"deck {name} added ({deck_type}, driver {deck_driver}, layout {deck_layout})")
-                else:
-                    logger.warning(f"deck {name} already exist, ignoring")
-            else:
-                logger.error(f"deck {deck_type} {name} has no device, ignoring")
-
-    def convert_color(self, instr):
-        """Adds an extra layer of possibilities to define our own color names
-        for styling purposes.
-        """
-        if instr in self.named_colors:
-            return self.named_colors.get(instr)
-        return convert_color(instr=instr)
-
-    def create_default_decks(self):
-        """
-        When no deck definition is found in the aicraft folder, Cockpit loads
-        a default X-Plane logo on all deck devices. The only active button is index 0,
-        which toggle X-Plane map on/off.
-        """
-        self.acpath = None
-
-        # {
-        #    CONFIG_KW.TYPE.value: decktype,
-        #    CONFIG_KW.DEVICE.value: device,
-        #    CONFIG_KW.SERIAL.value: serial
-        # }
-        for deck in self.devices:
-            deckdriver = deck.get(CONFIG_KW.DRIVER.value)
-            if deckdriver not in self.all_deck_drivers.keys():
-                logger.warning(f"invalid deck driver {deckdriver}, ignoring")
-                continue
-            device = deck[CONFIG_KW.DEVICE.value]
-            device.open()
-            device.reset()
-            name = device.id()
-            config = {
-                CONFIG_KW.NAME.value: name,
-                CONFIG_KW.TYPE.value: device.deck_type(),
-                CONFIG_KW.SERIAL.value: device.get_serial_number(),
-                CONFIG_KW.LAYOUT.value: None,  # Streamdeck will detect None layout and present default deck
-                "brightness": 75,  # Note: layout=None is not the same as no layout attribute (attribute missing)
-            }
-            self.cockpit[name] = self.all_deck_drivers[deckdriver][0](name, config, self, device)
-
-    def load_cd_observables(self):
-        fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
-        if os.path.exists(fn):
-            config = {}
-            with open(fn, "r") as fp:
-                config = yaml.load(fp)
-            self._cd_observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self._cd_observables.observables)} observables")
-            if self._ac_observables is not None and hasattr(self._ac_observables, "observables"):
-                self.observables = {o.name: o for o in self._dc_observables.observables} | {o.name: o for o in self._ac_observables.observables}
-            else:
-                self.observables = {o.name: o for o in self._cd_observables.observables}
-
-    def load_ac_observables(self):
-        fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
-        if os.path.exists(fn):
-            config = {}
-            with open(fn, "r") as fp:
-                config = yaml.load(fp)
-            self._ac_observables = Observables(config=config, simulator=self.sim)
-            self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self._ac_observables.observables}
-            logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
-            logger.info(f"{len(self.observables)} observables")
-
-    def get_observable(self, name) -> Observable | None:
-        return self.observables.get(name)
-
-    # #########################################################
-    # Cockpit data caches
-    #
-    def load_deck_types(self):
-        # 1. "System" types
-        for deck_type in DeckType.list():
-            try:
-                data = DeckType(deck_type)
-                self.deck_types[data.name] = data
-                if data.is_virtual_deck():
-                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-            except ValueError:  # this is one of ours, this is an error, not a warning.
-                logger.error(f"could not load deck type {deck_type}, ignoring")
-        # 2. Deck types in extension folder(s)
-        if self.extension_paths is not None:
-            for path in self.extension_paths:
-                ext_path = os.path.join(path, DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER)
-                for deck_type in DeckType.list(ext_path):
-                    data = DeckType(deck_type)
-                    self.deck_types[data.name] = data
-                    if data.is_virtual_deck():
-                        self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-
-        # 3. Deck types in extension modules:
-        for package in self.all_extensions:
-            for deck_type in DeckType.list(path=None, module=package + ".decks.resources.types"):
-                if deck_type not in self.deck_types:
-                    data = DeckType(deck_type)
-                    self.deck_types[data.name] = data
-                    if data.is_virtual_deck():
-                        self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-                    logger.debug(f"package {package}: decktype {deck_type} loaded")
-                else:
-                    logger.warning(f"package {package}: decktype {deck_type} already loaded")
-
-        real_decks = [k for k, v in self.deck_types.items() if not v.is_virtual_deck()]
-        logger.info(f"loaded {len(real_decks)} deck types ({', '.join(real_decks)})")
-        logger.info(f"loaded {len(self.virtual_deck_types)} virtual deck types ({', '.join(self.virtual_deck_types.keys())})")
-
-    def load_aircraft_deck_types(self):
-        aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
-        added = []
-        for deck_type in DeckType.list(aircraft_deck_types):
-            b = os.path.basename(deck_type)
-            if b in [CONFIG_FILE, "designer.yaml"]:
-                continue
-            try:
-                data = DeckType(deck_type)
-                data._aircraft = True  # mark as non-system deck type
-                self.deck_types[data.name] = data
-                if data.is_virtual_deck():
-                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-                added.append(data.name)
-            except ValueError:
-                logger.warning(f"could not load deck type {deck_type}, ignoring")
-        logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
-
-    def get_deck_type(self, name: str):
-        return self.deck_types.get(name)
-
-    def load_cd_icons(self):
-        # Loading default icons
-        #
-        cache_icon = self.get_attribute("cache-icon")
-        dn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, ICONS_FOLDER)
-        if os.path.exists(dn):
-            cache = os.path.join(dn, "_icon_cache.pickle")
-            if os.path.exists(cache) and cache_icon:
-                with open(cache, "rb") as fp:
-                    self._cd_icons = pickle.load(fp)
-                logger.info(f"{len(self._cd_icons)} icons loaded from cache")
-            else:
-                icons = os.listdir(dn)
-                for i in icons:
-                    fn = os.path.join(dn, i)
-                    if has_ext(i, "png"):  # later, might load JPG as well.
-                        image = Image.open(fn)
-                        self._cd_icons[i] = image
-                    elif has_ext(i, "svg"):  # Wow.
-                        try:
-                            fn = os.path.join(dn, i)
-                            fout = fn.replace(".svg", ".png")
-                            svg2png(url=fn, write_to=fout)
-                            image = Image.open(fout)
-                            self._cd_icons[i] = image
-                        except:
-                            logger.warning(f"could not load icon {fn}")
-                            pass  # no cairosvg
-
-                if cache_icon:  # we cache both folders of icons
-                    with open(cache, "wb") as fp:
-                        pickle.dump(self._cd_icons, fp)
-                    logger.info(f"{len(self._cd_icons)} icons cached")
-                else:
-                    logger.info(f"{len(self._cd_icons)} icons loaded")
-
-        self.icons = self._cd_icons | self._ac_icons
-
-        dftname = self.get_attribute("icon-name")
-        if dftname in self._cd_icons.keys():
-            logger.info(f"default icon name {dftname} found")
-        else:
-            logger.warning(f"default icon name {dftname} not found in default icons")
-
-    def load_cd_resources(self):
-        self.load_cd_fonts()
-        self.load_cd_icons()
-        self.load_cd_sounds()
-        self.load_cd_observables()
-        self.load_defaults()
-
-    def load_ac_resources(self):
-        # currently, nothing is not with this config, but it is loaded if it exists
-        livery = self._livery_dataref.value()
-        if self.acpath is not None and livery is not None and livery != "":
-            fn = os.path.join(self.acpath, "liveries", livery, CONFIG_FOLDER, CONFIG_FILE)
-            if os.path.exists(fn):
-                self._livery_config = Config(filename=fn)
-                logger.info(f"loaded livery configuration from {fn}")
-            else:
-                logger.info("livery has no configuration")
-        else:
-            logger.info("no livery path")
-        self.load_ac_fonts()
-        self.load_ac_icons()
-        self.load_ac_sounds()
-        self.load_ac_observables()
-
-    def load_ac_icons(self):
-        # Loading aircraft icons
-        #
-        cache_icon = self.get_attribute("cache-icon")
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
-        if os.path.exists(dn):
-            cache = os.path.join(dn, "_icon_cache.pickle")
-            if os.path.exists(cache) and cache_icon:
-                with open(cache, "rb") as fp:
-                    self._ac_icons = pickle.load(fp)
-                logger.info(f"{len(self._ac_icons)} aircraft icons loaded from cache")
-            else:
-                icons = os.listdir(dn)
-                for i in icons:
-                    fn = os.path.join(dn, i)
-                    if has_ext(i, "png"):  # later, might load JPG as well.
-                        image = Image.open(fn)
-                        self._ac_icons[i] = image
-                    elif has_ext(i, "svg"):  # Wow.
-                        try:
-                            fn = os.path.join(dn, i)
-                            fout = fn.replace(".svg", ".png")
-                            svg2png(url=fn, write_to=fout)
-                            image = Image.open(fout)
-                            self._ac_icons[i] = image
-                        except:
-                            logger.warning(f"could not load icon {fn}")
-                            pass  # no cairosvg
-
-                if cache_icon:  # we cache both folders of icons
-                    with open(cache, "wb") as fp:
-                        pickle.dump(self._ac_icons, fp)
-                    logger.info(f"{len(self._ac_icons)} aircraft icons cached")
-                else:
-                    logger.info(f"{len(self._ac_icons)} aircraft icons loaded")
-
-        self.icons = self._cd_icons | self._ac_icons
-        logger.info(f"{len(self.icons)} icons available")
-
-        dftname = self.get_attribute("icon-name")
-        if dftname in self.icons.keys():
-            logger.debug(f"default icon name {dftname} found")
-        else:
-            logger.warning(f"default icon name {dftname} not found")  # that's ok
-
-    def get_icon(self, candidate_icon):
-        for ext in ["", ".png", ".jpg", ".jpeg"]:
-            fn = add_ext(candidate_icon, ext)
-            if fn in self.icons.keys():
-                logger.debug(f"Cockpit: icon {fn} found")
-                return fn
-        logger.warning(f"Cockpit: icon not found {candidate_icon}")  # , available={self.icons.keys()}
-        return None
-
-    def get_icon_image(self, icon):
-        return self.icons.get(icon)
-
-    def load_cd_fonts(self):
-        # Loading fonts.
-        # For custom fonts (fonts found in the fonts config folder),
-        # we supply the full path for font definition to ImageFont.
-        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
-        # If the font is not found by ImageFont, we ignore it.
-        # So self.icons is a list of properly located usable fonts.
-        #
-        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER)
-        if os.path.exists(rn):
-            fonts = os.listdir(rn)
-            for i in fonts:
-                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    if i not in self._cd_fonts.keys():
-                        fn = os.path.join(rn, i)
-                        try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                            self._cd_fonts[i] = fn
-                        except:
-                            logger.warning(f"font file {fn} not loaded")
-                    else:
-                        logger.debug(f"font {i} already loaded")
-
-        self.fonts = self._cd_fonts | self._ac_fonts
-        logger.info(
-            f"{len(self._cd_fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
-        )
-
-    def load_ac_fonts(self):
-        # Loading fonts.
-        # For custom fonts (fonts found in the fonts config folder),
-        # we supply the full path for font definition to ImageFont.
-        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
-        # If the font is not found by ImageFont, we ignore it.
-        # So self.icons is a list of properly located usable fonts.
-        #
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, FONTS_FOLDER)
-        if os.path.exists(dn):
-            fonts = os.listdir(dn)
-            for i in fonts:
-                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    if i not in self._ac_fonts.keys():
-                        fn = os.path.join(dn, i)
-                        try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                            self._ac_fonts[i] = fn
-                        except:
-                            logger.warning(f"aircraft font file {fn} not loaded")
-                    else:
-                        logger.debug(f"aircraft font {i} already loaded")
-
-        logger.info(f"{len(self._ac_fonts)} aircraft fonts loaded")
-        self.fonts = self._cd_fonts | self._ac_fonts
-        logger.info(f"{len(self.fonts)} fonts available")
-
-    def load_cd_sounds(self):
-        # Loading sounds.
-        #
-        rn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, SOUNDS_FOLDER)
-        if os.path.exists(rn):
-            sounds = os.listdir(rn)
-            for i in sounds:
-                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
-                    if i not in self._cd_sounds.keys():
-                        fn = os.path.join(rn, i)
-                        try:
-                            with open(fn, mode="rb") as file:  # b is important -> binary
-                                self._cd_sounds[i] = file.read()
-                        except:
-                            logger.warning(f"default sound file {fn} not loaded")
-                    else:
-                        logger.debug(f"sound {i} already loaded")
-
-        self.sounds = self._cd_sounds | self._ac_sounds
-        logger.info(f"{len(self._cd_sounds)} sounds loaded")
-
-    def load_ac_sounds(self):
-        # Loading sounds.
-        #
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
-        if os.path.exists(dn):
-            sounds = os.listdir(dn)
-            for i in sounds:
-                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
-                    if i not in self._ac_sounds.keys():
-                        fn = os.path.join(dn, i)
-                        try:
-                            with open(fn, mode="rb") as file:  # b is important -> binary
-                                self._ac_sounds[i] = file.read()
-                        except:
-                            logger.warning(f"custom sound file {fn} not loaded")
-                    else:
-                        logger.debug(f"sound {i} already loaded")
-
-        logger.info(f"{len(self._ac_sounds)} aircraft sounds loaded")
-        self.sounds = self._cd_sounds | self._ac_sounds
-        logger.info(f"{len(self.sounds)} sounds available")
 
     # #########################################################
     # Cockpit start/stop/event/reload procedures
@@ -1733,12 +1306,130 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     # #########################################################
     # Cockpit instructions
     #
+    def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
+        self.global_luminosity = luminosity
+        self.global_brightness = brightness
+
+    def load_pages(self):
+        if self.default_pages is not None:
+            logger.debug(f"default_pages {self.default_pages.keys()}")
+            for name, deck in self.decks.items():
+                if name in self.default_pages.keys():
+                    if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
+                        deck.change_page(self.default_pages[name])
+                    else:
+                        deck.change_page()
+            self.default_pages = None
+        else:
+            for deck in self.decks.values():
+                deck.change_page()
+
+    def reload_pages(self):
+        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
+        for name, deck in self.decks.items():
+            deck.reload_page()
+
     def execute(self, instruction: CockpitInstruction):
         if not isinstance(instruction, CockpitInstruction):
             logger.warning(f"invalid instruction {instruction.name}")
             return
         instruction._execute()
 
+    def reload_deck(self, deck_name: str, just_do_it: bool = False):
+        """
+        Development function to reload page yaml without leaving the page
+        for one deck only .Should not be used in production.
+        """
+        # A security... if we get called we must ensure reloader is running...
+        if just_do_it:
+            deck = self.decks.get(deck_name)
+            if deck is None:
+                logger.info(f"deck {deck_name} not found")
+                return
+            logger.info(f"reloading deck {deck.name}..")
+            self.busy_reloading = True
+            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
+            if deck.current_page is not None:
+                self.default_pages[deck.name] = deck.current_page.name
+
+            # self.load_aircraft(self.acpath)  # will terminate it before loading again
+            logger.debug("..terminating current version..")
+            deck.terminate()
+            logger.debug("..creating new version..")
+            name = deck.name
+            # find deck in config.yaml.decks
+            deck_config = None
+            all_decks = self._config.get(CONFIG_KW.DECKS.value)
+            i = 0
+            while deck_config is None and i < len(all_decks):
+                if all_decks[i].get(CONFIG_KW.NAME.value, "") == name:
+                    deck_config = all_decks[i]
+                i = i + 1
+            if deck_config is None:
+                logger.info(f"deck {deck_name} not found in cockpit")
+                return
+            # get details
+            serial = deck_config.get(CONFIG_KW.SERIAL.value)
+            deck_type = deck_config.get(CONFIG_KW.TYPE.value)
+            if deck_type not in self.deck_types.keys():
+                logger.warning(f"invalid deck type {deck_type}, ignoring")
+                return
+            deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
+            device = self.get_device(req_driver=deck_driver, req_serial=serial)
+            # recreate
+            deck = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
+            del self.decks[name]
+            self.decks[name] = deck
+
+            # reload
+            if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:
+                deck.change_page(self.default_pages[name])
+                self.default_pages = {}
+            else:
+                deck.change_page()
+
+            self.busy_reloading = False
+            logger.info("..done")
+        else:
+            self.event_queue.put(f"reload:{deck_name}")
+            logger.info("enqueued")
+
+    def reload_decks(self, just_do_it: bool = False):
+        """
+        Development function to reload page yaml without leaving the page
+        Should not be used in production...
+        """
+        # A security... if we get called we must ensure reloader is running...
+        if just_do_it:
+            logger.info("reloading decks..")
+            self.busy_reloading = True
+            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
+            for name, deck in self.decks.items():
+                if deck.current_page is not None:
+                    self.default_pages[name] = deck.current_page.name
+            self.aircraft.terminate()
+            self.aircraft.load(self.aircraft.acpath)
+            self.busy_reloading = False
+            logger.info("..done")
+        else:
+            self.event_queue.put("reload")
+            logger.debug("enqueued")
+
+    def stop_decks(self, just_do_it: bool = False):
+        """
+        Stop decks gracefully. Since it also terminates self.event_loop_thread we cannot wait for it
+        since we are called from it ... So we just tell it to terminate.
+        """
+        if just_do_it:
+            logger.info("stopping decks..")
+            self.terminate_all()
+        else:
+            self.event_queue.put("stop")
+            logger.debug("enqueued")
+
+    # #########################################################
+    # Start/Stop engines
+    #
     def get_corresponding_serial(self, serial_in) -> str:
         """Serial numbers returned by ioreg -p IOUSB do not match serial number returned by devices.
         This does hardcoded case by case correspondance between both.
@@ -1787,116 +1478,143 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 s = s.replace("A00", "")
             serial = f" (serial# {s})"
         logger.warning(f"usb device {device_id}{serial} was removed")
-        inv = {d.serial: d for d in self.cockpit.values()}
+        inv = {d.serial: d for d in self.decks.values()}
         if s in inv:
             deck_name = inv.get(s).name
             logger.warning(f"terminating deck {deck_name}..")
-            deck = self.cockpit.get(deck_name)
+            deck = self.decks.get(deck_name)
             if deck is not None:
                 try:
                     deck.terminate(disconnected=True)  # cannot close the device since it is unplugged
                 except:
                     logger.warning(f"..issues terminating deck {deck_name} (can be ignored)..")
-                del self.cockpit[deck_name]
+                del self.decks[deck_name]
                 logger.warning(f"..terminated deck {deck_name}")
             else:
                 logger.warning(f"no deck named {deck_name} in cockpit")
         else:
             logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks (registered serial numbers are: {', '.join(inv.keys())})")
 
+    def simulator_variable_changed(self, data: SimulatorVariable):
+        """
+        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
+        """
+        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
+            logger.warning(f"unhandled {data.name}={data.value()}")
+            return
+        # Now performed by observable
+        # if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
+        #     self.change_aircraft()
+
+    def terminate_devices(self):
+        for deck in self.devices:
+            deck_driver = deck.get(CONFIG_KW.DRIVER.value)
+            if deck_driver not in self.all_deck_drivers.keys():
+                logger.warning(f"invalid deck type {deck_driver}, ignoring")
+                continue
+            device = deck[CONFIG_KW.DEVICE.value]
+            self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
+
+    def terminate_all(self, threads: int = 1):
+        logger.info("terminating cockpit..")
+        # Stop processing events
+        if self.event_loop_run:
+            self.stop_event_loop()
+            logger.info("..event loop stopped..")
+        # Terminate decks
+        self.aircraft.terminate()
+        logger.info("..aircraft terminated..")
+        # Terminate dataref collection
+        if self.sim is not None:
+            logger.info("..terminating connection to simulator..")
+            self.sim.terminate()
+            logger.info("..connection to simulator terminated..")
+            logger.debug("..deleting connection to simulator..")
+            del self.sim
+            self.sim = None
+            logger.debug("..connection to simulator deleted..")
+        logger.info("..terminating devices..")
+        self.usb_monitor.stop_monitoring()
+        logger.info("..usb monitoring stopped..")
+        self.terminate_devices()
+        logger.info("..done")
+        nt = threading.enumerate()
+        if len(nt) > 1:
+            logger.error(f"{len(nt)} threads remaining")
+            logger.error(f"{[t.name for t in nt]}")
+        else:
+            logger.info("no pending thread")
+        logger.info("..cockpit terminated")
+
+    def run(self, release: bool = False):
+        if len(self.decks) > 0:
+            # Each deck should have been started
+            # Start reload loop
+            logger.info("starting cockpit..")
+            self.sim.connect()
+            logger.info("..usb monitoring started..")
+            self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
+            logger.info("..connect to simulator loop started..")
+            self.start_event_loop()
+            logger.info("..event loop started..")
+            if self.has_web_decks():
+                self.handle_code(code=4, name="init")  # wake up proxy
+            logger.info(f"{len(threading.enumerate())} threads")
+            logger.info(f"{[t.name for t in threading.enumerate()]}")
+            logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
+            logger.info("..cockpit started")
+            if not release or not self.has_web_decks():
+                logger.info(f"serving {self.name}")
+                for t in threading.enumerate():
+                    try:
+                        t.join()
+                    except RuntimeError:
+                        pass
+                logger.info("terminated")
+            logger.info(f"serving {self.name} (released)")
+        else:
+            logger.warning("no deck")
+            if self.aircraft.acpath is not None:
+                self.terminate_all()
+
     # #########################################################
-    # Other
+    # Aircraft
     #
-    def reload_deck(self, deck_name: str, just_do_it: bool = False):
-        """
-        Development function to reload page yaml without leaving the page
-        for one deck only .Should not be used in production.
-        """
-        # A security... if we get called we must ensure reloader is running...
-        if just_do_it:
-            deck = self.cockpit.get(deck_name)
-            if deck is None:
-                logger.info(f"deck {deck_name} not found")
-                return
-            logger.info(f"reloading deck {deck.name}..")
-            self.busy_reloading = True
-            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
-            if deck.current_page is not None:
-                self.default_pages[deck.name] = deck.current_page.name
+    def add_aircraft_resources(self):
+        self.fonts = self._cd_fonts | self.aircraft._ac_fonts
+        logger.info(f"{len(self.fonts)} fonts available")
 
-            # self.load_aircraft(self.acpath)  # will terminate it before loading again
-            logger.debug("..terminating current version..")
-            deck.terminate()
-            logger.debug("..creating new version..")
-            name = deck.name
-            # find deck in config.yaml.decks
-            deck_config = None
-            all_decks = self._config.get(CONFIG_KW.DECKS.value)
-            i = 0
-            while deck_config is None and i < len(all_decks):
-                if all_decks[i].get(CONFIG_KW.NAME.value, "") == name:
-                    deck_config = all_decks[i]
-                i = i + 1
-            if deck_config is None:
-                logger.info(f"deck {deck_name} not found in cockpit")
-                return
-            # get details
-            serial = deck_config.get(CONFIG_KW.SERIAL.value)
-            deck_type = deck_config.get(CONFIG_KW.TYPE.value)
-            if deck_type not in self.deck_types.keys():
-                logger.warning(f"invalid deck type {deck_type}, ignoring")
-                return
-            deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            device = self.get_device(req_driver=deck_driver, req_serial=serial)
-            # recreate
-            deck = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self, device=device)
-            del self.cockpit[name]
-            self.cockpit[name] = deck
+        self.icons = self._cd_icons | self.aircraft._ac_icons
+        logger.info(f"{len(self.icons)} icons available")
 
-            # reload
-            if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:
-                deck.change_page(self.default_pages[name])
-                self.default_pages = {}
+        dftname = self.get_attribute("icon-name")
+        if dftname in self.icons.keys():
+            logger.debug(f"default icon name {dftname} found")
+        else:
+            logger.warning(f"default icon name {dftname} not found")  # that's ok
+
+        self.sounds = self._cd_sounds | self.aircraft._ac_sounds
+        logger.info(f"{len(self.sounds)} sounds available")
+
+        self.sounds = self._cd_sounds | self.aircraft._ac_sounds
+        logger.info(f"{len(self.sounds)} sounds available")
+
+        if self._cd_observables is not None:
+            if self.aircraft._ac_observables is not None and hasattr(self.aircraft._ac_observables, "observables"):
+                self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self.aircraft._ac_observables.observables}
             else:
-                deck.change_page()
+                self.observables = {o.name: o for o in self._cd_observables.observables}
+        logger.info(f"{len(self.observables)} observables")
 
-            self.busy_reloading = False
-            logger.info("..done")
-        else:
-            self.event_queue.put(f"reload:{deck_name}")
-            logger.info("enqueued")
-
-    def reload_decks(self, just_do_it: bool = False):
+    def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):
         """
-        Development function to reload page yaml without leaving the page
-        Should not be used in production...
+        Loads decks for aircraft in supplied path and start listening for key presses.
         """
-        # A security... if we get called we must ensure reloader is running...
-        if just_do_it:
-            logger.info("reloading decks..")
-            self.busy_reloading = True
-            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
-            for name, deck in self.cockpit.items():
-                if deck.current_page is not None:
-                    self.default_pages[name] = deck.current_page.name
-            self.load_aircraft(self.acpath)  # will terminate it before loading again
-            self.busy_reloading = False
-            logger.info("..done")
-        else:
-            self.event_queue.put("reload")
-            logger.debug("enqueued")
-
-    def stop_decks(self, just_do_it: bool = False):
-        """
-        Stop decks gracefully. Since it also terminates self.event_loop_thread we cannot wait for it
-        since we are called from it ... So we just tell it to terminate.
-        """
-        if just_do_it:
-            logger.info("stopping decks..")
-            self.terminate_all()
-        else:
-            self.event_queue.put("stop")
-            logger.debug("enqueued")
+        self.mode = mode
+        self.aircraft.terminate()
+        self.aircraft.load(acpath)
+        # self.add_aircraft_resources() called in above
+        self.run(release)
 
     def get_livery(self, path: str) -> str:
         return os.path.basename(os.path.normpath(path))
@@ -1952,8 +1670,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning(f"aircraft icao invalid value {acicao}, ignoring")
             return
 
-        if self.icao == acicao:
-            logger.info(f"aircraft icao unchanged {self.icao}")
+        if self.aircraft.icao == acicao:
+            logger.info(f"aircraft icao unchanged {self.aircraft.icao}")
             return
 
         if self.mode > 0 and not RELOAD_ON_LIVERY_CHANGE:
@@ -2001,120 +1719,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             if new_ac is not None and self.acpath != new_ac:
                 logger.debug(f"aircraft path: current {self.acpath}, new {new_ac} (former was {old_acname})")
                 logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
-                self.load_aircraft(acpath=new_ac)
+                self.aircraft.terminate()
+                self.aircraft.load(acpath=new_ac)
         else:
             logger.info(f"aircraft unchanged ({self._acname}, {self.acpath})")
 
-    def simulator_variable_changed(self, data: SimulatorVariable):
-        """
-        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
-        """
-        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
-            logger.warning(f"unhandled {data.name}={data.value()}")
-            return
-        # Now performed by observable
-        # if data.name == AIRCRAFT_CHANGE_MONITORING_DATAREF:
-        #     self.change_aircraft()
-
-    def terminate_aircraft(self):
-        logger.info("terminating aircraft..")
-        drefs = {d.name: d.value() for d in self.sim.all_simulator_variable.values()}  #  if d.is_internal
-        fn = "datarefs-log.yaml"
-        with open(fn, "w") as fp:
-            yaml.dump(drefs, fp)
-            logger.debug(f"..simulator data values saved in {fn} file")
-        logger.info("..terminating decks..")
-        self._ac_ready = False
-        for deck in self.cockpit.values():
-            deck.terminate()
-        logger.info("..terminating web decks..")
-        self.remove_web_decks()
-        logger.info("..removing aircraft resources..")
-        self.cockpit = {}
-        self._ac_fonts = {}
-        self._ac_icons = {}
-        self._ac_sounds = {}
-        self._ac_observables = {}
-        nt = threading.enumerate()
-        if len(nt) > 1:
-            logger.info(f"{len(nt)} threads")
-            logger.info(f"{[t.name for t in nt]}")
-        logger.info(f"..aircraft {os.path.basename(self.acpath)} terminated " + "✈ " * 30)
-
-    def terminate_devices(self):
-        for deck in self.devices:
-            deck_driver = deck.get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in self.all_deck_drivers.keys():
-                logger.warning(f"invalid deck type {deck_driver}, ignoring")
-                continue
-            device = deck[CONFIG_KW.DEVICE.value]
-            self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
-
-    def terminate_all(self, threads: int = 1):
-        logger.info("terminating cockpit..")
-        # Stop processing events
-        if self.event_loop_run:
-            self.stop_event_loop()
-            logger.info("..event loop stopped..")
-        # Terminate decks
-        self.terminate_aircraft()
-        logger.info("..aircraft terminated..")
-        # Terminate dataref collection
-        if self.sim is not None:
-            logger.info("..terminating connection to simulator..")
-            self.sim.terminate()
-            logger.info("..connection to simulator terminated..")
-            logger.debug("..deleting connection to simulator..")
-            del self.sim
-            self.sim = None
-            logger.debug("..connection to simulator deleted..")
-        logger.info("..terminating devices..")
-        self.usb_monitor.stop_monitoring()
-        logger.info("..usb monitoring stopped..")
-        self.terminate_devices()
-        logger.info("..done")
-        nt = threading.enumerate()
-        if len(nt) > 1:
-            logger.error(f"{len(nt)} threads remaining")
-            logger.error(f"{[t.name for t in nt]}")
-        else:
-            logger.info("no pending thread")
-        logger.info("..cockpit terminated")
-
-    def run(self, release: bool = False):
-        if len(self.cockpit) > 0:
-            # Each deck should have been started
-            # Start reload loop
-            logger.info("starting cockpit..")
-            self.sim.connect()
-            logger.info("..usb monitoring started..")
-            self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
-            logger.info("..connect to simulator loop started..")
-            self.start_event_loop()
-            logger.info("..event loop started..")
-            if self.has_web_decks():
-                self.handle_code(code=4, name="init")  # wake up proxy
-            logger.info(f"{len(threading.enumerate())} threads")
-            logger.info(f"{[t.name for t in threading.enumerate()]}")
-            logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
-            logger.info("..cockpit started")
-            if not release or not self.has_web_decks():
-                logger.info(f"serving {self.name}")
-                for t in threading.enumerate():
-                    try:
-                        t.join()
-                    except RuntimeError:
-                        pass
-                logger.info("terminated")
-            logger.info(f"serving {self.name} (released)")
-        else:
-            logger.warning("no deck")
-            if self.acpath is not None:
-                self.terminate_all()
-
     # ###############################################################
     # Web/Virtual decks
-    #
     #
     def has_web_decks(self) -> bool:
         for device in self.devices:
@@ -2134,7 +1745,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     def handle_code(self, code: int, name: str):
         logger.debug(f"received code {name}:{code}")
         if code == 1:
-            deck = self.cockpit.get(name)
+            deck = self.decks.get(name)
             if deck is None:
                 logger.warning(f"handle code: deck {name} not found (code {code})")
                 return
@@ -2143,7 +1754,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             deck.reload_page()
             logger.debug(f"{name} reloaded")
         if code == 2:
-            deck = self.cockpit.get(name)
+            deck = self.decks.get(name)
             if deck is None:
                 logger.warning(f"handle code: deck {name} not found (code {code})")
                 return
@@ -2158,7 +1769,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             self.send(deck=self.name, payload=payload)
 
     def process_event(self, deck_name, key, event, data, replay: bool = False):
-        deck = self.cockpit.get(deck_name)
+        deck = self.decks.get(deck_name)
         logger.debug(f"received {deck_name}: key={key}, event={event}")
         if deck is None:
             logger.warning(f"handle event: deck {deck_name} not found")
@@ -2248,14 +1859,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     # ###############################################################
     # Button designer
     #
-    #
     def get_assets(self):
         """Collects all assets for button designer
 
         Returns:
             dict: Assets
         """
-        decks = [{"name": k, "type": v.deck_type.name} for k, v in self.cockpit.items()]
+        decks = [{"name": k, "type": v.deck_type.name} for k, v in self.decks.items()]
         return {
             "decks": decks,
             "fonts": list(self.fonts.keys()),
@@ -2265,13 +1875,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         }
 
     def get_deck_indices(self, name):
-        deck = self.cockpit.get(name)
+        deck = self.decks.get(name)
         if deck is None:
             return {"index": []}
         return {"indices": deck.deck_type.valid_indices(with_icon=True)}
 
     def get_button_details(self, deck, index):
-        deck = self.cockpit.get(deck)
+        deck = self.decks.get(deck)
         if deck is None:
             return {}
         return {
@@ -2373,7 +1983,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.info(f"button saved ({fn})")
 
     def load_button(self, deck, layout, page, index):
-        deck_name = self.cockpit.get(deck)
+        deck_name = self.decks.get(deck)
         if deck_name is None or deck_name == "":
             return {"code": "", "meta": {"error": f"no deck {deck}"}}
 
@@ -2414,7 +2024,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         deck_name = data.get("deck")
         if deck_name is None or deck_name == "":
             return {"image": "", "meta": {"error": "no deck name"}}
-        deck = self.cockpit.get(deck_name)
+        deck = self.decks.get(deck_name)
         if deck is None:
             return {"image": "", "meta": {"error": f"deck {deck_name} not found"}}
         config = yaml.load(data["code"])
@@ -2454,7 +2064,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         # Located either in cockpitdecks/decks/resources/assets/decks/images
         # or <aircraft>/deckconfig/resources/decks/images.
         ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER))
-        AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
+        AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.aircraft.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
         INTERNAL_DESIGN = False
         folders = [AIRCRAFT_ASSET_FOLDER]
         if INTERNAL_DESIGN:
