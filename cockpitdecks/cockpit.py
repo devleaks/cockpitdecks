@@ -22,6 +22,7 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
+from cockpitdecks.decks.virtualdeck import VirtualDeck
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_SERIAL
 
@@ -285,15 +286,6 @@ class CockpitInfoInstruction(CockpitInstruction):
 
 
 # #################################
-#
-# Global constants
-#
-# IMPORTANT: These are rendez-vous point for JavaScript code
-# If changed here, please adjust JavaScript Code too.
-#
-DECK_TYPE_ORIGINAL = "deck-type-desc"
-DECK_TYPE_DESCRIPTION = "deck-type-flat"
-
 # Aircraft change detection
 # Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
 # (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
@@ -380,8 +372,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.deck_types = {}
         self.deck_types_new = {}
         self.virtual_deck_types = {}
-        self.virtual_deck_list = {}
-        self.virtual_decks_added = False
 
         # Devices
         self.usb_monitor = USBMonitor()
@@ -436,6 +426,10 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     @property
     def decks(self):
         return self.aircraft.decks
+
+    @property
+    def virtual_decks(self):
+        return self.aircraft.virtual_decks
 
     @property
     def _config(self):
@@ -698,6 +692,14 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         return None
 
     # Variables
+    def get_variables(self) -> set:
+        """Returns the list of datarefs for which the cockpit wants to be notified."""
+        ret = self._simulator_variable_names
+        ac = self.aircraft.get_variables()
+        if len(ac) > 0:
+            ret = ret | ac
+        return ret
+
     def register(self, variable: Variable) -> Variable:
         """Registers a Variable
 
@@ -743,15 +745,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning(f"{name} not found")
             return None
         return v.current_value if v.current_value is not None else default
-
-    def get_variables(self) -> set:
-        """Returns the list of datarefs for which the cockpit wants to be notified."""
-        ret = self._simulator_variable_names
-        # Observables gets notified themselves
-        # if len(self.observables) > 0:
-        #     for o in self.observables.values():
-        #         ret = ret | o.get_variables()
-        return ret
 
     # Instruction
     def instruction_factory(self, **kwargs):
@@ -920,7 +913,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning(f"invalid name {name}")
         return None
 
-    # Cockpitdecks instpection
+    # Cockpitdecks inspection
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         # Here, it is purely statistics
         if self.sim is not None:
@@ -939,8 +932,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         elif what == "monitored":
             self.inspect_monitored(what)
         else:
-            for v in self.decks.values():
-                v.inspect(what)
+            self.aircraft.inspect(what)
 
     def inspect_datarefs(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
@@ -1014,8 +1006,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 config = yaml.load(fp)
             self._cd_observables = Observables(config=config, simulator=self.sim)
             logger.info(f"loaded {len(self._cd_observables.observables)} observables")
-            if self.aircraft._ac_observables is not None and hasattr(self.aircraft._ac_observables, "observables"):
-                self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self._ac_observables.observables}
+            if self.aircraft.observables is not None and hasattr(self.aircraft.observables, "observables"):
+                self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self.observables.observables}
             else:
                 self.observables = {o.name: o for o in self._cd_observables.observables}
 
@@ -1058,7 +1050,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 else:
                     logger.info(f"{len(self._cd_icons)} icons loaded")
 
-        self.icons = self._cd_icons | self.aircraft._ac_icons
+        self.icons = self._cd_icons | self.aircraft.icons
 
         dftname = self.get_attribute("icon-name")
         if dftname in self._cd_icons.keys():
@@ -1101,7 +1093,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                     else:
                         logger.debug(f"font {i} already loaded")
 
-        self.fonts = self._cd_fonts | self.aircraft._ac_fonts
+        self.fonts = self._cd_fonts | self.aircraft.fonts
         logger.info(
             f"{len(self._cd_fonts)} fonts loaded, default font={self.get_attribute('default-font')}, default label font={self.get_attribute('default-label-font')}"
         )
@@ -1124,7 +1116,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                     else:
                         logger.debug(f"sound {i} already loaded")
 
-        self.sounds = self._cd_sounds | self.aircraft._ac_sounds
+        self.sounds = self._cd_sounds | self.aircraft.sounds
         logger.info(f"{len(self._cd_sounds)} sounds loaded")
 
     def load_cd_defaults(self):
@@ -1224,7 +1216,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning("no default system font specified")
 
         # rebuild font list
-        self.fonts = self._cd_fonts | self.aircraft._ac_fonts
+        self.fonts = self._cd_fonts | self.aircraft.fonts
 
         if default_label_font is None and len(self.fonts) > 0:
             first_one = list(self.fonts.keys())[0]
@@ -1306,6 +1298,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     # #########################################################
     # Cockpit instructions
     #
+    def execute(self, instruction: CockpitInstruction):
+        if not isinstance(instruction, CockpitInstruction):
+            logger.warning(f"invalid instruction {instruction.name}")
+            return
+        instruction._execute()
+
     def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
         self.global_luminosity = luminosity
         self.global_brightness = brightness
@@ -1328,12 +1326,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
         for name, deck in self.decks.items():
             deck.reload_page()
-
-    def execute(self, instruction: CockpitInstruction):
-        if not isinstance(instruction, CockpitInstruction):
-            logger.warning(f"invalid instruction {instruction.name}")
-            return
-        instruction._execute()
 
     def reload_deck(self, deck_name: str, just_do_it: bool = False):
         """
@@ -1408,7 +1400,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 if deck.current_page is not None:
                     self.default_pages[name] = deck.current_page.name
             self.aircraft.terminate()
-            self.aircraft.load(self.aircraft.acpath)
+            self.aircraft.start(self.aircraft.acpath)
             self.busy_reloading = False
             logger.info("..done")
         else:
@@ -1581,10 +1573,11 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     # Aircraft
     #
     def add_aircraft_resources(self):
-        self.fonts = self._cd_fonts | self.aircraft._ac_fonts
+        # called from self.aircraft.start() to incorporate aircraft resources into global cockpit
+        self.fonts = self._cd_fonts | self.aircraft.fonts
         logger.info(f"{len(self.fonts)} fonts available")
 
-        self.icons = self._cd_icons | self.aircraft._ac_icons
+        self.icons = self._cd_icons | self.aircraft.icons
         logger.info(f"{len(self.icons)} icons available")
 
         dftname = self.get_attribute("icon-name")
@@ -1593,15 +1586,15 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         else:
             logger.warning(f"default icon name {dftname} not found")  # that's ok
 
-        self.sounds = self._cd_sounds | self.aircraft._ac_sounds
+        self.sounds = self._cd_sounds | self.aircraft.sounds
         logger.info(f"{len(self.sounds)} sounds available")
 
-        self.sounds = self._cd_sounds | self.aircraft._ac_sounds
+        self.sounds = self._cd_sounds | self.aircraft.sounds
         logger.info(f"{len(self.sounds)} sounds available")
 
         if self._cd_observables is not None:
-            if self.aircraft._ac_observables is not None and hasattr(self.aircraft._ac_observables, "observables"):
-                self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self.aircraft._ac_observables.observables}
+            if self.aircraft.observables is not None and hasattr(self.aircraft.observables, "observables"):
+                self.observables = {o.name: o for o in self._cd_observables.observables} | {o.name: o for o in self.aircraft.observables.observables}
             else:
                 self.observables = {o.name: o for o in self._cd_observables.observables}
         logger.info(f"{len(self.observables)} observables")
@@ -1612,7 +1605,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         """
         self.mode = mode
         self.aircraft.terminate()
-        self.aircraft.load(acpath)
+        self.aircraft.start(acpath)
         # self.add_aircraft_resources() called in above
         self.run(release)
 
@@ -1720,7 +1713,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 logger.debug(f"aircraft path: current {self.acpath}, new {new_ac} (former was {old_acname})")
                 logger.info(f"livery changed to {new_livery}, aircraft changed to {new_ac}, loading new aircraft")
                 self.aircraft.terminate()
-                self.aircraft.load(acpath=new_ac)
+                self.aircraft.start(acpath=new_ac)
         else:
             logger.info(f"aircraft unchanged ({self._acname}, {self.acpath})")
 
@@ -1733,11 +1726,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 return True
         return False
 
-    def get_web_decks(self):
-        return self.virtual_deck_list
-
-    def get_virtual_deck_description(self, deck):
-        return self.virtual_deck_list.get(deck)
+    def get_virtual_deck_description(self, deck) -> VirtualDeck:
+        return self.virtual_decks.get(deck)
 
     def get_virtual_deck_defaults(self):
         return self.get_attribute("web-deck-defaults")
@@ -2094,7 +2084,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.send(deck=name, payload=payload)
 
     def refresh_all_decks(self):
-        for name in self.get_web_decks():
+        for name in self.virtual_decks:
             payload = {
                 "code": 1,
                 "deck": name,

@@ -82,12 +82,16 @@ class Aircraft:
         # "Aircraft" name or model...
         self.name = "Aircraft"
         self.icao = "ZZZZ"
+
+        self._acpath = None
         self._acname = ""
-        self._ac_ready = False
+        self._acliverypath = None
+        self._acliveryname = None
+        self._ac_running = False
 
         # Decks
         self.decks = {}  # all decks: { deckname: deck }
-        self.virtual_deck_list = {}
+        self.virtual_decks = {}
         self.virtual_decks_added = False
 
         # Content
@@ -97,6 +101,7 @@ class Aircraft:
         self._ac_observables: Observables | None = None
 
         # Internal variables
+        self._aircraft_variable_names = set()
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
         self.default_pages = None  # current pages on decks when reloading
@@ -110,8 +115,8 @@ class Aircraft:
         self._acpath = acpath
         logger.info(f"aircraft path set to {acpath}")
 
-    def is_ready(self) -> bool:
-        return self._ac_ready
+    def is_running(self) -> bool:
+        return self._ac_running
 
     # Shortcuts
     @property
@@ -149,6 +154,22 @@ class Aircraft:
     def get_attribute(self, attribute: str, default=None, silence: bool = True):
         return self.cockpit.get_attribute(attribute=attribute, default=default, silence=silence)
 
+    @property
+    def fonts(self):
+        return self._ac_fonts
+
+    @property
+    def sounds(self):
+        return self._ac_sounds
+
+    @property
+    def icons(self):
+        return self._ac_icons
+
+    @property
+    def observables(self):
+        return self._ac_observables
+
     # Attributes
     def get_button_value(self, name):
         a = name.split(ID_SEP)
@@ -170,6 +191,10 @@ class Aircraft:
         """
         for v in self.decks.values():
             v.inspect(what)
+
+    def get_variables(self) -> set:
+        """Returns the list of datarefs for which the cockpit wants to be notified."""
+        return self._aircraft_variable_names
 
     def load_pages(self):
         if self.default_pages is not None:
@@ -286,7 +311,7 @@ class Aircraft:
                 deck_count_by_type[ty] = 1
 
         cnt = 0
-        self.virtual_deck_list = {}
+        self.virtual_decks = {}
 
         for deck_config in decks:
             name = deck_config.get(CONFIG_KW.NAME.value, f"Deck {cnt}")
@@ -345,7 +370,7 @@ class Aircraft:
                             else:
                                 if not fn.startswith(COCKPITDECKS_ASSET_PATH):
                                     background[DECK_KW.IMAGE.value] = COCKPITDECKS_ASSET_PATH + fn
-                        self.virtual_deck_list[name] = deck_config | {
+                        self.virtual_decks[name] = deck_config | {
                             DECK_TYPE_ORIGINAL: self.deck_types.get(deck_type).store,
                             DECK_TYPE_DESCRIPTION: deck_flat,
                         }
@@ -518,103 +543,27 @@ class Aircraft:
             logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
 
     # #########################################################
-    # Other
+    # Utility functions for path manipulation
     #
-    def reload_deck(self, deck_name: str, just_do_it: bool = False):
-        """
-        Development function to reload page yaml without leaving the page
-        for one deck only .Should not be used in production.
-        """
-        # A security... if we get called we must ensure reloader is running...
-        if just_do_it:
-            deck = self.decks.get(deck_name)
-            if deck is None:
-                logger.info(f"deck {deck_name} not found")
-                return
-            logger.info(f"reloading deck {deck.name}..")
-            self.busy_reloading = True
-            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
-            if deck.current_page is not None:
-                self.default_pages[deck.name] = deck.current_page.name
+    @classmethod
+    def get_aircraft_path_from_livery_path(path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
+        return os.path.normpath(os.path.join(path, "..", ".."))
 
-            # self.load_aircraft(self.acpath)  # will terminate it before loading again
-            logger.debug("..terminating current version..")
-            deck.terminate()
-            logger.debug("..creating new version..")
-            name = deck.name
-            # find deck in config.yaml.decks
-            deck_config = None
-            all_decks = self._config.get(CONFIG_KW.DECKS.value)
-            i = 0
-            while deck_config is None and i < len(all_decks):
-                if all_decks[i].get(CONFIG_KW.NAME.value, "") == name:
-                    deck_config = all_decks[i]
-                i = i + 1
-            if deck_config is None:
-                logger.info(f"deck {deck_name} not found in cockpit")
-                return
-            # get details
-            serial = deck_config.get(CONFIG_KW.SERIAL.value)
-            deck_type = deck_config.get(CONFIG_KW.TYPE.value)
-            if deck_type not in self.deck_types.keys():
-                logger.warning(f"invalid deck type {deck_type}, ignoring")
-                return
-            deck_driver = self.deck_types[deck_type].get(CONFIG_KW.DRIVER.value)
-            device = self.cockpit.get_device(req_driver=deck_driver, req_serial=serial)
-            # recreate
-            deck = self.all_deck_drivers[deck_driver][0](name=name, config=deck_config, cockpit=self.cockpit, device=device)
-            del self.decks[name]
-            self.decks[name] = deck
+    @classmethod
+    def get_aircraft_name_from_livery_path(path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
+        return os.path.split(Aircraft.get_aircraft_home_from_livery_path(path=path))[1]
 
-            # reload
-            if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:
-                deck.change_page(self.default_pages[name])
-                self.default_pages = {}
-            else:
-                deck.change_page()
-
-            self.busy_reloading = False
-            logger.info("..done")
-        else:
-            self.event_queue.put(f"reload:{deck_name}")
-            logger.info("enqueued")
-
-    def reload_decks(self, just_do_it: bool = False):
-        """
-        Development function to reload page yaml without leaving the page
-        Should not be used in production...
-        """
-        # A security... if we get called we must ensure reloader is running...
-        if just_do_it:
-            logger.info("reloading decks..")
-            self.busy_reloading = True
-            self.default_pages = {}  # {deck_name: currently_loaded_page_name}
-            for name, deck in self.decks.items():
-                if deck.current_page is not None:
-                    self.default_pages[name] = deck.current_page.name
-            self.load_aircraft(self.acpath)  # will terminate it before loading again
-            self.busy_reloading = False
-            logger.info("..done")
-        else:
-            self.event_queue.put("reload")
-            logger.debug("enqueued")
-
-    def stop_decks(self, just_do_it: bool = False):
-        """
-        Stop decks gracefully. Since it also terminates self.event_loop_thread we cannot wait for it
-        since we are called from it ... So we just tell it to terminate.
-        """
-        if just_do_it:
-            logger.info("stopping decks..")
-            self.terminate_all()
-        else:
-            self.event_queue.put("stop")
-            logger.debug("enqueued")
+    @classmethod
+    def get_aircraft_name_from_aircraft_path(path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/
+        return os.path.basename(path)
 
     # #########################################################
     # Load, start and terminates
     #
-    def load(self, acpath: str):
+    def start(self, acpath: str):
         """
         Loads decks for aircraft in supplied path.
         First unloads a previously loaded aircraft if any
@@ -641,7 +590,7 @@ class Aircraft:
             self.load_ac_resources()
             self.create_decks()
             self.load_pages()
-            self._ac_ready = True
+            self._ac_running = True
         else:
             if acpath is None:
                 logger.error(f"no aircraft folder")
@@ -653,7 +602,7 @@ class Aircraft:
         logger.info(f"..aircraft {os.path.basename(acpath)} started")
 
     def terminate(self):
-        if not self.is_ready():
+        if not self.is_running():
             logger.info("aircraft not ready, no termination necessary")
             return
         logger.info("terminating aircraft..")
@@ -663,7 +612,7 @@ class Aircraft:
             yaml.dump(drefs, fp)
             logger.debug(f"..simulator data values saved in {fn} file")
         logger.info("..terminating decks..")
-        self._ac_ready = False
+        self._ac_running = False
         for deck in self.decks.values():
             deck.terminate()
         logger.info("..terminating web decks..")

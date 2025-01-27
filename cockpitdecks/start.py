@@ -30,10 +30,11 @@ from simple_websocket import Server, ConnectionClosed
 import ruamel
 from ruamel.yaml import YAML
 
+from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
+
 from cockpitdecks.constant import ENVIRON_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
-from cockpitdecks.cockpit import DECK_TYPE_DESCRIPTION
+from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
 
 
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
@@ -396,7 +397,7 @@ app = Flask(__NAME__, template_folder=TEMPLATE_FOLDER)
 
 @app.route("/")
 def index():
-    return render_template("index.j2", virtual_decks=cockpit.get_web_decks(), copyrights={"copyrights": copyrights.replace("\n", "<br/>")})
+    return render_template("index.j2", virtual_decks=cockpit.virtual_decks, copyrights={"copyrights": copyrights.replace("\n", "<br/>")})
 
 
 @app.route("/favicon.ico")
