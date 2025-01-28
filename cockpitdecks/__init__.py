@@ -22,7 +22,7 @@ __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 __DESCRIPTION__ = "Desk and web decks to X-Plane 12.1+"
 
-__version__ = "13.3.1"
+__version__ = "13.3.2"
 
 #
 # ##########################################################################
@@ -40,10 +40,12 @@ FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%
 # (mainly unit conversion functions)
 #
 def now():
+    # Returns now with local timezone.
     return datetime.now().astimezone()
 
 
 def nowutc() -> datetime:
+    # Returns now in UTC timezone
     return datetime.now(timezone.utc)
 
 

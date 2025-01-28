@@ -22,12 +22,14 @@ ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 
 # ###########################################################
-# C O C K P T D E C K S
 #
-RELEASE = "1.3.1"  # local version number
+#   C O C K P T D E C K S   H E L P E R   P L U G I N
+#
+RELEASE = "1.4.0"  # local version number
 #
 # Changelog:
 #
+# 27-JAN-2025: 1.4.0: Added aircraft path in datarefs
 # 09-JAN-2025: 1.3.1: Added explicit command begin-end-command in search
 # 28-OCT-2024: 1.3.0: Added code to split large quantities of string into acceptable UDP packets
 # 23-OCT-2024: 1.2.0: Add maximum frequency (~10 secs) for collection, send UDP more frequently
@@ -40,6 +42,7 @@ RELEASE = "1.3.1"  # local version number
 # 11-JUL-2024: 1.0.1: Added AIRCRAFT_LIVERY to the list of datarefs that are always sent
 # 05-JUL-2024: 1.0.0: Initial version, combination of cockpitdecks_helper and string_datarefs_udp
 #
+# Constants:
 #
 # Where to find things
 CONFIG_DIR = "deckconfig"
@@ -81,11 +84,13 @@ COLLECTION_FREQUENCY_MAX = 10  # will run at least every COLLECTION_FREQUENCY_MA
 EMISSION_FREQUENCY = 1  # seconds, sends UDP packet often so that Cockpitdecks does not wait to get data.
 # note: sending a single UDP package (often) is cheap (cpu, resources), even for X-Plane.
 
-AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
+AIRCRAFT_PATH = "sim/aircraft/view/acf_relative_path"
+AIRCRAFT_ICAO = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_LIVERY = "sim/aircraft/view/acf_livery_path"
+AIRCRAFT_LIVERY_INDEX = "sim/aircraft/view/acf_livery_index"
 
 # default is to return these if asked for default dataref
-PERMANENT_STRING_DATAREFS = [AIRCRAFT_DATAREF, AIRCRAFT_LIVERY, CDH_RELEASE]  # dataref that gets updated if new aircraft loaded
+PERMANENT_STRING_DATAREFS = [AIRCRAFT_PATH, AIRCRAFT_ICAO, AIRCRAFT_LIVERY, AIRCRAFT_LIVERY_INDEX]  # dataref that gets updated if new aircraft loaded
 LOAD_PERMANENT_DATAREFS = True
 
 CHECK_COUNT = [5, 20]
@@ -336,12 +341,12 @@ class PythonInterface:
                     f"CollectStringDatarefsCB: is alive ({self.run_count}), {len(self.datarefs)}/{self.num_collected_drefs} string datarefs for {self.acpath}",
                 )
         self.run_count = self.run_count + 1
-        drefvalues = {}
+        drefvalues = {AIRCRAFT_PATH: self.acpath}
         with self.RLock:
             try:  # efficent method
-                drefvalues = {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
+                drefvalues = drefvalues | {d: xp.getDatas(self.datarefs[d]) for d in self.datarefs}
             except:  # if one dataref does not work, try one by one, skip those in error
-                drefvalues = {}  # reset it
+                drefvalues = {AIRCRAFT_PATH: self.acpath}
                 for d in self.datarefs:
                     try:
                         v = xp.getDatas(self.datarefs[d])

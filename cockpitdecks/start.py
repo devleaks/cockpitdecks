@@ -632,7 +632,7 @@ def main():
         print("")  # to highlight CTRL-C in log window
         logger.info("..application server terminated")
         cockpit.terminate_all(threads=1)  # [MainThread]
-        logger.info(f"..{cockpit._acname} terminated.")
+        logger.info(f"..{cockpit.get_aircraft_name()} terminated.")
 
     except KeyboardInterrupt:
 

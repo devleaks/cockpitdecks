@@ -1,4 +1,6 @@
-# Aircraft configuration
+# Aircraft configuration: Loads main config.yaml file
+# and instanciate decks.
+# Link deck to device and start operation with it.
 #
 import logging
 import os
@@ -11,7 +13,6 @@ from cairosvg import svg2png
 from cockpitdecks import (
     # Constants, keywords
     AIRCRAFT_ASSET_PATH,
-    AIRCRAFT_CHANGE_MONITORING_DATAREF,
     COCKPITDECKS_ASSET_PATH,
     CONFIG_FILE,
     CONFIG_FOLDER,
@@ -55,16 +56,6 @@ logger = logging.getLogger(__name__)
 #
 DECK_TYPE_ORIGINAL = "deck-type-desc"
 DECK_TYPE_DESCRIPTION = "deck-type-flat"
-
-# Aircraft change detection
-# Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
-# (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
-# but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
-RELOAD_ON_LIVERY_CHANGE = False
-INTERNAL_AIRCRAFT_CHANGE_DATAREF = "_livery"  # dataref name is data:_livery
-
-# Little internal kitchen for internal datarefs
-AIRCRAF_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING_DATAREF}
 
 
 class Aircraft:
@@ -196,25 +187,7 @@ class Aircraft:
         """Returns the list of datarefs for which the cockpit wants to be notified."""
         return self._aircraft_variable_names
 
-    def load_pages(self):
-        if self.default_pages is not None:
-            logger.debug(f"default_pages {self.default_pages.keys()}")
-            for name, deck in self.decks.items():
-                if name in self.default_pages.keys():
-                    if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
-                        deck.change_page(self.default_pages[name])
-                    else:
-                        deck.change_page()
-            self.default_pages = None
-        else:
-            for deck in self.decks.values():
-                deck.change_page()
-
-    def reload_pages(self):
-        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
-        for name, deck in self.decks.items():
-            deck.reload_page()
-
+    # Initialisation, setup
     def scan_web_decks(self):
         """Virtual decks are declared in the cockpit configuration
         Therefore it is necessary to have an aircraft folder.
@@ -249,19 +222,181 @@ class Aircraft:
         self.virtual_decks_added = True
         logger.debug(f"added {cnt} virtual decks")
 
-    def remove_web_decks(self):
-        if not self.virtual_decks_added:
-            logger.info("virtual decks not added")
-            return
-        to_remove = []
-        for device in self.devices:
-            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
-                to_remove.append(device)
-        for device in to_remove:
-            self.devices.remove(device)
-        self.virtual_decks_added = False
-        logger.info(f"removed {len(to_remove)} virtual decks")
+    # #########################################################
+    # Aircraft resources
+    #
+    def load_ac_resources(self):
+        # currently, nothing is not with this config, but it is loaded if it exists
+        self.load_livery_config()
+        self.load_ac_deck_types()
+        self.load_ac_fonts()
+        self.load_ac_icons()
+        self.load_ac_sounds()
+        self.load_ac_observables()
+        self.cockpit.add_resources(aircraft=self)
 
+    def load_livery_config(self):
+        # currently, nothing is not with this config, but it is loaded if it exists
+        if self._acliverypath is not None and self._acliverypath != "":
+            fn = os.path.join(self._acliverypath, CONFIG_FOLDER, CONFIG_FILE)
+            if os.path.exists(fn):
+                self._livery_config = Config(filename=fn)
+                logger.info(f"loaded livery configuration from {fn}, currently unused...")
+            else:
+                logger.debug("livery has no configuration")
+            return
+        if self.acpath is not None and self._acliveryname is not None and self._acliveryname != "":
+            fn = os.path.join(self.acpath, "liveries", self._acliveryname, CONFIG_FOLDER, CONFIG_FILE)
+            if os.path.exists(fn):
+                self._livery_config = Config(filename=fn)
+                logger.info(f"loaded livery configuration from {fn}, currently unused...")
+            else:
+                logger.debug("livery has no configuration")
+        else:
+            logger.info("no livery path")
+
+    def load_ac_deck_types(self):
+        aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
+        added = []
+        for deck_type in DeckType.list(aircraft_deck_types):
+            b = os.path.basename(deck_type)
+            if b in [CONFIG_FILE, "designer.yaml"]:
+                continue
+            try:
+                data = DeckType(deck_type)
+                data._aircraft = True  # mark as non-system deck type
+                self.deck_types[data.name] = data
+                if data.is_virtual_deck():
+                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
+                added.append(data.name)
+            except ValueError:
+                logger.warning(f"could not load deck type {deck_type}, ignoring")
+        logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
+
+    def load_ac_icons(self):
+        # Loading aircraft icons
+        #
+        cache_icon = self.get_attribute("cache-icon")
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
+        if os.path.exists(dn):
+            cache = os.path.join(dn, "_icon_cache.pickle")
+            if os.path.exists(cache) and cache_icon:
+                with open(cache, "rb") as fp:
+                    self._ac_icons = pickle.load(fp)
+                logger.info(f"{len(self._ac_icons)} aircraft icons loaded from cache")
+            else:
+                icons = os.listdir(dn)
+                for i in icons:
+                    fn = os.path.join(dn, i)
+                    if has_ext(i, "png"):  # later, might load JPG as well.
+                        image = Image.open(fn)
+                        self._ac_icons[i] = image
+                    elif has_ext(i, "svg"):  # Wow.
+                        try:
+                            fn = os.path.join(dn, i)
+                            fout = fn.replace(".svg", ".png")
+                            svg2png(url=fn, write_to=fout)
+                            image = Image.open(fout)
+                            self._ac_icons[i] = image
+                        except:
+                            logger.warning(f"could not load icon {fn}")
+                            pass  # no cairosvg
+
+                if cache_icon:  # we cache both folders of icons
+                    with open(cache, "wb") as fp:
+                        pickle.dump(self._ac_icons, fp)
+                    logger.info(f"{len(self._ac_icons)} aircraft icons cached")
+                else:
+                    logger.info(f"{len(self._ac_icons)} aircraft icons loaded")
+
+    def load_ac_fonts(self):
+        # Loading fonts.
+        # For custom fonts (fonts found in the fonts config folder),
+        # we supply the full path for font definition to ImageFont.
+        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
+        # If the font is not found by ImageFont, we ignore it.
+        # So self.icons is a list of properly located usable fonts.
+        #
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, FONTS_FOLDER)
+        if os.path.exists(dn):
+            fonts = os.listdir(dn)
+            for i in fonts:
+                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
+                    if i not in self._ac_fonts.keys():
+                        fn = os.path.join(dn, i)
+                        try:
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                            self._ac_fonts[i] = fn
+                        except:
+                            logger.warning(f"aircraft font file {fn} not loaded")
+                    else:
+                        logger.debug(f"aircraft font {i} already loaded")
+        logger.info(f"{len(self._ac_fonts)} aircraft fonts loaded")
+
+    def load_ac_sounds(self):
+        # Loading sounds.
+        #
+        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
+        if os.path.exists(dn):
+            sounds = os.listdir(dn)
+            for i in sounds:
+                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
+                    if i not in self._ac_sounds.keys():
+                        fn = os.path.join(dn, i)
+                        try:
+                            with open(fn, mode="rb") as file:  # b is important -> binary
+                                self._ac_sounds[i] = file.read()
+                        except:
+                            logger.warning(f"custom sound file {fn} not loaded")
+                    else:
+                        logger.debug(f"sound {i} already loaded")
+
+        logger.info(f"{len(self._ac_sounds)} aircraft sounds loaded")
+
+    def load_ac_observables(self):
+        fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
+        if os.path.exists(fn):
+            config = {}
+            with open(fn, "r") as fp:
+                config = yaml.load(fp)
+            self._ac_observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
+
+    # #########################################################
+    # Utility functions for path manipulation
+    #
+    @staticmethod
+    def get_livery_from_livery_path(path: str) -> str:
+        return os.path.basename(os.path.normpath(path))
+
+    @staticmethod
+    def get_aircraft_path_from_livery_path(path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
+        return os.path.normpath(os.path.join(path, "..", ".."))
+
+    @staticmethod
+    def get_aircraft_name_from_livery_path(path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
+        return os.path.split(Aircraft.get_aircraft_path_from_livery_path(path=path))[1]
+
+    @staticmethod
+    def get_aircraft_name_from_aircraft_path(path: str) -> str:
+        # Path is like Aircraft/Extra Aircraft/ToLiss A321/
+        return os.path.basename(path)
+
+    def change_livery(self, path) -> bool:
+        if self._acliverypath is not None and self._acliverypath == path:
+            logger.info(f"livery unchanged ({self._acliverypath})")
+            return False
+        self._acliverypath = path
+        self._acliveryname = Aircraft.get_livery_from_livery_path(path)
+        self.load_livery_config()
+        logger.info(f"livery changed to {self._acliveryname}")
+        return True
+
+    # #########################################################
+    # Load, start and terminates
+    #
     def create_decks(self):
         fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
         self._config = Config(fn)
@@ -382,6 +517,19 @@ class Aircraft:
             else:
                 logger.error(f"deck {deck_type} {name} has no device, ignoring")
 
+    def remove_web_decks(self):
+        if not self.virtual_decks_added:
+            logger.info("virtual decks not added")
+            return
+        to_remove = []
+        for device in self.devices:
+            if device.get(CONFIG_KW.DRIVER.value) == VIRTUAL_DECK_DRIVER:
+                to_remove.append(device)
+        for device in to_remove:
+            self.devices.remove(device)
+        self.virtual_decks_added = False
+        logger.info(f"removed {len(to_remove)} virtual decks")
+
     def create_default_decks(self):
         """
         When no deck definition is found in the aicraft folder, Cockpit loads
@@ -413,156 +561,25 @@ class Aircraft:
             }
             self.decks[name] = self.all_deck_drivers[deckdriver][0](name, config, self, device)
 
-    # #########################################################
-    # Cockpit data caches
-    #
-    def load_ac_deck_types(self):
-        aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
-        added = []
-        for deck_type in DeckType.list(aircraft_deck_types):
-            b = os.path.basename(deck_type)
-            if b in [CONFIG_FILE, "designer.yaml"]:
-                continue
-            try:
-                data = DeckType(deck_type)
-                data._aircraft = True  # mark as non-system deck type
-                self.deck_types[data.name] = data
-                if data.is_virtual_deck():
-                    self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
-                added.append(data.name)
-            except ValueError:
-                logger.warning(f"could not load deck type {deck_type}, ignoring")
-        logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
-
-    def load_ac_resources(self):
-        # currently, nothing is not with this config, but it is loaded if it exists
-        livery = self.cockpit._livery_dataref.value()
-        if self.acpath is not None and livery is not None and livery != "":
-            fn = os.path.join(self.acpath, "liveries", livery, CONFIG_FOLDER, CONFIG_FILE)
-            if os.path.exists(fn):
-                self._livery_config = Config(filename=fn)
-                logger.info(f"loaded livery configuration from {fn}, currently unused...")
-            else:
-                logger.debug("livery has no additional configuration")
+    def load_pages(self):
+        if self.default_pages is not None:
+            logger.debug(f"default_pages {self.default_pages.keys()}")
+            for name, deck in self.decks.items():
+                if name in self.default_pages.keys():
+                    if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
+                        deck.change_page(self.default_pages[name])
+                    else:
+                        deck.change_page()
+            self.default_pages = None
         else:
-            logger.info("no livery path")
-        self.load_ac_deck_types()
-        self.load_ac_fonts()
-        self.load_ac_icons()
-        self.load_ac_sounds()
-        self.load_ac_observables()
-        self.cockpit.add_aircraft_resources()
+            for deck in self.decks.values():
+                deck.change_page()
 
-    def load_ac_icons(self):
-        # Loading aircraft icons
-        #
-        cache_icon = self.get_attribute("cache-icon")
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER)
-        if os.path.exists(dn):
-            cache = os.path.join(dn, "_icon_cache.pickle")
-            if os.path.exists(cache) and cache_icon:
-                with open(cache, "rb") as fp:
-                    self._ac_icons = pickle.load(fp)
-                logger.info(f"{len(self._ac_icons)} aircraft icons loaded from cache")
-            else:
-                icons = os.listdir(dn)
-                for i in icons:
-                    fn = os.path.join(dn, i)
-                    if has_ext(i, "png"):  # later, might load JPG as well.
-                        image = Image.open(fn)
-                        self._ac_icons[i] = image
-                    elif has_ext(i, "svg"):  # Wow.
-                        try:
-                            fn = os.path.join(dn, i)
-                            fout = fn.replace(".svg", ".png")
-                            svg2png(url=fn, write_to=fout)
-                            image = Image.open(fout)
-                            self._ac_icons[i] = image
-                        except:
-                            logger.warning(f"could not load icon {fn}")
-                            pass  # no cairosvg
+    def reload_pages(self):
+        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
+        for name, deck in self.decks.items():
+            deck.reload_page()
 
-                if cache_icon:  # we cache both folders of icons
-                    with open(cache, "wb") as fp:
-                        pickle.dump(self._ac_icons, fp)
-                    logger.info(f"{len(self._ac_icons)} aircraft icons cached")
-                else:
-                    logger.info(f"{len(self._ac_icons)} aircraft icons loaded")
-
-    def load_ac_fonts(self):
-        # Loading fonts.
-        # For custom fonts (fonts found in the fonts config folder),
-        # we supply the full path for font definition to ImageFont.
-        # For other fonts, we assume ImageFont will search at OS dependent folders or directories.
-        # If the font is not found by ImageFont, we ignore it.
-        # So self.icons is a list of properly located usable fonts.
-        #
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, FONTS_FOLDER)
-        if os.path.exists(dn):
-            fonts = os.listdir(dn)
-            for i in fonts:
-                if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    if i not in self._ac_fonts.keys():
-                        fn = os.path.join(dn, i)
-                        try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                            self._ac_fonts[i] = fn
-                        except:
-                            logger.warning(f"aircraft font file {fn} not loaded")
-                    else:
-                        logger.debug(f"aircraft font {i} already loaded")
-        logger.info(f"{len(self._ac_fonts)} aircraft fonts loaded")
-
-    def load_ac_sounds(self):
-        # Loading sounds.
-        #
-        dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
-        if os.path.exists(dn):
-            sounds = os.listdir(dn)
-            for i in sounds:
-                if has_ext(i, ".wav") or has_ext(i, ".mp3"):
-                    if i not in self._ac_sounds.keys():
-                        fn = os.path.join(dn, i)
-                        try:
-                            with open(fn, mode="rb") as file:  # b is important -> binary
-                                self._ac_sounds[i] = file.read()
-                        except:
-                            logger.warning(f"custom sound file {fn} not loaded")
-                    else:
-                        logger.debug(f"sound {i} already loaded")
-
-        logger.info(f"{len(self._ac_sounds)} aircraft sounds loaded")
-
-    def load_ac_observables(self):
-        fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
-        if os.path.exists(fn):
-            config = {}
-            with open(fn, "r") as fp:
-                config = yaml.load(fp)
-            self._ac_observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
-
-    # #########################################################
-    # Utility functions for path manipulation
-    #
-    @classmethod
-    def get_aircraft_path_from_livery_path(path: str) -> str:
-        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
-        return os.path.normpath(os.path.join(path, "..", ".."))
-
-    @classmethod
-    def get_aircraft_name_from_livery_path(path: str) -> str:
-        # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/
-        return os.path.split(Aircraft.get_aircraft_home_from_livery_path(path=path))[1]
-
-    @classmethod
-    def get_aircraft_name_from_aircraft_path(path: str) -> str:
-        # Path is like Aircraft/Extra Aircraft/ToLiss A321/
-        return os.path.basename(path)
-
-    # #########################################################
-    # Load, start and terminates
-    #
     def start(self, acpath: str):
         """
         Loads decks for aircraft in supplied path.
@@ -572,12 +589,15 @@ class Aircraft:
             logger.warning("no new aircraft path to load, not unloading current one")
             return
 
+        if self.is_running:
+            self.terminate()
+
         logger.info(f"starting aircraft {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
         self.acpath = None
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
-            self._acname = self.cockpit.get_aircraft_name_from_aircraft_path(acpath)
+            self._acname = Aircraft.get_aircraft_name_from_aircraft_path(acpath)
             logger.info(f"aircraft name set to {self._acname}")
 
             self.load_ac_deck_types()
@@ -603,7 +623,7 @@ class Aircraft:
 
     def terminate(self):
         if not self.is_running():
-            logger.info("aircraft not ready, no termination necessary")
+            logger.info("aircraft not running, no termination necessary")
             return
         logger.info("terminating aircraft..")
         drefs = {d.name: d.value() for d in self.sim.all_simulator_variable.values()}  #  if d.is_internal
@@ -623,6 +643,8 @@ class Aircraft:
         self._ac_icons = {}
         self._ac_sounds = {}
         self._ac_observables = None
+        self.cockpit.remove_aircraft_resources()
+        logger.info("..remaining threads..")
         nt = threading.enumerate()
         if len(nt) > 1:
             logger.info(f"{len(nt)} threads")
