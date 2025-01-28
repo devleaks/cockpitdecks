@@ -388,10 +388,14 @@ class Aircraft:
         if self._acliverypath is not None and self._acliverypath == path:
             logger.info(f"livery unchanged ({self._acliverypath})")
             return False
+        oldlivery = self._acliveryname
         self._acliverypath = path
         self._acliveryname = Aircraft.get_livery_from_livery_path(path)
         self.load_livery_config()
-        logger.info(f"livery changed to {self._acliveryname}")
+        if oldlivery is None:
+            logger.info(f"installed livery {self._acliveryname}")
+            return False
+        logger.info(f"changed livery from {oldlivery} to {self._acliveryname}")
         return True
 
     # #########################################################
@@ -594,6 +598,9 @@ class Aircraft:
 
         logger.info(f"starting aircraft {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
         self.acpath = None
+
+        # Note: Unfortunately, on first start, we cannot install a livery
+        #       So we will not detect if we really change it.
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath

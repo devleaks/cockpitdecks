@@ -31,6 +31,7 @@ from cockpitdecks import (
     # Constants, keywords
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_PATH_VARIABLE,
+    AIRCRAFT_ICAO_VARIABLE,
     LIVERY_PATH_VARIABLE,
     AIRCRAFT_CHANGE_MONITORING,
     LIVERY_CHANGE_MONITORING,
@@ -213,6 +214,18 @@ class CockpitChangeAircraftInstruction(CockpitInstruction):
 
     def _execute(self):
         self.cockpit.change_aircraft()
+
+
+class CockpitChangeAircraftICAOInstruction(CockpitInstruction):
+    """Instruction to change page on a deck"""
+
+    INSTRUCTION_NAME = "aircraft-icao"
+
+    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
+        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+
+    def _execute(self):
+        self.cockpit.change_aircraft_icao()
 
 
 class CockpitChangeLiveryInstruction(CockpitInstruction):
@@ -1030,9 +1043,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             else:
                 self.observables = {o.name: o for o in self._cd_observables.observables}
 
-    def get_observable(self, name) -> Observable | None:
-        return self.observables.get(name)
-
     def load_cd_icons(self):
         # Loading default icons
         #
@@ -1076,18 +1086,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.info(f"default icon name {dftname} found")
         else:
             logger.warning(f"default icon name {dftname} not found in default icons")
-
-    def get_icon(self, candidate_icon):
-        for ext in ["", ".png", ".jpg", ".jpeg"]:
-            fn = add_ext(candidate_icon, ext)
-            if fn in self.icons.keys():
-                logger.debug(f"Cockpit: icon {fn} found")
-                return fn
-        logger.warning(f"Cockpit: icon not found {candidate_icon}")  # , available={self.icons.keys()}
-        return None
-
-    def get_icon_image(self, icon):
-        return self.icons.get(icon)
 
     def load_cd_fonts(self):
         # Loading fonts.
@@ -1251,12 +1249,25 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             f"default fonts {self.fonts.keys()}, default={self.get_attribute('default-font')}, default label={self.get_attribute('default-label-font')}"
         )
 
+    # Getters
+    def get_observable(self, name) -> Observable | None:
+        return self.observables.get(name)
+
+    def get_icon(self, candidate_icon):
+        for ext in ["", ".png", ".jpg", ".jpeg"]:
+            fn = add_ext(candidate_icon, ext)
+            if fn in self.icons.keys():
+                logger.debug(f"Cockpit: icon {fn} found")
+                return fn
+        logger.warning(f"Cockpit: icon not found {candidate_icon}")  # , available={self.icons.keys()}
+        return None
+
+    def get_icon_image(self, icon):
+        return self.icons.get(icon)
+
     # #########################################################
     # Aircraft
     #
-    def get_aircraft_name(self) -> str:
-        return self.aircraft._acname if self.aircraft is not None else "none"
-
     def add_resources(self, aircraft: Aircraft):
         # called from self.aircraft.start() to incorporate aircraft resources into cockpit
         self.fonts = self._cd_fonts | aircraft.fonts
@@ -1311,6 +1322,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         # self.add_aircraft_resources() called in above
         self.run(release)
 
+    # Utility function
+    def get_aircraft_name(self) -> str:
+        return self.aircraft._acname if self.aircraft is not None else "none"
+
+    def get_aircraft_icao(self) -> str:
+        return self.aircraft.icao if self.aircraft is not None and self.aircraft.icao is not None else "ZZZZ"
+
     def get_aircraft_path(self, aircraft) -> str | None:
         if self.cockpitdecks_path is None:
             logger.info("COCKPITDECKS_PATH not set")
@@ -1323,6 +1341,29 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                     return ac
         logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
+
+    def get_livery_path(self, livery) -> str | None:
+        ac = self.aircraft._acpath
+        if self.aircraft._acpath is None:
+            logger.warning("no aircraft path")
+            return None
+        path = os.path.join(self.aircraft._acpath, "livery", livery)
+        if os.path.exists(path) and os.path.isdir(path):
+            logger.info(f"livery {livery} at {path}")
+            return path
+        logger.info(f"no livery path for aircraft {self.aircraft._acpath}")
+        return None
+
+    # #########################################################
+    # Cockpitdecks instructions
+    #
+    # The following functions ara called by CockpitdecksInstructions.
+    #
+    def execute(self, instruction: CockpitInstruction):
+        if not isinstance(instruction, CockpitInstruction):
+            logger.warning(f"invalid instruction {instruction.name}")
+            return
+        instruction._execute()
 
     def change_livery(self):
         # We arrive here when sim/aircraft/view/acf_livery_path or sim/aircraft/view/acf_livery_index changed
@@ -1339,8 +1380,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             return
 
         liveryname = Aircraft.get_livery_from_livery_path(value)
+
+        if liveryname == self.aircraft._acliveryname:
+            logger.info("livery unchanged")
+            return
+
         acname = Aircraft.get_aircraft_name_from_livery_path(value)
-        logger.info("✈ " * 6 + f"new livery path {value}, aircraft name {acname}, livery name {liveryname}")
+        logger.info(f"✈ new livery path {value}, aircraft name {acname}, livery name {liveryname}")
 
         # 2. If we have a livery path, has the plane changed?
         if acname != self.aircraft._acname:
@@ -1348,15 +1394,14 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             return
 
         # 3. Aircraft did not change, do we reload on livery change?
-        if not RELOAD_ON_LIVERY_CHANGE:
-            logger.info(f"aircraft unchanged ({self.aircraft._acname}), livery changed ({liveryname}), no reload on livery change")
-            return
-        logger.info(f"aircraft unchanged ({self.aircraft._acname}), changing livery to {liveryname}, reloading..")
-        if self.aircraft.change_livery(path=value):
-            self.reload_decks()
-            logger.info("..reloaded")
-        else:
-            logger.info("..no livery change, not reloaded")
+        if liveryname != self.aircraft._acliveryname:
+            logger.info(f"aircraft unchanged ({self.aircraft._acname}), changing livery to {liveryname}")
+            if self.aircraft.change_livery(path=value) and RELOAD_ON_LIVERY_CHANGE:
+                logger.info("reloading..")
+                self.reload_decks()
+                logger.info("..reloaded")
+            else:
+                logger.info("not reloading on livery change")
 
     def change_aircraft(self):
         # We arrive here when sim/aircraft/view/acf_relative_path changed
@@ -1405,14 +1450,20 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.aircraft.start(acpath=acpath)
         logger.info("..started")
 
-    # #########################################################
-    # Cockpit instructions
-    #
-    def execute(self, instruction: CockpitInstruction):
-        if not isinstance(instruction, CockpitInstruction):
-            logger.warning(f"invalid instruction {instruction.name}")
+    def change_aircraft_icao(self):
+        data = self.sim.all_simulator_variable.get(AIRCRAFT_ICAO_VARIABLE)
+        if data is None:
+            logger.warning(f"no variable {AIRCRAFT_ICAO_VARIABLE}, ignoring")
             return
-        instruction._execute()
+
+        value = data.value()
+        if value is None or type(value) is not str or not (3 <= len(value) <= 4):
+            logger.warning(f"{AIRCRAFT_ICAO_VARIABLE} has invalid value {value}, ignoring")
+            return
+
+        if value != self.aircraft.icao:
+            self.aircraft.icao = value
+            logger.info("✈ " * 3 + f"aircraft {self.aircraft._acname}: icao set to {value}")
 
     def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
         self.global_luminosity = luminosity
@@ -1665,10 +1716,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
-        # if data.name == AIRCRAFT_CHANGE_MONITORING:
-        #     self.change_aircraft()
-        # if data.name == LIVERY_CHANGE_MONITORING:
-        #     self.change_livery()
 
     def run(self, release: bool = False):
         if len(self.decks) > 0:

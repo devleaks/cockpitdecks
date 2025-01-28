@@ -6,6 +6,13 @@ observables:
     actions:
       - command: cockpitdecks-aircraft
         delay: 5
+  - name: Aircraft ICAO changed
+    type: onchange
+    enabled: True
+    dataref: sim/aircraft/view/acf_ICAO
+    actions:
+      - command: cockpitdecks-aircraft-icao
+        delay: 2
   - name: Livery changed
     type: onchange
     enabled: True
