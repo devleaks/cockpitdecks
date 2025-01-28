@@ -22,7 +22,7 @@ __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 __DESCRIPTION__ = "Desk and web decks to X-Plane 12.1+"
 
-__version__ = "13.3.0"
+__version__ = "13.3.3"
 
 #
 # ##########################################################################
@@ -40,10 +40,14 @@ FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%
 # (mainly unit conversion functions)
 #
 def now():
+    # Returns now with local timezone.
     return datetime.now().astimezone()
 
+
 def nowutc() -> datetime:
+    # Returns now in UTC timezone
     return datetime.now(timezone.utc)
+
 
 def to_fl(m, r: int = 10):
     # Convert meters to flight level (1 FL = 100 ft). Round flight level to r if provided, typically rounded to 10, at Patm = 1013 mbar

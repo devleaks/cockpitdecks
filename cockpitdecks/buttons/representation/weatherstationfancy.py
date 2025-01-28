@@ -16,7 +16,22 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-FLIGHT_RULES = {"VFR": "green", "MVFR": "blue", "IFR": "red", "LIFR": "purple"}  # fairly standard colors
+FLIGHT_RULES = {"VFR": "green", "MVFR": "blue", "IFR": "red", "LIFR": "purple"}
+
+
+@dataclass
+class Dracula:
+    background = [40, 42, 54]  # almost black
+    current_line = [68, 71, 90]  # dark grey
+    foreground = [248, 248, 242]  # almost white
+    comment = [98, 114, 164]  # medium, blueish grey
+    cyan = [139, 233, 253]
+    green = [80, 250, 123]
+    orange = [255, 184, 108]
+    pink = [255, 121, 198]
+    purple = [189, 147, 249]
+    red = [255, 85, 85]
+    yellow = [241, 250, 140]
 
 
 class WeatherStationPlot(WeatherBaseIcon):
@@ -24,7 +39,7 @@ class WeatherStationPlot(WeatherBaseIcon):
     Depends on avwx-engine
     """
 
-    REPRESENTATION_NAME = "station-plot-base"
+    REPRESENTATION_NAME = "station-fancy-base"
 
     DEFAULT_STATION = "EBBR"
 
@@ -185,9 +200,7 @@ class WeatherStationPlot(WeatherBaseIcon):
             if text is None:
                 logger.warning(f"current_weather: {int(code)} leads to invalid character")
                 return
-            draw.text(
-                cell_center(2, 3), text=text, font=wmofont, anchor="mm", align="center", fill=self.text_color, stroke_fill=self.text_alt_color, stroke_width=2
-            )
+            draw.text(cell_center(2, 3), text=text, font=wmofont, anchor="mm", align="center", fill=self.text_color, outline=self.yellow, width=1)
 
         def draw_dew_point():
             temp = station_plot_data["dew_point"]

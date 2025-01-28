@@ -60,8 +60,16 @@ COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
 TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, TEMPLATES_FOLDER)
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
 
-AIRCRAFT_CHANGE_MONITORING_DATAREF = "sim/aircraft/view/acf_livery_path"
-AIRCRAFT_ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
+
+AIRCRAFT_PATH_VARIABLE = "sim/aircraft/view/acf_relative_path"
+AIRCRAFT_ICAO_VARIABLE = "sim/aircraft/view/acf_ICAO"
+LIVERY_PATH_VARIABLE = "sim/aircraft/view/acf_livery_path"
+LIVERY_INDEX_VARIABLE = "sim/aircraft/view/acf_livery_index"
+
+AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
+LIVERY_CHANGE_MONITORING = "livery-name"
+RELOAD_ON_LIVERY_CHANGE = False
+
 
 MONITOR_DATAREF_USAGE = True
 

@@ -1,17 +1,22 @@
 observables:
-  - name: Aircraft loaded
+  - name: Aircraft changed
+    type: onchange
+    enabled: True
+    dataref: sim/aircraft/view/acf_relative_path
+    actions:
+      - command: cockpitdecks-aircraft
+        delay: 5
+  - name: Aircraft ICAO changed
+    type: onchange
+    enabled: True
+    dataref: sim/aircraft/view/acf_ICAO
+    actions:
+      - command: cockpitdecks-aircraft-icao
+        delay: 2
+  - name: Livery changed
     type: onchange
     enabled: True
     dataref: sim/aircraft/view/acf_livery_path
     actions:
-      - command: cockpitdecks-aircraft
+      - command: cockpitdecks-livery
         delay: 5
-  # - name: METAR Station
-  #   type: onchange
-  #   enabled: True
-  #   datarefs:
-  #     - sim/flightmodel/position/latitude
-  #     - sim/flightmodel/position/longitude
-  #   actions:
-  #     - set-dataref: data:station_icao
-  #       delay: 5
