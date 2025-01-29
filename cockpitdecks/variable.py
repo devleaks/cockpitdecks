@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Any
 import traceback
 
 
@@ -233,7 +233,7 @@ class VariableFactory:
 
     @abstractmethod
     def variable_factory(self, name: str, is_string: bool = False) -> Variable:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class InternalVariable(Variable):
@@ -262,6 +262,12 @@ class InternalVariableValueProvider(ABC, ValueProvider):
 
 
 class VariableDatabase:
+    """Container for all variables.
+
+    In the past, it was stored into the simulator.
+    It is now stored in the Cockpit and caontains both Simulator and Internal variables.
+
+    """
 
     def __init__(self) -> None:
         self.database: Dict[str, Variable] = {}
@@ -276,7 +282,18 @@ class VariableDatabase:
             logger.debug(f"variable {variable.name} already registered")
         return variable
 
+    def exists(self, name: str) -> bool:
+        return name in self.database
+
     def get(self, name: str) -> Variable | None:
-        if name not in self.database:
+        if not self.exists(name):
             logger.debug(f"variable {name} not found")
         return self.database.get(name)
+
+    def value(self, name: str, default: Any = None) -> Any | None:
+        v = self.get(name)
+        if v is None:
+            logger.warning(f"{name} not found")
+            return None
+        return v.current_value if v.current_value is not None else default
+

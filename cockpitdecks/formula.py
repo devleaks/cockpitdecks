@@ -26,6 +26,11 @@ class Formula(Variable, VariableListener):
 
     A Formula can be a simple Variable (either InternalVariable or SimulatorVariable)
     or an expression that combines several variables.
+
+    For a text variable, the formula is simply a text replace of ${...} by their value.
+    On of these ${...} can be a ${formula} that is evaluated in another Formula expression.
+    For a number variable, the formula is an expression that contains ${...} variables
+    that are substitued and then evealuated to a new, single value (booleans = 0 or non 0).
     """
 
     def __init__(self, owner, formula: str | None = None, data_type: str = "float", default_value=0.0, format_str: str | None = None):

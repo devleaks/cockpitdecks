@@ -72,7 +72,7 @@ from cockpitdecks import (
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
-from cockpitdecks.variable import Variable, VariableFactory, InternalVariable
+from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
 from cockpitdecks.instruction import Instruction, InstructionFactory
 from cockpitdecks.observable import Observables
@@ -373,11 +373,11 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.cockpitdecks_path = environ.get(ENVIRON_KW.COCKPITDECKS_PATH.value)
 
         # What's available
+        self.all_deck_drivers = {}  # Dict[str, Device], one day
         self.all_simulators: Dict[str, Simulator] = {}
         self.all_activations: Dict[str, Activation] = {}
         self.all_representations: Dict[str, Representation] = {}
         self.all_hardware_representations: Dict[str, Representation] = {}
-        self.all_deck_drivers = {}  # Dict[str, Device], one day
 
         # Defaults and config
         self._environ = environ
@@ -420,7 +420,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.observables = {}
 
         # Database of variables
-        self.all_variable = {}
+        self.variable_database = VariableDatabase
 
         # Main event look
         self.event_loop_run = False
@@ -725,43 +725,27 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
     # Variables
     def get_variables(self) -> set:
-        """Returns the list of datarefs for which the cockpit wants to be notified."""
+        """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft.
+           If another aircraft is loaded, this will be called again.
+        """
         ret = self._simulator_variable_names
         ac = self.aircraft.get_variables()
         if len(ac) > 0:
             ret = ret | ac
         return ret
 
-    def register(self, variable: Variable) -> Variable:
-        """Registers a Variable
-
-        Args:
-            variable ([type]): [description]
-
-        Returns:
-            [type]: [description]
-        """
-        if variable.name is None:
-            logger.warning(f"invalid variable name {variable.name}, not registered")
-            return None
-        if variable.name not in self.all_variable:
-            # variable._sim = self
-            # self.set_rounding(variable)
-            # self.set_frequency(variable)
-            self.all_variable[variable.name] = variable
-        else:
-            logger.debug(f"variable name {variable.name} already registered")
-        return variable
-
-    def get_variable(self, name: str, factory: VariableFactory, is_string: bool = False) -> Variable:
-        """Returns data or create a new one, internal if path requires it"""
-        if name in self.all_variable.keys():
-            return self.all_variable[name]
-        return self.register(variable=factory.variable_factory(name=name, is_string=is_string))
-
     def variable_factory(self, name: str, is_string: bool = False) -> Variable:
         """Returns data or create a new internal variable"""
         return InternalVariable(name=name, is_string=is_string)
+
+    def register(self, variable: Variable) -> Variable:
+        return self.variable_database.register(variable)
+
+    def get_variable(self, name: str, factory: VariableFactory, is_string: bool = False) -> Variable:
+        """Returns data or create a new one, internal if path requires it"""
+        if self.variable_database.exists(name):
+            return self.variable_database.get(name)
+        return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string))
 
     def get_variable_value(self, name, default=None) -> Any | None:
         """Gets the value of a Variable monitored by Cockpitdecks
@@ -772,11 +756,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         Returns:
             [type]: [description]
         """
-        v = self.all_variable.get(name)
-        if v is None:
-            logger.warning(f"{name} not found")
-            return None
-        return v.current_value if v.current_value is not None else default
+        return self.variable_database.value(name, default=default)
 
     # Instruction
     def instruction_factory(self, **kwargs):
