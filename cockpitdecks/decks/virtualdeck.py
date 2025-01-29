@@ -87,6 +87,12 @@ class VirtualDeck(DeckWithIcons):
     def disconnect(self):
         self.unload_current_page()
 
+    def change_page(self, page: str | None = None) -> str | None:
+        if self.has_clients():
+            return super().change_page(page=page)
+        logger.info(f"web deck {self.name} has no client")
+        return None
+
     def reload_page(self):
         """Reloads page to take into account changes in definition
 
@@ -95,7 +101,13 @@ class VirtualDeck(DeckWithIcons):
         """
         if self.is_connected():
             self.inc(INTERNAL_DATAREF.DECK_RELOADS.value)
-            self.change_page(self.current_page.name)
+            page = "index"
+            if self.home_page is None:
+                logger.debug(f"deck {self.name} has no home page, assuming index")
+            else:
+                page = self.home_page.name
+            page = self.current_page.name if self.current_page is not None else page
+            self.change_page(page)
         else:
             logger.debug(f"deck {self.name} is not connected")
 
