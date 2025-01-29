@@ -504,7 +504,7 @@ class SimulatorMacroInstruction(SimulatorInstruction):
             ci = self._simulator.instruction_factory(
                 name=c.get(CONFIG_KW.NAME.value),
                 command=c.get(CONFIG_KW.COMMAND.value),
-                delay=c.get(CONFIG_KW.DELAY.value),
+                delay=c.get(CONFIG_KW.DELAY.value, 0),  # !! very important to add default value to delay
                 condition=c.get(CONFIG_KW.CONDITION.value),
             )
             self._instructions.append(ci)
