@@ -633,7 +633,7 @@ class Aircraft:
             logger.info("aircraft not running, no termination necessary")
             return
         logger.info("terminating aircraft..")
-        drefs = {d.name: d.value() for d in self.sim.all_simulator_variable.values()}  #  if d.is_internal
+        drefs = {d.name: d.value() for d in self.cockpit.variable_database.database.values()}  #  if d.is_internal
         fn = "datarefs-log.yaml"
         with open(fn, "w") as fp:
             yaml.dump(drefs, fp)

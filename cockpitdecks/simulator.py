@@ -47,13 +47,10 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         self.cockpit = cockpit
         self.running = False
 
-        # This is really the database of all simulator_variable
-        self.all_simulator_variable = {}
-
         self.simulator_variable_to_monitor = {}  # simulator data and number of objects monitoring
 
         self.roundings = {}  # name: int
-        self.simulator_variable_frequencies = {}  # name: int
+        self.frequencies = {}  # name: int
         self.physics = {}  # name: physical_unit
 
         self._startup = True
@@ -99,24 +96,24 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
             simulator_variable.rounding = self.roundings.get(simulator_variable.name)
 
     def set_simulator_variable_frequencies(self, simulator_variable_frequencies):
-        self.simulator_variable_frequencies = self.simulator_variable_frequencies | simulator_variable_frequencies
+        self.frequencies = self.frequencies | simulator_variable_frequencies
 
     def set_frequency(self, simulator_variable):
         if simulator_variable.name.find("[") > 0:
-            freq = self.simulator_variable_frequencies.get(simulator_variable.name)
+            freq = self.frequencies.get(simulator_variable.name)
             if freq is not None:
                 simulator_variable.update_frequency = freq  # rounds this very priecise simulator_variable
             else:
                 idx = simulator_variable.name.find("[")
                 base = simulator_variable.name[:idx]
-                freq = self.simulator_variable_frequencies.get(base + "[*]")  # rounds all simulator_variable in array, explicit
+                freq = self.frequencies.get(base + "[*]")  # rounds all simulator_variable in array, explicit
                 if freq is not None:
                     simulator_variable.update_frequency = freq  # rounds this very priecise simulator_variable
                 # rnd = self.roundings.get(base)        # rounds all simulator_variable in array
                 # if rnd is not None:
                 #   simulator_variable.rounding = rnd     # rounds this very priecise simulator_variable
         else:
-            simulator_variable.update_frequency = self.simulator_variable_frequencies.get(simulator_variable.name)
+            simulator_variable.update_frequency = self.frequencies.get(simulator_variable.name)
 
     def set_physics(self, variable):
         if variable.name.find("[") > 0:
@@ -144,11 +141,11 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         if variable.name is None:
             logger.warning(f"invalid variable name {variable.name}")
             return None
-        if variable.name not in self.all_simulator_variable:
+        if not self.cockpit.variable_database.exists(variable.name):
             variable._sim = self
             self.set_rounding(variable)
             self.set_frequency(variable)
-            self.all_simulator_variable[variable.name] = variable
+            self.cockpit.variable_database.register(variable)
         else:
             logger.debug(f"variable name {variable.name} already registered")
         return variable
@@ -166,11 +163,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         Returns:
             [type]: [description]
         """
-        d = self.all_simulator_variable.get(simulator_variable)
-        if d is None:
-            logger.warning(f"{simulator_variable} not found")
-            return None
-        return d.current_value if d.current_value is not None else default
+        return self.cockpit.variable_database.value(name=simulator_variable, default=default)
 
     # Shortcuts
     def variable_factory(self, name: str, is_string: bool = False) -> Variable:
@@ -189,11 +182,11 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
 
     def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
         """Returns data or create a new one, internal if path requires it"""
-        if name in self.all_simulator_variable.keys():
-            return self.all_simulator_variable[name]
+        if self.cockpit.variable_database.exists(name):
+            return self.cockpit.variable_database.get(name)
         if Variable.is_internal_variable(path=name):
-            return self.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
-        return self.register(variable=self.variable_factory(name=name, is_string=is_string))
+            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
+        return self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string))
 
     def get_internal_variable(self, name: str, is_string: bool = False) -> Variable:
         """Returns the InternalVariable or creates it if it is the first time it is accessed.
@@ -299,7 +292,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
     def remove_all_simulator_variable(self):
         """Removes all data from Simulator."""
         logger.debug(f"removing..")
-        self.all_simulator_variable = {}
+        self.cockpit.variable_database.remove_all_simulator_variables()
         self.simulator_variable_to_monitor = {}
         logger.debug(f"..removed")
 
@@ -581,7 +574,7 @@ class SimulatorVariableEvent(SimulatorEvent):
             if self.sim is None:
                 logger.warning("no simulator")
                 return False
-            data = self.sim.all_simulator_variable.get(self.name)
+            data = self.cockpit.variable_database.get(self.name)
             if data is None:
                 logger.debug(f"dataref {self.name} not found in database")
                 return False

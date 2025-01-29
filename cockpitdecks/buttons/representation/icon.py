@@ -196,7 +196,7 @@ class IconBase(Representation):
             return image
 
         if self.button.is_managed() and which_text == CONFIG_KW.TEXT.value:
-            txtmod = self.button.manager.get(f"text-modifier", "dot").lower()
+            txtmod = self.button.manager.get("text-modifier", "dot").lower()
             if txtmod in ["std", "standard"]:  # QNH Std
                 text_font = "AirbusFCU"  # hardcoded
 

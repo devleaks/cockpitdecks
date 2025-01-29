@@ -420,7 +420,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.observables = {}
 
         # Database of variables
-        self.variable_database = VariableDatabase
+        self.variable_database = VariableDatabase()
 
         # Main event look
         self.event_loop_run = False
@@ -948,7 +948,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
     def inspect_variables(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
-            for dref in self.sim.all_simulator_variable.values():
+            for dref in self.variable_database.database.values():
                 logger.info(f"{dref.name} = {dref.value()} ({len(dref.listeners)} lsnrs)")
                 if what.endswith("listener"):
                     for l in dref.listeners:
@@ -1349,12 +1349,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         # We arrive here when sim/aircraft/view/acf_livery_path or sim/aircraft/view/acf_livery_index changed
 
         # 1. If we don't have a livery path, we cannot do anything, we say so.
-        data = self.sim.all_simulator_variable.get(LIVERY_PATH_VARIABLE)
-        if data is None:
-            logger.warning(f"no variable {LIVERY_PATH_VARIABLE}, ignoring")
-            return
-
-        value = data.value()
+        value = self.variable_database.value(LIVERY_PATH_VARIABLE)
         if value is None or type(value) is not str:
             logger.warning(f"{LIVERY_PATH_VARIABLE} has invalid value {value}, ignoring")
             return
@@ -1385,12 +1380,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
     def change_aircraft(self):
         # We arrive here when sim/aircraft/view/acf_relative_path changed
-        data = self.sim.all_simulator_variable.get(AIRCRAFT_PATH_VARIABLE)
-        if data is None:
-            logger.warning(f"no variable {AIRCRAFT_PATH_VARIABLE}, ignoring")
-            return
-
-        value = data.value()
+        value = self.variable_database.value(AIRCRAFT_PATH_VARIABLE)
         if value is None or type(value) is not str:
             logger.warning(f"{AIRCRAFT_PATH_VARIABLE} has invalid value {value}, ignoring")
             return
@@ -1415,28 +1405,19 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             return
 
         # We try to see if we have a new livery as well
-        liverydata = self.sim.all_simulator_variable.get(LIVERY_PATH_VARIABLE)
-        if liverydata is None:
-            logger.warning(f"no variable {LIVERY_PATH_VARIABLE}, ignoring livery change")
+        liveryvalue = self.variable_database.value(LIVERY_PATH_VARIABLE)
+        if liveryvalue is None or type(liveryvalue) is not str:
+            logger.warning(f"{LIVERY_CHANGE_MONITORING} has invalid value {liveryvalue}, ignoring livery change")
         else:
-            liveryvalue = liverydata.value()
-            if liveryvalue is None or type(liveryvalue) is not str:
-                logger.warning(f"{LIVERY_CHANGE_MONITORING} has invalid value {liveryvalue}, ignoring livery change")
-            else:
-                logger.info(f"new livery path {value}")
-                self.aircraft.change_livery(path=value)  # changing the livery now will not change is aircraft is changed (to do!)
+            logger.info(f"new livery path {value}")
+            self.aircraft.change_livery(path=value)  # changing the livery now will not change is aircraft is changed (to do!)
 
         logger.info(f"aircraft changed to {acname}, {acpath}, starting..")
         self.aircraft.start(acpath=acpath)
         logger.info("..started")
 
     def change_aircraft_icao(self):
-        data = self.sim.all_simulator_variable.get(AIRCRAFT_ICAO_VARIABLE)
-        if data is None:
-            logger.warning(f"no variable {AIRCRAFT_ICAO_VARIABLE}, ignoring")
-            return
-
-        value = data.value()
+        value = self.variable_database.value(AIRCRAFT_ICAO_VARIABLE)
         if value is None or type(value) is not str or not (3 <= len(value) <= 4):
             logger.warning(f"{AIRCRAFT_ICAO_VARIABLE} has invalid value {value}, ignoring")
             return

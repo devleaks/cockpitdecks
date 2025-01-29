@@ -297,3 +297,15 @@ class VariableDatabase:
             return None
         return v.current_value if v.current_value is not None else default
 
+    def show_all(self, word: str = None):
+        for k in self.database:
+            if word is None or word in k:
+                logger.debug(f"{k} = {self.value(k)}")
+
+    def remove_all_simulator_variables(self):
+        to_delete = []
+        for d in self.database:
+            if Variable.may_be_non_internal_variable(d):  # type(variable) is Dataref
+                to_delete.append(d)
+        for d in to_delete:
+            self.database.pop(d)

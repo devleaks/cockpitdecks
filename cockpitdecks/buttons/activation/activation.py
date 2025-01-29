@@ -407,7 +407,8 @@ class Activation:
 
     def get_state_variables(self) -> dict:
         base = InternalVariable(name=self.get_id()).name
-        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), self.button.sim.all_simulator_variable.values())}
+        vardb = self.button.cockpit.variable_database.database
+        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), vardb.values())}
         a = {
             "activation_type": type(self).__name__,
             "last_activated": self.last_activated,
