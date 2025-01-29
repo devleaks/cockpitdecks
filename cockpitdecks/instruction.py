@@ -36,6 +36,9 @@ class Instruction(ABC):
         self.condition = kwargs.get("condition")
         self._timer = None
 
+        if self.delay is None:
+            self.delay = 0
+
     @classmethod
     def name(cls) -> str:
         return cls.INSTRUCTION_NAME
