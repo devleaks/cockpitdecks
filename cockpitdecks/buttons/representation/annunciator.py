@@ -99,7 +99,7 @@ class AnnunciatorPart:
 
     def get_variables(self) -> set:
         if self.datarefs is None:
-            self.datarefs = self._value.get_variables(extra_keys=["text"])
+            self.datarefs = self._value.scan_variables(extra_keys=["text"])
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
@@ -478,7 +478,7 @@ class Annunciator(DrawBase):
             self._part_iterator = [t + str(partnum) for partnum in range(n)]
         return self._part_iterator
 
-    def get_variables(self) -> Set[SimulatorVariable]:
+    def get_variables(self) -> set:
         """
         Complement button datarefs with annunciator special lit datarefs
         """

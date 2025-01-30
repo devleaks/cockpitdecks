@@ -10,7 +10,7 @@ from cockpitdecks.value import Value
 # from cockpitdecks.deck import Deck
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Observables:

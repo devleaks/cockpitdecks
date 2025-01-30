@@ -47,6 +47,8 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         self.cockpit = cockpit
         self.running = False
 
+        self.providers = []  # list of simulator providers to collect variables from
+
         self.simulator_variable_to_monitor = {}  # simulator data and number of objects monitoring
 
         self.roundings = {}  # name: int
@@ -56,6 +58,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         self._startup = True
 
         self.cockpit.set_logging_level(__name__)
+        self.register_permanently_monitored_simulator_variables_provider(provider=self)
 
     @property
     def api_url(self) -> str | None:
@@ -64,10 +67,17 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
     def get_version(self) -> list:
         return [f"{type(self).__name__} {__version__}"]
 
-    def set_simulator_variable_roundings(self, simulator_variable_roundings):
+    def get_variables(self) -> set:
+        return set()
+
+    # Simulator variable pre-processing
+    def set_simulator_variable_roundings(self, simulator_variable_roundings: dict):
         self.roundings = self.roundings | simulator_variable_roundings
 
-    def set_simulator_variable_physics(self, simulator_variable_physics):
+    def set_simulator_variable_frequencies(self, simulator_variable_frequencies: dict):
+        self.frequencies = self.frequencies | simulator_variable_frequencies
+
+    def set_simulator_variable_physics(self, simulator_variable_physics: dict):
         self.physics = self.physics | simulator_variable_physics
 
     def get_rounding(self, simulator_variable_name: str) -> float | None:
@@ -78,7 +88,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
             rnd if rnd is not None else self.roundings.get(simulator_variable_name[: simulator_variable_name.find("[")] + "[*]")
         )  # rounds all simulator_variable in array ("dref[*]")
 
-    def set_rounding(self, simulator_variable):
+    def set_rounding(self, simulator_variable: SimulatorVariable):
         if simulator_variable.name.find("[") > 0:
             rnd = self.roundings.get(simulator_variable.name)
             if rnd is not None:
@@ -95,10 +105,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         else:
             simulator_variable.rounding = self.roundings.get(simulator_variable.name)
 
-    def set_simulator_variable_frequencies(self, simulator_variable_frequencies):
-        self.frequencies = self.frequencies | simulator_variable_frequencies
-
-    def set_frequency(self, simulator_variable):
+    def set_frequency(self, simulator_variable: SimulatorVariable):
         if simulator_variable.name.find("[") > 0:
             freq = self.frequencies.get(simulator_variable.name)
             if freq is not None:
@@ -115,7 +122,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         else:
             simulator_variable.update_frequency = self.frequencies.get(simulator_variable.name)
 
-    def set_physics(self, variable):
+    def set_physics(self, variable: Variable):
         if variable.name.find("[") > 0:
             unit = self.physics.get(variable.name)
             if unit is not None:
@@ -127,7 +134,50 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
                 if unit is not None:
                     variable.physical_unit = unit
         else:
-            variable.physical_unit = self.physics.get(variable.name)
+            variable.physical_unit = self.physics.get(variable.name, "")
+
+    # ################################
+    # Simulator variables
+    #
+    def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
+        """Returns the current simulator date and time"""
+        return datetime.now().astimezone()
+
+    def register_permanently_monitored_simulator_variables_provider(self, provider):
+        if provider not in self.providers:
+            self.providers.append(provider)
+
+    def get_permanently_monitored_simulator_variables(self) -> dict:
+        dtdrefs = {}
+        for provider in self.providers:
+            cnt = 0
+            for d in provider.get_variables():
+                if d in dtdrefs:
+                    logger.info(f"{d} already added")
+                    continue
+                if d.startswith(CONFIG_KW.STRING_PREFIX.value):
+                    d = d.replace(CONFIG_KW.STRING_PREFIX.value, "")
+                    dtdrefs[d] = self.get_variable(d, is_string=True)
+                else:
+                    dtdrefs[d] = self.get_variable(d)
+                dtdrefs[d].add_listener(provider)
+                cnt = cnt + 1
+            logger.info(f"adding {cnt} permanent variables from {provider.name}")
+        return dtdrefs
+
+    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+        # here is the place to inject a physical type if any, may be from a list
+        # like for roundings and frequencies?
+        # dataref-physical:
+        #     sim/cockpit/autopilot/heading: degrees
+        #     sim/weather/region/wind_altitude_msl_m[*]: meter
+        #     sim/weather/region/wind_direction_degt[*]: degree
+        #     sim/weather/region/wind_speed_msc[*]: meter/second
+        # ...
+        physical_unit = self.physics.get(name)
+        variable = SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
+        variable._sim = self
+        return variable
 
     def register(self, variable: Variable) -> Variable:
         """Registers a SimulatorVariable to be monitored by Cockpitdecks.
@@ -150,9 +200,13 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
             logger.debug(f"variable name {variable.name} already registered")
         return variable
 
-    def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
-        """Returns the current simulator date and time"""
-        return datetime.now().astimezone()
+    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
+        """Returns data or create a new one, internal if path requires it"""
+        if self.cockpit.variable_database.exists(name):
+            return self.cockpit.variable_database.get(name)
+        if Variable.is_internal_variable(path=name):
+            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
+        return self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string))
 
     def get_simulator_variable_value(self, simulator_variable, default=None) -> Any | None:
         """Gets the value of a SimulatorVariable monitored by Cockpitdecks
@@ -164,29 +218,6 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
             [type]: [description]
         """
         return self.cockpit.variable_database.value(name=simulator_variable, default=default)
-
-    # Shortcuts
-    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
-        # here is the place to inject a physical type if any, may be from a list
-        # like for roundings and frequencies?
-        # dataref-physical:
-        #     sim/cockpit/autopilot/heading: degrees
-        #     sim/weather/region/wind_altitude_msl_m[*]: meter
-        #     sim/weather/region/wind_direction_degt[*]: degree
-        #     sim/weather/region/wind_speed_msc[*]: meter/second
-        # ...
-        physical_unit = self.physics.get(name)
-        variable = SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
-        variable._sim = self
-        return variable
-
-    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
-        """Returns data or create a new one, internal if path requires it"""
-        if self.cockpit.variable_database.exists(name):
-            return self.cockpit.variable_database.get(name)
-        if Variable.is_internal_variable(path=name):
-            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
-        return self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string))
 
     def get_internal_variable(self, name: str, is_string: bool = False) -> Variable:
         """Returns the InternalVariable or creates it if it is the first time it is accessed.

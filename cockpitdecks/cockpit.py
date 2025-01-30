@@ -386,6 +386,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self._resources_config = {}  # content of resources/config.yaml
         self._reqdfts = set()
 
+        self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
+
         # Decks
         self.deck_types = {}
         self.deck_types_new = {}
@@ -437,12 +439,10 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.aircraft = Aircraft(cockpit=self)
 
         # Internal variables
-        self.busy_reloading = False
-        self.disabled = False
-        self.default_pages = None  # current pages on decks when reloading
-        self.mode = 0
+        self.reload_operation = threading.Lock()
 
-        self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
+        self.default_pages = None  # current pages on decks when reloading
+        self.mode = 0  # CD_MODE: NORMAL = 0 (normal operation), DEMO = 1 (no aircraft, do not change aircraft), FIXED = 2 (do not change aircraft)
 
         self.init()  # this will install all available simulators
 
@@ -600,6 +600,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.info(f"simulator set to {self._simulator_name}")
         self._simulator = self.all_simulators[self._simulator_name]
         self.sim = self._simulator(self, self._environ)
+        self.sim.register_permanently_monitored_simulator_variables_provider(provider=self)
         logger.info(f"simulator driver {', '.join(self.sim.get_version())} installed")
         if self.cockpitdecks_path is not None:
             logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
@@ -711,7 +712,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 device.open()
                 device.reset()
                 return device
-        logger.warning(f"deck {req_serial} not found")
+        logger.warning(f"deck with driver {req_driver} and serial '{req_serial}' not found")
         return None
 
     def terminate_devices(self):
@@ -725,9 +726,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
     # Variables
     def get_variables(self) -> set:
-        """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft.
-           If another aircraft is loaded, this will be called again.
-        """
+        """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft."""
         ret = self._simulator_variable_names
         ac = self.aircraft.get_variables()
         if len(ac) > 0:
@@ -1298,7 +1297,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         Loads decks for aircraft in supplied path and start listening for key presses.
         """
         self.mode = mode
-        self.aircraft.start(acpath)
+        with self.reload_operation:
+            self.aircraft.start(acpath)
         # self.add_aircraft_resources() called in above
         self.run(release)
 
@@ -1344,6 +1344,19 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.warning(f"invalid instruction {instruction.name}")
             return
         instruction._execute()
+
+    def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
+        self.global_luminosity = luminosity
+        self.global_brightness = brightness
+
+    def change_aircraft_icao(self):
+        value = self.variable_database.value(AIRCRAFT_ICAO_VARIABLE)
+        if value is None or type(value) is not str or not (3 <= len(value) <= 4):
+            logger.warning(f"{AIRCRAFT_ICAO_VARIABLE} has invalid value {value}, ignoring")
+            return
+        if value != self.aircraft.icao:
+            self.aircraft.icao = value
+            logger.info("✈ " * 3 + f"aircraft {self.aircraft._acname}: icao set to {value}")
 
     def change_livery(self):
         # We arrive here when sim/aircraft/view/acf_livery_path or sim/aircraft/view/acf_livery_index changed
@@ -1413,22 +1426,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             self.aircraft.change_livery(path=value)  # changing the livery now will not change is aircraft is changed (to do!)
 
         logger.info(f"aircraft changed to {acname}, {acpath}, starting..")
-        self.aircraft.start(acpath=acpath)
+        with self.reload_operation:
+            self.aircraft.start(acpath=acpath)
         logger.info("..started")
-
-    def change_aircraft_icao(self):
-        value = self.variable_database.value(AIRCRAFT_ICAO_VARIABLE)
-        if value is None or type(value) is not str or not (3 <= len(value) <= 4):
-            logger.warning(f"{AIRCRAFT_ICAO_VARIABLE} has invalid value {value}, ignoring")
-            return
-
-        if value != self.aircraft.icao:
-            self.aircraft.icao = value
-            logger.info("✈ " * 3 + f"aircraft {self.aircraft._acname}: icao set to {value}")
-
-    def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
-        self.global_luminosity = luminosity
-        self.global_brightness = brightness
 
     def load_pages(self):
         if self.default_pages is not None:
@@ -1445,9 +1445,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 deck.change_page()
 
     def reload_pages(self):
-        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
-        for name, deck in self.decks.items():
-            deck.reload_page()
+        with self.reload_operation:
+            logger.info("reloading pages..")
+            self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
+            for name, deck in self.decks.items():
+                deck.reload_page()
+            logger.info("..reloaded")
 
     def reload_deck(self, deck_name: str, just_do_it: bool = False):
         """
@@ -1461,7 +1464,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 logger.info(f"deck {deck_name} not found")
                 return
             logger.info(f"reloading deck {deck.name}..")
-            self.busy_reloading = True
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
             if deck.current_page is not None:
                 self.default_pages[deck.name] = deck.current_page.name
@@ -1501,7 +1503,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             else:
                 deck.change_page()
 
-            self.busy_reloading = False
             logger.info("..done")
         else:
             self.event_queue.put(f"reload:{deck_name}")
@@ -1515,13 +1516,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         # A security... if we get called we must ensure reloader is running...
         if just_do_it:
             logger.info("reloading decks..")
-            self.busy_reloading = True
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
             for name, deck in self.decks.items():
                 if deck.current_page is not None:
                     self.default_pages[name] = deck.current_page.name
-            self.aircraft.start(self.aircraft.acpath)
-            self.busy_reloading = False
+            with self.reload_operation:
+                self.aircraft.start(self.aircraft.acpath)
             logger.info("..done")
         else:
             self.event_queue.put("reload")
@@ -1706,8 +1706,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             logger.info(f"serving {self.get_aircraft_name()} (released)")
         else:
             logger.warning("no deck")
-            if self.aircraft.acpath is not None:
-                self.terminate_all()
+            self.terminate_all()
 
     def terminate_all(self, threads: int = 1):
         logger.info("terminating cockpit..")

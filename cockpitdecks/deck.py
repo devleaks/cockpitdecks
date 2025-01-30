@@ -376,7 +376,9 @@ class Deck(ABC):
             if self.current_page is not None:
                 logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
                 logger.debug("..unloading simulator variables..")
-                self.cockpit.sim.remove_simulator_variable_to_monitor(self.current_page.simulator_variable)
+                self.cockpit.sim.remove_simulator_variable_to_monitor(
+                    datarefs=self.current_page.simulator_variable, reason=f"deck {self.name}, page {self.current_page.name}"
+                )
                 logger.debug("..cleaning page..")
                 self.current_page.clean()
                 logger.debug(f"..reset device {self.name}..")
@@ -387,7 +389,9 @@ class Deck(ABC):
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
             logger.debug("..loading simulator variables..")
-            self.cockpit.sim.add_simulator_variable_to_monitor(self.current_page.simulator_variable)  # set simulator variables to monitor
+            self.cockpit.sim.add_simulator_variable_to_monitor(
+                datarefs=self.current_page.simulator_variable, reason=f"deck {self.name}, page {self.current_page.name}"
+            )  # set simulator variables to monitor
             logger.debug("..rendering page..")
             self.current_page.render()
             logger.debug(f"deck {self.name} ..done")

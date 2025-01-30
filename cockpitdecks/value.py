@@ -151,30 +151,30 @@ class Value:
         self._simulator_variable = self._simulator_variable | datarefs
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
-    def get_variables(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+    def get_variables(self) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
         listed dataref and datarefs attributes.
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
-        if base is None:  # local, button-level ones
-            if self._simulator_variable is not None:  # cached if globals (base is None)
-                return self._simulator_variable
-            base = self._config
-
-        self._simulator_variable = self.scan_datarefs(base, extra_keys=extra_keys)
+        if self._simulator_variable is not None:
+            return self._simulator_variable
+        self._simulator_variable = self.scan_variables(self._config, extra_keys=[CONFIG_KW.FORMULA.value])
         logger.debug(f"value {self.name}: found datarefs {self._simulator_variable}")
         return self._simulator_variable
 
     def get_all_datarefs(self) -> list:
         return self.get_variables() | self._string_simulator_variable
 
-    def scan_datarefs(self, base: dict, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+    def scan_variables(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         String datarefs are treated separately.
         """
+        if base is None:  # local, button-level ones
+            base = self._config
+
         r = set()
 
         # Direct use of datarefs:
@@ -202,7 +202,7 @@ class Value:
             if type(commands) is list:
                 for command in commands:
                     if type(command) is dict:  # command "block"
-                        datarefs = self.scan_datarefs(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
+                        datarefs = self.scan_variables(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
                         if len(datarefs) > 0:
                             r = r | datarefs
                             logger.debug(f"value {self.name}: added datarefs found in {command}: {datarefs}")
@@ -218,7 +218,7 @@ class Value:
             if text is None:
                 continue
             if type(text) is dict:
-                datarefs = self.scan_datarefs(base=text, extra_keys=extra_keys)
+                datarefs = self.scan_variables(base=text, extra_keys=extra_keys)
                 if len(datarefs) > 0:
                     r = r | datarefs
                 continue

@@ -56,7 +56,7 @@ class DataIcon(DrawBase):
     def get_variables(self) -> set:
         if self.datarefs is None:
             if self.data is not None:
-                self.datarefs = self.button.scan_datarefs(base=self.data)
+                self.datarefs = self.button.scan_variables(base=self.data)
         return self.datarefs
 
     def get_image_for_icon(self):

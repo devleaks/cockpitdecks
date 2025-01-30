@@ -28,6 +28,10 @@ class StringWithVariable(Variable, VariableListener):
     Variables can include internal variables, simulator variables,
     value from button internal state (including activation value), and results for a formula.
     It is the "owner" of the variable's responsibility to provide the value of the above variables.
+    Types of variables:
+        "data:...": Internal variables,
+        "state:...": State variable, currently for button only,
+        "...": Assumed to be a simulator variable.
     """
 
     def __init__(self, owner, message: str):
@@ -140,7 +144,7 @@ class StringWithVariable(Variable, VariableListener):
 
         if "${" not in self.formula:  # formula is simple expression, constant or single dataref without ${}
             # Is formula is single internal variable?
-            if Variable.is_internal_variable(self.formula) or Variable.is_internal_state_variable(self.formula):
+            if Variable.is_internal_variable(self.formula) or Variable.is_state_variable(self.formula):
                 self._variables.add(self.formula)
                 self._tokens[self.formula] = self.formula
                 return self._variables

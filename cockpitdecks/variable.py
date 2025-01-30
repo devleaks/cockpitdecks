@@ -93,7 +93,7 @@ class Variable(ABC):
         return path.startswith(INTERNAL_DATA_PREFIX)
 
     @staticmethod
-    def is_internal_state_variable(path: str) -> bool:
+    def is_state_variable(path: str) -> bool:
         return path.startswith(INTERNAL_STATE_PREFIX)
 
     @staticmethod

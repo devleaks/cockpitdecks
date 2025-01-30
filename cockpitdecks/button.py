@@ -448,7 +448,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.get_variables(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
+        r = self._value.scan_variables(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
 
         # 1b. Managed values
         managed = None
@@ -486,12 +486,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         return r  # removes duplicates
 
-    def scan_datarefs(self, base: dict) -> list:
+    def scan_variables(self, base: dict) -> list:
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
         """
-        return self._value.scan_datarefs(base)
+        return self._value.scan_variables(base)
 
     # ##################################
     # Dataref processing

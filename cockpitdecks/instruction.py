@@ -6,7 +6,6 @@ import logging
 from abc import ABC, abstractmethod
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.formula import Formula
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when simulator_variable are updated
@@ -34,7 +33,7 @@ class Instruction(ABC):
         self.performer = kwargs.get("performer")
         self.delay = kwargs.get("delay", 0)
         self.condition = kwargs.get("condition")
-        self._timer = None
+        self._timer: threading.Timer | None = None
 
         if self.delay is None:
             self.delay = 0

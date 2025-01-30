@@ -510,7 +510,7 @@ class MultiTexts(IconText):
     def get_variables(self) -> set:
         datarefs = set()
         for text in self.multi_texts:
-            drefs = self.button.scan_datarefs(text)
+            drefs = self.button.scan_variables(text)
             if len(drefs) > 0:
                 datarefs = datarefs | drefs
         return datarefs
