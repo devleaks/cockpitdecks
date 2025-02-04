@@ -6,6 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from cockpitdecks import CONFIG_KW
+from .strvar import Formula
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)  # To see when simulator_variable are updated
@@ -37,6 +38,12 @@ class Instruction(ABC):
 
         if self.delay is None:
             self.delay = 0
+
+        if self.condition is not None:
+            if "${" in self.condition:
+                self._condition = Formula(owner=self.performer, formula=self.condition)
+            else: # we assume the confition is a single dataref, we enclose it in ${} to make it a formula
+                self._condition = Formula(owner=self.performer, formula=f"${{{self.condition}}}")
 
     @classmethod
     def name(cls) -> str:

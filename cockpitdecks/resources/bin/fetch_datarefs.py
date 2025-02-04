@@ -67,7 +67,7 @@ class DatarefFetcher(SimulatorVariableListener, CockpitBase):
             dref = self.sim.get_variable(d)
             dref.add_listener(self)
             coll[d] = dref
-        self.sim.add_simulators_variable_to_monitor(coll)
+        self.sim.add_simulator_variables_to_monitor(coll)
 
     def run(self):
         # Start reload loop

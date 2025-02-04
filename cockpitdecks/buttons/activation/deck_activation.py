@@ -1363,7 +1363,7 @@ class Slider(Activation):  # Cursor?
             f"The raw value from slider is modified by formula {self.button.formula}.",
         ]
         if self._writable_dataref is not None:
-            a.append(f"The value is written in dataref {self._writable_dataref.name}.")
+            a.append(f"The value after modification by the formula is written in dataref {self._writable_dataref.name}.")
         return "\n\r".join(a)
 
 

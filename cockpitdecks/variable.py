@@ -102,6 +102,24 @@ class Variable(ABC):
             return INTERNAL_DATA_PREFIX + path
         return path  # already startswith INTERNAL_DATA_PREFIX
 
+    @staticmethod
+    def state_variable_name(path: str) -> str:
+        if not Variable.is_state_variable(path):  # prevent duplicate prepend
+            return INTERNAL_STATE_PREFIX + path
+        return path  # already startswith INTERNAL_DATA_PREFIX
+
+    @staticmethod
+    def internal_variable_root_name(path: str) -> str:
+        if Variable.is_internal_variable(path):  # prevent duplicate prepend
+            return path[len(INTERNAL_DATA_PREFIX):]
+        return path  # already startswith INTERNAL_DATA_PREFIX
+
+    @staticmethod
+    def state_variable_root_name(path: str) -> str:
+        if Variable.is_state_variable(path):  # prevent duplicate prepend
+            return path[len(INTERNAL_STATE_PREFIX):]
+        return path  # already startswith INTERNAL_DATA_PREFIX
+
     @property
     def is_internal(self) -> bool:
         return self.name.startswith(INTERNAL_DATA_PREFIX)

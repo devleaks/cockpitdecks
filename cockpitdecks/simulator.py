@@ -60,6 +60,9 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         self.cockpit.set_logging_level(__name__)
         self.register_permanently_monitored_simulator_variables_provider(provider=self)
 
+    def get_id(self):
+        return self.name
+
     @property
     def api_url(self) -> str | None:
         return None
@@ -282,7 +285,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         """Removes all data from Simulator monitoring."""
         self.simulator_variable_to_monitor = {}
 
-    def add_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str = None):
+    def add_simulator_variables_to_monitor(self, simulator_variables: dict, reason: str = None):
         """Adds supplied data to Simulator monitoring."""
         prnt = []
         for d in simulator_variables.values():
@@ -297,7 +300,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         logger.debug(f"added {prnt}")
         logger.debug(f"currently monitoring {self.simulator_variable_to_monitor}")
 
-    def remove_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str = None):
+    def remove_simulator_variables_to_monitor(self, simulator_variables: dict, reason: str = None):
         """Removes supplied data from Simulator monitoring."""
         prnt = []
         for d in simulator_variables.values():
@@ -359,10 +362,10 @@ class NoSimulator(Simulator):
         logger.debug(f"({kwargs})")
         return NoOperation(kwargs=kwargs)
 
-    def add_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str | None = None):
+    def add_simulator_variables_to_monitor(self, simulator_variables: dict, reason: str | None = None):
         logger.warning("NoSimulator monitors no data")
 
-    def remove_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str | None = None):
+    def remove_simulator_variables_to_monitor(self, simulator_variables: dict, reason: str | None = None):
         logger.warning("NoSimulator monitors no data")
 
     def replay_event_factory(self, name: str, value):
@@ -422,7 +425,7 @@ class SimulatorInstruction(Instruction):
     """
 
     def __init__(self, name: str, simulator: Simulator, delay: float = 0.0, condition: str | None = None) -> None:
-        Instruction.__init__(self, name=name, delay=delay, condition=condition)
+        Instruction.__init__(self, name=name, delay=delay, condition=condition, performer=simulator)
         self._simulator = simulator
 
     @property
@@ -495,6 +498,10 @@ class SimulatorInstruction(Instruction):
         # condition checked in each individual instruction
         if self.condition is None:
             return True
+        # Later:
+        condvalue = self._condition.value()
+        localeval = condvalue != 0
+        print(">>>>>", type(self._condition), condvalue, localeval, self._condition.formula, self._condition.get_variables())
         expr = self.substitute_dataref_values(message=self.condition)
         logger.debug(f"value {self.name}: {self.condition} => {expr}")
         r = RPC(expr)

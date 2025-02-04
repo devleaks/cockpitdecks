@@ -83,7 +83,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         #     logger.debug(f"button {self.name}: logging level set to {self.logging_level}")
 
         # Working variables
-        self._value = Value(self.name, config=config, provider=self)
         self._first_value_not_saved = True
         self._first_value = None  # first value the button will get
         self._last_activation_state = None
@@ -133,7 +132,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         #### Datarefs
         #
         self.dataref = config.get(CONFIG_KW.SIM_VARIABLE.value)
-        self.formula = config.get(CONFIG_KW.FORMULA.value)
 
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
@@ -165,6 +163,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             else:
                 self.string_datarefs = set(self.string_datarefs)
 
+        self._value = Value(self.name, config=config, provider=self)
+
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
         self.all_datarefs = self.get_variables()  # this does not add string datarefs
@@ -178,6 +178,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
         if self.wallpaper is not None:
             self._def.set_block_wallpaper(self.wallpaper)
+
 
         # Initialize value providers
         SimulatorVariableValueProvider.__init__(self, name=self.name, simulator=self.sim)
@@ -437,6 +438,14 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
+    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
+        """Returns data or create a new one, internal if path requires it"""
+        if self.cockpit.variable_database.exists(name):
+            return self.cockpit.variable_database.get(name)
+        if InternalVariable.is_internal_variable(path=name):
+            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
+        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string))
+
     def get_variables(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
@@ -449,7 +458,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.scan_variables(extra_keys=[CONFIG_KW.FORMULA.value, "text"])
+        r = self._value.scan_variables(extra_keys=["text"])
 
         # 1b. Managed values
         managed = None
@@ -617,7 +626,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         # 2. dataref or formula based
         #    note that a formula may also use state variables,
         #    but get_value() knows how to get them if needed.
-        if self.dataref is not None or self.formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
+        formula = self._config.get(CONFIG_KW.FORMULA.value)
+        if self.dataref is not None or formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
             logger.debug(f"button {self.name}: has formula and/or datarefs")
             return self._value.get_value()
 

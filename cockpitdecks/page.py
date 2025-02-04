@@ -284,7 +284,7 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
-            self.sim.remove_simulators_variable_to_monitor(simulator_variables=self.simulator_variable, reason=f"terminate page {self.name}")
+            self.sim.remove_simulator_variables_to_monitor(simulator_variables=self.simulator_variable, reason=f"terminate page {self.name}")
         if not disconnected:
             self.clean()
         for button in self.buttons.values():

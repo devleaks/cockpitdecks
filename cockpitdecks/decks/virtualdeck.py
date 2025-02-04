@@ -75,7 +75,7 @@ class VirtualDeck(DeckWithIcons):
         if self.current_page is not None:
             logger.debug(f"deck {self.name} unloading page {self.current_page.name}..")
             logger.debug("..unloading simulator data..")
-            self.cockpit.sim.remove_simulators_variable_to_monitor(
+            self.cockpit.sim.remove_simulator_variables_to_monitor(
                 simulator_variables=self.current_page.simulator_variable, reason=f"client disconnected from {self.name}"
             )
             logger.debug("..cleaning page..")

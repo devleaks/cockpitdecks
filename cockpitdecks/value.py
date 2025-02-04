@@ -13,6 +13,8 @@ from cockpitdecks.variable import InternalVariable, ValueProvider, INTERNAL_STAT
 from cockpitdecks.simulator import Simulator, SimulatorVariableValueProvider
 from cockpitdecks.buttons.activation import ActivationValueProvider
 
+from .strvar import Formula
+
 # from cockpitdecks.button import StateVariableValueProvider
 
 from .resources.iconfonts import ICON_FONTS
@@ -20,7 +22,7 @@ from .resources.color import convert_color
 from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Value:
@@ -54,7 +56,7 @@ class Value:
         self._simulator_variable: set | None = None
         self._string_simulator_variable: set | None = None
         self._known_extras: Tuple[str] = tuple()
-        self._formula: str | None = None
+        self._formula: Formula | None = None
 
         self.init()
 
@@ -71,11 +73,16 @@ class Value:
         if self.dataref is not None and self.set_dataref is not None:
             if self.dataref == self.set_dataref:
                 if self.formula == "":
-                    logger.debug(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
-                # if formula is None:
+                    logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
+                # if self.formula is None:
                 #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
                 # else:
-                #     logger.warning(f"value {self.name}: formula {formula} evaluated before set-dataref")
+                #     logger.warning(f"value {self.name}: formula {self.formula} evaluated before set-dataref")
+
+        if self.has_formula:
+            formula = self.get_formula()
+            self._formula = Formula(owner=self._provider, formula=formula)
+            # print(">>>", self._formula, self._formula.get_variables(), self._formula.value())
 
         if not self.has_domain:
             return
@@ -135,6 +142,11 @@ class Value:
         return self._config.get(CONFIG_KW.FORMULA.value, "")
 
     @property
+    def has_formula(self) -> bool:
+        formula = self.get_formula()
+        return formula is not None and formula != ""
+
+    @property
     def has_domain(self) -> bool:
         return self.value_min is not None and self.value_max is not None
 
@@ -159,14 +171,14 @@ class Value:
         """
         if self._simulator_variable is not None:
             return self._simulator_variable
-        self._simulator_variable = self.scan_variables(self._config, extra_keys=[CONFIG_KW.FORMULA.value])
+        self._simulator_variable = self.scan_variables(self._config)
         logger.debug(f"value {self.name}: found datarefs {self._simulator_variable}")
         return self._simulator_variable
 
     def get_all_datarefs(self) -> list:
         return self.get_variables() | self._string_simulator_variable
 
-    def scan_variables(self, base: dict | None = None, extra_keys: list = [CONFIG_KW.FORMULA.value]) -> set:
+    def scan_variables(self, base: dict | None = None, extra_keys: list = []) -> set:
         """
         scan all datarefs in texts, computed datarefs, or explicitely listed.
         This is applied to the entire button or to a subset (for annunciator parts for example).
@@ -176,6 +188,9 @@ class Value:
             base = self._config
 
         r = set()
+        if self.has_formula:
+            r = self._formula.get_variables()
+            logger.debug(f"value {self.name}: added formula variables {r}")
 
         # Direct use of datarefs:
         #
@@ -210,7 +225,7 @@ class Value:
             # else: commands is string or None, no dref to scan for
 
         # 3. In string datarefs (formula, text, etc.)
-        allways_extra = [CONFIG_KW.FORMULA.value, CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
+        allways_extra = [CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
         self._known_extras = set(extra_keys + allways_extra)
 
         for key in self._known_extras:
@@ -231,67 +246,68 @@ class Value:
                 logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
 
         # Clean up
+        # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but CONFIG_KW.FORMULA.value is not a dataref.
         # text: ${formula} replaces text with result of formula
-        if CONFIG_KW.FORMULA.value in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
+        if CONFIG_KW.FORMULA.value in r:
             r.remove(CONFIG_KW.FORMULA.value)
         if None in r:
             r.remove(None)
 
         return r
 
-    def deepscan(base: dict | CommentedMap | CommentedSeq) -> set:
-        # Highly ruamel.yaml specific procedure to scan
-        # all dataref in yaml-loaded structure.
-        # Returns a list of all ${} elements.
-        #
-        r = set()
+    # def deepscan(base: dict | CommentedMap | CommentedSeq) -> set:
+    #     # Highly ruamel.yaml specific procedure to scan
+    #     # all dataref in yaml-loaded structure.
+    #     # Returns a list of all ${} elements.
+    #     #
+    #     r = set()
 
-        # Direct use of datarefs:
-        #
-        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
-        for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
-            dataref = base.get(attribute)
-            if dataref is not None:
-                r.add(dataref)
+    #     # Direct use of datarefs:
+    #     #
+    #     # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
+    #     for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
+    #         dataref = base.get(attribute)
+    #         if dataref is not None:
+    #             r.add(dataref)
 
-        # 1.2 List of datarefs in attributes
-        for attribute in [CONFIG_KW.SIM_DATA.value, CONFIG_KW.SIM_DATA.value]:
-            datarefs = base.get(attribute)
-            if datarefs is not None:
-                r = r | set(datarefs)
+    #     # 1.2 List of datarefs in attributes
+    #     for attribute in [CONFIG_KW.SIM_DATA.value, CONFIG_KW.SIM_DATA.value]:
+    #         datarefs = base.get(attribute)
+    #         if datarefs is not None:
+    #             r = r | set(datarefs)
 
-        # 2. In string datarefs (formula, text, etc.)
-        #    Crawl down in dict attribute values
-        for key, value in base.items():
-            if type(value) is str and value != "":
-                r = r | set(re.findall(PATTERN_DOLCB, value))
-            elif type(value) is dict:
-                r = r | deepscan(value)
-            elif type(value) is list:
-                for v in value:
-                    r = r | deepscan(v)
-            elif type(value) is CommentedMap:
-                t = {k: v for k, v in value.items()}
-                r = r | deepscan(t)
-            elif type(value) is CommentedSeq:
-                for v in enumerate(value):
-                    v1 = v[1]
-                    if type(v1) is str and v1 != "":
-                        r = r | set(re.findall(PATTERN_DOLCB, v1))
-                    elif type(v1) is dict:
-                        r = r | deepscan(v[1])
-                    elif type(v1) is CommentedMap:
-                        t = {k: v for k, v in v1.items()}
-                        r = r | deepscan(t)
-                    else:
-                        logger.warning("unprocessed: {v}, {type(v1)}, {v1}")
+    #     # 2. In string datarefs (formula, text, etc.)
+    #     #    Crawl down in dict attribute values
+    #     for key, value in base.items():
+    #         if type(value) is str and value != "":
+    #             r = r | set(re.findall(PATTERN_DOLCB, value))
+    #         elif type(value) is dict:
+    #             r = r | deepscan(value)
+    #         elif type(value) is list:
+    #             for v in value:
+    #                 r = r | deepscan(v)
+    #         elif type(value) is CommentedMap:
+    #             t = {k: v for k, v in value.items()}
+    #             r = r | deepscan(t)
+    #         elif type(value) is CommentedSeq:
+    #             for v in enumerate(value):
+    #                 v1 = v[1]
+    #                 if type(v1) is str and v1 != "":
+    #                     r = r | set(re.findall(PATTERN_DOLCB, v1))
+    #                 elif type(v1) is dict:
+    #                     r = r | deepscan(v[1])
+    #                 elif type(v1) is CommentedMap:
+    #                     t = {k: v for k, v in v1.items()}
+    #                     r = r | deepscan(t)
+    #                 else:
+    #                     logger.warning("unprocessed: {v}, {type(v1)}, {v1}")
 
-        if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
-            r.remove("formula")
-        if None in r:
-            r.remove(None)
+    #     if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
+    #         r.remove("formula")
+    #     if None in r:
+    #         r.remove(None)
 
-        return r
+    #     return r
 
     # ##################################
     # Formula value substitution
@@ -302,6 +318,7 @@ class Value:
             if formula is not None and formula != "":
                 return formula
         if self.formula is not None and self.formula != "":
+            logger.debug(f"value {self.name}: has formula {self.formula}")
             return self.formula
         if (
             hasattr(self._provider, "formula")
@@ -310,6 +327,7 @@ class Value:
             and hasattr(self._provider, "_representation")
             and type(self._provider._representation).__name__ != "Annunciator"
         ):
+            logger.debug(f"value {self.name}: provider has formula {self._provider.formula}")
             return self._provider.formula
         return None
 
@@ -446,9 +464,7 @@ class Value:
         logger.debug(f"value {self.name}: {formula} => {expr}")
         r = RPC(expr)
         value = r.calculate()
-        logger.debug(
-            f"execute_formula: value {self.name}: {formula} => {expr} => {value}",
-        )
+        logger.debug(f"execute_formula: value {self.name}: {formula} => {expr} => {value}")
         return value
 
     # ##################################
@@ -539,15 +555,14 @@ class Value:
                         text = text.replace(f"${{{k}:{i}}}", v[1][i])
                         logger.debug(f"button {self._button.name}: substituing font icon {i}")
 
-        # Formula in text
+        # Formula keyword in text
         # If text contains ${formula}, it is replaced by the value of the formula calculation.
         text_format = base.get(f"{root}-format")
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
             res = ""
-            formula = self.get_formula(base)
-            if formula is not None:
-                res = self.execute_formula(formula=formula)
+            if self.has_formula:
+                res = self._formula.value()
                 if res != "":  # Format output if format present
                     if text_format is not None:
                         logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
@@ -581,11 +596,10 @@ class Value:
                 return self.value_max
             return val
 
-        formula = self.get_formula()
 
         # 1. If there is a formula, value comes from it
-        if formula is not None and formula != "":
-            ret = self.execute_formula(formula=formula)
+        if self.has_formula:
+            ret = self._formula.value()
             logger.debug(f"value {self.name}: {ret} (from formula)")
             return ret
 
