@@ -285,7 +285,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
     def add_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str = None):
         """Adds supplied data to Simulator monitoring."""
         prnt = []
-        for d in simulator_variable.values():
+        for d in simulator_variables.values():
             if d.name.startswith(INTERNAL_DATA_PREFIX):
                 logger.debug(f"local simulator_variable {d.name} is not monitored")
                 continue
@@ -300,7 +300,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
     def remove_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str = None):
         """Removes supplied data from Simulator monitoring."""
         prnt = []
-        for d in simulator_variable.values():
+        for d in simulator_variables.values():
             if d.name.startswith(INTERNAL_DATA_PREFIX):
                 logger.debug(f"local simulator_variable {d.name} is not monitored")
                 continue
@@ -317,10 +317,10 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
 
     def remove_all_simulator_variable(self):
         """Removes all data from Simulator."""
-        logger.debug(f"removing..")
+        logger.debug("removing..")
         self.cockpit.variable_database.remove_all_simulator_variables()
         self.simulator_variable_to_monitor = {}
-        logger.debug(f"..removed")
+        logger.debug("..removed")
 
     def execute(self, instruction: Instruction):
         """Executes a SimulatorInstruction"""
