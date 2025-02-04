@@ -35,6 +35,7 @@ class StringWithVariable(Variable, VariableListener):
     """
 
     def __init__(self, owner, message: str):
+        self._inited = False
         key = uuid.uuid3(namespace=MESSAGE_NS, name=str(message))
         name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
         Variable.__init__(self, name=name, data_type="string")
@@ -43,6 +44,7 @@ class StringWithVariable(Variable, VariableListener):
         # Used in formula
         self._tokens = {}  # "${path}": path
         self._variables = None
+        self._formats = {}  # for later @todo
         self.init()
 
     def init(self):
@@ -57,7 +59,7 @@ class StringWithVariable(Variable, VariableListener):
 
     @property
     def display_name(self):
-        i = self.name.index("|") + 5
+        i = self.name.index("|") + 5  # just the end of the string, for info, to identify
         return self.name[:i]
 
     def get_internal_variable_value(self, internal_variable, default=None):
@@ -68,9 +70,9 @@ class StringWithVariable(Variable, VariableListener):
         Returns:
             [type]: [value from internam variable]
         """
-        if hasattr(self.owner, "get_simulator_variable_value"):
-            return self.owner.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
-        logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
+        if hasattr(self.owner, "get_internal_variable_value"):
+            return self.owner.get_internal_variable_value(simulator_variable=internal_variable, default=default)
+        logger.warning(f"formula {self.display_name}: no get_internal_variable_value for {internal_variable}")
         return None
 
     def get_simulator_variable_value(self, simulator_variable, default=None):
@@ -86,7 +88,7 @@ class StringWithVariable(Variable, VariableListener):
         logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
         return None
 
-    def get_state_variable_value(self, state):
+    def get_state_variable_value(self, state_variable):
         """Get button state variable value from owner
 
         Owner should be a StateVariableValueProvider.
@@ -95,8 +97,8 @@ class StringWithVariable(Variable, VariableListener):
             [type]: [value from state variable]
         """
         if hasattr(self.owner, "get_state_variable_value"):
-            return self.owner.get_state_variable_value(state)
-        logger.warning(f"formula {self.display_name}: no get_state_variable_value for {state}")
+            return self.owner.get_state_variable_value(state_variable)
+        logger.warning(f"formula {self.display_name}: no get_state_variable_value for {state_variable}")
         return None
 
     def get_activation_value(self):
@@ -112,6 +114,19 @@ class StringWithVariable(Variable, VariableListener):
         logger.warning(f"formula {self.display_name}: no get_activation_value")
         return None
 
+    def get_formula_result(self):
+        """Get formuala result value from owner
+
+        Owner should be a button.
+
+        Returns:
+            str: retult value as string from formula evaluation
+        """
+        if hasattr(self.owner, "get_formula_result"):
+            return self.owner.get_formula_result()
+        logger.warning(f"formula {self.display_name}: no get_activation_value")
+        return None
+
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
 
@@ -121,9 +136,13 @@ class StringWithVariable(Variable, VariableListener):
             data (Variable): [variable that has changed]
         """
         old_value = self.current_value  # kept for debug
-        logger.debug(f"formula {self.display_name}: {data.name} changed, recomputing..")
-        self.compute()
-        logger.debug(f"formula {self.display_name}: ..done (new value: {self.current_value})")
+        logger.debug(f"string-with-variable {self.display_name}: {data.name} changed, reevaluating..")
+        dummy = self.substitute_values(store=True, cascade=True)
+        logger.debug(f"string-with-variable {self.display_name}: ..done (new value: {dummy})")
+
+    def render(self):
+        if hasattr(self.owner, "render"):
+            return self.owner.render()
 
     def get_variables(self) -> set:
         """Returns list of variables used by this formula
@@ -168,7 +187,17 @@ class StringWithVariable(Variable, VariableListener):
 
         return self._variables
 
-    def substitute_values(self) -> str:
+    def init(self):
+        if self._inited:
+            return
+
+        for name in self.get_variables():
+            var = self.owner.get_variable(name=name)
+            if var is not None:
+                var.add_listener(self)
+        self._inited = True
+
+    def substitute_values(self, store: bool = False, cascade: bool = False) -> str:
         """Substitute values for each variable.
 
         Vamue can come from cockpit, simulator, button internal state or activation.
@@ -177,13 +206,23 @@ class StringWithVariable(Variable, VariableListener):
             str: [Formula string with substitutions]
         """
         text = self.formula
+
         for token in self._tokens:
             value = self.default_value
-            if token.startswith(INTERNAL_DATA_PREFIX):
+            if token == f"${{{CONFIG_KW.FORMULA.value}}}":  # ${formula} gets replaced by the result of the formula:
+                value = self.owner.get_formula_result()
+            elif token.startswith(INTERNAL_DATA_PREFIX):
                 value = self.owner.get_variable_value(token)
             elif token.startswith(INTERNAL_STATE_PREFIX):
                 value = self.owner.get_state_variable_value(token)
+
+            if value is None:
+                logger.warning(f"{token}: value is null, substitued empty string")
+                value = ""
             text = text.replace(token, str(value))
+
+        if store:
+            self.update_value(new_value=text, cascade=cascade)
         return text
 
 
@@ -222,12 +261,6 @@ class Formula(StringWithVariable):
         """we remain read-only here"""
         return self.owner._config.get(CONFIG_KW.FORMULA.value)
 
-    def compute(self):
-        """Compute new formula value and save result"""
-        value = self.execute_formula()
-        value2 = self.format_value(value)
-        self.update_value(new_value=value2, cascade=False)  # False for now
-
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
 
@@ -238,10 +271,10 @@ class Formula(StringWithVariable):
         """
         old_value = self.current_value  # kept for debug
         logger.debug(f"formula {self.display_name}: {data.name} changed, recomputing..")
-        self.compute()
+        dummy = self.execute_formula(store=True, cascade=True)
         logger.debug(f"formula {self.display_name}: ..done (new value: {self.current_value})")
 
-    def execute_formula(self):
+    def execute_formula(self, store: bool = False, cascade: bool = False):
         """replace datarefs variables with their value and execute formula.
 
         Returns:
@@ -254,6 +287,9 @@ class Formula(StringWithVariable):
         logger.debug(
             f"executeformula: value {self.display_name}: {self.formula} => {expr} => {value}",
         )
+        valuestr = self.format_value(value)
+        if store:
+            self.update_value(new_value=valuestr, cascade=cascade)
         return value
 
     def format_value(self, value) -> str:

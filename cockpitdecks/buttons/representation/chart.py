@@ -196,7 +196,7 @@ class ChartData(DrawBase, SimulatorVariableListener):
         # image (width,0) is graph(maxtime, maxvalue)
         # data is sorted in truncate
         # plot = sorted(self.data, key=lambda v: v[1])  # sort by timestamp
-        plot = self.get_variable()
+        plot = self.get_data()
         vert_pix = image.height / (self.value_max - self.value_min)  # available for plot
         vert_zero = image.height
         if self.type == "point":

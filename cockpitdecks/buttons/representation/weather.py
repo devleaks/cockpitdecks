@@ -122,25 +122,25 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
     def anim_start(self):
         super().anim_start()
         if self.has_weather():
-            logger.info("starting weather surveillance")
+            logger.info(f"starting weather surveillance ({self.button_name()})")
             self.weather_data.start()
         else:
-            logger.info(f"no weather surveillance {self.button.button_name()}")
+            logger.info(f"no weather surveillance {self.button_name()}")
 
     def anim_stop(self):
         super().anim_stop()
         if self.weather_data is not None:
-            logger.info("stopping weather surveillance")
+            logger.info(f"stopping weather surveillance ({self.button_name()})")
             self.weather_data.stop()
         else:
-            logger.info("no weather surveillance")
+            logger.info(f"no weather surveillance ({self.button_name()})")
 
     def animate(self):
         if self.has_weather():
             if not self.weather_data.is_running:
                 self.weather_data.start()
         else:
-            logger.info(f"no weather surveillance {self.button.button_name()}")
+            logger.info(f"no weather surveillance {self.button_name()}")
 
     def updated(self) -> bool:
         """Determine if cached icon reflects weather data or needs redoing"""

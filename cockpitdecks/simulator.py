@@ -234,13 +234,8 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         """Sets the value of an InternalVariable. If the data does not exist, it is created first."""
         if not Variable.is_internal_variable(path=name):
             name = Variable.internal_variable_name(path=name)
-        if cascade:
-            if not Variable.is_internal_variable(path=name):
-                e = SimulatorVariableEvent(sim=self, name=name, value=value, cascade=cascade)
-            # no cascade for internal events
-        else:  # just save the value right away, do not cascade
-            data = self.get_variable(name=name)
-            data.update_value(new_value=value, cascade=cascade)
+        data = self.get_variable(name=name)
+        data.update_value(new_value=value, cascade=cascade)
 
     def inc_internal_variable(self, name: str, amount: float, cascade: bool = False):
         """Incretement an InternalVariable
@@ -287,7 +282,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         """Removes all data from Simulator monitoring."""
         self.simulator_variable_to_monitor = {}
 
-    def add_simulator_variable_to_monitor(self, simulator_variable: dict):
+    def add_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str = None):
         """Adds supplied data to Simulator monitoring."""
         prnt = []
         for d in simulator_variable.values():
@@ -302,7 +297,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         logger.debug(f"added {prnt}")
         logger.debug(f"currently monitoring {self.simulator_variable_to_monitor}")
 
-    def remove_simulator_variable_to_monitor(self, simulator_variable):
+    def remove_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str = None):
         """Removes supplied data from Simulator monitoring."""
         prnt = []
         for d in simulator_variable.values():
@@ -364,10 +359,10 @@ class NoSimulator(Simulator):
         logger.debug(f"({kwargs})")
         return NoOperation(kwargs=kwargs)
 
-    def add_simulator_variable_to_monitor(self, simulator_variable):
+    def add_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str | None = None):
         logger.warning("NoSimulator monitors no data")
 
-    def remove_simulator_variable_to_monitor(self, simulator_variable):
+    def remove_simulators_variable_to_monitor(self, simulator_variables: dict, reason: str | None = None):
         logger.warning("NoSimulator monitors no data")
 
     def replay_event_factory(self, name: str, value):

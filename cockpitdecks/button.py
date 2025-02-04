@@ -134,6 +134,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         #
         self.dataref = config.get(CONFIG_KW.SIM_VARIABLE.value)
         self.formula = config.get(CONFIG_KW.FORMULA.value)
+
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
             self.managed = self.manager.get(CONFIG_KW.SIM_VARIABLE.value)

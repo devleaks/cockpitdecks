@@ -131,8 +131,9 @@ def xplane_homes(dirlist: str = "x-plane_install_12.txt") -> str:
 # Command-line arguments
 #
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
+parser.add_argument("--version", action="store_true", help="show version information and exit")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
-parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="alternate environment file")
+parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="start with alternate environment file")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
@@ -142,12 +143,36 @@ args = parser.parse_args()
 
 VERBOSE = args.verbose
 
+# Just show version information and exits
+#
+# Run git if available to collect to info
+last_commit = ""
+project_url = ""
+last_commit_hash = ""
+git = which("git")
+if os.path.exists(".git") and git is not None:
+    process = subprocess.Popen([git, "show", "-s", "--format=%ci"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    last_commit = "." + stdout.decode("utf-8")[:10].replace("-", "")
+    process = subprocess.Popen([git, "remote", "get-url", "origin"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    project_url = stdout.decode("utf-8")[:-1]
+    process = subprocess.Popen([git, "log", "-n", "1", '--pretty=format:"%H"'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    last_commit_hash = stdout.decode("utf-8")[1:8]
+
+if args.version:
+    # copyrights = f"{__NAME__.title()} {__version__}{last_commit} {project_url}\n{__COPYRIGHT__}\n{DESC}\n"
+    version = f"{os.path.basename(sys.argv[0])} ({project_url}) version {__version__} ({last_commit_hash})"
+    print(version)
+    sys.exit(0)
+
 # Environment File
 #
 default_environment_file = os.path.abspath(os.path.join(__file__, "..", ENVIRON_FILE))
 environ_file = default_environment_file if args.env is None else args.env[0]
 
-environment = {}
+environment = {"SIMULATOR_NAME": "NoSimulator"}
 if os.path.exists(environ_file):
     environment = Config(filename=os.path.abspath(environ_file))
     if VERBOSE:
@@ -167,6 +192,7 @@ else:
 
 if len(environment) == 0 or (type(environment) is Config and not environment.is_valid()):
     if not args.demo:
+        print("Cockpitdecks has no environment", environment)
         sys.exit(1)
     else:
         print("Cockpitdecks starting with default environment values for demo only")
@@ -355,14 +381,6 @@ environment.verbose = VERBOSE
 #
 # COCKPITDECKS STARTS HERE, REALLY
 #
-# Run git status
-last_commit = ""
-git = which("git")
-if os.path.exists(".git") and git is not None:
-    process = subprocess.Popen([git, "show", "-s", "--format=%ci"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    last_commit = "." + stdout.decode("utf-8")[:10].replace("-", "")
-
 copyrights = f"{__NAME__.title()} {__version__}{last_commit} {__COPYRIGHT__}\n{DESC}\n"
 print(copyrights)
 logger.info("Initializing Cockpitdecks..")
