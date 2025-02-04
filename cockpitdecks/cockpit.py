@@ -294,6 +294,7 @@ class CockpitStopInstruction(CockpitInstruction):
 
     def _execute(self):
         self.cockpit.terminate_all()
+        logger.warning("********** It is not possible to stop the web server. Please press CTRL-C to stop it.")
 
 
 class CockpitInfoInstruction(CockpitInstruction):

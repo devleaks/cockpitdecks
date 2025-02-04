@@ -13,7 +13,7 @@ from cockpitdecks import ICON_SIZE, now
 
 from cockpitdecks.resources.color import convert_color
 from cockpitdecks.resources.ts import TimeSerie
-from cockpitdecks.simulator import SimulatorVariable, SimulatorVariableListener
+from cockpitdecks.variable import Variable, VariableListener
 from .draw import DrawBase
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
@@ -30,7 +30,7 @@ MAX_SPARKLINES = 3
 # DYNAMIC CHARTS
 #
 #
-class ChartData(DrawBase, SimulatorVariableListener):
+class ChartData(DrawBase, VariableListener):
 
     def __init__(self, chart, config: dict) -> None:
         self.chart_config = config
@@ -82,6 +82,7 @@ class ChartData(DrawBase, SimulatorVariableListener):
         if not self.auto_update:
             for d in self.get_variables():
                 dref = self.chart.button.sim.get_variable(d)
+                print(">>>", d, dref, type(dref))
                 dref.add_listener(self)
             logger.debug(f"chart {self.name}: installed listener on {self.get_variables()}")
 
@@ -132,7 +133,10 @@ class ChartData(DrawBase, SimulatorVariableListener):
         return self.value.get_value()
         # return randint(self.value_min, self.value_max)
 
-    def simulator_variable_changed(self, data: SimulatorVariable):
+    def variable_changed(self, data: Variable):
+        if data.name not in self.datarefs:
+            logger.debug(f"chart {self.name}: {data.name} is not for me {self.datarefs}")
+            return
         r = data.value()
         if r is None:
             logger.warning(f"chart {self.name}: value is None, set to zero")
