@@ -1,21 +1,16 @@
 # Base classes for interface with the simulation software
 #
 from __future__ import annotations
-import threading
 import logging
-import re
 
 from datetime import datetime
-from typing import List, Any
+from typing import Any
 from abc import ABC, abstractmethod
-from enum import Enum
 
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
-from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_DATA_PREFIX, PATTERN_DOLCB
+from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_DATA_PREFIX
 from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation
-from cockpitdecks.resources.rpc import RPC
-from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 loggerSimdata = logging.getLogger("SimulatorVariable")
 # loggerSimdata.setLevel(SPAM_LEVEL)
@@ -436,78 +431,11 @@ class SimulatorInstruction(Instruction):
     def cockpit(self, simulator):
         self._simulator = simulator
 
-    def get_simulator_variable_value(self, simulator_variable, default=None):
-        return self._simulator.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
-
-    def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
-        """
-        Replaces ${dataref} with value of dataref in labels and execution formula.
-        @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
-        """
-        if type(message) is int or type(message) is float:  # probably formula is a constant value
-            value_str = message
-            if formatting is not None:
-                if formatting is not None:
-                    value_str = formatting.format(message)
-                    logger.debug(f"value {self.name}:received int or float, returning as is.")
-                else:
-                    value_str = str(message)
-                    logger.debug(f"value {self.name}:received int or float, returning formatted {formatting}.")
-            return value_str
-
-        dataref_names = re.findall(PATTERN_DOLCB, message)
-
-        if len(dataref_names) == 0:
-            logger.debug(f"value {self.name}:no dataref to substitute.")
-            return message
-
-        if formatting is not None:
-            if type(formatting) is list:
-                if len(dataref_names) != len(formatting):
-                    logger.warning(
-                        f"value {self.name}:number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed."
-                    )
-                    return message
-            elif type(formatting) is not str:
-                logger.warning(f"value {self.name}:single format is not a string, cannot proceed.")
-                return message
-
-        retmsg = message
-        cnt = 0
-        for dataref_name in dataref_names:
-            value = self.get_simulator_variable_value(simulator_variable=dataref_name)
-            value_str = ""
-            if formatting is not None and value is not None:
-                if type(formatting) is list:
-                    value_str = formatting[cnt].format(value)
-                elif formatting is not None and type(formatting) is str:
-                    value_str = formatting.format(value)
-            else:
-                value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
-            retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
-            logger.debug(f"substitute_dataref_values {dataref_name} = {value_str}{' (default)' if value is not None else ''}")
-            cnt = cnt + 1
-
-        more = re.findall(PATTERN_DOLCB, retmsg)  # XXXHERE
-        if len(more) > 0:
-            logger.warning(f"value {self.name}:unsubstituted dataref values {more}")
-
-        return retmsg
-
     def _check_condition(self) -> bool:
         # condition checked in each individual instruction
         if self.condition is None:
             return True
-        # Later:
-        condvalue = self._condition.value()
-        localeval = condvalue != 0
-        print(">>>>>", type(self._condition), condvalue, localeval, self._condition.formula, self._condition.get_variables())
-        expr = self.substitute_dataref_values(message=self.condition)
-        logger.debug(f"value {self.name}: {self.condition} => {expr}")
-        r = RPC(expr)
-        value = r.calculate()
-        logger.debug(f"execute_formula: value {self.name}: {self.condition} => {expr} => {value}")
-        return value != 0
+        return self._condition.value() != 0
 
     def _execute(self):
         raise NotImplementedError(f"Please implement SimulatorInstruction._execute method ({self.name})")
