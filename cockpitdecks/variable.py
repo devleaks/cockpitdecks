@@ -86,7 +86,7 @@ class Variable(ABC):
         for start in PREFIX:
             if path.startswith(start + PREFIX_SEP):
                 return False
-        return path != CONFIG_KW.FORMULA.value
+        return path != CONFIG_KW.FORMULA.value and "/" in path  # !!
 
     @staticmethod
     def is_internal_variable(path: str) -> bool:

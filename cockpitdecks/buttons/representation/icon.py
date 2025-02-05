@@ -4,11 +4,12 @@ All representations for Icon/image based.
 
 import logging
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import ImageDraw, ImageFont
 
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, has_ext, add_ext, DEFAULT_COLOR
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_FEEDBACK, DEFAULT_LABEL_POSITION
+from cockpitdecks.resources.color import convert_color, has_ext, add_ext
+from cockpitdecks import CONFIG_KW, DECK_FEEDBACK, DEFAULT_LABEL_POSITION
 from .representation import Representation
+from cockpitdecks.strvar import StringWithVariable, TextWithVariables
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -39,22 +40,9 @@ class IconBase(Representation):
         # This is leaf node in hierarchy, so we have to be careful.
         # Button addresses "feature" and if it does not exist we return DEFAULT_ATTRIBUTE_PREFIX + "feature"
         # from hierarchy.
-        self.label = self._config.get("label")
-        self.label_format = self._config.get("label-format")
-        self.label_font = button.get_attribute("label-font")
-        self.label_size = int(button.get_attribute("label-size"))
-        self.label_color = button.get_attribute("label-color")
-        self.label_color = convert_color(self.label_color)
-        self.label_position = button.get_attribute("label-position")
-        if self.label_position[0] not in "lcr" or self.label_position[1] not in "tmb":
-            if self.label_position[0] not in "lcr":
-                logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label horizontal position code {self.label_position[0]}")
-            if self.label_position[1] not in "tmb":
-                logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid label vertical position code {self.label_position[1]}")
-            self.label_position = DEFAULT_LABEL_POSITION
-            logger.warning(
-                f"button {self.button_name()}: {type(self).__name__} invalid label position code {self.label_position}, using default ({self.label_position})"
-            )
+        self._label = None
+        if self._config.get(CONFIG_KW.LABEL.value) is not None:
+            self._label = TextWithVariables(owner=button, config=self._config, prefix=CONFIG_KW.LABEL.value)
 
         self.cockpit_color = button.get_attribute("cockpit-color")
         self.cockpit_color = convert_color(self.cockpit_color)
@@ -179,23 +167,23 @@ class IconBase(Representation):
         #     pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
         #     draw.polygon(pologon, fill="orange", outline="white")
 
-        return self.overlay_text(image, "label", self._config)
+        return self.overlay_text_new(image, self._label)
 
-    def overlay_text(self, image, which_text, text_dict):
-        draw = None
-        # Add label if any
-
-        text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(text_dict, which_text)
-
-        logger.debug(f"button {self.button_name()}: text is from {which_text}: {text}")
-
-        if which_text == "label":
-            text_size = int(text_size * image.width / 72)
-
+    def overlay_text_new(self, image, text: StringWithVariable):
         if text is None:
+            logger.debug(f"button {self.button_name()}: no text to lay over")
             return image
 
-        if self.button.is_managed() and which_text == CONFIG_KW.TEXT.value:
+        logger.debug(f"button {self.button_name()}: text is from {text.prefix}: {text.message}")
+
+        message = text.get_text()
+        if message is None:
+            logger.debug(f"button {self.button_name()}: no text")
+            return image
+
+        text_size = int(text.size * image.width / 72) if text.prefix == CONFIG_KW.LABEL.value else int(text.size)
+        text_font = text.font
+        if self.button.is_managed() and text.prefix == CONFIG_KW.TEXT.value:
             txtmod = self.button.manager.get("text-modifier", "dot").lower()
             if txtmod in ["std", "standard"]:  # QNH Std
                 text_font = "AirbusFCU"  # hardcoded
@@ -207,21 +195,21 @@ class IconBase(Representation):
         w = image.width / 2
         p = "m"
         a = "center"
-        if text_position[0] == "l":
+        if text.position[0] == "l":
             w = inside
             p = "l"
             a = "left"
-        elif text_position[0] == "r":
+        elif text.position[0] == "r":
             w = image.width - inside
             p = "r"
             a = "right"
         h = image.height / 2
-        if text_position[1] == "t":
+        if text.position[1] == "t":
             h = inside + text_size / 2
-        elif text_position[1] == "b":
+        elif text.position[1] == "b":
             h = image.height - inside - text_size / 2
         # logger.debug(f"position {(w, h)}")
-        draw.multiline_text((w, h), text=text, font=font, anchor=p + "m", align=a, fill=text_color)  # (image.width / 2, 15)
+        draw.multiline_text((w, h), text=message, font=font, anchor=p + "m", align=a, fill=text.color)  # (image.width / 2, 15)
         return image
 
     def clean(self):
@@ -340,7 +328,7 @@ class Icon(IconBase):
         #     pologon = ( (c1, image.height-c1), (c1, image.height-c1-s), (c1+s, image.height-c1), ((c1, image.height-c1)) )  # lower left corner
         #     draw.polygon(pologon, fill="orange", outline="white")
 
-        return self.overlay_text(image, "label", self._config)
+        return self.overlay_text_new(image, self._label)
 
     def get_framed_icon(self):
         # We assume self.frame is a non null dict
@@ -408,11 +396,7 @@ class IconColor(IconBase):
 
 
 class IconText(IconColor):
-    """Uniform color or texture icon with text laid over.
-
-    Attributes:
-        REPRESENTATION_NAME: "text"
-    """
+    """Uniform color or texture icon with text laid over.-"""
 
     REPRESENTATION_NAME = "text"
 
@@ -425,50 +409,37 @@ class IconText(IconColor):
     }
 
     def __init__(self, button: "Button"):
-        IconColor.__init__(self, button=button)
-
-        self.bg_texture = None
-
-        text_config = self._config.get(CONFIG_KW.TEXT.value)  # where to get text from
+        text_config = button._config.get(CONFIG_KW.TEXT.value)  # where to get text from
+        # Now should be indented
+        # - index: 9
+        #   typ: push
+        #   name: ATCCLR
+        #   command: AirbusFBW/ATCCodeKeyCLR
+        #   text:    <-- text is dict()
+        #       text: CLR
+        #       text-color: white
         if type(text_config) is not dict:
             # Handle this presentation structure (legacy, text unindented)
             # - index: 9
             #   typ: push
             #   name: ATCCLR
             #   command: AirbusFBW/ATCCodeKeyCLR
-            #   text: CLR
-            #   text-font: DIN Bold
+            #   text: CLR    <-- text is not dict()
             #   text-color: white
-            #   text-size: 24
-            #   text-position: cm
-            text_config = self._config
-        self.text_config = text_config
+            text_config = button._config
 
-    @property
-    def text_config(self) -> dict:
-        return self._text_config
+        self.bg_texture = None
+        self.bg_color = None
+        self.notify = None
+        self._text = None
+        if (config := button._config.get(CONFIG_KW.TEXT.value)) is not None:
+            self._text = TextWithVariables(owner=button, config=config, prefix=CONFIG_KW.TEXT.value)
 
-    @text_config.setter
-    def text_config(self, text_config):
-        self._text_config = text_config
-        self.notify = self._text_config.get("notify")
+            self.bg_texture = self._text._config.get("text-bg-texture")
+            self.bg_color = self._text._config.get("text-bg-color")
+            self.notify = self._text._config.get("text-notify")
 
-        # init safe default
-        self.icon_color = self.cockpit_color
-        self.icon_texture = self.cockpit_texture
-
-        if self._text_config is not None:
-            self.text = str(self._text_config.get(CONFIG_KW.TEXT.value))
-
-            # Overwrite icon-* with text-bg-*
-            self.bg_color = self._text_config.get("text-bg-color")
-            if self.bg_color is not None:
-                self.icon_color = convert_color(self.bg_color)
-                self.icon_texture = None  # if there is a color, we do not use the texture, unless explicitely supplied
-
-            self.bg_texture = self._text_config.get("text-bg-texture")
-            if self.bg_texture is not None:
-                self.icon_texture = self.bg_texture
+        IconColor.__init__(self, button=button)
 
     def get_image(self):
         """
@@ -478,14 +449,15 @@ class IconText(IconColor):
         """
         image = super().get_image()
         if self.notify is not None:
-            logger.info(f"notification from {self.button.button_name()}: {self.notify} {self._text_config.get(CONFIG_KW.TEXT.value)}")
-        return self.overlay_text(image, CONFIG_KW.TEXT.value, self.text_config)
+            logger.info(f"notification from {self.button.button_name()}: {self.notify} {self._text.message}")
+        return self.overlay_text_new(image, self._text)
 
     def describe(self) -> str:
         return "The representation places an icon with optional text and label overlay."
 
 
 class MultiTexts(IconText):
+    """Same as TextIcon, except we select _text from a list (_milti_texts) based on button value."""
 
     REPRESENTATION_NAME = "multi-texts"
 
@@ -505,26 +477,31 @@ class MultiTexts(IconText):
 
     def __init__(self, button: "Button"):
         IconText.__init__(self, button=button)
-        self.multi_texts = self._config.get("multi-texts", [])
+        multi_texts = self._config.get("multi-texts", [])
+        self._multi_texts = []
+        for text in multi_texts:
+            self._multi_texts.append(TextWithVariables(owner=button, config=text, prefix=CONFIG_KW.TEXT.value))
+
+    @property
+    def num_texts(self):
+        return len(self._multi_texts)
 
     def get_variables(self) -> set:
         datarefs = set()
-        for text in self.multi_texts:
-            drefs = self.button.scan_variables(text)
+        for text in self._multi_texts:
+            drefs = text.get_variables()
             if len(drefs) > 0:
                 datarefs = datarefs | drefs
         return datarefs
 
     def is_valid(self):
-        if self.multi_texts is None:
+        if self._multi_texts is None:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
             return False
-        if len(self.multi_texts) == 0:
+        if self.num_texts == 0:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
+            return False
         return super().is_valid()
-
-    def num_texts(self):
-        return len(self.multi_texts)
 
     def render(self):
         value = self.get_button_value()
@@ -536,19 +513,16 @@ class MultiTexts(IconText):
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
             return None
-        if self.num_texts() > 0:
-            if value >= 0 and value < self.num_texts():
-                self.text_config = self.multi_texts[value]
-            else:
-                self.text_config = self.multi_texts[value % self.num_texts()]
+        if self.num_texts > 0:
+            self._text = self._multi_texts[value % self.num_texts]
             return super().render()
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts()}")
+            logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts}")
         return None
 
     def describe(self) -> str:
         return "\n\r".join(
-            [f"The representation produces an icon with text, text is selected from a list of {len(self.multi_texts)} texts bsaed on the button's value."]
+            [f"The representation produces an icon with text, text is selected from a list of {self.num_texts} texts bsaed on the button's value."]
         )
 
 

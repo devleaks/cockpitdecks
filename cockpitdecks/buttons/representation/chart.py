@@ -190,12 +190,6 @@ class ChartData(DrawBase, VariableListener):
         time_pix = image.width / self.time_width
         time_left = now().timestamp()
 
-        # data, data_format, data_font, data_color, data_size, data_position = self.get_text_detail(self.chart, "data")
-        # data_color = "white"
-        # data_font = "D-DIN"
-        # data_size = 32
-        # font = self.get_font(data_font, data_size)
-
         # image (0, height) is graph (0,0)
         # image (width,0) is graph(maxtime, maxvalue)
         # data is sorted in truncate

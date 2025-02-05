@@ -18,6 +18,7 @@ from .buttons.activation import ACTIVATION_VALUE, ActivationValueProvider
 from .buttons.representation import Annunciator
 from .variable import ValueProvider, InternalVariable, VariableListener
 from .simulator import SimulatorVariable, SimulatorVariableValueProvider
+from .strvar import Formula
 from .value import Value
 from .instruction import Instruction
 
@@ -581,6 +582,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             return self._activation.get_activation_value()
         return None
 
+    def get_formula_result(self) -> str:
+        """Returns the result of the formula of this button"""
+        if self._value.has_formula:
+            return self._value._formula.current_value
+        return None
+
     # ##################################
     # Value substitution
     #
@@ -658,7 +665,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable):
+        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable) and not isinstance(data, Formula):
             logger.error(f"button {self.name}: not a simulator or internal variable ({type(data).__name__})")
             return
         logger.debug(f"{self.name}: {data.name} changed")
