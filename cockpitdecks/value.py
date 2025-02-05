@@ -1,12 +1,9 @@
-from __future__ import annotations
-
-from abc import abstractmethod
-from typing import Tuple
 import logging
 import re
 import math
+from typing import Tuple
 
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
+# from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cockpitdecks import CONFIG_KW
 from cockpitdecks.variable import InternalVariable, ValueProvider, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
@@ -59,6 +56,7 @@ class Value:
         self._formula: Formula | None = None
 
         self.init()
+        print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
 
     def init(self):
         self._string_simulator_variable = self.string_datarefs
@@ -82,7 +80,7 @@ class Value:
         if self.has_formula:
             formula = self.get_formula()
             self._formula = Formula(owner=self._provider, formula=formula)
-            # print(">>>", self._formula, self._formula.get_variables(), self._formula.value())
+            self._formula.add_listener(self._provider)
 
         if not self.has_domain:
             return
@@ -99,22 +97,6 @@ class Value:
                 logger.warning(f"value domain mismatch: value count {self.value_count} != {cnt}")
         elif self.value_count is not None and self.value_count > 0:
             self.value_inc = (self.value_max - self.value_min) / self.value_count
-
-    def get_simulator_variable_value(self, simulator_variable, default=None):
-        if isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator):
-            return self._provider.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
-        return None
-
-    def get_state_variable_value(self, state):
-        if hasattr(self._provider, "get_state_variable_value"):
-            # if isinstance(self._provider, StateVariableValueProvider):
-            return self._provider.get_state_variable_value(state)
-        return None
-
-    def get_activation_value(self):
-        if isinstance(self._provider, ActivationValueProvider):
-            return self._button.get_activation_value()
-        return None
 
     @property
     def dataref(self) -> str | None:
@@ -163,6 +145,9 @@ class Value:
         self._simulator_variable = self._simulator_variable | datarefs
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
+    # ##################################
+    # Constituing Variables
+    #
     def get_variables(self) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
@@ -255,80 +240,56 @@ class Value:
 
         return r
 
-    # def deepscan(base: dict | CommentedMap | CommentedSeq) -> set:
-    #     # Highly ruamel.yaml specific procedure to scan
-    #     # all dataref in yaml-loaded structure.
-    #     # Returns a list of all ${} elements.
-    #     #
-    #     r = set()
+    # ##################################
+    # Formula Execution
+    #
+    def get_formula(self) -> str | None:
+        # 1. Formula directly in supplied config
+        if self.formula is not None and self.formula != "":
+            logger.debug(f"value {self.name}: has formula {self.formula}")
+            return self.formula
+        # # 2. formula in the provider, if the provider's represntation is not an Annunciator
+        # #    DOCUMENT WHY!! @todo
+        # if (
+        #     hasattr(self._provider, "formula")
+        #     and self._provider.formula is not None
+        #     and self._provider.formula != ""
+        #     and hasattr(self._provider, "_representation")
+        #     and type(self._provider._representation).__name__ != "Annunciator"
+        # ):
+        #     logger.debug(f"value {self.name}: provider has formula {self._provider.formula}")
+        #     return self._provider.formula
+        return None
 
-    #     # Direct use of datarefs:
-    #     #
-    #     # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
-    #     for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
-    #         dataref = base.get(attribute)
-    #         if dataref is not None:
-    #             r.add(dataref)
-
-    #     # 1.2 List of datarefs in attributes
-    #     for attribute in [CONFIG_KW.SIM_DATA.value, CONFIG_KW.SIM_DATA.value]:
-    #         datarefs = base.get(attribute)
-    #         if datarefs is not None:
-    #             r = r | set(datarefs)
-
-    #     # 2. In string datarefs (formula, text, etc.)
-    #     #    Crawl down in dict attribute values
-    #     for key, value in base.items():
-    #         if type(value) is str and value != "":
-    #             r = r | set(re.findall(PATTERN_DOLCB, value))
-    #         elif type(value) is dict:
-    #             r = r | deepscan(value)
-    #         elif type(value) is list:
-    #             for v in value:
-    #                 r = r | deepscan(v)
-    #         elif type(value) is CommentedMap:
-    #             t = {k: v for k, v in value.items()}
-    #             r = r | deepscan(t)
-    #         elif type(value) is CommentedSeq:
-    #             for v in enumerate(value):
-    #                 v1 = v[1]
-    #                 if type(v1) is str and v1 != "":
-    #                     r = r | set(re.findall(PATTERN_DOLCB, v1))
-    #                 elif type(v1) is dict:
-    #                     r = r | deepscan(v[1])
-    #                 elif type(v1) is CommentedMap:
-    #                     t = {k: v for k, v in v1.items()}
-    #                     r = r | deepscan(t)
-    #                 else:
-    #                     logger.warning("unprocessed: {v}, {type(v1)}, {v1}")
-
-    #     if "formula" in r:  # label or text may contain like ${{CONFIG_KW.FORMULA.value}}, but {CONFIG_KW.FORMULA.value} is not a dataref.
-    #         r.remove("formula")
-    #     if None in r:
-    #         r.remove(None)
-
-    #     return r
+    def execute_formula(self, formula, default: float = 0.0) -> float:
+        """
+        replace datarefs variables with their (numeric) value and execute formula.
+        Returns formula result.
+        """
+        expr = self.substitute_values(text=formula, default=str(default))
+        logger.debug(f"value {self.name}: {formula} => {expr}")
+        r = RPC(expr)
+        value = r.calculate()
+        logger.debug(f"execute_formula: value {self.name}: {formula} => {expr} => {value}")
+        return value
 
     # ##################################
     # Formula value substitution
     #
-    def get_formula(self, base: dict | None = None) -> str | None:
-        if base is not None:
-            formula = base.get(CONFIG_KW.FORMULA.value)
-            if formula is not None and formula != "":
-                return formula
-        if self.formula is not None and self.formula != "":
-            logger.debug(f"value {self.name}: has formula {self.formula}")
-            return self.formula
-        if (
-            hasattr(self._provider, "formula")
-            and self._provider.formula is not None
-            and self._provider.formula != ""
-            and hasattr(self._provider, "_representation")
-            and type(self._provider._representation).__name__ != "Annunciator"
-        ):
-            logger.debug(f"value {self.name}: provider has formula {self._provider.formula}")
-            return self._provider.formula
+    def get_simulator_variable_value(self, simulator_variable, default=None):
+        if isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator):
+            return self._provider.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
+        return None
+
+    def get_state_variable_value(self, state):
+        if hasattr(self._provider, "get_state_variable_value"):
+            # if isinstance(self._provider, StateVariableValueProvider):
+            return self._provider.get_state_variable_value(state)
+        return None
+
+    def get_activation_value(self):
+        if isinstance(self._provider, ActivationValueProvider):
+            return self._button.get_activation_value()
         return None
 
     def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
@@ -412,26 +373,6 @@ class Value:
             logger.warning(f"value {self.name}:unsubstituted status values {more}")
         return txtcpy
 
-    # def substitute_button_values(self, text, default: str = "0.0", formatting=None):
-    #     # Experimental, do not use
-    #     txtcpy = text
-    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-    #     if len(more) > 0:
-    #         for m in more:
-    #             v = self.deck.cockpit.get_button_value(m)  # starts at the top
-    #             if v is None:
-    #                 logger.warning(f"value {self.name}:{m} has no value")
-    #                 v = str(default)
-    #             else:
-    #                 v = str(v)  # @todo: later: use formatting
-    #             m_str = f"${{button:{m}}}"  # "${formula}"
-    #             txtcpy = txtcpy.replace(m_str, v)
-    #             logger.debug(f"value {self.name}:replaced {m_str} by {str(v)}. ({m})")
-    #     more = re.findall("\\${button:([^\\}]+?)}", txtcpy)
-    #     if len(more) > 0:
-    #         logger.warning(f"value {self.name}:unsubstituted button values {more}")
-    #     return txtcpy
-
     def substitute_values(self, text, default: str = "0.0", formatting=None):
         logger.debug(f"substitute_values: {self._button.name}: value {self.name}: processing '{text}'..")
         if type(text) is not str or "$" not in text:  # no ${..} to stubstitute
@@ -453,76 +394,69 @@ class Value:
         return step3
 
     # ##################################
-    # Formula Execution
-    #
-    def execute_formula(self, formula, default: float = 0.0):
-        """
-        replace datarefs variables with their (numeric) value and execute formula.
-        Returns formula result.
-        """
-        expr = self.substitute_values(text=formula, default=str(default))
-        logger.debug(f"value {self.name}: {formula} => {expr}")
-        r = RPC(expr)
-        value = r.calculate()
-        logger.debug(f"execute_formula: value {self.name}: {formula} => {expr} => {value}")
-        return value
-
-    # ##################################
     # Text substitution
     #
     def get_text_detail(self, config, which_text):
-        DEFAULT_VALID_TEXT_POSITION = "cm"
+        # Utility Function
+        def get_text_detail(button, config, which_text) -> tuple:
+            """Returnr format, font, color, size, position attributes
+            Returns:
+                tuple: [attribute values]
+            """
+            DEFAULT_VALID_TEXT_POSITION = "cm"
+
+            text_text = config.get(which_text)
+            text_format = config.get(f"{which_text}-format")
+
+            dflt_system_font = button.get_attribute("system-font")
+            if dflt_system_font is None:
+                logger.error(f"button {button.name}: no system font")
+
+            dflt_text_font = button.get_attribute(f"{which_text}-font")
+            if dflt_text_font is None:
+                dflt_text_font = button.get_attribute("label-font")
+                if dflt_text_font is None:
+                    logger.warning(f"button {button.name}: no default label font, using system font")
+                    dflt_text_font = dflt_system_font
+
+            text_font = config.get(f"{which_text}-font", dflt_text_font)
+
+            dflt_text_size = button.get_attribute(f"{which_text}-size")
+            if dflt_text_size is None:
+                dflt_text_size = button.get_attribute("label-size")
+                if dflt_text_size is None:
+                    dflt_text_size = 16
+                    logger.warning(f"button {button.name}: no default label size, using {dflt_text_size}px")
+            text_size = config.get(f"{which_text}-size", dflt_text_size)
+
+            dflt_text_color = button.get_attribute(f"{which_text}-color")
+            if dflt_text_color is None:
+                dflt_text_color = button.get_attribute("label-color")
+                if dflt_text_color is None:
+                    dflt_text_color = DEFAULT_COLOR
+                    logger.warning(f"button {button.name}: no default label color, using {dflt_text_color}")
+            text_color = config.get(f"{which_text}-color", dflt_text_color)
+            text_color = convert_color(text_color)
+
+            dflt_text_position = button.get_attribute(f"{which_text}-position")
+            if dflt_text_position is None:
+                dflt_text_position = button.get_attribute("label-position")
+                if dflt_text_position is None:
+                    dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
+                    logger.warning(f"button {button.name}: no default label position, using {dflt_text_position}")
+            text_position = config.get(f"{which_text}-position", dflt_text_position)
+            if text_position[0] not in "lcr":
+                text_position = DEFAULT_VALID_TEXT_POSITION
+                logger.warning(f"button {button.name}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
+            if text_position[1] not in "tmb":
+                text_position = DEFAULT_VALID_TEXT_POSITION
+                logger.warning(f"button {button.name}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
+
+            return text_text, text_format, text_font, text_color, text_size, text_position
+
+        text_text, text_format, text_font, text_color, text_size, text_position = get_text_detail(button=self._button, config=config, which_text=which_text)
 
         text = self.get_text(config, which_text)
-        text_format = config.get(f"{which_text}-format")
-        page = self._button.page
-
-        dflt_system_font = self._button.get_attribute(f"system-font")
-        if dflt_system_font is None:
-            logger.error(f"button {self._button.name}: no system font")
-
-        dflt_text_font = self._button.get_attribute(f"{which_text}-font")
-        if dflt_text_font is None:
-            dflt_text_font = self._button.get_attribute("label-font")
-            if dflt_text_font is None:
-                logger.warning(f"button {self._button.name}: no default label font, using system font")
-                dflt_text_font = dflt_system_font
-
-        text_font = config.get(f"{which_text}-font", dflt_text_font)
-
-        dflt_text_size = self._button.get_attribute(f"{which_text}-size")
-        if dflt_text_size is None:
-            dflt_text_size = self._button.get_attribute("label-size")
-            if dflt_text_size is None:
-                dflt_text_size = 16
-                logger.warning(f"button {self._button.name}: no default label size, using {dflt_text_size}px")
-        text_size = config.get(f"{which_text}-size", dflt_text_size)
-
-        dflt_text_color = self._button.get_attribute(f"{which_text}-color")
-        if dflt_text_color is None:
-            dflt_text_color = self._button.get_attribute("label-color")
-            if dflt_text_color is None:
-                dflt_text_color = DEFAULT_COLOR
-                logger.warning(f"button {self._button.name}: no default label color, using {dflt_text_color}")
-        text_color = config.get(f"{which_text}-color", dflt_text_color)
-        text_color = convert_color(text_color)
-
-        dflt_text_position = self._button.get_attribute(f"{which_text}-position")
-        if dflt_text_position is None:
-            dflt_text_position = self._button.get_attribute("label-position")
-            if dflt_text_position is None:
-                dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
-                logger.warning(f"button {self._button.name}: no default label position, using {dflt_text_position}")
-        text_position = config.get(f"{which_text}-position", dflt_text_position)
-        if text_position[0] not in "lcr":
-            text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(f"button {self._button.name}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
-        if text_position[1] not in "tmb":
-            text_position = DEFAULT_VALID_TEXT_POSITION
-            logger.warning(f"button {self._button.name}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
-
-        # print(f">>>> {self._button.get_id()}:{which_text}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
-
         if text is not None and not isinstance(text, str):
             logger.warning(f"button {self._button.name}: converting text {text} to string (type {type(text)})")
             text = str(text)
@@ -563,8 +497,9 @@ class Value:
             res = ""
             if self.has_formula:
                 res = self._formula.value()
-                if res != "":  # Format output if format present
+                if res is not None and res != "":  # Format output if format present
                     if text_format is not None:
+                        res = float(res)
                         logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                         res = text_format.format(res)
                     else:
@@ -595,7 +530,6 @@ class Value:
                 logger.debug(f"value {val} out of domain max, set to {self.value_max}")
                 return self.value_max
             return val
-
 
         # 1. If there is a formula, value comes from it
         if self.has_formula:
