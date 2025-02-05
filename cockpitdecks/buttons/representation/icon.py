@@ -532,7 +532,7 @@ class MultiTexts(IconText):
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
             return None
         if type(value) in [str, int, float]:
-            value = int(value)
+            value = int(float(value))  # int('1.0') does not work
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
             return None

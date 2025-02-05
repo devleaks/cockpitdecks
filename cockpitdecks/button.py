@@ -179,7 +179,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if self.wallpaper is not None:
             self._def.set_block_wallpaper(self.wallpaper)
 
-
         # Initialize value providers
         SimulatorVariableValueProvider.__init__(self, name=self.name, simulator=self.sim)
         StateVariableValueProvider.__init__(self, name=self.name, button=self)

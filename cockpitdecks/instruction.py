@@ -42,7 +42,7 @@ class Instruction(ABC):
         if self.condition is not None:
             if "${" in self.condition:
                 self._condition = Formula(owner=self.performer, formula=self.condition)
-            else: # we assume the confition is a single dataref, we enclose it in ${} to make it a formula
+            else:  # we assume the confition is a single dataref, we enclose it in ${} to make it a formula
                 self._condition = Formula(owner=self.performer, formula=f"${{{self.condition}}}")
 
     @classmethod
