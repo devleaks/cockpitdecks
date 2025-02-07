@@ -11,7 +11,7 @@ from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider
 from cockpitdecks import CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -234,11 +234,11 @@ class Activation:
     def done(self):
         if self._activate_start is not None:
             self._activation_completed = self._activation_completed + 1
-            self.inc(INTERNAL_DATAREF.ACTIVATION_COMPLETED.value)
+            self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COMPLETED.value)
 
             duration = datetime.now() - self._activate_start
             self._total_duration = self._total_duration + duration
-            self.inc(INTERNAL_DATAREF.ACTIVATION_DURATION.value, duration)
+            self.inc(COCKPITDECKS_INTVAR.ACTIVATION_DURATION.value, duration)
 
     def is_pressed(self):
         return self.pressed
@@ -276,7 +276,7 @@ class Activation:
     #
     @property
     def activation_count(self):
-        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ACTIVATION_COUNT.value])
+        path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value])
         dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
@@ -304,7 +304,7 @@ class Activation:
         if event.pressed:
             self.pressed = True
             self.skip_view = True  # we only trigger the view on release
-            self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)
+            self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value)
 
             now = datetime.now().timestamp()
             self.last_activated = now
@@ -325,7 +325,7 @@ class Activation:
         else:
             self.pressed = False
             self.duration = datetime.now().timestamp() - self.last_activated
-            self.inc(INTERNAL_DATAREF.ACTIVATION_RELEASE.value)
+            self.inc(COCKPITDECKS_INTVAR.ACTIVATION_RELEASE.value)
 
             # Guard handling
             self._guard_changed = False

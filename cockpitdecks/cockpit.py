@@ -71,8 +71,8 @@ from cockpitdecks import (
 )
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
-from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
+from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
 from cockpitdecks.instruction import Instruction, InstructionFactory
 from cockpitdecks.observable import Observables
@@ -744,7 +744,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     def get_variable(self, name: str, factory: VariableFactory, is_string: bool = False) -> Variable:
         """Returns data or create a new one, internal if path requires it"""
         if self.variable_database.exists(name):
-            return self.variable_database.get(name)
+            var = self.variable_database.get(name)
+            if var is not None and var.is_string != is_string:
+                logger.warning(f"varaible {name} has wrong type {var.data_type} vs. ={is_string}")
+                if is_string:
+                    var.data_type = InternalVariableType.STRING
+                    logger.warning(f"variable {name} type forced to string" + " *" * 10)
         return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string))
 
     def get_variable_value(self, name, default=None) -> Any | None:
@@ -1448,7 +1453,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
     def reload_pages(self):
         with self.reload_operation:
             logger.info("reloading pages..")
-            self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
+            self.inc(COCKPITDECKS_INTVAR.COCKPITDECK_RELOADS.value)
             for name, deck in self.decks.items():
                 deck.reload_page()
             logger.info("..reloaded")
@@ -1564,6 +1569,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
 
     def event_loop(self):
         logger.debug("starting event loop..")
+        last_ts = 0
 
         while self.event_loop_run:
             e = self.event_queue.get()  # blocks infinitely here

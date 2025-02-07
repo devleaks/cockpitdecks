@@ -111,9 +111,6 @@ class Representation:
     def get_state_variables(self) -> dict:
         return {}
 
-    def get_text_detail(self, config, which_text):
-        return self.button.get_text_detail(config, which_text)
-
     def inspect(self, what: str | None = None):
         logger.info(f"{type(self).__name__}:")
         logger.info(f"{self.is_valid()}")

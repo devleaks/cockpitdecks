@@ -16,16 +16,18 @@ from cockpitdecks.variable import Variable, VariableListener, PATTERN_DOLCB
 
 from .resources.rpc import RPC
 from .resources.color import DEFAULT_COLOR, convert_color
-from .resources.iconfonts import ICON_FONTS
+from .resources.iconfonts import ICON_FONTS, get_special_character
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
+# Name spaces for UUID
+# Name of var is hash from buttton_name() and raw string in proper domain
 MESSAGE_NS = uuid.uuid4()
 FORMULA_NS = uuid.uuid4()
 
 
-class StringWithVariable(Variable, VariableListener):
+class StringWithVariables(Variable, VariableListener):
     """A string with variables to be substitued in it.
     text: ${sim/view/weather/pressure_hpa} hPa
     Variables can include internal variables, simulator variables,
@@ -37,12 +39,12 @@ class StringWithVariable(Variable, VariableListener):
         "...": Assumed to be a simulator variable.
     """
 
-    def __init__(self, owner, message: str, name: str | None = None):
+    def __init__(self, owner, message: str, name: str | None = None, data_type: str = "string"):
         self._inited = False
         if name is None:
             key = uuid.uuid3(namespace=MESSAGE_NS, name=str(message))
             name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
-        Variable.__init__(self, name=name, data_type="string")
+        Variable.__init__(self, name=name, data_type=data_type)
         self.owner = owner
         self.message = message if message is not None else ""
 
@@ -55,16 +57,20 @@ class StringWithVariable(Variable, VariableListener):
         self.is_static = True
 
         self.init()
-        if not isinstance(self, Formula):
-            print("+++++ CREATED STRING", self.name, self.owner.name, message, self.get_variables())
-            if message is None:
-                traceback.print_stack()
+        # if not isinstance(self, Formula):
+        #     print("+++++ CREATED STRING", self.name, self.owner.name, message, self.get_variables())
+        # if message is None:
+        #     logger.warning(f"message {self.display_name}: no message")
+
+    @staticmethod
+    def mk_uuid(message: str):
+        return uuid.uuid3(namespace=MESSAGE_NS, name=str(message))
 
     def init(self):
         self._variables = self.get_variables()
         if len(self._variables) > 0:
             self.is_static = False
-            logger.debug(f"message {self.display_name}: using variables {', '.join(self._tokens.values())}")
+            logger.debug(f"message {self.display_name}: using variables {', '.join(self._tokens.keys())}/{self._variables}")
             for varname in self._tokens.values():
                 v = self.owner.get_variable(varname)
                 v.add_listener(self)
@@ -94,11 +100,10 @@ class StringWithVariable(Variable, VariableListener):
             [type]: [value from internam variable]
         """
         if hasattr(self.owner, "get_internal_variable_value"):
-            if Variable.is_state_variable(internal_variable):
-                internal_variable = Variable.state_variable_root_name(internal_variable)
-            value = self.owner.get_internal_variable_value(internal_variable=internal_variable, default=default)
-            logger.debug(f"{internal_variable} = {value}")
-            return value
+            if Variable.is_internal_variable(internal_variable):
+                value = self.owner.get_internal_variable_value(internal_variable=internal_variable, default=default)
+                logger.debug(f"{internal_variable} = {value}")
+                return value
         logger.warning(f"formula {self.display_name}: no get_internal_variable_value for {internal_variable}")
         return None
 
@@ -112,7 +117,7 @@ class StringWithVariable(Variable, VariableListener):
         """
         if hasattr(self.owner, "get_simulator_variable_value"):
             value = self.owner.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
-            logger.debug(f"{simulator_variable} = {value}")
+            logger.debug(f"{simulator_variable} = {value} (owner={self.owner.name}, {type(self.owner)})")
             return value
         logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
         return None
@@ -157,7 +162,7 @@ class StringWithVariable(Variable, VariableListener):
             str: retult value as string from formula evaluation
         """
         if hasattr(self.owner, "get_formula_result"):
-            logger.debug(f"button {self.owner.name}: owner formula result: {self.owner.get_formula_result()}")
+            logger.debug(f"variable {self.display_name}: owner formula result: {self.owner.get_formula_result()}")
             return self.owner.get_formula_result()
         logger.warning(f"formula {self.display_name}: no get_formula_result (owner={type(self.owner)} {self.owner.name})")
         return default
@@ -170,7 +175,7 @@ class StringWithVariable(Variable, VariableListener):
         Args:
             data (Variable): [variable that has changed]
         """
-        print(">>>>> CHANGED", self.display_name, data.name, data.current_value)
+        # print(">>>>> CHANGED", self.display_name, data.name, data.current_value)
         old_value = self.current_value  # kept for debug
         logger.debug(f"string-with-variable {self.display_name}: {data.name} changed, reevaluating..")
         dummy = self.substitute_values(store=True, cascade=True)
@@ -217,6 +222,9 @@ class StringWithVariable(Variable, VariableListener):
         #         formula: ${sim/pressure} 33.28 *
         tokens = re.findall(PATTERN_DOLCB, self.message)
         for varname in tokens:
+            if Variable.is_icon(varname):
+                logger.debug(f"{varname} is an icon, ignorings")
+                continue
             self._variables.add(varname)
             if Variable.is_state_variable(varname):
                 self._has_state_vars = True
@@ -239,6 +247,7 @@ class StringWithVariable(Variable, VariableListener):
         if text is None:
             text = self.message
 
+        # If there is a icon font has the main font, the whole string is formatted with that font
         if hasattr(self, "font"):  # must be a string with font specified so we know where to look for correspondance
             for k, v in ICON_FONTS.items():
                 font = getattr(self, "font", "")
@@ -248,7 +257,7 @@ class StringWithVariable(Variable, VariableListener):
                     for i in icons:
                         if i in v[1].keys():
                             text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                            logger.debug(f"button {self.owner.name}: substituing font icon {i}")
+                            logger.debug(f"variable {self.display_name}: substituing font icon {i}")
 
         for token in self._tokens:
             value = default
@@ -266,11 +275,18 @@ class StringWithVariable(Variable, VariableListener):
             if value is None:
                 value = default
                 logger.warning(f"{token}: value is null, substitued {value}")
+            elif formatting is not None:
+                if type(value) in [int, float]:  # probably formula is a constant value
+                    value_str = formatting.format(value)
+                    logger.debug(f"variable {self.display_name}: formatted {formatting}:  {value_str}")
+                    value = value_str
+                else:
+                    logger.warning(f"variable {self.display_name}: has format string '{formatting}' but value is not a number '{value}'")
 
             logger.debug(f"{self.owner} ({type(self.owner)}): {varname}: value {value}")
-            print("BEFORE", text, token, str(value))
+            # print("BEFORE", text, token, str(value))
             text = text.replace(token, str(value))
-            print("AFTER", text)
+            # print("AFTER", text)
 
         if store:
             self.update_value(new_value=text, cascade=cascade)
@@ -278,15 +294,19 @@ class StringWithVariable(Variable, VariableListener):
         return text
 
 
-class Formula(StringWithVariable):
+class Formula(StringWithVariables):
     """A Formula is a typed value made of one or more Variables.
 
     A Formula can be a simple Variable or an expression that combines several variables.
-    The formula is a StringWithVariables but in addition, the string after substitutions
+    The formula is a StringWithVariabless but in addition, the string after substitutions
     can be evaluated as a Reverse Polish Notation expression.
     The result of the expression is the value of the formula.
     The value can be formatted to a string expression.
     """
+
+    @staticmethod
+    def mk_uuid(message: str):
+        return uuid.uuid3(namespace=FORMULA_NS, name=str(message))
 
     def __init__(self, owner, formula: str, data_type: str = "float", default_value=0.0, format_str: str | None = None):
         key = ""
@@ -298,28 +318,24 @@ class Formula(StringWithVariable):
         else:
             key = uuid.uuid3(namespace=FORMULA_NS, name=str(formula))
         name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
-        StringWithVariable.__init__(self, owner=owner, message=formula)
+        StringWithVariables.__init__(self, owner=owner, message=formula, data_type=data_type, name=name)
+
         self.default_value = default_value
         self.format_str = format_str
-        self.owner = owner
-
-        # Used in formula
-        self._tokens = {}  # "${path}": path
-        self._variables = None
-        self.init()
-        print("+++++ CREATED FORMULA", self.name, self.owner.name, formula, self.get_variables())
+        # print("+++++ CREATED FORMULA", self.name, self.owner.name, formula, self.get_variables())
 
     @property
     def formula(self):
-        """we remain read-only here"""
-        # if hasattr(self.owner, "_config"):
-        #     return self.owner._config.get(CONFIG_KW.FORMULA.value)
+        # alias
         return self.message
 
     def value(self):
         if self._has_state_vars:
             return self.execute_formula(store=True, cascade=True)
         return super().value()
+
+    def get_formatted_value(self) -> str:
+        return self.format_value(self.value())
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
@@ -329,10 +345,10 @@ class Formula(StringWithVariable):
         Args:
             data (Variable): [variable that has changed]
         """
-        print(">>>>> CHANGED", self.display_name, data.name, data.current_value)
+        # print(">>>>> CHANGED", self.display_name, data.name, data.current_value)
         old_value = self.current_value  # kept for debug
         logger.debug(f"formula {self.display_name}: {data.name} changed, recomputing..")
-        dummy = self.execute_formula(store=True, cascade=True)
+        new_value = self.execute_formula(store=True, cascade=True)
         logger.debug(f"formula {self.display_name}: ..done (new value: {self.current_value})")
 
     def execute_formula(self, store: bool = False, cascade: bool = False):
@@ -347,7 +363,7 @@ class Formula(StringWithVariable):
         value = r.calculate()
         logger.debug(f"value {self.display_name}: {self.formula} => {expr} => {value}")
         valueout = value
-        print(">>>>> NEW VALUE", self.display_name, self.message, " ==> ", valueout)
+        # print(">>>>> NEW VALUE", self.display_name, self.message, " ==> ", valueout)
         if self.is_string:
             valueout = self.format_value(value)
         if store:
@@ -387,8 +403,13 @@ class Formula(StringWithVariable):
 # handles variable and formula result substitutions, replacement, handling, etc.
 # Above, prefix is "text"
 #
-class TextWithVariables(StringWithVariable):
-    """A StringWithVariables that can be used in representation."""
+class TextWithVariables(StringWithVariables):
+    """A StringWithVariabless that can be used in representation.
+
+    In addition to its text string with variables that are substitued, a TextWithVariables
+    is made from a configuration block with font, size, color, etc.
+
+    """
 
     def __init__(self, owner, config: dict, prefix: str = CONFIG_KW.LABEL.value):
         self._config = config
@@ -412,36 +433,42 @@ class TextWithVariables(StringWithVariable):
         formula = config.get(CONFIG_KW.FORMULA.value)
         if formula is not None:
             self._formula = Formula(owner=owner, formula=formula)
-            print(">>>>> has a local formula")
 
         message = config.get(prefix)
-        StringWithVariable.__init__(self, owner=owner, message=message)
-        self.init()
+        StringWithVariables.__init__(self, owner=owner, message=message) # will call init()
 
     def get_variables(self) -> set:
         ret = super().get_variables()
         if self._formula is not None:
             ret = ret | self._formula.get_variables()
+        # remove ${formula}
         if CONFIG_KW.FORMULA.value in ret:
             ret.remove(CONFIG_KW.FORMULA.value)
         return ret
+
+    @property
+    def display_name(self):
+        s = super().display_name
+        return s + "/" + self.prefix
 
     # ##################################
     # Text substitution
     #
     def init(self):
+        super().init()
+
         DEFAULT_VALID_TEXT_POSITION = "cm"
         self.format = self._config.get(f"{self.prefix}-format")
 
         dflt_system_font = self.owner.get_attribute("system-font")
         if dflt_system_font is None:
-            logger.error(f"button {self.owner.name}: no system font")
+            logger.error(f"variable {self.display_name}: no system font")
 
         dflt_text_font = self.owner.get_attribute(f"{self.prefix}-font")
         if dflt_text_font is None:
             dflt_text_font = self.owner.get_attribute("label-font")
             if dflt_text_font is None:
-                logger.warning(f"button {self.owner.name}: no default label font, using system font")
+                logger.warning(f"variable {self.display_name}: no default label font, using system font")
                 dflt_text_font = dflt_system_font
 
         self.font = self._config.get(f"{self.prefix}-font", dflt_text_font)
@@ -451,7 +478,7 @@ class TextWithVariables(StringWithVariable):
             dflt_text_size = self.owner.get_attribute("label-size")
             if dflt_text_size is None:
                 dflt_text_size = 16
-                logger.warning(f"button {self.owner.name}: no default label size, using {dflt_text_size}px")
+                logger.warning(f"variable {self.display_name}: no default label size, using {dflt_text_size}px")
         self.size = self._config.get(f"{self.prefix}-size", dflt_text_size)
 
         dflt_text_color = self.owner.get_attribute(f"{self.prefix}-color")
@@ -459,7 +486,7 @@ class TextWithVariables(StringWithVariable):
             dflt_text_color = self.owner.get_attribute("label-color")
             if dflt_text_color is None:
                 dflt_text_color = DEFAULT_COLOR
-                logger.warning(f"button {self.owner.name}: no default label color, using {dflt_text_color}")
+                logger.warning(f"variable {self.display_name}: no default label color, using {dflt_text_color}")
         self.color = self._config.get(f"{self.prefix}-color", dflt_text_color)
         self.color = convert_color(self.color)
 
@@ -468,21 +495,21 @@ class TextWithVariables(StringWithVariable):
             dflt_text_position = self.owner.get_attribute("label-position")
             if dflt_text_position is None:
                 dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
-                logger.warning(f"button {self.owner.name}: no default label position, using {dflt_text_position}")
+                logger.warning(f"variable {self.display_name}: no default label position, using {dflt_text_position}")
         self.position = self._config.get(f"{self.prefix}-position", dflt_text_position)
         if self.position[0] not in "lcr":
             invalid = self.position[0]
             self.position = DEFAULT_VALID_TEXT_POSITION[0] + self.position[1:]
-            logger.warning(f"button {self.owner.name}: {type(self).__name__}: invalid horizontal label position code {invalid}, using default")
+            logger.warning(f"variable {self.display_name}: {type(self).__name__}: invalid horizontal label position code {invalid}, using default")
         if self.position[1] not in "tmb":
             invalid = self.position[1]
             self.position = self.position[0] + DEFAULT_VALID_TEXT_POSITION[1] + (self.position[2:] if len(self.position) > 2 else "")
-            logger.warning(f"button {self.owner.name}: {type(self).__name__}: invalid vertical label position code {invalid}, using default")
+            logger.warning(f"variable {self.display_name}: {type(self).__name__}: invalid vertical label position code {invalid}, using default")
 
         # print(f">>>> {self.owner.get_id()}:{self.prefix}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
 
         if self.message is not None and not isinstance(self.message, str):
-            logger.warning(f"button {self.owner.name}: converting text {self.message} to string (type {type(self.message)})")
+            logger.warning(f"variable {self.display_name}: converting text {self.message} to string (type {type(self.message)})")
             self.message = str(self.message)
 
     def get_formula_result(self, default: str = "0.0"):
@@ -490,18 +517,26 @@ class TextWithVariables(StringWithVariable):
         we get the result of the "local" formula
         """
         if self._formula is not None:
-            logger.debug(f"button {self.owner.name}: local formula result: {self._formula.current_value}")
+            logger.debug(f"variable {self.display_name}: local formula result: {self._formula.current_value}")
             return self._formula.current_value
+        logger.debug(f"variable {self.display_name}: no local formula")
         if default is None:
             return super().get_formula_result()
         return default
 
-    def get_text(self):
-        # 1. Static icon font like ${fa:airplane}, font=fontawesome.otf
+    def get_text(self, default: str = "---"):
         text = self.message
 
+        # 1. Static icon font like ${fa:airplane}, font=fontawesome.otf
+        # If the message is just an icon, we substitue it
+        if Variable.is_icon(text):
+            return text
+            # self.font, value = get_special_character(text)
+            # print("******** IS ICON", text, self.font, value)
+            # return text.replace(text, value)
+
         # 2. Formula in text
-        # If text contains ${formula}, it is replaced by the value of the formula calculation.
+        # If text contains ${formula}, it is replaced by the value of the formula calculation (with formatting is present)
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
             res = ""
@@ -509,17 +544,21 @@ class TextWithVariables(StringWithVariable):
                 res = self._formula.execute_formula()
                 if res is not None and res != "":  # Format output if format present
                     if self.format is not None:
-                        res = float(res)
-                        logger.debug(f"button {self.owner.name}: {self.prefix}-format {self.format}: res {res} => {self.format.format(res)}")
-                        res = self.format.format(res)
+                        restmp = float(res)
+                        res = self.format.format(restmp)
+                        logger.debug(f"variable {self.display_name}: formula: {self.prefix}: format {self.format}: res {restmp} => {res}")
                     else:
                         res = str(res)
             else:
-                logger.warning(f"button {self.owner.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
-
+                logger.warning(f"variable {self.display_name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
             text = text.replace(KW_FORMULA_STR, res)
+            logger.debug(f"variable {self.display_name}: result of formula {res} substitued")
 
         # 3. Rest of text: substitution of ${}
-        if self.prefix != CONFIG_KW.LABEL.value:
-            text = self.substitute_values(text=text, formatting=self.format, default="---")
+        if self.prefix != CONFIG_KW.LABEL.value:  # we may later lift this restriction to allow for dynamic labels?
+            logger.debug(f"variable {self.display_name}: before variable substitution: {text}")
+            text = self.substitute_values(text=text, formatting=self.format, default=default, cascade=True)
+            logger.debug(f"variable {self.display_name}: after variable substitution: {text}")
+
+        # print("GET TEXT", self.display_name, self.message.replace("\n", "<CR>"), self.is_static, text.replace("\n", "<CR>"))
         return text

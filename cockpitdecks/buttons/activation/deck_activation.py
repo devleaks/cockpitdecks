@@ -9,7 +9,7 @@ from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .activation import Activation
 
 logger = logging.getLogger(__name__)
@@ -369,7 +369,7 @@ class OnOff(Activation):
         s = super().get_state_variables()
         if s is None:
             s = {}
-        s = s | {INTERNAL_DATAREF.ACTIVATION_ON.value: self.is_on()}
+        s = s | {COCKPITDECKS_INTVAR.ACTIVATION_ON.value: self.is_on()}
         return s
 
     def describe(self) -> str:
@@ -636,21 +636,21 @@ class EncoderProperties:
 
     @property
     def _turns(self):
-        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_TURNS.value])
+        path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ENCODER_TURNS.value])
         dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
 
     @property
     def _cw(self):
-        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_CLOCKWISE.value])
+        path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value])
         dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
 
     @property
     def _ccw(self):
-        path = ID_SEP.join([self.get_id(), INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value])
+        path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value])
         dref = self.button.sim.get_internal_variable(path)
         value = dref.value()
         return 0 if value is None else value
@@ -688,12 +688,12 @@ class Encoder(Activation, EncoderProperties):
             return False
         if event.turned_counter_clockwise:  # rotate left
             self._commands[0].execute()
-            self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-            self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+            self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+            self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
         elif event.turned_clockwise:  # rotate right
             self._commands[1].execute()
-            self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, 1)
-            self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+            self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, 1)
+            self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event.turned_clockwise, event.turned_counter_clockwise}")
         return True  # normal termination
@@ -703,9 +703,9 @@ class Encoder(Activation, EncoderProperties):
 
     def get_state_variables(self) -> dict:
         a = {
-            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
-            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
-            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value: self._cw,
+            COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            COCKPITDECKS_INTVAR.ENCODER_TURNS.value: self._turns,
         }
         return a | super().get_state_variables()
 
@@ -774,7 +774,7 @@ class EncoderPush(Push, EncoderProperties):
         if type(event) is PushEvent:
             return super().activate(event)
 
-        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
+        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value)  # since super() not called
 
         # Turned
         if type(event) is EncoderEvent:
@@ -782,34 +782,34 @@ class EncoderPush(Push, EncoderProperties):
                 if self.longpush:
                     if self.is_pressed():
                         self._commands[2].execute()
-                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                        self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
                     else:
                         self._commands[0].execute()
-                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                        self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
-                    self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ACTIVATION_LONGPUSH.value)
                 else:
                     self._commands[1].execute()
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
-                    self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ACTIVATION_SHORTPUSH.value)
             elif event.turned_clockwise:  # rotate clockwise
                 if self.longpush:
                     if self.is_pressed():
                         self._commands[3].execute()
-                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                        self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
                     else:
                         self._commands[1].execute()
-                        self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                        self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
-                    self.inc(INTERNAL_DATAREF.ACTIVATION_LONGPUSH.value)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                        self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ACTIVATION_LONGPUSH.value)
                 else:
                     self._commands[2].execute()
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
-                    self.inc(INTERNAL_DATAREF.ACTIVATION_SHORTPUSH.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ACTIVATION_SHORTPUSH.value)
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -820,9 +820,9 @@ class EncoderPush(Push, EncoderProperties):
 
     def get_state_variables(self) -> dict:
         a = {
-            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
-            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
-            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value: self._cw,
+            COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            COCKPITDECKS_INTVAR.ENCODER_TURNS.value: self._turns,
         }
         return a | super().get_state_variables()
 
@@ -898,43 +898,43 @@ class EncoderOnOff(OnOff, EncoderProperties):
         if type(event) is PushEvent:
             return super().activate(event)
 
-        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
+        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_clockwise:  # rotate clockwise
                 if self.is_on():
                     if self.dual:
                         self._commands[2].execute()
-                        self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
+                        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_ON.value)
                     else:
                         self._commands[2].execute()
-                        self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_OFF.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
                 else:
                     if self.dual:
                         self._commands[4].execute()
                     else:
                         self._commands[2].execute()
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
             elif event.turned_counter_clockwise:  # rotate counter-clockwise
                 if self.is_on():
                     if self.dual:
                         self._commands[3].execute()
-                        self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
+                        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_ON.value)
                     else:
                         self._commands[3].execute()
-                        self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_OFF.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
                 else:
                     if self.dual:
                         self._commands[5].execute()
                     else:
                         self._commands[3].execute()
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -945,9 +945,9 @@ class EncoderOnOff(OnOff, EncoderProperties):
 
     def get_state_variables(self) -> dict:
         a = {
-            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
-            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
-            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value: self._cw,
+            COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            COCKPITDECKS_INTVAR.ENCODER_TURNS.value: self._turns,
         }
         return a | super().get_state_variables()
 
@@ -1054,7 +1054,7 @@ class EncoderValue(OnOff, EncoderProperties):
                 self.onoff_current_value = not self.onoff_current_value
             return True
 
-        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
+        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1064,13 +1064,13 @@ class EncoderValue(OnOff, EncoderProperties):
             if event.turned_counter_clockwise:  # rotate left
                 x = max(self.value_min, x - self.step)
                 ok = True
-                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
             elif event.turned_clockwise:  # rotate right
                 x = min(self.value_max, x + self.step)
                 ok = True
-                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
             else:
                 logger.warning(f"{type(self).__name__} invalid event {event}")
 
@@ -1091,9 +1091,9 @@ class EncoderValue(OnOff, EncoderProperties):
             "stepxl": self.stepxl,
             "value_min": self.value_min,
             "value_max": self.value_max,
-            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
-            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
-            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value: self._cw,
+            COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            COCKPITDECKS_INTVAR.ENCODER_TURNS.value: self._turns,
             "on": self.onoff_current_value,
             "value": self.encoder_current_value,
         }
@@ -1225,7 +1225,7 @@ class EncoderValueExtended(OnOff, EncoderProperties):
                     self._step_mode = self.step
                 return True
 
-        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
+        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             ok = False
@@ -1236,13 +1236,13 @@ class EncoderValueExtended(OnOff, EncoderProperties):
                 if event.turned_counter_clockwise:  # anti-clockwise
                     x = self.decrease(x)
                     ok = True
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                    self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
                 elif event.turned_clockwise:  # clockwise
                     x = self.increase(x)
                     ok = True
-                    self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                    self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                    self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
             if ok:
                 self.encoder_current_value = x
                 if self._local_dataref is not None:
@@ -1261,9 +1261,9 @@ class EncoderValueExtended(OnOff, EncoderProperties):
             "stepxl": self.stepxl,
             "value_min": self.value_min,
             "value_max": self.value_max,
-            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
-            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
-            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value: self._cw,
+            COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            COCKPITDECKS_INTVAR.ENCODER_TURNS.value: self._turns,
         }
         return a | super().get_state_variables()
 
@@ -1448,7 +1448,7 @@ class EncoderToggle(Activation, EncoderProperties):
                 self._on = True
             return True
 
-        self.inc(INTERNAL_DATAREF.ACTIVATION_COUNT.value)  # since super() not called
+        self.inc(COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value)  # since super() not called
 
         if type(event) is EncoderEvent:
             if event.turned_counter_clockwise and not self.is_pressed():  # rotate anti clockwise
@@ -1456,18 +1456,18 @@ class EncoderToggle(Activation, EncoderProperties):
                     self._commands[0].execute()
                 else:
                     self._commands[2].execute()
-                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value, -1)
-                self.inc(INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value, -1)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value)
 
             elif event.turned_clockwise and not self.is_pressed():  # rotate clockwise
                 if self._on:
                     self._commands[1].execute()
-                    self.inc(INTERNAL_DATAREF.ACTIVATION_ON.value)
+                    self.inc(COCKPITDECKS_INTVAR.ACTIVATION_ON.value)
                 else:
                     self._commands[3].execute()
-                    self.inc(INTERNAL_DATAREF.ACTIVATION_OFF.value)
-                self.inc(INTERNAL_DATAREF.ENCODER_TURNS.value)
-                self.inc(INTERNAL_DATAREF.ENCODER_CLOCKWISE.value)
+                    self.inc(COCKPITDECKS_INTVAR.ACTIVATION_OFF.value)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_TURNS.value)
+                self.inc(COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value)
             return True
 
         logger.warning(f"button {self.button_name()}: {type(self).__name__} invalid event {event}")
@@ -1475,9 +1475,9 @@ class EncoderToggle(Activation, EncoderProperties):
 
     def get_state_variables(self) -> dict:
         a = {
-            INTERNAL_DATAREF.ENCODER_CLOCKWISE.value: self._cw,
-            INTERNAL_DATAREF.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
-            INTERNAL_DATAREF.ENCODER_TURNS.value: self._turns,
+            COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value: self._cw,
+            COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value: self._ccw,
+            COCKPITDECKS_INTVAR.ENCODER_TURNS.value: self._turns,
         }
         return a | super().get_state_variables()
 

@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class INTERNAL_DATAREF(Enum):
+class COCKPITDECKS_INTVAR(Enum):
     #
     # C O C K P I T D E C K S
     #

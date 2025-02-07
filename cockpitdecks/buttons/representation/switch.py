@@ -259,6 +259,8 @@ class CircularSwitch(SwitchBase):
         value = self.button.value
         if value is None:
             value = 0
+        if type(value) is str:
+            value = float(value)
         if value >= self.tick_steps:
             logger.warning(f"button {self.button.name} invalid initial value {value}. Set to {self.tick_steps - 1}")
             value = self.tick_steps - 1

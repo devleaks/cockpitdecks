@@ -550,6 +550,9 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     # ##################################
     # Value provider
     #
+    def get_internal_variable_value(self, internal_variable, default=None):
+        return self.cockpit.get_variable_value(name=internal_variable, default=default)
+
     def get_simulator_variable_value(self, simulator_variable, default=None):
         return self.page.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
 
@@ -601,9 +604,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     # ##################################
     # Text(s)
     #
-    def get_text_detail(self, config, which_text):
-        return self._value.get_text_detail(config=config, which_text=which_text)
-
     def get_text(self, base: dict, root: str = CONFIG_KW.LABEL.value):  # root={label|text}
         return self._value.get_text(base=base, root=root)
 
@@ -687,7 +687,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
                 return False
-            # self.inc(INTERNAL_DATAREF.BUTTON_ACTIVATIONS.value, cascade=False)
+            # self.inc(COCKPITDECKS_INTVAR.BUTTON_ACTIVATIONS.value, cascade=False)
             try:
                 self._activation.handle(event)
             except:
@@ -731,7 +731,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if not self._representation.is_valid():
             logger.warning(f"button {self.name}: representation is not valid")
             return None
-        # self.inc(INTERNAL_DATAREF.BUTTON_self.deck.cockpit.all_representations.value, cascade=False)
+        # self.inc(COCKPITDECKS_INTVAR.BUTTON_self.deck.cockpit.all_representations.value, cascade=False)
         return self._representation.render()
 
     def get_representation_metadata(self):
@@ -791,7 +791,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                     logger.warning(f"button {self.name}: problem during rendering", exc_info=True)
                     logger.warning(f"button {self.name}: not completing rendering")
                     return
-                # self.inc(INTERNAL_DATAREF.BUTTON_RENDERS.value, cascade=False)
+                # self.inc(COCKPITDECKS_INTVAR.BUTTON_RENDERS.value, cascade=False)
                 # logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
@@ -802,7 +802,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         Button removes itself from device
         """
-        # self.inc(INTERNAL_DATAREF.BUTTON_CLEAN.value, cascade=False)
+        # self.inc(COCKPITDECKS_INTVAR.BUTTON_CLEAN.value, cascade=False)
         self.previous_value = None  # this will provoke a refresh of the value on data reload
         self._representation.clean()
 

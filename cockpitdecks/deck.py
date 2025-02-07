@@ -16,7 +16,7 @@ from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_co
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.representation import IconBase
 from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .page import Page
 from .button import Button
 
@@ -384,7 +384,7 @@ class Deck(ABC):
                 logger.debug(f"..reset device {self.name}..")
                 self.device.reset()
             logger.debug(f"deck {self.name} ..installing new page {page}..")
-            self.inc(INTERNAL_DATAREF.PAGE_CHANGES.value)
+            self.inc(COCKPITDECKS_INTVAR.PAGE_CHANGES.value)
             self.previous_page = self.current_page
             self.current_page = self.pages[page]
             self.page_history.append(self.current_page.name)
@@ -409,7 +409,7 @@ class Deck(ABC):
         Please note that this may loead to unexpected results if page was
         too heavily modified or interaction with other pages occurred.
         """
-        self.inc(INTERNAL_DATAREF.DECK_RELOADS.value)
+        self.inc(COCKPITDECKS_INTVAR.DECK_RELOADS.value)
         self.change_page(self.current_page.name)
 
     def set_home_page(self):
@@ -704,7 +704,7 @@ class DeckWithIcons(Deck):
         if image is not None:  # found a texture as requested
             logger.debug(f"{who}: use texture {texture_in}")
             image = image.resize((width, height))
-            self.inc(INTERNAL_DATAREF.RENDER_BG_TEXTURE.value)
+            self.inc(COCKPITDECKS_INTVAR.RENDER_BG_TEXTURE.value)
             return image
         if use_texture and texture_in is None:
             logger.debug(f"{who}: should use texture but no texture found, using uniform color")
@@ -721,7 +721,7 @@ class DeckWithIcons(Deck):
         color = get_color()
         image = Image.new(mode="RGBA", size=(width, height), color=color)
         logger.debug(f"{who}: uniform color {color} (color_in={color_in})")
-        self.inc(INTERNAL_DATAREF.RENDER_BG_COLOR.value)
+        self.inc(COCKPITDECKS_INTVAR.RENDER_BG_COLOR.value)
         return image
 
     def create_icon_for_key(self, index, colors, texture):
@@ -729,7 +729,7 @@ class DeckWithIcons(Deck):
         image = None
         width, height = self.get_image_size(index)
         wp = self.get_wallpaper(index)  # for this block
-        self.inc(INTERNAL_DATAREF.RENDER_CREATE_ICON.value)
+        self.inc(COCKPITDECKS_INTVAR.RENDER_CREATE_ICON.value)
         return (
             wp
             if wp is not None

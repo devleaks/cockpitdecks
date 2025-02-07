@@ -3,15 +3,13 @@
 #
 import logging
 import math
-from enum import Enum
-import random
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.iconfonts import ICON_FONTS
 
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off, grey
+from cockpitdecks.resources.color import convert_color, grey
+from cockpitdecks.strvar import TextWithVariables
 from .draw import DrawBase  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
@@ -64,6 +62,8 @@ class TapeIcon(DrawBase):
         self.label_frequency = self.tape.get("label-frequency", 5)
         self._tape = None
 
+        self._tick = TextWithVariables(owner=button, config=self.tape, prefix="tick")  # note: solely used has property older for font, size, and color
+
     def get_image_for_icon(self):
         """
         Helper function to get button image and overlay label on top of it.
@@ -93,8 +93,7 @@ class TapeIcon(DrawBase):
             numiconval = int(1.5 * (value_range / tape_size))
             self.step = (tape_width * ICON_SIZE) / value_range  # self.value_step unit in value = self.step pixels
 
-            tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.tape, "tick")
-            font = self.get_font(tick_font, tick_size)
+            font = self.get_font(self._tick.font, self._tick.size)
 
             center_position = ICON_SIZE / 2
             center_direction = -1
@@ -148,7 +147,7 @@ class TapeIcon(DrawBase):
                             font=font,
                             anchor=anchor,
                             align="center",
-                            fill=tick_color,
+                            fill=self._tick.color,
                         )
                 # between start and end values
                 offset = numiconval * self.step
@@ -171,7 +170,7 @@ class TapeIcon(DrawBase):
                             font=font,
                             anchor=anchor,
                             align="center",
-                            fill=tick_color,
+                            fill=self._tick.color,
                         )
 
                 # after end value
@@ -195,7 +194,7 @@ class TapeIcon(DrawBase):
                             font=font,
                             anchor=anchor,
                             align="center",
-                            fill=tick_color,
+                            fill=self._tick.color,
                         )
             else:
                 image, draw = self.double_icon(width=tape_size * ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
@@ -234,7 +233,7 @@ class TapeIcon(DrawBase):
                             font=font,
                             anchor=anchor,
                             align="center",
-                            fill=tick_color,
+                            fill=self._tick.color,
                         )
                 # between start and end values
                 offset = numiconval * self.step
@@ -256,7 +255,7 @@ class TapeIcon(DrawBase):
                             font=font,
                             anchor=anchor,
                             align="center",
-                            fill=tick_color,
+                            fill=self._tick.color,
                         )
 
                 # after end value
@@ -279,7 +278,7 @@ class TapeIcon(DrawBase):
                             font=font,
                             anchor=anchor,
                             align="center",
-                            fill=tick_color,
+                            fill=self._tick.color,
                         )
 
             self.icon_color = self._config.get("data-bg-color", self.cockpit_texture)
@@ -403,8 +402,6 @@ class GaugeIcon(DrawBase):
             self.angular_step = int(self.angle / self.num_ticks)
 
             # Values on arc
-            tick, tick_format, tick_font, tick_color, tick_size, tick_position = self.get_text_detail(self.gauge, "tick")
-
             tick_color = "yellow"
             tick_font = "D-DIN"
             tick_size = 60

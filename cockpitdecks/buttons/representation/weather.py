@@ -18,6 +18,7 @@ from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.resources.weather import WeatherData, WeatherDataListener
 from cockpitdecks.buttons.representation.draw_animation import DrawAnimation
 from cockpitdecks.simulator import SimulatorVariable, SimulatorVariableListener
+from cockpitdecks.strvar import TextWithVariables
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -60,6 +61,10 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
         self.icao_dataref = None
 
         DrawAnimation.__init__(self, button=button)
+
+        self._weather_text = TextWithVariables(
+            owner=button, config=self._representation_config, prefix="weather"
+        )  # note: solely used has property older for font, size, and color
 
         icao = self.weather.get("station", self.DEFAULT_STATION)
         self.set_label(icao)
@@ -212,19 +217,12 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
         lines = self.get_lines()
 
         if lines is not None:
-            text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._representation_config, "weather")
-            if text_font is None:
-                text_font = self.label_font
-            if text_size is None:
-                text_size = int(image.width / 10)
-            if text_color is None:
-                text_color = self.label_color
-            font = self.get_font(text_font, text_size)
+            font = self.get_font(self._weather_text.font, self._weather_text.size)
             w = inside
             p = "l"
             a = "left"
             h = image.height / 3
-            il = text_size
+            il = self._weather_text.size
             for line in lines:
                 draw.text(
                     (w, h),
@@ -232,7 +230,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
                     font=font,
                     anchor=p + "m",
                     align=a,
-                    fill=text_color,
+                    fill=self._weather_text.color,
                 )
                 h = h + il
         else:

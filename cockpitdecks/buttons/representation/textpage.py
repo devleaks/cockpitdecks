@@ -13,8 +13,8 @@ from math import ceil
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
 from cockpitdecks.buttons.representation.draw import DrawBase
+from cockpitdecks.strvar import TextWithVariables
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
@@ -32,7 +32,11 @@ class TextPageIcon(DrawBase):
 
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
-        self.text = self._representation_config.get("text")
+        self._textpage = TextWithVariables(
+            owner=button, config=self._representation_config, prefix="text"
+        )  # note: solely used has property older for font, size, and color
+
+        self.text = self._representation_config.get("text")  # self._textpage.get_text()?
         self.width = self._representation_config.get("width", 20)
         self.lines = self._representation_config.get("lines", 7)
         self.pagenum = self._representation_config.get("page-number", True)
@@ -63,28 +67,20 @@ class TextPageIcon(DrawBase):
             return self._cached
 
         # Generic display text in small font on icon
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
         inside = round(0.04 * image.width + 0.5)
 
         page = self.button.value
-        page = 0 if page is None else int(page)
+        page = 0 if page is None else int(float(page))
         lines = self.get_lines(page=page)
 
         if lines is not None:
-            text, text_format, text_font, text_color, text_size, text_position = self.get_text_detail(self._representation_config, "text")
-            if text_font is None:
-                text_font = self.label_font
-            if text_size is None:
-                text_size = int(image.width / 10)
-            if text_color is None:
-                text_color = self.label_color
-            font = self.get_font(text_font, text_size)
+            font = self.get_font(self._textpage.font, self._textpage.size)
             w = inside
             p = "l"
             a = "left"
             h = image.height / 3
-            il = text_size
+            il = self._textpage.size
             for line in lines:
                 draw.text(
                     (w, h),
@@ -92,7 +88,7 @@ class TextPageIcon(DrawBase):
                     font=font,
                     anchor=p + "m",
                     align=a,
-                    fill=text_color,
+                    fill=self._textpage.color,
                 )
                 h = h + il
         else:

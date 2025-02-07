@@ -97,6 +97,10 @@ class Variable(ABC):
         return path.startswith(INTERNAL_STATE_PREFIX)
 
     @staticmethod
+    def is_icon(path: str) -> bool:
+        return len([font for font in ICON_FONTS if path.startswith(font+":")]) > 0
+
+    @staticmethod
     def internal_variable_name(path: str) -> str:
         if not Variable.is_internal_variable(path):  # prevent duplicate prepend
             return INTERNAL_DATA_PREFIX + path

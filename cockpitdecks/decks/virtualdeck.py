@@ -12,7 +12,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw
 
 from cockpitdecks import DEFAULT_PAGE_NAME
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
 
@@ -102,7 +102,7 @@ class VirtualDeck(DeckWithIcons):
         too heavily modified or interaction with other pages occurred.
         """
         if self.is_connected():
-            self.inc(INTERNAL_DATAREF.DECK_RELOADS.value)
+            self.inc(COCKPITDECKS_INTVAR.DECK_RELOADS.value)
             page = "index"
             if self.home_page is None:
                 logger.debug(f"deck {self.name} has no home page, assuming index")

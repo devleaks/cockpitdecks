@@ -15,11 +15,10 @@ from .strvar import Formula
 # from cockpitdecks.button import StateVariableValueProvider
 
 from .resources.iconfonts import ICON_FONTS
-from .resources.color import convert_color
 from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Value:
@@ -56,7 +55,7 @@ class Value:
         self._formula: Formula | None = None
 
         self.init()
-        print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
+        # print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
 
     def init(self):
         self._string_simulator_variable = self.string_datarefs
@@ -68,14 +67,14 @@ class Value:
 
         # there is a special issue if dataref we get value from is also dataref we set
         # in this case there MUST be a formula to evalute the value before we set it
-        if self.dataref is not None and self.set_dataref is not None:
-            if self.dataref == self.set_dataref:
-                if self.formula == "":
-                    logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
-                # if self.formula is None:
-                #     logger.warning(f"value {self.name}: has no formula, get/set are identical")
-                # else:
-                #     logger.warning(f"value {self.name}: formula {self.formula} evaluated before set-dataref")
+        # if self.dataref is not None and self.set_dataref is not None:
+        #     if self.dataref == self.set_dataref:
+        #         if self.formula == "":
+        #             logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
+        #         if self.formula is None:
+        #             logger.warning(f"value {self.name}: has no formula, get/set are identical")
+        #         else:
+        #             logger.warning(f"value {self.name}: formula {self.formula} evaluated before set-dataref")
 
         if self.has_formula:
             formula = self.get_formula()
@@ -396,73 +395,6 @@ class Value:
     # ##################################
     # Text substitution
     #
-    def get_text_detail(self, config, which_text):
-        # Utility Function
-        def get_text_detail(button, config, which_text) -> tuple:
-            """Returnr format, font, color, size, position attributes
-            Returns:
-                tuple: [attribute values]
-            """
-            DEFAULT_VALID_TEXT_POSITION = "cm"
-
-            text_text = config.get(which_text)
-            text_format = config.get(f"{which_text}-format")
-
-            dflt_system_font = button.get_attribute("system-font")
-            if dflt_system_font is None:
-                logger.error(f"button {button.name}: no system font")
-
-            dflt_text_font = button.get_attribute(f"{which_text}-font")
-            if dflt_text_font is None:
-                dflt_text_font = button.get_attribute("label-font")
-                if dflt_text_font is None:
-                    logger.warning(f"button {button.name}: no default label font, using system font")
-                    dflt_text_font = dflt_system_font
-
-            text_font = config.get(f"{which_text}-font", dflt_text_font)
-
-            dflt_text_size = button.get_attribute(f"{which_text}-size")
-            if dflt_text_size is None:
-                dflt_text_size = button.get_attribute("label-size")
-                if dflt_text_size is None:
-                    dflt_text_size = 16
-                    logger.warning(f"button {button.name}: no default label size, using {dflt_text_size}px")
-            text_size = config.get(f"{which_text}-size", dflt_text_size)
-
-            dflt_text_color = button.get_attribute(f"{which_text}-color")
-            if dflt_text_color is None:
-                dflt_text_color = button.get_attribute("label-color")
-                if dflt_text_color is None:
-                    dflt_text_color = DEFAULT_COLOR
-                    logger.warning(f"button {button.name}: no default label color, using {dflt_text_color}")
-            text_color = config.get(f"{which_text}-color", dflt_text_color)
-            text_color = convert_color(text_color)
-
-            dflt_text_position = button.get_attribute(f"{which_text}-position")
-            if dflt_text_position is None:
-                dflt_text_position = button.get_attribute("label-position")
-                if dflt_text_position is None:
-                    dflt_text_position = DEFAULT_VALID_TEXT_POSITION  # middle of icon
-                    logger.warning(f"button {button.name}: no default label position, using {dflt_text_position}")
-            text_position = config.get(f"{which_text}-position", dflt_text_position)
-            if text_position[0] not in "lcr":
-                text_position = DEFAULT_VALID_TEXT_POSITION
-                logger.warning(f"button {button.name}: {type(self).__name__}: invalid horizontal label position code {text_position}, using default")
-            if text_position[1] not in "tmb":
-                text_position = DEFAULT_VALID_TEXT_POSITION
-                logger.warning(f"button {button.name}: {type(self).__name__}: invalid vertical label position code {text_position}, using default")
-
-            return text_text, text_format, text_font, text_color, text_size, text_position
-
-        text_text, text_format, text_font, text_color, text_size, text_position = get_text_detail(button=self._button, config=config, which_text=which_text)
-
-        text = self.get_text(config, which_text)
-        if text is not None and not isinstance(text, str):
-            logger.warning(f"button {self._button.name}: converting text {text} to string (type {type(text)})")
-            text = str(text)
-
-        return text, text_format, text_font, text_color, text_size, text_position
-
     def get_text(self, base: dict, root: str = CONFIG_KW.LABEL.value):  # root={label|text}
         """
         Extract label or text from base and perform formula and dataref values substitution if present.

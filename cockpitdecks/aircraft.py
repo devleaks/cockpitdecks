@@ -37,7 +37,7 @@ from cockpitdecks import (
     yaml,
 )
 from cockpitdecks.resources.color import has_ext
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 
 from cockpitdecks.observable import Observables
 
@@ -580,7 +580,7 @@ class Aircraft:
                 deck.change_page()
 
     def reload_pages(self):
-        self.inc(INTERNAL_DATAREF.COCKPITDECK_RELOADS.value)
+        self.inc(COCKPITDECKS_INTVAR.COCKPITDECK_RELOADS.value)
         for name, deck in self.decks.items():
             deck.reload_page()
 

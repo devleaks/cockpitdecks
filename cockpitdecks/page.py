@@ -5,8 +5,9 @@ from typing import Dict
 
 from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
-from cockpitdecks.resources.intvariables import INTERNAL_DATAREF
+from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.simulator import SimulatorVariable
+from cockpitdecks.variable import InternalVariableType
 from .button import Button, DECK_BUTTON_DEFINITION
 
 logger = logging.getLogger(__name__)
@@ -182,9 +183,12 @@ class Page:
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
+                    if not ref.is_string:
+                        logger.warning(f"page {self.name}: button {button.name} dataref {d} was not a string, forced as string" + " *" * 10)
+                        ref.data_type = InternalVariableType.STRING
                     self.simulator_variable[d] = ref
                     self.simulator_variable[d].add_listener(button)
-                    self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
+                    self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
@@ -202,7 +206,7 @@ class Page:
                 if ref is not None:
                     self.simulator_variable[d] = ref
                     self.simulator_variable[d].add_listener(button)
-                    self.inc(INTERNAL_DATAREF.DATAREF_REGISTERED.value)
+                    self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
                     logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
@@ -242,7 +246,7 @@ class Page:
             button.render()
             logger.debug(f"page {self.name}: button {button.name} rendered")
 
-        self.inc(INTERNAL_DATAREF.PAGE_RENDER.value)
+        self.inc(COCKPITDECKS_INTVAR.PAGE_RENDER.value)
 
         if not self.fill_empty_keys:
             return
@@ -290,4 +294,4 @@ class Page:
         for button in self.buttons.values():
             self.unregister_simulator_variable(button)  # otherwise ref to old buttons remain...
         self.buttons = {}
-        self.inc(INTERNAL_DATAREF.PAGE_CLEAN.value)
+        self.inc(COCKPITDECKS_INTVAR.PAGE_CLEAN.value)

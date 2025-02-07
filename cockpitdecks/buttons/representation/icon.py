@@ -7,9 +7,9 @@ import logging
 from PIL import ImageDraw, ImageFont
 
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
-from cockpitdecks import CONFIG_KW, DECK_FEEDBACK, DEFAULT_LABEL_POSITION
+from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 from .representation import Representation
-from cockpitdecks.strvar import StringWithVariable, TextWithVariables
+from cockpitdecks.strvar import TextWithVariables
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -169,7 +169,7 @@ class IconBase(Representation):
 
         return self.overlay_text_new(image, self._label)
 
-    def overlay_text_new(self, image, text: StringWithVariable):
+    def overlay_text_new(self, image, text: TextWithVariables):
         if text is None:
             logger.debug(f"button {self.button_name()}: no text to lay over")
             return image
@@ -432,14 +432,22 @@ class IconText(IconColor):
         self.bg_color = None
         self.notify = None
         self._text = None
-        if (config := button._config.get(CONFIG_KW.TEXT.value)) is not None:
-            self._text = TextWithVariables(owner=button, config=config, prefix=CONFIG_KW.TEXT.value)
+        if text_config is not None:
+            self._text = TextWithVariables(owner=button, config=text_config, prefix=CONFIG_KW.TEXT.value)
 
             self.bg_texture = self._text._config.get("text-bg-texture")
             self.bg_color = self._text._config.get("text-bg-color")
             self.notify = self._text._config.get("text-notify")
 
         IconColor.__init__(self, button=button)
+
+        # Overwrite icon-* with text-bg-*
+        if self.bg_color is not None:
+            self.icon_color = convert_color(self.bg_color)
+            self.icon_texture = None  # if there is a color, we do not use the texture, unless explicitely supplied
+
+        if self.bg_texture is not None:
+            self.icon_texture = self.bg_texture
 
     def get_image(self):
         """
