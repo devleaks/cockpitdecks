@@ -186,10 +186,13 @@ class Page:
                     if not ref.is_string:
                         logger.warning(f"page {self.name}: button {button.name} dataref {d} was not a string, forced as string" + " *" * 10)
                         ref.data_type = InternalVariableType.STRING
-                    self.simulator_variable[d] = ref
-                    self.simulator_variable[d].add_listener(button)
-                    self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
-                    logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
+                    if isinstance(ref, SimulatorVariable):
+                        self.simulator_variable[d] = ref
+                        self.simulator_variable[d].add_listener(button)
+                        self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
+                        logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
+                    else:
+                        logger.debug(f"page {self.name}: button {button.name} string dataref {d} is not a simulator variable")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
@@ -204,10 +207,13 @@ class Page:
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d)  # creates or return already defined dataref
                 if ref is not None:
-                    self.simulator_variable[d] = ref
-                    self.simulator_variable[d].add_listener(button)
-                    self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
-                    logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
+                    if isinstance(ref, SimulatorVariable):
+                        self.simulator_variable[d] = ref
+                        self.simulator_variable[d].add_listener(button)
+                        self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
+                        logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
+                    else:
+                        logger.debug(f"page {self.name}: button {button.name} dataref {d} is not a simulator variable")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener

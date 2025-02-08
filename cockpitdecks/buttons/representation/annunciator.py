@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from cockpitdecks import CONFIG_KW, ANNUNCIATOR_STYLES, ICON_SIZE
 from cockpitdecks.resources.color import convert_color, light_off, is_number
 from cockpitdecks.simulator import SimulatorVariable
+from cockpitdecks.strvar import TextWithVariables
 from cockpitdecks.value import Value
 
 from .draw import DrawBase
@@ -66,6 +67,7 @@ class AnnunciatorPart:
         self.color = config.get("color")
 
         self._value = Value(name, config=config, provider=annunciator.button)
+        self._display = TextWithVariables(owner=annunciator.button, config=self._config, prefix=CONFIG_KW.TEXT.value)
 
         self._width = None
         self._height = None
@@ -149,9 +151,6 @@ class AnnunciatorPart:
         logger.debug(f"button {self.annunciator.button.name}: no invert color, returning {DEFAULT_INVERT_COLOR}")
         return convert_color(DEFAULT_INVERT_COLOR)
 
-    def get_text(self, attr: str):  # = "text"
-        return self.annunciator.button.get_text(self._config, attr)
-
     def get_led(self):
         return self._config.get("led")
 
@@ -217,14 +216,14 @@ class AnnunciatorPart:
         # logger.debug(f"button {self.button.name}: annunc {annun_width}x{annun_height}, offset ({width_offset}, {height_offset}), box {box}")
         # logger.debug(f"button {self.button.name}: part {partname}: {self.width()}x{self.height()}, center ({self.center_w()}, {self.center_h()})")
         # logger.debug(f"button {self.button.name}: part {partname}: {is_lit}, {color}")
-        text = self.get_text("text")
-        if text is not None:
+        text = self._display.get_text()
+        if text == "":
+            logger.debug(f"button {self.annunciator.button.name}: empty text, assumes drawing")
+        if text is not None and text != "":
             #
             # Annunciator part will display text
             #
-            fontname = self._config.get("text-font")
-            fontsize = int(self._config.get("text-size", TEXT_SIZE))
-            font = self.annunciator.get_font(fontname, fontsize)
+            font = self.annunciator.get_font(self._display.font, self._display.size)
 
             if self.is_lit or not self.annunciator.annunciator_style == ANNUNCIATOR_STYLES.VIVISUN:
                 if self.is_lit and self.is_invert():

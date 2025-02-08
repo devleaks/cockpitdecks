@@ -53,6 +53,7 @@ class StringWithVariables(Variable, VariableListener):
         self._variables = None
         self._formats = {}  # for later @todo
         self._has_state_vars = False
+        self._has_sim_vars = False
 
         self.is_static = True
 
@@ -91,6 +92,80 @@ class StringWithVariables(Variable, VariableListener):
             i = len(self.name)
         return self.name[j:i]
 
+    # ##################################
+    # Constituing Variables
+    #
+    def get_variables(self) -> set:
+        """Returns list of variables used by this formula
+
+        [description]
+
+        Returns:
+            set: [list of variables used by formula]
+        """
+        if self._variables is not None:
+            return self._variables
+
+        self._variables = set()
+        # case 1: formula is single dataref without ${}
+        #         formula: data:_internal_var
+        if self.message is None or type(self.message) is not str:
+            return self._variables
+
+        if "${" not in self.message:  # formula is simple expression, constant or single dataref without ${}
+            # Is formula is single internal variable?
+            if Variable.is_internal_variable(self.message) or Variable.is_state_variable(self.message):
+                if Variable.is_state_variable(self.message):
+                    self._has_state_vars = True
+                self._variables.add(self.message)
+                self._tokens[self.message] = self.message
+                return self._variables
+            if Variable.may_be_non_internal_variable(self.message):  # probably a dataref path
+                self._variables.add(self.message)
+                self._tokens[self.message] = self.message
+                self._has_sim_vars = True
+                return self._variables
+        # else formula may be a constant like
+        #         formula: 2
+        #         formula: 3.14
+
+        # case 2: formula contains one or more ${var}
+        #         formula: ${sim/pressure} 33.28 *
+        tokens = re.findall(PATTERN_DOLCB, self.message)
+        for varname in tokens:
+            if Variable.is_icon(varname):
+                logger.debug(f"{varname} is an icon, ignorings")
+                continue
+            self._variables.add(varname)
+            if Variable.is_state_variable(varname):
+                self._has_state_vars = True
+            elif Variable.may_be_non_internal_variable(self.message):  # probably a dataref path
+                self._has_sim_vars = True
+            found = f"${{{varname}}}"
+            self._tokens[found] = varname
+
+        if CONFIG_KW.FORMULA.value in self._variables:
+            self._variables.remove(CONFIG_KW.FORMULA.value)
+
+        return self._variables
+
+    def variable_changed(self, data: Variable):
+        """Called when a constituing variable has changed.
+
+        Recompute its value, and notifies listener of change if any.
+
+        Args:
+            data (Variable): [variable that has changed]
+        """
+        # print(">>>>> CHANGED", self.display_name, data.name, data.current_value)
+        old_value = self.current_value  # kept for debug
+        logger.debug(f"string-with-variable {self.display_name}: {data.name} changed, reevaluating..")
+        dummy = self.substitute_values(store=True, cascade=True)
+        logger.debug(f"string-with-variable {self.display_name}: ..done (new value: {dummy})")
+
+    # ##################################
+    # Getting values
+    #
     def get_internal_variable_value(self, internal_variable, default=None):
         """Get internal variable value from owner
 
@@ -167,75 +242,9 @@ class StringWithVariables(Variable, VariableListener):
         logger.warning(f"formula {self.display_name}: no get_formula_result (owner={type(self.owner)} {self.owner.name})")
         return default
 
-    def variable_changed(self, data: Variable):
-        """Called when a constituing variable has changed.
-
-        Recompute its value, and notifies listener of change if any.
-
-        Args:
-            data (Variable): [variable that has changed]
-        """
-        # print(">>>>> CHANGED", self.display_name, data.name, data.current_value)
-        old_value = self.current_value  # kept for debug
-        logger.debug(f"string-with-variable {self.display_name}: {data.name} changed, reevaluating..")
-        dummy = self.substitute_values(store=True, cascade=True)
-        logger.debug(f"string-with-variable {self.display_name}: ..done (new value: {dummy})")
-
-    def render(self):
-        if hasattr(self.owner, "render"):
-            return self.owner.render()
-
-    def get_variables(self) -> set:
-        """Returns list of variables used by this formula
-
-        [description]
-
-        Returns:
-            set: [list of variables used by formula]
-        """
-        if self._variables is not None:
-            return self._variables
-
-        self._variables = set()
-        # case 1: formula is single dataref without ${}
-        #         formula: data:_internal_var
-        if self.message is None or type(self.message) is not str:
-            return self._variables
-
-        if "${" not in self.message:  # formula is simple expression, constant or single dataref without ${}
-            # Is formula is single internal variable?
-            if Variable.is_internal_variable(self.message) or Variable.is_state_variable(self.message):
-                if Variable.is_state_variable(self.message):
-                    self._has_state_vars = True
-                self._variables.add(self.message)
-                self._tokens[self.message] = self.message
-                return self._variables
-            if Variable.may_be_non_internal_variable(self.message):  # probably a dataref path
-                self._variables.add(self.message)
-                self._tokens[self.message] = self.message
-                return self._variables
-        # else formula may be a constant like
-        #         formula: 2
-        #         formula: 3.14
-
-        # case 2: formula contains one or more ${var}
-        #         formula: ${sim/pressure} 33.28 *
-        tokens = re.findall(PATTERN_DOLCB, self.message)
-        for varname in tokens:
-            if Variable.is_icon(varname):
-                logger.debug(f"{varname} is an icon, ignorings")
-                continue
-            self._variables.add(varname)
-            if Variable.is_state_variable(varname):
-                self._has_state_vars = True
-            found = f"${{{varname}}}"
-            self._tokens[found] = varname
-
-        if CONFIG_KW.FORMULA.value in self._variables:
-            self._variables.remove(CONFIG_KW.FORMULA.value)
-
-        return self._variables
-
+    # ##################################
+    # Local operations
+    #
     def substitute_values(self, text: str | None = None, default: str = "0.0", formatting=None, store: bool = False, cascade: bool = False) -> str:
         """Substitute values for each variable.
 
@@ -274,7 +283,7 @@ class StringWithVariables(Variable, VariableListener):
 
             if value is None:
                 value = default
-                logger.warning(f"{token}: value is null, substitued {value}")
+                logger.warning(f"variable {self.name}: {token}: value is null, substitued {value}")
             elif formatting is not None:
                 if type(value) in [int, float]:  # probably formula is a constant value
                     value_str = formatting.format(value)
@@ -293,6 +302,10 @@ class StringWithVariables(Variable, VariableListener):
 
         return text
 
+    def render(self):
+        if hasattr(self.owner, "render"):
+            return self.owner.render()
+
 
 class Formula(StringWithVariables):
     """A Formula is a typed value made of one or more Variables.
@@ -309,14 +322,7 @@ class Formula(StringWithVariables):
         return uuid.uuid3(namespace=FORMULA_NS, name=str(message))
 
     def __init__(self, owner, formula: str, data_type: str = "float", default_value=0.0, format_str: str | None = None):
-        key = ""
-        if formula is None and type(owner).__name__ == "Button":
-            formula = owner._config.get(CONFIG_KW.FORMULA.value)
-        if formula is None:
-            logger.warning(f"{owner.get_id()}: no formula")
-            key = uuid.uuid4()
-        else:
-            key = uuid.uuid3(namespace=FORMULA_NS, name=str(formula))
+        key = uuid.uuid3(namespace=FORMULA_NS, name=str(formula))
         name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
         StringWithVariables.__init__(self, owner=owner, message=formula, data_type=data_type, name=name)
 
@@ -330,14 +336,11 @@ class Formula(StringWithVariables):
         return self.message
 
     def value(self):
-        if self._has_state_vars:
+        if self._has_state_vars or self._has_sim_vars:
             return self.execute_formula(store=True, cascade=True)
-        if self.current_value is None:  # may be it was never evaluated, for example static value
+        if self.current_value is None:  # may be it was never evaluated, so we force it if value is None, for example static value
             self.execute_formula(store=True, cascade=False)
         return super().value()
-
-    def get_formatted_value(self) -> str:
-        return self.format_value(self.value())
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
@@ -352,6 +355,12 @@ class Formula(StringWithVariables):
         logger.debug(f"formula {self.display_name}: {data.name} changed, recomputing..")
         new_value = self.execute_formula(store=True, cascade=True)
         logger.debug(f"formula {self.display_name}: ..done (new value: {self.current_value})")
+
+    # ##################################
+    # Local operations
+    #
+    def get_formatted_value(self) -> str:
+        return self.format_value(self.value())
 
     def execute_formula(self, store: bool = False, cascade: bool = False):
         """replace datarefs variables with their value and execute formula.
@@ -515,7 +524,7 @@ class TextWithVariables(StringWithVariables):
             self.message = str(self.message)
 
     def get_formula_result(self, default: str = "0.0"):
-        """In this case, we do not get the result from the formula from the parent host,
+        """In this case, we do not get the result from the formula from the owner,
         we get the result of the "local" formula
         """
         if self._formula is not None:

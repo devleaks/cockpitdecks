@@ -585,36 +585,15 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             return self._activation.get_activation_value()
         return None
 
-    def get_formula_result(self) -> str:
+    def get_formula_result(self) -> str | None:
         """Returns the result of the formula of this button"""
         if self._value.has_formula:
             return self._value._formula.current_value
         return None
 
     # ##################################
-    # Value substitution
-    #
-    def execute_formula(self, formula, default: float = 0.0):
-        """
-        replace datarefs variables with their (numeric) value and execute formula.
-        Returns formula result.
-        """
-        return self._value.execute_formula(formula=formula, default=default)
-
-    # ##################################
-    # Text(s)
-    #
-    def get_text(self, base: dict, root: str = CONFIG_KW.LABEL.value):  # root={label|text}
-        return self._value.get_text(base=base, root=root)
-
-    # ##################################
     # Value
     #
-    def is_self_modified(self):
-        # Determine of the activation of the button directly modifies
-        # a dataref used in computation of the value.
-        return self._value.is_self_modified()
-
     def compute_value(self):
         """
         Button ultimately returns either one value or an array of values.

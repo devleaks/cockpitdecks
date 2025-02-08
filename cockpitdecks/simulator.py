@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
+from cockpitdecks.strvar import Formula
 from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_VARIABLE_PREFIX, InternalVariableType
 from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation
 
@@ -420,7 +421,7 @@ class SimulatorVariableListener(VariableListener):
         VariableListener.__init__(self, name=name)
 
     def variable_changed(self, data: Variable):
-        if isinstance(data, SimulatorVariable):
+        if isinstance(data, SimulatorVariable) or (isinstance(data, Formula) and data._has_sim_vars):  # could be a formula that has sim vars.
             self.simulator_variable_changed(data=data)
         else:
             logger.warning(f"non simulator variable for listener ({data.name}, {type(data)}), ignored")

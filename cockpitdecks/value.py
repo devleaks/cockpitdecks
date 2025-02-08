@@ -6,22 +6,19 @@ from typing import Tuple
 # from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cockpitdecks import CONFIG_KW
-from cockpitdecks.variable import InternalVariable, ValueProvider, INTERNAL_STATE_PREFIX, PATTERN_DOLCB, PATTERN_INTSTATE
+from cockpitdecks.variable import Variable, InternalVariable, ValueProvider, PATTERN_DOLCB
+from .strvar import StringWithVariables, Formula
 from cockpitdecks.simulator import Simulator, SimulatorVariableValueProvider
 from cockpitdecks.buttons.activation import ActivationValueProvider
 
-from .strvar import Formula
 
 # from cockpitdecks.button import StateVariableValueProvider
-
-from .resources.iconfonts import ICON_FONTS
-from .resources.rpc import RPC
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class Value:
+class Value(StringWithVariables):
     """A Value is a typed value used by Cockpitdecks entities.
 
     A Value can be a simple Data (either InternalVariable or SimulatorDate) or a formula that
@@ -29,11 +26,13 @@ class Value:
     """
 
     def __init__(self, name: str, config: dict, provider: ValueProvider):
+        lname = f"{provider.name}/value/{name}"
+
         self._config = config
         self._provider = provider
         self._button = provider
-        self.name = name  # for debeging and information purpose
 
+        # Variable to write result to
         self._set_simdata_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         self._set_simdata = None
         if self._set_simdata_path is not None:
@@ -49,17 +48,18 @@ class Value:
             self.value_count = int(self.value_count)
 
         # Used in "value"
-        self._simulator_variable: set | None = None
-        self._string_simulator_variables: set | None = None
+        self._variables: set | None = None
+        self._string_variables: set | None = None
 
         self._formula: Formula | None = None
-        self._known_extras: Tuple[str] = tuple()
+        self._permanent_keys: Tuple[str] = tuple()
 
-        self.init()
+        StringWithVariables.__init__(self, owner=provider, name=lname, message="")  # this allows to use get_xxx_variable_value()
+
         # print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
 
     def init(self):
-        self._string_simulator_variables = self.get_string_variables()
+        self._string_variables = self.get_string_variables()
 
         # there is a special issue if dataref we get value from is also dataref we set
         # in this case there MUST be a formula to evalute the value before we set it
@@ -72,9 +72,9 @@ class Value:
         #         else:
         #             logger.warning(f"value {self.name}: formula {self.formula} evaluated before set-dataref")
 
-        if self.has_formula:
-            formula = self.get_formula()
-            self._formula = Formula(owner=self._provider, formula=formula)
+        if self.formula is not None and self.formula != "":
+            logger.debug(f"value {self.name}: has formula {self.formula}")
+            self._formula = Formula(owner=self._provider, formula=self.formula)
             self._formula.add_listener(self._provider)
 
         if not self.has_domain:
@@ -120,25 +120,11 @@ class Value:
 
     @property
     def has_formula(self) -> bool:
-        formula = self.get_formula()
-        return formula is not None and formula != ""
+        return self.formula is not None and self.formula != ""
 
     @property
     def has_domain(self) -> bool:
         return self.value_min is not None and self.value_max is not None
-
-    def is_self_modified(self):
-        # Determine of the activation of the button directly modifies
-        # a dataref used in computation of the value.
-        return self._set_simdata_path in self._simulator_variable
-
-    def add_variables(self, datarefs: set, reason: str | None = None):
-        # Add datarefs to the value for computation purpose
-        # Used by activation and representation to add to button datarefs
-        if self._simulator_variable is None:
-            self._simulator_variable = set()
-        self._simulator_variable = self._simulator_variable | datarefs
-        logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
     # ##################################
     # Constituing Variables
@@ -149,25 +135,33 @@ class Value:
         listed dataref and datarefs attributes.
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
-        if self._simulator_variable is not None:
-            return self._simulator_variable
-        self._simulator_variable = self.scan_variables(self._config)
-        logger.debug(f"value {self.name}: found datarefs {self._simulator_variable}")
-        return self._simulator_variable
+        if self._variables is not None:
+            return self._variables
+        self._variables = self.scan_variables(self._config)
+        logger.debug(f"value {self.name}: found datarefs {self._variables}")
+        return self._variables
+
+    def add_variables(self, datarefs: set, reason: str | None = None):
+        # Add datarefs to the value for computation purpose
+        # Used by activation and representation to add to button datarefs
+        if self._variables is None:
+            self._variables = set()
+        self._variables = self._variables | datarefs
+        logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
 
     def get_string_variables(self) -> set:
-        if self._string_simulator_variables is not None:
-            return self._string_simulator_variables
-        self._string_simulator_variables = self.string_datarefs
-        if type(self._string_simulator_variables) is str:
-            if "," in self._string_simulator_variables:
-                self._string_simulator_variables = self._string_simulator_variables.replace(" ", "").split(",")
+        if self._string_variables is not None:
+            return self._string_variables
+        self._string_variables = self.string_datarefs
+        if type(self._string_variables) is str:
+            if "," in self._string_variables:
+                self._string_variables = self._string_variables.replace(" ", "").split(",")
             else:
-                self._string_simulator_variables = [self._string_simulator_variables]
-        return self._string_simulator_variables
+                self._string_variables = [self._string_variables]
+        return self._string_variables
 
     def get_all_variables(self) -> set:
-        return self.get_variables() | self._string_simulator_variables
+        return self.get_variables() | self._string_variables
 
     def scan_variables(self, base: dict | None = None, extra_keys: list = []) -> set:
         """
@@ -179,8 +173,10 @@ class Value:
             base = self._config
 
         r = set()
-        if self.has_formula:
-            r = self._formula.get_variables()
+        formula_str = base.get(CONFIG_KW.FORMULA.value)
+        if formula_str is not None and formula_str != "":
+            formula = Formula(owner=self._provider, formula=formula_str)
+            r = formula.get_variables()
             logger.debug(f"value {self.name}: added formula variables {r}")
 
         # Direct use of datarefs:
@@ -217,9 +213,9 @@ class Value:
 
         # 3. In string datarefs (formula, text, etc.)
         allways_extra = [CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
-        self._known_extras = set(extra_keys + allways_extra)
+        self._permanent_keys = set(extra_keys + allways_extra)
 
-        for key in self._known_extras:
+        for key in self._permanent_keys:
             text = base.get(key)
             if text is None:
                 continue
@@ -247,274 +243,72 @@ class Value:
         return r
 
     # ##################################
-    # Formula Execution
-    #
-    def get_formula(self) -> str | None:
-        # 1. Formula directly in supplied config
-        if self.formula is not None and self.formula != "":
-            logger.debug(f"value {self.name}: has formula {self.formula}")
-            return self.formula
-        # # 2. formula in the provider, if the provider's represntation is not an Annunciator
-        # #    DOCUMENT WHY!! @todo
-        # if (
-        #     hasattr(self._provider, "formula")
-        #     and self._provider.formula is not None
-        #     and self._provider.formula != ""
-        #     and hasattr(self._provider, "_representation")
-        #     and type(self._provider._representation).__name__ != "Annunciator"
-        # ):
-        #     logger.debug(f"value {self.name}: provider has formula {self._provider.formula}")
-        #     return self._provider.formula
-        return None
-
-    def execute_formula(self, formula, default: float = 0.0) -> float:
-        """
-        replace datarefs variables with their (numeric) value and execute formula.
-        Returns formula result.
-        """
-        expr = self.substitute_values(text=formula, default=str(default))
-        logger.debug(f"value {self.name}: {formula} => {expr}")
-        r = RPC(expr)
-        value = r.calculate()
-        logger.debug(f"execute_formula: value {self.name}: {formula} => {expr} => {value}")
-        return value
-
-    # ##################################
-    # Formula value substitution
-    #
-    def get_simulator_variable_value(self, simulator_variable, default=None):
-        if isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator):
-            return self._provider.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
-        return None
-
-    def get_state_variable_value(self, state):
-        if hasattr(self._provider, "get_state_variable_value"):
-            # if isinstance(self._provider, StateVariableValueProvider):
-            return self._provider.get_state_variable_value(state)
-        return None
-
-    def get_activation_value(self):
-        if isinstance(self._provider, ActivationValueProvider):
-            return self._button.get_activation_value()
-        return None
-
-    def substitute_dataref_values(self, message: str | int | float, default: str = "0.0", formatting=None):
-        """
-        Replaces ${dataref} with value of dataref in labels and execution formula.
-        @todo: should take into account dataref value type (Dataref.xp_data_type or Dataref.data_type).
-        """
-        if not (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
-            return
-
-        if type(message) is int or type(message) is float:  # probably formula is a constant value
-            value_str = message
-            if formatting is not None:
-                if formatting is not None:
-                    value_str = formatting.format(message)
-                    logger.debug(f"value {self.name}:received int or float, returning as is.")
-                else:
-                    value_str = str(message)
-                    logger.debug(f"value {self.name}:received int or float, returning formatted {formatting}.")
-            return value_str
-
-        dataref_names = re.findall(PATTERN_DOLCB, message)
-
-        if len(dataref_names) == 0:
-            logger.debug(f"value {self.name}:no dataref to substitute.")
-            return message
-
-        if formatting is not None:
-            if type(formatting) is list:
-                if len(dataref_names) != len(formatting):
-                    logger.warning(
-                        f"value {self.name}:number of datarefs {len(dataref_names)} not equal to the number of format {len(formatting)}, cannot proceed."
-                    )
-                    return message
-            elif type(formatting) is not str:
-                logger.warning(f"value {self.name}:single format is not a string, cannot proceed.")
-                return message
-
-        retmsg = message
-        cnt = 0
-        for dataref_name in dataref_names:
-            value = self.get_simulator_variable_value(simulator_variable=dataref_name)
-            value_str = ""
-            if formatting is not None and value is not None:
-                if type(formatting) is list:
-                    value_str = formatting[cnt].format(value)
-                elif formatting is not None and type(formatting) is str:
-                    value_str = formatting.format(value)
-            else:
-                value_str = str(value) if value is not None else str(default)  # default gets converted in float sometimes!
-            retmsg = retmsg.replace(f"${{{dataref_name}}}", value_str)
-            logger.debug(f"substitute_dataref_values {dataref_name} = {value_str}{' (default)' if value is not None else ''}")
-            cnt = cnt + 1
-
-        more = re.findall(PATTERN_DOLCB, retmsg)  # XXXHERE
-        if len(more) > 0:
-            logger.warning(f"value {self.name}:unsubstituted dataref values {more}")
-
-        return retmsg
-
-    def substitute_state_values(self, text, default: str = "0.0", formatting=None):
-        if not hasattr(self._provider, "get_state_variable_value"):
-            return text
-        # if not isinstance(self._provider, StateVariableValueProvider):
-        #     return text
-
-        txtcpy = text
-        more = re.findall(PATTERN_INTSTATE, txtcpy)
-        for name in more:
-            state_string = f"${{{INTERNAL_STATE_PREFIX}{name}}}"  # @todo: !!possible injection!!
-            value = self.get_state_variable_value(name)
-            logger.debug(f"value {state_string} = {value}")
-            if value is not None:
-                txtcpy = txtcpy.replace(state_string, value)
-                logger.debug(f"substitute_state_values: {state_string} -> {value}")
-            else:
-                txtcpy = txtcpy.replace(state_string, default)
-                logger.debug(f"substitute_state_values: {state_string} -> {default} (default)")
-        more = re.findall(PATTERN_INTSTATE, txtcpy)
-        if len(more) > 0:
-            logger.warning(f"value {self.name}:unsubstituted status values {more}")
-        return txtcpy
-
-    def substitute_values(self, text, default: str = "0.0", formatting=None):
-        logger.debug(f"substitute_values: {self._button.name}: value {self.name}: processing '{text}'..")
-        if type(text) is not str or "$" not in text:  # no ${..} to stubstitute
-            logger.debug(f"substitute_values: {self._button.name}: value {self.name}: {text} has no variable to substitute, returning as it is")
-            return text
-        step1 = self.substitute_state_values(text, default=default, formatting=formatting)
-        if text != step1:
-            logger.debug(f"substitute_values: {self._button.name}: value {self.name}: {text} => {step1}")
-        else:
-            logger.debug(f"substitute_values: {self._button.name}: value {self.name} has no state variable ({text})")
-        # step2 = self.substitute_button_values(step1, default=default, formatting=formatting)
-        step2 = step1
-        step3 = self.substitute_dataref_values(step2, default=default, formatting=formatting)
-        if step3 != step2:
-            logger.debug(f"substitute_values: {self._button.name}: value {self.name}: {step2} => {step3}")
-        else:
-            logger.debug(f"substitute_values: {self._button.name}: value {self.name} has no dataref ({step3})")
-        logger.debug(f"substitute_values: {self._button.name}: value {self.name}: ..processed '{text}' => {step3}")
-        return step3
-
-    # ##################################
-    # Text substitution
-    #
-    def get_text(self, base: dict, root: str = CONFIG_KW.LABEL.value):  # root={label|text}
-        """
-        Extract label or text from base and perform formula and dataref values substitution if present.
-        (I.e. replaces ${formula} and ${dataref} with their values.)
-        """
-        text = base.get(root)
-        if text is None:
-            return None
-
-        # HACK 1: Special icon font substitution
-        default_font = self._button.get_attribute("label-font")
-        if default_font is None:
-            logger.warning("no default font")
-
-        text_font = base.get(root + "-font", default_font)
-
-        # Substituing icons in icon fonts
-        for k, v in ICON_FONTS.items():
-            if text_font.lower().startswith(v[0].lower()):  # should be equal, except extension?
-                s = "\\${%s:([^\\}]+?)}" % (k)
-                # s = f"\\${{{k}:([^\\}}]+?)}}"
-                icons = re.findall(s, text)
-                for i in icons:
-                    if i in v[1].keys():
-                        text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"button {self._button.button_name()}: substituing font icon {i}")
-
-        # Formula keyword in text
-        # If text contains ${formula}, it is replaced by the value of the formula calculation.
-        text_format = base.get(f"{root}-format")
-        KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
-        if KW_FORMULA_STR in str(text):
-            res = ""
-            if self.has_formula:
-                res = self._formula.value()
-                if res is not None and res != "":  # Format output if format present
-                    if text_format is not None:
-                        res = float(res)
-                        logger.debug(f"button {self._button.button_name()}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
-                        res = text_format.format(res)
-                    else:
-                        res = str(res)
-            else:
-                logger.warning(f"button {self._button.button_name()}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
-
-            text = text.replace(KW_FORMULA_STR, res)
-
-        # Rest of text: substitution of ${}
-        if root != CONFIG_KW.LABEL.value:
-            text = self.substitute_values(text, formatting=text_format, default="---")
-        return text
-
-    # ##################################
     # Value computation
     #
-    def get_value(self):
+    def get_value(self, default: str = "0.0", formatting=None, store: bool = False, cascade: bool = False):
         """ """
 
-        def check_domain(val):
-            if not self.has_domain:
-                return val
-            if val < self.value_min:
-                logger.debug(f"value {val} out of domain min, set to {self.value_min}")
-                return self.value_min
-            if val > self.value_max:
-                logger.debug(f"value {val} out of domain max, set to {self.value_max}")
-                return self.value_max
-            return val
+        def store_value(val):
+            if store:
+                self.update_value(new_value=val, cascade=cascade)
+            return ret
 
         # 1. If there is a formula, value comes from it
         if self.has_formula:
             ret = self._formula.value()
             logger.debug(f"value {self.name}: {ret} (from formula)")
-            return ret
+            return store_value(ret)
 
-        # 2. One dataref
+        # 2a. One dataref, but dataref is actually internal variable
+        if self.dataref is not None and Variable.is_internal_variable(self.dataref):
+            ret = self.get_internal_variable_value(internal_variable=self.dataref)
+            logger.debug(f"value {self.name}: {ret} (from single internal variable {self.dataref})")
+            return store_value(ret)
+
+        # 2b. One dataref, but dataref is actually internal state variable
+        if self.dataref is not None and Variable.is_state_variable(self.dataref):
+            ret = self.get_state_variable_value(state_variable=self.dataref)
+            logger.debug(f"value {self.name}: {ret} (from single state variable {self.dataref})")
+            return store_value(ret)
+
+        # 2c. One dataref
         if self.dataref is not None and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
-            # if self._simulator_variable[0] in self.page.simulator_variable.keys():  # unnecessary check
+            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_simulator_variable_value(simulator_variable=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
-            return ret
+            return store_value(ret)
 
         # 3. Activation value
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
-            # if self._simulator_variable[0] in self.page.simulator_variable.keys():  # unnecessary check
+            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_activation_value()
             if ret is not None:
                 if type(ret) is bool:
                     ret = 1 if ret else 0
                 logger.debug(f"value {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
-                return ret
+                return store_value(ret)
 
         # From now on, warning issued since returns non scalar value
         #
         # 4. Multiple datarefs
-        if len(self._simulator_variable) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
-            r = {}
+        if len(self._variables) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
+            ret = {}
             for d in self.get_all_variables():
                 v = self.get_simulator_variable_value(simulator_variable=d)
-                r[d] = v
-            logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
-            return r
+                ret[d] = v
+            logger.info(f"value {self.name}: {ret} (no formula, no dataref, returning all datarefs)")
+            return store_value(ret)
 
         logger.warning(f"value {self.name}: no formula, no dataref, no activation")
 
-        # 4. State variables?
+        # 4. *All* state variables?
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
-            r = self._provider._activation.get_state_variables()
-            logger.info(f"value {self.name}: {r} (from state variables)")
-            return r
+            ret = self._provider._activation.get_state_variables()
+            logger.info(f"value {self.name}: {ret} (from state variables)")
+            return store_value(ret)
 
-        logger.warning(f"value {self.name}: no value")
-        return None
+        logger.warning(f"value {self.name}: no value, returning default {default}")
+        return store_value(default)
 
     def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
         value = self.get_value()
