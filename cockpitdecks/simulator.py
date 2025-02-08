@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
-from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_DATA_PREFIX, InternalVariableType
+from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_VARIABLE_PREFIX, InternalVariableType
 from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation
 
 loggerSimdata = logging.getLogger("SimulatorVariable")
@@ -175,6 +175,8 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         physical_unit = self.physics.get(name)
         variable = SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
         variable._sim = self
+        self.set_rounding(variable)
+        self.set_frequency(variable)
         return variable
 
     def register(self, variable: Variable) -> Variable:
@@ -302,7 +304,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         """Adds supplied data to Simulator monitoring."""
         prnt = []
         for d in simulator_variables.values():
-            if d.name.startswith(INTERNAL_DATA_PREFIX):
+            if d.name.startswith(INTERNAL_VARIABLE_PREFIX):
                 logger.debug(f"local simulator_variable {d.name} is not monitored")
                 continue
             if d.name not in self.simulator_variable_to_monitor.keys():
@@ -317,7 +319,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         """Removes supplied data from Simulator monitoring."""
         prnt = []
         for d in simulator_variables.values():
-            if d.name.startswith(INTERNAL_DATA_PREFIX):
+            if d.name.startswith(INTERNAL_VARIABLE_PREFIX):
                 logger.debug(f"local simulator_variable {d.name} is not monitored")
                 continue
             if d.name in self.simulator_variable_to_monitor.keys():

@@ -39,6 +39,7 @@ dataref-fetch-frequencies:
 dataref-roundings:
   sim/cockpit/autopilot/heading_mag: 2
   sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot: 4
+  sim/weather/barometer_current_inhg: 4
   # used in Weather button 3 or 4 decimals sufficient...
   sim/flightmodel/position/latitude: 8
   sim/flightmodel/position/longitude: 8

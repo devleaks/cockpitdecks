@@ -129,6 +129,7 @@ class AnnunciatorPart:
     def value(self):
         r = self._value.get_value()
         self.lit = r is not None and is_number(r) and float(r) > 0
+        # print(">>>", self.annunciator.button.button_name(), self.name, r)
         # print("PART", self.annunciator.button.name, self.name, r, self.lit, self._value.name, self._value.formula, self._value)
         return r
 

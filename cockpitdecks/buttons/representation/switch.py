@@ -9,9 +9,8 @@ from enum import Enum
 from PIL import Image, ImageDraw
 
 from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.iconfonts import ICON_FONTS
 
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color, light_off, grey
+from cockpitdecks.resources.color import convert_color, grey
 from .draw import DrawBase  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)

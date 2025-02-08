@@ -20,15 +20,16 @@ logger = logging.getLogger(__name__)
 # Variable conventions
 #
 # "internal" simulator_variable (not exported to X-Plane) start with that prefix
-INTERNAL_DATA_PREFIX = "data:"
-INTERNAL_STATE_PREFIX = "state:"
-BUTTON_PREFIX = "button:"
 PREFIX_SEP = ":"
+INTERNAL_VARIABLE_PREFIX = "data" + PREFIX_SEP
+INTERNAL_STATE_PREFIX = "state" + PREFIX_SEP
+BUTTON_PREFIX = "button" + PREFIX_SEP
 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
 # ${ ... }: dollar + anything between curly braces, but not start with state: or button: prefix
 # ?: does not return capturing group
 PATTERN_DOLCB = "\\${([^\\}]+?)}"  # ${ ... }: dollar + anything between curly braces.
+PATTERN_INTVAR = f"\\${{{INTERNAL_VARIABLE_PREFIX}([^\\}}]+?)}}"
 PATTERN_INTSTATE = f"\\${{{INTERNAL_STATE_PREFIX}([^\\}}]+?)}}"
 PATTERN_BUTTONVAR = f"\\${{{BUTTON_PREFIX}([^\\}}]+?)}}"
 
@@ -90,7 +91,7 @@ class Variable(ABC):
 
     @staticmethod
     def is_internal_variable(path: str) -> bool:
-        return path.startswith(INTERNAL_DATA_PREFIX)
+        return path.startswith(INTERNAL_VARIABLE_PREFIX)
 
     @staticmethod
     def is_state_variable(path: str) -> bool:
@@ -98,35 +99,35 @@ class Variable(ABC):
 
     @staticmethod
     def is_icon(path: str) -> bool:
-        return len([font for font in ICON_FONTS if path.startswith(font+":")]) > 0
+        return len([font for font in ICON_FONTS if path.startswith(font + ":")]) > 0
 
     @staticmethod
     def internal_variable_name(path: str) -> str:
         if not Variable.is_internal_variable(path):  # prevent duplicate prepend
-            return INTERNAL_DATA_PREFIX + path
-        return path  # already startswith INTERNAL_DATA_PREFIX
+            return INTERNAL_VARIABLE_PREFIX + path
+        return path  # already startswith INTERNAL_VARIABLE_PREFIX
 
     @staticmethod
     def state_variable_name(path: str) -> str:
         if not Variable.is_state_variable(path):  # prevent duplicate prepend
             return INTERNAL_STATE_PREFIX + path
-        return path  # already startswith INTERNAL_DATA_PREFIX
+        return path  # already startswith INTERNAL_VARIABLE_PREFIX
 
     @staticmethod
     def internal_variable_root_name(path: str) -> str:
         if Variable.is_internal_variable(path):  # prevent duplicate prepend
-            return path[len(INTERNAL_DATA_PREFIX) :]
-        return path  # already startswith INTERNAL_DATA_PREFIX
+            return path[len(INTERNAL_VARIABLE_PREFIX) :]
+        return path  # already startswith INTERNAL_VARIABLE_PREFIX
 
     @staticmethod
     def state_variable_root_name(path: str) -> str:
         if Variable.is_state_variable(path):  # prevent duplicate prepend
             return path[len(INTERNAL_STATE_PREFIX) :]
-        return path  # already startswith INTERNAL_DATA_PREFIX
+        return path  # already startswith INTERNAL_VARIABLE_PREFIX
 
     @property
     def is_internal(self) -> bool:
-        return self.name.startswith(INTERNAL_DATA_PREFIX)
+        return self.name.startswith(INTERNAL_VARIABLE_PREFIX)
 
     @property
     def is_string(self) -> bool:
@@ -264,8 +265,8 @@ class InternalVariable(Variable):
     """
 
     def __init__(self, name: str, is_string: bool = False):
-        if not name.startswith(INTERNAL_DATA_PREFIX):
-            name = INTERNAL_DATA_PREFIX + name
+        if not name.startswith(INTERNAL_VARIABLE_PREFIX):
+            name = INTERNAL_VARIABLE_PREFIX + name
         Variable.__init__(self, name=name, data_type="string" if is_string else "float")
 
 

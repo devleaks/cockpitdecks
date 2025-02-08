@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-def get_special_character(name: str) -> tuple:
+def get_special_character(name: str, default: str = None) -> tuple:
     # fa-aircraft -> ("fontawesome.otf", "character")
     arr = name.split(":")
     font = ICON_FONTS.get(arr[0])
     if font is None:
         logger.warning(f"font prefix {arr[0]} not found")
-        return None
+        return None, default
     return font[0], font[1].get(arr[1])

@@ -2,18 +2,13 @@
 # Buttons that are drawn on render()
 #
 import logging
-import threading
 
-from PIL import Image, ImageDraw
-
-from cockpitdecks import ICON_SIZE, now
-from cockpitdecks.resources.iconfonts import ICON_FONTS
+from cockpitdecks import ICON_SIZE
+from cockpitdecks.resources.iconfonts import get_special_character
 
 from cockpitdecks.resources.color import convert_color, light_off
 from cockpitdecks.strvar import TextWithVariables
 from .draw import DrawBase  # explicit Icon from file to avoid circular import
-from .draw_animation import DrawAnimation
-from cockpitdecks.value import Value
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -94,45 +89,40 @@ class DataIcon(DrawBase):
             )
 
         # Side icon
-        icon_str = "*"
         icon = self.icon_style.get_text()
-        icon_arr = icon.split(":")
-        if len(icon_arr) == 0 or icon_arr[0] not in ICON_FONTS.keys():
-            logger.warning(f"button {self.button.name}: invalid icon {icon}")
-        else:
-            icon_name = ":".join(icon_arr[1:])
-            icon_str = ICON_FONTS[icon_arr[0]][1].get(icon_name, "*")
-        icon_font = self.data.get("icon-font", ICON_FONTS[icon_arr[0]][0])
-        font = self.get_font(icon_font, int(self.icon_style.size))
-        inside = round(0.04 * image.width + 0.5)
-        w = inside - 4
-        h = image.height / 2
-        draw.text((w, h), text=icon_str, font=font, anchor="lm", align="left", fill=self.icon_style.color)  # (image.width / 2, 15)
+        icon_font, icon_str = get_special_character(icon, "*")
+        if icon_font is not None:
+            font = self.get_font(icon_font, int(self.icon_style.size))
+            inside = round(0.04 * image.width + 0.5)
+            w = inside - 4
+            h = image.height / 2
+            draw.text((w, h), text=icon_str, font=font, anchor="lm", align="left", fill=self.icon_style.color)  # (image.width / 2, 15)
 
         # Trend
         data_trend = self.data.get("data-trend")
-        trend_str = ICON_FONTS[icon_arr[0]][1].get("minus")
         trend_val = self.button.trend()
-        if trend_val == 1:
-            trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-up")
-        elif trend_val == -1:
-            trend_str = ICON_FONTS[icon_arr[0]][1].get("arrow-down")
-        font = self.get_font(icon_font, int(self.icon_style.size / 2))
-        if data_trend:
-            draw.text(
-                (w + self.icon_style.size + 4, h),
-                text=trend_str,
-                font=font,
-                anchor="lm",
-                align="center",
-                fill=self.icon_style.color,
-            )
+
+        trend_font, trend_str = get_special_character("fa:minus", "=")
+        if trend_val > 0:
+            trend_font, trend_str = get_special_character("fa:arrow-up", "+")
+        elif trend_val < 0:
+            trend_font, trend_str = get_special_character("fa:arrow-down", "-")
+        if trend_font is not None:
+            font = self.get_font(trend_font, int(self.icon_style.size / 2))
+            if data_trend:
+                draw.text(
+                    (w + self.icon_style.size + 4, h),
+                    text=trend_str,
+                    font=font,
+                    anchor="lm",
+                    align="center",
+                    fill=self.icon_style.color,
+                )
 
         # Value
         DATA_UNIT_SEP = " "
         data_value = self.data_style.get_formula_result()
         data_str = self.data_style.get_text()
-
         # if data_unit is not None:
         #    data_str = data_str + DATA_UNIT_SEP + data_unit
 

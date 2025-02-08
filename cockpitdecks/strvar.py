@@ -332,6 +332,8 @@ class Formula(StringWithVariables):
     def value(self):
         if self._has_state_vars:
             return self.execute_formula(store=True, cascade=True)
+        if self.current_value is None:  # may be it was never evaluated, for example static value
+            self.execute_formula(store=True, cascade=False)
         return super().value()
 
     def get_formatted_value(self) -> str:
@@ -363,9 +365,9 @@ class Formula(StringWithVariables):
         value = r.calculate()
         logger.debug(f"value {self.display_name}: {self.formula} => {expr} => {value}")
         valueout = value
-        # print(">>>>> NEW VALUE", self.display_name, self.message, " ==> ", valueout)
         if self.is_string:
             valueout = self.format_value(value)
+        # print(">>>>> NEW VALUE", self.display_name, self.message, " ==> ", valueout, type(valueout))
         if store:
             self.update_value(new_value=valueout, cascade=cascade)
         return valueout
@@ -435,7 +437,7 @@ class TextWithVariables(StringWithVariables):
             self._formula = Formula(owner=owner, formula=formula)
 
         message = config.get(prefix)
-        StringWithVariables.__init__(self, owner=owner, message=message) # will call init()
+        StringWithVariables.__init__(self, owner=owner, message=message)  # will call init()
 
     def get_variables(self) -> set:
         ret = super().get_variables()

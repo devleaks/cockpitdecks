@@ -40,7 +40,7 @@ class Value:
             self._set_simdata = self._button.sim.get_variable(self._set_simdata_path)
             self._set_simdata.writable = True
 
-        # Value domain:
+        # Value range and domain:
         self.value_min = self._config.get(CONFIG_KW.VALUE_MIN.value)
         self.value_max = self._config.get(CONFIG_KW.VALUE_MAX.value)
         self.value_inc = self._config.get(CONFIG_KW.VALUE_INC.value)
@@ -50,20 +50,16 @@ class Value:
 
         # Used in "value"
         self._simulator_variable: set | None = None
-        self._string_simulator_variable: set | None = None
-        self._known_extras: Tuple[str] = tuple()
+        self._string_simulator_variables: set | None = None
+
         self._formula: Formula | None = None
+        self._known_extras: Tuple[str] = tuple()
 
         self.init()
         # print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
 
     def init(self):
-        self._string_simulator_variable = self.string_datarefs
-        if type(self._string_simulator_variable) is str:
-            if "," in self._string_simulator_variable:
-                self._string_simulator_variable = self._string_simulator_variable.replace(" ", "").split(",")
-            else:
-                self._string_simulator_variable = [self._string_simulator_variable]
+        self._string_simulator_variables = self.get_string_variables()
 
         # there is a special issue if dataref we get value from is also dataref we set
         # in this case there MUST be a formula to evalute the value before we set it
@@ -159,8 +155,19 @@ class Value:
         logger.debug(f"value {self.name}: found datarefs {self._simulator_variable}")
         return self._simulator_variable
 
-    def get_all_datarefs(self) -> list:
-        return self.get_variables() | self._string_simulator_variable
+    def get_string_variables(self) -> set:
+        if self._string_simulator_variables is not None:
+            return self._string_simulator_variables
+        self._string_simulator_variables = self.string_datarefs
+        if type(self._string_simulator_variables) is str:
+            if "," in self._string_simulator_variables:
+                self._string_simulator_variables = self._string_simulator_variables.replace(" ", "").split(",")
+            else:
+                self._string_simulator_variables = [self._string_simulator_variables]
+        return self._string_simulator_variables
+
+    def get_all_variables(self) -> set:
+        return self.get_variables() | self._string_simulator_variables
 
     def scan_variables(self, base: dict | None = None, extra_keys: list = []) -> set:
         """
@@ -415,11 +422,12 @@ class Value:
         for k, v in ICON_FONTS.items():
             if text_font.lower().startswith(v[0].lower()):  # should be equal, except extension?
                 s = "\\${%s:([^\\}]+?)}" % (k)
+                # s = f"\\${{{k}:([^\\}}]+?)}}"
                 icons = re.findall(s, text)
                 for i in icons:
                     if i in v[1].keys():
                         text = text.replace(f"${{{k}:{i}}}", v[1][i])
-                        logger.debug(f"button {self._button.name}: substituing font icon {i}")
+                        logger.debug(f"button {self._button.button_name()}: substituing font icon {i}")
 
         # Formula keyword in text
         # If text contains ${formula}, it is replaced by the value of the formula calculation.
@@ -432,12 +440,12 @@ class Value:
                 if res is not None and res != "":  # Format output if format present
                     if text_format is not None:
                         res = float(res)
-                        logger.debug(f"button {self._button.name}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
+                        logger.debug(f"button {self._button.button_name()}: {root}-format {text_format}: res {res} => {text_format.format(res)}")
                         res = text_format.format(res)
                     else:
                         res = str(res)
             else:
-                logger.warning(f"button {self._button.name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+                logger.warning(f"button {self._button.button_name()}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
 
             text = text.replace(KW_FORMULA_STR, res)
 
@@ -491,7 +499,7 @@ class Value:
         # 4. Multiple datarefs
         if len(self._simulator_variable) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
             r = {}
-            for d in self.get_all_datarefs():
+            for d in self.get_all_variables():
                 v = self.get_simulator_variable_value(simulator_variable=d)
                 r[d] = v
             logger.info(f"value {self.name}: {r} (no formula, no dataref, returning all datarefs)")
@@ -537,5 +545,5 @@ class Value:
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0
             self._set_simdata.update_value(new_value=new_value, cascade=True)
-            # print(f"set-dataref>> button {self._button.name}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
+            # print(f"set-dataref>> button {self._button.button_name()}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
             self._set_simdata.save()

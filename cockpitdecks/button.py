@@ -18,7 +18,7 @@ from .buttons.activation import ACTIVATION_VALUE, ActivationValueProvider
 from .buttons.representation import Annunciator
 from .variable import ValueProvider, InternalVariable, VariableListener
 from .simulator import SimulatorVariable, SimulatorVariableValueProvider
-from .strvar import Formula
+from .strvar import StringWithVariables
 from .value import Value
 from .instruction import Instruction
 
@@ -665,7 +665,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable) and not isinstance(data, Formula):
+        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable) and not isinstance(data, StringWithVariables):
             logger.error(f"button {self.name}: not a simulator or internal variable ({type(data).__name__})")
             return
         logger.debug(f"{self.name}: {data.name} changed")
