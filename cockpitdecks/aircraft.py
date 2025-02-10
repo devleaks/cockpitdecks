@@ -630,7 +630,7 @@ class Aircraft:
 
     def terminate(self):
         if not self.is_running():
-            logger.info("aircraft not running, no termination necessary")
+            logger.debug("no aircraft running or aircraft not running, no termination necessary")
             return
         logger.info("terminating aircraft..")
         drefs = {d.name: d.value() for d in self.cockpit.variable_database.database.values()}  #  if d.is_internal

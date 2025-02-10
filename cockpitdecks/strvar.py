@@ -5,7 +5,6 @@
 import logging
 import uuid
 import re
-import traceback
 
 from cockpitdecks.constant import CONFIG_KW
 from cockpitdecks.variable import Variable, VariableListener, PATTERN_DOLCB
@@ -19,7 +18,8 @@ from .resources.color import DEFAULT_COLOR, convert_color
 from .resources.iconfonts import ICON_FONTS, get_special_character
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+
 
 # Name spaces for UUID
 # Name of var is hash from buttton_name() and raw string in proper domain
@@ -245,6 +245,9 @@ class StringWithVariables(Variable, VariableListener):
     # ##################################
     # Local operations
     #
+    def get_variable_format(self, variable) -> str:
+        return self._formats.get(variable)
+
     def substitute_values(self, text: str | None = None, default: str = "0.0", formatting=None, store: bool = False, cascade: bool = False) -> str:
         """Substitute values for each variable.
 
@@ -284,13 +287,17 @@ class StringWithVariables(Variable, VariableListener):
             if value is None:
                 value = default
                 logger.warning(f"variable {self.name}: {token}: value is null, substitued {value}")
-            elif formatting is not None:
-                if type(value) in [int, float]:  # probably formula is a constant value
-                    value_str = formatting.format(value)
-                    logger.debug(f"variable {self.display_name}: formatted {formatting}:  {value_str}")
-                    value = value_str
-                else:
-                    logger.warning(f"variable {self.display_name}: has format string '{formatting}' but value is not a number '{value}'")
+            else:
+                local_format = self.get_variable_format(varname)
+                if local_format is None:
+                    local_format = formatting
+                if local_format is not None:
+                    if type(value) in [int, float]:  # probably formula is a constant value
+                        value_str = local_format.format(value)
+                        logger.debug(f"variable {self.display_name}: formatted {local_format}:  {value_str}")
+                        value = value_str
+                    else:
+                        logger.warning(f"variable {self.display_name}: has format string '{local_format}' but value is not a number '{value}'")
 
             logger.debug(f"{self.owner} ({type(self.owner)}): {varname}: value {value}")
             # print("BEFORE", text, token, str(value))
@@ -471,6 +478,11 @@ class TextWithVariables(StringWithVariables):
         DEFAULT_VALID_TEXT_POSITION = "cm"
         self.format = self._config.get(f"{self.prefix}-format")
 
+        if type(self.format) is dict:
+            logger.debug(f"variable {self.display_name}: has multiple formats")
+            self._formats = self._formats | self.format
+        # else, same format applies to all variables
+
         dflt_system_font = self.owner.get_attribute("system-font")
         if dflt_system_font is None:
             logger.error(f"variable {self.display_name}: no system font")
@@ -552,12 +564,15 @@ class TextWithVariables(StringWithVariables):
         if KW_FORMULA_STR in str(text):
             res = ""
             if self._formula is not None:
-                res = self._formula.execute_formula()
+                res = self._formula.value()
                 if res is not None and res != "":  # Format output if format present
-                    if self.format is not None:
+                    local_format = self.get_variable_format(CONFIG_KW.FORMULA.value)
+                    if local_format is None:
+                        local_format = self.format
+                    if local_format is not None:
                         restmp = float(res)
-                        res = self.format.format(restmp)
-                        logger.debug(f"variable {self.display_name}: formula: {self.prefix}: format {self.format}: res {restmp} => {res}")
+                        res = local_format.format(restmp)
+                        logger.debug(f"variable {self.display_name}: formula: {self.prefix}: format {local_format}: res {restmp} => {res}")
                     else:
                         res = str(res)
             else:

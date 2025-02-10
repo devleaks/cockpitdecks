@@ -5,7 +5,6 @@ import logging
 from enum import Enum
 from abc import ABC, abstractmethod
 from typing import Dict, Any
-import traceback
 
 
 from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
@@ -68,10 +67,11 @@ class Variable(ABC):
         self._round = None
         self._update_frequency = DEFAULT_FREQUENCY  # sent by the simulator that many times per second.
         self._writable = False  # this is a cockpitdecks specific attribute, not an X-Plane meta data
+        self._format = None
 
-        self._previous_value = None  # raw values
-        self._current_value = None
-        self.previous_value = None
+        self._previous_value: Any | None = None  # raw values
+        self._current_value: Any | None = None
+        self.previous_value: Any | None = None  # rounded and/or formatted value
         self.current_value: Any | None = None
         self.current_array: List[float] = []
 
@@ -178,8 +178,8 @@ class Variable(ABC):
 
     def update_value(self, new_value, cascade: bool = False) -> bool:
         # returns whether has changed
-        def local_round(new_value):
-            return round(new_value, self._round) if self._round is not None and type(new_value) in [int, float] else new_value
+        def local_round(val):
+            return round(val, self._round) if self._round is not None and type(val) in [int, float] else val
 
         self._previous_value = self._current_value  # raw
         self._current_value = new_value  # raw
@@ -232,6 +232,23 @@ class Variable(ABC):
                     f"{self.name}: notified {lsnr.name} (not on an page)",
                 )
 
+    def value_formatted(self):
+        """Format value if format is supplied
+        Returns:
+            formatted value
+        """
+        value = self.current_value
+        if self._format is not None:
+            if type(value) in [int, float]:  # probably formula is a constant value
+                value_str = self._format.format(value)
+                logger.debug(f"{self.name}: returning formatted {self._format}:  {value_str}.")
+                return value_str
+            else:
+                logger.warning(f"{self.name}: has format string '{self._format}' but value is not a number '{value}'")
+        value_str = str(value)
+        logger.debug(f"{self.name}: received {value} ({type(value).__name__}), returns as string: '{value_str}'")
+        return value_str
+
     def save(self):
         # raise NotImplementedError
         # logger.warning(f"{self.name} nothing to save")
@@ -271,6 +288,10 @@ class InternalVariable(Variable):
 
 
 class ValueProvider:
+    """Any value: Either a variable value (internal, simulator)
+       but also button, activation or internal state value.
+    """
+
     def __init__(self, name: str, provider):
         self._provider = provider
 

@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class Value(StringWithVariables):
-    """A Value is a typed value used by Cockpitdecks entities.
+    """A Value is a typed value used by Button and Annunciator parts.
 
-    A Value can be a simple Data (either InternalVariable or SimulatorDate) or a formula that
+    A Value can be a simple Data (either InternalVariable or SimulatorVariable) or a formula that
     combines several Data.
     """
 
