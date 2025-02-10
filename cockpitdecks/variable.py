@@ -289,7 +289,7 @@ class InternalVariable(Variable):
 
 class ValueProvider:
     """Any value: Either a variable value (internal, simulator)
-       but also button, activation or internal state value.
+    but also button, activation or internal state value.
     """
 
     def __init__(self, name: str, provider):
