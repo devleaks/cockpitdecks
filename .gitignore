@@ -205,3 +205,4 @@ weather-ICAO-aircraft.json
 weather-ICAO-region.json
 *.sqlite
 /cockpitdecks/resources/weather/old
+variable-database-dump.yaml

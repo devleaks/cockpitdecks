@@ -203,13 +203,14 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
 
     def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
         """Returns data or create a new one, internal if path requires it"""
+        stars = 3
         if self.cockpit.variable_database.exists(name):
             t = self.cockpit.variable_database.get(name)
             if t.is_string != is_string:
                 logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string}")
                 if is_string:
                     t.data_type = InternalVariableType.STRING
-                    logger.warning(f"variable {name} type forced to string" + " *" * 10)
+                    logger.warning(f"variable {name} type forced to string" + " *" * stars)
             return t
         if Variable.is_internal_variable(path=name):
             t = self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
@@ -217,14 +218,14 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
                 logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string}")
                 if is_string:
                     t.data_type = InternalVariableType.STRING
-                    logger.warning(f"variable {name} type forced to string" + " *" * 10)
+                    logger.warning(f"variable {name} type forced to string" + " *" * stars)
             return t
         t = self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string))
         if t.is_string != is_string:
             logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string}")
             if is_string:
                 t.data_type = InternalVariableType.STRING
-                logger.warning(f"variable {name} type forced to string" + " *" * 10)
+                logger.warning(f"variable {name} type forced to string" + " *" * stars)
         return t
 
     def get_simulator_variable_value(self, simulator_variable, default=None) -> Any | None:

@@ -8,19 +8,13 @@ import math
 
 
 class RPC:
+    # Stack elements should be float
 
     def __init__(self, expression):
         self.tokens = []
 
-        if type(expression) != str:
+        if type(expression) is not str:
             expression = str(expression)
-            # print("RPC::__init__: expression is not a string")
-            # try:
-            #     self.tokens.append(float(expression))
-            # except:
-            #     self.tokens.append(expression)
-            #     print("RPC::__init__: expression cannot be converted to a float")
-            # return
 
         for part in expression.split(" "):
             try:
@@ -81,6 +75,38 @@ class RPC:
             elif isinstance(token, str):
                 print(f"RPC: pushing string {token}")
                 stack.append(token)
+            else:
+                print(f"RPC: invalid token {token}")
+
+        return stack if return_stack else stack.pop()
+
+
+class RPC_for_strings:
+    # Stack elements should be strings
+
+    def __init__(self, expression):
+        if type(expression) is not str:
+            expression = str(expression)
+        self.tokens = [str(p) for p in expression.split(" ")]
+
+    def calculate(self, return_stack=False):
+        stack = []
+
+        for token in self.tokens:
+            if isinstance(token, str):
+                stack.append(token)
+            elif token == "+":  # concat
+                stack.append(stack.pop() + stack.pop())
+            elif token == "fmt":  # 3.1415 {3.1f} fmt
+                stack.append(stack.pop().format(float(stack.pop())))
+            elif token == "eq":  # test for equality, pushes 1 if equal, 0 otherwise
+                stack.append(1 if (stack.pop() == stack.pop()) else 0)
+            elif token == "lt":  # test for <, pushes 1 if <, 0 otherwise
+                stack.append(1 if (stack.pop() < stack.pop()) else 0)
+            elif token == "gt":  # test for >, pushes 1 if >, 0 otherwise
+                stack.append(1 if (stack.pop() < stack.pop()) else 0)
+            elif token == "not":  # test for equality, pushes 1 if equal, 0 otherwise
+                stack.append("0" if stack.pop() else "1")  # stack.pop() can be None, "", 0, False
             else:
                 print(f"RPC: invalid token {token}")
 

@@ -18,13 +18,7 @@ from .resources.color import DEFAULT_COLOR, convert_color
 from .resources.iconfonts import ICON_FONTS, get_special_character
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
-# Name spaces for UUID
-# Name of var is hash from buttton_name() and raw string in proper domain
-MESSAGE_NS = uuid.uuid4()
-FORMULA_NS = uuid.uuid4()
+# logger.setLevel(logging.DEBUG)
 
 
 class StringWithVariables(Variable, VariableListener):
@@ -39,10 +33,16 @@ class StringWithVariables(Variable, VariableListener):
         "...": Assumed to be a simulator variable.
     """
 
+    MESSAGE_NS = uuid.uuid4()
+
+    @staticmethod
+    def mk_uuid(message: str):
+        return uuid.uuid3(namespace=StringWithVariables.MESSAGE_NS, name=str(message))
+
     def __init__(self, owner, message: str, name: str | None = None, data_type: str = "string"):
         self._inited = False
         if name is None:
-            key = uuid.uuid3(namespace=MESSAGE_NS, name=str(message))
+            key = StringWithVariables.mk_uuid(message=str(message))
             name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
         Variable.__init__(self, name=name, data_type=data_type)
         self.owner = owner
@@ -62,10 +62,6 @@ class StringWithVariables(Variable, VariableListener):
         #     print("+++++ CREATED STRING", self.name, self.owner.name, message, self.get_variables())
         # if message is None:
         #     logger.warning(f"message {self.display_name}: no message")
-
-    @staticmethod
-    def mk_uuid(message: str):
-        return uuid.uuid3(namespace=MESSAGE_NS, name=str(message))
 
     def init(self):
         self._variables = self.get_variables()
@@ -324,12 +320,14 @@ class Formula(StringWithVariables):
     The value can be formatted to a string expression.
     """
 
+    FORMULA_NS = uuid.uuid4()
+
     @staticmethod
     def mk_uuid(message: str):
-        return uuid.uuid3(namespace=FORMULA_NS, name=str(message))
+        return uuid.uuid3(namespace=Formula.FORMULA_NS, name=str(message))
 
     def __init__(self, owner, formula: str, data_type: str = "float", default_value=0.0, format_str: str | None = None):
-        key = uuid.uuid3(namespace=FORMULA_NS, name=str(formula))
+        key = Formula.mk_uuid(message=str(formula))
         name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
         StringWithVariables.__init__(self, owner=owner, message=formula, data_type=data_type, name=name)
 

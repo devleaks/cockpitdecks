@@ -634,7 +634,7 @@ class Aircraft:
             return
         logger.info("terminating aircraft..")
         drefs = {d.name: d.value() for d in self.cockpit.variable_database.database.values()}  #  if d.is_internal
-        fn = "datarefs-log.yaml"
+        fn = "variable-database-dump.yaml"
         with open(fn, "w") as fp:
             yaml.dump(drefs, fp)
             logger.debug(f"..simulator data values saved in {fn} file")
