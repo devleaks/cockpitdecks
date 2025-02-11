@@ -127,8 +127,8 @@ LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quit
 # See https://github.com/pypa/packaging-problems/issues/664
 # and https://github.com/HansBug/hbutils/blob/main/hbutils/system/python/package.py
 #
-def _yield_reqs_to_install(req: Requirement, current_extra: str = ''):
-    if req.marker and not req.marker.evaluate({'extra': current_extra}):
+def _yield_reqs_to_install(req: Requirement, current_extra: str = ""):
+    if req.marker and not req.marker.evaluate({"extra": current_extra}):
         return
 
     try:
@@ -137,12 +137,12 @@ def _yield_reqs_to_install(req: Requirement, current_extra: str = ''):
         yield req
     else:
         if req.specifier.contains(version):
-            for child_req in (importlib_metadata.metadata(req.name).get_all('Requires-Dist') or []):
+            for child_req in importlib_metadata.metadata(req.name).get_all("Requires-Dist") or []:
                 child_req_obj = Requirement(child_req)
 
                 need_check, ext = False, None
                 for extra in req.extras:
-                    if child_req_obj.marker and child_req_obj.marker.evaluate({'extra': extra}):
+                    if child_req_obj.marker and child_req_obj.marker.evaluate({"extra": extra}):
                         need_check = True
                         ext = extra
                         break
@@ -153,8 +153,10 @@ def _yield_reqs_to_install(req: Requirement, current_extra: str = ''):
         else:  # main version not match
             yield req
 
+
 def _check_req(req: Requirement):
     return not bool(list(itertools.islice(_yield_reqs_to_install(req), 1)))
+
 
 def check_reqs(reqs: List[str]) -> bool:
     """
@@ -178,6 +180,8 @@ def check_reqs(reqs: List[str]) -> bool:
         **it will be ignored** instead of return ``False``.
     """
     return all(map(lambda x: _check_req(Requirement(x)), reqs))
+
+
 #
 # ################################################
 
