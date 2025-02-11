@@ -87,7 +87,7 @@ class Variable(ABC):
         for start in PREFIX:
             if path.startswith(start + PREFIX_SEP):
                 return False
-        return path != CONFIG_KW.FORMULA.value and "/" in path  # !!
+        return path != CONFIG_KW.FORMULA.value and "/" in path and len(path) > 7 # !!  a string for an annunciator is ON/R (4 chars)
 
     @staticmethod
     def is_internal_variable(path: str) -> bool:

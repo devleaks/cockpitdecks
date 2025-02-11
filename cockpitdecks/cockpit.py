@@ -10,12 +10,19 @@ import base64
 import threading
 import pickle
 import json
+import itertools
 
 import importlib
-from importlib.metadata import version, requires
+import importlib.metadata as importlib_metadata
 import pkgutil
 
+from importlib.metadata import version, requires
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+from packaging.version import Version
+
 from typing import Dict, Tuple
+
 from datetime import datetime
 from queue import Queue
 
@@ -113,6 +120,66 @@ if EVENTLOGFILE is not None:
     event_logger.addHandler(handler)
     event_logger.propagate = False
 LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
+
+
+# ################################################
+# pkg_resources.require(dependencies)  # to be replace with importlib statements
+# See https://github.com/pypa/packaging-problems/issues/664
+# and https://github.com/HansBug/hbutils/blob/main/hbutils/system/python/package.py
+#
+def _yield_reqs_to_install(req: Requirement, current_extra: str = ''):
+    if req.marker and not req.marker.evaluate({'extra': current_extra}):
+        return
+
+    try:
+        version = importlib_metadata.distribution(req.name).version
+    except importlib_metadata.PackageNotFoundError:  # req not installed
+        yield req
+    else:
+        if req.specifier.contains(version):
+            for child_req in (importlib_metadata.metadata(req.name).get_all('Requires-Dist') or []):
+                child_req_obj = Requirement(child_req)
+
+                need_check, ext = False, None
+                for extra in req.extras:
+                    if child_req_obj.marker and child_req_obj.marker.evaluate({'extra': extra}):
+                        need_check = True
+                        ext = extra
+                        break
+
+                if need_check:  # check for extra reqs
+                    yield from _yield_reqs_to_install(child_req_obj, ext)
+
+        else:  # main version not match
+            yield req
+
+def _check_req(req: Requirement):
+    return not bool(list(itertools.islice(_yield_reqs_to_install(req), 1)))
+
+def check_reqs(reqs: List[str]) -> bool:
+    """
+    Overview:
+        Check if the given requirements are all satisfied.
+
+    :param reqs: List of requirements.
+    :return satisfied: All the requirements in ``reqs`` satisfied or not.
+
+    Examples::
+        >>> from hbutils.system import check_reqs
+        >>> check_reqs(['pip>=20.0'])
+        True
+        >>> check_reqs(['pip~=19.2'])
+        False
+        >>> check_reqs(['pip>=20.0', 'setuptools>=50.0'])
+        True
+
+    .. note::
+        If a requirement's marker is not satisfied in this environment,
+        **it will be ignored** instead of return ``False``.
+    """
+    return all(map(lambda x: _check_req(Requirement(x)), reqs))
+#
+# ################################################
 
 
 class CockpitInstruction(Instruction):
@@ -563,7 +630,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         """
         Loads extensions, then build lists of available resources (simulators, decks, etc.)
         """
-        self.add_extensions(trace_ext_loading=self._environ.verbose)
+        show_details = self._environ.verbose
+
+        self.add_extensions(trace_ext_loading=show_details)
 
         self.all_simulators = {s.name: s for s in Cockpit.all_subclasses(Simulator)}
         logger.info(f"available simulators: {", ".join(self.all_simulators.keys())}")
@@ -575,15 +644,18 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self.all_activations = {s.name(): s for s in Cockpit.all_subclasses(Activation) if not s.name().endswith("-base")} | {
             DECK_ACTIONS.NONE.value: Activation
         }
-        logger.debug(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
+        if show_details:
+            logger.info(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
 
         self.all_representations = {s.name(): s for s in Cockpit.all_subclasses(Representation) if not s.name().endswith("-base")} | {
             DECK_FEEDBACK.NONE.value: Representation
         }
-        logger.debug(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
+        if show_details:
+            logger.info(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
 
         self.all_hardware_representations = {s.name(): s for s in Cockpit.all_subclasses(HardwareRepresentation)}
-        logger.debug(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
+        if show_details:
+            logger.info(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
 
         if not self.init_simulator():  # this will start the requested one
             logger.info("..initialized with error, cannot continue\n")
@@ -615,12 +687,11 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             return
         driver_info = []
         for deck_driver in self.all_deck_drivers:
-            desc = f"{deck_driver} (included)"
             try:
                 desc = f"{deck_driver} {version(deck_driver)}"
+                driver_info.append(desc)
             except:
-                pass
-            driver_info.append(desc)
+                logger.warning(f"no driver information for {deck_driver}")
         if len(driver_info) == 0:
             logger.warning("no device driver for physical decks")
             return
@@ -629,17 +700,21 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         logger.info("scanning for decks and initializing them (this may take a few seconds)..")
 
         dependencies = []
-        for deck_driver in self.all_deck_drivers.items():
+        for name, deck_driver in self.all_deck_drivers.items():
+            if name == "virtualdeck":
+                continue
             dep = ""
             try:
                 dep = f"{deck_driver[0].DRIVER_NAME}>={deck_driver[0].MIN_DRIVER_VERSION}"
             except:
-                pass
+                logger.warning(f"no driver information for {name}", exc_info=True)
             if dep != "":
                 dependencies.append(dep)
         logger.debug(f"dependencies: {dependencies}")
         if len(dependencies) > 0:
-            requires(dependencies)
+            check_reqs(dependencies)
+            logger.info(f"requirements {';'.join(dependencies)} satified")
+            # pkg_resources.require(dependencies)  # to be replace with importlib statements
 
         # If there are already some devices, we need to terminate/kill them first
         if len(self.devices) > 0:
@@ -662,7 +737,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 if serial in EXCLUDE_DECKS:
                     logger.warning(f"deck {serial} excluded")
                     del decks[name]
-                logger.debug(f"added {type(device).__name__} (driver {deck_driver}, serial {serial[:3]}{'*'*max(1,len(serial))})")
+                if self._environ.verbose:
+                    logger.info(f"added {type(device).__name__} (driver {deck_driver}, serial {serial[:3]}{'*'*max(1,len(serial))})")
                 self.devices.append(
                     {
                         CONFIG_KW.DRIVER.value: deck_driver,
