@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import logging
 import sys
+from pprint import pformat
 from abc import ABC, abstractmethod
 
 
@@ -35,8 +36,6 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
-DECK_BUTTON_DEFINITION = "_deck_def"  # warning: this attribute MUST match an attribute in JSON/JavaScript object in jinja templates
-
 
 class StateVariableValueProvider(ABC, ValueProvider):
     def __init__(self, name: str, button: Button):
@@ -53,10 +52,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         # Definition and references
         self._config = config
-        self._def = config.get(DECK_BUTTON_DEFINITION)
-        self.page: "Page" = page
-        self.mosaic = self._def.is_tile()
-        self._part_of_multi = False
+        self.page = page
 
         self.cockpit.set_logging_level(__name__)
 
@@ -68,6 +64,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         )  # internal key, mostly equal to index, but not always. Index is for users, _key is for this software.
 
         self._definition = self.deck.deck_type.get_button_definition(self.index)  # kind of meta data capabilties of button
+        if self._definition is None:
+            logger.warning(f"button {self.name}: no definition")
 
         self.name = config.get(CONFIG_KW.NAME.value, str(self.index))
         self.num_index = None
@@ -75,6 +73,9 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             idxnum = re.findall("\\d+(?:\\.\\d+)?$", self.index)  # just the numbers of a button index name knob3 -> 3.
             if len(idxnum) > 0:
                 self.num_index = idxnum[0]
+
+        self.mosaic = self._definition.is_tile()
+        self._part_of_multi = False
 
         # # Logging level
         # self.logging_level = config.get("logging-level", "INFO")
@@ -124,8 +125,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             self._representation = self.deck.cockpit.all_representations["none"](self)
 
         self._hardware_representation = None
-        if self.deck.is_virtual_deck() and self._def.has_hardware_representation():
-            rtype = self._def.get_hardware_representation()
+        if self.deck.is_virtual_deck() and self._definition.has_hardware_representation():
+            rtype = self._definition.get_hardware_representation()
             if rtype is not None and rtype in self.deck.cockpit.all_representations:
                 logger.debug(f"button {self.name} has hardware representation {rtype}")
                 self._hardware_representation = self.deck.cockpit.all_representations[rtype](self)
@@ -178,7 +179,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
         if self.wallpaper is not None:
-            self._def.set_block_wallpaper(self.wallpaper)
+            self._definition.set_block_wallpaper(self.wallpaper)
 
         # Initialize value providers
         SimulatorVariableValueProvider.__init__(self, name=self.name, simulator=self.sim)
@@ -195,7 +196,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def guess_activation_type(config):
         a = config.get(CONFIG_KW.TYPE.value)
         if a is None or a == CONFIG_KW.NONE.value:
-            logger.debug(f"not type attribute, assuming 'none' type")
+            logger.debug("no type attribute, assuming type is none")
             return CONFIG_KW.NONE.value
         return a
 
@@ -205,7 +206,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
-            logger.debug(f"no representation in {config}")
+            logger.debug(f"no representation in \n{pformat(config)},\n assuming none, add representation: none to suppress warning message")
         else:
             logger.warning(f"multiple representations {a} found in {config}")
         return CONFIG_KW.NONE.value
@@ -438,14 +439,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def get_string_datarefs(self) -> list:
         return self.string_datarefs
 
-    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
-        """Returns data or create a new one, internal if path requires it"""
-        if self.cockpit.variable_database.exists(name):
-            return self.cockpit.variable_database.get(name)
-        if InternalVariable.is_internal_variable(path=name):
-            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
-        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string))
-
     def get_variables(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
@@ -458,7 +451,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.scan_variables(extra_keys=["text"])
+        r = self._value.get_variables()
 
         # 1b. Managed values
         managed = None
@@ -496,12 +489,13 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         return r  # removes duplicates
 
-    def scan_variables(self, base: dict) -> list:
-        """
-        scan all datarefs in texts, computed datarefs, or explicitely listed.
-        This is applied to the entire button or to a subset (for annunciator parts for example).
-        """
-        return self._value.scan_variables(base)
+    def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
+        """Returns data or create a new one, internal if path requires it"""
+        if self.cockpit.variable_database.exists(name):
+            return self.cockpit.variable_database.get(name)
+        if InternalVariable.is_internal_variable(path=name):
+            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
+        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string))
 
     # ##################################
     # Dataref processing

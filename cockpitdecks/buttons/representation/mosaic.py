@@ -89,7 +89,7 @@ class Mosaic(MultiButtons):
         # make buttons!
         buttons = self.mosaic.get(DECK_KW.TILES.value)
         if buttons is not None:
-            pseudo_deck_type = self.button._def.mosaic
+            pseudo_deck_type = self.button._definition.mosaic
             if pseudo_deck_type is not None:
                 self.tiles = self.button.page.load_buttons(buttons=buttons, deck_type=pseudo_deck_type)
                 logger.debug(f"load_tiles: loaded tiles {', '.join([t.name for t in self.tiles])}")
@@ -99,13 +99,13 @@ class Mosaic(MultiButtons):
             logger.warning(f"{self.button.name}: no tile buttons")
 
     def place_tile(self, tile, image):
-        dimensions = tile._def.display_size()
+        dimensions = tile._definition.display_size()
         portion = tile.get_representation()
         if portion is None:
             logger.warning(f"mosaic: tile {tile.name} has no image")
             return
         portion = portion.resize(dimensions)
-        position = tile._def.get_offset()
+        position = tile._definition.get_offset()
         dest = (position[0], position[1], position[0] + dimensions[0], position[1] + dimensions[1])
         logger.debug(f"place_tile: {self.button.name}, {image.size}, {tile.name}, {dimensions}, {position}, {dest}")
         image.paste(portion, dest, portion)

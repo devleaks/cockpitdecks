@@ -89,7 +89,7 @@ class ChartData(DrawBase, VariableListener):
     def get_variables(self) -> set:
         if self.datarefs is None:
             if self.chart is not None:
-                self.datarefs = self.chart.button.scan_variables(base=self.chart_config)
+                self.datarefs = self.value.get_variables()
         logger.debug(f"chart {self.name} return datarefs {self.datarefs}")
         return self.datarefs
 

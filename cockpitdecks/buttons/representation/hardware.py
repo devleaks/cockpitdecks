@@ -35,12 +35,12 @@ class HardwareRepresentation(IconBase):
         button._config[NO_ICON] = True
         IconBase.__init__(self, button=button)
 
-        self.hardware = self.button._def.hardware_representation
+        self.hardware = self.button._definition.hardware_representation
         self.highlight_color = self.hardware.get("highlight-color", "#ffffff10")
         self.flash_color = self.hardware.get("flash-color", "#0f80ffb0")
         self.flash_duration = self.hardware.get("flash-duration", 100)  # msec
 
-        dimension = self.button._def.dimension
+        dimension = self.button._definition.dimension
         if type(dimension) in (int, float):
             self.radius = dimension
             self.width = 2 * dimension

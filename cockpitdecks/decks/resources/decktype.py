@@ -1,20 +1,18 @@
 import os
 import logging
-import json
 import glob
-import posixpath
 import importlib
 
 from typing import List, Dict, Tuple
 
 from cockpitdecks.constant import DECK_IMAGES
-from cockpitdecks.decks import resources
+from cockpitdecks.decks import resources  # this loads all deck defs, do not remove
+
 from py3rtree import RTree, Rect
 from PIL import Image
 
 from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
-from cockpitdecks import DECKS_FOLDER, RESOURCES_FOLDER, TYPES_FOLDER
-from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
+from cockpitdecks import TYPES_FOLDER
 from cockpitdecks.buttons.activation import Activation
 from cockpitdecks.buttons.representation import Representation
 from cockpitdecks import ICON_SIZE, VIRTUAL_DECK_DRIVER
@@ -499,7 +497,6 @@ class DeckTypeBase:
         if btncfg is not None:
             btncfg2 = btncfg.copy()  # need a copy otherwise original gets polluted by following additions:
             btncfg2["index"] = key
-            btncfg2[DECK_BUTTON_DEFINITION] = bntdef
             return btncfg2
         return None
 

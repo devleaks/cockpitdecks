@@ -1557,7 +1557,7 @@ class Mosaic(Activation):
 
         if type(event) is TouchEvent:
             coords = event.xy()
-            button_def = self.button._def.mosaic.get_button(x=coords[0], y=coords[1])
+            button_def = self.button._definition.mosaic.get_button(x=coords[0], y=coords[1])
             if button_def is not None:
                 logger.info(f"found button def {button_def.name}")
                 button = self.button.page.find_button(button_def)

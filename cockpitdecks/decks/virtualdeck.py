@@ -16,9 +16,9 @@ from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
 
-from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SwipeEvent, SlideEvent
+from cockpitdecks.event import Event, PushEvent, EncoderEvent, TouchEvent, SlideEvent
 from cockpitdecks.page import Page
-from cockpitdecks.button import Button, DECK_BUTTON_DEFINITION
+from cockpitdecks.button import Button
 from cockpitdecks.buttons.representation import (
     Representation,
     IconBase,
@@ -135,7 +135,6 @@ class VirtualDeck(DeckWithIcons):
                     # "command": "sim/map/show_current",
                     # "text": "MAP",
                     "type": "reload",
-                    DECK_BUTTON_DEFINITION: self.deck_type.get_button_definition(first_index),
                 },
                 page=page0,
             )

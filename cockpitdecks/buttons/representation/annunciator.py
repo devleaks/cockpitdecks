@@ -101,7 +101,7 @@ class AnnunciatorPart:
 
     def get_variables(self) -> set:
         if self.datarefs is None:
-            self.datarefs = self._value.scan_variables(extra_keys=["text"])
+            self.datarefs = self._value.get_variables() | self._display.get_variables()
         return self.datarefs
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):

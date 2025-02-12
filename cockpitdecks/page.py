@@ -8,7 +8,7 @@ from cockpitdecks.decks.resources.decktype import DeckType
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.simulator import SimulatorVariable
 from cockpitdecks.variable import InternalVariableType
-from .button import Button, DECK_BUTTON_DEFINITION
+from .button import Button
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -142,7 +142,6 @@ class Page:
                 if rty == "none":
                     logger.debug(f"page {self.name}: button has no representation but it is ok")
 
-                button_config[DECK_BUTTON_DEFINITION] = deck_type.get_button_definition(idx)
                 button = Button(config=button_config, page=self)
                 if button is not None:
                     if add_to_page:
