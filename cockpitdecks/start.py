@@ -46,7 +46,7 @@ yaml.default_flow_style = False
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 
-logging.basicConfig(level=logging.WARNING, format=FORMAT, datefmt="%H:%M:%S")
+logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="%H:%M:%S")
 
 logger = logging.getLogger(__name__)
 if LOGFILE is not None:

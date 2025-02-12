@@ -46,6 +46,13 @@ class DrawBase(IconBase):
         draw = ImageDraw.Draw(image)
         return image, draw
 
+    def double_icon_for_button(self, button_definition):
+        """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
+        sizes = button_definition.get_drawing_size()
+        if sizes is None:
+            return self.double_icon()
+        return self.double_icon(width=sizes[0], height=sizes[1])
+
     def move_and_send(self, image):
         # 1. Scale whole drawing if requested
         if self.draw_scale != 1:

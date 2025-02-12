@@ -576,6 +576,7 @@ class Annunciator(DrawBase):
 
         glow = Image.new(mode="RGBA", size=(annun_width, annun_height), color=annun_color)  # annunciator text and leds , color=(0, 0, 0, 0)
         draw = ImageDraw.Draw(glow)
+
         guard = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=annun_color)  # annunuciator optional guard
         guard_draw = ImageDraw.Draw(guard)
 

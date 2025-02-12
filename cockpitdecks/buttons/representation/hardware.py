@@ -86,8 +86,7 @@ class VirtualEncoder(HardwareRepresentation):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image = Image.new(mode="RGBA", size=(2 * self.radius, 2 * self.radius), color=TRANSPARENT_PNG_COLOR)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=2 * self.radius, height=2 * self.radius)
         # knob
         draw.ellipse(
             [0, 0] + [2 * self.radius, 2 * self.radius],

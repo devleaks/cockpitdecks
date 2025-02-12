@@ -239,6 +239,7 @@ class DeckButton:
         return None
 
     def get_drawing_size(self, length: int = ICON_SIZE) -> Tuple[int, int] | None:
+        # Aspect ratio is preserved, smallest dimension is ICON_SIZE
         sizes = self.display_size()
         if sizes is not None:
             lmin = min(sizes)

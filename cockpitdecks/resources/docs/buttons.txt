@@ -18,7 +18,7 @@ push
 random
 reload
 short-or-long-press
-simulator
+simulator  -- Experimental, start sim if on same computer
 slider
 stop
 swipe

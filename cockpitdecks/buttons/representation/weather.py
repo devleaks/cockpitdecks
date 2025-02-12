@@ -187,8 +187,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
 
     def make_weather_image(self):
         # Generic display text in small font on icon
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Weather Icon in the background

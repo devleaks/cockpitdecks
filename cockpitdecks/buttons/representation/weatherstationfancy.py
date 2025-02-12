@@ -102,9 +102,7 @@ class WeatherStationPlot(WeatherBaseIcon):
         # https://en.wikipedia.org/wiki/Station_model
 
         # logger.setLevel(logging.DEBUG)
-        image = Image.new(mode="RGBA", size=(ICON_SIZE, ICON_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
-
-        draw = ImageDraw.Draw(image)
+        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
 
         PLOT_SIZE = ICON_SIZE  # 100% fit icon
         S12 = int(PLOT_SIZE / 2)  # half the size, the middle
@@ -375,8 +373,7 @@ class WeatherStationPlot(WeatherBaseIcon):
             speedtxt = "no speed" if speed is None else round(speed, 1)
             dirtxt = "---" if direction is None else round(direction, 1)
             pd(f"draw_wind_barbs: speed {speedtxt}, {dirtxt}")
-            wind_image = Image.new(mode="RGBA", size=(PLOT_SIZE, PLOT_SIZE), color=TRANSPARENT_PNG_COLOR)  # annunciator text and leds , color=(0, 0, 0, 0)
-            wd = ImageDraw.Draw(wind_image)
+            wind_image, wd = self.double_icon(width=PLOT_SIZE, height=PLOT_SIZE)
 
             numbars = 8
             barbwidth = 6
