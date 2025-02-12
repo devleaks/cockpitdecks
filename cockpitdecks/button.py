@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 
 from .buttons.activation import ACTIVATION_VALUE, ActivationValueProvider
 from .buttons.representation import Annunciator
-from .variable import ValueProvider, InternalVariable, VariableListener
+from .variable import ValueProvider, InternalVariable, VariableListener, InternalVariableType
 from .simulator import SimulatorVariable, SimulatorVariableValueProvider
 from .strvar import StringWithVariables
 from .value import Value
@@ -333,6 +333,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         Install button
         """
+        # Register itself as listener of its variables
+
         # Set initial value if not already set
         if self._first_value_not_saved:
             logger.debug(f"button {self.name} setting initial value..")
@@ -346,6 +348,29 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         else:
             logger.debug(f"button {self.name}: already has a value ({self.current_value}), initial value ignored")
         # logger.debug(f"button {self.name}: {self.id()}")
+
+    def register_simulator_variable(self):
+        # Declared string dataref must be create FIRST so that they get the proper type.
+        # If they are later used (in expression), at least they were created with STRING type first.
+        stars = 3
+        for d in self.get_string_variables():
+            ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
+            if ref is not None:
+                ref.add_listener(self)
+                if not ref.is_string:
+                    logger.warning(f"page {self.name}: button {self.name} dataref {d} was not a string, forced as string" + " *" * stars)
+                    ref.data_type = InternalVariableType.STRING
+            else:
+                logger.error(f"button {self.name}: failed to create string dataref {d}")
+
+        for d in self.get_variables():
+            ref = self.sim.get_variable(d)  # creates or return already defined dataref
+            if ref is not None:
+                ref.add_listener(self)
+            else:
+                logger.error(f"button {self.name}: failed to create dataref {d}")
+
+        logger.debug(f"button {self.name} variables registered")
 
     @property
     def value(self):

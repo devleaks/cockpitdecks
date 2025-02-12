@@ -155,9 +155,9 @@ class Value(StringWithVariables):
         self._string_variables = self.string_datarefs
         if type(self._string_variables) is str:
             if "," in self._string_variables:
-                self._string_variables = set( self._string_variables.replace(" ", "").split(",") )
+                self._string_variables = set(self._string_variables.replace(" ", "").split(","))
             else:
-                self._string_variables = { self._string_variables }
+                self._string_variables = {self._string_variables}
         if type(self._string_variables) in [list, tuple]:
             self._string_variables = set(self._string_variables)
         return self._string_variables
