@@ -93,6 +93,7 @@ class Aircraft:
 
         # Internal variables
         self._aircraft_variable_names = set()
+        self._aircraft_string_variable_names = set()
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
         self.default_pages = None  # current pages on decks when reloading
@@ -183,9 +184,13 @@ class Aircraft:
         for v in self.decks.values():
             v.inspect(what)
 
+    # Initialisation, setup
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified."""
         return self._aircraft_variable_names
+
+    def get_string_variables(self) -> set:
+        return self._aircraft_string_variable_names
 
     # Initialisation, setup
     def scan_web_decks(self):

@@ -58,6 +58,7 @@ class Variable(ABC):
         self.physical_unit = physical_unit
 
         # Stats
+        self._creator = None
         self._last_updated = None
         self._last_changed = None
         self._updated = 0  # number of time value updated
@@ -272,7 +273,7 @@ class VariableFactory:
     """A VariableFactory has a function to generate variable for its own use."""
 
     @abstractmethod
-    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+    def variable_factory(self, name: str, is_string: bool = False, creator: str = None) -> Variable:
         raise NotImplementedError
 
 

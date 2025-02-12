@@ -69,6 +69,9 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
     def get_variables(self) -> set:
         return set()
 
+    def get_string_variables(self) -> set:
+        return set()
+
     # Simulator variable pre-processing
     def set_simulator_variable_roundings(self, simulator_variable_roundings: dict):
         self.roundings = self.roundings | simulator_variable_roundings
@@ -150,6 +153,17 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         dtdrefs = {}
         for provider in self.providers:
             cnt = 0
+            for d in provider.get_string_variables():
+                if d.startswith(CONFIG_KW.STRING_PREFIX.value):
+                    d = d.replace(CONFIG_KW.STRING_PREFIX.value, "")
+                if d in dtdrefs:
+                    logger.info(f"{d} already added")
+                    continue
+                dtdrefs[d] = self.get_variable(d, is_string=True)
+                dtdrefs[d].add_listener(provider)
+                cnt = cnt + 1
+            logger.info(f"adding {cnt} permanent string variables from {provider.name}")
+            cnt = 0
             for d in provider.get_variables():
                 if d in dtdrefs:
                     logger.info(f"{d} already added")
@@ -164,7 +178,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
             logger.info(f"adding {cnt} permanent variables from {provider.name}")
         return dtdrefs
 
-    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+    def variable_factory(self, name: str, is_string: bool = False, creator: str = None) -> Variable:
         # here is the place to inject a physical type if any, may be from a list
         # like for roundings and frequencies?
         # dataref-physical:
@@ -178,6 +192,8 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         variable._sim = self
         self.set_rounding(variable)
         self.set_frequency(variable)
+        if creator is not None:
+            variable._creator = creator
         return variable
 
     def register(self, variable: Variable) -> Variable:
@@ -207,22 +223,22 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         if self.cockpit.variable_database.exists(name):
             t = self.cockpit.variable_database.get(name)
             if t.is_string != is_string:
-                logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string}")
+                logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string} (create={t._creator})")
                 if is_string:
                     t.data_type = InternalVariableType.STRING
                     logger.warning(f"variable {name} type forced to string" + " *" * stars)
             return t
         if Variable.is_internal_variable(path=name):
-            t = self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
+            t = self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string, creator=self.name))
             if t.is_string != is_string:
-                logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string}")
+                logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string} (create={t._creator})")
                 if is_string:
                     t.data_type = InternalVariableType.STRING
                     logger.warning(f"variable {name} type forced to string" + " *" * stars)
             return t
-        t = self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string))
+        t = self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string, creator=self.name))
         if t.is_string != is_string:
-            logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string}")
+            logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string} (create={t._creator})")
             if is_string:
                 t.data_type = InternalVariableType.STRING
                 logger.warning(f"variable {name} type forced to string" + " *" * stars)

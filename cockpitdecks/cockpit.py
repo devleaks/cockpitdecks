@@ -13,13 +13,8 @@ import json
 import itertools
 
 import importlib
-import importlib.metadata as importlib_metadata
 import pkgutil
-
-from importlib.metadata import version, requires
 from packaging.requirements import Requirement
-from packaging.utils import canonicalize_name
-from packaging.version import Version
 
 from typing import Dict, Tuple
 
@@ -132,12 +127,12 @@ def _yield_reqs_to_install(req: Requirement, current_extra: str = ""):
         return
 
     try:
-        version = importlib_metadata.distribution(req.name).version
-    except importlib_metadata.PackageNotFoundError:  # req not installed
+        version = importlib.metadata.distribution(req.name).version
+    except importlib.metadata.PackageNotFoundError:  # req not installed
         yield req
     else:
         if req.specifier.contains(version):
-            for child_req in importlib_metadata.metadata(req.name).get_all("Requires-Dist") or []:
+            for child_req in importlib.metadata.metadata(req.name).get_all("Requires-Dist") or []:
                 child_req_obj = Requirement(child_req)
 
                 need_check, ext = False, None
@@ -390,7 +385,8 @@ class CockpitInfoInstruction(CockpitInstruction):
 # Little internal kitchen for internal datarefs
 AIRCRAF_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING, CONFIG_KW.STRING_PREFIX.value + LIVERY_CHANGE_MONITORING}
 
-PERMANENT_SIMULATOR_DATA = AIRCRAF_CHANGE_SIMULATOR_DATA
+PERMANENT_SIMULATOR_VARIABLES = []
+PERMANENT_SIMULATOR_STRING_VARIABLES = AIRCRAF_CHANGE_SIMULATOR_DATA
 
 
 class CockpitBase:
@@ -505,7 +501,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self._simulator_name = environ.get(ENVIRON_KW.SIMULATOR_NAME.value)
         self._simulator = None
         self.sim = None
-        self._simulator_variable_names = PERMANENT_SIMULATOR_DATA
+        self._simulator_variable_names = PERMANENT_SIMULATOR_VARIABLES
+        self._simulator_string_variable_names = PERMANENT_SIMULATOR_STRING_VARIABLES
 
         # "Aircraft" name or model...
         self.aircraft = Aircraft(cockpit=self)
@@ -692,7 +689,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         driver_info = []
         for deck_driver in self.all_deck_drivers:
             try:
-                desc = f"{deck_driver} {version(deck_driver)}"
+                desc = f"{deck_driver} {importlib.metadata.version(deck_driver)}"
                 driver_info.append(desc)
             except:
                 logger.warning(f"no driver information for {deck_driver}")
@@ -814,9 +811,19 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
             ret = ret | ac
         return ret
 
-    def variable_factory(self, name: str, is_string: bool = False) -> Variable:
+    def get_string_variables(self) -> set:
+        ret = self._simulator_string_variable_names
+        ac = self.aircraft.get_string_variables()
+        if len(ac) > 0:
+            ret = ret | ac
+        return ret
+
+    def variable_factory(self, name: str, is_string: bool = False, creator: str = None) -> Variable:
         """Returns data or create a new internal variable"""
-        return InternalVariable(name=name, is_string=is_string)
+        variable = InternalVariable(name=name, is_string=is_string)
+        if creator is not None:
+            variable._creator = creator
+        return variable
 
     def register(self, variable: Variable) -> Variable:
         return self.variable_database.register(variable)
@@ -830,7 +837,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
                 if is_string:
                     var.data_type = InternalVariableType.STRING
                     logger.warning(f"variable {name} type forced to string" + " *" * 10)
-        return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string))
+        return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string, creator=self.name))
 
     def get_variable_value(self, name, default=None) -> Any | None:
         """Gets the value of a Variable monitored by Cockpitdecks

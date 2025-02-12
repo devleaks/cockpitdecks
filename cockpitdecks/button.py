@@ -436,8 +436,23 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 return [f"{pathroot}[{i}]" for i in range(start, end)]
         return [path]
 
-    def get_string_datarefs(self) -> list:
-        return self.string_datarefs
+    def get_string_variables(self) -> list:
+        datarefs = self.string_datarefs | self._value.get_string_variables()
+        # Activation datarefs
+        if self._activation is not None:
+            r = self._activation.get_string_variables()
+            if r is not None and len(r) > 0:
+                datarefs = datarefs | r
+                self._value.add_variables(r, reason="activation/str")
+                logger.debug(f"button {self.name}: added activation string datarefs {r}")
+        # Representation datarefs
+        if self._representation is not None:
+            r = self._representation.get_string_variables()
+            if r is not None and len(r) > 0:
+                datarefs = datarefs | r
+                self._value.add_variables(r, reason="representation/str")
+                logger.debug(f"button {self.name}: added representation string datarefs {r}")
+        return datarefs
 
     def get_variables(self, base: dict | None = None) -> set:
         """
@@ -451,7 +466,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
-        r = self._value.get_variables()
+        datarefs = self._value.get_variables()
 
         # 1b. Managed values
         managed = None
@@ -459,7 +474,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if managed_dict is not None:
             managed = managed_dict.get(CONFIG_KW.SIM_VARIABLE.value)
         if managed is not None:
-            r.add(managed)
+            datarefs.add(managed)
             logger.debug(f"button {self.name}: added managed dataref {managed}")
 
         # 1c. Guarded buttons
@@ -468,34 +483,34 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if guard_dict is not None:
             guarded = guard_dict.get(CONFIG_KW.SIM_VARIABLE.value)
         if guarded is not None:
-            r.add(guarded)
+            datarefs.add(guarded)
             logger.debug(f"button {self.name}: added guarding dataref {guarded}")
 
         # Activation datarefs
         if self._activation is not None:
-            datarefs = self._activation.get_variables()
-            if datarefs is not None:
-                r = r | datarefs
+            r = self._activation.get_variables()
+            if r is not None and len(r) > 0:
+                datarefs = datarefs | r
                 self._value.add_variables(r, reason="activation")
-                logger.debug(f"button {self.name}: added activation datarefs {datarefs}")
+                logger.debug(f"button {self.name}: added activation datarefs {r}")
 
         # Representation datarefs
         if self._representation is not None:
-            datarefs = self._representation.get_variables()
-            if datarefs is not None:
-                r = r | datarefs
+            r = self._representation.get_variables()
+            if r is not None and len(r) > 0:
+                datarefs = datarefs | r
                 self._value.add_variables(r, reason="representation")
-                logger.debug(f"button {self.name}: added representation datarefs {datarefs}")
+                logger.debug(f"button {self.name}: added representation datarefs {r}")
 
-        return r  # removes duplicates
+        return datarefs
 
     def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
         """Returns data or create a new one, internal if path requires it"""
         if self.cockpit.variable_database.exists(name):
             return self.cockpit.variable_database.get(name)
         if InternalVariable.is_internal_variable(path=name):
-            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string))
-        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string))
+            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string, creator=self.button_name()))
+        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string, creator=self.button_name()))
 
     # ##################################
     # Dataref processing
@@ -816,3 +831,28 @@ class ButtonInstruction(Instruction):
 
     def _execute(self):
         raise NotImplementedError(f"Please implement ButtonInstruction._execute method ({self.name})")
+
+
+class ButtonRenderInstruction(ButtonInstruction):
+    """Instruction to render a button after update"""
+
+    INSTRUCTION_NAME = "render"
+
+    def __init__(self, name: str, button: Button) -> None:
+        ButtonInstruction.__init__(self, name=self.INSTRUCTION_NAME, button=button)
+
+    def _execute(self):
+        self.button.render()
+
+
+class ButtonRenderInstruction(ButtonInstruction):
+    """Instruction to render a button after update"""
+
+    INSTRUCTION_NAME = "update"
+
+    def __init__(self, name: str, button: Button, value) -> None:
+        ButtonInstruction.__init__(self, name=self.INSTRUCTION_NAME, button=button)
+        self.value = value
+
+    def _execute(self):
+        self.button.value = value

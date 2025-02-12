@@ -130,7 +130,7 @@ class StringWithVariables(Variable, VariableListener):
         tokens = re.findall(PATTERN_DOLCB, self.message)
         for varname in tokens:
             if Variable.is_icon(varname):
-                logger.debug(f"{varname} is an icon, ignorings")
+                logger.debug(f"{varname} is an icon, ignored")
                 continue
             self._variables.add(varname)
             if Variable.is_state_variable(varname):
@@ -144,6 +144,9 @@ class StringWithVariables(Variable, VariableListener):
             self._variables.remove(CONFIG_KW.FORMULA.value)
 
         return self._variables
+
+    def get_string_variables(self) -> set:
+        return set()
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.

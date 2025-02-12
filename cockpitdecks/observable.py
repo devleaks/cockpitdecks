@@ -1,6 +1,5 @@
 from __future__ import annotations
 import logging
-from typing import Set
 
 from cockpitdecks.constant import CONFIG_KW, ID_SEP
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener
@@ -31,6 +30,12 @@ class Observables:
         ret = set()
         for o in self.observables:
             ret = ret | o.get_variables()
+        return ret
+
+    def get_string_variables(self) -> set:
+        ret = set()
+        for o in self.observables:
+            ret = ret | o.get_string_variables()
         return ret
 
     def enable(self, name):
@@ -120,18 +125,29 @@ class Observable(SimulatorVariableListener):
 
     def init(self):
         # Register simulator variables and ask to be notified
+
+        simdata = self._value.get_string_variables()
+        if simdata is not None:
+            for s in simdata:
+                ref = self.sim.get_variable(s, is_string=True)
+                if ref is not None:
+                    ref.add_listener(self)
+        logger.debug(f"observable {self.name}: listening to strings {simdata}")
+
         simdata = self._value.get_variables()
         if simdata is not None:
             for s in simdata:
                 ref = self.sim.get_variable(s)
                 if ref is not None:
                     ref.add_listener(self)
-
         logger.debug(f"observable {self.name}: listening to {simdata}")
         # logger.debug(f"observable {self.name} inited")
 
     def get_variables(self) -> set:
         return self._value.get_variables()
+
+    def get_string_variables(self) -> set:
+        return self._value.get_string_variables()
 
     def simulator_variable_changed(self, data: SimulatorVariable):
         # if not self._enabled:

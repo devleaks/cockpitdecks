@@ -145,6 +145,9 @@ class Representation:
         # is the value of the button.
         return set()
 
+    def get_string_variables(self) -> set:
+        return set()
+
     def get_button_value(self):
         # shortcut for representations
         return self.button.value

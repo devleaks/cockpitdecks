@@ -178,7 +178,7 @@ class Page:
     def register_simulator_variable(self, button: Button):
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
-        for d in button.get_string_datarefs():
+        for d in button.get_string_variables():
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
@@ -222,7 +222,7 @@ class Page:
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
     def unregister_simulator_variable(self, button: Button):
-        for d in button.get_string_datarefs():
+        for d in button.get_string_variables():
             ref = self.simulator_variable.get(d)
             if ref is not None:
                 ref.remove_listener(button)
