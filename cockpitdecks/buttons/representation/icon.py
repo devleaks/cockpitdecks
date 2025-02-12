@@ -449,6 +449,12 @@ class IconText(IconColor):
         if self.bg_texture is not None:
             self.icon_texture = self.bg_texture
 
+    def get_variables(self) -> set:
+        datarefs = set()
+        if self._text is not None:
+            datarefs = self._text.get_variables()
+        return datarefs
+
     def get_image(self):
         """
         Helper function to get button image and overlay label on top of it.
