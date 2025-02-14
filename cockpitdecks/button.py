@@ -153,6 +153,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 logger.debug(f"button {self.name} has guard {self._guard_dref.name}")
 
         # String datarefs
+        # self.string_datarefs are string datarefs as declared in the button
+        # they are not all string datarefs collected from activation and/or representation.
         self.string_datarefs = config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
         if type(self.string_datarefs) is str:
             if "," in self.string_datarefs:
@@ -169,13 +171,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
-        self.all_datarefs = self.get_variables()  # this does not add string datarefs
+        self.all_datarefs = self.get_variables()  # this does not contain string datarefs
         if len(self.all_datarefs) > 0:
             self.page.register_simulator_variable(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
-
-        # collection in single set
-        self.all_datarefs = self.all_datarefs | self.string_datarefs
+        # add string datarefs to all_datarefs after their registration at the page level
+        self.all_datarefs = self.all_datarefs | self.get_string_variables()
 
         self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
         if self.wallpaper is not None:
@@ -486,8 +487,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         This can be applied to the entire button or to a subset (for annunciator parts)
         """
         if base is None:  # local, button-level ones
-            if self.all_datarefs is not None:  # cached if globals (base is None)
-                return self.all_datarefs
             base = self._config
 
         # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref

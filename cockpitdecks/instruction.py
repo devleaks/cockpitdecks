@@ -18,7 +18,16 @@ class InstructionFactory:
     Often, the entity generates instruction it will perform.
     """
 
-    def instruction_factory(self, **kwargs) -> Instruction:
+    def instruction_factory(self, name: str, instruction_block: dict) -> Instruction:
+        raise NotImplementedError("Please implement InstructionFactory.instruction_factory method")
+
+
+class InstructionPerformer:
+    """An InstructionFactory is an entity capable of generating instructions
+    Often, the entity generates instruction it will perform.
+    """
+
+    def execute(self, instruction) -> bool:
         raise NotImplementedError("Please implement InstructionFactory.instruction_factory method")
 
 
@@ -29,11 +38,15 @@ class Instruction(ABC):
 
     INSTRUCTION_NAME = "undefined"
 
-    def __init__(self, name: str, **kwargs) -> None:
-        self.name = name
-        self.performer = kwargs.get("performer")
-        self.delay = kwargs.get("delay", 0)
-        self.condition = kwargs.get("condition")
+    def __init__(
+        self, name: str, performer: InstructionPerformer, factory: InstructionFactory | None = None, delay: float = 0.0, condition: str | None = None
+    ) -> None:
+        self._name = name
+        self.performer = performer
+        self.factory = factory
+        self.delay = delay
+        self.condition = condition
+
         self._timer: threading.Timer | None = None
 
         if self.delay is None:
@@ -50,7 +63,7 @@ class Instruction(ABC):
         return cls.INSTRUCTION_NAME
 
     def __str__(self) -> str:
-        return f"{self.INSTRUCTION_NAME} {self.name}"
+        return f"{self.INSTRUCTION_NAME} {self._name}"
 
     @staticmethod
     def all_subclasses(cls) -> list:
@@ -116,8 +129,10 @@ class MacroInstruction(Instruction):
 
     INSTRUCTION_NAME = "macro"
 
-    def __init__(self, name: str, instructions: dict, **kwargs):
-        Instruction.__init__(self, name=name, **kwargs)
+    def __init__(
+        self, name: str, performer: InstructionPerformer, factory: InstructionFactory, instructions: dict, delay: float = 0.0, condition: str | None = None
+    ) -> None:
+        Instruction.__init__(self, name=name, performer=performer, factory=factory, delay=delay, condition=condition)
         self.instructions = instructions
         self._instructions = []
         self.init()
@@ -133,7 +148,8 @@ class MacroInstruction(Instruction):
                 total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
                 if total_delay > 0:
                     c[CONFIG_KW.DELAY.value] = total_delay
-                ci = self.performer.instruction_factory(name=c[CONFIG_KW.COMMAND.value], **c)
+                print("creating", f"{self.name}-{count}", c)
+                ci = self.factory.instruction_factory(name=f"{self.name}-{count}", instruction_block=c)
                 self._instructions.append(ci)
                 count = count + 1
         else:
@@ -152,13 +168,8 @@ class NoOperation(Instruction):
 
     INSTRUCTION_NAME = "no-op"
 
-    def __init__(self, **kwargs):
-        name = kwargs.get(CONFIG_KW.NAME.value)
-        if name is None:
-            name = self.INSTRUCTION_NAME
-        else:
-            del kwargs[CONFIG_KW.NAME.value]
-        Instruction.__init__(self, name=name, kwargs=kwargs)
+    def __init__(self, name: str, delay: float = 0.0, condition: str | None = None):
+        Instruction.__init__(self, name=name, performer=None)
 
     def _check_condition(self):
         # condition checked in each individual instruction

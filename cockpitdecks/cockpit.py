@@ -76,7 +76,7 @@ from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
-from cockpitdecks.instruction import Instruction, InstructionFactory
+from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables
 
 # from cockpitdecks.simulators.xplane import DatarefEvent
@@ -194,26 +194,18 @@ class CockpitInstruction(Instruction):
     INSTRUCTION_NAME = "cockpitdecks-instruction"
     PREFIX = "cockpitdecks-"
 
-    def __init__(self, name: str, cockpit: Cockpit) -> None:
-        Instruction.__init__(self, name=name)
-        self._cockpit = cockpit
+    def __init__(self, name: str, cockpit: Cockpit, delay: float = 0.0, condition: str | None = None) -> None:
+        Instruction.__init__(self, name=name, performer=cockpit, delay=delay, condition=condition)
+        self.cockpit = cockpit
 
     @classmethod
-    def new(cls, name: str, cockpit: Cockpit, **kwargs: dict):
+    def new(cls, cockpit: Cockpit, name: str, instruction_block: dict):
         instr = name.replace(CockpitInstruction.PREFIX, "")
         all_cockpit_instructions = {s.name(): s for s in Cockpit.all_subclasses(CockpitInstruction)}
 
         if instr in all_cockpit_instructions:
-            return all_cockpit_instructions[instr](cockpit=cockpit, **kwargs)
+            return all_cockpit_instructions[instr](cockpit=cockpit, name=name, instruction_block=instruction_block)
         return None
-
-    @property
-    def cockpit(self):
-        return self._cockpit
-
-    @cockpit.setter
-    def cockpit(self, cockpit):
-        self._cockpit = cockpit
 
     def _check_condition(self):
         # condition checked in each individual instruction
@@ -228,8 +220,10 @@ class CockpitReloadInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "reload"
 
-    def __init__(self, cockpit: Cockpit) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         self.cockpit.reload_decks()
@@ -240,9 +234,11 @@ class CockpitReloadOneDeckInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "reload1"
 
-    def __init__(self, deck: str, cockpit: Cockpit) -> None:
-        self.deck = deck
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        self.deck = instruction_block.get("deck")
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         self.cockpit.reload_deck(self.deck)
@@ -253,10 +249,12 @@ class CockpitChangePageInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "page"
 
-    def __init__(self, deck: str, page: str, cockpit: Cockpit) -> None:
-        self.deck = deck
-        self.page = page
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        self.deck = instruction_block.get("deck")
+        self.page = instruction_block.get("page")
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         deck = self.cockpit.decks.get(self.deck)
@@ -275,8 +273,10 @@ class CockpitChangeAircraftInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "aircraft"
 
-    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         self.cockpit.change_aircraft()
@@ -287,8 +287,10 @@ class CockpitChangeAircraftICAOInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "aircraft-icao"
 
-    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         self.cockpit.change_aircraft_icao()
@@ -299,8 +301,10 @@ class CockpitChangeLiveryInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "livery"
 
-    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         self.cockpit.change_livery()
@@ -311,9 +315,11 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "theme"
 
-    def __init__(self, theme: str, cockpit: Cockpit) -> None:
-        self.theme = theme
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        self.theme = instruction_block.get("theme")
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         before = self.cockpit.theme
@@ -327,13 +333,15 @@ class CockpitObservableInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "obs"
 
-    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
-        self.observable = kwargs.get(CONFIG_KW.OBSERVABLE.value)
-        self.action = kwargs.get(CONFIG_KW.ACTION.value, "toggle")
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
+        self.observable = instruction_block.get("observable")
+        self.action = instruction_block.get("action")
 
     def _execute(self):
-        o = self._cockpit.get_observable(self.observable)
+        o = self.cockpit.get_observable(self.observable)
         if o is not None:
             if self.action == "toggle":
                 if o._enabled:
@@ -355,8 +363,10 @@ class CockpitStopInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "stop"
 
-    def __init__(self, cockpit: Cockpit) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
 
     def _execute(self):
         self.cockpit.terminate_all()
@@ -368,9 +378,11 @@ class CockpitInfoInstruction(CockpitInstruction):
 
     INSTRUCTION_NAME = "info"
 
-    def __init__(self, cockpit: Cockpit, **kwargs) -> None:
-        CockpitInstruction.__init__(self, name=self.INSTRUCTION_NAME, cockpit=cockpit)
-        self.message = kwargs.get("message", "Hello, world!")
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict, message: str = "Hello, world!") -> None:
+        CockpitInstruction.__init__(
+            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+        )
+        self.message = message
 
     def _execute(self):
         logger.info(f"Message from the Cockpit: {self.message}")
@@ -409,7 +421,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
+class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerformer, CockpitBase):
     """
     Contains all deck configurations for a given aircraft.
     Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
@@ -419,7 +431,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         self._startup_time = datetime.now()
 
         CockpitBase.__init__(self)
-        SimulatorVariableListener.__init__(self)
+        SimulatorVariableListener
+        InstructionPerformer.__init__(self)
 
         self.name = "Cockpitdecks"
 
@@ -851,16 +864,15 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, CockpitBase):
         return self.variable_database.value(name, default=default)
 
     # Instruction
-    def instruction_factory(self, **kwargs):
+    def instruction_factory(self, name: str, instruction_block: dict) -> Instruction:
         # Should be the top-most instruction factory.
         # Delegates to simulator if not capable of building instruction
-        name = kwargs.get("name")
         if name is not None and name.startswith(CockpitInstruction.PREFIX):
             logger.debug(f"creating {name}")
-            instruction = CockpitInstruction.new(cockpit=self, **kwargs)
+            instruction = CockpitInstruction.new(cockpit=self, name=name, instruction_block=instruction_block)
             if instruction is not None:
                 return instruction
-        return self.sim.instruction_factory(**kwargs)
+        return self.sim.instruction_factory(name=name, instruction_block=instruction_block)
         # if name == "reload_one":
         #     deck = kwargs.get(CONFIG_KW.DECK.value)
         #     return CockpitReloadOneDeckInstruction(deck=deck, cockpit=self)

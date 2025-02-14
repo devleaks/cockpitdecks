@@ -50,6 +50,7 @@ class StringWithVariables(Variable, VariableListener):
 
         # Used in formula
         self._tokens = {}  # "${path}": path
+        self._string_variables = None
         self._variables = None
         self._formats = {}  # for later @todo
         self._has_state_vars = False
@@ -146,7 +147,27 @@ class StringWithVariables(Variable, VariableListener):
         return self._variables
 
     def get_string_variables(self) -> set:
-        return set()
+        if self._string_variables is not None:
+            return self._string_variables
+
+        self._string_variables = set()
+
+        # string_datarefs = config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
+        # if type(string_datarefs) is str:
+        #     if "," in string_datarefs:
+        #         string_datarefs = set(string_datarefs.replace(" ", "").split(","))
+        #     else:
+        #         string_datarefs = {string_datarefs}
+        # if type(string_datarefs) is not set:
+        #     if type(string_datarefs) is str:
+        #         string_datarefs = {string_datarefs}
+        #     else:
+        #         string_datarefs = set(string_datarefs)
+
+        # if len(string_datarefs) > 0:
+        #     self._string_variables = string_datarefs
+
+        return self._string_variables
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
