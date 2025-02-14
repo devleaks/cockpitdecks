@@ -75,7 +75,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType
-from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent
+from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent, NoSimulator
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables
 
@@ -1830,8 +1830,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             logger.info("..connection to simulator terminated..")
             logger.debug("..deleting connection to simulator..")
             del self.sim
-            self.sim = None
             logger.debug("..connection to simulator deleted..")
+            self.sim = NoSimulator(cockpit=self, environ=self._environ)
+            logger.debug("..no simulator installed..")
         logger.info("..terminating devices..")
         self.usb_monitor.stop_monitoring()
         logger.info("..usb monitoring stopped..")

@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
+class CockpitdecksError(Exception):
+    pass
 
 class StateVariableValueProvider(ABC, ValueProvider):
     def __init__(self, name: str, button: Button):
@@ -222,6 +224,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
     @property
     def sim(self):
+        if self.page.deck.cockpit.sim is None:
+            raise CockpitdecksError("simulator no longer accessible")
         return self.page.deck.cockpit.sim
 
     def button_name(self):

@@ -22,7 +22,7 @@ __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 __DESCRIPTION__ = "Desk and web decks to X-Plane 12.1+"
 
-__version__ = "14.1.6"
+__version__ = "14.2.0"
 
 #
 # ##########################################################################
