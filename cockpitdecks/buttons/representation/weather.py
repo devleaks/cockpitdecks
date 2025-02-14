@@ -154,7 +154,8 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
         return self.weather_data.last_updated > self._last_updated
 
     def set_label(self, label: str = "Weather"):
-        self.button._config["label"] = label if label is not None else "Weather"
+        if self._label is not None:
+            self._label.message = label if label is not None else "Weather"
 
     def get_image_for_icon(self):
         """

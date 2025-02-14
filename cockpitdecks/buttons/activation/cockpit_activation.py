@@ -7,7 +7,7 @@ import random
 import subprocess
 
 from cockpitdecks.event import PushEvent
-from cockpitdecks import DECK_ACTIONS, CONFIG_KW, ID_SEP
+from cockpitdecks import DECK_ACTIONS, CONFIG_KW, ID_SEP, instruction
 from .activation import Activation
 
 # from ...cockpit import CockpitInstruction
@@ -42,7 +42,8 @@ class LoadPage(Activation):
         self.page = self._config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
         self.remote_deck = self._config.get("deck")
         self.instruction = self.cockpit.instruction_factory(
-            name=INSTRUCTION_PREFIX + "page", page=self.page, deck=self.remote_deck if self.remote_deck is not None else self.button.deck.name
+            name=INSTRUCTION_PREFIX + "page",
+            instruction_block={"page": self.page, "deck": self.remote_deck if self.remote_deck is not None else self.button.deck.name},
         )
 
     def is_valid(self):
@@ -88,9 +89,9 @@ class Reload(Activation):
         self.deck = self._config.get("deck")
         self.instruction = None
         if self.deck is None:
-            self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "reload")
+            self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "reload", instruction_block={})
         else:
-            self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "reload1", deck=self.deck)
+            self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "reload1", instruction_block={"deck": self.deck})
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
@@ -130,7 +131,7 @@ class ChangeTheme(Activation):
 
         # Activation arguments
         self.theme = self._config.get("theme")
-        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "theme", theme=self.theme)
+        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + "theme", instruction_block={"theme": self.theme})
 
     def is_valid(self):
         if self.theme is None:
@@ -210,7 +211,7 @@ class Stop(Activation):
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
-        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + self.ACTIVATION_NAME)
+        self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + self.ACTIVATION_NAME, instruction_block={})
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):
@@ -295,7 +296,7 @@ class Obs(Activation):
         Activation.__init__(self, button=button)
         self.observable = self._config.get(CONFIG_KW.OBSERVABLE.value)
         self.instruction = self.cockpit.instruction_factory(
-            name=INSTRUCTION_PREFIX + "obs", observable=self.observable, action=self._config.get(CONFIG_KW.ACTION.value, "toggle")
+            name=INSTRUCTION_PREFIX + "obs", instruction_block={"observable": self.observable, "action": self._config.get(CONFIG_KW.ACTION.value, "toggle")}
         )
 
     def get_variables(self) -> set:

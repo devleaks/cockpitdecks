@@ -11,7 +11,7 @@ from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
 from cockpitdecks.strvar import Formula
 from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_VARIABLE_PREFIX, InternalVariableType
-from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation
+from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation, InstructionPerformer
 
 loggerSimdata = logging.getLogger("SimulatorVariable")
 # loggerSimdata.setLevel(SPAM_LEVEL)
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ########################################
 # Simulator
 #
-class Simulator(ABC, InstructionFactory, VariableFactory):
+class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
@@ -163,6 +163,8 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
                 dtdrefs[d].add_listener(provider)
                 cnt = cnt + 1
             logger.info(f"adding {cnt} permanent string variables from {provider.name}")
+
+        for provider in self.providers:
             cnt = 0
             for d in provider.get_variables():
                 if d in dtdrefs:
@@ -178,7 +180,7 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
             logger.info(f"adding {cnt} permanent variables from {provider.name}")
         return dtdrefs
 
-    def variable_factory(self, name: str, is_string: bool = False, creator: str = None) -> Variable:
+    def variable_factory(self, name: str, is_string: bool = False, creator: str | None = None) -> Variable:
         # here is the place to inject a physical type if any, may be from a list
         # like for roundings and frequencies?
         # dataref-physical:
@@ -195,6 +197,9 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         if creator is not None:
             variable._creator = creator
         return variable
+
+    def instruction_factory(self, name: str, instruction_block: dict) -> SimulatorInstruction:
+        raise NotImplementedError
 
     def register(self, variable: Variable) -> Variable:
         """Registers a SimulatorVariable to be monitored by Cockpitdecks.
@@ -218,30 +223,31 @@ class Simulator(ABC, InstructionFactory, VariableFactory):
         return variable
 
     def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:
-        """Returns data or create a new one, internal if path requires it"""
-        stars = 3
+        """Returns data or create a new one, internal if path requires it
+
+        Important note: is_string has precedence over whatever type has the variable.
+        If is_string is true, and the variable is not of type string, it is forced to type string.
+        This is (probably) due to a first request to create the variable without being able to determine its data type.
+        Then later, another request to create the variable happens with the proper requested type, so we adjust it.
+        Parent objects always know what data type their variable is. (float is default, string is explicit.)
+        """
+        stars = 4
         if self.cockpit.variable_database.exists(name):
             t = self.cockpit.variable_database.get(name)
-            if t.is_string != is_string:
-                logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string} (create={t._creator})")
-                if is_string:
-                    t.data_type = InternalVariableType.STRING
-                    logger.warning(f"variable {name} type forced to string" + " *" * stars)
+            if is_string and t.is_string != is_string:
+                logger.warning(f"variable {name} has type {t.data_type} vs. is_string={is_string} (create={t._creator}), forced to string" + " *" * stars)
+                t.data_type = InternalVariableType.STRING
             return t
         if Variable.is_internal_variable(path=name):
             t = self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string, creator=self.name))
-            if t.is_string != is_string:
-                logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string} (create={t._creator})")
-                if is_string:
-                    t.data_type = InternalVariableType.STRING
-                    logger.warning(f"variable {name} type forced to string" + " *" * stars)
+            if is_string and t.is_string != is_string:
+                logger.warning(f"variable {name} has type {t.data_type} vs. is_string={is_string} (create={t._creator}), forced to string" + " *" * stars)
+                t.data_type = InternalVariableType.STRING
             return t
         t = self.cockpit.variable_database.register(variable=self.variable_factory(name=name, is_string=is_string, creator=self.name))
-        if t.is_string != is_string:
-            logger.warning(f"variable {name} has wrong type {t.data_type} vs. is_string={is_string} (create={t._creator})")
-            if is_string:
-                t.data_type = InternalVariableType.STRING
-                logger.warning(f"variable {name} type forced to string" + " *" * stars)
+        if is_string and t.is_string != is_string:
+            logger.warning(f"variable {name} has type {t.data_type} vs. is_string={is_string} (create={t._creator}), forced to string" + " *" * stars)
+            t.data_type = InternalVariableType.STRING
         return t
 
     def get_simulator_variable_value(self, simulator_variable, default=None) -> Any | None:
@@ -390,10 +396,8 @@ class NoSimulator(Simulator):
     def __init__(self, cockpit, environ):
         Simulator.__init__(self, cockpit, environ)
 
-    def instruction_factory(self, **kwargs) -> Instruction:
-        # logger.warning("NoSimulator executes no instruction")
-        logger.debug(f"({kwargs})")
-        return NoOperation(kwargs=kwargs)
+    def instruction_factory(self, name: str, instruction_block: dict) -> SimulatorInstruction:
+        return NoOperation(name=name)  # this is not a SimulatorInstruction, but an instruction, ubt it is OK
 
     def add_simulator_variables_to_monitor(self, simulator_variables: dict, reason: str | None = None):
         logger.warning("NoSimulator monitors no data")
@@ -427,6 +431,8 @@ class SimulatorVariable(Variable):
     def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
         Variable.__init__(self, name=name, data_type=data_type, physical_unit=physical_unit)
 
+        self._sim = None
+
     # def __init__(self, name: str, is_string: bool = False):
     #     Variable.__init__(self, name=name, data_type="string" if is_string else "float")
 
@@ -458,16 +464,8 @@ class SimulatorInstruction(Instruction):
     """
 
     def __init__(self, name: str, simulator: Simulator, delay: float = 0.0, condition: str | None = None) -> None:
-        Instruction.__init__(self, name=name, delay=delay, condition=condition, performer=simulator)
-        self._simulator = simulator
-
-    @property
-    def simulator(self):
-        return self._simulator
-
-    @simulator.setter
-    def cockpit(self, simulator):
-        self._simulator = simulator
+        Instruction.__init__(self, name=name, performer=simulator, delay=delay, condition=condition)
+        self.simulator = simulator
 
     def _check_condition(self) -> bool:
         # condition checked in each individual instruction
@@ -477,40 +475,6 @@ class SimulatorInstruction(Instruction):
 
     def _execute(self):
         raise NotImplementedError(f"Please implement SimulatorInstruction._execute method ({self.name})")
-
-
-class SimulatorMacroInstruction(SimulatorInstruction):
-    """A Macro Instruction is a collection of individual Instruction.
-    Each instruction comes with its condition for execution and delay since activation.
-    (Could have been called Instructions (plural form))
-    """
-
-    def __init__(self, name: str, simulator: Simulator, instructions: dict):
-        SimulatorInstruction.__init__(self, name=name, simulator=simulator)
-        self.instructions = instructions
-        self._instructions = []
-        self.init()
-
-    def __str__(self) -> str:
-        return self.name + f" ({', '.join([c.name for c in self._instructions])}"
-
-    def init(self):
-        total_delay = 0
-        for c in self.instructions:
-            total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
-            if total_delay > 0:
-                c[CONFIG_KW.DELAY.value] = total_delay
-            ci = self._simulator.instruction_factory(
-                name=c.get(CONFIG_KW.NAME.value),
-                command=c.get(CONFIG_KW.COMMAND.value),
-                delay=c.get(CONFIG_KW.DELAY.value, 0),  # !! very important to add default value to delay
-                condition=c.get(CONFIG_KW.CONDITION.value),
-            )
-            self._instructions.append(ci)
-
-    def _execute(self):
-        for instruction in self._instructions:
-            instruction.execute()
 
 
 # ########################################

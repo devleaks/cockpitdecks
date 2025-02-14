@@ -76,10 +76,11 @@ class Variable(ABC):
         self.current_value: Any | None = None
         self.current_array: List[float] = []
 
-        self._sim = None
-
         self.listeners: List[VariableListener] = []  # buttons using this simulator_variable, will get notified if changes.
 
+    # ################################
+    # Variable name control and generation
+    #
     @staticmethod
     def may_be_non_internal_variable(path: str) -> bool:
         # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
@@ -126,6 +127,9 @@ class Variable(ABC):
             return path[len(INTERNAL_STATE_PREFIX) :]
         return path  # already startswith INTERNAL_VARIABLE_PREFIX
 
+    # ################################
+    # Deduced behavior
+    #
     @property
     def is_internal(self) -> bool:
         return self.name.startswith(INTERNAL_VARIABLE_PREFIX)
@@ -134,6 +138,9 @@ class Variable(ABC):
     def is_string(self) -> bool:
         return self.data_type == InternalVariableType.STRING
 
+    # ################################
+    # Value control
+    #
     @property
     def rounding(self):
         return self._round
@@ -205,6 +212,26 @@ class Variable(ABC):
         # logger.error(f"variable {self.name} updated")
         return False
 
+    def value_formatted(self):
+        """Format value if format is supplied
+        Returns:
+            formatted value
+        """
+        value = self.current_value
+        if self._format is not None:
+            if type(value) in [int, float]:  # probably formula is a constant value
+                value_str = self._format.format(value)
+                logger.debug(f"{self.name}: returning formatted {self._format}:  {value_str}.")
+                return value_str
+            else:
+                logger.warning(f"{self.name}: has format string '{self._format}' but value is not a number '{value}'")
+        value_str = str(value)
+        logger.debug(f"{self.name}: received {value} ({type(value).__name__}), returns as string: '{value_str}'")
+        return value_str
+
+    # ################################
+    # Listeners
+    #
     def add_listener(self, obj):
         if not isinstance(obj, VariableListener):
             logger.warning(f"{self.name} not a listener {obj}")
@@ -232,23 +259,6 @@ class Variable(ABC):
                     SPAM_LEVEL,
                     f"{self.name}: notified {lsnr.name} (not on an page)",
                 )
-
-    def value_formatted(self):
-        """Format value if format is supplied
-        Returns:
-            formatted value
-        """
-        value = self.current_value
-        if self._format is not None:
-            if type(value) in [int, float]:  # probably formula is a constant value
-                value_str = self._format.format(value)
-                logger.debug(f"{self.name}: returning formatted {self._format}:  {value_str}.")
-                return value_str
-            else:
-                logger.warning(f"{self.name}: has format string '{self._format}' but value is not a number '{value}'")
-        value_str = str(value)
-        logger.debug(f"{self.name}: received {value} ({type(value).__name__}), returns as string: '{value_str}'")
-        return value_str
 
     def save(self):
         # raise NotImplementedError

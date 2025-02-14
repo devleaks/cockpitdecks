@@ -99,7 +99,7 @@ class Activation:
 
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:
-            self._view = self.sim.instruction_factory(name=cmdname + ":view", command=view)
+            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={"view": view})
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press
@@ -110,7 +110,9 @@ class Activation:
         self._long_press = None
         long_press = self._config.get("long-press")
         if long_press is not None:
-            self._long_press = self.sim.instruction_factory(name=cmdname + ":long-press", command=long_press)  # Optional additional command
+            self._long_press = self.sim.instruction_factory(
+                name=cmdname + ":long-press", instruction_block={"long_press": long_press}
+            )  # Optional additional command
 
         # Datarefs
         # Note on set-dataref: The activation will set the dataref value

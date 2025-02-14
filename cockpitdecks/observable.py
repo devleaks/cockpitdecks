@@ -9,7 +9,7 @@ from cockpitdecks.value import Value
 # from cockpitdecks.deck import Deck
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Observables:
@@ -80,34 +80,27 @@ class Observable(SimulatorVariableListener):
         self._enabled_data = self.sim.get_internal_variable(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
         self._value = Value(name=self.name, config=self._config, provider=simulator)
-        self.previous_value = None
-        self.current_value = None
         self._actions = MacroInstruction(
-            name=config.get(CONFIG_KW.NAME.value, type(self).__name__), instructions=self._config.get(CONFIG_KW.ACTIONS.value), performer=simulator.cockpit
+            name=config.get(CONFIG_KW.NAME.value, type(self).__name__),
+            performer=simulator,
+            factory=simulator,
+            instructions=self._config.get(CONFIG_KW.ACTIONS.value),
         )
         self.init()
 
     @property
     def value(self):
         """Gets the current value, but does not provoke a calculation, just returns the current value."""
-        logger.debug(f"observable {self.name}: {self.current_value}")
-        return self.current_value
+        logger.debug(f"observable {self.name}: {self._value.value()}")
+        return self._value.value()
 
     @value.setter
     def value(self, value):
-        if value != self.current_value:
-            self.previous_value = self.current_value
-            self.current_value = value
-            logger.debug(f"observable {self.name}: {self.current_value}")
+        logger.debug(f"observable {self.name}: set value to {self._value.value()}")
+        self._value.update_value(new_value=value, cascade=True)
 
     def has_changed(self) -> bool:
-        if self.previous_value is None and self.current_value is None:
-            return False
-        elif self.previous_value is None and self.current_value is not None:
-            return True
-        elif self.previous_value is not None and self.current_value is None:
-            return True
-        return self.current_value != self.previous_value
+        return self._value.has_changed()
 
     @property
     def trigger(self):
@@ -126,21 +119,21 @@ class Observable(SimulatorVariableListener):
     def init(self):
         # Register simulator variables and ask to be notified
 
-        simdata = self._value.get_string_variables()
-        if simdata is not None:
-            for s in simdata:
+        variables = self._value.get_string_variables()
+        if variables is not None:
+            for s in variables:
                 ref = self.sim.get_variable(s, is_string=True)
                 if ref is not None:
                     ref.add_listener(self)
-        logger.debug(f"observable {self.name}: listening to strings {simdata}")
+        logger.debug(f"observable {self.name}: listening to strings variables {variables}")
 
-        simdata = self._value.get_variables()
-        if simdata is not None:
-            for s in simdata:
+        variables = self._value.get_variables()
+        if variables is not None:
+            for s in variables:
                 ref = self.sim.get_variable(s)
                 if ref is not None:
                     ref.add_listener(self)
-        logger.debug(f"observable {self.name}: listening to {simdata}")
+        logger.debug(f"observable {self.name}: listening to variables {variables}")
         # logger.debug(f"observable {self.name} inited")
 
     def get_variables(self) -> set:

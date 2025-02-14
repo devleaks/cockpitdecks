@@ -274,7 +274,7 @@ class Value(StringWithVariables):
             return store_value(ret)
 
         # 2c. One dataref
-        if self.dataref is not None and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
+        if self.dataref is not None and isinstance(self._provider, (SimulatorVariableValueProvider, Simulator)):
             # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_simulator_variable_value(simulator_variable=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
