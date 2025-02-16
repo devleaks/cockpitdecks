@@ -36,8 +36,10 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
 
+
 class CockpitdecksError(Exception):
     pass
+
 
 class StateVariableValueProvider(ABC, ValueProvider):
     def __init__(self, name: str, button: Button):

@@ -1,6 +1,7 @@
 # Base classes for interface with the simulation software
 #
 from __future__ import annotations
+from itertools import permutations
 import threading
 import logging
 from abc import ABC, abstractmethod
@@ -96,7 +97,7 @@ class Instruction(ABC):
 
     @abstractmethod
     def _execute(self):
-        if self.performer is not None and hasattr(self.performer, "execute"):
+        if self.performer is not None and (hasattr(self.performer, "execute") or isinstance(self.performer, InstructionPerformer)):
             self.performer.execute(instruction=self)
         self.clean_timer()
 
@@ -148,7 +149,6 @@ class MacroInstruction(Instruction):
                 total_delay = total_delay + c.get(CONFIG_KW.DELAY.value, 0)
                 if total_delay > 0:
                     c[CONFIG_KW.DELAY.value] = total_delay
-                print("creating", f"{self.name}-{count}", c)
                 ci = self.factory.instruction_factory(name=f"{self.name}-{count}", instruction_block=c)
                 self._instructions.append(ci)
                 count = count + 1

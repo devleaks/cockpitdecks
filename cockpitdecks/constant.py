@@ -116,14 +116,18 @@ class ENVIRON_KW(Enum):
     COCKPITDECKS_EXTENSION_NAME = "COCKPITDECKS_EXTENSION_NAME"
     COCKPITDECKS_PATH = "COCKPITDECKS_PATH"
     DEBUG = "DEBUG"
+    MODE = "mode"
+    VERBOSE = "verbose"
 
 
-# System default values
+# "System" default values
+# "Cockpitdecks-level" default values
+# Please handle with care, might break entire system. You're warned.
 COCKPITDECKS_DEFAULT_VALUES = {
     "cache-icon": True,
     "system-font": "Monaco.ttf",  # alias
-    "cockpit-color": "cornflowerblue",  # there are no default-* for the following three values
-    "cockpit-texture": None,
+    "cockpit-color": "cornflowerblue",  # there are no default-* for the following three values, just cockpit-* values
+    "cockpit-texture": None,  # in other words, cockpit-* values ARE cockpitdecks-level, global default values.
     "cockpit-theme": "light",
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
     DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.KORRY,
@@ -170,8 +174,10 @@ class CONFIG_KW(Enum):
     DECOR = "decor"
     DELAY = "delay"
     DEVICE = "device"
+    DISABLE = "disable"
     DISABLED = "disabled"
     DRIVER = "driver"
+    ENABLE = "enable"
     ENABLED = "enabled"
     FORMULA = "formula"
     FRAME = "frame"
@@ -191,6 +197,7 @@ class CONFIG_KW(Enum):
     OBSERVABLE = "observable"
     ONCHANGE = "onchange"
     OPTIONS = "options"
+    PAGE = "page"
     SERIAL = "serial"
     SET_SIM_VARIABLE = "set-dataref"
     SIM_VARIABLE = "dataref"
@@ -200,6 +207,7 @@ class CONFIG_KW(Enum):
     TEXT = "text"
     THEME = "theme"
     TRIGGER = "trigger"
+    TOGGLE = "toggle"
     TYPE = "type"
     VALUE_MIN = "value-min"
     VALUE_MAX = "value-max"
@@ -303,19 +311,19 @@ class Config(MutableMapping):
 
     def __init__(self, filename: str):
         self.store = dict()
-        if os.path.exists(filename):
-            filename = os.path.abspath(filename)
-            dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
-            try:
-                with open(filename, "r") as fp:
-                    self.store = yaml.load(fp)
-                    self.store[CONFIG_FILENAME] = filename
-                    init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
-            except:
-                self.store[CONFIG_FILENAME] = filename
-                init_logger.warning(f"error loading config from {os.path.abspath(filename).replace(dirname, '')}", exc_info=True)
-        else:
-            init_logger.warning(f"no file {filename}")
+        self.store[CONFIG_FILENAME] = filename
+        if filename is not None:
+            if os.path.exists(filename):
+                filename = os.path.abspath(filename)
+                dirname = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "")
+                try:
+                    with open(filename, "r") as fp:
+                        self.store = yaml.load(fp)
+                        init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
+                except:
+                    init_logger.warning(f"error loading config from {os.path.abspath(filename).replace(dirname, '')}", exc_info=True)
+            else:
+                init_logger.warning(f"no file {filename}")
 
     def __getitem__(self, key):
         return self.store[self._keytransform(key)]
@@ -338,3 +346,9 @@ class Config(MutableMapping):
 
     def is_valid(self) -> bool:
         return self.store is not None and len(self.store) > 1  # because there always is self.store[CONFIG_FILENAME]
+
+    def filename(self) -> str | None:
+        return self.store[CONFIG_FILENAME]
+
+    def from_filename(self) -> bool:
+        return self.filename() is not None and self.filename() != ""

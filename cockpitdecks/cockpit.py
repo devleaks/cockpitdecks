@@ -79,13 +79,9 @@ from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariab
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables
 
-# from cockpitdecks.simulators.xplane import DatarefEvent
-
 # imports all known decks, if deck driver not available, ignore it
 import cockpitdecks.decks
 
-# @todo later: put custom decks outside of cockpitdecks for flexibility
-# same for simulator
 from cockpitdecks.deck import Deck
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.activation import Activation
@@ -115,68 +111,6 @@ if EVENTLOGFILE is not None:
     event_logger.addHandler(handler)
     event_logger.propagate = False
 LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
-
-
-# ################################################
-# pkg_resources.require(dependencies)  # to be replace with importlib statements
-# See https://github.com/pypa/packaging-problems/issues/664
-# and https://github.com/HansBug/hbutils/blob/main/hbutils/system/python/package.py
-#
-def _yield_reqs_to_install(req: Requirement, current_extra: str = ""):
-    if req.marker and not req.marker.evaluate({"extra": current_extra}):
-        return
-
-    try:
-        version = importlib.metadata.distribution(req.name).version
-    except importlib.metadata.PackageNotFoundError:  # req not installed
-        yield req
-    else:
-        if req.specifier.contains(version):
-            for child_req in importlib.metadata.metadata(req.name).get_all("Requires-Dist") or []:
-                child_req_obj = Requirement(child_req)
-
-                need_check, ext = False, None
-                for extra in req.extras:
-                    if child_req_obj.marker and child_req_obj.marker.evaluate({"extra": extra}):
-                        need_check = True
-                        ext = extra
-                        break
-
-                if need_check:  # check for extra reqs
-                    yield from _yield_reqs_to_install(child_req_obj, ext)
-
-        else:  # main version not match
-            yield req
-
-
-def _check_req(req: Requirement):
-    return not bool(list(itertools.islice(_yield_reqs_to_install(req), 1)))
-
-
-def check_reqs(reqs: List[str]) -> bool:
-    """
-    Overview:
-        Check if the given requirements are all satisfied.
-
-    :param reqs: List of requirements.
-    :return satisfied: All the requirements in ``reqs`` satisfied or not.
-
-    Examples::
-        >>> from hbutils.system import check_reqs
-        >>> check_reqs(['pip>=20.0'])
-        True
-        >>> check_reqs(['pip~=19.2'])
-        False
-        >>> check_reqs(['pip>=20.0', 'setuptools>=50.0'])
-        True
-
-    .. note::
-        If a requirement's marker is not satisfied in this environment,
-        **it will be ignored** instead of return ``False``.
-    """
-    return all(map(lambda x: _check_req(Requirement(x)), reqs))
-
-
 #
 # ################################################
 
@@ -222,7 +156,11 @@ class CockpitReloadInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -235,9 +173,13 @@ class CockpitReloadOneDeckInstruction(CockpitInstruction):
     INSTRUCTION_NAME = "reload1"
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
-        self.deck = instruction_block.get("deck")
+        self.deck = instruction_block.get(CONFIG_KW.DECK.value)
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -250,10 +192,14 @@ class CockpitChangePageInstruction(CockpitInstruction):
     INSTRUCTION_NAME = "page"
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
-        self.deck = instruction_block.get("deck")
-        self.page = instruction_block.get("page")
+        self.deck = instruction_block.get(CONFIG_KW.DECK.value)
+        self.page = instruction_block.get(CONFIG_KW.PAGE.value)
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -275,7 +221,11 @@ class CockpitChangeAircraftInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -289,7 +239,11 @@ class CockpitChangeAircraftICAOInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -303,7 +257,11 @@ class CockpitChangeLiveryInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -316,9 +274,13 @@ class CockpitChangeThemeInstruction(CockpitInstruction):
     INSTRUCTION_NAME = "theme"
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
-        self.theme = instruction_block.get("theme")
+        self.theme = instruction_block.get(CONFIG_KW.THEME.value)
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -335,22 +297,26 @@ class CockpitObservableInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
-        self.observable = instruction_block.get("observable")
-        self.action = instruction_block.get("action")
+        self.observable = instruction_block.get(CONFIG_KW.OBSERVABLE.value)
+        self.action = instruction_block.get(CONFIG_KW.ACTION.value)
 
     def _execute(self):
         o = self.cockpit.get_observable(self.observable)
         if o is not None:
-            if self.action == "toggle":
+            if self.action == CONFIG_KW.TOGGLE.value:
                 if o._enabled:
                     o.disable()
                 else:
                     o.enable()
-            elif self.action == "enable":
+            elif self.action == CONFIG_KW.ENABLE.value:
                 o.enable()
-            elif self.action == "disable":
+            elif self.action == CONFIG_KW.DISABLE.value:
                 o.disable()
             else:
                 logger.warning(f"observable {self.observable} invalid action {self.action} (must be enable, disable, or toggle)")
@@ -365,7 +331,11 @@ class CockpitStopInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
 
     def _execute(self):
@@ -380,7 +350,11 @@ class CockpitInfoInstruction(CockpitInstruction):
 
     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict, message: str = "Hello, world!") -> None:
         CockpitInstruction.__init__(
-            self, name=self.INSTRUCTION_NAME, cockpit=cockpit, delay=instruction_block.get("delay", 0.0), condition=instruction_block.get("condition")
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
         self.message = message
 
@@ -679,8 +653,10 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self.scan_devices()
 
     def init_simulator(self) -> bool:
-        if self._simulator_name is None and len(self.all_simulators) >= 1:
-            logger.error(f"ambiguous simulator, please set SIMULATOR_NAME to raise ambiguity, available: {', '.join(self.all_simulators.keys())}")
+        if self._simulator_name is None and len(self.all_simulators) != 1:
+            logger.error(
+                f"simulator name not set or ambiguous, please set SIMULATOR_NAME to raise ambiguity, available: {', '.join(self.all_simulators.keys())}"
+            )
             return False
         if len(self.all_simulators) == 1 or self._simulator_name is None:
             self._simulator_name = list(self.all_simulators.keys())[0]
@@ -696,6 +672,64 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     # Devices
     def scan_devices(self):
         """Scan for hardware devices"""
+
+        # ################################################
+        # pkg_resources.require(dependencies)  # to be replace with importlib statements
+        # See https://github.com/pypa/packaging-problems/issues/664
+        # and https://github.com/HansBug/hbutils/blob/main/hbutils/system/python/package.py
+        #
+        def _yield_reqs_to_install(req: Requirement, current_extra: str = ""):
+            if req.marker and not req.marker.evaluate({"extra": current_extra}):
+                return
+
+            try:
+                version = importlib.metadata.distribution(req.name).version
+            except importlib.metadata.PackageNotFoundError:  # req not installed
+                yield req
+            else:
+                if req.specifier.contains(version):
+                    for child_req in importlib.metadata.metadata(req.name).get_all("Requires-Dist") or []:
+                        child_req_obj = Requirement(child_req)
+
+                        need_check, ext = False, None
+                        for extra in req.extras:
+                            if child_req_obj.marker and child_req_obj.marker.evaluate({"extra": extra}):
+                                need_check = True
+                                ext = extra
+                                break
+
+                        if need_check:  # check for extra reqs
+                            yield from _yield_reqs_to_install(child_req_obj, ext)
+
+                else:  # main version not match
+                    yield req
+
+        def _check_req(req: Requirement):
+            return not bool(list(itertools.islice(_yield_reqs_to_install(req), 1)))
+
+        def check_reqs(reqs: List[str]) -> bool:
+            """
+            Overview:
+                Check if the given requirements are all satisfied.
+
+            :param reqs: List of requirements.
+            :return satisfied: All the requirements in ``reqs`` satisfied or not.
+
+            Examples::
+                >>> from hbutils.system import check_reqs
+                >>> check_reqs(['pip>=20.0'])
+                True
+                >>> check_reqs(['pip~=19.2'])
+                False
+                >>> check_reqs(['pip>=20.0', 'setuptools>=50.0'])
+                True
+
+            .. note::
+                If a requirement's marker is not satisfied in this environment,
+                **it will be ignored** instead of return ``False``.
+            """
+            return all(map(lambda x: _check_req(Requirement(x)), reqs))
+
         if len(self.all_deck_drivers) == 0:
             logger.error("no driver")
             return

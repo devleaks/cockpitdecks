@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 
 
-from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now
+from cockpitdecks import SPAM_LEVEL, DEFAULT_FREQUENCY, CONFIG_KW, now, yaml
 from cockpitdecks.resources.iconfonts import ICON_FONTS  # to detect ${fa:plane} type of non-sim data
 
 logger = logging.getLogger(__name__)
@@ -364,3 +364,9 @@ class VariableDatabase:
                 to_delete.append(d)
         for d in to_delete:
             self.database.pop(d)
+
+    def dump(self, filename: str = "variable-database-dump.yaml"):
+        drefs = {d.name: d.value() for d in self.database.values()}  #  if d.is_internal
+        with open(filename, "w") as fp:
+            yaml.dump(drefs, fp)
+            logger.debug(f"simulator data values saved in {filename} file")

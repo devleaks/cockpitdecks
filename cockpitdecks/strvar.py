@@ -265,8 +265,9 @@ class StringWithVariables(Variable, VariableListener):
     # ##################################
     # Local operations
     #
-    def get_variable_format(self, variable) -> str:
-        return self._formats.get(variable)
+    def get_variable_format(self, variable: str, default: str | None = None) -> str | None:
+        """Untested."""
+        return self._formats.get(variable, default)
 
     def substitute_values(self, text: str | None = None, default: str = "0.0", formatting=None, store: bool = False, cascade: bool = False) -> str:
         """Substitute values for each variable.
@@ -308,9 +309,7 @@ class StringWithVariables(Variable, VariableListener):
                 value = default
                 logger.warning(f"variable {self.name}: {token}: value is null, substitued {value}")
             else:
-                local_format = self.get_variable_format(varname)
-                if local_format is None:
-                    local_format = formatting
+                local_format = self.get_variable_format(variable=varname, default=formatting)
                 if local_format is not None:
                     if type(value) in [int, float]:  # probably formula is a constant value
                         value_str = local_format.format(value)
@@ -588,9 +587,7 @@ class TextWithVariables(StringWithVariables):
             if self._formula is not None:
                 res = self._formula.value()
                 if res is not None and res != "":  # Format output if format present
-                    local_format = self.get_variable_format(CONFIG_KW.FORMULA.value)
-                    if local_format is None:
-                        local_format = self.format
+                    local_format = self.get_variable_format(variable=CONFIG_KW.FORMULA.value, default=self.format)
                     if local_format is not None:
                         restmp = float(res)
                         res = local_format.format(restmp)

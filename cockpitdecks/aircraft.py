@@ -638,11 +638,7 @@ class Aircraft:
             logger.debug("no aircraft running or aircraft not running, no termination necessary")
             return
         logger.info("terminating aircraft..")
-        drefs = {d.name: d.value() for d in self.cockpit.variable_database.database.values()}  #  if d.is_internal
-        fn = "variable-database-dump.yaml"
-        with open(fn, "w") as fp:
-            yaml.dump(drefs, fp)
-            logger.debug(f"..simulator data values saved in {fn} file")
+        self.cockpit.variable_database.dump()
         logger.info("..terminating decks..")
         self._ac_running = False
         for deck in self.decks.values():

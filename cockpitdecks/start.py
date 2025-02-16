@@ -21,6 +21,7 @@ import argparse
 import subprocess
 import shutil
 import filecmp
+import socket
 
 from enum import Enum
 
@@ -54,24 +55,19 @@ if LOGFILE is not None:
     handler = logging.FileHandler(LOGFILE, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-#
-# COCKPITDECKS STARTS HERE
-#
-# COMMAND LINE PARSING
-#
-# No aircraft supplied starts the demo version.
-# DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
-DESC = __DESCRIPTION__
-DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "DEMO")
-AIRCRAFT_HOME = DEMO_HOME
-AIRCRAFT_DESC = "Cockpitdecks Demo"
-COCKPITDECKS_FOLDER = "cockpitdecks"
 
 
 class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
     FIXED = 2
+
+
+#
+# Utility functions
+def my_ip() -> str | set:
+    x = set([address[4][0] for address in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)])
+    return list(x)[0] if len(x) == 1 else x
 
 
 def which(program):
@@ -123,9 +119,28 @@ def xplane_homes(dirlist: str = "x-plane_install_12.txt") -> str:
             print(f"x-plane installations: {fn} not found")
 
     if homes != "":
-        homes = ", ".join(homes.split("\n"))
+        homes = ",".join(homes.split("\n"))
 
-    return homes.strip(", ")  # for extra \n in file
+    return homes.strip(",")  # for extra \n in file
+
+
+def add_env(env, paths):
+    return ":".join(set(env.split(":") + paths)).strip(":")
+
+
+# ######################################################################################################
+# COCKPITDECKS STARTS HERE
+#
+# DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
+DESC = __DESCRIPTION__
+DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "DEMO")
+DEFAULT_ENVIRONMENT_FILE = os.path.abspath(os.path.join(__file__, "..", ENVIRON_FILE))
+AIRCRAFT_HOME = DEMO_HOME
+AIRCRAFT_DESC = "Cockpitdecks Demo"
+COCKPITDECKS_FOLDER = "cockpitdecks"
+
+SIMULATOR_NAME = None
+SIMULATOR_HOME = None
 
 
 # Command-line arguments
@@ -143,9 +158,8 @@ args = parser.parse_args()
 
 VERBOSE = args.verbose
 
-# Just show version information and exits
+# Run git if available to collect info
 #
-# Run git if available to collect to info
 last_commit = ""
 project_url = ""
 last_commit_hash = ""
@@ -161,44 +175,44 @@ if os.path.exists(".git") and git is not None:
     stdout, stderr = process.communicate()
     last_commit_hash = stdout.decode("utf-8")[1:8]
 
+# #########################################@
+# Show version (and exits)
+#
 if args.version:
-    # copyrights = f"{__NAME__.title()} {__version__}{last_commit} {project_url}\n{__COPYRIGHT__}\n{DESC}\n"
-    version = f"{os.path.basename(sys.argv[0])} ({project_url}) version {__version__} ({last_commit_hash})"
-    print(version)
+    if git is not None:
+        # copyrights = f"{__NAME__.title()} {__version__}{last_commit} {project_url}\n{__COPYRIGHT__}\n{DESC}\n"
+        version = f"{os.path.basename(sys.argv[0])} ({project_url}) version {__version__} ({last_commit_hash})"
+        print(version)
+    else:
+        print("git not available")
     sys.exit(0)
 
-# Environment File
+# #########################################@
+# Load Environment File if any, tries default one as well.
+# Loads environment to know which flight simulator and where to locate it.
 #
-default_environment_file = os.path.abspath(os.path.join(__file__, "..", ENVIRON_FILE))
-environ_file = default_environment_file if args.env is None else args.env[0]
+environ_file = DEFAULT_ENVIRONMENT_FILE if args.env is None else args.env[0]
+environment = Config(filename=None)
 
-environment = {"SIMULATOR_NAME": "NoSimulator"}
 if os.path.exists(environ_file):
     environment = Config(filename=os.path.abspath(environ_file))
     if VERBOSE:
-        if default_environment_file != environ_file:
+        if DEFAULT_ENVIRONMENT_FILE != environ_file:
             print(f"Cockpitdecks loaded environment from file {environ_file}")
         else:
             print(f"Cockpitdecks loaded default environment from file {environ_file}")
 else:
-    if default_environment_file != environ_file:
-        print(f"Cockpitdecks environment file {environ_file} not found")
-        if os.path.exists(default_environment_file):
-            environment = Config(filename=default_environment_file)
+    if DEFAULT_ENVIRONMENT_FILE != environ_file:
+        if VERBOSE:
+            print(f"Cockpitdecks environment file {environ_file} not found")
+        if os.path.exists(DEFAULT_ENVIRONMENT_FILE):
+            environment = Config(filename=DEFAULT_ENVIRONMENT_FILE)
             if VERBOSE:
-                print(f"Cockpitdecks loaded default environment file {default_environment_file} instead")
+                print(f"Cockpitdecks loaded default environment file {DEFAULT_ENVIRONMENT_FILE} instead")
         else:
-            print(f"Cockpitdecks default environment file {default_environment_file} not found")
+            print(f"Cockpitdecks default environment file {DEFAULT_ENVIRONMENT_FILE} not found")
 
-if len(environment) == 0 or (type(environment) is Config and not environment.is_valid()):
-    if not args.demo:
-        print("Cockpitdecks has no environment", environment)
-        sys.exit(1)
-    else:
-        print("Cockpitdecks starting with default environment values for demo only")
-        environment = {
-            "APP_HOST": ["127.0.0.1", 7777],
-        }
+environment.verbose = VERBOSE
 
 # Debug
 #
@@ -213,37 +227,93 @@ elif debug != "info":
 if VERBOSE:
     print(f"debug set to {debug}")
 
-
-# Simulator
+# Demo
 #
-# First try env:
-if VERBOSE:
-    homes = xplane_homes()
-    if homes != "":
-        print(f"X-Plane located at {homes}")
-    else:
-        print(f"X-Plane not automagically located on this host")
+if args.demo:
+    print("Cockpitdecks starting for demo")
+    environment[ENVIRON_KW.SIMULATOR_NAME.value] = "NoSimulator"
+    environment[ENVIRON_KW.APP_HOST.value] = ["127.0.0.1", 7777]
 
-SIMULATOR_NAME = environment.get(ENVIRON_KW.SIMULATOR_NAME.value)
+# #########################################@
+# Simulator and software home directory
+#
+# Simulator name
+#
+# First try operating system environment:
+SIMULATOR_NAME = os.getenv(ENVIRON_KW.SIMULATOR_NAME.value)
 if SIMULATOR_NAME is None:
     if VERBOSE:
-        print("no simulator")
-    # SIMULATOR_NAME = "X-Plane"
-    # print(f"assuming simulator is {SIMULATOR_NAME}")
-    # sys.exit(1)
+        print("no simulator in os env")
 
-SIMULATOR_HOME = os.getenv(ENVIRON_KW.SIMULATOR_HOME.value)
-# Then environment
+# Second try environment file:
+if SIMULATOR_NAME is None:
+    if environment.from_filename():  # we loaded an environment
+        SIMULATOR_NAME = environment.get(ENVIRON_KW.SIMULATOR_NAME.value)
+        if SIMULATOR_NAME is None:
+            if VERBOSE:
+                print("no simulator in environment file")
+
+# Third: try x-plane installation file (os dependent):
+if SIMULATOR_NAME is None:
+    xp_homes = xplane_homes()  # os dependent
+    if xp_homes != "":
+        xp_homes = xp_homes.split(",")
+        if len(xp_homes) == 1:
+            SIMULATOR_NAME = "X-Plane"
+            SIMULATOR_HOME = xp_homes[0]
+            if VERBOSE:
+                print(f"found {SIMULATOR_NAME} in {SIMULATOR_HOME} from X-Plane installations file")
+        elif len(xp_homes) > 1:
+            SIMULATOR_NAME = "X-Plane"
+            print("multiple X-Plane installations found")
+        else:
+            print(f"X-Plane simulator installation file contains {xp_homes}, but no SIMULATOR_HOME identified; please specify SIMULATOR_HOME")
+    else:
+        print("X-Plane simulator installation file not found or empty")
+
+
+if SIMULATOR_NAME is None:
+    if not args.demo:
+        print("no simulator name")
+        sys.exit(1)
+    else:
+        SIMULATOR_NAME = "NoSimulator"
+        print("simulator set to default for demo")
+
+# Summary:
+if SIMULATOR_NAME is not None:
+    environment[ENVIRON_KW.SIMULATOR_NAME.value] = SIMULATOR_NAME
+if VERBOSE:
+    print(f"Simulator is {SIMULATOR_NAME}")
+
+#
+# Simulator software home directory if local:
 if SIMULATOR_HOME is None:
-    SIMULATOR_HOME = environment.get("SIMULATOR_HOME")
+    SIMULATOR_HOME = os.getenv(ENVIRON_KW.SIMULATOR_HOME.value)
+    # Then environment
+    if SIMULATOR_HOME is None:
+        if VERBOSE:
+            print("no simulator home in os env")
 
-if SIMULATOR_HOME is not None:
-    if not (os.path.exists(SIMULATOR_HOME) and os.path.isdir(SIMULATOR_HOME)):  # if defined, must exist.
+if SIMULATOR_HOME is None:
+    SIMULATOR_HOME = environment.get(ENVIRON_KW.SIMULATOR_HOME.value)
+    if SIMULATOR_HOME is None:
+        if VERBOSE:
+            print("no simulator home in environment file")
+
+if SIMULATOR_HOME is None:  # Try to see if we need it
+    SIMULATOR_HOST = environment.get(ENVIRON_KW.SIMULATOR_HOST.value)
+    if SIMULATOR_HOST is not None:
+        if VERBOSE:
+            print(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
+else:
+    if not os.path.exists(SIMULATOR_HOME) or not os.path.isdir(SIMULATOR_HOME):  # if defined, must exist.
         print(f"{SIMULATOR_NAME} not found in {SIMULATOR_HOME}")
         SIMULATOR_HOME = None
         if not args.demo:
             sys.exit(1)
     else:
+        environment[ENVIRON_KW.SIMULATOR_HOME.value] = SIMULATOR_HOME
         if VERBOSE:
             print(f"{SIMULATOR_NAME} found in {SIMULATOR_HOME}")
             # while we are at it...
@@ -252,19 +322,9 @@ if SIMULATOR_HOME is not None:
                 print(f"PI_cockpitdecks plugin found in {plugin_location}")
             else:
                 print(f"PI_cockpitdecks plugin not found in {plugin_location}")
-else:
-    SIMULATOR_HOST = environment.get(ENVIRON_KW.SIMULATOR_HOST.value)
-    if SIMULATOR_HOST is not None:
-        if VERBOSE:
-            print(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
-    # else:
-    #     if not args.demo:
-    #         print(f"{SIMULATOR_NAME} not found. no folder, no remote host")
-    #         sys.exit(1)
-    #     else:
-    #         print("Simulator ignored for demo")
 
-# Install plugin
+# #########################################@
+# Install plugin (and exits)
 #
 if args.install_plugin:
     print("installing Cockpitdecks plugin in XXPython3")
@@ -308,16 +368,17 @@ if args.install_plugin:
         print("..copied")
     print("plugin installed")
     sys.exit(0)
-# We do not do anthing else when installing the plugin, which should only occurs once
-# or when the plugin is upgraded
+    # We do not do anthing else when installing the plugin, which should only occurs once
+    # or when the plugin is upgraded
 
+#
+if not environment.is_valid():
+    if not args.demo:
+        print("Cockpitdecks has no environment or environment is not valid")
+        sys.exit(1)
 
 # COCKPITDECKS_PATH
 #
-def add_env(env, paths):
-    return ":".join(set(env.split(":") + paths)).strip(":")
-
-
 # Strats from environment
 COCKPITDECKS_PATH = os.getenv(ENVIRON_KW.COCKPITDECKS_PATH.value, "")
 
@@ -337,7 +398,8 @@ environment[ENVIRON_KW.COCKPITDECKS_PATH.value] = COCKPITDECKS_PATH
 if VERBOSE:
     print(f"{ENVIRON_KW.COCKPITDECKS_PATH.value}={COCKPITDECKS_PATH}")
 
-# Other environment variables
+# Application environment variables
+#
 APP_HOST = os.getenv(ENVIRON_KW.APP_HOST.value)
 APP_PORT = 7777
 if APP_HOST is not None:
@@ -345,39 +407,48 @@ if APP_HOST is not None:
 else:
     APP_HOST = environment.get(ENVIRON_KW.APP_HOST.value, ["127.0.0.1", 7777])
 
+if APP_HOST is not None:
+    environment[ENVIRON_KW.APP_HOST.value] = APP_HOST
+
 if VERBOSE:
     print(f"Cockpitdecks server at {APP_HOST}")
 
 # Start-up Mode
 #
 mode = CD_MODE.DEMO if args.demo else CD_MODE.NORMAL
+environment[ENVIRON_KW.MODE.value] = mode
+
 ac = args.aircraft_folder
-if ac is not None:
-    target_dir = os.path.abspath(os.path.join(os.getcwd(), ac))
-    if not os.path.exists(target_dir) or not os.path.isdir(target_dir):
-        print(f"{target_dir} directory not found")
-        sys.exit(1)
-    test_dir = os.path.join(target_dir, CONFIG_FOLDER)
-    if not os.path.exists(test_dir) or not os.path.isdir(test_dir):
-        print(f"{target_dir} directory does not contain {CONFIG_FOLDER} directory")
-        sys.exit(1)
-    AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
-    AIRCRAFT_DESC = os.path.basename(ac)
-    mode = CD_MODE.FIXED if args.fixed else CD_MODE.NORMAL
-    if VERBOSE:
-        print(f"starting aircraft folder {AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'dynamically adjusted to aircraft'}\n")
-elif ac is None and SIMULATOR_HOME is None and len(COCKPITDECKS_PATH) == 0:
-    mode = CD_MODE.DEMO
-    if VERBOSE:
-        print(f"no aircraft, no {SIMULATOR_NAME} on this host, COCKPITDECKS_PATH not defined: starting in demonstration mode")
+
+if not args.demo:
+    if ac is not None:
+        target_dir = os.path.abspath(os.path.join(os.getcwd(), ac))
+        if not os.path.exists(target_dir) or not os.path.isdir(target_dir):
+            print(f"{target_dir} directory not found")
+            sys.exit(1)
+        test_dir = os.path.join(target_dir, CONFIG_FOLDER)
+        if not os.path.exists(test_dir) or not os.path.isdir(test_dir):
+            print(f"{target_dir} directory does not contain {CONFIG_FOLDER} directory")
+            sys.exit(1)
+        AIRCRAFT_HOME = os.path.abspath(os.path.join(os.getcwd(), ac))
+        AIRCRAFT_DESC = os.path.basename(ac)
+        mode = CD_MODE.FIXED if args.fixed else CD_MODE.NORMAL
+        if VERBOSE:
+            print(f"starting aircraft folder {AIRCRAFT_HOME}, {'fixed' if mode.value > 0 else 'dynamically adjusted to aircraft'}\n")
+    elif ac is None:
+        if args.fixed:
+            print("non demo and fixed mode but no aircraft path")
+            sys.exit(1)
+        elif SIMULATOR_HOME is None and len(COCKPITDECKS_PATH) == 0:
+            mode = CD_MODE.DEMO
+            if VERBOSE:
+                print(f"no aircraft, no {SIMULATOR_NAME} on this host, COCKPITDECKS_PATH not defined: starting in demonstration mode")
 
 if VERBOSE:
+    print(f"environment: {environment.store}")
+    print(f"cockpitdecks {mode}")
     action = "try" if args.fixed else "fly"
     print(f"let's {action}...\n")
-
-# Transfer from command line...
-environment.verbose = VERBOSE
-
 #
 # COCKPITDECKS STARTS HERE, REALLY
 #
@@ -388,7 +459,7 @@ cockpit = Cockpit(environ=environment)
 logger.info("..initialized\n")
 
 
-# ##################################
+# ######################################################################################################
 # Flask Web Server (& WebSocket Server)
 #
 # Serves decks and their assets.

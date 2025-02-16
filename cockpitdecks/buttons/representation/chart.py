@@ -82,7 +82,6 @@ class ChartData(DrawBase, VariableListener):
         if not self.auto_update:
             for d in self.get_variables():
                 dref = self.chart.button.sim.get_variable(d)
-                print(">>>", d, dref, type(dref))
                 dref.add_listener(self)
             logger.debug(f"chart {self.name}: installed listener on {self.get_variables()}")
 
