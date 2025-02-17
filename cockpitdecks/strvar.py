@@ -13,9 +13,9 @@ from cockpitdecks.variable import Variable, VariableListener, PATTERN_DOLCB
 # from cockpitdecks.button.activation import ActivationValueProvider
 # from cockpitdecks.simulator import SimulatorVariableValueProvider
 
-from .resources.rpc import RPC
+from .resources.rpc import RPC, RPC_for_strings
 from .resources.color import DEFAULT_COLOR, convert_color
-from .resources.iconfonts import ICON_FONTS, get_special_character
+from .resources.iconfonts import ICON_FONTS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -257,9 +257,12 @@ class StringWithVariables(Variable, VariableListener):
             str: retult value as string from formula evaluation
         """
         if hasattr(self.owner, "get_formula_result"):
-            logger.debug(f"variable {self.display_name}: owner formula result: {self.owner.get_formula_result()}")
-            return self.owner.get_formula_result()
-        logger.warning(f"formula {self.display_name}: no get_formula_result (owner={type(self.owner)} {self.owner.name})")
+            res = self.owner.get_formula_result(default=default)
+            logger.debug(f"variable {self.display_name}: owner formula result: {res}")
+            return res
+        logger.warning(
+            f"formula {self.display_name}: owner has no get_formula_result (owner={type(self.owner)} {self.owner.name}), returning default {default}"
+        )
         return default
 
     # ##################################
@@ -399,6 +402,10 @@ class Formula(StringWithVariables):
         expr = self.substitute_values()
         logger.debug(f"formula {self.display_name}: {self.formula} => {expr}")
         r = RPC(expr)
+        # if self.data_type == "string":
+        #     r = RPC_for_strings(expr)
+        # else:
+        #     r = RPC(expr)
         value = r.calculate()
         logger.debug(f"value {self.display_name}: {self.formula} => {expr} => {value}")
         valueout = value
@@ -562,11 +569,9 @@ class TextWithVariables(StringWithVariables):
         """
         if self._formula is not None:
             logger.debug(f"variable {self.display_name}: local formula result: {self._formula.current_value}")
-            return self._formula.current_value
+            return self._formula.value()  # must cll value() to force computation, in case not computed before, .current_value might be None.
         logger.debug(f"variable {self.display_name}: no local formula")
-        if default is None:
-            return super().get_formula_result()
-        return default
+        return super().get_formula_result(default=default)
 
     def get_text(self, default: str = "---"):
         text = self.message
@@ -583,19 +588,14 @@ class TextWithVariables(StringWithVariables):
         # If text contains ${formula}, it is replaced by the value of the formula calculation (with formatting is present)
         KW_FORMULA_STR = f"${{{CONFIG_KW.FORMULA.value}}}"  # "${formula}"
         if KW_FORMULA_STR in str(text):
-            res = ""
-            if self._formula is not None:
-                res = self._formula.value()
-                if res is not None and res != "":  # Format output if format present
-                    local_format = self.get_variable_format(variable=CONFIG_KW.FORMULA.value, default=self.format)
-                    if local_format is not None:
-                        restmp = float(res)
-                        res = local_format.format(restmp)
-                        logger.debug(f"variable {self.display_name}: formula: {self.prefix}: format {local_format}: res {restmp} => {res}")
-                    else:
-                        res = str(res)
+            res = self.get_formula_result()
+            local_format = self.get_variable_format(variable=CONFIG_KW.FORMULA.value, default=self.format)
+            if local_format is not None:
+                restmp = float(res)
+                res = local_format.format(restmp)
+                logger.debug(f"variable {self.display_name}: formula: {self.prefix}: format {local_format}: res {restmp} => {res}")
             else:
-                logger.warning(f"variable {self.display_name}: text contains {KW_FORMULA_STR} but no {CONFIG_KW.FORMULA.value} attribute found")
+                res = str(res)
             text = text.replace(KW_FORMULA_STR, res)
             logger.debug(f"variable {self.display_name}: result of formula {res} substitued")
 

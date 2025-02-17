@@ -493,11 +493,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
 
         # "Aircraft" name or model...
         self.aircraft = Aircraft(cockpit=self)
+        self.running = False
 
         # Internal variables
         self.reload_operation = threading.Lock()
 
         self.default_pages = None  # current pages on decks when reloading
+        self.client_list = None
         self.mode = 0  # CD_MODE: NORMAL = 0 (normal operation), DEMO = 1 (no aircraft, do not change aircraft), FIXED = 2 (do not change aircraft)
 
         self.init()  # this will install all available simulators
@@ -1573,12 +1575,16 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         if self.default_pages is not None:
             logger.debug(f"default_pages {self.default_pages.keys()}")
             for name, deck in self.decks.items():
+                if deck.is_virtual_deck() and self.client_list is not None and len(self.client_list) > 0:
+                    if name in self.client_list:
+                        deck.set_clients(self.client_list.get(name, 0))
                 if name in self.default_pages.keys():
                     if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
                         deck.change_page(self.default_pages[name])
                     else:
                         deck.change_page()
             self.default_pages = None
+            self.client_list = None
         else:
             for deck in self.decks.values():
                 deck.change_page()
@@ -1656,9 +1662,13 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         if just_do_it:
             logger.info("reloading decks..")
             self.default_pages = {}  # {deck_name: currently_loaded_page_name}
+            self.client_list = {}
             for name, deck in self.decks.items():
                 if deck.current_page is not None:
                     self.default_pages[name] = deck.current_page.name
+                if deck.is_virtual_deck():
+                    if deck.clients > 0:
+                        self.client_list[name] = deck.clients
             with self.reload_operation:
                 self.aircraft.start(self.aircraft.acpath)
             logger.info("..done")
@@ -1835,6 +1845,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             logger.info(f"{[t.name for t in threading.enumerate()]}")
             logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
             logger.info("..cockpit started")
+            self.running = True
             if not release or not self.has_web_decks():
                 logger.info(f"serving {self.get_aircraft_name()}")
                 for t in threading.enumerate():
@@ -1849,6 +1860,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             self.terminate_all()
 
     def terminate_all(self, threads: int = 1):
+        if not self.running:
+            logger.info("cockpit not running")
+            return
         logger.info("terminating cockpit..")
         # Stop processing events
         if self.event_loop_run:
@@ -1879,6 +1893,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         else:
             logger.info("no pending thread")
         logger.info("..cockpit terminated")
+        self.running = False
+
 
     # ###############################################################
     # Web/Virtual decks

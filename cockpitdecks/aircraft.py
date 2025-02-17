@@ -96,7 +96,21 @@ class Aircraft:
         self._aircraft_string_variable_names = set()
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
-        self.default_pages = None  # current pages on decks when reloading
+    @property
+    def default_pages(self):
+        return self.cockpit.default_pages
+
+    @default_pages.setter
+    def default_pages(self, default_pages):
+        self.cockpit.default_pages = default_pages
+
+    @property
+    def client_list(self):
+        return self.cockpit.client_list
+
+    @client_list.setter
+    def client_list(self, client_list):
+        self.cockpit.client_list = client_list
 
     @property
     def acpath(self):
@@ -574,12 +588,16 @@ class Aircraft:
         if self.default_pages is not None:
             logger.debug(f"default_pages {self.default_pages.keys()}")
             for name, deck in self.decks.items():
+                if deck.is_virtual_deck() and self.client_list is not None and len(self.client_list) > 0:
+                    if name in self.client_list:
+                        deck.set_clients(self.client_list.get(name, 0))
                 if name in self.default_pages.keys():
                     if self.default_pages[name] in deck.pages.keys() and deck.home_page is not None:  # do not refresh if no home page loaded...
                         deck.change_page(self.default_pages[name])
                     else:
                         deck.change_page()
             self.default_pages = None
+            self.client_list = None
         else:
             for deck in self.decks.values():
                 deck.change_page()

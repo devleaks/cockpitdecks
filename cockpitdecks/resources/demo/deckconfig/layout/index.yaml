@@ -43,12 +43,14 @@ buttons:
       B0:
         text: FAIL
         text-font: D-DIN-Bold.otf
+        text-size: 72
         color: darkorange
         formula: ${state:activation_count} 2 mod 0 eq
       B1:
         text: "ON"
         color: deepskyblue
         text-font: D-DIN-Bold.otf
+        text-size: 72
         framed: true
         formula: ${state:activation_count} 2 mod
     command: none
@@ -197,7 +199,7 @@ buttons:
   - index: 9
     name: METAR
     type: none
-    weather-metar:
+    live-weather:
       weather-font: D-DINCondensed.otf
       weather-size: 28
       weather-color: white

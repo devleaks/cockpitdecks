@@ -624,11 +624,11 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             return self._activation.get_activation_value()
         return None
 
-    def get_formula_result(self) -> str | None:
+    def get_formula_result(self, default="0.0") -> str | None:
         """Returns the result of the formula of this button"""
         if self._value.has_formula:
-            return self._value._formula.current_value
-        return None
+            return self._value._formula.value()  # must cll value() to force computation, in case not computed before, .current_value might be None.
+        return default
 
     # ##################################
     # Value
