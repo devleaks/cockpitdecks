@@ -33,15 +33,15 @@ MAX_SPARKLINES = 3
 class ChartData(DrawBase, VariableListener):
 
     def __init__(self, chart, config: dict) -> None:
+        name = config.get("name", "chart data")
+
         self.chart_config = config
         self.chart = chart
 
-        self.name = config.get("name")
-
-        self.datarefs = None
+        self.variables = None
 
         # values
-        self.value = Value(self.name, config=config, provider=chart.button)
+        self.value = Value(name=name, config=config, provider=chart.button)
 
         self.data = []
         self.last_data = now().timestamp()
@@ -68,7 +68,8 @@ class ChartData(DrawBase, VariableListener):
         self.color = convert_color(self.color)
         self._cached = None
 
-        self.init()
+        VariableListener.__init__(self, name=name)
+        DrawBase.__init__(self, button=chart.button)
 
     def init(self):
         if self.time_width is None:  # have to compute/guess it
@@ -86,11 +87,11 @@ class ChartData(DrawBase, VariableListener):
             logger.debug(f"chart {self.name}: installed listener on {self.get_variables()}")
 
     def get_variables(self) -> set:
-        if self.datarefs is None:
+        if self.variables is None:
             if self.chart is not None:
-                self.datarefs = self.value.get_variables()
-        logger.debug(f"chart {self.name} return datarefs {self.datarefs}")
-        return self.datarefs
+                self.variables = self.value.get_variables()
+        logger.debug(f"chart {self.name} return datarefs {self.variables}")
+        return self.variables
 
     @property
     def auto_update(self):
@@ -132,11 +133,11 @@ class ChartData(DrawBase, VariableListener):
         return self.value.get_value()
         # return randint(self.value_min, self.value_max)
 
-    def variable_changed(self, data: Variable):
-        if data.name not in self.datarefs:
-            logger.debug(f"chart {self.name}: {data.name} is not for me {self.datarefs}")
+    def variable_changed(self, variable: Variable):
+        if variable.name not in self.variables:
+            logger.debug(f"chart {self.name}: {variable.name} is not for me {self.variables}")
             return
-        r = data.value()
+        r = variable.value()
         if r is None:
             logger.warning(f"chart {self.name}: value is None, set to zero")
             r = 0
@@ -274,6 +275,7 @@ class ChartIcon(DrawAnimation):
         self.chart_configs = self.chart.get("charts")  # raw
         self.charts = {}  # same, but constructed
         self.rule_height = self.chart.get("rule-height", 0)
+        self.variables = None
 
         DrawAnimation.__init__(self, button=button)
         self.init()
@@ -290,12 +292,12 @@ class ChartIcon(DrawAnimation):
 
     def get_variables(self):
         # Collects datarefs in each chart
-        if self.datarefs is None:
+        if self.variables is None:
             datarefs = set()
             for c in self.charts.values():
                 datarefs = datarefs | c.get_variables()
-            self.datarefs = datarefs
-        return self.datarefs
+            self.variables = datarefs
+        return self.variables
 
     def should_run(self):
         """

@@ -1,7 +1,6 @@
 # Base classes for interface with the simulation software
 #
 from __future__ import annotations
-from itertools import permutations
 import threading
 import logging
 from abc import ABC, abstractmethod
@@ -96,10 +95,11 @@ class Instruction(ABC):
         return list(subclasses)
 
     @abstractmethod
-    def _execute(self):
+    def _execute(self) -> bool:
         if self.performer is not None and (hasattr(self.performer, "execute") or isinstance(self.performer, InstructionPerformer)):
-            self.performer.execute(instruction=self)
+            return self.performer.execute(instruction=self)
         self.clean_timer()
+        return True
 
     @abstractmethod
     def _check_condition(self) -> bool:
@@ -110,16 +110,16 @@ class Instruction(ABC):
             self._timer.cancel()
             self._timer = None
 
-    def execute(self):
+    def execute(self) -> bool:
         if not self._check_condition():
             logger.debug(f"{self.name} not allowed to run")
-            return
+            return False
         if self._timer is None and self.delay > 0:
             self._timer = threading.Timer(self.delay, self._execute)
             self._timer.start()
             logger.debug(f"{self.name} will be executed in {self.delay} secs")
-            return
-        self._execute()
+            return True
+        return self._execute()
 
 
 class MacroInstruction(Instruction):
@@ -176,4 +176,4 @@ class NoOperation(Instruction):
         return True
 
     def _execute(self):
-        logger.warning(f"{self.name} born to do nothing")
+        logger.debug(f"{self.name} born to do nothing")

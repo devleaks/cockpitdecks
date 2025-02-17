@@ -272,7 +272,7 @@ class VariableListener(ABC):
     """
 
     def __init__(self, name: str = "abstract-data-listener"):
-        self.name = name
+        self.vl_name = name
 
     @abstractmethod
     def variable_changed(self, data: Variable):

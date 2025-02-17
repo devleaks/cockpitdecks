@@ -61,7 +61,7 @@ DECK_TYPE_DESCRIPTION = "deck-type-flat"
 class Aircraft:
     """
     Contains all deck configurations for a given aircraft.
-    Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
+    Is started when aircraft is loaded and aircraft contains CONFIG_FOLDER folder.
     """
 
     def __init__(self, cockpit: "Cockpit"):

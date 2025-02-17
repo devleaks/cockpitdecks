@@ -397,8 +397,9 @@ class CockpitBase:
 
 class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerformer, CockpitBase):
     """
-    Contains all deck configurations for a given aircraft.
-    Is started when aicraft is loaded and aircraft contains CONFIG_FOLDER folder.
+    Common instances shared by all aircrafts/decks.
+    Loads and starts a particular aircraft if requested.
+    Main entry points to initialize, start (run()) and stop (terminate()) Cockpitdecks.
     """
 
     def __init__(self, environ: Config | dict):
@@ -493,7 +494,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
 
         # "Aircraft" name or model...
         self.aircraft = Aircraft(cockpit=self)
-        self.running = False
+        self.running = False  # flag to prevent multiple start/stop
 
         # Internal variables
         self.reload_operation = threading.Lock()
@@ -616,6 +617,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     def get_representations_for(self, feedback: DECK_FEEDBACK):
         return [a for a in self.all_representations.values() if feedback in a.get_required_capability()]
 
+    # #########################################################
+    # Initialisation
+    #
     def init(self):
         """
         Loads extensions, then build lists of available resources (simulators, decks, etc.)
@@ -671,7 +675,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             logger.info(f"COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return True
 
+    # #########################################################
     # Devices
+    #
     def scan_devices(self):
         """Scan for hardware devices"""
 
@@ -851,7 +857,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             device = deck[CONFIG_KW.DEVICE.value]
             self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
+    # #########################################################
     # Variables
+    #
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft."""
         ret = self._simulator_variable_names
@@ -899,7 +907,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         """
         return self.variable_database.value(name, default=default)
 
+    # #########################################################
     # Instruction
+    #
     def instruction_factory(self, name: str, instruction_block: dict) -> Instruction:
         # Should be the top-most instruction factory.
         # Delegates to simulator if not capable of building instruction
@@ -920,7 +930,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         # elif name == "stop":
         #     return CockpitStopInstruction(cockpit=self)
 
+    # #########################################################
     # Attribute defaults
+    #
     def get_color(self, color, silence: bool = True) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
         if type(color) is str and color in self.named_colors:
             color1 = color
@@ -1065,7 +1077,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             logger.warning(f"invalid name {name}")
         return None
 
+    # #########################################################
     # Cockpitdecks inspection
+    #
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         # Here, it is purely statistics
         if self.sim is not None:
@@ -1146,9 +1160,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         real_decks = [k for k, v in self.deck_types.items() if not v.is_virtual_deck()]
         logger.info(f"loaded {len(real_decks)} deck types ({', '.join(real_decks)})")
         logger.info(f"loaded {len(self.virtual_deck_types)} virtual deck types ({', '.join(self.virtual_deck_types.keys())})")
-
-    def get_deck_type(self, name: str):
-        return self.deck_types.get(name)
 
     def load_cd_observables(self):
         fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
@@ -1370,6 +1381,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         )
 
     # Getters
+    def get_deck_type(self, name: str):
+        return self.deck_types.get(name)
+
     def get_observable(self, name) -> Observable | None:
         return self.observables.get(name)
 
@@ -1480,11 +1494,19 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     #
     # The following functions ara called by CockpitdecksInstructions.
     #
-    def execute(self, instruction: CockpitInstruction):
+    def simulator_variable_changed(self, data: SimulatorVariable):
+        """
+        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
+        """
+        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
+            logger.warning(f"unhandled {data.name}={data.value()}")
+            return
+
+    def execute(self, instruction: CockpitInstruction) -> bool:
         if not isinstance(instruction, CockpitInstruction):
             logger.warning(f"invalid instruction {instruction.name}")
-            return
-        instruction._execute()
+            return False
+        return instruction._execute()
 
     def adjust_light(self, luminosity: float = 1.0, brightness: float = 1.0):
         self.global_luminosity = luminosity
@@ -1820,14 +1842,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         else:
             logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks (registered serial numbers are: {', '.join(inv.keys())})")
 
-    def simulator_variable_changed(self, data: SimulatorVariable):
-        """
-        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
-        """
-        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
-            logger.warning(f"unhandled {data.name}={data.value()}")
-            return
-
     def run(self, release: bool = False):
         if len(self.decks) > 0:
             # Each deck should have been started
@@ -2038,7 +2052,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             self.send(deck=name, payload=payload)
 
     # ###############################################################
-    # Button designer
+    # Button designer (supporting web api)
     #
     def get_assets(self):
         """Collects all assets for button designer
