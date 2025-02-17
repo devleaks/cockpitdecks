@@ -58,6 +58,7 @@ if LOGFILE is not None:
 
 startup_logger = logging.getLogger("Cockpitdecks startup")
 
+
 class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
@@ -365,7 +366,9 @@ if not environment.is_valid():
         sys.exit(1)
 
 if SIMULATOR_HOST is not None and SIMULATOR_HOME is not None:
-    startup_logger.warning(f"both software home directory ({SIMULATOR_HOME}) and remote host ({SIMULATOR_HOST}) provided; please make sure software location is consistent with Cockpitdecks (see manual)")
+    startup_logger.warning(
+        f"both software home directory ({SIMULATOR_HOME}) and remote host ({SIMULATOR_HOST}) provided; please make sure software location is consistent with Cockpitdecks (see manual)"
+    )
 
 # COCKPITDECKS_PATH
 #
