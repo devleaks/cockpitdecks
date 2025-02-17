@@ -11,7 +11,7 @@ from cockpitdecks.variable import InternalVariableType
 from .button import Button
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Page:

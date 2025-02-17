@@ -69,7 +69,7 @@ class Value(StringWithVariables):
         # in this case there MUST be a formula to evalute the value before we set it
         if self.dataref is not None and self.set_dataref is not None and self.dataref == self.set_dataref:
             if self._formula is None:
-                logger.warning(f"value {self.name}: get/set are identical, no formula")
+                logger.warning(f"value {self.name}: get/set dataref are identical, no formula")
             else:
                 logger.info(f"value {self.name}: get/set dataref are identical, formula {self.formula} evaluated before set-dataref")
 
