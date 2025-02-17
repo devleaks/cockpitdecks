@@ -311,7 +311,6 @@ class Config(MutableMapping):
 
     def __init__(self, filename: str):
         self.store = dict()
-        self.store[CONFIG_FILENAME] = filename
         if filename is not None:
             if os.path.exists(filename):
                 filename = os.path.abspath(filename)
@@ -320,6 +319,7 @@ class Config(MutableMapping):
                     with open(filename, "r") as fp:
                         self.store = yaml.load(fp)
                         init_logger.info(f"loaded config from {os.path.abspath(filename).replace(dirname, '')}")
+                    self.store[CONFIG_FILENAME] = filename
                 except:
                     init_logger.warning(f"error loading config from {os.path.abspath(filename).replace(dirname, '')}", exc_info=True)
             else:
@@ -348,7 +348,7 @@ class Config(MutableMapping):
         return self.store is not None and len(self.store) > 1  # because there always is self.store[CONFIG_FILENAME]
 
     def filename(self) -> str | None:
-        return self.store[CONFIG_FILENAME]
+        return self.store.get(CONFIG_FILENAME)
 
     def from_filename(self) -> bool:
         return self.filename() is not None and self.filename() != ""

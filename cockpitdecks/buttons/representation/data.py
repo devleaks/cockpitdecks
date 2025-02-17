@@ -163,7 +163,7 @@ class DataIcon(DrawBase):
         data_progress = self.data.get("data-progress")
         progress_color = self.data.get("progress-color")
         if data_progress is not None:
-            w = icon_size + 4 * inside
+            w = self.icon_style.size + 4 * inside
             h = 3 * image.height / 4 - 2 * DATA_PROGRESS
             pct = float(data_value) / float(data_progress)
             if pct > 1:
