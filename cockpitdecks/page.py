@@ -11,7 +11,7 @@ from cockpitdecks.variable import InternalVariableType
 from .button import Button
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Page:
@@ -210,9 +210,9 @@ class Page:
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d)  # creates or return already defined dataref
                 if ref is not None:
+                    ref.add_listener(button)
                     if isinstance(ref, SimulatorVariable):
                         self.simulator_variable[d] = ref
-                        self.simulator_variable[d].add_listener(button)
                         self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
                         logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                     else:

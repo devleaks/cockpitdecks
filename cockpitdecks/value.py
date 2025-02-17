@@ -30,13 +30,12 @@ class Value(StringWithVariables):
 
         self._config = config
         self._provider = provider
-        self._button = provider
 
         # Variable to write result to
         self._set_simdata_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         self._set_simdata = None
         if self._set_simdata_path is not None:
-            self._set_simdata = self._button.sim.get_variable(self._set_simdata_path)
+            self._set_simdata = self._provider.sim.get_variable(self._set_simdata_path)
             self._set_simdata.writable = True
 
         # Value range and domain:
@@ -61,24 +60,22 @@ class Value(StringWithVariables):
     def init(self):
         self._string_variables = self.get_string_variables()
 
-        # there is a special issue if dataref we get value from is also dataref we set
-        # in this case there MUST be a formula to evalute the value before we set it
-        # if self.dataref is not None and self.set_dataref is not None:
-        #     if self.dataref == self.set_dataref:
-        #         if self.formula == "":
-        #             logger.warning(f"value {self.name}: set and get from same dataref ({self.dataref}) ({'no' if self.formula == '' else 'has'} formula)")
-        #         if self.formula is None:
-        #             logger.warning(f"value {self.name}: has no formula, get/set are identical")
-        #         else:
-        #             logger.warning(f"value {self.name}: formula {self.formula} evaluated before set-dataref")
-
         if self.formula is not None and self.formula != "":
             logger.debug(f"value {self.name}: has formula {self.formula}")
             self._formula = Formula(owner=self._provider, formula=self.formula)
             self._formula.add_listener(self._provider)
 
+        # there is a special issue if dataref we get value from is also dataref we set
+        # in this case there MUST be a formula to evalute the value before we set it
+        if self.dataref is not None and self.set_dataref is not None and self.dataref == self.set_dataref:
+            if self._formula is None:
+                logger.warning(f"value {self.name}: get/set are identical, no formula")
+            else:
+                logger.info(f"value {self.name}: get/set dataref are identical, formula {self.formula} evaluated before set-dataref")
+
         if not self.has_domain:
             return
+
         if self.value_min > self.value_max:
             tmp = self.value_min
             self.value_min = self.value_max
@@ -295,7 +292,7 @@ class Value(StringWithVariables):
             if ret is not None:
                 if type(ret) is bool:
                     ret = 1 if ret else 0
-                logger.debug(f"value {self.name}: {ret} (from activation {type(self._button._activation).__name__})")
+                logger.debug(f"value {self.name}: {ret} (from activation {type(self._provider._activation).__name__})")
                 return store_value(ret)
 
         # From now on, warning issued since returns non scalar value
@@ -349,5 +346,5 @@ class Value(StringWithVariables):
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0
             self._set_simdata.update_value(new_value=new_value, cascade=True)
-            # print(f"set-dataref>> button {self._button.button_name()}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
+            # print(f"set-dataref>> button {self._provider.button_name()}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
             self._set_simdata.save()

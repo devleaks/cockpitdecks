@@ -1895,7 +1895,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         logger.info("..cockpit terminated")
         self.running = False
 
-
     # ###############################################################
     # Web/Virtual decks
     #
