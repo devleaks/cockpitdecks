@@ -346,5 +346,5 @@ class Value(StringWithVariables):
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0
             self._set_simdata.update_value(new_value=new_value, cascade=True)
-            # print(f"set-dataref>> button {self._provider.button_name()}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
+            # print(f"set-dataref>> button {self._provider.name}: value {self.name}: set-dataref {self._set_simdata.name} to button value {new_value}")
             self._set_simdata.save()

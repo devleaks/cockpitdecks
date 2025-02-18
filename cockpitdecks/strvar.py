@@ -53,21 +53,12 @@ class StringWithVariables(Variable, VariableListener):
         self._string_variables = None
         self._variables = None
         self._formats = {}  # for later @todo
-        self._has_state_vars = False
-        self._has_sim_vars = False
-
-        self.is_static = True
 
         self.init()
-        # if not isinstance(self, Formula):
-        #     print("+++++ CREATED STRING", self.name, self.owner.name, message, self.get_variables())
-        # if message is None:
-        #     logger.warning(f"message {self.display_name}: no message")
 
     def init(self):
         self._variables = self.get_variables()
         if len(self._variables) > 0:
-            self.is_static = False
             logger.debug(f"message {self.display_name}: using variables {', '.join(self._tokens.keys())}/{self._variables}")
             for varname in self._tokens.values():
                 v = self.owner.get_variable(varname)
@@ -77,6 +68,24 @@ class StringWithVariables(Variable, VariableListener):
             self.add_listener(self.owner)
         # else:
         #     logger.debug(f"formula {self.display_name}: constant {self.message}")
+
+    @property
+    def is_static(self) -> bool:
+        if self._variables is None:
+            return True
+        return len(self._variables) == 0 and len(self._tokens) == 0  # nothing to replace
+
+    @property
+    def _has_state_vars(self) -> bool:
+        if self._variables is None:
+            return False
+        return len([c for c in self._variables if Variable.is_state_variable(c)]) > 0
+
+    @property
+    def _has_sim_vars(self) -> bool:
+        if self._variables is None:
+            return False
+        return len([c for c in self._variables if Variable.may_be_non_internal_variable(c)]) > 0
 
     @property
     def display_name(self):
@@ -109,24 +118,26 @@ class StringWithVariables(Variable, VariableListener):
         if self.message is None or type(self.message) is not str:
             return self._variables
 
-        if "${" not in self.message:  # formula is simple expression, constant or single dataref without ${}
-            # Is formula is single internal variable?
+        if "${" not in self.message:  # message is simple expression, constant or single dataref without ${}
+            # Is message a single internal variable?
+            #     text: state:activation_count without the ${}?
             if Variable.is_internal_variable(self.message) or Variable.is_state_variable(self.message):
-                if Variable.is_state_variable(self.message):
-                    self._has_state_vars = True
                 self._variables.add(self.message)
                 self._tokens[self.message] = self.message
                 return self._variables
-            if Variable.may_be_non_internal_variable(self.message):  # probably a dataref path
+            # Is message a single dataref?
+            #     text: sim/position/latitude without the ${}?
+            if Variable.may_be_non_internal_variable(self.message):  # probably a dataref path?
                 self._variables.add(self.message)
                 self._tokens[self.message] = self.message
-                self._has_sim_vars = True
                 return self._variables
-        # else formula may be a constant like
+        # else message may be a constant like
         #         formula: 2
         #         formula: 3.14
+        #         text: Hello, world!
+        # No variable to add
 
-        # case 2: formula contains one or more ${var}
+        # case 2: message contains one or more ${var}
         #         formula: ${sim/pressure} 33.28 *
         tokens = re.findall(PATTERN_DOLCB, self.message)
         for varname in tokens:
@@ -134,13 +145,10 @@ class StringWithVariables(Variable, VariableListener):
                 logger.debug(f"{varname} is an icon, ignored")
                 continue
             self._variables.add(varname)
-            if Variable.is_state_variable(varname):
-                self._has_state_vars = True
-            elif Variable.may_be_non_internal_variable(self.message):  # probably a dataref path
-                self._has_sim_vars = True
             found = f"${{{varname}}}"
             self._tokens[found] = varname
 
+        # remove formula from variables, but doo not remove ${formula} from token
         if CONFIG_KW.FORMULA.value in self._variables:
             self._variables.remove(CONFIG_KW.FORMULA.value)
 
@@ -367,7 +375,7 @@ class Formula(StringWithVariables):
         return self.message
 
     def value(self):
-        if self._has_state_vars or self._has_sim_vars:
+        if self._has_state_vars or self._has_sim_vars:  # not self.is_static ?
             return self.execute_formula(store=True, cascade=True)
         if self.current_value is None:  # may be it was never evaluated, so we force it if value is None, for example static value
             self.execute_formula(store=True, cascade=False)

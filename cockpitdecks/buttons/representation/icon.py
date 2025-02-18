@@ -463,7 +463,7 @@ class IconText(IconColor):
         """
         image = super().get_image()
         if self.notify is not None:
-            logger.info(f"notification from {self.button.button_name()}: {self.notify} {self._text.message}")
+            logger.info(f"notification from {self.button.name}: {self.notify} {self._text.message}")
         return self.overlay_text_new(image, self._text)
 
     def describe(self) -> str:

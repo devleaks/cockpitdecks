@@ -41,7 +41,7 @@ class Instruction(ABC):
     def __init__(
         self, name: str, performer: InstructionPerformer, factory: InstructionFactory | None = None, delay: float = 0.0, condition: str | None = None
     ) -> None:
-        self._name = name
+        self.name = name
         self.performer = performer
         self.factory = factory
         self.delay = delay
@@ -59,11 +59,11 @@ class Instruction(ABC):
                 self._condition = Formula(owner=self.performer, formula=f"${{{self.condition}}}")
 
     @classmethod
-    def name(cls) -> str:
+    def int_name(cls) -> str:
         return cls.INSTRUCTION_NAME
 
     def __str__(self) -> str:
-        return f"{self.INSTRUCTION_NAME} {self._name}"
+        return f"{self.INSTRUCTION_NAME} {self.name}"
 
     @staticmethod
     def all_subclasses(cls) -> list:
@@ -139,7 +139,7 @@ class MacroInstruction(Instruction):
         self.init()
 
     def __str__(self) -> str:
-        return f"{super()} ({', '.join([c.name for c in self._instructions])})"
+        return f"{self.name} ({', '.join([c.name for c in self._instructions])})"
 
     def init(self):
         total_delay = 0
@@ -150,7 +150,8 @@ class MacroInstruction(Instruction):
                 if total_delay > 0:
                     c[CONFIG_KW.DELAY.value] = total_delay
                 ci = self.factory.instruction_factory(name=f"{self.name}-{count}", instruction_block=c)
-                self._instructions.append(ci)
+                if ci is not None:
+                    self._instructions.append(ci)
                 count = count + 1
         else:
             logger.warning(f"{self.name} has no performer")

@@ -85,6 +85,7 @@ def convert_color_hsl(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]
 def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tuple[int, int, int]:
     # Darkens (or lighten) a color
     temp_color = color if type(color) in [tuple, list] else convert_color(color)
+    temp_color = temp_color[:3]
     a = list(colorsys.rgb_to_hls(*[c / 255 for c in temp_color]))
     a[1] = lightness
     return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])

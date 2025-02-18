@@ -135,7 +135,7 @@ class CockpitInstruction(Instruction):
     @classmethod
     def new(cls, cockpit: Cockpit, name: str, instruction_block: dict):
         instr = name.replace(CockpitInstruction.PREFIX, "")
-        all_cockpit_instructions = {s.name(): s for s in Cockpit.all_subclasses(CockpitInstruction)}
+        all_cockpit_instructions = {s.int_name(): s for s in Cockpit.all_subclasses(CockpitInstruction)}
 
         if instr in all_cockpit_instructions:
             return all_cockpit_instructions[instr](cockpit=cockpit, name=name, instruction_block=instruction_block)

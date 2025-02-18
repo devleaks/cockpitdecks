@@ -230,9 +230,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             raise CockpitdecksError("simulator no longer accessible")
         return self.page.deck.cockpit.sim
 
-    def button_name(self):
-        return self.name
-
     def get_id(self):
         return ID_SEP.join([self.page.get_id(), str(self.index)])
 
@@ -539,8 +536,8 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if self.cockpit.variable_database.exists(name):
             return self.cockpit.variable_database.get(name)
         if InternalVariable.is_internal_variable(path=name):
-            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string, creator=self.button_name()))
-        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string, creator=self.button_name()))
+            return self.cockpit.variable_database.register(variable=self.cockpit.variable_factory(name=name, is_string=is_string, creator=self.name))
+        return self.cockpit.variable_database.register(variable=self.sim.variable_factory(name=name, is_string=is_string, creator=self.name))
 
     # ##################################
     # Dataref processing
@@ -842,7 +839,7 @@ class ButtonInstruction(Instruction):
     @classmethod
     def new(cls, name: str, button: Button, **kwargs: dict):
         instr = name.replace(ButtonInstruction.PREFIX, "")
-        all_cockpit_instructions = {s.name(): s for s in Instruction.all_subclasses(ButtonInstruction)}
+        all_cockpit_instructions = {s.int_name(): s for s in Instruction.all_subclasses(ButtonInstruction)}
         if instr in all_cockpit_instructions:
             return all_cockpit_instructions[instr](button=button, **kwargs)
         return None

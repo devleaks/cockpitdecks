@@ -292,11 +292,17 @@ if SIMULATOR_HOME is None:
     if SIMULATOR_HOME is None:
         startup_logger.debug("no simulator home in environment file")
 
-if SIMULATOR_HOME is None:  # Try to see if we need it
-    SIMULATOR_HOST = environment.get(ENVIRON_KW.SIMULATOR_HOST.value)
-    if SIMULATOR_HOST is not None:
+SIMULATOR_HOST = environment.get(ENVIRON_KW.SIMULATOR_HOST.value)
+if SIMULATOR_HOST is not None:
+    if SIMULATOR_HOME is None:
         startup_logger.debug(f"no SIMULATOR_HOME, assume remote installation at {ENVIRON_KW.SIMULATOR_HOST.value}={SIMULATOR_HOST}")
-else:
+    else:
+        startup_logger.warning(
+            f"both software home directory ({SIMULATOR_HOME}) and remote host ({SIMULATOR_HOST}) provided; please make sure software location is consistent with Cockpitdecks (see manual)"
+        )
+
+# Check SIMULATOR_HOME
+if SIMULATOR_HOME is not None:
     SIMULATOR_HOME = SIMULATOR_HOME.rstrip(os.sep)
     if not os.path.exists(SIMULATOR_HOME) or not os.path.isdir(SIMULATOR_HOME):  # if defined, must exist.
         startup_logger.warning(f"{SIMULATOR_NAME} not found in {SIMULATOR_HOME}")
@@ -311,7 +317,8 @@ else:
         if os.path.exists(plugin_location):
             startup_logger.debug(f"PI_cockpitdecks plugin found in {plugin_location}")
         else:
-            startup_logger.debug(f"PI_cockpitdecks plugin not found in {plugin_location}")
+            startup_logger.warning(f"PI_cockpitdecks plugin not found in {plugin_location}")
+
 
 # #########################################@
 # Install plugin (and exits)
@@ -364,11 +371,6 @@ if not environment.is_valid():
     if not args.demo:
         startup_logger.error("Cockpitdecks has no environment or environment is not valid")
         sys.exit(1)
-
-if SIMULATOR_HOST is not None and SIMULATOR_HOME is not None:
-    startup_logger.warning(
-        f"both software home directory ({SIMULATOR_HOME}) and remote host ({SIMULATOR_HOST}) provided; please make sure software location is consistent with Cockpitdecks (see manual)"
-    )
 
 # COCKPITDECKS_PATH
 #

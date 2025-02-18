@@ -114,10 +114,8 @@ class VirtualDeck(DeckWithIcons):
             else:
                 page = self.home_page.name
             page = self.current_page.name if self.current_page is not None else page
-            print(">>> change_page", self.name, page)
             self.change_page(page)
         else:
-            print(">>> not connected", self.name)
             logger.debug(f"deck {self.name} is not connected")
 
     # #######################################

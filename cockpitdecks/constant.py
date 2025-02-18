@@ -69,7 +69,7 @@ LIVERY_INDEX_VARIABLE = "sim/aircraft/view/acf_livery_index"
 AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
 LIVERY_CHANGE_MONITORING = "livery-name"
 RELOAD_ON_LIVERY_CHANGE = False
-
+WEATHER_STATION_MONITORING = "weather-station"
 
 MONITOR_DATAREF_USAGE = True
 

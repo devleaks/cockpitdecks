@@ -82,26 +82,12 @@ class Variable(ABC):
     # Variable name control and generation
     #
     @staticmethod
-    def may_be_non_internal_variable(path: str) -> bool:
-        # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
-        # At the end, we are not sure it is a dataref, but we are sure non-datarefs are excluded ;-)
-        PREFIX = list(ICON_FONTS.keys()) + [INTERNAL_STATE_PREFIX[:-1], BUTTON_PREFIX[:-1]]
-        for start in PREFIX:
-            if path.startswith(start + PREFIX_SEP):
-                return False
-        return path != CONFIG_KW.FORMULA.value and "/" in path and len(path) > 7  # !!  a string for an annunciator is ON/R (4 chars)
+    def is_icon(path: str) -> bool:
+        return len([font for font in ICON_FONTS if path.startswith(font + ":")]) > 0
 
     @staticmethod
     def is_internal_variable(path: str) -> bool:
         return path.startswith(INTERNAL_VARIABLE_PREFIX)
-
-    @staticmethod
-    def is_state_variable(path: str) -> bool:
-        return path.startswith(INTERNAL_STATE_PREFIX)
-
-    @staticmethod
-    def is_icon(path: str) -> bool:
-        return len([font for font in ICON_FONTS if path.startswith(font + ":")]) > 0
 
     @staticmethod
     def internal_variable_name(path: str) -> str:
@@ -110,29 +96,44 @@ class Variable(ABC):
         return path  # already startswith INTERNAL_VARIABLE_PREFIX
 
     @staticmethod
-    def state_variable_name(path: str) -> str:
-        if not Variable.is_state_variable(path):  # prevent duplicate prepend
-            return INTERNAL_STATE_PREFIX + path
-        return path  # already startswith INTERNAL_VARIABLE_PREFIX
-
-    @staticmethod
     def internal_variable_root_name(path: str) -> str:
         if Variable.is_internal_variable(path):  # prevent duplicate prepend
             return path[len(INTERNAL_VARIABLE_PREFIX) :]
-        return path  # already startswith INTERNAL_VARIABLE_PREFIX
+        return path  # already root name
+
+    @staticmethod
+    def is_state_variable(path: str) -> bool:
+        return path.startswith(INTERNAL_STATE_PREFIX)
+
+    @staticmethod
+    def state_variable_name(path: str) -> str:
+        if not Variable.is_state_variable(path):  # prevent duplicate prepend
+            return INTERNAL_STATE_PREFIX + path
+        return path  # already startswith INTERNAL_STATE_PREFIX
 
     @staticmethod
     def state_variable_root_name(path: str) -> str:
         if Variable.is_state_variable(path):  # prevent duplicate prepend
             return path[len(INTERNAL_STATE_PREFIX) :]
-        return path  # already startswith INTERNAL_VARIABLE_PREFIX
+        return path  # already root name
+
+    @staticmethod
+    def may_be_non_internal_variable(path: str) -> bool:
+        # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
+        # At the end, we are not sure it is a dataref, but we are sure non-datarefs are excluded ;-)
+        icon_prefixes = [c + PREFIX_SEP for c in ICON_FONTS.keys()]
+        PREFIXES = icon_prefixes + [INTERNAL_STATE_PREFIX, BUTTON_PREFIX]
+        for start in PREFIXES:
+            if path.startswith(start):
+                return False
+        return path != CONFIG_KW.FORMULA.value and "/" in path and len(path) > 7  # !!  a string for an annunciator is ON/R (4 chars)
 
     # ################################
     # Deduced behavior
     #
     @property
     def is_internal(self) -> bool:
-        return self.name.startswith(INTERNAL_VARIABLE_PREFIX)
+        return Variable.is_internal_variable(self.name)
 
     @property
     def is_string(self) -> bool:
@@ -293,8 +294,8 @@ class InternalVariable(Variable):
     """
 
     def __init__(self, name: str, is_string: bool = False):
-        if not name.startswith(INTERNAL_VARIABLE_PREFIX):
-            name = INTERNAL_VARIABLE_PREFIX + name
+        if not Variable.is_internal_variable(name):
+            name = Variable.internal_variable_name(name)
         Variable.__init__(self, name=name, data_type="string" if is_string else "float")
 
 

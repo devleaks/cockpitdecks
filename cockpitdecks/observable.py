@@ -71,7 +71,7 @@ class Observable(SimulatorVariableListener):
 
     def __init__(self, config: dict, simulator: Simulator):
         self._config = config
-        self.name = config.get(CONFIG_KW.NAME.value)
+        self.name = config.get(CONFIG_KW.NAME.value, type(self).__name__)
         self.mode = config.get(CONFIG_KW.TYPE.value, CONFIG_KW.TRIGGER.value)
         self.sim = simulator
         self._enabled = config.get(CONFIG_KW.ENABLED.value, False)
@@ -81,10 +81,10 @@ class Observable(SimulatorVariableListener):
         self._enabled_data.update_value(new_value=0)
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self._actions = MacroInstruction(
-            name=config.get(CONFIG_KW.NAME.value, type(self).__name__),
+            name=self.name,
             performer=simulator,
             factory=simulator,
-            instructions=self._config.get(CONFIG_KW.ACTIONS.value),
+            instructions=self._config.get(CONFIG_KW.ACTIONS.value, {}),
         )
         self.init()
 

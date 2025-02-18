@@ -12,12 +12,12 @@ from typing import Tuple
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import ICON_SIZE
+from cockpitdecks import WEATHER_STATION_MONITORING, ICON_SIZE
 from cockpitdecks.resources.iconfonts import WEATHER_ICON_FONT
-from cockpitdecks.resources.color import light_off, TRANSPARENT_PNG_COLOR
+from cockpitdecks.resources.color import light_off
 from cockpitdecks.resources.weather import WeatherData, WeatherDataListener
 from cockpitdecks.buttons.representation.draw_animation import DrawAnimation
-from cockpitdecks.simulator import SimulatorVariable, SimulatorVariableListener
+from cockpitdecks.variable import Variable, VariableListener
 from cockpitdecks.strvar import TextWithVariables
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListener):
+class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
     """Base class for all weather iconic representations.
     Subclasses produce different iconic representations: Simple text, pages of text, station plot...
     This base class proposes a simple textual display of lines returned by the get_lines() function.
@@ -57,7 +57,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
         self.protection = Lock()
 
         # Following parameters are overwritten by config
-        self.icao_dataref_path = button._config.get("string-dataref")
+        self.icao_dataref_path = Variable.internal_variable_name(path=WEATHER_STATION_MONITORING)
         self.icao_dataref = None
 
         DrawAnimation.__init__(self, button=button)
@@ -84,7 +84,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
             # toliss_airbus/flightplan/destination_icao
             self.icao_dataref = self.button.sim.get_variable(self.icao_dataref_path, is_string=True)
             self.icao_dataref.add_listener(self)  # the representation gets notified directly.
-            self.simulator_variable_changed(self.icao_dataref)
+            self.variable_changed(self.icao_dataref)
             self._inited = True
             logger.debug(f"initialized, waiting for dataref {self.icao_dataref.name}")
         self._inited = True
@@ -169,7 +169,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, SimulatorVariableListe
 
         return self._cached
 
-    def simulator_variable_changed(self, data: SimulatorVariable):
+    def variable_changed(self, data: Variable):
         # what if Dataref.internal_variableref_path("weather:*") change?
         if data.name != self.icao_dataref_path:
             return

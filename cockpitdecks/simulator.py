@@ -10,7 +10,14 @@ from abc import ABC, abstractmethod
 from cockpitdecks import CONFIG_KW, __version__
 from cockpitdecks.event import Event
 from cockpitdecks.strvar import Formula
-from cockpitdecks.variable import Variable, VariableFactory, ValueProvider, VariableListener, InternalVariable, INTERNAL_VARIABLE_PREFIX, InternalVariableType
+from cockpitdecks.variable import (
+    InternalVariable,
+    InternalVariableType,
+    ValueProvider,
+    Variable,
+    VariableFactory,
+    VariableListener,
+)
 from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation, InstructionPerformer
 
 loggerSimdata = logging.getLogger("SimulatorVariable")
@@ -29,7 +36,7 @@ logger = logging.getLogger(__name__)
 # ########################################
 # Simulator
 #
-class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory):
+class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, ValueProvider):
     """
     Abstract class for execution of operations and collection of data in the simulation software.
     """
@@ -328,7 +335,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory):
         """Adds supplied data to Simulator monitoring."""
         prnt = []
         for d in simulator_variables.values():
-            if d.name.startswith(INTERNAL_VARIABLE_PREFIX):
+            if Variable.is_internal_variable(d.name):
                 logger.debug(f"local simulator_variable {d.name} is not monitored")
                 continue
             if d.name not in self.simulator_variable_to_monitor.keys():
@@ -343,7 +350,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory):
         """Removes supplied data from Simulator monitoring."""
         prnt = []
         for d in simulator_variables.values():
-            if d.name.startswith(INTERNAL_VARIABLE_PREFIX):
+            if Variable.is_internal_variable(d.name):
                 logger.debug(f"local simulator_variable {d.name} is not monitored")
                 continue
             if d.name in self.simulator_variable_to_monitor.keys():
