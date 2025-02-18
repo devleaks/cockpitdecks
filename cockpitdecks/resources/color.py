@@ -59,6 +59,15 @@ def convert_color(instr: str | tuple | list | None) -> Tuple[int, int, int] | Tu
         logger.debug(f"color {instr} ({type(instr)}) not found, using {DEFAULT_COLOR}")
         return DEFAULT_COLOR
 
+    # is it a single number? in which case we assume it is a color hue
+    try:
+        val = float(instr)
+        if val > 1:  # assume 0-255
+            val = val / 256
+        return tuple([int(c * 256) for c in colorsys.hls_to_rgb(val, 0.5, 1)])  # returns [0, 1] values
+    except:
+        pass
+
     # it's a string...
     instr = instr.strip()
     if "," in instr and instr.startswith("("):  # "(255, 7, 2)"
@@ -76,9 +85,6 @@ def convert_color(instr: str | tuple | list | None) -> Tuple[int, int, int] | Tu
 
 
 def convert_color_hsl(instr) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
-    # process either a color name or a color tuple as a string "(1, 2, 3)"
-    # and returns a tuple of 3 or 4 integers in range [0,255].
-    # If case of failure to convert, returns middle DEFAULT_COLOR values.
     return colorsys.rgb_to_hls(*convert_color(instr)[0:3])
 
 
@@ -92,21 +98,20 @@ def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tup
 
 
 def has_ext(name: str, ext: str) -> bool:
-    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
-    narr = name.split(".")
-    return (len(narr) > 1) and (narr[-1].lower() == rext.lower())
+    return name.endswith("." + ext.lstrip("."))
 
 
 def add_ext(name: str, ext: str) -> str:
-    rext = ext if not ext.startswith(".") else ext[1:]  # remove leading period from extension if any
+    rext = ext.lstrip(".")
     narr = name.split(".")
     if len(narr) < 2:  # has no extension
         return name + "." + rext
-    nameext = narr[-1]
-    if nameext.lower() == rext.lower():
-        return ".".join(narr[:-1]) + "." + rext  # force extension to what is should
-    else:  # did not finish with extention, so add it
-        return name + "." + rext  # force extension to what is should
+    # remove old extension
+    namenoext = ".".join(narr[:-1])
+    namenoext.rstrip(".")
+    # add new extension
+    return namenoext + "." + rext  # force extension to what is should
+    # If no need to remove old ext use name = name.rstrip(".") + "." + ext
 
 
 # # https://stackoverflow.com/questions/66837477/pillow-how-to-gradient-fill-drawn-shapes

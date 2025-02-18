@@ -96,7 +96,7 @@ class Observable(SimulatorVariableListener):
 
     @value.setter
     def value(self, value):
-        logger.debug(f"observable {self.name}: set value to {self._value.value()}")
+        logger.debug(f"observable {self.name}: set value to {value}")
         self._value.update_value(new_value=value, cascade=True)
 
     def has_changed(self) -> bool:

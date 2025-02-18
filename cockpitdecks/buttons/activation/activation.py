@@ -116,8 +116,9 @@ class Activation:
 
         # Datarefs
         # Note on set-dataref: The activation will set the dataref value
-        # to the value of the activatiuon but it will NOT write it the X-Plane
-        # Therefore, here, it is not a Instruction SetDataref that is built.
+        # to the value of the activatiuon but it will NOT write it to X-Plane
+        # Therefore, here, it is not a Instruction SetDataref that is built,
+        # but rather a explicit write when necessary.
         self._writable_dataref = None
         set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         if set_dataref_path is not None:

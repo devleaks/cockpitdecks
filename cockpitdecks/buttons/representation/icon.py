@@ -71,12 +71,10 @@ class IconBase(Representation):
                 if has_ext(fn, ".ttf") or has_ext(fn, ".otf"):
                     if fn in fonts_available:
                         return all_fonts[fn]
-                f1 = add_ext(fn, ".ttf")
-                if f1 in fonts_available:
-                    return all_fonts[f1]
-                f2 = add_ext(fn, ".otf")
-                if f2 in fonts_available:
-                    return all_fonts[f2]
+                for ext in [".ttf", ".otf"]:
+                    f1 = add_ext(fn, ext)
+                    if f1 in fonts_available:
+                        return all_fonts[f1]
                 logger.warning(f"button {this_button}: font '{fn}' not found")
             return None
 

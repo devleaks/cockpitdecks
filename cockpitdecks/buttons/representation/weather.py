@@ -8,9 +8,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 from threading import Lock
-from typing import Tuple
-
-from PIL import Image, ImageDraw
 
 from cockpitdecks import WEATHER_STATION_MONITORING, ICON_SIZE
 from cockpitdecks.resources.iconfonts import WEATHER_ICON_FONT
@@ -60,14 +57,15 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         self.icao_dataref_path = Variable.internal_variable_name(path=WEATHER_STATION_MONITORING)
         self.icao_dataref = None
 
+        self.icao = self.weather.get("station", self.DEFAULT_STATION)
+
         DrawAnimation.__init__(self, button=button)
 
         self._weather_text = TextWithVariables(
             owner=button, config=self._representation_config, prefix="weather"
         )  # note: solely used has property older for font, size, and color
 
-        icao = self.weather.get("station", self.DEFAULT_STATION)
-        self.set_label(icao)
+        self.set_label(self.icao)
 
         # "Animation" (refresh) rate
         speed = self.weather.get("refresh", 10)  # minutes, should be ~30 minutes
@@ -79,7 +77,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
     def init(self):
         if self._inited:
             return
-        if self.icao_dataref_path is not None:
+        if not self.is_fixed and self.icao_dataref_path is not None:
             # toliss_airbus/flightplan/departure_icao
             # toliss_airbus/flightplan/destination_icao
             self.icao_dataref = self.button.sim.get_variable(self.icao_dataref_path, is_string=True)
@@ -87,13 +85,33 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
             self.variable_changed(self.icao_dataref)
             self._inited = True
             logger.debug(f"initialized, waiting for dataref {self.icao_dataref.name}")
+        else:
+            logger.debug(f"initialized, fixed {self.icao}")
         self._inited = True
+
+    @property
+    def is_fixed(self) -> bool:
+        return self.weather.get("station") is not None
 
     def get_variables(self) -> set:
         ret = set()
         if self.icao_dataref_path is not None:
             ret.add(self.icao_dataref_path)
         return ret
+
+    def variable_changed(self, data: Variable):
+        # what if Dataref.internal_variableref_path("weather:*") change?
+        if self.is_fixed:
+            return
+        if data.name != self.icao_dataref_path:
+            return
+        icao = data.value()
+        if icao is None or icao == "":  # no new station, stick or current
+            return
+        self.icao = icao
+        self.set_label(icao)
+        if self.weather_data is not None:
+            self.weather_data.set_station(station=icao)
 
     # #############################################
     # Weather data interface
@@ -169,17 +187,6 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
 
         return self._cached
 
-    def variable_changed(self, data: Variable):
-        # what if Dataref.internal_variableref_path("weather:*") change?
-        if data.name != self.icao_dataref_path:
-            return
-        icao = data.value()
-        if icao is None or icao == "":  # no new station, stick or current
-            return
-        self.set_label(icao)
-        if self.weather_data is not None:
-            self.weather_data.set_station(station=icao)
-
     # #############################################
     # Cockpitdecks Representation interface
     #
@@ -221,7 +228,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
             w = inside
             p = "l"
             a = "left"
-            h = image.height / 3
+            h = image.height / 4  # leave upper 1/4 for label and spacing
             il = self._weather_text.size
             for line in lines:
                 draw.text(
