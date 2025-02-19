@@ -133,13 +133,28 @@ class CockpitInstruction(Instruction):
         self.cockpit = cockpit
 
     @classmethod
-    def new(cls, cockpit: Cockpit, name: str, instruction_block: dict):
-        instr = name.replace(CockpitInstruction.PREFIX, "")
+    def new(cls, cockpit: Cockpit, name: str, instruction: str, instruction_block: dict):
         all_cockpit_instructions = {s.int_name(): s for s in Cockpit.all_subclasses(CockpitInstruction)}
-
+        instr = CockpitInstruction.cockpit_instruction_root_name(instruction)
         if instr in all_cockpit_instructions:
+            logger.debug(f"creating CockpitInstruction {instr}")
             return all_cockpit_instructions[instr](cockpit=cockpit, name=name, instruction_block=instruction_block)
+        logger.warning(f"no CockpitInstruction {instr}")
         return None
+
+    @staticmethod
+    def is_cockpit_instruction(instruction: str) -> bool:
+        return instruction.startswith(CockpitInstruction.PREFIX)
+
+    @staticmethod
+    def cockpit_instruction(instruction: str) -> str:
+        if CockpitInstruction.is_cockpit_instruction(instruction):
+            return instruction
+        return CockpitInstruction.PREFIX + instruction
+
+    @staticmethod
+    def cockpit_instruction_root_name(instruction: str) -> str:
+        return instruction.replace(CockpitInstruction.PREFIX, "")
 
     def _check_condition(self):
         # condition checked in each individual instruction
@@ -869,7 +884,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
                 ret = ret | obs
         ac = self.aircraft.get_variables()
         if len(ac) > 0:
-            print(type(ret), type(ac))
             ret = ret | ac
         return ret
 
@@ -918,11 +932,17 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     def instruction_factory(self, name: str, instruction_block: dict) -> Instruction:
         # Should be the top-most instruction factory.
         # Delegates to simulator if not capable of building instruction
-        if name is not None and name.startswith(CockpitInstruction.PREFIX):
-            logger.debug(f"creating {name}")
-            instruction = CockpitInstruction.new(cockpit=self, name=name, instruction_block=instruction_block)
-            if instruction is not None:
-                return instruction
+        instruction = name
+        if instruction_block is not None:
+            if type(instruction_block) is str:
+                instruction = instruction_block
+            elif type(instruction_block) is dict and CONFIG_KW.COMMAND.value in instruction_block:
+                instruction = instruction_block.get(CONFIG_KW.COMMAND.value)
+        if CockpitInstruction.is_cockpit_instruction(instruction):
+            logger.debug(f"creating CockpitInstruction {name} ({instruction})")
+            ci = CockpitInstruction.new(cockpit=self, name=name, instruction=instruction, instruction_block=instruction_block)
+            if ci is not None:
+                return ci
         return self.sim.instruction_factory(name=name, instruction_block=instruction_block)
         # if name == "reload_one":
         #     deck = kwargs.get(CONFIG_KW.DECK.value)

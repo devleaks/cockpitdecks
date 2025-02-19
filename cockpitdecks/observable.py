@@ -83,7 +83,7 @@ class Observable(SimulatorVariableListener):
         self._actions = MacroInstruction(
             name=self.name,
             performer=simulator,
-            factory=simulator,
+            factory=simulator.cockpit,
             instructions=self._config.get(CONFIG_KW.ACTIONS.value, {}),
         )
         self.init()
