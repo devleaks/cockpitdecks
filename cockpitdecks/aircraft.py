@@ -92,7 +92,7 @@ class Aircraft:
         self._ac_observables: Observables | None = None
 
         # Internal variables
-        self._aircraft_variable_names = set()
+        self._aircraft_variable_names = None
         self._aircraft_string_variable_names = set()
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
@@ -201,6 +201,14 @@ class Aircraft:
     # Initialisation, setup
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified."""
+        if self._aircraft_variable_names is not None:
+            return self._aircraft_variable_names
+        ret = set()
+        if type(self.observables) is Observables:
+            obs = self.observables.get_variables()
+            if len(obs) > 0:
+                ret = ret | obs
+        self._aircraft_variable_names = ret
         return self._aircraft_variable_names
 
     def get_string_variables(self) -> set:
