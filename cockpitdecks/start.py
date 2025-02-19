@@ -33,7 +33,7 @@ from ruamel.yaml import YAML
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
 
-from cockpitdecks.constant import ENVIRON_FILE, CONFIG_FOLDER, RESOURCES_FOLDER
+from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
 
@@ -135,10 +135,9 @@ def add_env(env, paths):
 #
 # DESC = "Elgato Stream Decks, Loupedeck decks, Berhinger X-Touch Mini, and web decks to X-Plane 12.1+"
 DESC = __DESCRIPTION__
-COCKPITDECKS_FOLDER = "cockpitdecks"
 
 # Default values for demo
-DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "DEMO")
+DEMO_HOME = os.path.join(os.path.dirname(__file__), "resources", "demo")
 AIRCRAFT_HOME = DEMO_HOME
 AIRCRAFT_DESC = "Cockpitdecks Demo"
 
@@ -153,6 +152,7 @@ parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("--version", action="store_true", help="show version information and exit")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="start with alternate environment file")
+parser.add_argument("--template", metavar="template_file", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder")
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
@@ -193,6 +193,25 @@ if args.version:
         startup_logger.info(version)
     else:
         startup_logger.warning("git not available")
+    sys.exit(0)
+
+# #########################################@
+# Copy template files (and exits)
+#
+if args.template:
+    tmpl_dir = args.template[0]
+    tmpl_dest = os.path.join(tmpl_dir, CONFIG_FOLDER)
+    tmpl_src = DEMO_HOME
+
+    if not os.path.exists(tmpl_src):
+        startup_logger.warning(f"could not locate templates in {tmpl_src}")
+        sys.exit(1)
+    if os.path.exists(tmpl_dest):
+        startup_logger.warning(f"{tmpl_dir} already contains a {CONFIG_FOLDER}, cannot install templates")
+        sys.exit(1)
+    else:
+        shutil.copytree(tmpl_src, tmpl_dest, dirs_exist_ok=False)
+        startup_logger.info(f"templates installed in {tmpl_dest}")
     sys.exit(0)
 
 # #########################################@
@@ -327,7 +346,7 @@ if args.install_plugin:
     if SIMULATOR_NAME != "X-Plane":
         startup_logger.error(f"Cockpitdecks plugin is for X-Plane flight simulator only (simulator is {SIMULATOR_NAME})")
         sys.exit(1)
-    startup_logger.info("installing Cockpitdecks plugin in XXPython3")
+    startup_logger.info("installing Cockpitdecks plugin in XPPython3")
     if SIMULATOR_HOME is None:
         startup_logger.error("no simulator home directory, cannot install")
         sys.exit(1)

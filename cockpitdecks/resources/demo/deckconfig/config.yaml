@@ -3,3 +3,13 @@ decks:
   - layout: layout
     name: Cockpitdecks Web Deck Demonstration
     type: cockpitdecks-repeat
+# Sample Stream Deck entry
+  - name: StreamDeckXL
+    type: Stream Deck XL
+    layout: default
+    disabled: true
+# Sample Loupedeck LoupedeckLive entry
+  - name: loupedecklive
+    type: LoupedeckLive
+    disabled: true
+    layout: default
