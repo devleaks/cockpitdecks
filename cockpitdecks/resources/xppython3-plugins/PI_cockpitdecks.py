@@ -6,7 +6,6 @@
 #
 import os
 import glob
-from re import split
 import socket
 import time
 import json
@@ -25,10 +24,11 @@ yaml = YAML(typ="safe", pure=True)
 #
 #   C O C K P T D E C K S   H E L P E R   P L U G I N
 #
-RELEASE = "1.4.0"  # local version number
+RELEASE = "1.4.1"  # local version number
 #
 # Changelog:
 #
+# 18-FEB-2025: 1.4.1: Do not load new aircraft if no deckconfig
 # 27-JAN-2025: 1.4.0: Added aircraft path in datarefs
 # 09-JAN-2025: 1.3.1: Added explicit command begin-end-command in search
 # 28-OCT-2024: 1.3.0: Added code to split large quantities of string into acceptable UDP packets
@@ -180,7 +180,7 @@ class PythonInterface:
             CDH_RELEASE, dataType=xp.Type_Data, writable=0, readData=self.getReleaseCallback  # Read-Only
         )  # Refcons not used
         if self.trace:
-            print(self.Info, f"XPluginStart: data accessors added.")
+            print(self.Info, "XPluginStart: data accessors added.")
 
         return self.Name, self.Sig, self.Desc
 
@@ -529,7 +529,7 @@ class PythonInterface:
                         )
         return commands
 
-    def get_string_datarefs(self, acpath):
+    def get_string_datarefs(self, acpath) -> set:
         # Scans an aircraft deckconfig and collects string datarefs.
         #
         # Internal constants (keywords in yaml file)
@@ -548,7 +548,7 @@ class PythonInterface:
                 self.Info,
                 f"get_string_datarefs: Cockpitdecks config directory '{config_dn}' not found in aircraft path '{acpath}'",
             )
-            return []
+            return set()
 
         config_fn = os.path.join(config_dn, CONFIG_FILE)
         if not os.path.exists(config_fn):
@@ -556,7 +556,7 @@ class PythonInterface:
                 self.Info,
                 f"get_string_datarefs: Cockpitdecks config file '{config_fn}' not found in Cockpitdecks config dir '{config_dn}'",
             )
-            return []
+            return set()
 
         strings = []
         with open(config_fn, "r", encoding="utf-8") as config_fp:
@@ -651,8 +651,18 @@ class PythonInterface:
         #
         # ###################################################################
         #
-        # Load current aircraft string datarefs.
+        # PART 1: Load current aircraft string datarefs.
         #
+        # If no deckconfig directory in aircraft folder, we do not erase previous setup.
+        # This is inconsistent, but works.
+        config_dn = os.path.join(acpath, CONFIG_DIR)
+        if not os.path.isdir(config_dn):
+            print(
+                self.Info,
+                f"load: Cockpitdecks config directory '{config_dn}' not found in aircraft path '{acpath}', aircraft not loaded",
+            )
+            return
+
         self.acpath = acpath
 
         # remove previous command set
@@ -661,15 +671,9 @@ class PythonInterface:
         # install this aircraft's set
         datarefs = self.get_string_datarefs(acpath)
 
-        if len(datarefs) == 0:
-            print(self.Info, f"load: no string datarefs")
-            if self.use_defaults:
-                datarefs = PERMANENT_STRING_DATAREFS
-                print(self.Info, f"load: using defaults only")
-        else:
-            if self.use_defaults:
-                datarefs = datarefs.union(PERMANENT_STRING_DATAREFS)
-                print(self.Info, f"load: added default datarefs")
+        if self.use_defaults:
+            datarefs = datarefs.union(PERMANENT_STRING_DATAREFS)
+            print(self.Info, "load: added permanent datarefs")
 
         self.num_collected_drefs = len(datarefs)
 
@@ -700,8 +704,7 @@ class PythonInterface:
         #
         # ###################################################################
         #
-        # Load current aircraft "long press" commands.
-        #
+        # PART 2: Load current aircraft "long press" commands.
         #
         # Unload previous aircraft's command set.
         # Load current aircraft command set.
@@ -745,13 +748,13 @@ class PythonInterface:
                         print(self.Info, f"load: added command {cmd}")
                     # else:
                     #     print(self.Info, f"load: {command} not found")
-                except Exception as e:
+                except:
                     if self.trace:
                         print(self.Info, "load: exception:")
                     print_exc()
         else:
             if self.trace:
-                print(self.Info, f"load: no command to add.")
+                print(self.Info, "load: no command to add.")
 
         if self.trace:
             print(self.Info, f"load: {len(self.commands)} commands installed.")
