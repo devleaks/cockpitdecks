@@ -35,12 +35,11 @@ class IconBase(Representation):
     PARAMETERS = {}
 
     def __init__(self, button: "Button"):
+        self._label = None
         Representation.__init__(self, button=button)
-
         # This is leaf node in hierarchy, so we have to be careful.
         # Button addresses "feature" and if it does not exist we return DEFAULT_ATTRIBUTE_PREFIX + "feature"
         # from hierarchy.
-        self._label = None
         if self._config.get(CONFIG_KW.LABEL.value) is not None:
             self._label = TextWithVariables(owner=button, config=self._config, prefix=CONFIG_KW.LABEL.value)
 
@@ -563,7 +562,8 @@ class MultiIcons(Icon):
                     logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
                     invalid.append(i)
             for i in invalid:
-                del self.multi_icons[i]
+                if i in self.multi_icons:
+                    del self.multi_icons[i]
         else:
             logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
 

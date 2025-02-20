@@ -656,7 +656,7 @@ class WeatherStationPlot(WeatherBaseIcon):
         )
         bg.alpha_composite(image)
 
-        logger.debug(f"..plot updated")
+        logger.debug("..plot updated")
         # logger.setLevel(logging.INFO)
         self._cached = bg
 

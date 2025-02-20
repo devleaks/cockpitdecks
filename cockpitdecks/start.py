@@ -72,12 +72,14 @@ def my_ip() -> str | set:
     x = set([address[4][0] for address in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)])
     return list(x)[0] if len(x) == 1 else x
 
+
 def get_ip(s) -> str:
     c = s[0]
     if c in "0123456789":
         return ipaddress.ip_address(s)
     else:
         return ipaddress.ip_address(socket.gethostbyname(s))
+
 
 def which(program):
     def is_exe(fpath):
@@ -159,7 +161,9 @@ parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("--version", action="store_true", help="show version information and exit")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
 parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="start with alternate environment file")
-parser.add_argument("--template", metavar="template_file", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder")
+parser.add_argument(
+    "--template", metavar="template_file", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder"
+)
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
@@ -425,7 +429,7 @@ APP_PORT = 7777
 if APP_HOST is not None:
     APP_PORT = os.getenv(ENVIRON_KW.APP_PORT.value, 7777)
     APP_HOST = [APP_HOST, APP_PORT]
-else: # from now on, APP_HOST = [hostname, port]
+else:  # from now on, APP_HOST = [hostname, port]
     APP_HOST = environment.get(ENVIRON_KW.APP_HOST.value, ["127.0.0.1", 7777])
 
 if APP_HOST is not None:
@@ -451,7 +455,7 @@ if API_HOST is not None:
         startup_logger.debug("X-Plane and Cockpidecks on same host computer")
     else:
         startup_logger.debug(f"X-Plane ({ip_api}) and Cockpidecks ({ip_app}) on different host computers")
-else: # from now on, APP_HOST = [hostname, port]
+else:  # from now on, APP_HOST = [hostname, port]
     API_HOST = environment.get(ENVIRON_KW.API_HOST.value, ["127.0.0.1", 8086])
     startup_logger.debug("X-Plane and Cockpidecks on same host computer")
 

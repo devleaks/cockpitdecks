@@ -7,10 +7,9 @@ from abc import ABC, abstractmethod
 from typing import List
 from datetime import datetime
 
-from cockpitdecks.constant import ID_SEP
+from cockpitdecks import ID_SEP, CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider
-from cockpitdecks import CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 
 logger = logging.getLogger(__name__)
@@ -99,7 +98,7 @@ class Activation:
 
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:
-            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={"view": view})
+            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.VIEW.value: view})
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press
@@ -108,10 +107,10 @@ class Activation:
 
         # but could be anything.
         self._long_press = None
-        long_press = self._config.get("long-press")
+        long_press = self._config.get(CONFIG_KW.LONG_PRESS.value)
         if long_press is not None:
             self._long_press = self.sim.instruction_factory(
-                name=cmdname + ":long-press", instruction_block={"long_press": long_press}
+                name=cmdname + ":long-press", instruction_block={CONFIG_KW.LONG_PRESS.value: long_press}
             )  # Optional additional command
 
         # Datarefs

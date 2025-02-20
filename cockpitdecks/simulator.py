@@ -403,6 +403,10 @@ class NoSimulator(Simulator):
     def __init__(self, cockpit, environ):
         Simulator.__init__(self, cockpit, environ)
 
+    @property
+    def connected(self):
+        return False
+
     def instruction_factory(self, name: str, instruction_block: dict) -> SimulatorInstruction:
         return NoOperation(name=name)  # this is not a SimulatorInstruction, but an instruction, ubt it is OK
 

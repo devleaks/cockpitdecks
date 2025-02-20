@@ -189,6 +189,7 @@ class CONFIG_KW(Enum):
     INTERNAL_KEY = "_key"
     LABEL = "label"
     LAYOUT = "layout"
+    LONG_PRESS = "long-press"
     MANAGED = "managed"
     NAME = "name"
     NAMED_COLORS = "named-colors"
