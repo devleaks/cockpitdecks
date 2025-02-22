@@ -118,8 +118,7 @@ class Observable(SimulatorVariableListener):
 
     def init(self):
         # Register simulator variables and ask to be notified
-
-        variables = self._value.get_string_variables()
+        variables = self.get_string_variables()
         if variables is not None:
             for s in variables:
                 ref = self.sim.get_variable(s, is_string=True)
@@ -127,13 +126,18 @@ class Observable(SimulatorVariableListener):
                     ref.add_listener(self)
         logger.debug(f"observable {self.name}: listening to strings variables {variables}")
 
-        variables = self._value.get_variables()
+        variables = self.get_variables()
+        v = []
         if variables is not None:
             for s in variables:
                 ref = self.sim.get_variable(s)
+                print("trying", s, ref)
                 if ref is not None:
+                    v.append(ref.name)
                     ref.add_listener(self)
-        logger.debug(f"observable {self.name}: listening to variables {variables}")
+                else:
+                    logger.warning(f"could not get variable {s}")
+        logger.debug(f"observable {self.name}: listening to variables {v}")
         # logger.debug(f"observable {self.name} inited")
 
     def get_variables(self) -> set:
