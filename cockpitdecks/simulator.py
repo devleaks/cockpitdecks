@@ -574,3 +574,30 @@ class SimulatorVariableValueProvider(ABC, ValueProvider):
     @abstractmethod
     def get_simulator_variable_value(self, simulator_variable, default=None):
         pass
+
+
+class SimulatorOccurenceEvent(SimulatorEvent):
+    """Data Update Event"""
+
+    def __init__(self, sim: Simulator, name: str, cascade: bool, autorun: bool = True):
+        """Simulator Event: Something occurred in the simulator software.
+
+        Args:
+        """
+        self.name = name
+        self.cascade = cascade
+        SimulatorEvent.__init__(self, sim=sim, autorun=autorun)
+
+    def __str__(self):
+        return f"{self.sim.name}:{self.name}@{self.timestamp}"
+
+    def info(self):
+        return super().info() | {"path": self.name, "cascade": self.cascade}
+
+    def run(self, just_do_it: bool = False) -> bool:
+        if just_do_it:
+            logger.debug(f"event {self.name} occured in simulator")
+        else:
+            self.enqueue()
+            logger.debug("enqueued")
+        return True

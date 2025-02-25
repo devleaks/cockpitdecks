@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 
 from .buttons.activation import ACTIVATION_VALUE, ActivationValueProvider
 from .buttons.representation import Annunciator
-from .variable import ValueProvider, InternalVariable, VariableListener, InternalVariableType
+from .variable import Variable, ValueProvider, InternalVariable, VariableListener, InternalVariableType
 from .simulator import SimulatorVariable, SimulatorVariableValueProvider
 from .strvar import StringWithVariables
 from .value import Value
@@ -172,6 +172,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 self.string_datarefs = set(self.string_datarefs)
 
         self._value = Value(self.name, config=config, provider=self)
+        self._value.add_listener(self)
 
         # Regular datarefs
         self.all_datarefs = None  # all datarefs used by this button
@@ -649,7 +650,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         #    but get_value() knows how to get them if needed.
         formula = self._config.get(CONFIG_KW.FORMULA.value)
         if self.dataref is not None or formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
-            logger.debug(f"button {self.name}: has formula and/or datarefs")
+            logger.debug(f"button {self.name}: has formula and/or more than one datarefs")
             return self._value.get_value()
 
         # 3. internal button state based
@@ -683,7 +684,13 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable) and not isinstance(data, StringWithVariables):
             logger.error(f"button {self.name}: not a simulator or internal variable ({type(data).__name__})")
             return
+
         logger.debug(f"{self.name}: {data.name} changed")
+
+        if data == self._value:
+            print(">>> self value changed, rendering...")
+            self.render()
+
         self.value = self.compute_value()
         if self.has_changed() or data.has_changed():
             logger.log(
