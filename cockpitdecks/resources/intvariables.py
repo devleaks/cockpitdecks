@@ -75,6 +75,7 @@ class COCKPITDECKS_INTVAR(Enum):
     LAST_READ = "last_read_time"
     VALUES = "values_read"
     UPDATE_ENQUEUED = "value_change_enqueued"
+    COMMAND_ACTIVE_ENQUEUED = "command-is-active"
 
     # Average number of reads per seconds (last 100 reads)
     UDP_READS_PERSEC = "cockpitdecks/udp/persec"

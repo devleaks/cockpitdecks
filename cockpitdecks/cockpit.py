@@ -1750,7 +1750,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     #
     def start_event_loop(self):
         if not self.event_loop_run:
-            self.event_loop_thread = threading.Thread(target=self.event_loop, name="Cockpit::event_loop")
+            self.event_loop_thread = threading.Thread(target=self.event_loop, name="Cockpit::Event Processor")
             self.event_loop_run = True
             self.event_loop_thread.start()
             logger.debug("started")
@@ -1873,9 +1873,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             # Start reload loop
             logger.info("starting cockpit..")
             self.sim.connect()
-            logger.info("..usb monitoring started..")
-            self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
             logger.info("..connect to simulator loop started..")
+            self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
+            logger.info("..usb monitoring started..")
             self.start_event_loop()
             logger.info("..event loop started..")
             if self.has_web_decks():

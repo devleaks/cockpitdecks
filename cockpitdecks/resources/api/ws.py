@@ -43,6 +43,13 @@ class XPWebSocket:
             self.all_commands.load("/commands")
         self.start()
 
+    def reload_caches(self):
+        self.all_datarefs = Cache(self.api)
+        self.all_datarefs.load("/datarefs")
+        if self.api.version == "v2":
+            self.all_commands = Cache(self.api)
+            self.all_commands.load("/commands")
+
     def receiver(self):
         try:
             logger.debug("started")
@@ -63,8 +70,12 @@ class XPWebSocket:
     def parse(self, data: dict) -> dict:
         ty = data[TYPE]
         if ty == "result":
-            logger.debug(f"req. {data[REQID]}: {SUCCESS if data[SUCCESS] else 'failed'}")
+            if not data[SUCCESS]:
+                logger.warning(f"req. {data[REQID]}: {SUCCESS if data[SUCCESS] else 'failed'}")
+            else:
+                logger.debug(f"req. {data[REQID]}: {SUCCESS if data[SUCCESS] else 'failed'}")
             return None
+
         return data
 
     def start(self):
@@ -80,12 +91,12 @@ class XPWebSocket:
         logger.debug("sent", payload)
         return req_id
 
-    def dataref_value(self, path, on: bool = True) -> int:
+    def register_dataref_value_event(self, path, on: bool = True) -> int:
         dref = Dataref(path=path, cache=self.all_datarefs)
         action = "dataref_subscribe_values" if on else "dataref_unsubscribe_values"
         return self.send({"type": action, "params": {"datarefs": [{"id": dref.ident}]}})
 
-    def command_event(self, path, on: bool = True) -> int:
+    def register_command_event(self, path, on: bool = True) -> int:
         cmd = Command(path=path, cache=self.all_commands)
         action = "command_subscribe_is_active" if on else "command_unsubscribe_is_active"
         return self.send({"type": action, "params": {"commands": [{"id": cmd.ident}]}})
@@ -94,5 +105,5 @@ class XPWebSocket:
 if __name__ == "__main__":
 
     ws = XPWebSocket(host="192.168.1.140", port=8080)
-    ws.dataref_value(path="sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot")
-    ws.command_event("sim/map/show_current")
+    ws.register_dataref_value_event(path="sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot")
+    ws.register_command_event("sim/map/show_current")
