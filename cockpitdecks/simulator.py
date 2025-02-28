@@ -197,8 +197,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         #     sim/weather/region/wind_speed_msc[*]: meter/second
         # ...
         physical_unit = self.physics.get(name)
-        variable = SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
-        variable._sim = self
+        variable = SimulatorVariable(name=name, simulator=self, data_type="string" if is_string else "float", physical_unit=physical_unit)
         self.set_rounding(variable)
         self.set_frequency(variable)
         if creator is not None:
@@ -221,7 +220,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
             logger.warning(f"invalid variable name {variable.name}")
             return None
         if not self.cockpit.variable_database.exists(variable.name):
-            variable._sim = self
+            variable.simulator = self
             self.set_rounding(variable)
             self.set_frequency(variable)
             self.cockpit.variable_database.register(variable)
@@ -439,10 +438,9 @@ class NoSimulator(Simulator):
 class SimulatorVariable(Variable):
     """A specialised variable to monitor in the simulator"""
 
-    def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
+    def __init__(self, name: str, simulator: Simulator, data_type: str = "float", physical_unit: str = ""):
         Variable.__init__(self, name=name, data_type=data_type, physical_unit=physical_unit)
-
-        self._sim = None
+        self.simulator = simulator
 
     # def __init__(self, name: str, is_string: bool = False):
     #     Variable.__init__(self, name=name, data_type="string" if is_string else "float")

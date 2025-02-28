@@ -439,31 +439,29 @@ startup_logger.debug(f"Cockpitdecks application server at {APP_HOST}")
 
 # X-Plane API guesses (same computer?)
 #
-API_HOST = SIMULATOR_HOST
-if API_HOST is None:
-    API_HOST = os.getenv(ENVIRON_KW.API_HOST.value)
-    if API_HOST == "":
-        API_HOST = None
+# Here API_HOST = IP address, API_PORT = tcp port
+API_HOST = os.getenv(ENVIRON_KW.API_HOST.value)
 API_PORT = 8086
-if API_HOST is not None:
+if API_HOST is not None and API_HOST != "":  # got from OS
     ip_app = get_ip(APP_HOST[0])
     ip_api = get_ip(API_HOST)
     DEFAULT_API_PORT = 8086 if ip_app == ip_api else 8080
     API_PORT = os.getenv(ENVIRON_KW.API_PORT.value, DEFAULT_API_PORT)
-    API_HOST = [API_HOST, API_PORT]
     if ip_app == ip_api:
         startup_logger.debug("X-Plane and Cockpidecks on same host computer")
     else:
         startup_logger.debug(f"X-Plane ({ip_api}) and Cockpidecks ({ip_app}) on different host computers")
-else:  # from now on, APP_HOST = [hostname, port]
-    API_HOST = environment.get(ENVIRON_KW.API_HOST.value, ["127.0.0.1", 8086])
+else:
+    API_HOST = environment.get(ENVIRON_KW.API_HOST.value, "127.0.0.1")
+    API_PORT = environment.get(ENVIRON_KW.API_PORT.value, 8086)
     startup_logger.debug("X-Plane and Cockpidecks on same host computer")
 
+# !! From now on, APP_HOST = [hostname, port]
+#
 if API_HOST is not None:
-    environment[ENVIRON_KW.API_HOST.value] = API_HOST
+    environment[ENVIRON_KW.API_HOST.value] = [API_HOST, API_PORT]
 
 startup_logger.debug(f"X-Plane API reachable at {API_HOST} if X-Plane version > 12.1")
-
 
 # Start-up Mode
 #
