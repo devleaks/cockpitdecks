@@ -61,9 +61,10 @@ class StringWithVariables(Variable, VariableListener):
         if len(self._variables) > 0:
             logger.debug(f"message {self.display_name}: using variables {', '.join(self._tokens.keys())}/{self._variables}")
             for varname in self._tokens.values():
-                v = self.owner.get_variable(varname)
-                v.add_listener(self)
-        # owner get notified when this string changes
+                if not Variable.is_state_variable(varname):
+                    v = self.owner.get_variable(varname)
+                    v.add_listener(self)
+            # owner get notified when this string changes
         if isinstance(self.owner, VariableListener):
             self.add_listener(self.owner)
         # else:

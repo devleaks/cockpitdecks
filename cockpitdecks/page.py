@@ -7,11 +7,11 @@ from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckType
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.simulator import SimulatorVariable
-from cockpitdecks.variable import InternalVariableType
+from cockpitdecks.variable import InternalVariableType, Variable
 from .button import Button
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Page:
@@ -181,24 +181,30 @@ class Page:
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
         for d in button.get_string_variables():
+            if Variable.is_state_variable(d):
+                continue
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
                 if ref is not None:
+                    ref.add_listener(button)
+                    if isinstance(ref, SimulatorVariable) and not Variable.is_internal_variable(d):
+                        self.simulator_variable[d] = ref
+                        self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
+                        logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
+                    else:
+                        logger.debug(f"page {self.name}: button {button.name} dataref {d} is not a simulator variable")
+                    # ensure is a string dataref
                     if not ref.is_string:
                         logger.warning(f"page {self.name}: button {button.name} dataref {d} was not a string, forced as string" + " *" * 10)
                         ref.data_type = InternalVariableType.STRING
-                        ref.add_listener(button)
-                        logger.debug(f"page {self.name}: button {button.name} registered for new string dataref {d} (is_string={ref.is_string})")
-                    else:
-                        logger.debug(f"page {self.name}: button {button.name} string dataref {d} is not a simulator variable")
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create string dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
                 ref = self.simulator_variable[d]
+                ref.add_listener(button)
                 if not ref.is_string:
                     logger.warning(f"page {self.name}: button {button.name} dataref {d} was not a string, forced as string" + " *" * 10)
                     ref.data_type = InternalVariableType.STRING
-                ref.add_listener(button)
                 logger.debug(
                     f"page {self.name}: button {button.name} registered for existing string dataref {d} (is_string={self.simulator_variable[d].is_string})"
                 )
@@ -207,11 +213,13 @@ class Page:
         # ex. it appears in text: "${str-dref}", and str-dref is a previously "undeclared" string dataref
         # Working on this issue...
         for d in button.get_variables():  # these are requested by Cockpitecks to the simulator
+            if Variable.is_state_variable(d):
+                continue
             if d not in self.simulator_variable:
                 ref = self.sim.get_variable(d)  # creates or return already defined dataref
                 if ref is not None:
                     ref.add_listener(button)
-                    if isinstance(ref, SimulatorVariable):
+                    if isinstance(ref, SimulatorVariable) and not Variable.is_internal_variable(d):
                         self.simulator_variable[d] = ref
                         self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
                         logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")

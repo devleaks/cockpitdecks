@@ -131,7 +131,6 @@ class Observable(SimulatorVariableListener):
         if variables is not None:
             for s in variables:
                 ref = self.sim.get_variable(s)
-                print("trying", s, ref)
                 if ref is not None:
                     v.append(ref.name)
                     ref.add_listener(self)

@@ -111,6 +111,7 @@ class ENVIRON_KW(Enum):
     API_HOST = "API_HOST"
     API_PORT = "API_PORT"
     API_PATH = "API_PATH"
+    API_VERSION = "API_VERSION"
     APP_HOST = "APP_HOST"
     APP_PORT = "APP_PORT"
     COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
@@ -164,6 +165,7 @@ class CONFIG_KW(Enum):
     ACTION = "action"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
+    BEGIN_END = "begin-end-command" # pressed, execution remains while pressed, then released
     BUTTONS = "buttons"
     COCKPIT_THEME = "cockpit-theme"
     COMMAND = "command"
@@ -190,7 +192,7 @@ class CONFIG_KW(Enum):
     INTERNAL_KEY = "_key"
     LABEL = "label"
     LAYOUT = "layout"
-    LONG_PRESS = "long-press"
+    LONG_PRESS = "long-press"  # pressed for a long time, action triggers on release
     MANAGED = "managed"
     NAME = "name"
     NAMED_COLORS = "named-colors"
@@ -269,11 +271,11 @@ class DECK_KW(Enum):
 class DECK_ACTIONS(Enum):
     NONE = "none"
     PRESS = "press"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
-    LONGPRESS = "longpress"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
+    LONGPRESS = "longpress"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched) for more than ~0.5 sec
     PUSH = "push"  # TWO events, pressed and released
-    ENCODER = "encoder"  # turn with clicks or stops
-    CURSOR = "cursor"
-    SWIPE = "swipe"
+    ENCODER = "encoder"  # turn with clicks or stops, either clockwise and/or counter-clockwise
+    CURSOR = "cursor"  # continuous value between range
+    SWIPE = "swipe" # several events from touch (one event) to swipe (two events), each event has position and timing
 
 
 #
@@ -281,12 +283,12 @@ class DECK_ACTIONS(Enum):
 #
 class DECK_FEEDBACK(Enum):
     NONE = "none"
-    COLORED_LED = "colored-led"
-    IMAGE = "image"
-    LED = "led"
-    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
-    VIBRATE = "vibrate"
-
+    COLORED_LED = "colored-led"  # color and/or intensite
+    IMAGE = "image"  # width and height, assumed RGB
+    LED = "led"  # just on or off
+    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini, a "ramp" of LEDs
+    VIBRATE = "vibrate"  # emit vibration or non chgeable sound/beep
+    SOUND = "sound" # play a sound (short wav/mp3 file)
 
 # ############################################################
 #

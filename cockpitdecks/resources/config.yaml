@@ -58,8 +58,8 @@ dataref-roundings:
   AirbusFBW/OHPLightsATA30[5]: 3
   AirbusFBW/OHPLightsATA30[10]: 3
   AirbusFBW/OHPLightsATA30[11]: 3
-  # cabin pressure ditching
   AirbusFBW/OHPLightsATA21[13]: 3
+  AirbusFBW/OHPLightsATA31[*]: 3
   sim/flightmodel/weight/m_fuel_total: 0
   # This is for Region Real Weather,
   # it does not need to be updated frequently...

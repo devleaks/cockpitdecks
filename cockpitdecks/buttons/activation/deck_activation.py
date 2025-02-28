@@ -8,7 +8,7 @@ import threading
 from cockpitdecks.constant import ID_SEP
 from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
-from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
+from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .activation import Activation
 
@@ -55,7 +55,7 @@ class Push(Activation):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = self.sim.instruction_factory(name=cmdname, instruction_block={"command": cmd})
+            self._command = self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.COMMAND.value: cmd})
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released
@@ -214,12 +214,12 @@ class BeginEndPress(Push):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = self.sim.instruction_factory(name=cmdname, instruction_block={"command": cmd, "longpress": True})
+            self._command = self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.BEGIN_END.value: cmd})
 
     def is_valid(self):
-        if type(self._command).__name__ != "BeginEndCommand":
-            logger.warning(f"{self.button.get_id()}: {type(self)}: command is not BeginEndCommand: {type(self._command)}")
-            return False
+        # if type(self._command).__name__ != "BeginEndCommand":
+        #     logger.warning(f"{self.button.get_id()}: {type(self)}: command is not BeginEndCommand: {type(self._command)}")
+        #     return False
         return super().is_valid()
 
     def activate(self, event) -> bool:
@@ -279,7 +279,7 @@ class OnOff(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={"command": cmd}) for cmd in cmds]
+            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.COMMAND.value: cmd}) for cmd in cmds]
 
         # Internal variables
         self.onoff_current_value = False  # bool on or off, true = on
@@ -417,7 +417,7 @@ class ShortOrLongpress(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={"command": cmd}) for cmd in cmds]
+            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.COMMAND.value: cmd}) for cmd in cmds]
 
         # Internal variables
         self.long_time = self._config.get("long-time", 2)
@@ -487,7 +487,7 @@ class UpDown(Activation):
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={"command": cmd}) for cmd in cmds]
+            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.COMMAND.value: cmd}) for cmd in cmds]
 
         # Internal variables
         self.go_up = True
@@ -632,7 +632,7 @@ class EncoderProperties:
         cmds = button._config.get(CONFIG_KW.COMMANDS.value)
         if cmds is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={"command": cmd}) for cmd in cmds]
+            self._commands = [self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.COMMAND.value: cmd}) for cmd in cmds]
 
     @property
     def _turns(self):
