@@ -161,8 +161,6 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         for provider in self.providers:
             cnt = 0
             for d in provider.get_string_variables():
-                if d.startswith(CONFIG_KW.STRING_PREFIX.value):
-                    d = d.replace(CONFIG_KW.STRING_PREFIX.value, "")
                 if d in dtdrefs:
                     logger.info(f"{d} already added")
                     continue
@@ -177,11 +175,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
                 if d in dtdrefs:
                     logger.info(f"{d} already added")
                     continue
-                if d.startswith(CONFIG_KW.STRING_PREFIX.value):
-                    d = d.replace(CONFIG_KW.STRING_PREFIX.value, "")
-                    dtdrefs[d] = self.get_variable(d, is_string=True)
-                else:
-                    dtdrefs[d] = self.get_variable(d)
+                dtdrefs[d] = self.get_variable(d)
                 dtdrefs[d].add_listener(provider)
                 cnt = cnt + 1
             logger.info(f"adding {cnt} permanent variables from {provider.name}")

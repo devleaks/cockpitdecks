@@ -106,11 +106,6 @@ class Value(StringWithVariables):
         return self._config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
 
     @property
-    def datarefs(self) -> list:
-        # List of datarefs
-        return self._config.get(CONFIG_KW.SIM_DATA.value, [])
-
-    @property
     def formula(self) -> str:
         # Formula
         return self._config.get(CONFIG_KW.FORMULA.value, "")
@@ -180,22 +175,12 @@ class Value(StringWithVariables):
 
         # Direct use of datarefs:
         #
-        # 1.1 Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
+        # 1. Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
             dataref = base.get(attribute)
             if dataref is not None and InternalVariable.may_be_non_internal_variable(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
-
-        # 1.2 Multiple
-        datarefs = base.get(CONFIG_KW.SIM_DATA.value)
-        if datarefs is not None:
-            a = []
-            for d in datarefs:
-                if InternalVariable.may_be_non_internal_variable(d):
-                    r.add(d)
-                    a.append(d)
-            logger.debug(f"value {self.name}: added multiple datarefs {a}")
 
         # 2. Command with potential conditions
         for instr_cmd in [CONFIG_KW.COMMAND.value, CONFIG_KW.COMMANDS.value, CONFIG_KW.VIEW.value]:

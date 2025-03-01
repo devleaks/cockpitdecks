@@ -384,7 +384,10 @@ class CockpitInfoInstruction(CockpitInstruction):
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 
 # Little internal kitchen for internal datarefs
-AIRCRAFT_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING, CONFIG_KW.STRING_PREFIX.value + LIVERY_CHANGE_MONITORING}
+AIRCRAFT_CHANGE_SIMULATOR_DATA = {
+    Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING),
+    Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)
+}
 
 PERMANENT_SIMULATOR_VARIABLES = set()
 PERMANENT_SIMULATOR_STRING_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
@@ -1523,7 +1526,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
+        all_vars = self._simulator_variable_names | self._simulator_string_variable_names
+        if not isinstance(data, SimulatorVariable) or data.name not in all_vars:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return
 

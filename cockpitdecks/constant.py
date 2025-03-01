@@ -205,9 +205,7 @@ class CONFIG_KW(Enum):
     SERIAL = "serial"
     SET_SIM_VARIABLE = "set-dataref"
     SIM_VARIABLE = "dataref"
-    SIM_DATA = "multi-datarefs"
     STRING_SIM_DATA = "string-datarefs"
-    STRING_PREFIX = "string:"
     TEXT = "text"
     THEME = "theme"
     TRIGGER = "trigger"
@@ -225,7 +223,6 @@ class CONFIG_KW(Enum):
 
 class CONFIG_KW_ALIASES(Enum):
     SIM_VARIABLE = {"dataref", "simvar", "simdata"}
-    SIM_DATA = {"multi-datarefs", "multi-simvars", "multi-simdata"}
 
 
 class ACTIVATION_KW(Enum):

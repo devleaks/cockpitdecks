@@ -121,6 +121,10 @@ class Variable(ABC):
     def may_be_non_internal_variable(path: str) -> bool:
         # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
         # At the end, we are not sure it is a dataref, but we are sure non-datarefs are excluded ;-)
+        if Variable.is_internal_variable(path):
+            return False
+        if Variable.is_state_variable(path):
+            return False
         icon_prefixes = [c + PREFIX_SEP for c in ICON_FONTS.keys()]
         PREFIXES = icon_prefixes + [INTERNAL_STATE_PREFIX, BUTTON_PREFIX]
         for start in PREFIXES:
@@ -331,6 +335,9 @@ class VariableDatabase:
     def register(self, variable: Variable) -> Variable:
         if variable.name is None:
             logger.warning(f"invalid variable name {variable.name}, not stored")
+            return variable
+        if Variable.is_state_variable(variable.name):
+            logger.warning(f"invalid variable name {variable.name}, this is a state, not stored")
             return variable
         if variable.name not in self.database:
             self.database[variable.name] = variable

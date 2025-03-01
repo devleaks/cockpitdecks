@@ -493,7 +493,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if base is None:  # local, button-level ones
             base = self._config
 
-        # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
+        # 1a. Datarefs in base: dataref, set-dataref
         datarefs = self._value.get_variables()
 
         # 1b. Managed values
