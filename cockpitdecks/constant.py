@@ -72,7 +72,8 @@ RELOAD_ON_LIVERY_CHANGE = False
 WEATHER_STATION_MONITORING = "weather-station"
 DAYTIME = "daytime"
 
-MONITOR_DATAREF_USAGE = True
+MONITOR_RESOURCE_USAGE = True
+
 
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
@@ -165,7 +166,7 @@ class CONFIG_KW(Enum):
     ACTION = "action"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
-    BEGIN_END = "begin-end-command" # pressed, execution remains while pressed, then released
+    BEGIN_END = "begin-end-command"  # pressed, execution remains while pressed, then released
     BUTTONS = "buttons"
     COCKPIT_THEME = "cockpit-theme"
     COMMAND = "command"
@@ -182,6 +183,7 @@ class CONFIG_KW(Enum):
     DRIVER = "driver"
     ENABLE = "enable"
     ENABLED = "enabled"
+    EVENTS = "events"
     FORMULA = "formula"
     FRAME = "frame"
     GUARD = "guard"
@@ -272,7 +274,7 @@ class DECK_ACTIONS(Enum):
     PUSH = "push"  # TWO events, pressed and released
     ENCODER = "encoder"  # turn with clicks or stops, either clockwise and/or counter-clockwise
     CURSOR = "cursor"  # continuous value between range
-    SWIPE = "swipe" # several events from touch (one event) to swipe (two events), each event has position and timing
+    SWIPE = "swipe"  # several events from touch (one event) to swipe (two events), each event has position and timing
 
 
 #
@@ -285,7 +287,8 @@ class DECK_FEEDBACK(Enum):
     LED = "led"  # just on or off
     ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini, a "ramp" of LEDs
     VIBRATE = "vibrate"  # emit vibration or non chgeable sound/beep
-    SOUND = "sound" # play a sound (short wav/mp3 file)
+    SOUND = "sound"  # play a sound (short wav/mp3 file)
+
 
 # ############################################################
 #

@@ -384,10 +384,7 @@ class CockpitInfoInstruction(CockpitInstruction):
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 
 # Little internal kitchen for internal datarefs
-AIRCRAFT_CHANGE_SIMULATOR_DATA = {
-    Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING),
-    Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)
-}
+AIRCRAFT_CHANGE_SIMULATOR_DATA = {Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING), Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)}
 
 PERMANENT_SIMULATOR_VARIABLES = set()
 PERMANENT_SIMULATOR_STRING_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
@@ -876,8 +873,11 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     # #########################################################
-    # Variables
+    # Variables and Events
     #
+    def get_events(self) -> set:
+        return set()
+
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft."""
         ret = self._simulator_variable_names

@@ -97,20 +97,20 @@ class Activation:
         cmdname = ":".join([self.button.get_id(), type(self).__name__])
 
         view = self._config.get(CONFIG_KW.VIEW.value)
-        if view is not None:
-            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.VIEW.value: view})
+        if view is not None:  # a "view" is just a command...
+            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.COMMAND.value: view})
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press
         self.vibrate = self.get_attribute("vibrate")
         self.sound = self.get_attribute("sound")
-
         # but could be anything.
+
         self._long_press = None
         long_press = self._config.get(CONFIG_KW.LONG_PRESS.value)
-        if long_press is not None:
+        if long_press is not None:  # a long-press is just a command that gets executed when pressed for a long time
             self._long_press = self.sim.instruction_factory(
-                name=cmdname + ":long-press", instruction_block={CONFIG_KW.LONG_PRESS.value: long_press}
+                name=cmdname + ":long-press", instruction_block={CONFIG_KW.COMMAND.value: long_press}
             )  # Optional additional command
 
         # Datarefs
@@ -267,7 +267,7 @@ class Activation:
         return set()
 
     def long_press(self, event):
-        logger.debug(">" * 40 + " long_press")
+        logger.debug(">" * 40 + " long-press")
         self._long_press.execute()
 
     def is_valid(self) -> bool:

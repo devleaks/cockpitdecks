@@ -235,9 +235,7 @@ class BeginEndPress(Push):
         return True  # normal termination
 
     def inspect(self, what: str | None = None):
-        if what is not None and "longpress" in what:
-            logger.info(f"{self.button.get_id()} has long press command")
-        elif what is not None and "activation" in what:
+        if what is not None and "activation" in what:
             super().inspect(what=what)
 
     def describe(self) -> str:

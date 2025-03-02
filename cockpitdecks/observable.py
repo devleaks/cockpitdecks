@@ -26,6 +26,12 @@ class Observables:
         self.sim = simulator
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
 
+    def get_events(self) -> set:
+        ret = set()
+        for o in self.observables:
+            ret = ret | o.get_events()
+        return ret
+
     def get_variables(self) -> set:
         ret = set()
         for o in self.observables:
@@ -79,6 +85,7 @@ class Observable(SimulatorVariableListener):
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
         self._enabled_data = self.sim.get_internal_variable(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
+        self._events = set(config.get(CONFIG_KW.EVENTS.value, set()))
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self._actions = MacroInstruction(
             name=self.name,
@@ -138,6 +145,9 @@ class Observable(SimulatorVariableListener):
                     logger.warning(f"could not get variable {s}")
         logger.debug(f"observable {self.name}: listening to variables {v}")
         # logger.debug(f"observable {self.name} inited")
+
+    def get_events(self) -> set:
+        return self._events
 
     def get_variables(self) -> set:
         return self._value.get_variables()

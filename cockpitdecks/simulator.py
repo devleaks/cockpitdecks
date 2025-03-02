@@ -53,6 +53,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.providers = []  # list of simulator providers to collect variables from
 
         self.simulator_variable_to_monitor = {}  # simulator data and number of objects monitoring
+        self.simulator_event_to_monitor = {}  # simulator event and number of objects monitoring
 
         self.roundings = {}  # name: int
         self.frequencies = {}  # name: int
@@ -74,6 +75,9 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         return [f"{type(self).__name__} {__version__}"]
 
     def get_variables(self) -> set:
+        return set()
+
+    def get_events(self) -> set:
         return set()
 
     def get_string_variables(self) -> set:
@@ -180,6 +184,14 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
                 cnt = cnt + 1
             logger.info(f"adding {cnt} permanent variables from {provider.name}")
         return dtdrefs
+
+    def get_permanently_monitored_simulator_events(self) -> set:
+        events = set()
+        for provider in self.providers:
+            provevnts = provider.get_events()
+            events = events | provevnts
+            logger.info(f"adding {len(provevnts)} permanent events from {provider.name}")
+        return events
 
     def variable_factory(self, name: str, is_string: bool = False, creator: str | None = None) -> Variable:
         # here is the place to inject a physical type if any, may be from a list
@@ -320,6 +332,8 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     # ################################
     # Cockpit interface
     #
+    #
+    # Variables
     def clean_simulator_variable_to_monitor(self):
         """Removes all data from Simulator monitoring."""
         self.simulator_variable_to_monitor = {}
@@ -364,6 +378,47 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.simulator_variable_to_monitor = {}
         logger.debug("..removed")
 
+    #
+    # Events
+    def add_simulator_events_to_monitor(self, simulator_events: set, reason: str = None):
+        """Adds supplied data to Simulator monitoring."""
+        prnt = []
+        for d in simulator_events:
+            if d not in self.simulator_event_to_monitor.keys():
+                self.simulator_event_to_monitor[d] = 1
+                prnt.append(d)
+            else:
+                self.simulator_event_to_monitor[d] = self.simulator_event_to_monitor[d] + 1
+        logger.debug(f"added {prnt}")
+        logger.debug(f"currently monitoring {self.simulator_event_to_monitor}")
+
+    def remove_simulator_events_to_monitor(self, simulator_events: set, reason: str = None):
+        """Removes supplied data from Simulator monitoring."""
+        prnt = []
+        for d in simulator_events:
+            if d in self.simulator_event_to_monitor:
+                self.simulator_event_to_monitor[d] = self.simulator_event_to_monitor[d] - 1
+                if self.simulator_event_to_monitor[d] == 0:
+                    prnt.append(d)
+                    del self.simulator_event_to_monitor[d]
+            else:
+                if not self._startup:
+                    logger.warning(f"simulator_event {d} not monitored")
+        logger.debug(f"removed {prnt}")
+        logger.debug(f"currently monitoring {self.simulator_event_to_monitor}")
+
+    def remove_all_simulator_event(self):
+        """Removes all data from Simulator."""
+        logger.debug("removing..")
+        self.simulator_event_to_monitor = {}
+        logger.debug("..removed")
+
+    def clean_simulator_event_to_monitor(self):
+        """Removes all data from Simulator monitoring."""
+        self.remove_all_simulator_event()
+
+    #
+    # Instructions
     def execute(self, instruction: Instruction):
         """Executes a SimulatorInstruction"""
         instruction.execute(self)
