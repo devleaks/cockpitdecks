@@ -183,6 +183,7 @@ class CONFIG_KW(Enum):
     DRIVER = "driver"
     ENABLE = "enable"
     ENABLED = "enabled"
+    EVENT = "event"
     EVENTS = "events"
     FORMULA = "formula"
     FRAME = "frame"

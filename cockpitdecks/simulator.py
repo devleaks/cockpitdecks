@@ -94,12 +94,21 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.physics = self.physics | simulator_variable_physics
 
     def get_rounding(self, simulator_variable_name: str) -> float | None:
-        if not simulator_variable_name.find("[") > 0:
-            return self.roundings.get(simulator_variable_name)
+        # 1. plain path: sim/some/values[4]
         rnd = self.roundings.get(simulator_variable_name)
-        return (
-            rnd if rnd is not None else self.roundings.get(simulator_variable_name[: simulator_variable_name.find("[")] + "[*]")
-        )  # rounds all simulator_variable in array ("dref[*]")
+        if rnd is not None:
+            return rnd
+        # 2. for arrays, all element can use same rounding
+        if "[" in simulator_variable_name:
+            root_name = simulator_variable_name[: simulator_variable_name.find("[")] # sim/some/values
+            rnd = self.roundings.get(root_name)
+            if rnd is not None:
+                return rnd
+            root_name = root_name + "[*]" # sim/some/values[*]
+            rnd = self.roundings.get(root_name)
+            if rnd is not None:
+                return rnd
+        return None
 
     def set_rounding(self, simulator_variable: SimulatorVariable):
         if simulator_variable.name.find("[") > 0:

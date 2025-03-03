@@ -85,7 +85,17 @@ class Observable(SimulatorVariableListener):
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
         self._enabled_data = self.sim.get_internal_variable(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
-        self._events = set(config.get(CONFIG_KW.EVENTS.value, set()))
+        self._events = set()
+        if self.mode == CONFIG_KW.EVENT.value:
+            event = config.get(CONFIG_KW.EVENT.value)
+            if event is not None:
+                self._events = self._events | { event }
+            events = config.get(CONFIG_KW.EVENTS.value)
+            if events is not None:
+                self._events = self._events | set( events )
+            if len(self._events) == 0:
+                logger.warning(f"observable {self.name} of type event has no event")
+            print(f"observable {self.name}: events: {self._events}")
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self._actions = MacroInstruction(
             name=self.name,

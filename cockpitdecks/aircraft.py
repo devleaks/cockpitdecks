@@ -214,6 +214,9 @@ class Aircraft:
     def get_string_variables(self) -> set:
         return self._aircraft_string_variable_names
 
+    def get_events(self) -> set:
+        return set()  # later
+
     # Initialisation, setup
     def scan_web_decks(self):
         """Virtual decks are declared in the cockpit configuration

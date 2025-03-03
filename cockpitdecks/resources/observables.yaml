@@ -20,3 +20,12 @@ observables:
     actions:
       - command: cockpitdecks-livery
         delay: 5
+  - name: QFE adjusted
+    type: event
+    enabled: True
+    events:
+      - sim/instruments/barometer_up
+      - sim/instruments/barometer_down
+    actions:
+      - command: cockpitdecks-info
+        message: QNH adjusted

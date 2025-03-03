@@ -506,6 +506,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self.sim = None
         self._simulator_variable_names = PERMANENT_SIMULATOR_VARIABLES
         self._simulator_string_variable_names = PERMANENT_SIMULATOR_STRING_VARIABLES
+        self._simulator_event_names = set()
 
         # "Aircraft" name or model...
         self.aircraft = Aircraft(cockpit=self)
@@ -876,7 +877,18 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     # Variables and Events
     #
     def get_events(self) -> set:
-        return set()
+        ret = self._simulator_event_names
+        if type(self.observables) is Observables:
+            obs = self.observables.get_events()
+            if len(obs) > 0:
+                ret = ret | obs
+        elif type(self.observables) is dict:
+            for obs in self.observables.values():
+                ret = ret | obs.get_events()
+        ac = self.aircraft.get_events()
+        if len(ac) > 0:
+            ret = ret | ac
+        return ret
 
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft."""
@@ -885,6 +897,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             obs = self.observables.get_variables()
             if len(obs) > 0:
                 ret = ret | obs
+        elif type(self.observables) is dict:
+            for obs in self.observables.values():
+                ret = ret | obs.get_variables()
         ac = self.aircraft.get_variables()
         if len(ac) > 0:
             ret = ret | ac
