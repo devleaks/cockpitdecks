@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from threading import Lock
 
 from cockpitdecks import WEATHER_STATION_MONITORING, ICON_SIZE
+from cockpitdecks.constant import CONFIG_KW
 from cockpitdecks.resources.iconfonts import WEATHER_ICON_FONT
 from cockpitdecks.resources.color import light_off
 from cockpitdecks.resources.weather import WeatherData, WeatherDataListener
@@ -54,7 +55,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         self.protection = Lock()
 
         # Following parameters are overwritten by config
-        self.icao_dataref_path = Variable.internal_variable_name(path=WEATHER_STATION_MONITORING)
+        self.icao_dataref_path = self.weather.get(CONFIG_KW.SIM_VARIABLE.value, Variable.internal_variable_name(path=WEATHER_STATION_MONITORING))
         self.icao_dataref = None
 
         self.icao = self.weather.get("station", self.DEFAULT_STATION)
