@@ -355,7 +355,10 @@ class CockpitStopInstruction(CockpitInstruction):
 
     def _execute(self):
         self.cockpit.terminate_all()
-        logger.warning("********** It is not possible to stop the application server. Please press CTRL-C in this window to stop it.")
+        # logger.warning("********** It is not possible to stop the application server. Please press CTRL-C in this window to stop it.")
+        # https://stackoverflow.com/questions/39380811/how-can-i-kill-all-threads
+        # "hard" stop necessary to kill Flask thread(s)
+        os._exit(0)
 
 
 class CockpitInfoInstruction(CockpitInstruction):
@@ -1882,8 +1885,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             # Each deck should have been started
             # Start reload loop
             logger.info("starting cockpit..")
-            self.sim.connect()
-            logger.info("..connect to simulator loop started..")
+            self.sim.connect(reload_cache=True)
+            logger.info("..connect to simulator monitoring started..")
             self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
             logger.info("..usb monitoring started..")
             self.start_event_loop()
@@ -2282,7 +2285,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         if CONFIG_KW.BUTTONS.value not in this_page.store:
             return {"code": "", "meta": {"error": f"no buttons in {page}"}}
 
-        this_button = None
         for b in this_page.store.get(CONFIG_KW.BUTTONS.value):
             idx = b.get(CONFIG_KW.INDEX.value)
             if idx is not None and ((idx == index) or (str(idx) == str(index))):
