@@ -263,9 +263,6 @@ class Activation:
             return {self._writable_dataref.name}
         return set()
 
-    def get_string_variables(self) -> set:
-        return set()
-
     def long_press(self, event):
         logger.debug(">" * 40 + " long-press")
         self._long_press.execute()

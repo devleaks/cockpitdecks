@@ -145,16 +145,22 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
     def anim_start(self):
         super().anim_start()
         if self.has_weather():
-            logger.info(f"starting weather surveillance ({self.button_name()})")
-            self.weather_data.start()
+            if not self.weather_data.is_running:
+                logger.info(f"starting weather surveillance ({self.button_name()})")
+                self.weather_data.start()
+            else:
+                logger.warning(f"weather surveillance ({self.button_name()}) already is_running")
         else:
             logger.info(f"no weather surveillance {self.button_name()}")
 
     def anim_stop(self):
         super().anim_stop()
         if self.weather_data is not None:
-            logger.info(f"stopping weather surveillance ({self.button_name()})")
-            self.weather_data.stop()
+            if self.weather_data.is_running:
+                logger.info(f"stopping weather surveillance ({self.button_name()})")
+                self.weather_data.stop()
+            else:
+                logger.warning(f"weather surveillance ({self.button_name()}) already stopped")
         else:
             logger.info(f"no weather surveillance ({self.button_name()})")
 
@@ -162,6 +168,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         if self.has_weather():
             if not self.weather_data.is_running:
                 self.weather_data.start()
+                logger.info(f"starting weather surveillance ({self.button_name()})")
         else:
             logger.info(f"no weather surveillance {self.button_name()}")
 

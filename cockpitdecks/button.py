@@ -159,17 +159,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         # String datarefs
         # self.string_datarefs are string datarefs as declared in the button
         # they are not all string datarefs collected from activation and/or representation.
-        self.string_datarefs = config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
-        if type(self.string_datarefs) is str:
-            if "," in self.string_datarefs:
-                self.string_datarefs = set(self.string_datarefs.replace(" ", "").split(","))
-            else:
-                self.string_datarefs = {self.string_datarefs}
-        if type(self.string_datarefs) is not set:
-            if type(self.string_datarefs) is str:
-                self.string_datarefs = {self.string_datarefs}
-            else:
-                self.string_datarefs = set(self.string_datarefs)
+        self.string_datarefs = set()
 
         self._value = Value(self.name, config=config, provider=self)
         self._value.add_listener(self)
@@ -181,7 +171,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             self.page.register_simulator_variable(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
         # add string datarefs to all_datarefs after their registration at the page level
-        self.all_datarefs = self.all_datarefs | self.get_string_variables()
+        self.all_datarefs = self.all_datarefs
 
         self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
         if self.wallpaper is not None:
@@ -358,16 +348,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
         stars = 3
-        for d in self.get_string_variables():
-            ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
-            if ref is not None:
-                ref.add_listener(self)
-                if not ref.is_string:
-                    logger.warning(f"page {self.name}: button {self.name} dataref {d} was not a string, forced as string" + " *" * stars)
-                    ref.data_type = InternalVariableType.STRING
-            else:
-                logger.error(f"button {self.name}: failed to create string dataref {d}")
-
         for d in self.get_variables():
             ref = self.sim.get_variable(d)  # creates or return already defined dataref
             if ref is not None:
@@ -465,24 +445,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                     logger.warning(f"path {path} has {cnt} elements which is beyond {MAXRANGE} max.")
                 return [f"{pathroot}[{i}]" for i in range(start, end)]
         return [path]
-
-    def get_string_variables(self) -> list:
-        datarefs = self.string_datarefs | self._value.get_string_variables()
-        # Activation datarefs
-        if self._activation is not None:
-            r = self._activation.get_string_variables()
-            if r is not None and len(r) > 0:
-                datarefs = datarefs | r
-                self._value.add_variables(r, reason="activation/str")
-                logger.debug(f"button {self.name}: added activation string datarefs {r}")
-        # Representation datarefs
-        if self._representation is not None:
-            r = self._representation.get_string_variables()
-            if r is not None and len(r) > 0:
-                datarefs = datarefs | r
-                self._value.add_variables(r, reason="representation/str")
-                logger.debug(f"button {self.name}: added representation string datarefs {r}")
-        return datarefs
 
     def get_variables(self, base: dict | None = None) -> set:
         """

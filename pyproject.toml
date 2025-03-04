@@ -28,13 +28,13 @@ requires-python = ">=3.10"
 dependencies = [
     "CairoSVG~=2.7.1",
     "Flask~=3.1.0",
+    "jsonlines~=4.0.0",
+    "packaging~=24.0",
     "pillow~=11.1.0",
+    "py3rtree @ git+https://github.com/drwelby/py3rtree",
+    "requests~=2.32.3",
     "ruamel.yaml~=0.18.8",
     "simple-websocket~=1.1.0",
-    "requests~=2.32.3",
-    "packaging~=24.0",
-    "py3rtree @ git+https://github.com/drwelby/py3rtree",
-    "jsonlines~=4.0.0",
     "usb-monitor~=1.23"
 ]
 

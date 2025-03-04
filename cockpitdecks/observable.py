@@ -38,12 +38,6 @@ class Observables:
             ret = ret | o.get_variables()
         return ret
 
-    def get_string_variables(self) -> set:
-        ret = set()
-        for o in self.observables:
-            ret = ret | o.get_string_variables()
-        return ret
-
     def enable(self, name):
         ok = False
         for o in self.observables:
@@ -89,10 +83,10 @@ class Observable(SimulatorVariableListener):
         if self.mode == CONFIG_KW.EVENT.value:
             event = config.get(CONFIG_KW.EVENT.value)
             if event is not None:
-                self._events = self._events | { event }
+                self._events = self._events | {event}
             events = config.get(CONFIG_KW.EVENTS.value)
             if events is not None:
-                self._events = self._events | set( events )
+                self._events = self._events | set(events)
             if len(self._events) == 0:
                 logger.warning(f"observable {self.name} of type event has no event")
             print(f"observable {self.name}: events: {self._events}")
@@ -135,14 +129,6 @@ class Observable(SimulatorVariableListener):
 
     def init(self):
         # Register simulator variables and ask to be notified
-        variables = self.get_string_variables()
-        if variables is not None:
-            for s in variables:
-                ref = self.sim.get_variable(s, is_string=True)
-                if ref is not None:
-                    ref.add_listener(self)
-        logger.debug(f"observable {self.name}: listening to strings variables {variables}")
-
         variables = self.get_variables()
         v = []
         if variables is not None:
@@ -161,9 +147,6 @@ class Observable(SimulatorVariableListener):
 
     def get_variables(self) -> set:
         return self._value.get_variables()
-
-    def get_string_variables(self) -> set:
-        return self._value.get_string_variables()
 
     def simulator_variable_changed(self, data: SimulatorVariable):
         # if not self._enabled:

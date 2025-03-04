@@ -48,7 +48,6 @@ class Value(StringWithVariables):
 
         # Used in "value"
         self._variables: set | None = None
-        self._string_variables: set | None = None
 
         self._formula: Formula | None = None
         self._permanent_keys: Tuple[str] = tuple()
@@ -58,8 +57,6 @@ class Value(StringWithVariables):
         # print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
 
     def init(self):
-        self._string_variables = self.get_string_variables()
-
         if self.formula is not None and self.formula != "":
             logger.debug(f"value {self.name}: has formula {self.formula}")
             self._formula = Formula(owner=self._provider, formula=self.formula)
@@ -101,11 +98,6 @@ class Value(StringWithVariables):
         return self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
 
     @property
-    def string_datarefs(self) -> set:
-        # List of string datarefs
-        return self._config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
-
-    @property
     def formula(self) -> str:
         # Formula
         return self._config.get(CONFIG_KW.FORMULA.value, "")
@@ -129,7 +121,7 @@ class Value(StringWithVariables):
         """
         if self._variables is not None:
             return self._variables
-        self._variables = self.scan_variables(self._config)
+        self._variables = self.scan_variables()
         logger.debug(f"value {self.name}: found datarefs {self._variables}")
         return self._variables
 
@@ -140,22 +132,6 @@ class Value(StringWithVariables):
             self._variables = set()
         self._variables = self._variables | datarefs
         logger.debug(f"value {self.name}: added {len(datarefs)} datarefs ({reason})")
-
-    def get_string_variables(self) -> set:
-        if self._string_variables is not None:
-            return self._string_variables
-        self._string_variables = self.string_datarefs
-        if type(self._string_variables) is str:
-            if "," in self._string_variables:
-                self._string_variables = set(self._string_variables.replace(" ", "").split(","))
-            else:
-                self._string_variables = {self._string_variables}
-        if type(self._string_variables) in [list, tuple]:
-            self._string_variables = set(self._string_variables)
-        return self._string_variables
-
-    def get_all_variables(self) -> set:
-        return self.get_variables() | self.get_string_variables()
 
     def scan_variables(self, base: dict | None = None, extra_keys: list = []) -> set:
         """
@@ -195,7 +171,7 @@ class Value(StringWithVariables):
                     # else command is str, no dref to scan for
             # else: commands is string or None, no dref to scan for
 
-        # 3. In string datarefs (formula, text, etc.)
+        # 3. In formula, text, etc.
         allways_extra = [CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
         self._permanent_keys = set(extra_keys + allways_extra)
 
@@ -262,14 +238,6 @@ class Value(StringWithVariables):
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return store_value(ret)
 
-        # 2d. One string dataref
-        if len(self._string_variables) == 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
-            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
-            dref = list(self._string_variables)[0]
-            ret = self.get_simulator_variable_value(simulator_variable=dref)
-            logger.debug(f"value {self.name}: {ret} (from single dataref {dref})")
-            return store_value(ret)
-
         # 3. Activation value
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
             # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
@@ -285,10 +253,10 @@ class Value(StringWithVariables):
         # 4. Multiple datarefs
         if len(self._variables) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
             ret = {}
-            for d in self.get_all_variables():
+            for d in self.get_variables():
                 v = self.get_simulator_variable_value(simulator_variable=d)
                 ret[d] = v
-            logger.info(f"value {self.name}: {ret} (no formula, no dataref, no string dataref, returning all datarefs)")
+            logger.info(f"value {self.name}: {ret} (no formula, no dataref, returning all datarefs)")
             return store_value(ret)
 
         logger.warning(f"value {self.name}: no formula, no dataref, no activation")

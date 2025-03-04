@@ -386,8 +386,7 @@ class CockpitInfoInstruction(CockpitInstruction):
 # Little internal kitchen for internal datarefs
 AIRCRAFT_CHANGE_SIMULATOR_DATA = {Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING), Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)}
 
-PERMANENT_SIMULATOR_VARIABLES = set()
-PERMANENT_SIMULATOR_STRING_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
+PERMANENT_SIMULATOR_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
 
 
 class CockpitBase:
@@ -505,7 +504,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self._simulator = None
         self.sim = None
         self._simulator_variable_names = PERMANENT_SIMULATOR_VARIABLES
-        self._simulator_string_variable_names = PERMANENT_SIMULATOR_STRING_VARIABLES
         self._simulator_event_names = set()
 
         # "Aircraft" name or model...
@@ -901,13 +899,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             for obs in self.observables.values():
                 ret = ret | obs.get_variables()
         ac = self.aircraft.get_variables()
-        if len(ac) > 0:
-            ret = ret | ac
-        return ret
-
-    def get_string_variables(self) -> set:
-        ret = self._simulator_string_variable_names
-        ac = self.aircraft.get_string_variables()
         if len(ac) > 0:
             ret = ret | ac
         return ret
@@ -1541,7 +1532,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        all_vars = self._simulator_variable_names | self._simulator_string_variable_names
+        all_vars = self._simulator_variable_names
         if not isinstance(data, SimulatorVariable) or data.name not in all_vars:
             logger.warning(f"unhandled {data.name}={data.value()}")
             return

@@ -93,7 +93,6 @@ class Aircraft:
 
         # Internal variables
         self._aircraft_variable_names = None
-        self._aircraft_string_variable_names = set()
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
     @property
@@ -210,9 +209,6 @@ class Aircraft:
                 ret = ret | obs
         self._aircraft_variable_names = ret
         return self._aircraft_variable_names
-
-    def get_string_variables(self) -> set:
-        return self._aircraft_string_variable_names
 
     def get_events(self) -> set:
         return set()  # later

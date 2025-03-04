@@ -80,9 +80,6 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def get_events(self) -> set:
         return set()
 
-    def get_string_variables(self) -> set:
-        return set()
-
     # Simulator variable pre-processing
     def set_simulator_variable_roundings(self, simulator_variable_roundings: dict):
         self.roundings = self.roundings | simulator_variable_roundings
@@ -100,11 +97,11 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
             return rnd
         # 2. for arrays, all element can use same rounding
         if "[" in simulator_variable_name:
-            root_name = simulator_variable_name[: simulator_variable_name.find("[")] # sim/some/values
+            root_name = simulator_variable_name[: simulator_variable_name.find("[")]  # sim/some/values
             rnd = self.roundings.get(root_name)
             if rnd is not None:
                 return rnd
-            root_name = root_name + "[*]" # sim/some/values[*]
+            root_name = root_name + "[*]"  # sim/some/values[*]
             rnd = self.roundings.get(root_name)
             if rnd is not None:
                 return rnd
@@ -171,17 +168,6 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
 
     def get_permanently_monitored_simulator_variables(self) -> dict:
         dtdrefs = {}
-        for provider in self.providers:
-            cnt = 0
-            for d in provider.get_string_variables():
-                if d in dtdrefs:
-                    logger.info(f"{d} already added")
-                    continue
-                dtdrefs[d] = self.get_variable(d, is_string=True)
-                dtdrefs[d].add_listener(provider)
-                cnt = cnt + 1
-            logger.info(f"adding {cnt} permanent string variables from {provider.name}")
-
         for provider in self.providers:
             cnt = 0
             for d in provider.get_variables():

@@ -208,7 +208,6 @@ class CONFIG_KW(Enum):
     SERIAL = "serial"
     SET_SIM_VARIABLE = "set-dataref"
     SIM_VARIABLE = "dataref"
-    STRING_SIM_DATA = "string-datarefs"
     TEXT = "text"
     THEME = "theme"
     TRIGGER = "trigger"
