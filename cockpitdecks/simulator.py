@@ -465,7 +465,7 @@ class NoSimulator(Simulator):
     def runs_locally(self) -> bool:
         return True
 
-    def connect(self):
+    def connect(self, reload_cache: bool = False):
         logger.info("simulator connected")
 
     def start(self):
