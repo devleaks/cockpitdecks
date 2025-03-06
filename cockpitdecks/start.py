@@ -20,7 +20,8 @@ import urllib.parse
 import argparse
 import subprocess
 import shutil
-import filecmp
+
+# import filecmp
 import socket
 import ipaddress
 
