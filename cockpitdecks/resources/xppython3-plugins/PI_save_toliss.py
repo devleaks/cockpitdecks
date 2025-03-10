@@ -18,19 +18,41 @@ XPLANE_FOLDER_PATH = os.getcwd()
 SAVED_SITUATION_FOLDER_PATH = os.path.join("Resources", "Plugins", "ToLissData", "Situations")
 DATETIME_FORMAT = "%Y%m%d%H%M%S"
 
+FLIGHT_PHASE_DREF = "AirbusFBW/ECAMFlightPhase"
+FLIGHT_PHASES = [
+    "OFF",  # 0
+    "ELEC POWER",
+    "FIRST ENG STARTED",
+    "FIRST ENG TO POWER",
+    "80KT",
+    "LIFT OFF",
+    "1500 FT",
+    "800 FT",
+    "TOUCHDOWN",
+    "80KT",
+    "2ND ENG SHUTDOWN",
+    "5 MIN AFTER",  # 10
+]
+
 # ###########################################################
 # S A V E   T O L I S S   S I T U A T I O N
 #
-PLUGIN_VERSION = "1.3.0"
+PLUGIN_VERSION = "1.4.0"
 #
 # Changelog:
 #
+# 10-MAR-2025: 1.4.0: Added flight phase code -0- (off) to -10- (off :-D) to name
 # 15-OCT-2024: 1.3.0: Prepend aircraft ICAO name A339_... A321_...
 # 15-OCT-2024: 1.2.0: Force name to USERSAVED_SITUATION-YYYMMDDHHMMSS*
 # 02-SEP-2024: 1.1.0: Add notification on screen that it worked
 # 23-AUG-2024: 1.0.1: Changed date/time format
 # 02-FEB-2024: 1.0.0: Initial version
-
+#
+# Suggestion, ideas
+# Depending on ac model (icao), we can get
+# - toliss_airbus/flightplan/departure_icao
+# - toliss_airbus/flightplan/destination_icao
+# or equivalent
 
 class PythonInterface:
     def __init__(self):
@@ -111,6 +133,23 @@ class PythonInterface:
                 ac_icao = "ZZZZ"
                 if dref is not None:
                     ac_icao = xp.getDatas(dref, count=4)  # count=-1 gets error
+                print(self.Info, f"aircraft icao {ac_icao}")
+
+                # 0.b Find flight phase for ToLiss airbus
+                fpref = xp.findDataRef(FLIGHT_PHASE_DREF)
+                ac_fp = 0
+                if fpref is not None:
+                    ac_fp = xp.getDatai(fpref)  # count=-1 gets error
+                    try:
+                        ac_fp = int(ac_fp)
+                        if 0 <= ac_fp < len(FLIGHT_PHASES):
+                            print(self.Info, f"flight phase {FLIGHT_PHASES[ac_fp]}")
+                        else:
+                            print(self.Info, f"flight phase {ac_fp} (invalid)")
+                    except:
+                        print(self.Info, "flight phase is not an integer?")
+                        print_exc()
+                        ac_fp = 0
 
                 # 1. Save the situation (2 files)
                 cmd_ref = xp.findCommand(TOLISS_SAVE_COMMAND)
@@ -142,7 +181,7 @@ class PythonInterface:
                     tstr = ts.strftime(DATETIME_FORMAT)
                     for f in files:
                         fn, fext = os.path.os.path.splitext(f)
-                        newname = os.path.join(os.path.dirname(fn), f"{ac_icao}_USERSAVED_SITUATION-" + tstr + fext)
+                        newname = os.path.join(os.path.dirname(fn), f"{ac_icao}_USERSAVED_SITUATION-{ac_fp}-" + tstr + fext)
                         os.rename(f, newname)
                         self.color = (0.0, 1.0, 0.0)
                         self.message = f"saved situation at {ts} in file {os.path.basename(newname)}"

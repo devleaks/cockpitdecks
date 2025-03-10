@@ -106,7 +106,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
             return
         if data.name != self.icao_dataref_path:
             return
-        icao = data.value()
+        icao = data.value
         if icao is None or icao == "":  # no new station, stick or current
             return
         self.icao = icao

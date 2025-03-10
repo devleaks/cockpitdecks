@@ -352,12 +352,14 @@ class Formula(StringWithVariables):
         # alias
         return self.message
 
+    # See https://stackoverflow.com/questions/7019643/overriding-properties-in-python
+    @Variable.value.getter
     def value(self):
         if self._has_state_vars or self._has_sim_vars:  # not self.is_static ?
             return self.execute_formula(store=True, cascade=True)
         if self.current_value is None:  # may be it was never evaluated, so we force it if value is None, for example static value
             self.execute_formula(store=True, cascade=False)
-        return super().value()
+        return super().value
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
@@ -377,7 +379,7 @@ class Formula(StringWithVariables):
     # Local operations
     #
     def get_formatted_value(self) -> str:
-        return self.format_value(self.value())
+        return self.format_value(self.value)
 
     def execute_formula(self, store: bool = False, cascade: bool = False):
         """replace datarefs variables with their value and execute formula.
@@ -555,7 +557,7 @@ class TextWithVariables(StringWithVariables):
         """
         if self._formula is not None:
             logger.debug(f"variable {self.display_name}: local formula result: {self._formula.current_value}")
-            return self._formula.value()  # must cll value() to force computation, in case not computed before, .current_value might be None.
+            return self._formula.value  # must cll value() to force computation, in case not computed before, .current_value might be None.
         logger.debug(f"variable {self.display_name}: no local formula")
         return super().get_formula_result(default=default)
 

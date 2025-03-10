@@ -176,6 +176,7 @@ class CONFIG_KW(Enum):
     DECK = "deck"
     DECKS = "decks"
     DECOR = "decor"
+    DEFAULT_VALUE = "default-value"
     DELAY = "delay"
     DEVICE = "device"
     DISABLE = "disable"

@@ -636,21 +636,21 @@ class EncoderProperties:
     def _turns(self):
         path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ENCODER_TURNS.value])
         dref = self.button.sim.get_internal_variable(path)
-        value = dref.value()
+        value = dref.value
         return 0 if value is None else value
 
     @property
     def _cw(self):
         path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ENCODER_CLOCKWISE.value])
         dref = self.button.sim.get_internal_variable(path)
-        value = dref.value()
+        value = dref.value
         return 0 if value is None else value
 
     @property
     def _ccw(self):
         path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ENCODER_COUNTER_CLOCKWISE.value])
         dref = self.button.sim.get_internal_variable(path)
-        value = dref.value()
+        value = dref.value
         return 0 if value is None else value
 
 

@@ -280,7 +280,7 @@ class Activation:
     def activation_count(self):
         path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value])
         dref = self.button.sim.get_internal_variable(path)
-        value = dref.value()
+        value = dref.value
         return 0 if value is None else value
 
     def activate(self, event) -> bool:
@@ -410,7 +410,7 @@ class Activation:
     def get_state_variables(self) -> dict:
         base = InternalVariable(name=self.get_id()).name
         vardb = self.button.cockpit.variable_database.database
-        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), vardb.values())}
+        drefs = {d.name.split(ID_SEP)[-1]: d.value for d in filter(lambda d: d.name.startswith(base), vardb.values())}
         a = {
             "activation_type": type(self).__name__,
             "last_activated": self.last_activated,

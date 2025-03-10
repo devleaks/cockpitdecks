@@ -102,8 +102,8 @@ class Observable(SimulatorVariableListener):
     @property
     def value(self):
         """Gets the current value, but does not provoke a calculation, just returns the current value."""
-        logger.debug(f"observable {self.name}: {self._value.value()}")
-        return self._value.value()
+        logger.debug(f"observable {self.name}: {self._value.value}")
+        return self._value.value
 
     @value.setter
     def value(self, value):
@@ -152,7 +152,7 @@ class Observable(SimulatorVariableListener):
         # if not self._enabled:
         #     logger.warning(f"observable {self.name} disabled")
         #     return
-        self.value = self._value.get_value()
+        self.value = self._value.value
         if self.mode == CONFIG_KW.TRIGGER.value:
             if self.value != 0:  # 0=False
                 logger.debug(f"observable {self.name} executing (conditional trigger)..")

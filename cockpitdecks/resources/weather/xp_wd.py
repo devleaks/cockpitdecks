@@ -250,7 +250,7 @@ class DatarefAccessor:
         if self.__drefidx__ is not None:
             name = name + f"[{self.__drefidx__}]"
         # print("getting", src, " > ", name, "=", self.__datarefs__.get(name))
-        # return dref.value() if dref is not None else None # if dict values are datarefs, not values
+        # return dref.value if dref is not None else None # if dict values are datarefs, not values
         return self.__datarefs__.get(name)
 
 

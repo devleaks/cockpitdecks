@@ -266,7 +266,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         Returns:
             [type]: [description]
         """
-        return self.cockpit.variable_database.value(name=simulator_variable, default=default)
+        return self.cockpit.variable_database.value_of(name=simulator_variable, default=default)
 
     def get_internal_variable(self, name: str, is_string: bool = False) -> Variable:
         """Returns the InternalVariable or creates it if it is the first time it is accessed.
@@ -294,7 +294,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
             cascade (bool): [description] (default: `False`)
         """
         data = self.get_internal_variable(name=name)
-        curr = data.value()
+        curr = data.value
         if curr is None:
             curr = 0
         newvalue = curr + amount
@@ -524,7 +524,7 @@ class SimulatorInstruction(Instruction):
         # condition checked in each individual instruction
         if self.condition is None:
             return True
-        return self._condition.value() != 0
+        return self._condition.value != 0
 
     def _execute(self):
         raise NotImplementedError(f"Please implement SimulatorInstruction._execute method ({self.name})")

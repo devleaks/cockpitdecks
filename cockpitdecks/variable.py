@@ -186,8 +186,13 @@ class Variable(ABC):
             return True
         return self.current_value != self.previous_value
 
+    @property
     def value(self):
         return self.current_value
+
+    @value.setter
+    def value(self, value):
+        self.current_value = value
 
     def update_value(self, new_value, cascade: bool = False) -> bool:
         # returns whether has changed
@@ -353,7 +358,7 @@ class VariableDatabase:
             logger.debug(f"variable {name} not found")
         return self.database.get(name)
 
-    def value(self, name: str, default: Any = None) -> Any | None:
+    def value_of(self, name: str, default: Any = None) -> Any | None:
         v = self.get(name)
         if v is None:
             logger.warning(f"{name} not found")
@@ -363,7 +368,7 @@ class VariableDatabase:
     def show_all(self, word: str = None):
         for k in self.database:
             if word is None or word in k:
-                logger.debug(f"{k} = {self.value(k)}")
+                logger.debug(f"{k} = {self.value_of(k)}")
 
     def remove_all_simulator_variables(self):
         to_delete = []
@@ -374,7 +379,7 @@ class VariableDatabase:
             self.database.pop(d)
 
     def dump(self, filename: str = "variable-database-dump.yaml"):
-        drefs = {d.name: d.value() for d in self.database.values()}  #  if d.is_internal
+        drefs = {d.name: d.value for d in self.database.values()}  #  if d.is_internal
         with open(filename, "w") as fp:
             yaml.dump(drefs, fp)
             logger.debug(f"simulator data values saved in {filename} file")

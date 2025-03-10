@@ -137,8 +137,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         #### Datarefs
         #
-        self.dataref = config.get(CONFIG_KW.SIM_VARIABLE.value)
-
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
             self.managed = self.manager.get(CONFIG_KW.SIM_VARIABLE.value)
@@ -523,7 +521,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def is_guarded(self):
         if not self.has_guard():
             return False
-        d = self._guard_dref.value()
+        d = self._guard_dref.value
         if d == 0:
             logger.debug(f"button {self.name}: is guarded ({d}).")
             return True
@@ -532,7 +530,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def _set_guarded(self, value: int):
         if not self.has_guard():
             return
-        d = self._guard_dref.value()
+        d = self._guard_dref.value
         if d == value:
             logger.debug(f"button {self.name}: is already {'guarded' if d==1 else 'open'} ({value}).")
             return
@@ -587,7 +585,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def get_formula_result(self, default="0.0") -> str | None:
         """Returns the result of the formula of this button"""
         if self._value.has_formula:
-            return self._value._formula.value()  # must cll value() to force computation, in case not computed before, .current_value might be None.
+            return self._value._formula.value  # must cll value() to force computation, in case not computed before, .current_value might be None.
         return default
 
     # ##################################
@@ -609,11 +607,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         # 2. dataref or formula based
         #    note that a formula may also use state variables,
-        #    but get_value() knows how to get them if needed.
+        #    but the value knows how to get them if needed.
+        dataref = self._config.get(CONFIG_KW.SIM_VARIABLE.value)
         formula = self._config.get(CONFIG_KW.FORMULA.value)
-        if self.dataref is not None or formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
-            logger.debug(f"button {self.name}: has formula and/or more than one datarefs")
-            return self._value.get_value()
+        if dataref is not None or formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
+            logger.debug(f"button {self.name}: use simulator variable(s)")
+            return self._value.value
 
         # 3. internal button state based
         logger.debug(f"button {self.name}: use internal state")
@@ -667,6 +666,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         @todo: Return a status from activate()
         """
+        print(f"ACTIVATE {self.name} ({event})")
         if self._activation is not None:
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
@@ -771,12 +771,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 # Instruction to render has to come from "parent" button.
                 try:
                     self.deck.render(self)
+                    print(f"RENDER {self.name} ({self.value})")
                 except:
                     logger.warning(f"button {self.name}: problem during rendering", exc_info=True)
-                    logger.warning(f"button {self.name}: not completing rendering")
                     return
                 # self.inc(COCKPITDECKS_INTVAR.BUTTON_RENDERS.value, cascade=False)
-                # logger.debug(f"button {self.name} rendered")
+                logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
         else:

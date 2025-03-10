@@ -86,7 +86,7 @@ class Page:
         if d is None:
             logger.warning(f"page {self.name}: {simulator_variable} not found")
             return None  # should return default?
-        return d.value() if d.value() is not None else default
+        return d.value if d.value is not None else default
 
     def get_button_value(self, name):
         a = name.split(ID_SEP)

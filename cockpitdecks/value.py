@@ -2,6 +2,7 @@ import logging
 import re
 import math
 from typing import Tuple
+import traceback
 
 # from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
@@ -26,7 +27,7 @@ class Value(StringWithVariables):
     """
 
     def __init__(self, name: str, config: dict, provider: ValueProvider):
-        lname = f"{provider.name}/value/{name}"
+        local_name = f"{provider.name}/value/{name}"
 
         self._config = config
         self._provider = provider
@@ -52,7 +53,7 @@ class Value(StringWithVariables):
         self._formula: Formula | None = None
         self._permanent_keys: Tuple[str] = tuple()
 
-        StringWithVariables.__init__(self, owner=provider, name=lname, message="")  # this allows to use get_xxx_variable_value()
+        StringWithVariables.__init__(self, owner=provider, name=local_name, message="")  # this allows to use get_xxx_variable_value()
 
         # print("+++++ CREATED VALUE", self.name, provider.name, self.get_variables())
 
@@ -205,38 +206,32 @@ class Value(StringWithVariables):
     # ##################################
     # Value computation
     #
-    def get_value(self, default: str = "0.0", formatting=None, store: bool = False, cascade: bool = False):
-        """ """
-
-        def store_value(val):
-            if store:
-                self.update_value(new_value=val, cascade=cascade)
-            return val
-
+    @Variable.value.getter
+    def value(self):
         # 1. If there is a formula, value comes from it
         if self.has_formula:
-            ret = self._formula.value()
+            ret = self._formula.value
             logger.debug(f"value {self.name}: {ret} (from formula)")
-            return store_value(ret)
+            return ret
 
         # 2a. One dataref, but dataref is actually internal variable
         if self.dataref is not None and Variable.is_internal_variable(self.dataref):
             ret = self.get_internal_variable_value(internal_variable=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single internal variable {self.dataref})")
-            return store_value(ret)
+            return ret
 
         # 2b. One dataref, but dataref is actually internal state variable
         if self.dataref is not None and Variable.is_state_variable(self.dataref):
             ret = self.get_state_variable_value(state_variable=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single state variable {self.dataref})")
-            return store_value(ret)
+            return ret
 
         # 2c. One dataref
         if self.dataref is not None and isinstance(self._provider, (SimulatorVariableValueProvider, Simulator)):
             # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_simulator_variable_value(simulator_variable=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
-            return store_value(ret)
+            return ret
 
         # 3. Activation value
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
@@ -246,32 +241,32 @@ class Value(StringWithVariables):
                 if type(ret) is bool:
                     ret = 1 if ret else 0
                 logger.debug(f"value {self.name}: {ret} (from activation {type(self._provider._activation).__name__})")
-                return store_value(ret)
+                return ret
 
         # From now on, warning issued since returns non scalar value
         #
         # 4. Multiple datarefs
-        if len(self._variables) > 1 and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
+        if (self._variables is not None and len(self._variables) > 1) and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
             ret = {}
             for d in self.get_variables():
                 v = self.get_simulator_variable_value(simulator_variable=d)
                 ret[d] = v
             logger.info(f"value {self.name}: {ret} (no formula, no dataref, returning all datarefs)")
-            return store_value(ret)
+            return ret
 
-        logger.warning(f"value {self.name}: no formula, no dataref, no activation")
+        logger.debug(f"value {self.name}: no formula, no dataref, no activation")
 
         # 4. *All* state variables?
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
             ret = self._provider._activation.get_state_variables()
-            logger.info(f"value {self.name}: {ret} (from state variables)")
-            return store_value(ret)
+            logger.debug(f"value {self.name}: {ret} (from state variables)")
+            return ret
 
-        logger.warning(f"value {self.name}: no value, returning default {default}")
-        return store_value(default)
+        logger.info(f"value {self.name}: no local value, returning parent value {self.current_value}")
+        return self.current_value  # super().value
 
     def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
-        value = self.get_value()
+        value = self.value
         if value is None:
             return None
         if not self.has_domain:
