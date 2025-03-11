@@ -61,9 +61,10 @@ class StringWithVariables(Variable, VariableListener):
         if len(self._variables) > 0:
             logger.debug(f"message {self.display_name}: using variables {', '.join(self._tokens.keys())}/{self._variables}")
             for varname in self._tokens.values():
-                v = self.owner.get_variable(varname)
-                v.add_listener(self)
-        # owner get notified when this string changes
+                if not Variable.is_state_variable(varname):
+                    v = self.owner.get_variable(varname)
+                    v.add_listener(self)
+            # owner get notified when this string changes
         if isinstance(self.owner, VariableListener):
             self.add_listener(self.owner)
         # else:
@@ -89,14 +90,17 @@ class StringWithVariables(Variable, VariableListener):
 
     @property
     def display_name(self):
-        i = self.name.index("|")  # just the end of the string, for info, to identify
-        j = i - 10
-        i = i + 7
-        if j < 0:
-            j = 0
-        if i > len(self.name):
-            i = len(self.name)
-        return self.name[j:i]
+        try:
+            i = self.name.index("|")  # just the end of the string, for info, to identify
+            j = i - 10
+            i = i + 7
+            if j < 0:
+                j = 0
+            if i > len(self.name):
+                i = len(self.name)
+            return self.name[j:i]
+        except ValueError:
+            return self.name
 
     # ##################################
     # Constituing Variables
@@ -153,29 +157,6 @@ class StringWithVariables(Variable, VariableListener):
             self._variables.remove(CONFIG_KW.FORMULA.value)
 
         return self._variables
-
-    def get_string_variables(self) -> set:
-        if self._string_variables is not None:
-            return self._string_variables
-
-        self._string_variables = set()
-
-        # string_datarefs = config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
-        # if type(string_datarefs) is str:
-        #     if "," in string_datarefs:
-        #         string_datarefs = set(string_datarefs.replace(" ", "").split(","))
-        #     else:
-        #         string_datarefs = {string_datarefs}
-        # if type(string_datarefs) is not set:
-        #     if type(string_datarefs) is str:
-        #         string_datarefs = {string_datarefs}
-        #     else:
-        #         string_datarefs = set(string_datarefs)
-
-        # if len(string_datarefs) > 0:
-        #     self._string_variables = string_datarefs
-
-        return self._string_variables
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
@@ -374,12 +355,14 @@ class Formula(StringWithVariables):
         # alias
         return self.message
 
+    # See https://stackoverflow.com/questions/7019643/overriding-properties-in-python
+    @Variable.value.getter
     def value(self):
         if self._has_state_vars or self._has_sim_vars:  # not self.is_static ?
             return self.execute_formula(store=True, cascade=True)
         if self.current_value is None:  # may be it was never evaluated, so we force it if value is None, for example static value
             self.execute_formula(store=True, cascade=False)
-        return super().value()
+        return super().value
 
     def variable_changed(self, data: Variable):
         """Called when a constituing variable has changed.
@@ -399,7 +382,7 @@ class Formula(StringWithVariables):
     # Local operations
     #
     def get_formatted_value(self) -> str:
-        return self.format_value(self.value())
+        return self.format_value(self.value)
 
     def execute_formula(self, store: bool = False, cascade: bool = False):
         """replace datarefs variables with their value and execute formula.
@@ -577,7 +560,7 @@ class TextWithVariables(StringWithVariables):
         """
         if self._formula is not None:
             logger.debug(f"variable {self.display_name}: local formula result: {self._formula.current_value}")
-            return self._formula.value()  # must cll value() to force computation, in case not computed before, .current_value might be None.
+            return self._formula.value  # must cll value() to force computation, in case not computed before, .current_value might be None.
         logger.debug(f"variable {self.display_name}: no local formula")
         return super().get_formula_result(default=default)
 

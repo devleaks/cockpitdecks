@@ -94,10 +94,6 @@ buttons:
     name: AIRCRAFT
     label: AIRCRAFT
     type: none
-    string-datarefs:
-      - sim/aircraft/view/acf_ICAO
-      - sim/aircraft/view/acf_tailnum
-      - data:_livery
     text: |-
       ${sim/aircraft/view/acf_ICAO}
       ${sim/aircraft/view/acf_tailnum}

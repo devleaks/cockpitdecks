@@ -2,21 +2,30 @@ observables:
   - name: Aircraft changed
     type: onchange
     enabled: True
-    string-datarefs: sim/aircraft/view/acf_relative_path
+    dataref: sim/aircraft/view/acf_relative_path
     actions:
       - command: cockpitdecks-aircraft
         delay: 5
   - name: Aircraft ICAO changed
     type: onchange
     enabled: True
-    string-datarefs: sim/aircraft/view/acf_ICAO
+    dataref: sim/aircraft/view/acf_ICAO
     actions:
       - command: cockpitdecks-aircraft-icao
         delay: 2
   - name: Livery changed
     type: onchange
     enabled: True
-    string-datarefs: sim/aircraft/view/acf_livery_path
+    dataref: sim/aircraft/view/acf_livery_path
     actions:
       - command: cockpitdecks-livery
         delay: 5
+  - name: QFE adjusted
+    type: event
+    enabled: True
+    events:
+      - sim/instruments/barometer_up
+      - sim/instruments/barometer_down
+    actions:
+      - command: cockpitdecks-info
+        message: QNH adjusted

@@ -37,6 +37,7 @@ dataref-fetch-frequencies:
   sim/flightmodel/position/latitude: 1
   sim/flightmodel/position/longitude: 1
 dataref-roundings:
+  sim/time/zulu_time_sec: 0
   sim/cockpit/autopilot/heading_mag: 2
   sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot: 4
   sim/weather/barometer_current_inhg: 4
@@ -57,8 +58,8 @@ dataref-roundings:
   AirbusFBW/OHPLightsATA30[5]: 3
   AirbusFBW/OHPLightsATA30[10]: 3
   AirbusFBW/OHPLightsATA30[11]: 3
-  # cabin pressure ditching
   AirbusFBW/OHPLightsATA21[13]: 3
+  AirbusFBW/OHPLightsATA31[*]: 3
   sim/flightmodel/weight/m_fuel_total: 0
   # This is for Region Real Weather,
   # it does not need to be updated frequently...

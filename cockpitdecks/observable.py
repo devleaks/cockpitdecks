@@ -26,16 +26,16 @@ class Observables:
         self.sim = simulator
         self.observables = [Observable(config=c, simulator=self.sim) for c in self._config.get(CONFIG_KW.OBSERVABLES.value)]
 
+    def get_events(self) -> set:
+        ret = set()
+        for o in self.observables:
+            ret = ret | o.get_events()
+        return ret
+
     def get_variables(self) -> set:
         ret = set()
         for o in self.observables:
             ret = ret | o.get_variables()
-        return ret
-
-    def get_string_variables(self) -> set:
-        ret = set()
-        for o in self.observables:
-            ret = ret | o.get_string_variables()
         return ret
 
     def enable(self, name):
@@ -79,6 +79,17 @@ class Observable(SimulatorVariableListener):
         self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
         self._enabled_data = self.sim.get_internal_variable(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
+        self._events = set()
+        if self.mode == CONFIG_KW.EVENT.value:
+            event = config.get(CONFIG_KW.EVENT.value)
+            if event is not None:
+                self._events = self._events | {event}
+            events = config.get(CONFIG_KW.EVENTS.value)
+            if events is not None:
+                self._events = self._events | set(events)
+            if len(self._events) == 0:
+                logger.warning(f"observable {self.name} of type event has no event")
+            print(f"observable {self.name}: events: {self._events}")
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self._actions = MacroInstruction(
             name=self.name,
@@ -91,8 +102,8 @@ class Observable(SimulatorVariableListener):
     @property
     def value(self):
         """Gets the current value, but does not provoke a calculation, just returns the current value."""
-        logger.debug(f"observable {self.name}: {self._value.value()}")
-        return self._value.value()
+        logger.debug(f"observable {self.name}: {self._value.value}")
+        return self._value.value
 
     @value.setter
     def value(self, value):
@@ -118,20 +129,11 @@ class Observable(SimulatorVariableListener):
 
     def init(self):
         # Register simulator variables and ask to be notified
-        variables = self.get_string_variables()
-        if variables is not None:
-            for s in variables:
-                ref = self.sim.get_variable(s, is_string=True)
-                if ref is not None:
-                    ref.add_listener(self)
-        logger.debug(f"observable {self.name}: listening to strings variables {variables}")
-
         variables = self.get_variables()
         v = []
         if variables is not None:
             for s in variables:
                 ref = self.sim.get_variable(s)
-                print("trying", s, ref)
                 if ref is not None:
                     v.append(ref.name)
                     ref.add_listener(self)
@@ -140,17 +142,17 @@ class Observable(SimulatorVariableListener):
         logger.debug(f"observable {self.name}: listening to variables {v}")
         # logger.debug(f"observable {self.name} inited")
 
+    def get_events(self) -> set:
+        return self._events
+
     def get_variables(self) -> set:
         return self._value.get_variables()
-
-    def get_string_variables(self) -> set:
-        return self._value.get_string_variables()
 
     def simulator_variable_changed(self, data: SimulatorVariable):
         # if not self._enabled:
         #     logger.warning(f"observable {self.name} disabled")
         #     return
-        self.value = self._value.get_value()
+        self.value = self._value.value
         if self.mode == CONFIG_KW.TRIGGER.value:
             if self.value != 0:  # 0=False
                 logger.debug(f"observable {self.name} executing (conditional trigger)..")

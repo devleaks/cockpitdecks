@@ -117,7 +117,7 @@ class ChartData(DrawBase, VariableListener):
     def loop(self):
         logger.debug(f"chart {self.name} started")
         while not self._stop.wait(self.update):
-            r = self.get_value()
+            r = self.value.value
             self.add(r)
         logger.debug(f"chart {self.name} stopped")
 
@@ -128,16 +128,11 @@ class ChartData(DrawBase, VariableListener):
             e = self.thread.join(timeout=self.update)
             logger.debug(f"chart {self.name}: thread terminated")
 
-    # Value
-    def get_value(self):
-        return self.value.get_value()
-        # return randint(self.value_min, self.value_max)
-
     def variable_changed(self, variable: Variable):
         if variable.name not in self.variables:
             logger.debug(f"chart {self.name}: {variable.name} is not for me {self.variables}")
             return
-        r = variable.value()
+        r = variable.value
         if r is None:
             logger.warning(f"chart {self.name}: value is None, set to zero")
             r = 0
@@ -335,7 +330,7 @@ class ChartIcon(DrawAnimation):
         top_of_chart = int(ICON_SIZE / 8 + inside)
 
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.icon_texture,

@@ -213,7 +213,7 @@ class Deck(ABC):
 
         This function is called on all pages of this Deck.
         """
-        logger.info(f"*" * 60)
+        logger.info("*" * 60)
         logger.info(f"Deck {self.name} -- {what}")
         for v in self.pages.values():
             v.inspect(what)

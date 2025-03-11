@@ -48,7 +48,7 @@ class LoadPage(Activation):
 
     def is_valid(self):
         if self.page is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no page")
+            logger.warning(f"button {self.button_name}: {type(self).__name__} has no page")
             return False
         return super().is_valid()
 
@@ -135,7 +135,7 @@ class ChangeTheme(Activation):
 
     def is_valid(self):
         if self.theme is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__} has no theme")
+            logger.warning(f"button {self.button_name}: {type(self).__name__} has no theme")
             return False
         return super().is_valid()
 

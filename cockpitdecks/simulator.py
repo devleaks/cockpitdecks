@@ -53,6 +53,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.providers = []  # list of simulator providers to collect variables from
 
         self.simulator_variable_to_monitor = {}  # simulator data and number of objects monitoring
+        self.simulator_event_to_monitor = {}  # simulator event and number of objects monitoring
 
         self.roundings = {}  # name: int
         self.frequencies = {}  # name: int
@@ -76,7 +77,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def get_variables(self) -> set:
         return set()
 
-    def get_string_variables(self) -> set:
+    def get_events(self) -> set:
         return set()
 
     # Simulator variable pre-processing
@@ -90,12 +91,21 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.physics = self.physics | simulator_variable_physics
 
     def get_rounding(self, simulator_variable_name: str) -> float | None:
-        if not simulator_variable_name.find("[") > 0:
-            return self.roundings.get(simulator_variable_name)
+        # 1. plain path: sim/some/values[4]
         rnd = self.roundings.get(simulator_variable_name)
-        return (
-            rnd if rnd is not None else self.roundings.get(simulator_variable_name[: simulator_variable_name.find("[")] + "[*]")
-        )  # rounds all simulator_variable in array ("dref[*]")
+        if rnd is not None:
+            return rnd
+        # 2. for arrays, all element can use same rounding
+        if "[" in simulator_variable_name:
+            root_name = simulator_variable_name[: simulator_variable_name.find("[")]  # sim/some/values
+            rnd = self.roundings.get(root_name)
+            if rnd is not None:
+                return rnd
+            root_name = root_name + "[*]"  # sim/some/values[*]
+            rnd = self.roundings.get(root_name)
+            if rnd is not None:
+                return rnd
+        return None
 
     def set_rounding(self, simulator_variable: SimulatorVariable):
         if simulator_variable.name.find("[") > 0:
@@ -160,32 +170,23 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         dtdrefs = {}
         for provider in self.providers:
             cnt = 0
-            for d in provider.get_string_variables():
-                if d.startswith(CONFIG_KW.STRING_PREFIX.value):
-                    d = d.replace(CONFIG_KW.STRING_PREFIX.value, "")
-                if d in dtdrefs:
-                    logger.info(f"{d} already added")
-                    continue
-                dtdrefs[d] = self.get_variable(d, is_string=True)
-                dtdrefs[d].add_listener(provider)
-                cnt = cnt + 1
-            logger.info(f"adding {cnt} permanent string variables from {provider.name}")
-
-        for provider in self.providers:
-            cnt = 0
             for d in provider.get_variables():
                 if d in dtdrefs:
                     logger.info(f"{d} already added")
                     continue
-                if d.startswith(CONFIG_KW.STRING_PREFIX.value):
-                    d = d.replace(CONFIG_KW.STRING_PREFIX.value, "")
-                    dtdrefs[d] = self.get_variable(d, is_string=True)
-                else:
-                    dtdrefs[d] = self.get_variable(d)
+                dtdrefs[d] = self.get_variable(d)
                 dtdrefs[d].add_listener(provider)
                 cnt = cnt + 1
             logger.info(f"adding {cnt} permanent variables from {provider.name}")
         return dtdrefs
+
+    def get_permanently_monitored_simulator_events(self) -> set:
+        events = set()
+        for provider in self.providers:
+            provevnts = provider.get_events()
+            events = events | provevnts
+            logger.info(f"adding {len(provevnts)} permanent events from {provider.name}")
+        return events
 
     def variable_factory(self, name: str, is_string: bool = False, creator: str | None = None) -> Variable:
         # here is the place to inject a physical type if any, may be from a list
@@ -197,8 +198,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         #     sim/weather/region/wind_speed_msc[*]: meter/second
         # ...
         physical_unit = self.physics.get(name)
-        variable = SimulatorVariable(name=name, data_type="string" if is_string else "float", physical_unit=physical_unit)
-        variable._sim = self
+        variable = SimulatorVariable(name=name, simulator=self, data_type="string" if is_string else "float", physical_unit=physical_unit)
         self.set_rounding(variable)
         self.set_frequency(variable)
         if creator is not None:
@@ -221,7 +221,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
             logger.warning(f"invalid variable name {variable.name}")
             return None
         if not self.cockpit.variable_database.exists(variable.name):
-            variable._sim = self
+            variable.simulator = self
             self.set_rounding(variable)
             self.set_frequency(variable)
             self.cockpit.variable_database.register(variable)
@@ -266,7 +266,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         Returns:
             [type]: [description]
         """
-        return self.cockpit.variable_database.value(name=simulator_variable, default=default)
+        return self.cockpit.variable_database.value_of(name=simulator_variable, default=default)
 
     def get_internal_variable(self, name: str, is_string: bool = False) -> Variable:
         """Returns the InternalVariable or creates it if it is the first time it is accessed.
@@ -294,7 +294,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
             cascade (bool): [description] (default: `False`)
         """
         data = self.get_internal_variable(name=name)
-        curr = data.value()
+        curr = data.value
         if curr is None:
             curr = 0
         newvalue = curr + amount
@@ -327,6 +327,8 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     # ################################
     # Cockpit interface
     #
+    #
+    # Variables
     def clean_simulator_variable_to_monitor(self):
         """Removes all data from Simulator monitoring."""
         self.simulator_variable_to_monitor = {}
@@ -371,6 +373,47 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.simulator_variable_to_monitor = {}
         logger.debug("..removed")
 
+    #
+    # Events
+    def add_simulator_events_to_monitor(self, simulator_events: set, reason: str = None):
+        """Adds supplied data to Simulator monitoring."""
+        prnt = []
+        for d in simulator_events:
+            if d not in self.simulator_event_to_monitor.keys():
+                self.simulator_event_to_monitor[d] = 1
+                prnt.append(d)
+            else:
+                self.simulator_event_to_monitor[d] = self.simulator_event_to_monitor[d] + 1
+        logger.debug(f"added {prnt}")
+        logger.debug(f"currently monitoring {self.simulator_event_to_monitor}")
+
+    def remove_simulator_events_to_monitor(self, simulator_events: set, reason: str = None):
+        """Removes supplied data from Simulator monitoring."""
+        prnt = []
+        for d in simulator_events:
+            if d in self.simulator_event_to_monitor:
+                self.simulator_event_to_monitor[d] = self.simulator_event_to_monitor[d] - 1
+                if self.simulator_event_to_monitor[d] == 0:
+                    prnt.append(d)
+                    del self.simulator_event_to_monitor[d]
+            else:
+                if not self._startup:
+                    logger.warning(f"simulator_event {d} not monitored")
+        logger.debug(f"removed {prnt}")
+        logger.debug(f"currently monitoring {self.simulator_event_to_monitor}")
+
+    def remove_all_simulator_event(self):
+        """Removes all data from Simulator."""
+        logger.debug("removing..")
+        self.simulator_event_to_monitor = {}
+        logger.debug("..removed")
+
+    def clean_simulator_event_to_monitor(self):
+        """Removes all data from Simulator monitoring."""
+        self.remove_all_simulator_event()
+
+    #
+    # Instructions
     def execute(self, instruction: Instruction):
         """Executes a SimulatorInstruction"""
         instruction.execute(self)
@@ -422,7 +465,7 @@ class NoSimulator(Simulator):
     def runs_locally(self) -> bool:
         return True
 
-    def connect(self):
+    def connect(self, reload_cache: bool = False):
         logger.info("simulator connected")
 
     def start(self):
@@ -439,10 +482,9 @@ class NoSimulator(Simulator):
 class SimulatorVariable(Variable):
     """A specialised variable to monitor in the simulator"""
 
-    def __init__(self, name: str, data_type: str = "float", physical_unit: str = ""):
+    def __init__(self, name: str, simulator: Simulator, data_type: str = "float", physical_unit: str = ""):
         Variable.__init__(self, name=name, data_type=data_type, physical_unit=physical_unit)
-
-        self._sim = None
+        self.simulator = simulator
 
     # def __init__(self, name: str, is_string: bool = False):
     #     Variable.__init__(self, name=name, data_type="string" if is_string else "float")
@@ -482,7 +524,7 @@ class SimulatorInstruction(Instruction):
         # condition checked in each individual instruction
         if self.condition is None:
             return True
-        return self._condition.value() != 0
+        return self._condition.value != 0
 
     def _execute(self):
         raise NotImplementedError(f"Please implement SimulatorInstruction._execute method ({self.name})")

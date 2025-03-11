@@ -121,6 +121,10 @@ class Variable(ABC):
     def may_be_non_internal_variable(path: str) -> bool:
         # ${state:button-value} is not a simulator data, BUT ${data:path} is a "local" simulator data
         # At the end, we are not sure it is a dataref, but we are sure non-datarefs are excluded ;-)
+        if Variable.is_internal_variable(path):
+            return False
+        if Variable.is_state_variable(path):
+            return False
         icon_prefixes = [c + PREFIX_SEP for c in ICON_FONTS.keys()]
         PREFIXES = icon_prefixes + [INTERNAL_STATE_PREFIX, BUTTON_PREFIX]
         for start in PREFIXES:
@@ -182,8 +186,13 @@ class Variable(ABC):
             return True
         return self.current_value != self.previous_value
 
+    @property
     def value(self):
         return self.current_value
+
+    @value.setter
+    def value(self, value):
+        self.current_value = value
 
     def update_value(self, new_value, cascade: bool = False) -> bool:
         # returns whether has changed
@@ -332,6 +341,9 @@ class VariableDatabase:
         if variable.name is None:
             logger.warning(f"invalid variable name {variable.name}, not stored")
             return variable
+        if Variable.is_state_variable(variable.name):
+            logger.warning(f"invalid variable name {variable.name}, this is a state, not stored")
+            return variable
         if variable.name not in self.database:
             self.database[variable.name] = variable
         else:
@@ -346,7 +358,7 @@ class VariableDatabase:
             logger.debug(f"variable {name} not found")
         return self.database.get(name)
 
-    def value(self, name: str, default: Any = None) -> Any | None:
+    def value_of(self, name: str, default: Any = None) -> Any | None:
         v = self.get(name)
         if v is None:
             logger.warning(f"{name} not found")
@@ -356,7 +368,7 @@ class VariableDatabase:
     def show_all(self, word: str = None):
         for k in self.database:
             if word is None or word in k:
-                logger.debug(f"{k} = {self.value(k)}")
+                logger.debug(f"{k} = {self.value_of(k)}")
 
     def remove_all_simulator_variables(self):
         to_delete = []
@@ -367,7 +379,7 @@ class VariableDatabase:
             self.database.pop(d)
 
     def dump(self, filename: str = "variable-database-dump.yaml"):
-        drefs = {d.name: d.value() for d in self.database.values()}  #  if d.is_internal
+        drefs = {d.name: d.value for d in self.database.values()}  #  if d.is_internal
         with open(filename, "w") as fp:
             yaml.dump(drefs, fp)
             logger.debug(f"simulator data values saved in {filename} file")

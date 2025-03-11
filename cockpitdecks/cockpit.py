@@ -355,7 +355,10 @@ class CockpitStopInstruction(CockpitInstruction):
 
     def _execute(self):
         self.cockpit.terminate_all()
-        logger.warning("********** It is not possible to stop the application server. Please press CTRL-C in this window to stop it.")
+        # logger.warning("********** It is not possible to stop the application server. Please press CTRL-C in this window to stop it.")
+        # https://stackoverflow.com/questions/39380811/how-can-i-kill-all-threads
+        # "hard" stop necessary to kill Flask thread(s)
+        os._exit(0)
 
 
 class CockpitInfoInstruction(CockpitInstruction):
@@ -384,10 +387,9 @@ class CockpitInfoInstruction(CockpitInstruction):
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 
 # Little internal kitchen for internal datarefs
-AIRCRAFT_CHANGE_SIMULATOR_DATA = {CONFIG_KW.STRING_PREFIX.value + AIRCRAFT_CHANGE_MONITORING, CONFIG_KW.STRING_PREFIX.value + LIVERY_CHANGE_MONITORING}
+AIRCRAFT_CHANGE_SIMULATOR_DATA = {Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING), Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)}
 
-PERMANENT_SIMULATOR_VARIABLES = set()
-PERMANENT_SIMULATOR_STRING_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
+PERMANENT_SIMULATOR_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
 
 
 class CockpitBase:
@@ -505,7 +507,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self._simulator = None
         self.sim = None
         self._simulator_variable_names = PERMANENT_SIMULATOR_VARIABLES
-        self._simulator_string_variable_names = PERMANENT_SIMULATOR_STRING_VARIABLES
+        self._simulator_event_names = set()
 
         # "Aircraft" name or model...
         self.aircraft = Aircraft(cockpit=self)
@@ -873,8 +875,22 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
 
     # #########################################################
-    # Variables
+    # Variables and Events
     #
+    def get_events(self) -> set:
+        ret = self._simulator_event_names
+        if type(self.observables) is Observables:
+            obs = self.observables.get_events()
+            if len(obs) > 0:
+                ret = ret | obs
+        elif type(self.observables) is dict:
+            for obs in self.observables.values():
+                ret = ret | obs.get_events()
+        ac = self.aircraft.get_events()
+        if len(ac) > 0:
+            ret = ret | ac
+        return ret
+
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft."""
         ret = self._simulator_variable_names
@@ -882,14 +898,10 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             obs = self.observables.get_variables()
             if len(obs) > 0:
                 ret = ret | obs
+        elif type(self.observables) is dict:
+            for obs in self.observables.values():
+                ret = ret | obs.get_variables()
         ac = self.aircraft.get_variables()
-        if len(ac) > 0:
-            ret = ret | ac
-        return ret
-
-    def get_string_variables(self) -> set:
-        ret = self._simulator_string_variable_names
-        ac = self.aircraft.get_string_variables()
         if len(ac) > 0:
             ret = ret | ac
         return ret
@@ -924,7 +936,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         Returns:
             [type]: [description]
         """
-        return self.variable_database.value(name, default=default)
+        return self.variable_database.value_of(name, default=default)
 
     # #########################################################
     # Instruction
@@ -1128,7 +1140,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     def inspect_variables(self, what: str | None = None):
         if what is not None and what.startswith("datarefs"):
             for dref in self.variable_database.database.values():
-                logger.info(f"{dref.name} = {dref.value()} ({len(dref.listeners)} lsnrs)")
+                logger.info(f"{dref.name} = {dref.value} ({len(dref.listeners)} lsnrs)")
                 if what.endswith("listener"):
                     for l in dref.listeners:
                         logger.info(f"  {l.name}")
@@ -1499,6 +1511,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
                 if os.path.exists(ac_cfg) and os.path.isdir(ac_cfg):
                     logger.info(f"aircraft path with deckconfig found in COCKPITDECKS_PATH: {ac}")
                     return ac
+                else:
+                    logger.info(f"aircraft {aircraft} found but no {CONFIG_FOLDER} folder")
         logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
 
@@ -1523,8 +1537,9 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if not isinstance(data, SimulatorVariable) or data.name not in [d.replace(CONFIG_KW.STRING_PREFIX.value, "") for d in self._simulator_variable_names]:
-            logger.warning(f"unhandled {data.name}={data.value()}")
+        all_vars = self._simulator_variable_names
+        if not isinstance(data, SimulatorVariable) or data.name not in all_vars:
+            logger.warning(f"unhandled {data.name}={data.value}")
             return
 
     def execute(self, instruction: CockpitInstruction) -> bool:
@@ -1538,7 +1553,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self.global_brightness = brightness
 
     def change_aircraft_icao(self):
-        value = self.variable_database.value(AIRCRAFT_ICAO_VARIABLE)
+        value = self.get_variable_value(AIRCRAFT_ICAO_VARIABLE)
         if value is None or type(value) is not str or not (3 <= len(value) <= 4):
             logger.warning(f"{AIRCRAFT_ICAO_VARIABLE} has invalid value {value}, ignoring")
             return
@@ -1550,7 +1565,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         # We arrive here when sim/aircraft/view/acf_livery_path or sim/aircraft/view/acf_livery_index changed
 
         # 1. If we don't have a livery path, we cannot do anything, we say so.
-        value = self.variable_database.value(LIVERY_PATH_VARIABLE)
+        value = self.get_variable_value(LIVERY_PATH_VARIABLE)
         if value is None or type(value) is not str:
             logger.warning(f"{LIVERY_PATH_VARIABLE} has invalid value {value}, ignoring")
             return
@@ -1581,7 +1596,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
 
     def change_aircraft(self):
         # We arrive here when sim/aircraft/view/acf_relative_path changed
-        value = self.variable_database.value(AIRCRAFT_PATH_VARIABLE)
+        value = self.get_variable_value(AIRCRAFT_PATH_VARIABLE)
         if value is None or type(value) is not str:
             logger.warning(f"{AIRCRAFT_PATH_VARIABLE} has invalid value {value}, ignoring")
             return
@@ -1606,7 +1621,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             return
 
         # We try to see if we have a new livery as well
-        liveryvalue = self.variable_database.value(LIVERY_PATH_VARIABLE)
+        liveryvalue = self.get_variable_value(LIVERY_PATH_VARIABLE)
         if liveryvalue is None or type(liveryvalue) is not str:
             logger.warning(f"{LIVERY_CHANGE_MONITORING} has invalid value {liveryvalue}, ignoring livery change")
         else:
@@ -1872,8 +1887,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             # Each deck should have been started
             # Start reload loop
             logger.info("starting cockpit..")
-            self.sim.connect()
-            logger.info("..connect to simulator loop started..")
+            self.sim.connect(reload_cache=True)
+            logger.info("..connect to simulator monitoring started..")
             self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
             logger.info("..usb monitoring started..")
             self.start_event_loop()
@@ -2272,7 +2287,6 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         if CONFIG_KW.BUTTONS.value not in this_page.store:
             return {"code": "", "meta": {"error": f"no buttons in {page}"}}
 
-        this_button = None
         for b in this_page.store.get(CONFIG_KW.BUTTONS.value):
             idx = b.get(CONFIG_KW.INDEX.value)
             if idx is not None and ((idx == index) or (str(idx) == str(index))):

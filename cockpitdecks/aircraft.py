@@ -93,7 +93,6 @@ class Aircraft:
 
         # Internal variables
         self._aircraft_variable_names = None
-        self._aircraft_string_variable_names = set()
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
 
     @property
@@ -211,8 +210,8 @@ class Aircraft:
         self._aircraft_variable_names = ret
         return self._aircraft_variable_names
 
-    def get_string_variables(self) -> set:
-        return self._aircraft_string_variable_names
+    def get_events(self) -> set:
+        return set()  # later
 
     # Initialisation, setup
     def scan_web_decks(self):
@@ -222,10 +221,10 @@ class Aircraft:
         [description]
         """
         if self.acpath is None:
-            logger.warning(f"no aircraft folder, cannot load virtual decks")
+            logger.warning("no aircraft folder, cannot load virtual decks")
             return
         if self.virtual_decks_added:
-            logger.info(f"virtual decks already added")
+            logger.info("virtual decks already added")
             return
         cnt = 0
         virtual_deck_types = {d.name: d for d in filter(lambda d: d.is_virtual_deck(), self.deck_types.values())}
@@ -429,15 +428,12 @@ class Aircraft:
     # Load, start and terminates
     #
     def create_decks(self):
-        fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
-        self._config = Config(fn)
-        if not self._config.is_valid():
-            logger.warning(f"no config file {fn} or file is invalid")
-            return
+        # Default attribute values
+        # Named colors
         self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
         if (n := len(self.named_colors)) > 0:
             logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
-
+        # Theme(s)
         before = self.theme
         theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
         if self.theme is None:
@@ -635,6 +631,16 @@ class Aircraft:
 
         if acpath is not None and os.path.exists(os.path.join(acpath, CONFIG_FOLDER)):
             self.acpath = acpath
+
+            fn = os.path.join(self.acpath, CONFIG_FOLDER, CONFIG_FILE)
+            self._config = Config(fn)
+            if not self._config.is_valid():
+                logger.warning(f"no config file {fn} or file is invalid")
+                return
+
+            self.icao = self._config.get("icao", "ZZZZ")
+            logger.info(f"aircraft icao {self.icao} set from config")
+
             self._acname = Aircraft.get_aircraft_name_from_aircraft_path(acpath)
             logger.info(f"aircraft name set to {self._acname}")
 

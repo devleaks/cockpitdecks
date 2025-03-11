@@ -68,10 +68,10 @@ class IconAnimation(MultiIcons):
         """
         if not self.running:
             self.running = True
-            self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button_name()})")
+            self.thread = threading.Thread(target=self.loop, name=f"ButtonAnimate::loop({self.button_name})")
             self.thread.start()
         else:
-            logger.warning(f"button {self.button_name()}: already started")
+            logger.warning(f"button {self.button_name}: already started")
 
     def anim_stop(self, render: bool = True):
         """
@@ -86,15 +86,15 @@ class IconAnimation(MultiIcons):
             if render:
                 self.render()
         else:
-            logger.debug(f"button {self.button_name()}: already stopped")
+            logger.debug(f"button {self.button_name}: already stopped")
 
     def clean(self):
         """
         Stops animation and remove icon from deck
         """
-        logger.debug(f"button {self.button_name()}: cleaning requested")
+        logger.debug(f"button {self.button_name}: cleaning requested")
         self.anim_stop(render=False)
-        logger.debug(f"button {self.button_name()}: stopped")
+        logger.debug(f"button {self.button_name}: stopped")
         super().clean()
 
     def render(self):

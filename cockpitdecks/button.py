@@ -137,8 +137,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         #### Datarefs
         #
-        self.dataref = config.get(CONFIG_KW.SIM_VARIABLE.value)
-
         self.manager = config.get(CONFIG_KW.MANAGED.value)
         if self.manager is not None:
             self.managed = self.manager.get(CONFIG_KW.SIM_VARIABLE.value)
@@ -159,17 +157,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         # String datarefs
         # self.string_datarefs are string datarefs as declared in the button
         # they are not all string datarefs collected from activation and/or representation.
-        self.string_datarefs = config.get(CONFIG_KW.STRING_SIM_DATA.value, set())
-        if type(self.string_datarefs) is str:
-            if "," in self.string_datarefs:
-                self.string_datarefs = set(self.string_datarefs.replace(" ", "").split(","))
-            else:
-                self.string_datarefs = {self.string_datarefs}
-        if type(self.string_datarefs) is not set:
-            if type(self.string_datarefs) is str:
-                self.string_datarefs = {self.string_datarefs}
-            else:
-                self.string_datarefs = set(self.string_datarefs)
+        self.string_datarefs = set()
 
         self._value = Value(self.name, config=config, provider=self)
         self._value.add_listener(self)
@@ -181,7 +169,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             self.page.register_simulator_variable(self)  # when the button's page is loaded, we monitor these datarefs
             # string-datarefs are not monitored by the page, they get sent by the XPPython3 plugin
         # add string datarefs to all_datarefs after their registration at the page level
-        self.all_datarefs = self.all_datarefs | self.get_string_variables()
+        self.all_datarefs = self.all_datarefs
 
         self.wallpaper = self.deck.cockpit.locate_image(config.get(CONFIG_KW.WALLPAPER.value))
         if self.wallpaper is not None:
@@ -358,16 +346,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         # Declared string dataref must be create FIRST so that they get the proper type.
         # If they are later used (in expression), at least they were created with STRING type first.
         stars = 3
-        for d in self.get_string_variables():
-            ref = self.sim.get_variable(d, is_string=True)  # creates or return already defined dataref
-            if ref is not None:
-                ref.add_listener(self)
-                if not ref.is_string:
-                    logger.warning(f"page {self.name}: button {self.name} dataref {d} was not a string, forced as string" + " *" * stars)
-                    ref.data_type = InternalVariableType.STRING
-            else:
-                logger.error(f"button {self.name}: failed to create string dataref {d}")
-
         for d in self.get_variables():
             ref = self.sim.get_variable(d)  # creates or return already defined dataref
             if ref is not None:
@@ -466,24 +444,6 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 return [f"{pathroot}[{i}]" for i in range(start, end)]
         return [path]
 
-    def get_string_variables(self) -> list:
-        datarefs = self.string_datarefs | self._value.get_string_variables()
-        # Activation datarefs
-        if self._activation is not None:
-            r = self._activation.get_string_variables()
-            if r is not None and len(r) > 0:
-                datarefs = datarefs | r
-                self._value.add_variables(r, reason="activation/str")
-                logger.debug(f"button {self.name}: added activation string datarefs {r}")
-        # Representation datarefs
-        if self._representation is not None:
-            r = self._representation.get_string_variables()
-            if r is not None and len(r) > 0:
-                datarefs = datarefs | r
-                self._value.add_variables(r, reason="representation/str")
-                logger.debug(f"button {self.name}: added representation string datarefs {r}")
-        return datarefs
-
     def get_variables(self, base: dict | None = None) -> set:
         """
         Returns all datarefs used by this button from label, texts, computed datarefs, and explicitely
@@ -493,7 +453,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         if base is None:  # local, button-level ones
             base = self._config
 
-        # 1a. Datarefs in base: dataref, multi-datarefs, set-dataref
+        # 1a. Datarefs in base: dataref, set-dataref
         datarefs = self._value.get_variables()
 
         # 1b. Managed values
@@ -561,7 +521,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def is_guarded(self):
         if not self.has_guard():
             return False
-        d = self._guard_dref.value()
+        d = self._guard_dref.value
         if d == 0:
             logger.debug(f"button {self.name}: is guarded ({d}).")
             return True
@@ -570,7 +530,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def _set_guarded(self, value: int):
         if not self.has_guard():
             return
-        d = self._guard_dref.value()
+        d = self._guard_dref.value
         if d == value:
             logger.debug(f"button {self.name}: is already {'guarded' if d==1 else 'open'} ({value}).")
             return
@@ -625,7 +585,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
     def get_formula_result(self, default="0.0") -> str | None:
         """Returns the result of the formula of this button"""
         if self._value.has_formula:
-            return self._value._formula.value()  # must cll value() to force computation, in case not computed before, .current_value might be None.
+            return self._value._formula.value  # must cll value() to force computation, in case not computed before, .current_value might be None.
         return default
 
     # ##################################
@@ -647,11 +607,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
 
         # 2. dataref or formula based
         #    note that a formula may also use state variables,
-        #    but get_value() knows how to get them if needed.
+        #    but the value knows how to get them if needed.
+        dataref = self._config.get(CONFIG_KW.SIM_VARIABLE.value)
         formula = self._config.get(CONFIG_KW.FORMULA.value)
-        if self.dataref is not None or formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
-            logger.debug(f"button {self.name}: has formula and/or more than one datarefs")
-            return self._value.get_value()
+        if dataref is not None or formula is not None or (self.all_datarefs is not None and len(self.all_datarefs) > 0):
+            logger.debug(f"button {self.name}: use simulator variable(s)")
+            return self._value.value
 
         # 3. internal button state based
         logger.debug(f"button {self.name}: use internal state")
@@ -681,15 +642,16 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable) and not isinstance(data, StringWithVariables):
+        if not isinstance(data, (SimulatorVariable, InternalVariable, StringWithVariables)):
             logger.error(f"button {self.name}: not a simulator or internal variable ({type(data).__name__})")
             return
 
-        logger.debug(f"{self.name}: {data.name} changed")
+        logger.debug(f"button {self.name}: {data.name} changed")
 
         if data == self._value:
-            print(">>> self value changed, rendering...")
+            logger.log(SPAM_LEVEL, "self value changed, rendering")
             self.render()
+            return
 
         self.value = self.compute_value()
         if self.has_changed() or data.has_changed():
@@ -705,6 +667,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         @todo: Return a status from activate()
         """
+        print(f"ACTIVATE {self.name} ({event})")
         if self._activation is not None:
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
@@ -809,12 +772,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 # Instruction to render has to come from "parent" button.
                 try:
                     self.deck.render(self)
+                    print(f"RENDER {self.name} ({self.value})")
                 except:
                     logger.warning(f"button {self.name}: problem during rendering", exc_info=True)
-                    logger.warning(f"button {self.name}: not completing rendering")
                     return
                 # self.inc(COCKPITDECKS_INTVAR.BUTTON_RENDERS.value, cascade=False)
-                # logger.debug(f"button {self.name} rendered")
+                logger.debug(f"button {self.name} rendered")
             else:
                 logger.debug(f"button {self.name} not on current page")
         else:

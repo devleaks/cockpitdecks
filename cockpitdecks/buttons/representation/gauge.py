@@ -138,7 +138,7 @@ class TapeIcon(DrawBase):
                         width=tick_width,
                         fill=self.rule_color,
                     )
-                    # print(self.button_name(), "B", y, i, idx)
+                    # print(self.button_name, "B", y, i, idx)
 
                     if idx % self.label_frequency == 0:
                         draw.text(
@@ -161,7 +161,7 @@ class TapeIcon(DrawBase):
                         width=tick_width,
                         fill=self.rule_color,
                     )
-                    # print(self.button_name(), "R", y, i, idx)
+                    # print(self.button_name, "R", y, i, idx)
 
                     if idx % self.label_frequency == 0:
                         draw.text(
@@ -185,7 +185,7 @@ class TapeIcon(DrawBase):
                         width=tick_width,
                         fill=self.rule_color,
                     )
-                    # print(self.button_name(), "A", y, i, idx)
+                    # print(self.button_name, "A", y, i, idx)
 
                     if idx % self.label_frequency == 0:
                         draw.text(
@@ -308,7 +308,7 @@ class TapeIcon(DrawBase):
         # Paste image on cockpit background and return it.
         # may be cahe it and take a bg = cached_bg.copy()
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.icon_texture,
@@ -465,7 +465,7 @@ class GaugeIcon(DrawBase):
             self.icon_color = self._config.get("data-bg-color", self.cockpit_texture)
             self.icon_texture = self._config.get("data-bg-texture", self.cockpit_color)
             self._gauge = self.button.deck.get_icon_background(
-                name=self.button_name(),
+                name=self.button_name,
                 width=ICON_SIZE,
                 height=ICON_SIZE,
                 texture_in=self.icon_texture,

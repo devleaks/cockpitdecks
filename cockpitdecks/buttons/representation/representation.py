@@ -72,7 +72,7 @@ class Representation:
     def can_render(self) -> bool:
         button_cap = self.button._def[DECK_KW.FEEDBACK.value]
         if button_cap not in self.get_required_capability():
-            logger.warning(f"button {self.button_name()} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}.")
+            logger.warning(f"button {self.button_name} has feedback capability {button_cap}, representation expects {self.REQUIRED_DECK_FEEDBACKS}.")
             return False
         return True
 
@@ -82,29 +82,30 @@ class Representation:
     def inc(self, name: str, amount: float = 1.0, cascade: bool = True):
         self.button.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
+    @property
     def button_name(self):
         return self.button.name if self.button is not None else "no button"
 
     def get_attribute(self, attribute: str, default=None, propagate: bool = True, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
-            logger.warning(f"button {self.button_name()}: representation fetched default attribute {attribute}")
+            logger.warning(f"button {self.button_name}: representation fetched default attribute {attribute}")
 
         value = self._representation_config.get(attribute)
         if value is not None:  # found!
             if silence:
-                logger.debug(f"button {self.button_name()} representation returning {attribute}={value}")
+                logger.debug(f"button {self.button_name} representation returning {attribute}={value}")
             else:
-                logger.info(f"button {self.button_name()} representation returning {attribute}={value}")
+                logger.info(f"button {self.button_name} representation returning {attribute}={value}")
             return self.button.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=value, silence=silence)
 
         if propagate:  # we just look at the button level if allowed, not above.
             if not silence:
-                logger.info(f"button {self.button_name()} representation propagate to button for {attribute}")
+                logger.info(f"button {self.button_name} representation propagate to button for {attribute}")
             return self.button.get_attribute(attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
-            logger.warning(f"button {self.button_name()}: representation attribute not found {attribute}, returning default ({default})")
+            logger.warning(f"button {self.button_name}: representation attribute not found {attribute}, returning default ({default})")
 
         return self.button.deck.cockpit.convert_if_color_attribute(attribute=attribute, value=default, silence=silence)
 
@@ -145,9 +146,6 @@ class Representation:
         # is the value of the button.
         return set()
 
-    def get_string_variables(self) -> set:
-        return set()
-
     def get_button_value(self):
         # shortcut for representations
         return self.button.value
@@ -165,7 +163,7 @@ class Representation:
         it to the deck's render() function which takes appropriate action
         to pass the returned value to the appropriate device function for display.
         """
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} has no rendering")
+        logger.debug(f"button {self.button_name}: {type(self).__name__} has no rendering")
         return None
 
     def vibrate(self):
@@ -175,7 +173,7 @@ class Representation:
         return self._vibrate
 
     def clean(self):
-        # logger.warning(f"button {self.button_name()}: no cleaning")
+        # logger.warning(f"button {self.button_name}: no cleaning")
         pass
 
     def describe(self) -> str:

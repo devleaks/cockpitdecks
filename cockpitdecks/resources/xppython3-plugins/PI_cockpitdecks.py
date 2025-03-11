@@ -63,7 +63,7 @@ CDH_DATAREFS = [CDH_IS_RUNNING, CDH_RELEASE, CDH_LPCOMMANDS, CDH_STRINGDREF]
 #
 # Commands extracted from these button types
 # will get a command/begin command/end helper command.
-NOTICABLE_BUTTON_TYPES = ["long-press", "longpress", "begin-end-command"]
+NOTICABLE_BUTTON_TYPES = ["begin-end-command"]
 #
 REF = "cmdref"
 FUN = "cmdfun"

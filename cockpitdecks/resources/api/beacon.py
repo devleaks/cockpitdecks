@@ -1,6 +1,7 @@
-import socket
-import threading
 import logging
+import threading
+import socket
+import ipaddress
 import struct
 import binascii
 import platform
@@ -9,23 +10,30 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-
 XP_MIN_VERSION = 121100
 XP_MAX_VERSION = 121399
 
-RECONNECT_TIMEOUT = 10  # seconds, times between attempts to reconnect to X-Plane when not connected
-SOCKET_TIMEOUT = 5  # seconds, assumes no awser if no message recevied withing that timeout
-MAX_TIMEOUT_COUNT = 5  # after x timeouts, assumes connection lost, disconnect, and restart later
 
-
-# XPlaneBeacon
-# Beacon-specific error classes
+# XPlaneBeacon-specific error classes
 class XPlaneIpNotFound(Exception):
-    args = "Could not find any running XPlane instance in network."
+    args = "Could not find any running XPlane instance in network"
 
 
 class XPlaneVersionNotSupported(Exception):
-    args = "XPlane version not supported."
+    args = "XPlane version not supported"
+
+
+def my_ip() -> str | set:
+    x = set([address[4][0] for address in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)])
+    return list(x)[0] if len(x) == 1 else x
+
+
+def get_ip(s) -> str:
+    c = s[0]
+    if c in "0123456789":
+        return ipaddress.ip_address(s)
+    else:
+        return ipaddress.ip_address(socket.gethostbyname(s))
 
 
 class XPlaneBeacon:
@@ -39,19 +47,20 @@ class XPlaneBeacon:
     MCAST_PORT = 49707  # (MCAST_PORT was 49000 for XPlane10)
     BEACON_TIMEOUT = 3.0  # seconds
     MAX_WARNING = 3
+    RECONNECT_TIMEOUT = 10  # seconds, times between attempts to reconnect to X-Plane when not connected
+    WARN_FREQ = 10  # seconds
 
     def __init__(self):
         # Open a UDP Socket to receive on Port 49000
         self.socket = None
-
         hostname = socket.gethostname()
         self.local_ip = socket.gethostbyname(hostname)
-
         self.beacon_data = {}
-
-        self.should_not_connect = None  # threading.Event()
-        self.connect_thread = None  # threading.Thread()
+        self.should_not_connect: threading.Event | None = None
+        self.connect_thread: threading.Thread | None = None
         self._already_warned = 0
+        self.min_version = XP_MIN_VERSION
+        self.max_version = XP_MAX_VERSION
 
     @property
     def connected(self):
@@ -155,7 +164,6 @@ class XPlaneBeacon:
         If a connection fails, drops, disappears, will try periodically to restore it.
         """
         logger.debug("starting..")
-        WARN_FREQ = 10
         cnt = 0
         while self.should_not_connect is not None and not self.should_not_connect.is_set():
             if not self.connected:
@@ -166,31 +174,28 @@ class XPlaneBeacon:
                         logger.info(f"beacon: {self.beacon_data}")
                         if "XPlaneVersion" in self.beacon_data:
                             curr = self.beacon_data["XPlaneVersion"]
-                            if curr < XP_MIN_VERSION:
+                            if curr < self.min_version:
                                 logger.warning(f"X-Plane version {curr} detected, minimal version is {XP_MIN_VERSION}")
                                 logger.warning(f"Some features in Cockpitdecks may not work properly")
-                            elif curr > XP_MAX_VERSION:
+                            elif curr > self.max_version:
                                 logger.warning(f"X-Plane version {curr} detected, maximal version is {XP_MAX_VERSION}")
                                 logger.warning(f"Some features in Cockpitdecks may not work properly")
                             else:
                                 logger.info(f"X-Plane version meets current criteria ({XP_MIN_VERSION}<= {curr} <={XP_MAX_VERSION})")
-                                logger.info(f"connected")
-                        logger.debug("..connected, starting dataref listener..")
-                        self.start()
-                        logger.info("..dataref listener started..")
+                                logger.info("connected")
                 except XPlaneVersionNotSupported:
                     self.beacon_data = {}
                     logger.error("..X-Plane Version not supported..")
                 except XPlaneIpNotFound:
                     self.beacon_data = {}
-                    if cnt % WARN_FREQ == 0:
+                    if cnt % XPlaneBeacon.WARN_FREQ == 0:
                         logger.error(f"..X-Plane instance not found on local network.. ({datetime.now().strftime('%H:%M:%S')})")
                     cnt = cnt + 1
                 if not self.connected:
-                    self.should_not_connect.wait(RECONNECT_TIMEOUT)
+                    self.should_not_connect.wait(XPlaneBeacon.RECONNECT_TIMEOUT)
                     logger.debug("..trying..")
             else:
-                self.should_not_connect.wait(RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
+                self.should_not_connect.wait(XPlaneBeacon.RECONNECT_TIMEOUT)  # could be n * RECONNECT_TIMEOUT
                 logger.debug("..monitoring connection..")
         logger.debug("..ended")
 
@@ -215,14 +220,13 @@ class XPlaneBeacon:
         """
         if self.should_not_connect is not None:
             logger.debug("disconnecting..")
-            self.cleanup()
             self.beacon_data = {}
             self.should_not_connect.set()
-            wait = RECONNECT_TIMEOUT
+            wait = XPlaneBeacon.RECONNECT_TIMEOUT
             logger.debug(f"..asked to stop connect_loop.. (this may last {wait} secs.)")
             self.connect_thread.join(timeout=wait)
             if self.connect_thread.is_alive():
-                logger.warning(f"..thread may hang..")
+                logger.warning("..thread may hang..")
             self.should_not_connect = None
             logger.debug("..disconnected")
         else:
@@ -232,19 +236,17 @@ class XPlaneBeacon:
             else:
                 logger.debug("..not connected")
 
-    # ################################
-    # Hooks for extensions
-    #
-    def start(self):
-        logger.warning("nothing to start")
+    def set_version_control(self, minversion, maxversion):
+        self.min_version = minversion
+        self.max_version = maxversion
 
-    def stop(self):
-        logger.warning("nothing to stop")
-
-    def cleanup(self):
-        logger.warning("nothing to clean up")
+    def runs_locally(self) -> bool:
+        if self.connected:
+            return ipaddress.ip_address(self.local_ip) == ipaddress.ip_address(self.beacon_data["IP"])
+        return False
 
 
 if __name__ == "__main__":
     xp = XPlaneBeacon()
     xp.connect()
+    print(xp.runs_locally())

@@ -9,7 +9,7 @@ from datetime import datetime
 
 from cockpitdecks import ID_SEP, CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
 from cockpitdecks.event import PushEvent
-from cockpitdecks.variable import InternalVariable, ValueProvider
+from cockpitdecks.variable import InternalVariable, ValueProvider, Variable, VariableListener
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class ActivationBase(ABC):
 # ##########################################
 # ACTIVATION
 #
-class Activation:
+class Activation(VariableListener):
     """
     Base class for all activation mechanism.
     Can be used for no-operation activation on display-only button.
@@ -82,35 +82,40 @@ class Activation:
         return r if type(r) in [list, tuple] else [r]
 
     def __init__(self, button: "Button"):
-        self.button = button
         self._inited = False
 
+        self.button = button
         self.button.deck.cockpit.set_logging_level(__name__)
+        VariableListener.__init__(self, name=self.name())
+        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
+            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
 
         # Options
+        self.options = parse_options(self._config.get(CONFIG_KW.OPTIONS.value))
 
         # Commands
         self._command = None
-        self._view = None
-        self.skip_view = False
-
         cmdname = ":".join([self.button.get_id(), type(self).__name__])
 
+        # Depecrated
+        self.skip_view = False
+        self._view = None
         view = self._config.get(CONFIG_KW.VIEW.value)
-        if view is not None:
-            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.VIEW.value: view})
+        if view is not None:  # a "view" is just a command...
+            logger.warning(f"{self.button_name}: {self.name()}: usage of view is deprecated")
+            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.COMMAND.value: view})
             self._view.button = self.button  # set button to evalute conditional
 
-        # Vibrate on press
+        # Vibrate on press, or emit/play sound (mp3 or wav only for web compatibility
         self.vibrate = self.get_attribute("vibrate")
         self.sound = self.get_attribute("sound")
 
-        # but could be anything.
+        # Long press option
         self._long_press = None
         long_press = self._config.get(CONFIG_KW.LONG_PRESS.value)
-        if long_press is not None:
+        if long_press is not None:  # a long-press is just a command that gets executed when pressed for a long time
             self._long_press = self.sim.instruction_factory(
-                name=cmdname + ":long-press", instruction_block={CONFIG_KW.LONG_PRESS.value: long_press}
+                name=cmdname + ":long-press", instruction_block={CONFIG_KW.COMMAND.value: long_press}
             )  # Optional additional command
 
         # Datarefs
@@ -118,11 +123,12 @@ class Activation:
         # to the value of the activatiuon but it will NOT write it to X-Plane.
         # Therefore, here, it is not a SetDataref instruction that is built,
         # but rather a explicit "on-demand" write when necessary.
-        self._writable_dataref = None
+        self._set_sim_data = None
         set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         if set_dataref_path is not None:
-            self._writable_dataref = self.button.sim.get_variable(set_dataref_path)
-            self._writable_dataref.writable = True
+            self._set_sim_data = self.button.sim.get_variable(set_dataref_path)
+            self._set_sim_data.writable = True  # we assume it is, we force it here, will be removed when avail. through API
+            self._set_sim_data.add_listener(self)
         self.activation_requires_modification_set_dataref = True
 
         # Working variables, internal state
@@ -134,11 +140,6 @@ class Activation:
         self.pressed = False
         self.initial_value = self._config.get(CONFIG_KW.INITIAL_VALUE.value)
         self._guard_changed = False
-
-        self.options = parse_options(self._config.get(CONFIG_KW.OPTIONS.value))
-
-        if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
-            self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]
 
         self.init()
 
@@ -167,11 +168,12 @@ class Activation:
     def can_handle(self, event) -> bool:
         if event.action not in self.get_required_capability():
             logger.warning(
-                f"button {self.button_name()}: {type(self).__name__}: invalid event received {type(event).__name__}, action {event.action}, expected {self.REQUIRED_DECK_ACTIONS}"
+                f"button {self.button_name}: {type(self).__name__}: invalid event received {type(event).__name__}, action {event.action}, expected {self.REQUIRED_DECK_ACTIONS}"
             )
             return False
         return True
 
+    @property
     def button_name(self) -> str:
         return self.button.name if self.button is not None else "no button"
 
@@ -197,23 +199,23 @@ class Activation:
     def get_attribute(self, attribute: str, default=None, propagate: bool = False, silence: bool = True):
         # Is there such an attribute directly in the button defintion?
         if attribute.startswith(DEFAULT_ATTRIBUTE_PREFIX):
-            logger.warning(f"button {self.button_name()}: activation fetched default attribute {attribute}")
+            logger.warning(f"button {self.button_name}: activation fetched default attribute {attribute}")
 
         value = self._config.get(attribute)
         if value is not None:  # found!
             if silence:
-                logger.debug(f"button {self.button_name()} activation returning {attribute}={value}")
+                logger.debug(f"button {self.button_name} activation returning {attribute}={value}")
             else:
-                logger.info(f"button {self.button_name()} activation returning {attribute}={value}")
+                logger.info(f"button {self.button_name} activation returning {attribute}={value}")
             return value
 
         if propagate:  # we just look at the button. level, not above.
             if not silence:
-                logger.info(f"button {self.button_name()} activation propagate to button for {attribute}")
+                logger.info(f"button {self.button_name} activation propagate to button for {attribute}")
             return self.button.get_attribute(attribute, default=default, propagate=propagate, silence=silence)
 
         if not silence:
-            logger.warning(f"button {self.button_name()}: activation attribute not found {attribute}, returning default ({default})")
+            logger.warning(f"button {self.button_name}: activation attribute not found {attribute}, returning default ({default})")
 
         return default
 
@@ -259,15 +261,16 @@ class Activation:
         return self._long_press is not None and self._long_press.is_valid()
 
     def get_variables(self) -> set:
-        if self._writable_dataref is not None:
-            return {self._writable_dataref.name}
+        if self._set_sim_data is not None:
+            return {self._set_sim_data.name}
         return set()
 
-    def get_string_variables(self) -> set:
-        return set()
+    def variable_changed(self, data: Variable):
+        logger.debug(f"variable {data.name} changed, unhandled by activation")
+        pass
 
     def long_press(self, event):
-        logger.debug(">" * 40 + " long_press")
+        logger.debug(">" * 40 + " long-press")
         self._long_press.execute()
 
     def is_valid(self) -> bool:
@@ -283,7 +286,7 @@ class Activation:
     def activation_count(self):
         path = ID_SEP.join([self.get_id(), COCKPITDECKS_INTVAR.ACTIVATION_COUNT.value])
         dref = self.button.sim.get_internal_variable(path)
-        value = dref.value()
+        value = dref.value
         return 0 if value is None else value
 
     def activate(self, event) -> bool:
@@ -315,7 +318,7 @@ class Activation:
             self.last_activated = now
             self._fast = now - self.last_activated  # time between previous activation and this one
 
-            logger.debug(f"button {self.button_name()}: {type(self).__name__} activated")
+            logger.debug(f"button {self.button_name}: {type(self).__name__} activated")
 
             # Guard handling
             if self.button.is_guarded():
@@ -336,20 +339,20 @@ class Activation:
             self._guard_changed = False
             if self.button.is_guarded() and self.long_pressed():
                 self.button.set_guard_off()
-                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard removed")
+                logger.debug(f"button {self.button_name}: {type(self).__name__}: guard removed")
                 self._guard_changed = True
                 return True
 
             if self.button.has_guard() and not self.button.is_guarded() and self.long_pressed():
                 self.button.set_guard_on()
-                logger.debug(f"button {self.button_name()}: {type(self).__name__}: guard replaced")
+                logger.debug(f"button {self.button_name}: {type(self).__name__}: guard replaced")
                 self._guard_changed = True
                 return True
 
             # Long press handling
             if self.has_long_press() and self.long_pressed():
                 self.long_press(event)
-                logger.debug(f"button {self.button_name()}: {type(self).__name__}: long pressed")
+                logger.debug(f"button {self.button_name}: {type(self).__name__}: long pressed")
                 return True
 
         logger.debug(f"{type(self).__name__} activated ({event}, {self.activation_count})")
@@ -357,21 +360,21 @@ class Activation:
 
     def set_dataref(self):
         # Writes the "raw" activation value to set-dataref as produced by the activation
-        if self._writable_dataref is None:
+        if self._set_sim_data is None:
             return
         value = self.get_activation_value()
         if value is None:
-            logger.debug(f"button {self.button_name()}: {type(self).__name__} activation value is none")
+            logger.debug(f"button {self.button_name}: {type(self).__name__} activation value is none")
             return
         if type(value) is bool:
             value = 1 if value else 0
-        self._writable_dataref.update_value(new_value=value, cascade=True)
-        logger.debug(f"button {self.button_name()}: {type(self).__name__} set-dataref {self._writable_dataref.name} to activation value {value}")
+        self._set_sim_data.update_value(new_value=value, cascade=True)
+        logger.debug(f"button {self.button_name}: {type(self).__name__} set-dataref {self._set_sim_data.name} to activation value {value}")
 
     def view(self):
         if self._view is not None:
             if self.skip_view:
-                logger.debug(f"button {self.button_name()}: skipping view {self._view}")
+                logger.debug(f"button {self.button_name}: skipping view {self._view}")
                 return
             self._view.execute()
 
@@ -382,15 +385,15 @@ class Activation:
             if self.activation_requires_modification_set_dataref:
                 self.set_dataref()
             else:
-                logger.debug(f"button {self.button_name()}: {type(self).__name__} activation does not set-dataref ({event})")
+                logger.debug(f"button {self.button_name}: {type(self).__name__} activation does not set-dataref ({event})")
                 self.activation_requires_modification_set_dataref = True  # reset it
             # Optionally affect cockpit view to concentrate on event consequences
             if self.skip_view:
                 self.skip_view = False
-                logger.debug(f"button {self.button_name()}: {type(self).__name__} view skipped")
+                logger.debug(f"button {self.button_name}: {type(self).__name__} view skipped")
             else:
                 self.view()
-                logger.debug(f"button {self.button_name()}: {type(self).__name__} view activated")
+                logger.debug(f"button {self.button_name}: {type(self).__name__} view activated")
 
     def inspect(self, what: str | None = None):
         if what is not None and "activation" not in what:
@@ -413,13 +416,13 @@ class Activation:
     def get_state_variables(self) -> dict:
         base = InternalVariable(name=self.get_id()).name
         vardb = self.button.cockpit.variable_database.database
-        drefs = {d.name.split(ID_SEP)[-1]: d.value() for d in filter(lambda d: d.name.startswith(base), vardb.values())}
+        drefs = {d.name.split(ID_SEP)[-1]: d.value for d in filter(lambda d: d.name.startswith(base), vardb.values())}
         a = {
             "activation_type": type(self).__name__,
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
-            "writable_dataref": self._writable_dataref.name if self._writable_dataref is not None else None,
+            "writable_dataref": self._set_sim_data.name if self._set_sim_data is not None else None,
             ACTIVATION_VALUE: self.get_activation_value(),
         }
         return a | drefs

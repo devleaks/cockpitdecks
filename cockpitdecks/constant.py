@@ -53,6 +53,7 @@ DEFAULT_LABEL_SIZE = 12
 NAMED_COLORS = {}  # name: tuple()
 
 # Virtual decks and web decks
+#
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
@@ -61,18 +62,24 @@ TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCE
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
 
 
+# Mostly common X-Plane simulator variables
+# of general interest
+# Used to determine Cockpitdecks behavior
+#
 AIRCRAFT_PATH_VARIABLE = "sim/aircraft/view/acf_relative_path"
 AIRCRAFT_ICAO_VARIABLE = "sim/aircraft/view/acf_ICAO"
 LIVERY_PATH_VARIABLE = "sim/aircraft/view/acf_livery_path"
 LIVERY_INDEX_VARIABLE = "sim/aircraft/view/acf_livery_index"
 
+
+# Rendez-vous Internal Variables
+#
 AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
 LIVERY_CHANGE_MONITORING = "livery-name"
 RELOAD_ON_LIVERY_CHANGE = False
 WEATHER_STATION_MONITORING = "weather-station"
 DAYTIME = "daytime"
 
-MONITOR_DATAREF_USAGE = True
 
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
@@ -101,23 +108,25 @@ DARK_THEME_PREFIX = DARK_THEME_NAME + "-"  # night
 LIGHT_THEME_NAME = "light"
 LIGHT_THEME_PREFIX = LIGHT_THEME_NAME + "-"  # day
 # dusk/dawn?
+MONITOR_RESOURCE_USAGE = True
 
 
 # environment attributes
 class ENVIRON_KW(Enum):
-    SIMULATOR_NAME = "SIMULATOR_NAME"
-    SIMULATOR_HOST = "SIMULATOR_HOST"
-    SIMULATOR_HOME = "SIMULATOR_HOME"
     API_HOST = "API_HOST"
-    API_PORT = "API_PORT"
     API_PATH = "API_PATH"
+    API_PORT = "API_PORT"
+    API_VERSION = "API_VERSION"
     APP_HOST = "APP_HOST"
     APP_PORT = "APP_PORT"
-    COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
     COCKPITDECKS_EXTENSION_NAME = "COCKPITDECKS_EXTENSION_NAME"
+    COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
     COCKPITDECKS_PATH = "COCKPITDECKS_PATH"
     DEBUG = "DEBUG"
     MODE = "mode"
+    SIMULATOR_HOME = "SIMULATOR_HOME"
+    SIMULATOR_HOST = "SIMULATOR_HOST"
+    SIMULATOR_NAME = "SIMULATOR_NAME"
     VERBOSE = "verbose"
 
 
@@ -160,12 +169,14 @@ COCKPITDECKS_DEFAULT_VALUES = {
 # Config.yaml
 #
 class CONFIG_KW(Enum):
-    ACTIONS = "actions"
     ACTION = "action"
+    ACTIONS = "actions"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
+    BEGIN_END = "begin-end-command"  # pressed, execution remains while pressed, then released
     BUTTONS = "buttons"
     COCKPIT_THEME = "cockpit-theme"
+    COCKPITDECKS = "COCKPITDECKS"
     COMMAND = "command"
     COMMANDS = "commands"
     CONDITION = "condition"
@@ -173,6 +184,7 @@ class CONFIG_KW(Enum):
     DECK = "deck"
     DECKS = "decks"
     DECOR = "decor"
+    DEFAULT_VALUE = "default-value"
     DELAY = "delay"
     DEVICE = "device"
     DISABLE = "disable"
@@ -180,6 +192,8 @@ class CONFIG_KW(Enum):
     DRIVER = "driver"
     ENABLE = "enable"
     ENABLED = "enabled"
+    EVENT = "event"
+    EVENTS = "events"
     FORMULA = "formula"
     FRAME = "frame"
     GUARD = "guard"
@@ -190,40 +204,38 @@ class CONFIG_KW(Enum):
     INTERNAL_KEY = "_key"
     LABEL = "label"
     LAYOUT = "layout"
-    LONG_PRESS = "long-press"
+    LONG_PRESS = "long-press"  # pressed for a long time, action triggers on release
     MANAGED = "managed"
     NAME = "name"
     NAMED_COLORS = "named-colors"
     NONE = "none"
-    OBSERVABLES = "observables"
     OBSERVABLE = "observable"
+    OBSERVABLES = "observables"
     ONCHANGE = "onchange"
     OPTIONS = "options"
     PAGE = "page"
     SERIAL = "serial"
     SET_SIM_VARIABLE = "set-dataref"
     SIM_VARIABLE = "dataref"
-    SIM_DATA = "multi-datarefs"
-    STRING_SIM_DATA = "string-datarefs"
-    STRING_PREFIX = "string:"
     TEXT = "text"
     THEME = "theme"
-    TRIGGER = "trigger"
     TOGGLE = "toggle"
+    TRIGGER = "trigger"
     TYPE = "type"
-    VALUE_MIN = "value-min"
-    VALUE_MAX = "value-max"
-    VALUE_INC = "value-inc"
     VALUE_COUNT = "value-count"
+    VALUE_INC = "value-inc"
+    VALUE_MAX = "value-max"
+    VALUE_MIN = "value-min"
     VIEW = "view"
     VIEW_IF = "view-if"
     WALLPAPER = "wallpaper"
-    COCKPITDECKS = "COCKPITDECKS"
 
 
 class CONFIG_KW_ALIASES(Enum):
     SIM_VARIABLE = {"dataref", "simvar", "simdata"}
-    SIM_DATA = {"multi-datarefs", "multi-simvars", "multi-simdata"}
+    SET_VARIABLE = {"set-dataref", "set-simvar"}
+    INSTRUCTION = {"command", "view", "begin-end", "instruction"}
+    FORMULA = {"formula", "condition", "view-if"}
 
 
 class ACTIVATION_KW(Enum):
@@ -269,23 +281,22 @@ class DECK_KW(Enum):
 class DECK_ACTIONS(Enum):
     NONE = "none"
     PRESS = "press"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
-    LONGPRESS = "longpress"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
+    LONGPRESS = "longpress"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched) for more than ~0.5 sec
     PUSH = "push"  # TWO events, pressed and released
-    ENCODER = "encoder"  # turn with clicks or stops
-    CURSOR = "cursor"
-    SWIPE = "swipe"
+    ENCODER = "encoder"  # turn with clicks or stops, either clockwise and/or counter-clockwise
+    CURSOR = "cursor"  # continuous value between range
+    SWIPE = "swipe"  # several events from touch (one event) to swipe (two events), each event has position and timing
 
-
-#
 # deck type feedback capabilities
 #
 class DECK_FEEDBACK(Enum):
     NONE = "none"
-    COLORED_LED = "colored-led"
-    IMAGE = "image"
-    LED = "led"
-    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini
-    VIBRATE = "vibrate"
+    COLORED_LED = "colored-led"  # color and/or intensite
+    IMAGE = "image"  # width and height, assumed RGB
+    LED = "led"  # just on or off
+    ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini, a "ramp" of LEDs
+    VIBRATE = "vibrate"  # emit vibration or non chgeable sound/beep
+    SOUND = "sound"  # play a sound (short wav/mp3 file)
 
 
 # ############################################################
