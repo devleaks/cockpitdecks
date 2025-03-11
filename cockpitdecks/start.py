@@ -167,6 +167,7 @@ parser.add_argument(
 )
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
+parser.add_argument("-p", "--packages", nargs="+", help="lookup for packages")
 # parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 
@@ -175,6 +176,7 @@ args = parser.parse_args()
 if args.verbose:
     startup_logger.setLevel(logging.DEBUG)
     startup_logger.debug(f"{os.path.basename(sys.argv[0])} {__version__} configuring startup..")
+    # startup_logger.debug(args)
 else:
     startup_logger.info(f"{os.path.basename(sys.argv[0])} {__version__}")
 
@@ -344,64 +346,27 @@ if SIMULATOR_HOME is not None:
         environment[ENVIRON_KW.SIMULATOR_HOME.value] = SIMULATOR_HOME
         startup_logger.debug(f"{SIMULATOR_NAME} found in {SIMULATOR_HOME}")
         # while we are at it...
-        plugin_location = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "PythonPlugins", "PI_cockpitdecks.py")
-        if os.path.exists(plugin_location):
-            startup_logger.debug(f"PI_cockpitdecks plugin found in {plugin_location}")
-        else:
-            startup_logger.warning(f"PI_cockpitdecks plugin not found in {plugin_location}")
+        # plugin_location = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "PythonPlugins", "PI_cockpitdecks.py")
+        # if os.path.exists(plugin_location):
+        #     startup_logger.debug(f"PI_cockpitdecks plugin found in {plugin_location}")
+        # else:
+        #     startup_logger.warning(f"PI_cockpitdecks plugin not found in {plugin_location}")
 
 
-# #########################################@
-# Install plugin (and exits)
-#
-# if args.install_plugin:
-#     if SIMULATOR_NAME != "X-Plane":
-#         startup_logger.error(f"Cockpitdecks plugin is for X-Plane flight simulator only (simulator is {SIMULATOR_NAME})")
-#         sys.exit(1)
-#     startup_logger.info("installing Cockpitdecks plugin in XPPython3")
-#     if SIMULATOR_HOME is None:
-#         startup_logger.error("no simulator home directory, cannot install")
-#         sys.exit(1)
-#     dest = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "PythonPlugins")
-#     if not (os.path.exists(dest) and os.path.isdir(dest)):
-#         startup_logger.error("no PythonPlugins directory, cannot install")
-#         dest = os.path.join(SIMULATOR_HOME, "Resources", "plugins", "XPPython3")
-#         if not (os.path.exists(dest) and os.path.isdir(dest)):
-#             startup_logger.error("no XPPython3 directory, is XPPython3 installed?")
-#             startup_logger.info("it can be downloaded from https://xppython3.readthedocs.io/")
-#         sys.exit(1)
-#     src = os.path.join(os.path.dirname(__file__), "resources", "xppython3-plugins", "PI_cockpitdecks.py")
-#     src = os.path.abspath(src)
-#     if not os.path.exists(src):
-#         startup_logger.error(f"plugin file not found ({src})")
-#         sys.exit(1)
-#     dest2 = os.path.join(dest, "PI_cockpitdecks.py")
-#     if os.path.exists(dest2):
-#         startup_logger.warning(f"plugin file already exists ({dest2})")
-#         if filecmp.cmp(src, dest2):
-#             startup_logger.info("plugin files are the same")
-#         else:
-#             startup_logger.info("plugin files are the different")
-#             if not args.fixed:
-#                 startup_logger.info(f"remove existing file {dest2} first and run installation again to overwrite")
-#                 # print(f"use --fixed to overwrite")
-#         if not args.fixed:
-#             sys.exit(1)
-#         else:
-#             startup_logger.warning("fixed. overwriting")
-#     startup_logger.debug(f"copying {src} to {dest2}..")
-#     shutil.copy(src, dest2)
-#     startup_logger.debug("..copied")
-#     startup_logger.info("plugin installed")
-#     sys.exit(0)
-#     # We do not do anthing else when installing the plugin, which should only occurs once
-#     # or when the plugin is upgraded
 
 #
 if not environment.is_valid():
     if not args.demo:
         startup_logger.error("Cockpitdecks has no environment or environment is not valid")
         sys.exit(1)
+
+# Extension packages
+if args.packages is not None:
+    if ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value not in environment:
+        environment[ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value] = args.packages
+    else:
+        environment[ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value] = environment[ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value] + args.packages
+    startup_logger.info(f"added packages {args.packages}")
 
 # COCKPITDECKS_PATH
 #
@@ -438,31 +403,6 @@ if APP_HOST is not None:
 
 startup_logger.debug(f"Cockpitdecks application server at {APP_HOST}")
 
-# X-Plane API guesses (same computer?)
-#
-# Here API_HOST = IP address, API_PORT = tcp port
-API_HOST = os.getenv(ENVIRON_KW.API_HOST.value)
-API_PORT = 8086
-if API_HOST is not None and API_HOST != "":  # got from OS
-    ip_app = get_ip(APP_HOST[0])
-    ip_api = get_ip(API_HOST)
-    DEFAULT_API_PORT = 8086 if ip_app == ip_api else 8080
-    API_PORT = os.getenv(ENVIRON_KW.API_PORT.value, DEFAULT_API_PORT)
-    if ip_app == ip_api:
-        startup_logger.debug("X-Plane and Cockpidecks on same host computer")
-    else:
-        startup_logger.debug(f"X-Plane ({ip_api}) and Cockpidecks ({ip_app}) on different host computers")
-else:
-    API_HOST = environment.get(ENVIRON_KW.API_HOST.value, "127.0.0.1")
-    API_PORT = environment.get(ENVIRON_KW.API_PORT.value, 8086)
-    startup_logger.debug("X-Plane and Cockpidecks on same host computer")
-
-# !! From now on, APP_HOST = [hostname, port]
-#
-if API_HOST is not None:
-    environment[ENVIRON_KW.API_HOST.value] = [API_HOST, API_PORT]
-
-startup_logger.debug(f"X-Plane API reachable at {API_HOST} if X-Plane version > 12.1")
 
 # Start-up Mode
 #

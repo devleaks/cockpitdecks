@@ -667,7 +667,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         @todo: Return a status from activate()
         """
-        print(f"ACTIVATE {self.name} ({event})")
+        logger.log(SPAM_LEVEL, f"ACTIVATE {self.name} ({event})")
         if self._activation is not None:
             if not self._activation.is_valid():
                 logger.warning(f"button {self.name}: activation is not valid, nothing executed")
@@ -772,7 +772,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 # Instruction to render has to come from "parent" button.
                 try:
                     self.deck.render(self)
-                    print(f"RENDER {self.name} ({self.value})")
+                    logger.log(SPAM_LEVEL, f"RENDER {self.name} ({self.value})")
                 except:
                     logger.warning(f"button {self.name}: problem during rendering", exc_info=True)
                     return

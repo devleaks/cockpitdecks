@@ -77,7 +77,7 @@ from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent, NoSimulator
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
-from cockpitdecks.observable import Observables
+from cockpitdecks.observable import Observables, Observable
 
 # imports all known decks, if deck driver not available, ignore it
 import cockpitdecks.decks
@@ -484,6 +484,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self._cd_sounds = {}
         self._cd_icons = {}
         self._cd_observables = []
+        self._permanent_observables = []
 
         # these are _cd_ (permanent) | _ac_ (changing)
         self.named_colors = NAMED_COLORS
@@ -1199,6 +1200,16 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         logger.info(f"loaded {len(self.virtual_deck_types)} virtual deck types ({', '.join(self.virtual_deck_types.keys())})")
 
     def load_cd_observables(self):
+        # Permament observables are observables coded as subclass of Observable.
+        # They take no configuration to start, they are self contained.
+        # If it exposes a variable, the variable can be used in other Observables to trigger actions/instructions.
+        self._permanent_observables = {s.name(): s for s in Cockpit.all_subclasses(Observable) if not s.name().endswith("-base")}
+        if len(self._permanent_observables) > 0:
+            logger.info(f"permanent observables: {", ".join(sorted(self._permanent_observables.keys()))}.")
+        else:
+            logger.info("no permanent observables")
+
+        # Regular, cockpitdecks-level observables
         fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}

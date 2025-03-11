@@ -1,0 +1,14 @@
+# ##############################
+#
+COCKPITDECKS_EXTENSION_PATH:
+  - /Users/pierre/Developer/fs/cockpitdecks_xp
+#  - /Users/pierre/Developer/fs/cockpitdecks_ext
+#  - /Users/pierre/Developer/fs/cockpitdecks_tl
+#  - /Users/pierre/Developer/fs/cockpitdecks_wm
+  - /Users/pierre/Developer/fs/cockpitdecks_sd
+#  - /Users/pierre/Developer/fs/cockpitdecks_ld
+#  - /Users/pierre/Developer/fs/cockpitdecks_bx
+# Template to start a new web deck
+#  - /Users/pierre/Developer/fs/cockpitdecks_wd
+# Template to start a new deck
+#  - /Users/pierre/Developer/fs/cockpitdecks_dev

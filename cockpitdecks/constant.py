@@ -287,6 +287,7 @@ class DECK_ACTIONS(Enum):
     CURSOR = "cursor"  # continuous value between range
     SWIPE = "swipe"  # several events from touch (one event) to swipe (two events), each event has position and timing
 
+
 # deck type feedback capabilities
 #
 class DECK_FEEDBACK(Enum):

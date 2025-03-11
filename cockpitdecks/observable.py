@@ -69,6 +69,12 @@ class Observable(SimulatorVariableListener):
     Executes actions in list.
     """
 
+    OBSERVABLE_NAME = "observable-base"
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.OBSERVABLE_NAME
+
     def __init__(self, config: dict, simulator: Simulator):
         self._config = config
         self.name = config.get(CONFIG_KW.NAME.value, type(self).__name__)
@@ -173,3 +179,6 @@ class Observable(SimulatorVariableListener):
                 logger.debug(f"..observable {self.name} executed")
             else:
                 logger.debug(f"observable {self.name} value unchanged ({self.value})")
+
+    def describe(self) -> str:
+        return ". ".join(["to do"])
