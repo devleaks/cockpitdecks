@@ -353,7 +353,6 @@ if SIMULATOR_HOME is not None:
         #     startup_logger.warning(f"PI_cockpitdecks plugin not found in {plugin_location}")
 
 
-
 #
 if not environment.is_valid():
     if not args.demo:
