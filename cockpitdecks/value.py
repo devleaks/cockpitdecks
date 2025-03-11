@@ -37,7 +37,8 @@ class Value(StringWithVariables):
         self._set_simdata = None
         if self._set_simdata_path is not None:
             self._set_simdata = self._provider.sim.get_variable(self._set_simdata_path)
-            self._set_simdata.writable = True
+            self._set_simdata.writable = True  # we assume it is, we force it here, will be removed when avail. through API
+            self._set_simdata.add_listener(self)
 
         # Value range and domain:
         self.value_min = self._config.get(CONFIG_KW.VALUE_MIN.value)
@@ -246,7 +247,9 @@ class Value(StringWithVariables):
         # From now on, warning issued since returns non scalar value
         #
         # 4. Multiple datarefs
-        if (self._variables is not None and len(self._variables) > 1) and (isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)):
+        if (self._variables is not None and len(self._variables) > 1) and (
+            isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)
+        ):
             ret = {}
             for d in self.get_variables():
                 v = self.get_simulator_variable_value(simulator_variable=d)
@@ -289,7 +292,7 @@ class Value(StringWithVariables):
     def save(self):
         # Writes the computed button value to set-dataref
         if self._set_simdata is not None:
-            new_value = self.get_value()
+            new_value = self.value
             if new_value is None:
                 logger.warning(f"value {self.name}: value is None, set to 0")
                 new_value = 0

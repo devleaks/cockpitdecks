@@ -158,7 +158,7 @@ class DrawAnimationFTG(DrawAnimation):
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
 
         bgrd = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=image.width,
             height=image.height,
             texture_in=self.icon_texture,

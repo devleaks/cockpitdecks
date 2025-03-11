@@ -330,7 +330,7 @@ class ChartIcon(DrawAnimation):
         top_of_chart = int(ICON_SIZE / 8 + inside)
 
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.icon_texture,

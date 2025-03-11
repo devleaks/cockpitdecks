@@ -74,7 +74,7 @@ class DrawBase(IconBase):
 
         # 3. Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.cockpit_texture,

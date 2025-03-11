@@ -54,6 +54,7 @@ PLUGIN_VERSION = "1.4.0"
 # - toliss_airbus/flightplan/destination_icao
 # or equivalent
 
+
 class PythonInterface:
     def __init__(self):
         self.Name = "Save ToLiss Situation"

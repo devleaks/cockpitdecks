@@ -1511,6 +1511,8 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
                 if os.path.exists(ac_cfg) and os.path.isdir(ac_cfg):
                     logger.info(f"aircraft path with deckconfig found in COCKPITDECKS_PATH: {ac}")
                     return ac
+                else:
+                    logger.info(f"aircraft {aircraft} found but no {CONFIG_FOLDER} folder")
         logger.info(f"aircraft {aircraft} not found in COCKPITDECKS_PATH={self.cockpitdecks_path}")
         return None
 

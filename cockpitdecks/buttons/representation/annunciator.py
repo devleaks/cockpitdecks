@@ -630,7 +630,7 @@ class Annunciator(DrawBase):
         # PART 3: Background
         # Paste the annunciator into the button background:
         image = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.cockpit_texture,

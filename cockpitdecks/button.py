@@ -642,15 +642,16 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         One of its dataref has changed, records its value and provoke an update of its representation.
         """
-        if not isinstance(data, SimulatorVariable) and not isinstance(data, InternalVariable) and not isinstance(data, StringWithVariables):
+        if not isinstance(data, (SimulatorVariable, InternalVariable, StringWithVariables)):
             logger.error(f"button {self.name}: not a simulator or internal variable ({type(data).__name__})")
             return
 
-        logger.debug(f"{self.name}: {data.name} changed")
+        logger.debug(f"button {self.name}: {data.name} changed")
 
         if data == self._value:
-            print(">>> self value changed, rendering...")
+            logger.log(SPAM_LEVEL, "self value changed, rendering")
             self.render()
+            return
 
         self.value = self.compute_value()
         if self.has_changed() or data.has_changed():

@@ -42,18 +42,18 @@ class MultiButtons(IconBase):
     def render(self):
         value = self.get_button_value()
         if value is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no current value, no rendering")
             return None
         if type(value) in [str, int, float]:
             value = int(value)
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: complex value {value}")
             return None
         if self.num_icons() > 0:
             self.current_value = value if value >= 0 and value < self.num_icons() else value % self.num_icons()
             return self.buttons[self.current_value].get_representation()
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: button not found {value}/{self.num_icons()}")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: button not found {value}/{self.num_icons()}")
         return None
 
     def clean(self):

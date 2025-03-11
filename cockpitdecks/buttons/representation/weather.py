@@ -147,31 +147,31 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         super().anim_start()
         if self.has_weather():
             if not self.weather_data.is_running:
-                logger.info(f"starting weather surveillance ({self.button_name()})")
+                logger.info(f"starting weather surveillance ({self.button_name})")
                 self.weather_data.start()
             else:
-                logger.warning(f"weather surveillance ({self.button_name()}) already is_running")
+                logger.warning(f"weather surveillance ({self.button_name}) already is_running")
         else:
-            logger.info(f"no weather surveillance {self.button_name()}")
+            logger.info(f"no weather surveillance {self.button_name}")
 
     def anim_stop(self):
         super().anim_stop()
         if self.weather_data is not None:
             if self.weather_data.is_running:
-                logger.info(f"stopping weather surveillance ({self.button_name()})")
+                logger.info(f"stopping weather surveillance ({self.button_name})")
                 self.weather_data.stop()
             else:
-                logger.warning(f"weather surveillance ({self.button_name()}) already stopped")
+                logger.warning(f"weather surveillance ({self.button_name}) already stopped")
         else:
-            logger.info(f"no weather surveillance ({self.button_name()})")
+            logger.info(f"no weather surveillance ({self.button_name})")
 
     def animate(self):
         if self.has_weather():
             if not self.weather_data.is_running:
                 self.weather_data.start()
-                logger.info(f"starting weather surveillance ({self.button_name()})")
+                logger.info(f"starting weather surveillance ({self.button_name})")
         else:
-            logger.info(f"no weather surveillance {self.button_name()}")
+            logger.info(f"no weather surveillance {self.button_name}")
 
     def updated(self) -> bool:
         """Determine if cached icon reflects weather data or needs redoing"""
@@ -253,7 +253,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
 
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.cockpit_texture,

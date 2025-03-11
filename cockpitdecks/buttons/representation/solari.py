@@ -137,7 +137,7 @@ class SolariIcon(DrawAnimation):
         self.bg_texture = self._representation_config.get("bg-texture")
 
         self.bg = self.button.deck.get_icon_background(
-            name=self.button_name(),
+            name=self.button_name,
             width=ICON_SIZE,
             height=ICON_SIZE,
             texture_in=self.bg_texture,

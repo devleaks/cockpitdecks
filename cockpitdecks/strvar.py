@@ -90,14 +90,17 @@ class StringWithVariables(Variable, VariableListener):
 
     @property
     def display_name(self):
-        i = self.name.index("|")  # just the end of the string, for info, to identify
-        j = i - 10
-        i = i + 7
-        if j < 0:
-            j = 0
-        if i > len(self.name):
-            i = len(self.name)
-        return self.name[j:i]
+        try:
+            i = self.name.index("|")  # just the end of the string, for info, to identify
+            j = i - 10
+            i = i + 7
+            if j < 0:
+                j = 0
+            if i > len(self.name):
+                i = len(self.name)
+            return self.name[j:i]
+        except ValueError:
+            return self.name
 
     # ##################################
     # Constituing Variables

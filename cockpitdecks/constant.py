@@ -53,6 +53,7 @@ DEFAULT_LABEL_SIZE = 12
 NAMED_COLORS = {}  # name: tuple()
 
 # Virtual decks and web decks
+#
 VIRTUAL_DECK_DRIVER = "virtualdeck"
 AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
 COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
@@ -61,18 +62,23 @@ TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCE
 ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
 
 
+# Mostly common X-Plane simulator variables
+# of general interest
+# Used to determine Cockpitdecks behavior
+#
 AIRCRAFT_PATH_VARIABLE = "sim/aircraft/view/acf_relative_path"
 AIRCRAFT_ICAO_VARIABLE = "sim/aircraft/view/acf_ICAO"
 LIVERY_PATH_VARIABLE = "sim/aircraft/view/acf_livery_path"
 LIVERY_INDEX_VARIABLE = "sim/aircraft/view/acf_livery_index"
 
+
+# Rendez-vous Internal Variables
+#
 AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
 LIVERY_CHANGE_MONITORING = "livery-name"
 RELOAD_ON_LIVERY_CHANGE = False
 WEATHER_STATION_MONITORING = "weather-station"
 DAYTIME = "daytime"
-
-MONITOR_RESOURCE_USAGE = True
 
 
 # the following extensions are supposed to always be available
@@ -102,24 +108,25 @@ DARK_THEME_PREFIX = DARK_THEME_NAME + "-"  # night
 LIGHT_THEME_NAME = "light"
 LIGHT_THEME_PREFIX = LIGHT_THEME_NAME + "-"  # day
 # dusk/dawn?
+MONITOR_RESOURCE_USAGE = True
 
 
 # environment attributes
 class ENVIRON_KW(Enum):
-    SIMULATOR_NAME = "SIMULATOR_NAME"
-    SIMULATOR_HOST = "SIMULATOR_HOST"
-    SIMULATOR_HOME = "SIMULATOR_HOME"
     API_HOST = "API_HOST"
-    API_PORT = "API_PORT"
     API_PATH = "API_PATH"
+    API_PORT = "API_PORT"
     API_VERSION = "API_VERSION"
     APP_HOST = "APP_HOST"
     APP_PORT = "APP_PORT"
-    COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
     COCKPITDECKS_EXTENSION_NAME = "COCKPITDECKS_EXTENSION_NAME"
+    COCKPITDECKS_EXTENSION_PATH = "COCKPITDECKS_EXTENSION_PATH"
     COCKPITDECKS_PATH = "COCKPITDECKS_PATH"
     DEBUG = "DEBUG"
     MODE = "mode"
+    SIMULATOR_HOME = "SIMULATOR_HOME"
+    SIMULATOR_HOST = "SIMULATOR_HOST"
+    SIMULATOR_NAME = "SIMULATOR_NAME"
     VERBOSE = "verbose"
 
 
@@ -162,13 +169,14 @@ COCKPITDECKS_DEFAULT_VALUES = {
 # Config.yaml
 #
 class CONFIG_KW(Enum):
-    ACTIONS = "actions"
     ACTION = "action"
+    ACTIONS = "actions"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BEGIN_END = "begin-end-command"  # pressed, execution remains while pressed, then released
     BUTTONS = "buttons"
     COCKPIT_THEME = "cockpit-theme"
+    COCKPITDECKS = "COCKPITDECKS"
     COMMAND = "command"
     COMMANDS = "commands"
     CONDITION = "condition"
@@ -201,8 +209,8 @@ class CONFIG_KW(Enum):
     NAME = "name"
     NAMED_COLORS = "named-colors"
     NONE = "none"
-    OBSERVABLES = "observables"
     OBSERVABLE = "observable"
+    OBSERVABLES = "observables"
     ONCHANGE = "onchange"
     OPTIONS = "options"
     PAGE = "page"
@@ -211,21 +219,23 @@ class CONFIG_KW(Enum):
     SIM_VARIABLE = "dataref"
     TEXT = "text"
     THEME = "theme"
-    TRIGGER = "trigger"
     TOGGLE = "toggle"
+    TRIGGER = "trigger"
     TYPE = "type"
-    VALUE_MIN = "value-min"
-    VALUE_MAX = "value-max"
-    VALUE_INC = "value-inc"
     VALUE_COUNT = "value-count"
+    VALUE_INC = "value-inc"
+    VALUE_MAX = "value-max"
+    VALUE_MIN = "value-min"
     VIEW = "view"
     VIEW_IF = "view-if"
     WALLPAPER = "wallpaper"
-    COCKPITDECKS = "COCKPITDECKS"
 
 
 class CONFIG_KW_ALIASES(Enum):
     SIM_VARIABLE = {"dataref", "simvar", "simdata"}
+    SET_VARIABLE = {"set-dataref", "set-simvar"}
+    INSTRUCTION = {"command", "view", "begin-end", "instruction"}
+    FORMULA = {"formula", "condition", "view-if"}
 
 
 class ACTIVATION_KW(Enum):
@@ -277,8 +287,6 @@ class DECK_ACTIONS(Enum):
     CURSOR = "cursor"  # continuous value between range
     SWIPE = "swipe"  # several events from touch (one event) to swipe (two events), each event has position and timing
 
-
-#
 # deck type feedback capabilities
 #
 class DECK_FEEDBACK(Enum):

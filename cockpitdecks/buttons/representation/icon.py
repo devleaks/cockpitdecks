@@ -63,7 +63,7 @@ class IconBase(Representation):
         cockpit = deck.cockpit
         all_fonts = cockpit.fonts
         fonts_available = list(all_fonts.keys())
-        this_button = f"{self.button_name()}: {type(self).__name__}"
+        this_button = f"{self.button_name}: {type(self).__name__}"
 
         def try_ext(fn):
             if fn is not None:
@@ -116,7 +116,7 @@ class IconBase(Representation):
         image = self.get_image_for_icon()
 
         if image is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__} no image")
+            logger.warning(f"button {self.button_name}: {type(self).__name__} no image")
             return None
 
         if self.button.has_option("placeholder"):
@@ -168,14 +168,14 @@ class IconBase(Representation):
 
     def overlay_text_new(self, image, text: TextWithVariables):
         if text is None:
-            logger.debug(f"button {self.button_name()}: no text to lay over")
+            logger.debug(f"button {self.button_name}: no text to lay over")
             return image
 
-        logger.debug(f"button {self.button_name()}: text is from {text.prefix}: {text.message}")
+        logger.debug(f"button {self.button_name}: text is from {text.prefix}: {text.message}")
 
         message = text.get_text()
         if message is None:
-            logger.debug(f"button {self.button_name()}: no text")
+            logger.debug(f"button {self.button_name}: no text")
             return image
 
         text_size = int(text.size * image.width / 72) if text.prefix == CONFIG_KW.LABEL.value else int(text.size)
@@ -242,7 +242,7 @@ class Icon(IconBase):
 
         if self.icon is None:
             if self._config.get(NO_ICON, False):
-                logger.debug(f"button {self.button_name()}: requested to no do icon")
+                logger.debug(f"button {self.button_name}: requested to no do icon")
 
         self._icon_cache = None
 
@@ -252,7 +252,7 @@ class Icon(IconBase):
                 return True
             if self.cockpit_color is not None:
                 return True
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon and no icon color")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no icon and no icon color")
         return False
 
     def get_image_for_icon(self):
@@ -277,7 +277,7 @@ class Icon(IconBase):
             image = self.get_image_for_icon()
 
         if image is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__} no image")
+            logger.warning(f"button {self.button_name}: {type(self).__name__} no image")
             return None
 
         if self.button.has_option("placeholder"):
@@ -334,7 +334,7 @@ class Icon(IconBase):
         frame_content = self.frame.get("content-size")
         frame_position = self.frame.get("content-offset")
 
-        this_button = f"{self.button_name()}: {type(self).__name__}"
+        this_button = f"{self.button_name}: {type(self).__name__}"
         image = None
         deck = self.button.deck
         if frame is None or frame_size is None or frame_position is None or frame_content is None:
@@ -507,28 +507,28 @@ class MultiTexts(IconText):
 
     def is_valid(self):
         if self._multi_texts is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no icon")
             return False
         if self.num_texts == 0:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no icon")
             return False
         return super().is_valid()
 
     def render(self):
         value = self.get_button_value()
         if value is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no current value, no rendering")
             return None
         if type(value) in [str, int, float]:
             value = int(float(value))  # int('1.0') does not work
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: complex value {value}")
             return None
         if self.num_texts > 0:
             self._text = self._multi_texts[value % self.num_texts]
             return super().render()
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_texts}")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: icon not found {value}/{self.num_texts}")
         return None
 
     def describe(self) -> str:
@@ -550,7 +550,7 @@ class MultiIcons(Icon):
         if len(self.multi_icons) == 0:
             self.multi_icons = self._config.get("multi-icons", [])
         else:
-            logger.debug(f"button {self.button_name()}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
+            logger.debug(f"button {self.button_name}: {type(self).__name__}: animation sequence {len(self.multi_icons)}")
 
         if len(self.multi_icons) > 0:
             invalid = []
@@ -559,17 +559,17 @@ class MultiIcons(Icon):
                 if icon is not None:
                     self.multi_icons[i] = icon
                 else:
-                    logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
+                    logger.warning(f"button {self.button_name}: {type(self).__name__}: icon not found {self.multi_icons[i]}")
                     invalid.append(i)
             for i in invalid:
                 if i in self.multi_icons:
                     del self.multi_icons[i]
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no icon")
 
     def is_valid(self):
         if self.multi_icons is None or len(self.multi_icons) == 0:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no icon")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no icon")
             return False
         return super().is_valid()
 
@@ -579,12 +579,12 @@ class MultiIcons(Icon):
     def render(self):
         value = self.get_button_value()
         if value is None:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: no current value, no rendering")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: no current value, no rendering")
             return None
         if type(value) in [str, int, float]:
             value = int(value)
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: complex value {value}")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: complex value {value}")
             return None
         if self.num_icons() > 0:
             if value >= 0 and value < self.num_icons():
@@ -593,7 +593,7 @@ class MultiIcons(Icon):
                 self.icon = self.multi_icons[value % self.num_icons()]
             return super().render()
         else:
-            logger.warning(f"button {self.button_name()}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
+            logger.warning(f"button {self.button_name}: {type(self).__name__}: icon not found {value}/{self.num_icons()}")
         return None
 
     def describe(self) -> str:
