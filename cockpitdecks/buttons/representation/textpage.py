@@ -70,8 +70,13 @@ class TextPageIcon(DrawBase):
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
         inside = round(0.04 * image.width + 0.5)
 
-        page = self.button.value
-        page = 0 if page is None else int(float(page))
+        bv = self.button.value
+        page = 0
+        try:
+            page = int(float(bv))
+        except:
+            page = 0
+            logger.warning(f"{self.name}: button value is not a number {bv}, cannot change page")
         lines = self.get_lines(page=page)
 
         if lines is not None:

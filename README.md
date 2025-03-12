@@ -24,6 +24,9 @@ Fly safely.
 
 ## Installation
 
+
+WARNING: The latest version of Cockpitdecks, release 15 and above, requires the latest version of X-Plane, 12.1.4 or above.
+
 Read the [documentation](https://devleaks.github.io/cockpitdecks-docs/Installation/).
 
 Create a python environment. Python 3.10 minimum (it is a requirement of an underlying package,

@@ -161,13 +161,12 @@ SIMULATOR_HOST = None
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("--version", action="store_true", help="show version information and exit")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
-parser.add_argument("-e", "--env", metavar="environ_file", type=str, nargs=1, help="start with alternate environment file")
 parser.add_argument(
     "--template", metavar="template_file", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder"
 )
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
-parser.add_argument("-p", "--packages", nargs="+", help="lookup for packages")
+parser.add_argument("-p", "--packages", nargs="+", help="lookup for optional packages")
 # parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 
@@ -233,14 +232,6 @@ if args.template:
 # Loads environment to know which flight simulator and where to locate it.
 #
 environment = Config(filename=None)  # create default env to host values
-
-if args.env is not None:
-    environ_file = args.env[0]
-    if os.path.exists(environ_file):
-        environment = Config(filename=os.path.abspath(environ_file))
-        startup_logger.debug(f"Cockpitdecks loaded environment from file {environ_file}")
-    else:
-        startup_logger.warning(f"Cockpitdecks could not load environment from file {environ_file}")
 
 # Debug
 #
