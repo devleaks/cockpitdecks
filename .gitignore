@@ -210,3 +210,4 @@ cockpitdecks/environ.yaml
 cockpitdecks/extensions.yaml
 commands.json
 datarefs.json
+packdev.txt
