@@ -207,3 +207,6 @@ weather-ICAO-region.json
 /cockpitdecks/resources/weather/old
 variable-database-dump.yaml
 cockpitdecks/environ.yaml
+cockpitdecks/extensions.yaml
+commands.json
+datarefs.json

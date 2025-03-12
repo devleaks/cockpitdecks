@@ -71,6 +71,12 @@ class COCKPITDECKS_INTVAR(Enum):
     STARTS = "starts"
     STOPS = "stops"
 
+    WS_PCKT_RECV = "websockets_packets_received"
+    WS_RSLT_RECV = "websockets_result_received"
+    WS_VUPD_RECV = "websockets_value_update_received"
+    WS_DREF_RECV = "websockets_dataref_value_received"
+    WS_CMDS_RECV = "websockets_command_active_received"
+
     UDP_READS = "udp_rcv"
     LAST_READ = "last_read_time"
     VALUES = "values_read"
