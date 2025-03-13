@@ -26,13 +26,10 @@ Fly safely.
 
 
 WARNING: The latest version of Cockpitdecks, release 15 and above, requires the latest version of X-Plane, 12.1.4 or above.
-
 Read the [documentation](https://devleaks.github.io/cockpitdecks-docs/Installation/).
 
-Create a python environment. Python 3.10 minimum (it is a requirement of an underlying package,
-Cockpitdecks was developed and tested in 3.11 and 3.12.)
-
-In that environement, install the following packages:
+Create a python environment. Python 3.12 minimum.
+In that environment, install the following packages:
 
 ```sh
 pip install 'cockpitdecks[demoext,weather,streamdeck] @ git+https://github.com/devleaks/cockpitdecks.git'
@@ -40,19 +37,19 @@ pip install 'cockpitdecks[demoext,weather,streamdeck] @ git+https://github.com/d
 
 Valid installable extras (between the `[` `]`, comma separated, no space) are:
 
-| Extra              | Content                                                                                                                    |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `demoext`          | Add a few Loupedeck and Stream Deck+ demo extensions. Recommended                                                          |
-| `weather`          | Add special iconic representation for weather. These icons sometimes fetch information outside of X-Plane. Recommended     |
-| `streamdeck`       | For Elgato Stream Deck devices                                                                                             |
-| `loupedeck`        | For Loupedeck LoupedeckLive, LoupedeckLive.s and Loupedeck CT devices                                                      |
-| `xtouchmini`       | For Berhinger X-Touch Mini devices                                                                                         |
-| `development`      | For developer only, add testing packages and python types                                                                  |
+| Extra              | Content                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `weather`          | Add special iconic representation for weather. These icons sometimes fetch information outside of X-Plane. |
+| `toliss`           | Add special features for ToLiss airbus aircrafts. Useless for other aircrafts.                             |
+| `demoext`          | Add a few Loupedeck and Stream Deck+ demo extensions.                                                      |
+| `streamdeck`       | For Elgato Stream Deck devices                                                                             |
+| `loupedeck`        | For Loupedeck LoupedeckLive, LoupedeckLive.s and Loupedeck CT devices                                      |
+| `xtouchmini`       | For Berhinger X-Touch Mini devices                                                                         |
+| `development`      | For developer only, add testing packages and python types                                                  |
 
 
 ```sh
 cockpitdecks_cli --demo'
 ```
-
 
 Fly safely.

@@ -1955,6 +1955,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         if len(nt) > 1:
             logger.error(f"{len(nt)} threads remaining")
             logger.error(f"{[t.name for t in nt]}")
+            # os._exit(0)
         else:
             logger.info("no pending thread")
         logger.info("..cockpit terminated")
