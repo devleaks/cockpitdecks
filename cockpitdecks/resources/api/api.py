@@ -10,6 +10,7 @@ logger.setLevel(logging.INFO)
 
 DATA = "data"
 IDENT = "id"
+INDEX = "index"
 NAME = "name"
 DURATION = "duration"
 
@@ -161,6 +162,21 @@ class Dataref(XPObject):
         logger.error(f"write: {response.reason}")
         return False
 
+    def write_arr(self, value, index) -> bool:
+        if not self.valid:
+            logger.error(f"dataref {self.path} not found")
+            return False
+        payload = {IDENT: self.ident, DATA: int(value), INDEX: index}
+        url = f"{self.api.url}/datarefs/{self.ident}/value"
+        print("payload", payload)
+        response = requests.patch(url, json=payload)
+        if response.status_code == 200:
+            data = response.json()
+            logger.debug(f"result: {data}")
+            return True
+        logger.error(f"write: {response.reason}, {response.text}")
+        return False
+
 
 class Command(XPObject):
     def __init__(self, path: str, cache: Cache) -> None:
@@ -191,22 +207,26 @@ if __name__ == "__main__":
         all_commands = Cache(api)
         all_commands.load("/commands")
 
-    # number
-    dref = Dataref("sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot", cache=all_datarefs)
-    print(dref.ident, dref)
+    # # number
+    # dref = Dataref("sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot", cache=all_datarefs)
+    # print(dref.ident, dref)
 
-    # string
-    dref = Dataref("sim/aircraft/view/acf_ICAO", cache=all_datarefs)
-    print(dref.ident, dref)
+    # # string
+    # dref = Dataref("sim/aircraft/view/acf_ICAO", cache=all_datarefs)
+    # print(dref.ident, dref)
 
-    # write
-    dref = Dataref("sim/multiplayer/position/plane15_strobe_lights_on", cache=all_datarefs)
-    print(dref.ident, dref)
-    v = 0 if dref.value == 1 else 1
-    if dref.write(v):
-        print("dataref written", dref)
-    else:
-        print("dataref not written", dref)
+    # # write
+    # dref = Dataref("sim/multiplayer/position/plane15_strobe_lights_on", cache=all_datarefs)
+    # print(dref.ident, dref)
+    # v = 0 if dref.value == 1 else 1
+    # if dref.write(v):
+    #     print("dataref written", dref)
+    # else:
+    #     print("dataref not written", dref)
 
-    cmd = Command("sim/map/show_current", cache=all_commands)
-    print(f"command {cmd.ident} was {'' if cmd.execute() else 'not '}executed")
+    # cmd = Command("sim/map/show_current", cache=all_commands)
+    # print(f"command {cmd.ident} was {'' if cmd.execute() else 'not '}executed")
+
+    dref = Dataref("sim/network/dataout/data_to_screen", cache=all_datarefs)
+    print(dref)
+    dref.write_arr(1, 21)

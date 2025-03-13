@@ -127,7 +127,6 @@ class Activation(VariableListener):
         set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         if set_dataref_path is not None:
             self._set_sim_data = self.button.sim.get_variable(set_dataref_path)
-            self._set_sim_data.writable = True  # we assume it is, we force it here, will be removed when avail. through API
             self._set_sim_data.add_listener(self)
         self.activation_requires_modification_set_dataref = True
 
@@ -422,7 +421,7 @@ class Activation(VariableListener):
             "last_activated": self.last_activated,
             "last_activated_dt": datetime.fromtimestamp(self.last_activated).isoformat(),
             "initial_value": self.initial_value,
-            "writable_dataref": self._set_sim_data.name if self._set_sim_data is not None else None,
+            "set-dataref": self._set_sim_data.name if self._set_sim_data is not None else None,
             ACTIVATION_VALUE: self.get_activation_value(),
         }
         return a | drefs

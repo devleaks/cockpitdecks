@@ -419,7 +419,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         instruction.execute(self)
 
     @abstractmethod
-    def runs_locally(self) -> bool:
+    def same_host(self) -> bool:
         """Returns whether Cockpitdecks runs on the same computer as the Simulator software"""
         return False
 
@@ -462,7 +462,7 @@ class NoSimulator(Simulator):
     def replay_event_factory(self, name: str, value):
         pass
 
-    def runs_locally(self) -> bool:
+    def same_host(self) -> bool:
         return True
 
     def connect(self, reload_cache: bool = False):

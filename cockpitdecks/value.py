@@ -37,7 +37,6 @@ class Value(StringWithVariables):
         self._set_simdata = None
         if self._set_simdata_path is not None:
             self._set_simdata = self._provider.sim.get_variable(self._set_simdata_path)
-            self._set_simdata.writable = True  # we assume it is, we force it here, will be removed when avail. through API
             self._set_simdata.add_listener(self)
 
         # Value range and domain:
