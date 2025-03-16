@@ -20,6 +20,7 @@ observables:
     actions:
       - command: cockpitdecks-livery
         delay: 5
+  # Demo of command active event
   - name: QFE adjusted
     type: event
     enabled: True

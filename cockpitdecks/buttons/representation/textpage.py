@@ -57,6 +57,9 @@ class TextPageIcon(DrawBase):
         else:
             return all_lines[l : l + self.lines]
 
+    def get_activation_count(self):
+        return self.button._activation.get_activation_count()
+
     def get_image_for_icon(self):
         """
         Helper function to get button image and overlay label on top of it.
@@ -70,14 +73,7 @@ class TextPageIcon(DrawBase):
         image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
         inside = round(0.04 * image.width + 0.5)
 
-        bv = self.button.value
-        page = 0
-        try:
-            page = int(float(bv))
-        except:
-            page = 0
-            logger.warning(f"{self.name}: button value is not a number {bv}, cannot change page")
-        lines = self.get_lines(page=page)
+        lines = self.get_lines(page=self.get_activation_count())
 
         if lines is not None:
             font = self.get_font(self._textpage.font, self._textpage.size)

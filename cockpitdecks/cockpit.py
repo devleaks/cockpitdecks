@@ -1617,7 +1617,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         logger.info("✈ " * 6 + f"new aircraft path {value}, aircraft name {acname}")
 
         if self.mode > 0:
-            logger.info("Cockpitdecks in demontration mode or aircraft --fixed, aircraft not changed")
+            logger.info("Cockpitdecks aircraft --fixed or demo mode, aircraft not changed")
             return
 
         if acname == self.aircraft._acname:

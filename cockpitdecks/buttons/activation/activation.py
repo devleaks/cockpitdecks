@@ -409,6 +409,9 @@ class Activation(VariableListener):
         logger.info(f"{self.duration}")
         logger.info(f"{self.pressed}")
 
+    def get_activation_count(self) -> int:
+        return int(self.activation_count)
+
     def get_activation_value(self):
         return self.activation_count
 
@@ -433,7 +436,7 @@ class Activation(VariableListener):
         """
         Describe what the button does in plain English
         """
-        return "\n\r".join([f"The button does nothing."])
+        return "\n".join(["The button does nothing."])
 
 
 class ActivationValueProvider(ABC, ValueProvider):

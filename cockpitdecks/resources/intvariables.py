@@ -54,34 +54,29 @@ class COCKPITDECKS_INTVAR(Enum):
     ACTIVATION_ON = "on"
     ACTIVATION_OFF = "off"
 
+    # RENDERING
+
     #
-    # U D P
+    # C O N N E C T I O N  To X-Plane
     #
     INTDREF_CONNECTION_STATUS = "_connection_status"
     # Status value:
     # 0: Nothing running
     # 1: Connection monitor running
     # 2: Connection to X-Plane but no more
-    # 3: UDP listener running (no timeout)
+    # 3: Data receiver/listener running (no timeout)
     # 4: Event forwarder running
 
-    # Number of UDP packet received
-    UDP_BEACON_RCV = "udp_beacon_received"
-    UDP_BEACON_TIMEOUT = "udp_beacon_timeout"
     STARTS = "starts"
     STOPS = "stops"
 
-    WS_PCKT_RECV = "websockets_packets_received"
-    WS_RSLT_RECV = "websockets_result_received"
-    WS_VUPD_RECV = "websockets_value_update_received"
-    WS_DREF_RECV = "websockets_dataref_value_received"
-    WS_CMDS_RECV = "websockets_command_active_received"
-
+    #
+    # UDP
+    #
+    # Number of UDP packet received
+    UDP_BEACON_RCV = "udp_beacon_received"
+    UDP_BEACON_TIMEOUT = "udp_beacon_timeout"
     UDP_READS = "udp_rcv"
-    LAST_READ = "last_read_time"
-    VALUES = "values_read"
-    UPDATE_ENQUEUED = "value_change_enqueued"
-    COMMAND_ACTIVE_ENQUEUED = "command-is-active"
 
     # Average number of reads per seconds (last 100 reads)
     UDP_READS_PERSEC = "cockpitdecks/udp/persec"
@@ -94,6 +89,20 @@ class COCKPITDECKS_INTVAR(Enum):
 
     # Total number of dataref values recevied
     UDP_DATAREF_COUNT = "cockpitdecks/udp/dataref-count"
+
+    #
+    # Websockets
+    #
+    WS_PCKT_RECV = "websockets_packets_received"
+    WS_RSLT_RECV = "websockets_result_received"
+    WS_VUPD_RECV = "websockets_value_update_received"
+    WS_DREF_RECV = "websockets_dataref_value_received"
+    WS_CMDS_RECV = "websockets_command_active_received"
+
+    LAST_READ = "last_read_time"
+    VALUES = "values_read"
+    UPDATE_ENQUEUED = "value_change_enqueued"
+    COMMAND_ACTIVE_ENQUEUED = "command-is-active"
 
     #
     # E V E N T

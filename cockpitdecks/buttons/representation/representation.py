@@ -66,6 +66,9 @@ class Representation:
     def init(self):  # ~ABC
         self._inited = True
 
+    def get_activation_count(self) -> int:
+        return self.button._activation.get_activation_count()
+
     def clean_cache(self):
         self._cached = None
 

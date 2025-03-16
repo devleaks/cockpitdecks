@@ -803,24 +803,41 @@ class ButtonInstruction(Instruction):
     PREFIX = "button-"
 
     def __init__(self, name: str, button: Button) -> None:
-        Instruction.__init__(self, name=name)
+        Instruction.__init__(self, name=name, performer=button.cockpit)
         self._button = button
 
     @classmethod
-    def new(cls, name: str, button: Button, **kwargs: dict):
-        instr = name.replace(ButtonInstruction.PREFIX, "")
+    def new(cls, button: Button, name: str, instruction: str, instruction_block: dict):
         all_cockpit_instructions = {s.int_name(): s for s in Instruction.all_subclasses(ButtonInstruction)}
+        instr = ButtonInstruction.button_instruction_root_name(instruction)
         if instr in all_cockpit_instructions:
-            return all_cockpit_instructions[instr](button=button, **kwargs)
+            logger.debug(f"creating ButtonInstruction {instr}")
+            return all_cockpit_instructions[instr](button=button, name=name)
+        logger.warning(f"no ButtonInstruction {instr}")
         return None
 
     @property
     def button(self):
         return self._button
 
-    @button.setter
-    def button(self, button):
-        self._button = button
+    # Button should be read-only
+    # @button.setter
+    # def button(self, button):
+    #     self._button = button
+
+    @staticmethod
+    def is_button_instruction(instruction: str) -> bool:
+        return instruction.startswith(ButtonInstruction.PREFIX)
+
+    @staticmethod
+    def cockpit_instruction(instruction: str) -> str:
+        if ButtonInstruction.is_button_instruction(instruction):
+            return instruction
+        return ButtonInstruction.PREFIX + instruction
+
+    @staticmethod
+    def button_instruction_root_name(instruction: str) -> str:
+        return instruction.replace(ButtonInstruction.PREFIX, "")
 
     def _check_condition(self):
         # condition checked in each individual instruction
@@ -836,19 +853,19 @@ class ButtonRenderInstruction(ButtonInstruction):
     INSTRUCTION_NAME = "render"
 
     def __init__(self, name: str, button: Button) -> None:
-        ButtonInstruction.__init__(self, name=self.INSTRUCTION_NAME, button=button)
+        ButtonInstruction.__init__(self, button=button, name=self.INSTRUCTION_NAME)
 
     def _execute(self):
         self.button.render()
 
 
-class ButtonRenderInstruction(ButtonInstruction):
+class ButtonUpdateInstruction(ButtonInstruction):
     """Instruction to render a button after update"""
 
     INSTRUCTION_NAME = "update"
 
-    def __init__(self, name: str, button: Button, value) -> None:
-        ButtonInstruction.__init__(self, name=self.INSTRUCTION_NAME, button=button)
+    def __init__(self, name: str, button: Button, value, cascade: bool = True) -> None:
+        ButtonInstruction.__init__(self, button=button, name=self.INSTRUCTION_NAME, instruction_block={})
         self.value = value
 
     def _execute(self):

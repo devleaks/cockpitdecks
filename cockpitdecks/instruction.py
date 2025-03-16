@@ -98,7 +98,6 @@ class Instruction(ABC):
     def _execute(self) -> bool:
         if self.performer is not None and (hasattr(self.performer, "execute") or isinstance(self.performer, InstructionPerformer)):
             return self.performer.execute(instruction=self)
-        self.clean_timer()
         return True
 
     @abstractmethod
@@ -111,6 +110,7 @@ class Instruction(ABC):
             self._timer = None
 
     def execute(self) -> bool:
+        self.clean_timer()
         if not self._check_condition():
             logger.debug(f"{self.name} not allowed to run")
             return False
