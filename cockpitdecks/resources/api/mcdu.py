@@ -1,200 +1,11 @@
 import logging
-import base64
 import json
 
-import requests
+from cockpitdecks.resources.api.api import NAME
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-DATA = "data"
-IDENT = "id"
-INDEX = "index"
-NAME = "name"
-DURATION = "duration"
-
-
-class API:
-
-    def __init__(self, host: str, port: int) -> None:
-        self.host = host
-        self.port = port
-        self.version = ""
-        self._api = ""
-        self._capabilities = {}
-        self.capabilities()
-
-    @property
-    def url(self):
-        return f"http://{self.host}:{self.port}/api{self._api}"
-
-    def capabilities(self) -> dict:
-        # Guess capabilties and caches it
-        if len(self._capabilities) > 0:
-            return self._capabilities
-        try:
-            response = requests.get(self.url + "/capabilities")
-            if response.status_code == 200:  # We have version 12.1.4 or above
-                self._capabilities = response.json()
-                logger.debug(f"capabilities: {self._capabilities}")
-                return self._capabilities
-            response = requests.get(self.url + "/v1/datarefs/count")
-            if response.status_code == 200:  # OK, /api/v1 exists, we use it, we have version 12.1.1 or above
-                self._capabilities = {"api": {"versions": ["v1"]}, "x-plane": {"version": "12"}}
-                logger.debug(f"capabilities: {self._capabilities}")
-                return self._capabilities
-            logger.error(f"capabilities: response={response.status_code}")
-        except:
-            logger.error("capabilities", exc_info=True)
-        return self._capabilities
-
-    @property
-    def xp_version(self) -> str | None:
-        a = self._capabilities.get("x-plane")
-        if a is None:
-            return None
-        return a.get("version")
-
-    def set_api(self, api: str | None = None):
-        api_details = self._capabilities.get("api")
-        if api_details is not None:
-            api_versions = api_details.get("versions")
-            if api is None:
-                if api_versions is None:
-                    logger.error("cannot determine api")
-                    return
-                api = api_versions[-1]
-            if api in api_versions:
-                self.version = api
-                self._api = "/" + api
-                logger.info(f"set api {api}, xp {self.xp_version}")
-            else:
-                logger.warning(f"no api {api} in {api_versions}")
-            return
-        logger.warning(f"could not check api {api} in {self._capabilities}")
-
-
-class Cache:
-    def __init__(self, api: API) -> None:
-        self.api = api
-        self._data = dict()
-        self._valid = set()
-
-    def load(self, path):
-        url = self.api.url + path
-        response = requests.get(url)
-        if response.status_code == 200:  # We have version 12.1.4 or above
-            raw = response.json()
-            data = raw[DATA]
-            self._data = {c[NAME]: c for c in data}
-            self._valid = set()
-            logger.debug(f"{path[1:]} cached")
-            return
-        logger.error(f"load: response={response.status_code}")
-
-    @property
-    def has_data(self) -> bool:
-        return self._data is not None and len(self._data) > 0
-
-    def get(self, name):
-        r = self._data.get(name)
-        if r is not None:
-            self._valid.add(name)
-            return r
-        return None
-
-    def is_valid(self, name):
-        return name in self._valid
-
-
-class XPObject:
-
-    def __init__(self, path: str, cache: Cache) -> None:
-        self.path = path
-        self.config = cache.get(self.path)
-        self.api = None
-        self.valid = False
-        if self.config is None:
-            logger.error(f"{type(self)} {self.path} not found")
-        else:
-            self.api = cache.api
-            self.valid = True
-
-    @property
-    def ident(self) -> int | None:
-        if not self.valid:
-            return None
-        return self.config[IDENT]
-
-
-class Dataref(XPObject):
-    def __init__(self, path: str, cache: Cache) -> None:
-        XPObject.__init__(self, path=path, cache=cache)
-
-    def __str__(self) -> str:
-        return f"{self.path}={self.value}"
-
-    @property
-    def value(self):
-        if not self.valid:
-            logger.error(f"dataref {self.path} not found")
-            return None
-        url = f"{self.api.url}/datarefs/{self.ident}/value"
-        response = requests.get(url)
-        data = response.json()
-        logger.debug(f"result: {data}")
-        if DATA in data and type(data[DATA]) in [bytes, str]:
-            return base64.b64decode(data[DATA])[:-1].decode("ascii").replace("\u0000", "")
-        return data[DATA]
-
-    def write(self, value) -> bool:
-        if not self.valid:
-            logger.error(f"dataref {self.path} not found")
-            return False
-        payload = {IDENT: self.ident, DATA: value}
-        url = f"{self.api.url}/datarefs/{self.ident}/value"
-        response = requests.patch(url, json=payload)
-        if response.status_code == 200:
-            data = response.json()
-            logger.debug(f"result: {data}")
-            return True
-        logger.error(f"write: {response.reason}")
-        return False
-
-    def write_arr(self, value, index) -> bool:
-        if not self.valid:
-            logger.error(f"dataref {self.path} not found")
-            return False
-        payload = {IDENT: self.ident, DATA: int(value), INDEX: index}
-        url = f"{self.api.url}/datarefs/{self.ident}/value"
-        print("payload", payload)
-        response = requests.patch(url, json=payload)
-        if response.status_code == 200:
-            data = response.json()
-            logger.debug(f"result: {data}")
-            return True
-        logger.error(f"write: {response.reason}, {response.text}")
-        return False
-
-
-class Command(XPObject):
-    def __init__(self, path: str, cache: Cache) -> None:
-        XPObject.__init__(self, path=path, cache=cache)
-
-    def execute(self) -> bool:
-        if not self.valid:
-            logger.error(f"command {self.path} not found")
-            return False
-        payload = {IDENT: self.ident, DURATION: 0.0}
-        url = f"{self.api.url}/command/{self.ident}/activate"
-        response = requests.post(url, json=payload)
-        data = response.json()
-        if response.status_code == 200:
-            logger.debug(f"result: {data}")
-            return True
-        logger.error(f"execute: {response}, {data}")
-        return False
+# logger.setLevel(logging.INFO)
 
 
 MCDU_COLORS = {
@@ -204,70 +15,80 @@ MCDU_COLORS = {
     "m": "\033[38;5;165m",
     "w": "\033[38;5;231m",
     "y": "\033[38;5;226m",
-    "s": "\033[38;5;196m",
+    "s": "\033[38;5;196m",  # special characters, not a color
     "Lw": "\033[38;5;15m",  # bold white, bright white
-    "Lg": "\033[38;5;10m",
+    "Lg": "\033[38;5;10m",  # bold white, bright green
 }
 
 
-def print_extra(lines, mcdu_unit, what, colors):
-    screen = []
-    for code in what:
-        this_line = []
-        for c in range(24):
-            has_char = []
-            for color in colors:
+class MCDU:
+
+    def __init__(self) -> None:
+        self.datarefs = {}
+        self.lines = {}
+        self._req_vars = 0
+
+    def init(self):
+        pass
+
+    def get_variables(self) -> set:
+        variables = set()
+        variables.add("AirbusFBW/MCDU1VertSlewKeys")
+        for mcdu_unit in range(1, 2):
+            variables = variables | self.get_variables1unit(mcdu_unit=mcdu_unit)
+        self._req_vars = len(variables)
+        return variables
+
+    def get_variables1unit(self, mcdu_unit: int = 1) -> set:
+        variables = set()
+        # label
+        for code in ["title", "stitle"]:
+            for color in "bgwys":
                 if code == "stitle" and color == "s":
-                    continue
-                d = f"AirbusFBW/MCDU{mcdu_unit}{code}{color}"
-                v = lines.get(d)
-                if v is None:
-                    print("no dataref", d)
-                else:
-                    if c < len(v):
-                        if v[c] != " ":
-                            has_char.append((v[c], color))
-            if len(has_char) == 1:
-                this_line = this_line + has_char
+                    continue  # skip
+                variables.add(f"AirbusFBW/MCDU{mcdu_unit}{code}{color}")
+        # scratchpad
+        code = "sp"
+        for color in "aw":
+            variables.add(f"AirbusFBW/MCDU{mcdu_unit}{code}{color}")
+        # lines
+        for line in range(1, 7):
+            for code in ["label", "cont", "scont"]:
+                for color in MCDU_COLORS:
+                    if code.endswith("cont") and color.startswith("L"):
+                        continue  # skip
+                    variables.add(f"AirbusFBW/MCDU{mcdu_unit}{code}{line}{color}")
+        return variables
+
+    def variable_changed(self, variable):
+        ROOT = "AirbusFBW/MCDU"
+        if not variable.value_changed():
+            return
+        if not variable.name.startswith(ROOT):
+            return
+        self.datarefs[variable.name] = variable
+        mcdu_unit = -1
+        try:
+            mcdu_unit = int(variable.name[len(ROOT)])
+        except:
+            print("error for int", variable.name[len(ROOT)], variable)
+            return
+        if "title" in variable.name:
+            self.update_title(variable, mcdu_unit=mcdu_unit)
+        elif "sp" in variable.name:
+            self.update_sp(variable, mcdu_unit=mcdu_unit)
+        else:
+            line = variable.name[-2]
+            if line == "L":
+                line = variable.name[-3]
+            if "label" in variable.name:
+                self.update_label(variable, mcdu_unit=mcdu_unit, line=line)
             else:
-                if len(has_char) > 1:
-                    print(f"mutiple char {code}, {c}: {has_char}")
-                this_line.append((" ", "w"))
-        screen.append(this_line)
-    return screen
+                self.update_line(variable, mcdu_unit=mcdu_unit, line=line)
+        if len(self.datarefs) == self._req_vars:  # if got all data
+            self.show_screen()
 
-
-def get_char(lines, mcdu_unit, l, c, line_code):
-    for color in MCDU_COLORS:
-        if line_code.endswith("cont") and color.startswith("L"):
-            continue
-        d = f"AirbusFBW/MCDU{mcdu_unit}{line_code}{l}{color}"
-        # line.format(mcdu_unit=1, line=l, color=color)
-        v = lines.get(d)
-        if v is None:
-            print("no dataref", d)
-            continue
-        if c < len(v):
-            if v[c] != " ":
-                return v[c], color
-    return " ", "w"
-
-
-def print_screen(lines, mcdu_unit):
-    screen = []
-    for l in range(6):
-        line = l + 1
-        for code in ["label", "cont", "scont"]:
-            this_line = []
-            for char in range(24):
-                d = get_char(lines, mcdu_unit, line, char, code)
-                this_line.append(d)
-            screen.append(this_line)
-    return screen
-
-
-def combine(lines):
-    def combi(l1, l2):
+    def combine(self, l1, l2):
         line = []
         for i in range(24):
             if l1[i][0] == " ":
@@ -278,71 +99,118 @@ def combine(lines):
             line.append(l1[i])
         return line
 
-    screen = []
-    for i in range(0, 21, 3):
-        screen.append(combi(lines[i], lines[i + 1]))
-        screen.append(lines[i + 2])
-    return screen
+    def update_title(self, variable, mcdu_unit: int):
+        lines = self.get_line_extra(mcdu_unit=mcdu_unit, what=["title", "stitle"], colors="bgwys")
+        self.lines[f"AirbusFBW/MCDU{mcdu_unit}title"] = self.combine(lines[0], lines[1])
 
+    def update_sp(self, variable, mcdu_unit: int):
+        self.lines[f"AirbusFBW/MCDU{mcdu_unit}sp"] = self.get_line_extra(mcdu_unit=mcdu_unit, what=["sp"], colors="aw")[0]
 
-def print_mcdu(lines, mcdu_unit):
-    screen = print_extra(lines, mcdu_unit, ["title", "stitle"], "bgwys")
-    screen = screen + print_screen(lines, mcdu_unit)
-    screen = screen + print_extra(lines, mcdu_unit, ["sp"], "aw")
-    screen = combine(screen)
-    return screen
+    def update_label(self, variable, mcdu_unit: int, line: int):
+        self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{line}"] = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["label"], colors=MCDU_COLORS)[0]
 
+    def update_line(self, variable, mcdu_unit: int, line: int):
+        lines = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["cont", "scont"], colors=MCDU_COLORS)
+        self.lines[f"AirbusFBW/MCDU{mcdu_unit}cont{line}"] = self.combine(lines[0], lines[1])
 
-def print_color(lines):
-    for line in lines:
-        curr = ""
-        for c in line:
-            if c[1] == "s":  # "special" characters (rev. eng.)
-                if c[0] == "E":
-                    c = ("☐", "a")
-                elif c[0] == "2":
-                    c = ("←", "w")
-                elif c[0] == "3":
-                    c = ("→", "w")
-                elif c[0] == "A":
-                    c = ("[", "b")
-                elif c[0] == "B":
-                    c = ("]", "b")
-                elif c[0] == "`":  # does not print on terminal
-                    c = ("°", c[1])
-            if curr != c[1]:
-                curr = c[1]
-                print(MCDU_COLORS[c[1]], end="")
-            print(c[0], end="")
-        print("\033[0m")  # reset
+    def get_line_extra(self, mcdu_unit, what, colors):
+        lines = []
+        for code in what:
+            this_line = []
+            for c in range(24):
+                has_char = []
+                for color in colors:
+                    if code == "stitle" and color == "s":  # if code in ["stitle", "title"] and color == "s":
+                        continue
+                    name = f"AirbusFBW/MCDU{mcdu_unit}{code}{color}"
+                    d = self.datarefs.get(name)
+                    if d is None:
+                        logger.debug(f"no dataref {name}")
+                        continue
+                    v = d.value
+                    if c < len(v):
+                        if v[c] != " ":
+                            has_char.append((v[c], color))
+                if len(has_char) == 1:
+                    this_line = this_line + has_char
+                else:
+                    if len(has_char) > 1:
+                        print(f"mutiple char {code}, {c}: {has_char}")
+                    this_line.append((" ", "w"))
+            lines.append(this_line)
+        return lines
 
+    def get_line(self, mcdu_unit, line, what, colors):
+        lines = []
+        for code in what:
+            this_line = []
+            for c in range(24):
+                has_char = []
+                for color in colors:
+                    if code.endswith("cont") and color.startswith("L"):
+                        continue
+                    name = f"AirbusFBW/MCDU{mcdu_unit}{code}{line}{color}"
+                    d = self.datarefs.get(name)
+                    if d is None:
+                        logger.debug(f"no dataref {name}")
+                        continue
+                    v = d.value
+                    if c < len(v):
+                        if v[c] != " ":
+                            has_char.append((v[c], color))
+                if len(has_char) == 1:
+                    this_line = this_line + has_char
+                else:
+                    if len(has_char) > 1:
+                        print(f"mutiple char {code}, {c}: {has_char}")
+                    this_line.append((" ", "w"))
+            lines.append(this_line)
+        return lines
 
-if __name__ == "__main__":
-    api = API(host="192.168.1.140", port=8080)
-    # api.set_api("vx")
-    api.set_api()
-    all_datarefs = Cache(api)
-    all_datarefs.load("/datarefs")
-    if api.version == "v2":
-        all_commands = Cache(api)
-        all_commands.load("/commands")
+    def build_screen(self):
+        variable = list(self.datarefs.values())[0]
+        mcdu_unit = int(variable.name[14])
+        self.update_title(variable, mcdu_unit)
+        self.update_sp(variable, mcdu_unit)
+        for line in range(1, 7):
+            self.update_label(variable, mcdu_unit, line)
+            self.update_line(variable, mcdu_unit, line)
 
-    data = []
-    with open("mcdu.txt", "r") as fp:
-        data = fp.readlines()
-        # data = txt.split("\n")
+    def show_mcdu(self, mcdu_unit: int):
+        def show_line(line):
+            curr = ""
+            for c in line:
+                if c[1] == "s":  # "special" characters (rev. eng.)
+                    if c[0] == "E":
+                        c = ("☐", "a")
+                    elif c[0] == "0":
+                        c = ("←", "b")
+                    elif c[0] == "2":
+                        c = ("←", "w")
+                    elif c[0] == "3":
+                        c = ("→", "w")
+                    elif c[0] == "A":
+                        c = ("[", "b")
+                    elif c[0] == "B":
+                        c = ("]", "b")
+                    elif c[0] == "`":  # does not print on terminal
+                        c = ("°", c[1])
+                if curr != c[1]:
+                    curr = c[1]
+                    print(MCDU_COLORS[c[1]], end="")
+                print(c[0], end="")
+            print("\033[0m")  # reset
 
-    print("getting data..", end="", flush=True)
-    mcdu = {}
-    for d in data:
-        d = d[:-1]
-        dref = Dataref(d, cache=all_datarefs)
-        mcdu[d] = dref.value
-        # print(d, mcdu[d], f"({len(mcdu[d])})" if type(mcdu[d]) is str else type(mcdu[d]))
-        print(".", end="", flush=True)
-    print("..done")
+        show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}title"])
+        for l in range(1, 7):
+            show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{l}"])
+            show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}cont{l}"])
+        show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}sp"])
 
-    with open("mcdu.out", "w") as fp:
-        json.dump(mcdu, fp, indent=2)
+    def show_screen(self):
+        for mcdu_unit in range(1, 2):
+            self.show_mcdu(mcdu_unit=mcdu_unit)
 
-    print_color(print_mcdu(mcdu, 1))
+    def save(self, fn):
+        with open(fn, "w") as fp:
+            json.dump({k: v.value for k, v in self.datarefs.items()}, fp, indent=2)

@@ -1,6 +1,7 @@
 import logging
 import base64
 import json
+from enum import Enum
 
 import requests
 
@@ -13,6 +14,25 @@ IDENT = "id"
 INDEX = "index"
 NAME = "name"
 DURATION = "duration"
+
+class REST_KW(Enum):
+    COMMANDS = "commands"
+    DATA = "data"
+    DATAREFS = "datarefs"
+    DESCRIPTION = "description"
+    DURATION = "duration"
+    IDENT = "id"
+    INDEX = "index"
+    ISACTIVE = "is_active"
+    ISWRITABLE = "is_writable"
+    NAME = "name"
+    PARAMS = "params"
+    REQID = "req_id"
+    RESULT = "result"
+    SUCCESS = "success"
+    TYPE = "type"
+    VALUE = "value"
+    VALUE_TYPE = "value_type"
 
 
 class API:
@@ -76,20 +96,37 @@ class API:
 
 
 class Cache:
-    def __init__(self, api: API) -> None:
+    """Accessory structure to host datarref and command cache
+    of current X-Plane instance.
+    Must be "refreshed" each time a new connection is created.
+    Must be refreshed each time a new aircraft is loaded (for new datarefs, commands, etc.)
+    Reload_cache() is provided in XPlaneREST.
+
+    There is no faster structure than a python dict() for (name,value) pair storage.
+    """
+
+    def __init__(self, api) -> None:
         self.api = api
+        self._raw_data = dict()
         self._data = dict()
+        self._ids = dict()
         self._valid = set()
 
     def load(self, path):
         url = self.api.url + path
         response = requests.get(url)
+        obj = Dataref
+        if path == "/commands":
+            obj = Command
         if response.status_code == 200:  # We have version 12.1.4 or above
             raw = response.json()
-            data = raw[DATA]
-            self._data = {c[NAME]: c for c in data}
+            raw_data = raw[REST_KW.DATA.value]
+            self._raw_data = {c[REST_KW.NAME.value]: c for c in raw_data}
+            # {d: Dataref(d, cache=all_datarefs) for d in data}
+            self._data = {d: obj(d, cache=self) for d in self._raw_data} # {c[REST_KW.NAME.value]: c for c in data}
+            self._ids = {d.ident: d for d in self._data.values()}
             self._valid = set()
-            logger.debug(f"{path[1:]} cached")
+            logger.debug(f"{path[1:]} cached ({len(self._data)} entries)")
             return
         logger.error(f"load: response={response.status_code}")
 
@@ -98,14 +135,34 @@ class Cache:
         return self._data is not None and len(self._data) > 0
 
     def get(self, name):
+        return self._raw_data.get(name)
+
+    def get_by_name(self, name):
         r = self._data.get(name)
         if r is not None:
             self._valid.add(name)
             return r
         return None
 
+    def get_by_id(self, ident: int):
+        r = self._ids.get(ident)
+        if r is not None:
+            self._valid.add(r.name)
+            return r
+        return None
+
     def is_valid(self, name):
         return name in self._valid
+
+    def save(self, filename):
+        with open(filename, "w") as fp:
+            json.dump(self._raw_data, fp)
+
+    def equiv(self, ident) -> str | None:
+        r = self._ids.get(ident)
+        if r is not None:
+            return f"{ident}({r.name})"
+        return None
 
 
 class XPObject:
@@ -127,10 +184,24 @@ class XPObject:
             return None
         return self.config[IDENT]
 
+    @property
+    def name(self) -> int | None:
+        if not self.valid:
+            return None
+        return self.config[NAME]
+
+    @property
+    def value_type(self) -> int | None:
+        if not self.valid:
+            return None
+        return self.config[REST_KW.VALUE_TYPE.value]
+
 
 class Dataref(XPObject):
     def __init__(self, path: str, cache: Cache) -> None:
         XPObject.__init__(self, path=path, cache=cache)
+        self._old_value = None
+        self._value = None
 
     def __str__(self) -> str:
         return f"{self.path}={self.value}"
@@ -140,13 +211,20 @@ class Dataref(XPObject):
         if not self.valid:
             logger.error(f"dataref {self.path} not found")
             return None
-        url = f"{self.api.url}/datarefs/{self.ident}/value"
-        response = requests.get(url)
-        data = response.json()
-        logger.debug(f"result: {data}")
-        if DATA in data and type(data[DATA]) in [bytes, str]:
-            return base64.b64decode(data[DATA])[:-1].decode("ascii").replace("\u0000", "")
-        return data[DATA]
+        if self._value is None:
+            url = f"{self.api.url}/datarefs/{self.ident}/value"
+            response = requests.get(url)
+            data = response.json()
+            logger.debug(f"result: {data}")
+            self._old_value = self._value
+            if DATA in data and type(data[DATA]) in [bytes, str]:
+                self._value = base64.b64decode(data[DATA])[:-1].decode("ascii").replace("\u0000", "")
+            else:
+                self._value = data[DATA]
+        return self._value
+
+    def value_changed(self) -> bool:
+        return (self._old_value is None and self._value is not None) or self._value != self._old_value
 
     def write(self, value) -> bool:
         if not self.valid:
