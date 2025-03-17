@@ -5,7 +5,7 @@ import base64
 
 from simple_websocket import Client, ConnectionClosed
 
-from api import Dataref, Command, Cache, API, REST_KW
+from api import Command, Cache, API, REST_KW
 from mcdu import MCDU
 
 
@@ -15,19 +15,11 @@ logger = logging.getLogger(__name__)
 
 INDICES = "indices"
 
-class ReqNumber:
-    def __init__(self) -> None:
-        self.req_number = 0
-
-    def next(self) -> int:
-        self.req_number = self.req_number + 1
-        return self.req_number
-
 
 class XPWebSocket:
 
     def __init__(self, host: str, port: int, callback) -> None:
-        self.curr_reqnr = ReqNumber()
+        self.req_number = 0
         self.run = threading.Event()
         self.receiver_thread = threading.Thread(target=self.receiver)
         self.api = API(host="192.168.1.140", port=8080)
@@ -41,6 +33,12 @@ class XPWebSocket:
             self.all_commands.load("/commands")
         self.callback = callback
         self.start()
+
+    @property
+    def next_req(self) -> int:
+        """Provides request number for WebSocket requests"""
+        self.req_number = self.req_number + 1
+        return self.req_number
 
     def reload_caches(self):
         self.all_datarefs = Cache(self.api)
@@ -89,11 +87,7 @@ class XPWebSocket:
                                         # Scalar values
                                         v = value
                                         # String
-                                        if (
-                                            dref.value_type is not None
-                                            and dref.value_type == "data"
-                                            and type(value) in [bytes, str]
-                                        ):  # data = string
+                                        if dref.value_type is not None and dref.value_type == "data" and type(value) in [bytes, str]:  # data = string
                                             v = base64.b64decode(value).decode("ascii").replace("\u0000", "")
                                         # Other than string
                                         elif type(v) in [int, float]:
@@ -107,8 +101,6 @@ class XPWebSocket:
 
                                 else:
                                     logger.warning(f"dataref {didx} not found")
-
-
 
                 except:
                     logger.debug("no message", exc_info=True)
@@ -135,7 +127,7 @@ class XPWebSocket:
         self.run.set()
 
     def send(self, payload: dict) -> int:
-        req_id = self.curr_reqnr.next()
+        req_id = self.next_req
         payload["req_id"] = req_id
         self.ws.send(json.dumps(payload))
         logger.debug(f"sent {payload}")
@@ -201,8 +193,10 @@ class XPWebSocket:
 
 
 if __name__ == "__main__":
-
     mcdu = MCDU()
-    ws = XPWebSocket(host="192.168.1.140", port=8080, callback=mcdu.variable_changed)
-    data = mcdu.get_variables()
-    ws.register_bulk_dataref_value_event(paths=data, on=True)
+    try:
+        ws = XPWebSocket(host="192.168.1.140", port=8080, callback=mcdu.variable_changed)
+        data = mcdu.get_variables()
+        ws.register_bulk_dataref_value_event(paths=data, on=True)
+    except KeyboardInterrupt:
+        mcdu.end()

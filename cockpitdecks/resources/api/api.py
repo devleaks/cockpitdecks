@@ -15,6 +15,7 @@ INDEX = "index"
 NAME = "name"
 DURATION = "duration"
 
+
 class REST_KW(Enum):
     COMMANDS = "commands"
     DATA = "data"
@@ -123,7 +124,7 @@ class Cache:
             raw_data = raw[REST_KW.DATA.value]
             self._raw_data = {c[REST_KW.NAME.value]: c for c in raw_data}
             # {d: Dataref(d, cache=all_datarefs) for d in data}
-            self._data = {d: obj(d, cache=self) for d in self._raw_data} # {c[REST_KW.NAME.value]: c for c in data}
+            self._data = {d: obj(d, cache=self) for d in self._raw_data}  # {c[REST_KW.NAME.value]: c for c in data}
             self._ids = {d.ident: d for d in self._data.values()}
             self._valid = set()
             logger.debug(f"{path[1:]} cached ({len(self._data)} entries)")

@@ -1,6 +1,6 @@
 import logging
 
-from api import Dataref, Cache, API
+from api import Cache, API
 
 from mcdu import MCDU
 
