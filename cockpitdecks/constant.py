@@ -71,12 +71,14 @@ AIRCRAFT_ICAO_VARIABLE = "sim/aircraft/view/acf_ICAO"
 LIVERY_PATH_VARIABLE = "sim/aircraft/view/acf_livery_path"
 LIVERY_INDEX_VARIABLE = "sim/aircraft/view/acf_livery_index"
 
+RELOAD_ON_LIVERY_CHANGE = False  # we only reload on AIRCRAFT_PATH_VARIABLE change
+RELOAD_ON_ICAO_CHANGE = False  # we only reload on AIRCRAFT_PATH_VARIABLE change
+
 
 # Rendez-vous Internal Variables
 #
 AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
 LIVERY_CHANGE_MONITORING = "livery-name"
-RELOAD_ON_LIVERY_CHANGE = False
 WEATHER_STATION_MONITORING = "weather-station"
 DAYTIME = "daytime"
 

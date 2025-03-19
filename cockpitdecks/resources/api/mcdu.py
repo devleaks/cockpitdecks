@@ -2,8 +2,6 @@ import logging
 import json
 import curses
 
-from cockpitdecks.resources.api.api import NAME
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.INFO)
@@ -241,7 +239,7 @@ class MCDU:
                 if curr != c[1]:
                     curr = c[1]
                 color = self.CURSES_COLORS[c[1]]
-                if c[1].startswith("L"):
+                if c[1].startswith("L"):  # L large? it is going to get bold
                     color = color | curses.A_BOLD
                 self.stdscr.addstr(linenum, idx, c[0], color)
                 # print(linenum, idx, c[0])

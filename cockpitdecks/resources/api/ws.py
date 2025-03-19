@@ -2,7 +2,6 @@ import json
 import threading
 import logging
 
-from cockpitdecks.resources.api.api import Dataref
 from simple_websocket import Client, ConnectionClosed
 
 from api import Dataref, Command, Cache, API

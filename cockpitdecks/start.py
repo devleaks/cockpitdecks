@@ -356,7 +356,7 @@ if args.packages is not None:
         environment[ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value] = args.packages
     else:
         environment[ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value] = environment[ENVIRON_KW.COCKPITDECKS_EXTENSION_PATH.value] + args.packages
-    startup_logger.info(f"added packages {args.packages}")
+    startup_logger.info(f"added packages {", ".join(args.packages)}")
 
 # COCKPITDECKS_PATH
 #

@@ -109,7 +109,7 @@ class XPWebSocket:
             self.ws.close()
             logger.warning("closed")
 
-    def parse(self, data: dict) -> dict:
+    def parse(self, data: dict) -> dict | None:
         ty = data[REST_KW.TYPE.value]
         if ty == "result":
             if not data[REST_KW.SUCCESS.value]:
@@ -132,11 +132,6 @@ class XPWebSocket:
         self.ws.send(json.dumps(payload))
         logger.debug(f"sent {payload}")
         return req_id
-
-    def register_dataref_value_event(self, path, on: bool = True) -> int:
-        dref = self.all_datarefs.get_by_name(name=path)
-        action = "dataref_subscribe_values" if on else "dataref_unsubscribe_values"
-        return self.send({"type": action, "params": {"datarefs": [{"id": dref.ident}]}})
 
     def split_dataref_path(self, path):
         name = path
@@ -186,10 +181,19 @@ class XPWebSocket:
         logger.warning(f"no bulk datarefs to {action}")
         return -1
 
-    def register_command_event(self, path, on: bool = True) -> int:
-        cmd = Command(path=path, cache=self.all_commands)
+    def register_dataref_value_event(self, path, on: bool = True) -> int:
+        return self.register_bulk_dataref_value_event(paths=[path], on=on)
+
+    def register_bulk_command_event(self, paths, on: bool = True) -> int:
+        cmds = []
+        for path in paths:
+            cmd = self.all_commands.get_by_name(path)
+            cmds.append({REST_KW.IDENT.value: dref.ident})
         action = "command_subscribe_is_active" if on else "command_unsubscribe_is_active"
-        return self.send({"type": action, "params": {"commands": [{"id": cmd.ident}]}})
+        return self.send({"type": action, "params": {"commands": cmds}})
+
+    def register_command_event(self, path, on: bool = True) -> int:
+        return self.register_bulk_command_event(paths=[path], on=on)
 
 
 if __name__ == "__main__":

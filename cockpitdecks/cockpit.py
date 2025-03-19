@@ -61,6 +61,7 @@ from cockpitdecks import (
     OBSERVABLES_FILE,
     RESOURCES_FOLDER,
     RELOAD_ON_LIVERY_CHANGE,
+    RELOAD_ON_ICAO_CHANGE,
     ROOT_DEBUG,
     SECRET_FILE,
     SOUNDS_FOLDER,
@@ -110,7 +111,7 @@ if EVENTLOGFILE is not None:
     handler.setFormatter(formatter)
     event_logger.addHandler(handler)
     event_logger.propagate = False
-LOG_DATAREF_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
+LOG_SIMULATOR_VARIABLE_EVENTS = False  # Do not log dataref events (numerous, can grow quite large, especialy for long sessions)
 #
 # ################################################
 
@@ -387,9 +388,9 @@ class CockpitInfoInstruction(CockpitInstruction):
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 
 # Little internal kitchen for internal datarefs
-AIRCRAFT_CHANGE_SIMULATOR_DATA = {Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING), Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)}
+AIRCRAFT_CHANGE_SIMULATOR_VARIABLES = {Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING), Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)}
 
-PERMANENT_SIMULATOR_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_DATA
+PERMANENT_SIMULATOR_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_VARIABLES
 
 
 class CockpitBase:
@@ -1571,6 +1572,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         if value != self.aircraft.icao:
             self.aircraft.icao = value
             logger.info("✈ " * 3 + f"aircraft {self.aircraft._acname}: icao set to {value}")
+            if RELOAD_ON_ICAO_CHANGE:
+                logger.info("reloading..")
+                self.reload_decks()
+                logger.info("..reloaded")
+            else:
+                logger.info("not reloading on ICAO change")
 
     def change_livery(self):
         # We arrive here when sim/aircraft/view/acf_livery_path or sim/aircraft/view/acf_livery_index changed
@@ -1806,7 +1813,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             try:
                 logger.debug(f"doing {e}..")
                 self.inc("event_count_" + type(e).__name__)
-                if EVENTLOGFILE is not None and (LOG_DATAREF_EVENTS or not isinstance(e, SimulatorEvent)) and not e.is_replay():
+                if EVENTLOGFILE is not None and (LOG_SIMULATOR_VARIABLE_EVENTS or not isinstance(e, SimulatorEvent)) and not e.is_replay():
                     # we do not enqueue events that are replayed
                     event_logger.info(e.to_json())
                 e.run(just_do_it=True)
@@ -1857,8 +1864,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         logger.info(f"new usb device {device_id} {serial}")
         inv = {v: k for k, v in self._secret.items()}
         if s in inv:
-            logger.warning(f"starting deck {inv.get(s)}..")
+            deck = inv.get(s)
+            logger.warning(f"starting deck {deck}..")
             logger.warning("it is currently not possible to start a single deck -- please reload all decks to take new deck into account")
+            # self.reload_decks()
+            # logger.warning("..decks reloaded")
+            # logger.warning(f"..deck {deck} started")
             # self._device_scanned = False
         else:
             logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks ({', '.join([str(s) for s in inv.keys()])})")
