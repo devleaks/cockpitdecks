@@ -71,14 +71,13 @@ class Aircraft:
         self._secret = {}  # content of aircraft/deckconfig/secret.yaml
 
         # "Aircraft" name or model...
-        self.name = "Aircraft"
         self.icao = "ZZZZ"
 
-        self._acpath = None
-        self._acname = ""
-        self._acliverypath = None
-        self._acliveryname = None
-        self._ac_running = False
+        self._path = None
+        self._name = ""
+        self._liverypath = None
+        self._liveryname = None
+        self._running = False
 
         # Decks
         self.decks = {}  # all decks: { deckname: deck }
@@ -86,14 +85,22 @@ class Aircraft:
         self.virtual_decks_added = False
 
         # Content
-        self._ac_fonts = {}
-        self._ac_sounds = {}
-        self._ac_icons = {}
-        self._ac_observables: Observables | None = None
+        self._fonts = {}
+        self._sounds = {}
+        self._icons = {}
+        self._observables: Observables | None = None
 
         # Internal variables
         self._aircraft_variable_names = None
         self._livery_config = {}  # content of <livery path>/deckconfig.yaml, to change color for example, to match livery!
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def liveryname(self):
+        return self._liveryname
 
     @property
     def default_pages(self):
@@ -113,15 +120,15 @@ class Aircraft:
 
     @property
     def acpath(self):
-        return self._acpath
+        return self._path
 
     @acpath.setter
     def acpath(self, acpath: str | None):
-        self._acpath = acpath
+        self._path = acpath
         logger.info(f"aircraft path set to {acpath}")
 
     def is_running(self) -> bool:
-        return self._ac_running
+        return self._running
 
     # Shortcuts
     @property
@@ -161,19 +168,19 @@ class Aircraft:
 
     @property
     def fonts(self):
-        return self._ac_fonts
+        return self._fonts
 
     @property
     def sounds(self):
-        return self._ac_sounds
+        return self._sounds
 
     @property
     def icons(self):
-        return self._ac_icons
+        return self._icons
 
     @property
     def observables(self):
-        return self._ac_observables
+        return self._observables
 
     # Attributes
     def get_button_value(self, name):
@@ -211,7 +218,15 @@ class Aircraft:
         return self._aircraft_variable_names
 
     def get_events(self) -> set:
-        return set()  # later
+        ret = set()
+        if type(self.observables) is Observables:
+            obs = self.observables.get_events()
+            if len(obs) > 0:
+                ret = ret | obs
+        elif type(self.observables) is dict:
+            for obs in self.observables.values():
+                ret = ret | obs.get_events()
+        return ret
 
     # Initialisation, setup
     def scan_web_decks(self):
@@ -251,28 +266,28 @@ class Aircraft:
     # #########################################################
     # Aircraft resources
     #
-    def load_ac_resources(self):
+    def load_resources(self):
         # currently, nothing is not with this config, but it is loaded if it exists
         self.load_livery_config()
-        self.load_ac_deck_types()
-        self.load_ac_fonts()
-        self.load_ac_icons()
-        self.load_ac_sounds()
-        self.load_ac_observables()
+        self.load_deck_types()
+        self.load_fonts()
+        self.load_icons()
+        self.load_sounds()
+        self.load_observables()
         self.cockpit.add_resources(aircraft=self)
 
     def load_livery_config(self):
         # currently, nothing is not with this config, but it is loaded if it exists
-        if self._acliverypath is not None and self._acliverypath != "":
-            fn = os.path.join(self._acliverypath, CONFIG_FOLDER, CONFIG_FILE)
+        if self._liverypath is not None and self._liverypath != "":
+            fn = os.path.join(self._liverypath, CONFIG_FOLDER, CONFIG_FILE)
             if os.path.exists(fn):
                 self._livery_config = Config(filename=fn)
                 logger.info(f"loaded livery configuration from {fn}, currently unused...")
             else:
                 logger.debug("livery has no configuration")
             return
-        if self.acpath is not None and self._acliveryname is not None and self._acliveryname != "":
-            fn = os.path.join(self.acpath, "liveries", self._acliveryname, CONFIG_FOLDER, CONFIG_FILE)
+        if self.acpath is not None and self._liveryname is not None and self._liveryname != "":
+            fn = os.path.join(self.acpath, "liveries", self._liveryname, CONFIG_FOLDER, CONFIG_FILE)
             if os.path.exists(fn):
                 self._livery_config = Config(filename=fn)
                 logger.info(f"loaded livery configuration from {fn}, currently unused...")
@@ -281,7 +296,7 @@ class Aircraft:
         else:
             logger.info("no livery path")
 
-    def load_ac_deck_types(self):
+    def load_deck_types(self):
         aircraft_deck_types = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, DECK_TYPES))
         added = []
         for deck_type in DeckType.list(aircraft_deck_types):
@@ -299,7 +314,7 @@ class Aircraft:
                 logger.warning(f"could not load deck type {deck_type}, ignoring")
         logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
 
-    def load_ac_icons(self):
+    def load_icons(self):
         # Loading aircraft icons
         #
         cache_icon = self.get_attribute("cache-icon")
@@ -308,34 +323,34 @@ class Aircraft:
             cache = os.path.join(dn, "_icon_cache.pickle")
             if os.path.exists(cache) and cache_icon:
                 with open(cache, "rb") as fp:
-                    self._ac_icons = pickle.load(fp)
-                logger.info(f"{len(self._ac_icons)} aircraft icons loaded from cache")
+                    self._icons = pickle.load(fp)
+                logger.info(f"{len(self._icons)} aircraft icons loaded from cache")
             else:
                 icons = os.listdir(dn)
                 for i in icons:
                     fn = os.path.join(dn, i)
                     if has_ext(i, "png"):  # later, might load JPG as well.
                         image = Image.open(fn)
-                        self._ac_icons[i] = image
+                        self._icons[i] = image
                     elif has_ext(i, "svg"):  # Wow.
                         try:
                             fn = os.path.join(dn, i)
                             fout = fn.replace(".svg", ".png")
                             svg2png(url=fn, write_to=fout)
                             image = Image.open(fout)
-                            self._ac_icons[i] = image
+                            self._icons[i] = image
                         except:
                             logger.warning(f"could not load icon {fn}")
                             pass  # no cairosvg
 
                 if cache_icon:  # we cache both folders of icons
                     with open(cache, "wb") as fp:
-                        pickle.dump(self._ac_icons, fp)
-                    logger.info(f"{len(self._ac_icons)} aircraft icons cached")
+                        pickle.dump(self._icons, fp)
+                    logger.info(f"{len(self._icons)} aircraft icons cached")
                 else:
-                    logger.info(f"{len(self._ac_icons)} aircraft icons loaded")
+                    logger.info(f"{len(self._icons)} aircraft icons loaded")
 
-    def load_ac_fonts(self):
+    def load_fonts(self):
         # Loading fonts.
         # For custom fonts (fonts found in the fonts config folder),
         # we supply the full path for font definition to ImageFont.
@@ -348,18 +363,18 @@ class Aircraft:
             fonts = os.listdir(dn)
             for i in fonts:
                 if has_ext(i, ".ttf") or has_ext(i, ".otf"):
-                    if i not in self._ac_fonts.keys():
+                    if i not in self._fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
                             test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
-                            self._ac_fonts[i] = fn
+                            self._fonts[i] = fn
                         except:
                             logger.warning(f"aircraft font file {fn} not loaded")
                     else:
                         logger.debug(f"aircraft font {i} already loaded")
-        logger.info(f"{len(self._ac_fonts)} aircraft fonts loaded")
+        logger.info(f"{len(self._fonts)} aircraft fonts loaded")
 
-    def load_ac_sounds(self):
+    def load_sounds(self):
         # Loading sounds.
         #
         dn = os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, SOUNDS_FOLDER)
@@ -367,26 +382,31 @@ class Aircraft:
             sounds = os.listdir(dn)
             for i in sounds:
                 if has_ext(i, ".wav") or has_ext(i, ".mp3"):
-                    if i not in self._ac_sounds.keys():
+                    if i not in self._sounds.keys():
                         fn = os.path.join(dn, i)
                         try:
                             with open(fn, mode="rb") as file:  # b is important -> binary
-                                self._ac_sounds[i] = file.read()
+                                self._sounds[i] = file.read()
                         except:
                             logger.warning(f"custom sound file {fn} not loaded")
                     else:
                         logger.debug(f"sound {i} already loaded")
 
-        logger.info(f"{len(self._ac_sounds)} aircraft sounds loaded")
+        logger.info(f"{len(self._sounds)} aircraft sounds loaded")
 
-    def load_ac_observables(self):
+    def load_observables(self):
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            self._ac_observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self._ac_observables.observables)} aircraft observables")
+            self._observables = Observables(config=config, simulator=self.sim)
+            logger.info(f"loaded {len(self._observables.observables)} aircraft observables")
+
+    def unload_observables(self):
+        if type(self.observables) is Observables:
+            self.observables.unload()
+        # monitored variables will remain monitored but observable won't listen to changes
 
     # #########################################################
     # Utility functions for path manipulation
@@ -411,17 +431,17 @@ class Aircraft:
         return os.path.basename(path)
 
     def change_livery(self, path) -> bool:
-        if self._acliverypath is not None and self._acliverypath == path:
-            logger.info(f"livery unchanged ({self._acliverypath})")
+        if self._liverypath is not None and self._liverypath == path:
+            logger.info(f"livery unchanged ({self._liverypath})")
             return False
-        oldlivery = self._acliveryname
-        self._acliverypath = path
-        self._acliveryname = Aircraft.get_livery_from_livery_path(path)
+        oldlivery = self._liveryname
+        self._liverypath = path
+        self._liveryname = Aircraft.get_livery_from_livery_path(path)
         self.load_livery_config()
         if oldlivery is None:
-            logger.info(f"installed livery {self._acliveryname}")
+            logger.info(f"installed livery {self._liveryname}")
             return False
-        logger.info(f"changed livery from {oldlivery} to {self._acliveryname}")
+        logger.info(f"changed livery from {oldlivery} to {self._liveryname}")
         return True
 
     # #########################################################
@@ -641,20 +661,20 @@ class Aircraft:
             self.icao = self._config.get("icao", "ZZZZ")
             logger.info(f"aircraft icao {self.icao} set from config")
 
-            self._acname = Aircraft.get_aircraft_name_from_aircraft_path(acpath)
-            logger.info(f"aircraft name set to {self._acname}")
+            self._name = Aircraft.get_aircraft_name_from_aircraft_path(acpath)
+            logger.info(f"aircraft name set to {self._name}")
 
-            self.load_ac_deck_types()
+            self.load_deck_types()
             self.scan_web_decks()
 
             if len(self.devices) == 0:
                 logger.warning("no device")
                 return
 
-            self.load_ac_resources()
+            self.load_resources()
             self.create_decks()
             self.load_pages()
-            self._ac_running = True
+            self._running = True
         else:
             if acpath is None:
                 logger.error(f"no aircraft folder")
@@ -672,17 +692,18 @@ class Aircraft:
         logger.info("terminating aircraft..")
         self.cockpit.variable_database.dump()
         logger.info("..terminating decks..")
-        self._ac_running = False
+        self._running = False
         for deck in self.decks.values():
             deck.terminate()
         logger.info("..terminating web decks..")
         self.remove_web_decks()
         logger.info("..removing aircraft resources..")
         self.decks = {}
-        self._ac_fonts = {}
-        self._ac_icons = {}
-        self._ac_sounds = {}
-        self._ac_observables = None
+        self._fonts = {}
+        self._icons = {}
+        self._sounds = {}
+        self.unload_observables()
+        self._observables = None
         self.cockpit.remove_aircraft_resources()
         logger.info("..remaining threads..")
         nt = threading.enumerate()

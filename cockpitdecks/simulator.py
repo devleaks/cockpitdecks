@@ -46,23 +46,22 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def __init__(self, cockpit, environ):
         self._inited = False
         self._environ = environ
+        self._observables = None
         self.name = type(self).__name__
         self.cockpit = cockpit
+
         self.running = False
-
-        self.providers = []  # list of simulator providers to collect variables from
-
-        self.simulator_variable_to_monitor = {}  # simulator data and number of objects monitoring
-        self.simulator_event_to_monitor = {}  # simulator event and number of objects monitoring
+        self._startup = True
 
         self.roundings = {}  # name: int
         self.frequencies = {}  # name: int
         self.physics = {}  # name: physical_unit
 
-        self._startup = True
+        # Internal properties
+        self.simulator_variable_to_monitor = {}  # simulator data and number of objects monitoring
+        self.simulator_event_to_monitor = {}  # simulator event and number of objects monitoring
 
         self.cockpit.set_logging_level(__name__)
-        self.register_permanently_monitored_simulator_variables_provider(provider=self)
 
     def get_id(self):
         return self.name
@@ -161,32 +160,6 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def datetime(self, zulu: bool = False, system: bool = False) -> datetime:
         """Returns the current simulator date and time"""
         return datetime.now().astimezone()
-
-    def register_permanently_monitored_simulator_variables_provider(self, provider):
-        if provider not in self.providers:
-            self.providers.append(provider)
-
-    def get_permanently_monitored_simulator_variables(self) -> dict:
-        dtdrefs = {}
-        for provider in self.providers:
-            cnt = 0
-            for d in provider.get_variables():
-                if d in dtdrefs:
-                    logger.info(f"{d} already added")
-                    continue
-                dtdrefs[d] = self.get_variable(d)
-                dtdrefs[d].add_listener(provider)
-                cnt = cnt + 1
-            logger.info(f"adding {cnt} permanent variables from {provider.name}")
-        return dtdrefs
-
-    def get_permanently_monitored_simulator_events(self) -> set:
-        events = set()
-        for provider in self.providers:
-            provevnts = provider.get_events()
-            events = events | provevnts
-            logger.info(f"adding {len(provevnts)} permanent events from {provider.name}")
-        return events
 
     def variable_factory(self, name: str, is_string: bool = False, creator: str | None = None) -> Variable:
         # here is the place to inject a physical type if any, may be from a list
@@ -372,6 +345,14 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         self.cockpit.variable_database.remove_all_simulator_variables()
         self.simulator_variable_to_monitor = {}
         logger.debug("..removed")
+
+    #
+    # Observables
+    def get_observables(self):
+        return self._observables
+
+    def load_observables(self):
+        self._observables = set()
 
     #
     # Events

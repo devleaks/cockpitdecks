@@ -62,6 +62,11 @@ class Observables:
                 return o
         return None
 
+    def unload(self):
+        for o in self.observables:
+            o.disable()
+            o.remove_listener()
+
 
 class Observable(SimulatorVariableListener):
     """An Observable is a Value that is monitored for changes.
@@ -95,7 +100,8 @@ class Observable(SimulatorVariableListener):
                 self._events = self._events | set(events)
             if len(self._events) == 0:
                 logger.warning(f"observable {self.name} of type event has no event")
-            print(f"observable {self.name}: events: {self._events}")
+            else:
+                logger.debug(f"observable {self.name}: listening to events {self._events}")
         self._value = Value(name=self.name, config=self._config, provider=simulator)
         self._actions = MacroInstruction(
             name=self.name,
@@ -136,17 +142,31 @@ class Observable(SimulatorVariableListener):
     def init(self):
         # Register simulator variables and ask to be notified
         variables = self.get_variables()
-        v = []
+        v = set()
         if variables is not None:
             for s in variables:
                 ref = self.sim.get_variable(s)
                 if ref is not None:
-                    v.append(ref.name)
+                    v.add(ref.name)
                     ref.add_listener(self)
                 else:
                     logger.warning(f"could not get variable {s}")
-        logger.debug(f"observable {self.name}: listening to variables {v}")
+        if len(v) == 0:
+            logger.debug(f"observable {self.name}: listening to no variable")
+        else:
+            logger.debug(f"observable {self.name}: listening to variables {v}")
         # logger.debug(f"observable {self.name} inited")
+
+    def remove_listener(self):
+        variables = self.get_variables()
+        if variables is not None:
+            for s in variables:
+                ref = self.sim.get_variable(s)
+                if ref is not None:
+                    ref.remove_listener(self)
+                else:
+                    logger.warning(f"could not get variable {s}")
+        logger.debug(f"observable {self.name}: listening to no variable")
 
     def get_events(self) -> set:
         return self._events
