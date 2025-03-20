@@ -82,12 +82,12 @@ class Observable(SimulatorVariableListener):
 
     def __init__(self, config: dict, simulator: Simulator):
         self._config = config
-        self.name = config.get(CONFIG_KW.NAME.value, type(self).__name__)
+        self._name: str = config.get(CONFIG_KW.NAME.value, type(self).__name__)
         self.mode = config.get(CONFIG_KW.TYPE.value, CONFIG_KW.TRIGGER.value)
         self.sim = simulator
         self._enabled = config.get(CONFIG_KW.ENABLED.value, False)
         # Create a data "internal:observable:name" is enabled or disabled
-        self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self.name])
+        self._enabled_data_name = ID_SEP.join([CONFIG_KW.OBSERVABLE.value, self._name])
         self._enabled_data = self.sim.get_internal_variable(self._enabled_data_name)
         self._enabled_data.update_value(new_value=0)
         self._events = set()
@@ -99,12 +99,12 @@ class Observable(SimulatorVariableListener):
             if events is not None:
                 self._events = self._events | set(events)
             if len(self._events) == 0:
-                logger.warning(f"observable {self.name} of type event has no event")
+                logger.warning(f"observable {self._name} of type event has no event")
             else:
-                logger.debug(f"observable {self.name}: listening to events {self._events}")
-        self._value = Value(name=self.name, config=self._config, provider=simulator)
+                logger.debug(f"observable {self._name}: listening to events {self._events}")
+        self._value = Value(name=self._name, config=self._config, provider=simulator)
         self._actions = MacroInstruction(
-            name=self.name,
+            name=self._name,
             performer=simulator,
             factory=simulator.cockpit,
             instructions=self._config.get(CONFIG_KW.ACTIONS.value, {}),
@@ -114,12 +114,12 @@ class Observable(SimulatorVariableListener):
     @property
     def value(self):
         """Gets the current value, but does not provoke a calculation, just returns the current value."""
-        logger.debug(f"observable {self.name}: {self._value.value}")
+        logger.debug(f"observable {self._name}: {self._value.value}")
         return self._value.value
 
     @value.setter
     def value(self, value):
-        logger.debug(f"observable {self.name}: set value to {value}")
+        logger.debug(f"observable {self._name}: set value to {value}")
         self._value.update_value(new_value=value, cascade=True)
 
     def has_changed(self) -> bool:
@@ -132,12 +132,12 @@ class Observable(SimulatorVariableListener):
     def enable(self):
         self._enabled = True
         self._enabled_data.update_value(new_value=1, cascade=True)
-        logger.info(f"observable {self.name} enabled")
+        logger.info(f"observable {self._name} enabled")
 
     def disable(self):
         self._enabled = False
         self._enabled_data.update_value(new_value=0, cascade=True)
-        logger.info(f"observable {self.name} disabled")
+        logger.info(f"observable {self._name} disabled")
 
     def init(self):
         # Register simulator variables and ask to be notified
@@ -152,10 +152,10 @@ class Observable(SimulatorVariableListener):
                 else:
                     logger.warning(f"could not get variable {s}")
         if len(v) == 0:
-            logger.debug(f"observable {self.name}: listening to no variable")
+            logger.debug(f"observable {self._name}: listening to no variable")
         else:
-            logger.debug(f"observable {self.name}: listening to variables {v}")
-        # logger.debug(f"observable {self.name} inited")
+            logger.debug(f"observable {self._name}: listening to variables {v}")
+        # logger.debug(f"observable {self._name} inited")
 
     def remove_listener(self):
         variables = self.get_variables()
@@ -166,7 +166,7 @@ class Observable(SimulatorVariableListener):
                     ref.remove_listener(self)
                 else:
                     logger.warning(f"could not get variable {s}")
-        logger.debug(f"observable {self.name}: listening to no variable")
+        logger.debug(f"observable {self._name}: listening to no variable")
 
     def get_events(self) -> set:
         return self._events
@@ -176,29 +176,29 @@ class Observable(SimulatorVariableListener):
 
     def simulator_variable_changed(self, data: SimulatorVariable):
         # if not self._enabled:
-        #     logger.warning(f"observable {self.name} disabled")
+        #     logger.warning(f"observable {self._name} disabled")
         #     return
         self.value = self._value.value
         if self.mode == CONFIG_KW.TRIGGER.value:
             if self.value != 0:  # 0=False
-                logger.debug(f"observable {self.name} executing (conditional trigger)..")
+                logger.debug(f"observable {self._name} executing (conditional trigger)..")
                 if self._enabled:
                     self._actions.execute()
                 else:
-                    logger.info(f"observable {self.name} not enabled")
-                logger.debug(f"..observable {self.name} executed")
+                    logger.info(f"observable {self._name} not enabled")
+                logger.debug(f"..observable {self._name} executed")
             else:
-                logger.debug(f"observable {self.name} condition is false ({self.value})")
+                logger.debug(f"observable {self._name} condition is false ({self.value})")
         if self.mode == CONFIG_KW.ONCHANGE.value:
             if self.has_changed():
-                logger.debug(f"observable {self.name} executing (value changed)..")
+                logger.debug(f"observable {self._name} executing (value changed)..")
                 if self._enabled:
                     self._actions.execute()
                 else:
-                    logger.info(f"observable {self.name} not enabled")
-                logger.debug(f"..observable {self.name} executed")
+                    logger.info(f"observable {self._name} not enabled")
+                logger.debug(f"..observable {self._name} executed")
             else:
-                logger.debug(f"observable {self.name} value unchanged ({self.value})")
+                logger.debug(f"observable {self._name} value unchanged ({self.value})")
 
     def describe(self) -> str:
         return ". ".join(["to do"])

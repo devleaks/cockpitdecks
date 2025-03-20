@@ -78,6 +78,9 @@ class Variable(ABC):
 
         self.listeners: List[VariableListener] = []  # buttons using this simulator_variable, will get notified if changes.
 
+    def __str__(self) -> str:
+        return str(self.name)
+
     # ################################
     # Variable name control and generation
     #

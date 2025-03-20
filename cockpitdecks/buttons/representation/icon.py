@@ -526,6 +526,16 @@ class MultiTexts(IconText):
             return None
         if self.num_texts > 0:
             self._text = self._multi_texts[value % self.num_texts]
+
+            self.bg_texture = self._text._config.get("text-bg-texture")
+            self.bg_color = self._text._config.get("text-bg-color")
+            self.notify = self._text._config.get("text-notify")
+            if self.bg_color is not None:
+                self.icon_color = convert_color(self.bg_color)
+                self.icon_texture = None  # if there is a color, we do not use the texture, unless explicitely supplied
+            if self.bg_texture is not None:
+                self.icon_texture = self.bg_texture
+
             return super().render()
         else:
             logger.warning(f"button {self.button_name}: {type(self).__name__}: icon not found {value}/{self.num_texts}")

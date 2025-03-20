@@ -85,9 +85,9 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
             self.icao_dataref.add_listener(self)  # the representation gets notified directly.
             self.variable_changed(self.icao_dataref)
             self._inited = True
-            logger.debug(f"initialized, waiting for dataref {self.icao_dataref.name}")
+            logger.debug(f"{self.name}: initialized, listening on dataref {self.icao_dataref.name}")
         else:
-            logger.debug(f"initialized, fixed {self.icao}")
+            logger.debug(f"{self.name}: initialized, fixed {self.icao}")
         self._inited = True
 
     @property
@@ -104,6 +104,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         # what if Dataref.internal_variableref_path("weather:*") change?
         if self.is_fixed:
             return
+        logger.debug(f"variable changed: {data.name}={data.value}")
         if data.name != self.icao_dataref_path:
             return
         icao = data.value

@@ -9,6 +9,10 @@ a321dev:
 	clear
 	@cockpitdecks-cli aircrafts/ToLiss\ A321 -p `cat packdev.txt`
 
+test:
+	clear
+	@cockpitdecks-cli aircrafts/tests --fixed -p `cat packdev.txt`
+
 a321:
 	clear
 	@cockpitdecks-cli aircrafts/ToLiss\ A321 -p `cat packages.txt`
