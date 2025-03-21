@@ -13,8 +13,8 @@ from cockpitdecks.variable import Variable, VariableListener, PATTERN_DOLCB
 # from cockpitdecks.button.activation import ActivationValueProvider
 # from cockpitdecks.simulator import SimulatorVariableValueProvider
 
-from .resources.rpc import RPC, RPC_for_strings
-from .resources.color import DEFAULT_COLOR, convert_color
+from .resources.rpc import RPC
+from .resources.color import convert_color
 from .resources.iconfonts import ICON_FONTS
 
 logger = logging.getLogger(__name__)
@@ -527,7 +527,7 @@ class TextWithVariables(StringWithVariables):
         if dflt_text_color is None:
             dflt_text_color = self.owner.get_attribute("label-color")
             if dflt_text_color is None:
-                dflt_text_color = DEFAULT_COLOR
+                dflt_text_color = (128, 128, 128)
                 logger.warning(f"variable {self.display_name}: no default label color, using {dflt_text_color}")
         self.color = self._config.get(f"{self.prefix}-color", dflt_text_color)
         self.color = convert_color(self.color)

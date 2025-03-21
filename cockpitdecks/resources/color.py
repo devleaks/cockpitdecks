@@ -1,23 +1,16 @@
 """
 Helper class for color management
 """
-
 import logging
 import colorsys
 from typing import Tuple
 
-# import numpy as np
-
-from PIL import Image, ImageDraw
 from PIL import ImageColor
+
 
 logger = logging.getLogger(__name__)
 
-TRANSPARENT_PNG_COLOR_BLACK = (0, 0, 0, 0)  # black-based
-TRANSPARENT_PNG_COLOR_WHITE = (255, 255, 255, 0)  # white
-TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
 
-DEFAULT_COLOR_NAME = "grey"
 DEFAULT_COLOR = (128, 128, 128)
 
 

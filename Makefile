@@ -22,7 +22,9 @@ a339:
 	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p `cat packages.txt`
 
 clean:
-	rm -f cockpitdecks.log events.json commands.json datarefs.json webapi.log variable-datatase-dump.yaml webapi-datarefs.json webapi-commands.json
+	rm -f cockpitdecks.log
+	rm -f events.json variable-database-dump.yaml 
+	rm -f commands.json datarefs.json webapi-datarefs.json webapi-commands.json webapi.log
 
 black:
 	sh blackall.sh

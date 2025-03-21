@@ -73,7 +73,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType, VariableListener
-from cockpitdecks.simulator import Simulator, SimulatorVariableListener, SimulatorEvent, NoSimulator
+from cockpitdecks.simulator import Simulator, SimulatorEvent, NoSimulator
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables, Observable
 from cockpitdecks.decks.virtualdeck import VirtualDeck

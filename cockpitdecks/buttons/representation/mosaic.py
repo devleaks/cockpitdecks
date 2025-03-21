@@ -1,9 +1,6 @@
 import logging
 
-from PIL import Image
-
 from cockpitdecks import DECK_KW
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
 from .icon import IconBase
 
 logger = logging.getLogger(__name__)

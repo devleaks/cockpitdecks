@@ -117,7 +117,6 @@ class SolariIcon(DrawAnimation):
     FLAP_BG_COLOR = "black"
 
     SPEED = 0.005
-    ICON_SIZE = 256  # px
 
     PARAMETERS = {
         "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},

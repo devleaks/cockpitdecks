@@ -4,9 +4,8 @@ Special represenations for web decks, to draw a "hardware" button
 
 import logging
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR
 from .icon import IconBase
 
 logger = logging.getLogger(__name__)

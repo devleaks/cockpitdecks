@@ -11,11 +11,11 @@ from PIL import Image
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT, DEFAULT_ATTRIBUTE_PREFIX
 from cockpitdecks.decks.resources.decktype import DeckButton
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR_BLACK, convert_color
+from cockpitdecks.resources.color import convert_color
 
 from cockpitdecks.decks.resources import DeckType
 from cockpitdecks.buttons.representation import IconBase
-from cockpitdecks.event import PushEvent, EncoderEvent, SwipeEvent
+from cockpitdecks.event import PushEvent, EncoderEvent
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .page import Page
 from .button import Button
@@ -639,7 +639,7 @@ class DeckWithIcons(Deck):
         return button_def.get_wallpaper()
 
     def create_empty_icon_for_key(self, index):
-        return Image.new(mode="RGBA", size=self.get_image_size(index), color=TRANSPARENT_PNG_COLOR_BLACK)
+        return Image.new(mode="RGBA", size=self.get_image_size(index), color=(0, 0, 0, 0))  # black-based
 
     def get_icon_background(
         self,

@@ -6,14 +6,13 @@ import math
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color
+from cockpitdecks.resources.color import convert_color
 from .icon import IconBase  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 ICON_SIZE = 256  # px
-
 
 #
 # ###############################
@@ -45,7 +44,7 @@ class DrawBase(IconBase):
 
     def double_icon(self, width: int = ICON_SIZE * 2, height: int = ICON_SIZE * 2):
         """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
-        image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
+        image = Image.new(mode="RGBA", size=(width, height), color=self.TRANSPARENT_PNG_COLOR)
         draw = ImageDraw.Draw(image)
         return image, draw
 
