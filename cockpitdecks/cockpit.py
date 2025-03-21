@@ -14,6 +14,7 @@ import itertools
 
 import importlib
 import pkgutil
+from typing_extensions import IntVar
 from packaging.requirements import Requirement
 
 from typing import Dict, Tuple
@@ -34,9 +35,11 @@ from cockpitdecks import (
     AIRCRAFT_ASSET_PATH,
     AIRCRAFT_PATH_VARIABLE,
     AIRCRAFT_ICAO_VARIABLE,
+    AIRCRAFT_ICAO_MONITORING,
     LIVERY_PATH_VARIABLE,
     AIRCRAFT_CHANGE_MONITORING,
     LIVERY_CHANGE_MONITORING,
+    LIVERY_INDEX_MONITORING,
     ASSETS_FOLDER,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
@@ -75,7 +78,7 @@ from cockpitdecks import (
 from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
-from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType
+from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType, VariableListener
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent, NoSimulator
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables, Observable
@@ -388,10 +391,14 @@ class CockpitInfoInstruction(CockpitInstruction):
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 
 # Little internal kitchen for internal datarefs
-AIRCRAFT_CHANGE_SIMULATOR_VARIABLES = {Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING), Variable.internal_variable_name(LIVERY_CHANGE_MONITORING)}
+AIRCRAFT_CHANGE_SIMULATOR_VARIABLES = {
+    Variable.internal_variable_name(AIRCRAFT_ICAO_MONITORING),
+    Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING),
+    Variable.internal_variable_name(LIVERY_CHANGE_MONITORING),
+    Variable.internal_variable_name(LIVERY_INDEX_MONITORING)
+}
 
 PERMANENT_COCKPITDECKS_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_VARIABLES
-PERMANENT_COCKPITDECKS_EVENTS = set()
 
 
 class CockpitBase:
@@ -414,7 +421,7 @@ class CockpitBase:
         pass
 
 
-class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerformer, CockpitBase):
+class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, CockpitBase):
     """
     Common instances shared by all aircrafts/decks.
     Loads and starts a particular aircraft if requested.
@@ -488,10 +495,12 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         self._icons = {}
         self._observables = None  # loaded from file
 
-        self._permanent_observables = {}  # Subclasses of Observables
+        self._permanent_observables = {}  # Subclasses of Observables, static, fixed after extension load
 
+        # Cockpitdecks will listen to these variables as "rendez-vous" points
+        # to be updated by extensions and other parties to "notify" Cockpitdecks of changes
         self._permanent_variable_names = PERMANENT_COCKPITDECKS_VARIABLES
-        self._permanent_event_names = PERMANENT_COCKPITDECKS_EVENTS
+        self._permanent_variables = {}
 
         self.named_colors = NAMED_COLORS
         self.theme = None
@@ -630,7 +639,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
             if len(test) > 0:
                 logger.debug(f"loaded package {package}")  #  (recursively)
                 loaded.append(package)
-        logger.debug(f"..loaded")
+        logger.debug("..loaded")
         logger.info(f"loaded extensions {", ".join(loaded)}")
 
     def get_activations_for(self, action: DECK_ACTIONS) -> list:
@@ -650,28 +659,34 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
 
         self.add_extensions(trace_ext_loading=show_details)
 
+        for v in self._permanent_variable_names:
+            intvar = self.get_variable(name=v, factory=self)
+            intvar.add_listener(self)
+            self._permanent_variables[v] = intvar
+        logger.info(f"permanent variables: {', '.join([Variable.internal_variable_root_name(v) for v in self._permanent_variables.keys()])}")
+
         self.all_simulators = {s.name: s for s in Cockpit.all_subclasses(Simulator)}
-        logger.info(f"available simulators: {", ".join(self.all_simulators.keys())}")
+        logger.info(f"available simulators: {', '.join(self.all_simulators.keys())}")
 
         self.all_deck_drivers = {s.DECK_NAME: [s, s.DEVICE_MANAGER] for s in Cockpit.all_subclasses(Deck) if s.DECK_NAME != "none"}
-        logger.info(f"available deck drivers: {", ".join(self.all_deck_drivers.keys())}")
+        logger.info(f"available deck drivers: {', '.join(self.all_deck_drivers.keys())}")
 
         # classes with NAME that ends with "-base" are considered "base" classes and should not be instancieted.
         self.all_activations = {s.name(): s for s in Cockpit.all_subclasses(Activation) if not s.name().endswith("-base")} | {
             DECK_ACTIONS.NONE.value: Activation
         }
         if show_details:
-            logger.info(f"available activations: {", ".join(sorted(self.all_activations.keys()))}")
+            logger.info(f"available activations: {', '.join(sorted(self.all_activations.keys()))}")
 
         self.all_representations = {s.name(): s for s in Cockpit.all_subclasses(Representation) if not s.name().endswith("-base")} | {
             DECK_FEEDBACK.NONE.value: Representation
         }
         if show_details:
-            logger.info(f"available representations: {", ".join(sorted(self.all_representations.keys()))}")
+            logger.info(f"available representations: {', '.join(sorted(self.all_representations.keys()))}")
 
         self.all_hardware_representations = {s.name(): s for s in Cockpit.all_subclasses(HardwareRepresentation)}
         if show_details:
-            logger.info(f"available hardware representations: {", ".join(self.all_hardware_representations.keys())}")
+            logger.info(f"available hardware representations: {', '.join(self.all_hardware_representations.keys())}")
 
         if not self.init_simulator():  # this will start the requested one
             logger.info("..initialized with error, cannot continue\n")
@@ -882,7 +897,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
     # Variables and Events
     #
     def get_events(self) -> set:
-        ret = self._permanent_event_names
+        ret = set()
         if type(self.observables) is Observables:
             obs = self.observables.get_events()
             if len(obs) > 0:
@@ -1208,7 +1223,7 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         # If it exposes a variable, the variable can be used in other Observables to trigger actions/instructions.
         self._permanent_observables = {s.name(): s for s in Cockpit.all_subclasses(Observable) if not s.name().endswith("-base")}
         if len(self._permanent_observables) > 0:
-            logger.info(f"permanent observables: {", ".join(sorted(self._permanent_observables.keys()))}.")
+            logger.info(f"permanent observables: {', '.join(sorted(self._permanent_observables.keys()))}.")
         else:
             logger.info("no permanent observables")
 
@@ -1549,20 +1564,20 @@ class Cockpit(SimulatorVariableListener, InstructionFactory, InstructionPerforme
         logger.info(f"no livery path for aircraft {self.aircraft._path}")
         return None
 
+    def variable_changed(self, data: Variable):
+        """
+        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
+        """
+        if data.name not in self._permanent_variables:
+            logger.warning(f"{data.name}({type(data)})={data.value} unhandled")
+            return
+        logger.info(f"********** RECEIVED {data.name}({type(data)})={data.value}")
+
     # #########################################################
     # Cockpitdecks instructions
     #
     # The following functions ara called by CockpitdecksInstructions.
     #
-    def simulator_variable_changed(self, data: SimulatorVariable):
-        """
-        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
-        """
-        all_vars = self._simulator_variable_names
-        if not isinstance(data, SimulatorVariable) or data.name not in all_vars:
-            logger.warning(f"unhandled {data.name}={data.value}")
-            return
-
     def execute(self, instruction: CockpitInstruction) -> bool:
         if not isinstance(instruction, CockpitInstruction):
             logger.warning(f"invalid instruction {instruction.name}")

@@ -78,9 +78,11 @@ RELOAD_ON_ICAO_CHANGE = False  # we only reload on AIRCRAFT_PATH_VARIABLE change
 # Rendez-vous Internal Variables
 #
 AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
+AIRCRAFT_ICAO_MONITORING = "aircraft-icao"
 LIVERY_CHANGE_MONITORING = "livery-name"
 WEATHER_STATION_MONITORING = "weather-station"
 DAYTIME = "daytime"
+LIVERY_INDEX_MONITORING = "livery-index"
 
 
 # the following extensions are supposed to always be available
