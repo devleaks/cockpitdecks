@@ -5,8 +5,6 @@ import logging
 import threading
 
 from .icon import MultiIcons
-from .draw import DrawBase
-from cockpitdecks import ICON_SIZE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

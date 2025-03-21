@@ -8,10 +8,8 @@ from enum import Enum
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import ICON_SIZE
-
 from cockpitdecks.resources.color import convert_color, grey
-from .draw import DrawBase  # explicit Icon from file to avoid circular import
+from .draw import DrawBase, ICON_SIZE  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

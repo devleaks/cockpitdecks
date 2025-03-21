@@ -14,7 +14,6 @@ import itertools
 
 import importlib
 import pkgutil
-from typing_extensions import IntVar
 from packaging.requirements import Requirement
 
 from typing import Dict, Tuple
@@ -25,7 +24,6 @@ from queue import Queue
 from PIL import Image, ImageFont
 from cairosvg import svg2png
 
-from cockpitdecks.decks.virtualdeck import VirtualDeck
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_SERIAL
 
@@ -33,13 +31,9 @@ from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
     # Constants, keywords
     AIRCRAFT_ASSET_PATH,
-    AIRCRAFT_PATH_VARIABLE,
-    AIRCRAFT_ICAO_VARIABLE,
-    AIRCRAFT_ICAO_MONITORING,
-    LIVERY_PATH_VARIABLE,
     AIRCRAFT_CHANGE_MONITORING,
+    AIRCRAFT_ICAO_MONITORING,
     LIVERY_CHANGE_MONITORING,
-    LIVERY_INDEX_MONITORING,
     ASSETS_FOLDER,
     COCKPITDECKS_ASSET_PATH,
     COCKPITDECKS_DEFAULT_VALUES,
@@ -53,15 +47,15 @@ from cockpitdecks import (
     DECKS_FOLDER,
     DEFAULT_ATTRIBUTE_NAME,
     DEFAULT_ATTRIBUTE_PREFIX,
-    DEFAULT_LABEL_SIZE,
     COCKPITDECKS_INTERNAL_EXTENSIONS,
     ENVIRON_KW,
     EXCLUDE_DECKS,
     FONTS_FOLDER,
     ICONS_FOLDER,
     ID_SEP,
-    NAMED_COLORS,
     OBSERVABLES_FILE,
+    PERMANENT_COCKPITDECKS_NAMED_COLORS,
+    PERMANENT_COCKPITDECKS_VARIABLE_NAMES,
     RESOURCES_FOLDER,
     RELOAD_ON_LIVERY_CHANGE,
     RELOAD_ON_ICAO_CHANGE,
@@ -79,9 +73,10 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType, VariableListener
-from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener, SimulatorEvent, NoSimulator
+from cockpitdecks.simulator import Simulator, SimulatorVariableListener, SimulatorEvent, NoSimulator
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables, Observable
+from cockpitdecks.decks.virtualdeck import VirtualDeck
 
 # imports all known decks, if deck driver not available, ignore it
 import cockpitdecks.decks
@@ -233,60 +228,6 @@ class CockpitChangePageInstruction(CockpitInstruction):
             logger.warning(f"{type(self).__name__}: deck not found {self.deck}")
 
 
-class CockpitChangeAircraftInstruction(CockpitInstruction):
-    """Instruction to change page on a deck"""
-
-    INSTRUCTION_NAME = "aircraft"
-
-    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
-        CockpitInstruction.__init__(
-            self,
-            name=self.INSTRUCTION_NAME,
-            cockpit=cockpit,
-            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
-            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
-        )
-
-    def _execute(self):
-        self.cockpit.change_aircraft()
-
-
-class CockpitChangeAircraftICAOInstruction(CockpitInstruction):
-    """Instruction to change page on a deck"""
-
-    INSTRUCTION_NAME = "aircraft-icao"
-
-    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
-        CockpitInstruction.__init__(
-            self,
-            name=self.INSTRUCTION_NAME,
-            cockpit=cockpit,
-            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
-            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
-        )
-
-    def _execute(self):
-        self.cockpit.change_aircraft_icao()
-
-
-class CockpitChangeLiveryInstruction(CockpitInstruction):
-    """Instruction to change page on a deck"""
-
-    INSTRUCTION_NAME = "livery"
-
-    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
-        CockpitInstruction.__init__(
-            self,
-            name=self.INSTRUCTION_NAME,
-            cockpit=cockpit,
-            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
-            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
-        )
-
-    def _execute(self):
-        self.cockpit.change_livery()
-
-
 class CockpitChangeThemeInstruction(CockpitInstruction):
     """Instruction to change 'global) theme for Cockpit"""
 
@@ -390,16 +331,6 @@ class CockpitInfoInstruction(CockpitInstruction):
 # (you may want to change your cockpit texture to a pinky one for this Barbie Livery)
 # but also the aircraft. So in 1 dataref, 2 informations: aircraft and livery!
 
-# Little internal kitchen for internal datarefs
-AIRCRAFT_CHANGE_SIMULATOR_VARIABLES = {
-    Variable.internal_variable_name(AIRCRAFT_ICAO_MONITORING),
-    Variable.internal_variable_name(AIRCRAFT_CHANGE_MONITORING),
-    Variable.internal_variable_name(LIVERY_CHANGE_MONITORING),
-    Variable.internal_variable_name(LIVERY_INDEX_MONITORING)
-}
-
-PERMANENT_COCKPITDECKS_VARIABLES = AIRCRAFT_CHANGE_SIMULATOR_VARIABLES
-
 
 class CockpitBase:
     """As used in Simulator"""
@@ -432,7 +363,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self._startup_time = datetime.now()
 
         CockpitBase.__init__(self)
-        SimulatorVariableListener
+        VariableListener.__init__(self, name=type(self).__name__)
         InstructionPerformer.__init__(self)
 
         self.name = "Cockpitdecks"
@@ -499,10 +430,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
         # Cockpitdecks will listen to these variables as "rendez-vous" points
         # to be updated by extensions and other parties to "notify" Cockpitdecks of changes
-        self._permanent_variable_names = PERMANENT_COCKPITDECKS_VARIABLES
+        self._permanent_variable_names = PERMANENT_COCKPITDECKS_VARIABLE_NAMES
         self._permanent_variables = {}
 
-        self.named_colors = NAMED_COLORS
+        self.named_colors = PERMANENT_COCKPITDECKS_NAMED_COLORS
         self.theme = None
 
         self.fonts = {}
@@ -660,7 +591,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.add_extensions(trace_ext_loading=show_details)
 
         for v in self._permanent_variable_names:
-            intvar = self.get_variable(name=v, factory=self)
+            intvar = self.get_variable(name=Variable.internal_variable_name(v), factory=self)
             intvar.add_listener(self)
             self._permanent_variables[v] = intvar
         logger.info(f"permanent variables: {', '.join([Variable.internal_variable_root_name(v) for v in self._permanent_variables.keys()])}")
@@ -1307,7 +1238,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
                     if i not in self._fonts.keys():
                         fn = os.path.join(rn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size", 12))
                             self._fonts[i] = fn
                         except:
                             logger.warning(f"font file {fn} not loaded")
@@ -1352,7 +1283,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
             # 1. Try "system" font
             try:
-                test = ImageFont.truetype(fontname, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                test = ImageFont.truetype(fontname, self.get_attribute("label-size", 12))
                 logger.debug(f"font {fontname} found in computer system fonts")
                 return fontname
             except:
@@ -1362,7 +1293,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size", 12))
                 logger.debug(f"font {fontname} found locally ({RESOURCES_FOLDER} folder)")
                 return fn
             except:
@@ -1372,7 +1303,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             fn = None
             try:
                 fn = os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, FONTS_FOLDER, fontname)
-                test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                test = ImageFont.truetype(fn, self.get_attribute("label-size", 12))
                 logger.debug(f"font {fontname} found locally ({FONTS_FOLDER} folder)")
                 return fn
             except:
@@ -1568,10 +1499,19 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
         """
-        if data.name not in self._permanent_variables:
+        name = data.name
+        if Variable.is_internal_variable(name):
+            name = Variable.internal_variable_root_name(name)
+        if name not in self._permanent_variables:
             logger.warning(f"{data.name}({type(data)})={data.value} unhandled")
             return
-        logger.info(f"********** RECEIVED {data.name}({type(data)})={data.value}")
+        logger.debug(f"{data.name}({type(data)})={data.value}")
+        if name == AIRCRAFT_CHANGE_MONITORING:
+            self.change_aircraft(newpath=data.value)
+        elif name == LIVERY_CHANGE_MONITORING:
+            self.change_livery(newpath=data.value)
+        elif name == AIRCRAFT_ICAO_MONITORING:
+            self.change_aircraft_icao(newicao=data.value)
 
     # #########################################################
     # Cockpitdecks instructions
@@ -1588,10 +1528,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.global_luminosity = luminosity
         self.global_brightness = brightness
 
-    def change_aircraft_icao(self):
-        value = self.get_variable_value(AIRCRAFT_ICAO_VARIABLE)
+    def change_aircraft_icao(self, newicao):
+        value = newicao
         if value is None or type(value) is not str or not (3 <= len(value) <= 4):
-            logger.warning(f"{AIRCRAFT_ICAO_VARIABLE} has invalid value {value}, ignoring")
+            logger.warning(f"aircraft icoa has invalid value {value}, ignoring")
             return
         if value != self.aircraft.icao:
             self.aircraft.icao = value
@@ -1603,13 +1543,13 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             else:
                 logger.info("not reloading on ICAO change")
 
-    def change_livery(self):
+    def change_livery(self, newpath):
         # We arrive here when sim/aircraft/view/acf_livery_path or sim/aircraft/view/acf_livery_index changed
 
         # 1. If we don't have a livery path, we cannot do anything, we say so.
-        value = self.get_variable_value(LIVERY_PATH_VARIABLE)
+        value = newpath
         if value is None or type(value) is not str:
-            logger.warning(f"{LIVERY_PATH_VARIABLE} has invalid value {value}, ignoring")
+            logger.warning(f"livery path invalid value {value}, ignoring")
             return
 
         liveryname = Aircraft.get_livery_from_livery_path(value)
@@ -1636,11 +1576,11 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             else:
                 logger.info("not reloading on livery change")
 
-    def change_aircraft(self):
+    def change_aircraft(self, newpath: str):
         # We arrive here when sim/aircraft/view/acf_relative_path changed
-        value = self.get_variable_value(AIRCRAFT_PATH_VARIABLE)
+        value = newpath
         if value is None or type(value) is not str:
-            logger.warning(f"{AIRCRAFT_PATH_VARIABLE} has invalid value {value}, ignoring")
+            logger.warning(f"aircraft path invalid value {value}, ignoring")
             return
 
         # Path is like Aircraft/Extra Aircraft/ToLiss A321/liveries/F Airways (OO-PMA)/A330-900_StdDef.acf

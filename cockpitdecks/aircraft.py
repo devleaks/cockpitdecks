@@ -20,7 +20,6 @@ from cockpitdecks import (
     DECK_KW,
     DECK_TYPES,
     DECKS_FOLDER,
-    DEFAULT_LABEL_SIZE,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
     EXCLUDE_DECKS,
@@ -366,7 +365,7 @@ class Aircraft:
                     if i not in self._fonts.keys():
                         fn = os.path.join(dn, i)
                         try:
-                            test = ImageFont.truetype(fn, self.get_attribute("label-size", DEFAULT_LABEL_SIZE))
+                            test = ImageFont.truetype(fn, self.get_attribute("label-size", 12))
                             self._fonts[i] = fn
                         except:
                             logger.warning(f"aircraft font file {fn} not loaded")
@@ -410,6 +409,9 @@ class Aircraft:
 
     # #########################################################
     # Utility functions for path manipulation
+    #
+    # (May be they should be in simulator rather than here?
+    #  May be they should be isolated in a class/package?)
     #
     @staticmethod
     def get_livery_from_livery_path(path: str) -> str:

@@ -14,7 +14,7 @@ from ruamel.yaml import YAML
 
 
 # ##############################################################
-# A few constants and default values
+# Constants and default values
 # Adjust with care...
 #
 # These are mainly used inside Cockpitdecks and should not be changed.
@@ -47,44 +47,6 @@ TEMPLATES_FOLDER = "templates"
 DEFAULT_LAYOUT = "default"
 DEFAULT_PAGE_NAME = "Default Page"
 
-ICON_SIZE = 256  # px
-DEFAULT_LABEL_POSITION = "cm"
-DEFAULT_LABEL_SIZE = 12
-NAMED_COLORS = {}  # name: tuple()
-
-# Virtual decks and web decks
-#
-VIRTUAL_DECK_DRIVER = "virtualdeck"
-AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
-COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
-
-TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, TEMPLATES_FOLDER)
-ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
-
-
-# Mostly common X-Plane simulator variables
-# of general interest
-# Used to determine Cockpitdecks behavior
-#
-AIRCRAFT_PATH_VARIABLE = "sim/aircraft/view/acf_relative_path"
-AIRCRAFT_ICAO_VARIABLE = "sim/aircraft/view/acf_ICAO"
-LIVERY_PATH_VARIABLE = "sim/aircraft/view/acf_livery_path"
-LIVERY_INDEX_VARIABLE = "sim/aircraft/view/acf_livery_index"
-
-RELOAD_ON_LIVERY_CHANGE = False  # we only reload on AIRCRAFT_PATH_VARIABLE change
-RELOAD_ON_ICAO_CHANGE = False  # we only reload on AIRCRAFT_PATH_VARIABLE change
-
-
-# Rendez-vous Internal Variables
-#
-AIRCRAFT_CHANGE_MONITORING = "aircraft-name"
-AIRCRAFT_ICAO_MONITORING = "aircraft-icao"
-LIVERY_CHANGE_MONITORING = "livery-name"
-WEATHER_STATION_MONITORING = "weather-station"
-DAYTIME = "daytime"
-LIVERY_INDEX_MONITORING = "livery-index"
-
-
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
 #
@@ -98,23 +60,46 @@ COCKPITDECKS_INTERNAL_EXTENSIONS = {
 }
 
 
-class ANNUNCIATOR_STYLES(Enum):
-    KORRY = "k"  # k(orry): backlit, glowing
-    VIVISUN = "v"  # v(ivisun): bright, sharp.
+# Rendez-vous Internal Variables
+# Changing any of those triggers actions inside cockpitdecks
+#
+AIRCRAFT_CHANGE_MONITORING = "aircraft-name"  # Actually contains the aircraft path (relative to X-Plane install)
+LIVERY_CHANGE_MONITORING = "livery-name"  # Actually contains the livery path
+AIRCRAFT_ICAO_MONITORING = "aircraft-icao"  # Contains the aircraft ICAO but it is not sufficient to determine which aircraft it is (editor, model, options...)
+
+# Used to determine Cockpitdecks behavior when above values are changed
+RELOAD_ON_LIVERY_CHANGE = False  # we only reload on AIRCRAFT_CHANGE_MONITORING change
+RELOAD_ON_ICAO_CHANGE = False  # we only reload on AIRCRAFT_CHANGE_MONITORING change
+
+
+PERMANENT_COCKPITDECKS_VARIABLE_NAMES = {AIRCRAFT_CHANGE_MONITORING, AIRCRAFT_ICAO_MONITORING, LIVERY_CHANGE_MONITORING}
+
+PERMANENT_COCKPITDECKS_NAMED_COLORS = {}  # name: tuple()
+
+WEATHER_STATION_MONITORING = "weather-station"
+METAR_DEPARTURE = "metar-departure"
+METAR_DESTINATION = "metar-destination"
+DAYTIME = "daytime"
 
 
 # internals
 ID_SEP = "/"
 DEFAULT_ATTRIBUTE_NAME = "default"
 DEFAULT_ATTRIBUTE_PREFIX = DEFAULT_ATTRIBUTE_NAME + "-"  # cannot be "", must be at lesat one char
+
+MONITOR_RESOURCE_USAGE = True
+
 DARK_THEME_NAME = "dark"
 DARK_THEME_PREFIX = DARK_THEME_NAME + "-"  # night
 LIGHT_THEME_NAME = "light"
 LIGHT_THEME_PREFIX = LIGHT_THEME_NAME + "-"  # day
-# dusk/dawn?
-MONITOR_RESOURCE_USAGE = True
+# dusk/dawn? See DAYTIME permanent variable
 
 
+# ############################################################
+#
+# Internal keywords and conventions
+#
 # environment attributes
 class ENVIRON_KW(Enum):
     API_HOST = "API_HOST"
@@ -134,44 +119,7 @@ class ENVIRON_KW(Enum):
     VERBOSE = "verbose"
 
 
-# "System" default values
-# "Cockpitdecks-level" default values
-# Please handle with care, might break entire system. You're warned.
-COCKPITDECKS_DEFAULT_VALUES = {
-    "cache-icon": True,
-    "system-font": "Monaco.ttf",  # alias
-    "cockpit-color": "cornflowerblue",  # there are no default-* for the following three values, just cockpit-* values
-    "cockpit-texture": None,  # in other words, cockpit-* values ARE cockpitdecks-level, global default values.
-    "cockpit-theme": "light",
-    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
-    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.KORRY,
-    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
-    DEFAULT_ATTRIBUTE_PREFIX + "font": "D-DIN.otf",
-    DEFAULT_ATTRIBUTE_PREFIX + "home-page-name": "index",
-    DEFAULT_ATTRIBUTE_PREFIX + "icon-color": "cornflowerblue",
-    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "inop.png",
-    DEFAULT_ATTRIBUTE_PREFIX + "icon-texture": None,
-    DEFAULT_ATTRIBUTE_PREFIX + "interface-bg-color": "black",
-    DEFAULT_ATTRIBUTE_PREFIX + "interface-fg-color": "white",
-    DEFAULT_ATTRIBUTE_PREFIX + "label-color": "white",
-    DEFAULT_ATTRIBUTE_PREFIX + "label-font": "D-DIN.otf",
-    DEFAULT_ATTRIBUTE_PREFIX + "label-position": "ct",
-    DEFAULT_ATTRIBUTE_PREFIX + "label-size": 10,
-    DEFAULT_ATTRIBUTE_PREFIX + "light-off-intensity": 10,
-    DEFAULT_ATTRIBUTE_PREFIX + "logo": "logo.png",
-    DEFAULT_ATTRIBUTE_PREFIX + "system-font": "Monaco.ttf",
-    DEFAULT_ATTRIBUTE_PREFIX + "text-color": "white",
-    DEFAULT_ATTRIBUTE_PREFIX + "text-font": "D-DIN.otf",
-    DEFAULT_ATTRIBUTE_PREFIX + "text-position": "cm",
-    DEFAULT_ATTRIBUTE_PREFIX + "text-size": 32,
-    DEFAULT_ATTRIBUTE_PREFIX + "wallpaper": "wallpaper.png",
-}
-
-
-# deckconfig attribute keywords
-#
-# Config.yaml
-#
+# deckconfig attribute keywords in config.yaml
 class CONFIG_KW(Enum):
     ACTION = "action"
     ACTIONS = "actions"
@@ -248,9 +196,21 @@ class ACTIVATION_KW(Enum):
     OPTIONS = "options"
 
 
+# ############################################################
 #
-# Deck.yaml (decks/resources/*.yaml)
+# Deck type definition
 #
+# Virtual decks and web decks
+#
+VIRTUAL_DECK_DRIVER = "virtualdeck"
+AIRCRAFT_ASSET_PATH = "/aircraft/decks/images/"  # this is an URL path, so forward slash are appropriate
+COCKPITDECKS_ASSET_PATH = "/assets/decks/images/"  # this is an URL path
+
+TEMPLATE_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, TEMPLATES_FOLDER)
+ASSET_FOLDER = os.path.join(os.path.dirname(__file__), DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER)
+
+
+# deck.yaml (decks/resources/*.yaml)
 class DECK_KW(Enum):
     ACTION = "action"
     BACKGROUND = "background"
@@ -278,10 +238,7 @@ class DECK_KW(Enum):
     TILES = "tiles"
 
 
-# ############################################################
-#
 # deck type action capabilities
-#
 class DECK_ACTIONS(Enum):
     NONE = "none"
     PRESS = "press"  # triggered automatically by Elgato firmwire, ONE event only (when pressed/touched)
@@ -293,7 +250,6 @@ class DECK_ACTIONS(Enum):
 
 
 # deck type feedback capabilities
-#
 class DECK_FEEDBACK(Enum):
     NONE = "none"
     COLORED_LED = "colored-led"  # color and/or intensite
@@ -302,6 +258,48 @@ class DECK_FEEDBACK(Enum):
     ENCODER_LEDS = "encoder-leds"  # specific to X-Touch mini, a "ramp" of LEDs
     VIBRATE = "vibrate"  # emit vibration or non chgeable sound/beep
     SOUND = "sound"  # play a sound (short wav/mp3 file)
+
+
+# ############################################################
+#
+# "System" default values
+#
+# Please handle with care, might break entire system. You're warned.
+#
+class ANNUNCIATOR_STYLES(Enum):
+    KORRY = "k"  # k(orry): backlit, glowing
+    VIVISUN = "v"  # v(ivisun): bright, sharp.
+
+
+COCKPITDECKS_DEFAULT_VALUES = {
+    "cache-icon": True,
+    "system-font": "Monaco.ttf",  # alias
+    "cockpit-color": "cornflowerblue",  # there are no default-* for the following three values, just cockpit-* values
+    "cockpit-texture": None,  # in other words, cockpit-* values ARE cockpitdecks-level, global default values.
+    "cockpit-theme": "light",
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-color": "black",
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-style": ANNUNCIATOR_STYLES.KORRY,
+    DEFAULT_ATTRIBUTE_PREFIX + "annunciator-texture": None,
+    DEFAULT_ATTRIBUTE_PREFIX + "font": "D-DIN.otf",
+    DEFAULT_ATTRIBUTE_PREFIX + "home-page-name": "index",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-color": "cornflowerblue",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-name": "inop.png",
+    DEFAULT_ATTRIBUTE_PREFIX + "icon-texture": None,
+    DEFAULT_ATTRIBUTE_PREFIX + "interface-bg-color": "black",
+    DEFAULT_ATTRIBUTE_PREFIX + "interface-fg-color": "white",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-color": "white",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-font": "D-DIN.otf",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-position": "ct",
+    DEFAULT_ATTRIBUTE_PREFIX + "label-size": 10,
+    DEFAULT_ATTRIBUTE_PREFIX + "light-off-intensity": 10,
+    DEFAULT_ATTRIBUTE_PREFIX + "logo": "logo.png",
+    DEFAULT_ATTRIBUTE_PREFIX + "system-font": "Monaco.ttf",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-color": "white",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-font": "D-DIN.otf",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-position": "cm",
+    DEFAULT_ATTRIBUTE_PREFIX + "text-size": 32,
+    DEFAULT_ATTRIBUTE_PREFIX + "wallpaper": "wallpaper.png",
+}
 
 
 # ############################################################

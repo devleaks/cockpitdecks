@@ -3,7 +3,6 @@
 #
 import logging
 
-from cockpitdecks import ICON_SIZE
 from cockpitdecks.resources.iconfonts import get_special_character
 
 from cockpitdecks.resources.color import convert_color, light_off
@@ -69,7 +68,7 @@ class DataIcon(DrawBase):
         Label may be updated at each activation since it can contain datarefs.
         Also add a little marker on placeholder/invalid buttons that will do nothing.
         """
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.simple_icon()  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Data
@@ -218,8 +217,8 @@ class DataIcon(DrawBase):
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
             name=self.button_name,
-            width=ICON_SIZE,
-            height=ICON_SIZE,
+            width=image.width,
+            height=image.height,
             texture_in=self.icon_texture,
             color_in=self.icon_color,
             use_texture=True,

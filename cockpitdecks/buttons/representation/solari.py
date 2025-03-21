@@ -4,8 +4,7 @@
 import logging
 from functools import reduce
 
-from cockpitdecks import ICON_SIZE, yaml
-from cockpitdecks.constant import CONFIG_KW
+from cockpitdecks import CONFIG_KW, yaml
 
 from .draw_animation import DrawAnimation
 
@@ -118,6 +117,7 @@ class SolariIcon(DrawAnimation):
     FLAP_BG_COLOR = "black"
 
     SPEED = 0.005
+    ICON_SIZE = 256  # px
 
     PARAMETERS = {
         "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
@@ -138,8 +138,8 @@ class SolariIcon(DrawAnimation):
 
         self.bg = self.button.deck.get_icon_background(
             name=self.button_name,
-            width=ICON_SIZE,
-            height=ICON_SIZE,
+            width=self.ICON_SIZE,
+            height=self.ICON_SIZE,
             texture_in=self.bg_texture,
             color_in=self.bg_color,
             use_texture=True,

@@ -4,17 +4,14 @@
 import logging
 import threading
 import math
-from random import randint
-import traceback
 
 from PIL import ImageDraw
 
-from cockpitdecks import ICON_SIZE, now
+from cockpitdecks import now
 
 from cockpitdecks.resources.color import convert_color
-from cockpitdecks.resources.ts import TimeSerie
 from cockpitdecks.variable import Variable, VariableListener
-from .draw import DrawBase
+from .draw import DrawBase, ICON_SIZE
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
 

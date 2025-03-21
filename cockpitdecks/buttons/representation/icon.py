@@ -34,6 +34,8 @@ class IconBase(Representation):
 
     PARAMETERS = {}
 
+    # ICON_SIZE = 256
+
     def __init__(self, button: "Button"):
         self._label = None
         Representation.__init__(self, button=button)

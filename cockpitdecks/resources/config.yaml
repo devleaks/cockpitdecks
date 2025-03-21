@@ -31,6 +31,15 @@ default-icon-name: none.png
 # dark-default-tick-underline-color: coral
 #
 # ##################################################
+# Rendez-vous variables to trigger events in Cockpit
+#
+permenant-variable-names:
+  - aircraft-name
+  - aircraft-icao
+  - livery-name
+  - livery-index
+#
+# ##################################################
 # Dataref roundings and reading frequencies (if non standard)
 #
 dataref-fetch-frequencies:

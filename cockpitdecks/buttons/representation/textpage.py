@@ -10,9 +10,6 @@ from functools import reduce
 from textwrap import wrap
 from math import ceil
 
-from PIL import Image, ImageDraw
-
-from cockpitdecks import ICON_SIZE
 from cockpitdecks.buttons.representation.draw import DrawBase
 from cockpitdecks.strvar import TextWithVariables
 
@@ -70,7 +67,7 @@ class TextPageIcon(DrawBase):
             return self._cached
 
         # Generic display text in small font on icon
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
+        image, draw = self.simple_icon()
         inside = round(0.04 * image.width + 0.5)
 
         lines = self.get_lines(page=self.get_activation_count())
@@ -98,8 +95,8 @@ class TextPageIcon(DrawBase):
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
             name=self.button_name,
-            width=ICON_SIZE,
-            height=ICON_SIZE,
+            width=image.width,
+            height=image.height,
             texture_in=self.cockpit_texture,
             color_in=self.cockpit_color,
             use_texture=True,

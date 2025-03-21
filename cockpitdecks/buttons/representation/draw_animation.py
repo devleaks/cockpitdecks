@@ -4,9 +4,7 @@
 import logging
 import threading
 
-from .icon import MultiIcons
 from .draw import DrawBase
-from cockpitdecks import ICON_SIZE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -155,7 +153,7 @@ class DrawAnimationFTG(DrawAnimation):
         Can use self.tween to increase iterations.
         Text, color, sizes are all hardcoded here.
         """
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
+        image, draw = self.simple_icon()
 
         bgrd = self.button.deck.get_icon_background(
             name=self.button_name,
@@ -167,14 +165,16 @@ class DrawAnimationFTG(DrawAnimation):
             who="Weather",
         )
 
+        icon_size = max(image.size)
+
         image.paste(bgrd)
         # Button
         cs = 4  # light size, px
         lum = 5  # num flashing green center lines
         nb = 2 * lum  # num side bleu lights, i.e. twice more blue lights than green ones
-        h0 = ICON_SIZE / 16  # space from left/right sides
-        h1 = ICON_SIZE / 2 - h0  # space from bottom of upper middle part
-        s = (ICON_SIZE - (2 * h0)) / (nb - 1)  # spece between blue lights
+        h0 = icon_size / 16  # space from left/right sides
+        h1 = icon_size / 2 - h0  # space from bottom of upper middle part
+        s = (icon_size - (2 * h0)) / (nb - 1)  # spece between blue lights
         # Taxiway borders, blue lights
         for i in range(nb):
             for h in [h0, h1]:
@@ -183,15 +183,15 @@ class DrawAnimationFTG(DrawAnimation):
                 br = [w + cs, h + cs]
                 draw.ellipse(tl + br, fill="blue")
         # Taxiway center yellow line
-        h = ICON_SIZE / 4
-        draw.line([(h0, h), (ICON_SIZE - h0, h)], fill="yellow", width=4)
+        h = icon_size / 4
+        draw.line([(h0, h), (icon_size - h0, h)], fill="yellow", width=4)
 
         # Taxiway center lights, lit if animated
         offset = -24
         cs = 2 * cs
         for i in range(lum):
             w = offset + h + i * s * 2 - s / 2
-            w = ICON_SIZE - w
+            w = icon_size - w
             tl = [w - cs, h - cs]
             br = [w + cs, h + cs]
             color = "lime" if self.running and (self.tween + i) % lum == 0 else "chocolate"
@@ -199,9 +199,9 @@ class DrawAnimationFTG(DrawAnimation):
 
         # Text AVAIL (=off) or framed ON (=on)
         font = self.get_font(self.button.get_attribute("label-font"), 80)
-        inside = ICON_SIZE / 16
-        cx = ICON_SIZE / 2
-        cy = int(3 * ICON_SIZE / 4)
+        inside = icon_size / 16
+        cx = icon_size / 2
+        cy = int(3 * icon_size / 4)
         if self.running:
             draw.multiline_text(
                 (cx, cy),
@@ -219,8 +219,8 @@ class DrawAnimationFTG(DrawAnimation):
             )
             side_margin = 4 * inside  # margin from side of part of annunciator
             framemax = (
-                (cx - ICON_SIZE / 2 + side_margin, cy - ICON_SIZE / 4 + side_margin),
-                (cx + ICON_SIZE / 2 - side_margin, cy + ICON_SIZE / 4 - side_margin),
+                (cx - icon_size / 2 + side_margin, cy - icon_size / 4 + side_margin),
+                (cx + icon_size / 2 - side_margin, cy + icon_size / 4 - side_margin),
             )
             frame = (
                 (
@@ -232,7 +232,7 @@ class DrawAnimationFTG(DrawAnimation):
                     max(framebb[1][1], framemax[1][1]),
                 ),
             )
-            thick = int(ICON_SIZE / 32)
+            thick = int(icon_size / 32)
             # logger.debug(f"button {self.button.name}: part {partname}: {framebb}, {framemax}, {frame}")
             draw.rectangle(frame, outline="deepskyblue", width=thick)
         else:

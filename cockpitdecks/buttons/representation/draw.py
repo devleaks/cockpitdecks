@@ -6,13 +6,13 @@ import math
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import ICON_SIZE
-
 from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, convert_color
 from .icon import IconBase  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
+
+ICON_SIZE = 256  # px
 
 
 #
@@ -40,6 +40,9 @@ class DrawBase(IconBase):
         self.draw_left = self._config.get("left", 0) - self._config.get("right", 0)
         self.draw_up = self._config.get("up", 0) - self._config.get("down", 0)
 
+    def simple_icon(self):
+        return self.double_icon(width=ICON_SIZE, height=ICON_SIZE)
+
     def double_icon(self, width: int = ICON_SIZE * 2, height: int = ICON_SIZE * 2):
         """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
         image = Image.new(mode="RGBA", size=(width, height), color=TRANSPARENT_PNG_COLOR)
@@ -48,7 +51,7 @@ class DrawBase(IconBase):
 
     def double_icon_for_button(self, button_definition):
         """Or any size icon, default is to double ICON_SIZE to allow for room around center."""
-        sizes = button_definition.get_drawing_size()
+        sizes = button_definition.get_drawing_size(length=ICON_SIZE)
         if sizes is None:
             return self.double_icon()
         return self.double_icon(width=sizes[0], height=sizes[1])

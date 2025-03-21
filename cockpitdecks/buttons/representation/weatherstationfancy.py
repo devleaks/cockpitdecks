@@ -5,10 +5,7 @@ import logging
 import re
 from dataclasses import dataclass
 
-from PIL import Image, ImageDraw
-
-from cockpitdecks import ICON_SIZE
-from cockpitdecks.resources.color import TRANSPARENT_PNG_COLOR, grey
+from PIL import Image
 
 from .weather import WeatherBaseIcon
 
@@ -56,7 +53,7 @@ class WeatherStationPlot(WeatherBaseIcon):
             "plot-style", default="bw"
         )  # |color|dracula, color mode is, as a shortcut, also synonym of non-standard, fancier plot, with additional data
         self.plot_color = self.get_attribute("plot-color", default="black")
-        self.barb_color = self.get_attribute("plot-wind-barb-color", default=grey(160))
+        self.barb_color = self.get_attribute("plot-wind-barb-color", default="darkgrey")
         self.text_color = self.get_attribute("plot-text-color", default="black")
         self.text_alt_color = self.get_attribute("plot-text-alt-color", default="grey")
         self.text_past_color = self.get_attribute(
@@ -102,9 +99,9 @@ class WeatherStationPlot(WeatherBaseIcon):
         # https://en.wikipedia.org/wiki/Station_model
 
         # logger.setLevel(logging.DEBUG)
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.simple_icon()  # annunciator text and leds , color=(0, 0, 0, 0)
 
-        PLOT_SIZE = ICON_SIZE  # 100% fit icon
+        PLOT_SIZE = max(image.size)  # 100% fit icon
         S12 = int(PLOT_SIZE / 2)  # half the size, the middle
 
         cellsize = int(PLOT_SIZE / 5)
@@ -660,8 +657,8 @@ class WeatherStationPlot(WeatherBaseIcon):
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
             name=self.button_name,
-            width=ICON_SIZE,
-            height=ICON_SIZE,
+            width=image.width,
+            height=image.height,
             texture_in=self.cockpit_texture,
             color_in=self.cockpit_color,
             use_texture=True,
@@ -669,7 +666,7 @@ class WeatherStationPlot(WeatherBaseIcon):
         )
         bg.alpha_composite(image)
 
-        logger.debug(f"..plot updated")
+        logger.debug("..plot updated")
         # logger.setLevel(logging.INFO)
         self._cached = bg
 

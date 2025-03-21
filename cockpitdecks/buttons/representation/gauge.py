@@ -6,11 +6,9 @@ import math
 
 from PIL import Image
 
-from cockpitdecks import ICON_SIZE
-
 from cockpitdecks.resources.color import convert_color, grey
 from cockpitdecks.strvar import TextWithVariables
-from .draw import DrawBase  # explicit Icon from file to avoid circular import
+from .draw import DrawBase, ICON_SIZE  # explicit Icon from file to avoid circular import
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)

@@ -15,7 +15,7 @@ from cockpitdecks import DECK_KW, Config, DECK_ACTIONS, DECK_FEEDBACK
 from cockpitdecks import TYPES_FOLDER
 from cockpitdecks.buttons.activation import Activation
 from cockpitdecks.buttons.representation import Representation
-from cockpitdecks import ICON_SIZE, VIRTUAL_DECK_DRIVER
+from cockpitdecks import VIRTUAL_DECK_DRIVER
 
 loggerButtonType = logging.getLogger("ButtonType")
 # loggerButtonType.setLevel(logging.DEBUG)
@@ -238,8 +238,8 @@ class DeckButton:
             return self.position
         return None
 
-    def get_drawing_size(self, length: int = ICON_SIZE) -> Tuple[int, int] | None:
-        # Aspect ratio is preserved, smallest dimension is ICON_SIZE
+    def get_drawing_size(self, length: int) -> Tuple[int, int] | None:
+        # Aspect ratio is preserved, smallest dimension is length
         sizes = self.display_size()
         if sizes is not None:
             lmin = min(sizes)

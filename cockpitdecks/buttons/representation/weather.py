@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timedelta
 from threading import Lock
 
-from cockpitdecks import WEATHER_STATION_MONITORING, ICON_SIZE
+from cockpitdecks import WEATHER_STATION_MONITORING
 from cockpitdecks.constant import CONFIG_KW
 from cockpitdecks.resources.iconfonts import WEATHER_ICON_FONT
 from cockpitdecks.resources.color import light_off
@@ -204,7 +204,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
 
     def make_weather_image(self):
         # Generic display text in small font on icon
-        image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
+        image, draw = self.simple_icon()  # annunciator text and leds , color=(0, 0, 0, 0)
         inside = round(0.04 * image.width + 0.5)
 
         # Weather Icon in the background
@@ -255,8 +255,8 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         # Paste image on cockpit background and return it.
         bg = self.button.deck.get_icon_background(
             name=self.button_name,
-            width=ICON_SIZE,
-            height=ICON_SIZE,
+            width=image.width,
+            height=image.height,
             texture_in=self.cockpit_texture,
             color_in=self.cockpit_color,
             use_texture=True,
