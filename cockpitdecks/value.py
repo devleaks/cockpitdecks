@@ -228,14 +228,12 @@ class Value(StringWithVariables):
 
         # 2c. One dataref
         if self.dataref is not None and isinstance(self._provider, (SimulatorVariableValueProvider, Simulator)):
-            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_simulator_variable_value(simulator_variable=self.dataref)
             logger.debug(f"value {self.name}: {ret} (from single dataref {self.dataref})")
             return ret
 
         # 3. Activation value
         if isinstance(self._provider, ActivationValueProvider) and hasattr(self._provider, "_activation") and self._provider._activation is not None:
-            # if self._variables[0] in self.page.simulator_variable.keys():  # unnecessary check
             ret = self.get_activation_value()
             if ret is not None:
                 if type(ret) is bool:

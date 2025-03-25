@@ -37,7 +37,6 @@ class IconBase(Representation):
     ICON_SIZE = 256  # "global", standard size for LCD icon, used by drawing methods to pixelize vector drawings and size fonts
     TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
 
-
     def __init__(self, button: "Button"):
         self._label = None
         Representation.__init__(self, button=button)

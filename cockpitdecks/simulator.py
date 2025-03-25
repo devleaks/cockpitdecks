@@ -343,7 +343,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         """Removes all data from Simulator."""
         logger.debug("removing..")
         self.cockpit.variable_database.remove_all_simulator_variables()
-        self.simulator_variable_to_monitor = {}
+        self.clean_simulator_variable_to_monitor()
         logger.debug("..removed")
 
     #
@@ -356,6 +356,10 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
 
     #
     # Events
+    def clean_simulator_event_to_monitor(self):
+        """Removes all data from Simulator monitoring."""
+        self.simulator_event_to_monitor = {}
+
     def add_simulator_events_to_monitor(self, simulator_events: set, reason: str = None):
         """Adds supplied data to Simulator monitoring."""
         prnt = []
@@ -386,12 +390,8 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def remove_all_simulator_event(self):
         """Removes all data from Simulator."""
         logger.debug("removing..")
-        self.simulator_event_to_monitor = {}
+        self.clean_simulator_event_to_monitor()
         logger.debug("..removed")
-
-    def clean_simulator_event_to_monitor(self):
-        """Removes all data from Simulator monitoring."""
-        self.remove_all_simulator_event()
 
     #
     # Instructions

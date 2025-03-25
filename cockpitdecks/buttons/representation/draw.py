@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 ICON_SIZE = 256  # px
 
+
 #
 # ###############################
 # DRAWN REPRESENTATION (using Pillow)

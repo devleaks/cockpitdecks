@@ -1,6 +1,7 @@
 """
 Helper class for color management
 """
+
 import logging
 import colorsys
 from typing import Tuple

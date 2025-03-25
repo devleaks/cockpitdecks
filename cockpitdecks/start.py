@@ -447,7 +447,7 @@ logger.info("..initialized\n")
 AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER)
 AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
 DESIGNER_CONFIG_FILE = "designer.yaml"
-DESIGNER = True
+DESIGNER = False
 CODE = "code"
 WEBDECK_DEFAULTS = "presentation-default"
 WEBDECK_WSURL = "ws_url"
@@ -679,7 +679,7 @@ def cockpit_wshandler():
 #
 def main():
     try:
-
+        appsrvstarted = False
         logger.info(f"Starting {AIRCRAFT_DESC}..")
         if ac is None and SIMULATOR_HOME is not None:
             logger.info(
@@ -689,14 +689,18 @@ def main():
         logger.info(f"..{AIRCRAFT_DESC} running..")
         if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
             if not cockpit.has_web_decks():
-                logger.warning("no web deck, start application server for designer")
+                logger.warning("no web deck, starting application server for designer")
             logger.info("starting application server..")
+            appsrvstarted = True
             app.run(host="0.0.0.0", port=APP_HOST[1])
+        else:
+            logger.warning("no web deck, no request for designer")
 
         # If single CTRL-C pressed, will terminate from here
         # logger.info("terminating (please wait)..")
         print("")  # to highlight CTRL-C in log window
-        logger.info("..application server terminated")
+        if appsrvstarted:
+            logger.info("..application server terminated")
         cockpit.terminate_all(threads=1)  # [MainThread]
         logger.info(f"..{cockpit.get_aircraft_name()} terminated.")
 

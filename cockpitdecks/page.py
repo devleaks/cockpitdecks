@@ -29,7 +29,7 @@ class Page:
 
         self.buttons: Dict[str, Button] = {}
         self.button_names: Dict[str, Button] = {}
-        self.simulator_variable: Dict[str, SimulatorVariable] = {}
+        self.simulator_variables: Dict[str, SimulatorVariable] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
 
@@ -82,7 +82,7 @@ class Page:
             setattr(self, ATTRNAME, ld | attributes)
 
     def get_simulator_variable_value(self, simulator_variable, default=None):
-        d = self.simulator_variable.get(simulator_variable)
+        d = self.simulator_variables.get(simulator_variable)
         if d is None:
             logger.warning(f"page {self.name}: {simulator_variable} not found")
             return None  # should return default?
@@ -184,12 +184,12 @@ class Page:
         for d in button.get_variables():  # these are requested by Cockpitecks to the simulator
             if Variable.is_state_variable(d):
                 continue
-            if d not in self.simulator_variable:
+            if d not in self.simulator_variables:
                 ref = self.sim.get_variable(d)  # creates or return already defined dataref
                 if ref is not None:
                     ref.add_listener(button)
                     if isinstance(ref, SimulatorVariable) and not Variable.is_internal_variable(d):
-                        self.simulator_variable[d] = ref
+                        self.simulator_variables[d] = ref
                         self.inc(COCKPITDECKS_INTVAR.DATAREF_REGISTERED.value)
                         logger.debug(f"page {self.name}: button {button.name} registered for new dataref {d}")
                     else:
@@ -197,14 +197,14 @@ class Page:
                 else:
                     logger.error(f"page {self.name}: button {button.name}: failed to create dataref {d}")
             else:  # dataref already exists in list, just add this button as a listener
-                self.simulator_variable[d].add_listener(button)
+                self.simulator_variables[d].add_listener(button)
                 logger.debug(f"page {self.name}: button {button.name} registered for existing dataref {d}")
 
         logger.debug(f"page {self.name}: button {button.name} datarefs registered")
 
     def unregister_simulator_variable(self, button: Button):
         for d in button.get_variables():
-            ref = self.simulator_variable.get(d)
+            ref = self.simulator_variables.get(d)
             if ref is not None:
                 ref.remove_listener(button)
 
@@ -269,7 +269,7 @@ class Page:
         Cleans all individual buttons on the page
         """
         if self.is_current_page() and self.sim is not None:
-            self.sim.remove_simulator_variables_to_monitor(simulator_variables=self.simulator_variable, reason=f"terminate page {self.name}")
+            self.sim.remove_simulator_variables_to_monitor(simulator_variables=self.simulator_variables, reason=f"terminate page {self.name}")
         if not disconnected:
             self.clean()
         for button in self.buttons.values():

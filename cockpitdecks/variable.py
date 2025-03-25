@@ -202,13 +202,21 @@ class Variable(ABC):
         def local_round(val):
             return round(val, self._round) if self._round is not None and type(val) in [int, float] else val
 
+        def local_round_arr(val):
+            return [local_round(v) for v in val]
+
         self._previous_value = self._current_value  # raw
         self._current_value = new_value  # raw
         self.previous_value = self.current_value  # exposed
         if self.is_string:
             self.current_value = new_value
         else:
-            self.current_value = local_round(new_value)
+            if type(new_value) in [int, float]:
+                self.current_value = local_round(new_value)
+            elif type in [list, tuple]:
+                self.current_value = local_round_arr(new_value)
+            else:
+                self.current_value = new_value
         self._updated = self._updated + 1
         self._last_updated = now()
         # self.notify_updated()

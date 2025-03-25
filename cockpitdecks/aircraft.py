@@ -39,6 +39,7 @@ from cockpitdecks.resources.color import has_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 
 from cockpitdecks.observable import Observables
+from cockpitdecks.variable import Variable, VariableListener
 
 from cockpitdecks.decks.resources import DeckType
 
@@ -679,7 +680,7 @@ class Aircraft:
             self._running = True
         else:
             if acpath is None:
-                logger.error(f"no aircraft folder")
+                logger.error("no aircraft folder")
             elif not os.path.exists(acpath):
                 logger.error(f"no aircraft folder {acpath}")
             else:
@@ -713,3 +714,47 @@ class Aircraft:
             logger.info(f"{len(nt)} threads")
             logger.info(f"{[t.name for t in nt]}")
         logger.info(f"..aircraft {os.path.basename(self.acpath)} terminated " + "✈ " * 30)
+
+
+# #################################################@
+#
+# Flight Information Structure
+#
+AIRPORT_DEPARTURE = "airport_departure"
+AIRPORT_DESTINATION = "airport_destination"
+METAR_DEPARTURE = "metar_departure"
+METAR_DESTINATION = "metar_destination"
+TAF_DESTINATION = "taf_destination"
+FLIGHT_LEVEL = "flight_level"
+
+PERMANENT_FLIGHT_VARIABLE_NAMES = {AIRPORT_DEPARTURE, AIRPORT_DESTINATION, METAR_DEPARTURE}
+
+
+class Flight(VariableListener):
+    """Information container for some variables
+    Variables are filled if available, which is not always the case...
+    """
+
+    def __init__(self, owner) -> None:
+        VariableListener.__init__(self, name=type(self).__name__)
+        self.owner = owner
+        self._permanent_variable_names = PERMANENT_FLIGHT_VARIABLE_NAMES
+        self._permanent_variables = {}
+
+    def init(self):
+        for v in self._permanent_variable_names:
+            intvar = self.owner.get_variable(name=Variable.internal_variable_name(v), factory=self)
+            intvar.add_listener(self)
+            self._permanent_variables[v] = intvar
+        logger.info(f"permanent variables: {', '.join([Variable.internal_variable_root_name(v) for v in self._permanent_variables.keys()])}")
+
+    def variable_changed(self, data: Variable):
+        """
+        This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
+        """
+        name = data.name
+        if Variable.is_internal_variable(name):
+            name = Variable.internal_variable_root_name(name)
+        if name not in self._permanent_variables:
+            logger.warning(f"{data.name}({type(data)})={data.value} unhandled")
+            return
