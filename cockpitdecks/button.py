@@ -667,6 +667,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         @todo: Return a status from activate()
         """
+
         def always_render():
             if self._representation is not None:
                 if hasattr(self._representation, "always_render"):

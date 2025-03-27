@@ -37,6 +37,7 @@ LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 # logger name: %(name)s
 
+
 #
 # ##########################################################################
 # Utility functions
