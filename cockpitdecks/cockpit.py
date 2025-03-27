@@ -714,6 +714,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
                 desc = f"{deck_driver} {importlib.metadata.version(deck_driver)}"
                 driver_info.append(desc)
             except:
+                if deck_driver == VirtualDeck.DRIVER_NAME:
+                    desc = f"{deck_driver} {VirtualDeck.DRIVER_VERSION}"
+                    driver_info.append(desc)
+                    continue
                 logger.warning(f"no driver information for {deck_driver}")
         if len(driver_info) == 0:
             logger.warning("no device driver for physical decks")
@@ -1154,7 +1158,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         # If it exposes a variable, the variable can be used in other Observables to trigger actions/instructions.
         self._permanent_observables = {s.name(): s for s in Cockpit.all_subclasses(Observable) if not s.name().endswith("-base")}
         if len(self._permanent_observables) > 0:
-            logger.info(f"permanent observables: {', '.join(sorted(self._permanent_observables.keys()))}.")
+            logger.info(f"permanent observables: {', '.join(sorted(self._permanent_observables.keys()))}")
         else:
             logger.info("no permanent observables")
 

@@ -35,6 +35,7 @@ from ruamel.yaml import YAML
 
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
 
+from cockpitdecks import LOGFILE, FORMAT
 from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
 from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
@@ -43,11 +44,6 @@ from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
-
-
-# logging.basicConfig(level=logging.DEBUG, filename="cockpitdecks.log", filemode="a")
-LOGFILE = "cockpitdecks.log"
-FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 
 logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="%H:%M:%S")
 

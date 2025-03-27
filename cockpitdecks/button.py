@@ -667,6 +667,12 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
         """
         @todo: Return a status from activate()
         """
+        def always_render():
+            if self._representation is not None:
+                if hasattr(self._representation, "always_render"):
+                    return self._representation.always_render
+            return False
+
         logger.log(SPAM_LEVEL, f"ACTIVATE {self.name} ({event})")
         if self._activation is not None:
             if not self._activation.is_valid():
@@ -693,7 +699,7 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
             self.render()
         else:
             logger.debug(f"button {self.name}: no change")
-            if self.deck.is_virtual_deck():  # representation has not changed, but hardware representation might have
+            if self.deck.is_virtual_deck() or always_render():  # representation has not changed, but hardware representation might have
                 self.render()
         return True
 

@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from datetime import datetime
 
-from cockpitdecks import ID_SEP, CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options
+from cockpitdecks import ID_SEP, CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREFIX, parse_options, DEPRECATION_LEVEL
 from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider, Variable, VariableListener
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
@@ -102,7 +102,7 @@ class Activation(VariableListener):
         self._view = None
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:  # a "view" is just a command...
-            logger.warning(f"{self.button_name}: {self.name()}: usage of view is deprecated")
+            logger.log(DEPRECATION_LEVEL, f"{self.button_name}: {self.name()}: usage of view is deprecated")
             self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.COMMAND.value: view})
             self._view.button = self.button  # set button to evalute conditional
 

@@ -3,7 +3,6 @@
 # Sends update to VirtualDeckUI through TCP/IP socket
 # Receives interactions from VirtualDeckUI
 #
-import socket
 import logging
 import io
 import base64
@@ -40,6 +39,7 @@ class VirtualDeck(DeckWithIcons):
     DECK_NAME = "virtualdeck"
     DRIVER_NAME = "virtualdeck"
     MIN_DRIVER_VERSION = "0.0.0"
+    DRIVER_VERSION = "1.0.0"
     DEVICE_MANAGER = VirtualDeckManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
@@ -122,7 +122,7 @@ class VirtualDeck(DeckWithIcons):
     #
     # Deck Specific Functions : Definition
     #
-    def make_default_page(self):
+    def make_default_page(self, b: str | None = None):
         # Generates an image that is correctly sized to fit across all keys of a given
         #
         # The following two helper functions are stolen from streamdeck example scripts (tiled_image)
@@ -135,10 +135,6 @@ class VirtualDeck(DeckWithIcons):
                 config={
                     "index": first_index,
                     "name": "Reload",
-                    # "name": "X-Plane Map (default page)",
-                    # "type": "push",
-                    # "command": "sim/map/show_current",
-                    # "text": "MAP",
                     "type": "reload",
                 },
                 page=page0,
