@@ -22,16 +22,16 @@ __NAME__ = "cockpitdecks"
 __COPYRIGHT__ = f"© 2022-{datetime.now().strftime('%Y')} Pierre M <pierre@devleaks.be>"
 __DESCRIPTION__ = "Deck and web decks to X-Plane 12.1.4+ (required for REST/WebSocket API)"
 
-__version__ = "15.5.2"
+__version__ = "15.5.3"
 
 #
 # ##########################################################################
 # Logging
 #
-SPAM_LEVEL = 15
-SPAM = "SPAM"
 DEPRECATION_LEVEL = 12
 DEPRECATION = "DEPRECATION"
+SPAM_LEVEL = 15
+SPAM = "SPAM"
 
 LOGFILE = "cockpitdecks.log"
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"

@@ -1102,8 +1102,12 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             logger.info("to do")
 
     def inspect_monitored(self, what: str | None = None):
-        for dref in self.sim.simulator_variable.values():
+        logger.info("Monitored datarefs:")
+        for dref in self.sim.simulator_variable_to_monitor.values():
             logger.info(f"{dref}")
+        logger.info("Monitored events:")
+        for evt in self.sim.simulator_event_to_monitor.values():
+            logger.info(f"{evt}")
 
     # #########################################################
     # Cockpit data caches

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>X-Plane REST API Demo with G3</title>
+</head>
+<style type="text/css">
+html {
+    font-family: sans-serif;
+    font-size: smaller;
+}
+#dataref td:nth-child(2) {
+    text-align: center;
+}
+</style>
+<body>
+    <table id="dataref" style="width: 50%; margin-left: auto; margin-right: auto;">
+        <colgroup>
+           <col span="1" style="width: 40%;">
+           <col span="1" style="width: 15%;">
+           <col span="1" style="width: 30%;">
+           <col span="1" style="width: 15%;">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Dataref Name</th>
+                <th>Data Type</th>
+                <th>Value</th>
+                <th>Last update</br><button type="button" id="stopButton">Stop</button></th>
+            </tr>
+        </thead>
+        <tbody id="inserthere">
+        </tbody>
+    </table>
+<script type="text/javascript">
+const WS_CONNECT_RETRY_TIME = 5000 // msecs
+const ELEM = document.getElementById("inserthere")
+const ws_url = "ws://192.168.1.140:8080/api/v2"
+const api_url = ws_url.replace("ws:", "http:") + "/datarefs"
+var ws, request_id = 0, index_list = [];
+
+function connect() {
+    console.log("WebSocket trying every " + Math.round(WS_CONNECT_RETRY_TIME/1000, 0) + " seconds...");
+    socket = new WebSocket(ws_url);
+    got_data = false;
+
+    socket.onopen = (event) => {
+        console.log("WebSocket opened", ws_url);
+        ws = socket;
+    };
+
+    socket.onclose = (event) => {
+        // console.log("WebSocket closed");
+        ws = false;
+        console.log("WebSocket closed", event);
+        setTimeout(function() {
+            connect();
+        }, WS_CONNECT_RETRY_TIME);
+    };
+
+    socket.onerror = (event) => {
+        console.error("WebSocket error", event);
+        if (socket) {
+            socket.close()
+        }
+    };
+
+    socket.onmessage = (event) => {
+        if (! got_data) {
+            console.log("receiving..")
+        }
+        result = JSON.parse(event.data)
+        if (result.type == "result") {
+            console.log(result.type, result);
+        } else if (result.type == "dataref_update_values") {
+            if (! got_data) {
+                console.log("receiving values..")
+                got_data = true
+            }
+            // Idea: We save latest value in big array of datarefs
+            // console.log(result.type, result.data);
+            now = new Date()
+            nows = now.toISOString()
+            for (const [key, value] of Object.entries(result.data)) {
+                display = value
+                if (DATAREFS_BY_INDEX[key].value_type == "data") {
+                    display = btoa(value)
+                    console.log(display, value, btoa(value), atob(value))
+                }
+                DATAREFS_BY_INDEX[key].value = display;
+                e = document.getElementById(key);
+                e.innerHTML = display;
+                e = document.getElementById("date-" + key);
+                e.innerHTML = nows.right(13);
+            }
+            // console.log("received", total, local.join(","))
+        }
+    };
+}
+
+connect();
+
+DATAREFS_BY_NAME = {}
+DATAREFS_BY_INDEX = {}
+DATAREFS_BY_METRIC = {}
+//
+METRICS = {
+    "metrics": [
+        {
+            "metric": "zuluDemo",
+            "dref": "sim/cockpit2/clock_timer/zulu_time_seconds",
+            "unit": "second"
+        },
+        {
+            "metric": "zuluDemo",
+            "dref": "sim/aircraft/view/acf_ICAO",
+            "unit": "second"
+        }
+    ]
+}
+
+Promise.resolve(METRICS).then(result => { // build request to get dataref descriptions
+    reqbody = []
+    // structure of a dataref:
+    // {
+    // I   "metric": "pitch",
+    // I   "dref": "sim/cockpit2/gauges/indicators/pitch_vacuum_deg_pilot",
+    //     "unit": "deg",
+    //   +  added from X-Plane description:
+    // I + "index": 12345
+    //   + "value_type": int, float, double, int_array, float_array, data
+    //   + "writable": false, true
+    //   + "value": 0
+    // }
+    // I = Indexed by this value: DATAREFS_BY_NAME, _METRIC, _INDEX
+    result.metrics.forEach(d => {
+        reqbody.push(["filter[name]", d.dref])
+        DATAREFS_BY_NAME[d.dref] = d
+        DATAREFS_BY_METRIC[d.metric] = d
+    });
+    return reqbody
+}).then(reqdrefs => { // request descriptions
+    let request = new Request(api_url + "?" + new URLSearchParams(reqdrefs).toString(), {
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
+    fetch(request)
+    .then(r =>  r.json().then(result => { // store descriptions, access by dataref index
+        // console.log("dataref info", result)
+        result.data.forEach(dataref => {
+            d = DATAREFS_BY_NAME[dataref.name]
+            d.index = dataref.id;
+            d.value_type = dataref.value_type;
+            d.writable = dataref.is_writable;
+            d.value = 0;
+            DATAREFS_BY_INDEX[dataref.id] = d
+            index_list.push({"id": dataref.id}) // keep list of dataref index to request
+            //
+            row = document.createElement("tr");
+            c1 = document.createElement("td");
+            c1.innerHTML = dataref.name;
+            row.appendChild(c1);
+            c2 = document.createElement("td");
+            c2.innerHTML = dataref.value_type;
+            row.appendChild(c2);
+            c3 = document.createElement("td");
+            c3.id = dataref.id;
+            c3.innerHTML = dataref.id;
+            row.appendChild(c3);
+            c4 = document.createElement("td");
+            c4.id = "date-" + dataref.id;
+            c4.innerHTML = ""
+            row.appendChild(c4);
+            ELEM.appendChild(row);
+        })
+        // console.log("datarefs", DATAREFS_BY_METRIC);
+        request_id = request_id + 1
+        ws.send(JSON.stringify({ // request dataref value updates
+            "req_id": request_id,
+            "type": "dataref_subscribe_values",
+            "params": {
+                "datarefs": index_list
+            }
+        }));
+        console.log("sent", {
+            "req_id": request_id,
+            "type": "dataref_subscribe_values",
+            "params": {
+                "datarefs": index_list
+            }
+        });
+    }))
+})
+
+
+document.getElementById("stopButton").onclick = function () {
+    request_id = request_id + 1
+    ws.send(JSON.stringify({ // request dataref value updates
+        "req_id": request_id,
+        "type": "dataref_unsubscribe_values",
+        "params": {
+            "datarefs": index_list
+        }
+    }));
+    console.log("sent", {
+        "req_id": request_id,
+        "type": "dataref_unsubscribe_values",
+        "params": {
+            "datarefs": index_list
+        }
+    });
+};
+
+</script>
+</body>
+</html>
