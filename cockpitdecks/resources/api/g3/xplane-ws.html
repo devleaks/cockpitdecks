@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>X-Plane REST API Demo with G3</title>
+    <link rel="shortcut icon" href="favicon.ico">
 </head>
 <body>
     <div id="panel"></div>
@@ -9,18 +10,160 @@
 <script src="g3-ws.js"></script>
 <script type="text/javascript">
 const WS_URL = "ws://192.168.1.140:8080/api/v2"
-
 const METRICS = [
+    // {
+    //     "metric": "pitch",
+    //     "dref": "sim/cockpit2/gauges/indicators/pitch_vacuum_deg_pilot",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "heading",
+    //     "dref": "sim/cockpit2/gauges/indicators/heading_vacuum_deg_mag_pilot",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "roll",
+    //     "dref": "sim/cockpit2/gauges/indicators/roll_vacuum_deg_pilot",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "slip",
+    //     "dref": "sim/cockpit2/gauges/indicators/slip_deg",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "altitude",
+    //     "dref": "sim/cockpit2/gauges/indicators/altitude_ft_pilot",
+    //     "unit": "ft"
+    // },
+    // {
+    //     "metric": "pressureSetting",
+    //     "dref": "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot",
+    //     "unit": "inHg"
+    // },
+    // {
+    //     "metric": "airspeed",
+    //     "dref": "sim/cockpit2/gauges/indicators/airspeed_kts_pilot",
+    //     "unit": "knot"
+    // },
+    // {
+    //     "metric": "verticalSpeed",
+    //     "dref": "sim/cockpit2/gauges/indicators/vvi_fpm_pilot",
+    //     "unit": "ft/min"
+    // },
+    // {
+    //     "metric": "turnrate",
+    //     "dref": "sim/cockpit2/gauges/indicators/turn_rate_heading_deg_pilot",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "compass",
+    //     "dref": "sim/cockpit2/gauges/indicators/compass_heading_deg_mag",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "fuelPressure",
+    //     "dref": "sim/cockpit2/engine/indicators/fuel_pressure_psi",
+    //     "unit": "psi"
+    // },
+    // {
+    //     "metric": "oilPressure",
+    //     "dref": "sim/cockpit2/engine/indicators/oil_pressure_psi",
+    //     "unit": "psi"
+    // },
+    // {
+    //     "metric": "oilTemperature",
+    //     "dref": "sim/cockpit2/engine/indicators/oil_temperature_deg_C",
+    //     "unit": "C"
+    // },
     {
         "metric": "engineRPM",
         "dref": "sim/cockpit2/engine/indicators/engine_speed_rpm[0]",
         "unit": "rpm"
-    }
+    },
+    // {
+    //     "metric": "manifoldPressure",
+    //     "dref": "sim/cockpit2/engine/indicators/MPR_in_hg",
+    //     "unit": "inHg"
+    // },
+    // {
+    //     "metric": "cylinderHeadTemp",
+    //     "dref": "sim/cockpit2/engine/indicators/CHT_deg_C",
+    //     "unit": "C"
+    // },
+    // {
+    //     "metric": "nav1obs",
+    //     "dref": "sim/cockpit2/radios/actuators/nav1_obs_deg_mag_pilot"
+    // },
+    // {
+    //     "metric": "nav1course",
+    //     "dref": "sim/cockpit2/radios/actuators/nav1_course_deg_mag_pilot"
+    // },
+    // {
+    //     "metric": "nav1bearing",
+    //     "dref": "sim/cockpit2/radios/indicators/nav1_bearing_deg_mag"
+    // },
+    // {
+    //     "metric": "nav1rel",
+    //     "dref": "sim/cockpit2/radios/indicators/nav1_relative_bearing_deg",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "nav1relvac",
+    //     "dref": "sim/cockpit2/radios/indicators/nav1_relative_heading_vacuum_deg_pilot"
+    // },
+    // {
+    //     "metric": "nav1dots",
+    //     "dref": "sim/cockpit2/radios/indicators/nav1_hdef_dots_pilot"
+    // },
+    // {
+    //     "metric": "toFrVOR",
+    //     "dref": "sim/cockpit2/radios/indicators/nav1_flag_from_to_pilot",
+    //     "fx": "x - 1"
+    // },
+    // {
+    //     "metric": "reliabilityVOR",
+    //     "dref": "sim/cockpit2/radios/indicators/nav1_flag_from_to_pilot",
+    //     "fx": "x == 0"
+    // },
+    // {
+    //     "metric": "headingADF",
+    //     "dref": "sim/cockpit2/radios/actuators/adf1_card_heading_deg_mag_pilot",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "relativeADF",
+    //     "dref": "sim/cockpit2/radios/indicators/adf1_relative_bearing_deg",
+    //     "unit": "deg"
+    // },
+    // {
+    //     "metric": "fuelSelector",
+    //     "dref": "sim/cockpit2/fuel/fuel_tank_selector"
+    // },
+    // {
+    //     "metric": [
+    //         "fuelFront",
+    //         "fuelCenter",
+    //         "fuelRear"
+    //     ],
+    //     "dref": "sim/cockpit2/fuel/fuel_quantity",
+    //     "unit": "gal"
+    // },
+    // {
+    //     "metric": "midnightSecondsUTC",
+    //     "dref": "sim/time/zulu_time_sec",
+    //     "unit": "s"
+    // },
+    // {
+    //     "metric": "midnightSecondsLocal",
+    //     "dref": "sim/time/local_time_sec",
+    //     "unit": "s"
+    // }
 ]
-
 
 var g = g3.gauge()
     .metric("engineRPM").unit("rpm")
+    .fake(g3.forceSeries(300, 3500))
     .measure(d3.scaleLinear().domain([0,6000]).range([-125,125]))
     .css(`
 text.g3-gauge-label, .g3-axis-labels text {
@@ -77,83 +220,7 @@ var p = g3.panel()
         g3.put().x(320).y(320).scale(2).append(g)
     );
 
-// this initialize the panel and creates the websocket
-// we need the websocket in the next promise that resolves
-// metric datarefs to dataref indices.
 p("#panel");
-
-// communicate dataref indices to panel
-Promise.resolve(METRICS).then(metrics => { // build request to get dataref descriptions
-    let datarefs = {}, reqbody = [];
-    // structure of a dataref:
-    // {
-    //     "metric": "pitch",
-    //     "dref": "sim/cockpit2/gauges/indicators/pitch_vacuum_deg_pilot",
-    //     "unit": "deg",
-    //     // added from X-Plane description:
-    //     "index": 12345,
-    //     "value_type": int, float, double, int_array, float_array, data, should probably be numeric value for metrics
-    //     "writable": false, true,
-    //     // we optionally keep the latest value
-    //     "value": 0
-    // }
-    metrics.forEach(m => {
-        m.path = m.dref
-        if (m.dref.indexOf("[") >= 0 && m.dref.indexOf("]") >= 0) { // array
-            m.array_index = parseInt(m.dref.substring(m.dref.indexOf("[")+1, m.dref.indexOf("]")));
-            m.path = m.dref.substring(0, m.dref.indexOf("["));
-            // console.log(m.dref, "is array", m.path, m.array_index);
-        }
-        reqbody.push(["filter[name]", m.path]);
-        datarefs[m.path] = m;
-    });
-    return [reqbody, datarefs]
-}).then(([reqdrefs, metric_datarefs]) => { // request descriptions
-    const api_url = WS_URL.replace("ws:", "http:") + "/datarefs"
-    let request = new Request(api_url + "?" + new URLSearchParams(reqdrefs).toString(), {
-        headers: {
-            "Content-Type": "application/json",
-        }
-    });
-    return fetch(request)
-    .then(r =>  r.json().then(result => { // store descriptions, access by dataref index
-        // console.log("dataref info", result)
-        let request_id = 1;
-        let index_list = [];
-        result.data.forEach(dataref => {
-            if (["int", "float", "int_array", "float_array", "double"].indexOf(dataref.value_type) < 0) {
-                console.log(d.name, "not a number type for metric", d.metric, dataref.value_type)
-            }
-            d = metric_datarefs[dataref.name]
-            d.index = dataref.id;
-            d.value_type = dataref.value_type;
-            d.writable = dataref.is_writable;
-            d.value = 0;
-            index_list.push({"id": dataref.id}) // keep list of dataref index to request
-        })
-        p.ws().send(JSON.stringify({ // request dataref value updates
-            "req_id": request_id,
-            "type": "dataref_subscribe_values",
-            "params": {
-                "datarefs": index_list
-            }
-        }));
-        console.log("sent", new Date(), {
-            "req_id": request_id,
-            "type": "dataref_subscribe_values",
-            "params": {
-                "datarefs": index_list
-            }
-        });
-        // index by dataref index
-        let didx = {};
-        for (const [path, dataref] of Object.entries(metric_datarefs)) {
-            didx[dataref.index] = dataref;
-        }
-        return didx;
-    }))
-}).then(r => {p.di(r);});
-
 </script>
 </body>
 </html>

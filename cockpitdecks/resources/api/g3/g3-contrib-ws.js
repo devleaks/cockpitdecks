@@ -9395,6 +9395,131 @@
                             latest = data.latest;
                         });
                 }, interval);
+            } else if (url.protocol == "ws:") { // websocket
+            //
+            // W E B S O C K E T
+            //
+            //
+            //
+            //
+            // NOTE: METRICS is global, defined in web page
+            //       Later: should fetch from metrics array.
+              let ws = new WebSocket(url.href);
+              let got_data = false; // debug
+              let datarefs = {}, reqbody = [];
+              let DATAREF_IDS = {};
+
+              function find_metric(name) {
+                let r = METRICS.filter((m) => {return m.metric == name})
+                return r ? r[0] : undefined
+              }
+
+              // Link metrics to dataref ids
+              controller.indicators().forEach(i => {
+                let m = find_metric(i)
+                if (m === undefined) {
+                    console.log("no metric", i);
+                    return;
+                }
+                let path = m.dref;
+                if (m.dref.indexOf("[") >= 0 && m.dref.indexOf("]") >= 0) { // array
+                  path = m.dref.substring(0, m.dref.indexOf("["));
+                }
+                if (datarefs[path] === undefined) {
+                  datarefs[path] = m
+                }
+                let curr = datarefs[path];
+                curr.path = path
+                if (path != m.dref) {
+                  if (curr.indices === undefined) {
+                    curr.indices = [];
+                  }
+                  curr.indices.push(parseInt(m.dref.substring(m.dref.indexOf("[")+1, m.dref.indexOf("]"))));
+                  curr.array_index = curr.indices.length - 1; // entry in above array
+                }
+                reqbody.push(["filter[name]", path]);
+              });
+              const api_url = url.href.replace("ws:", "http:") + "/datarefs"
+              let request = new Request(api_url + "?" + new URLSearchParams(reqbody).toString(), {
+                headers: {
+                  "Content-Type": "application/json",
+                }
+              });
+              if (reqbody.length > 0) {
+                fetch(request).then(r =>  r.json().then(result => { // store descriptions, access by dataref index
+                  // console.log("dataref info", result)
+                  let request_id = 1;
+                  let index_list = [];
+                  result.data.forEach(dataref => {
+                    let d = datarefs[dataref.name];
+                    if (d != undefined) {
+                      if (["int", "float", "int_array", "float_array", "double"].indexOf(dataref.value_type) < 0) {
+                        console.log(d.metric, "dataref type for metric is not a number", dataref.name, dataref.value_type)
+                        return;
+                      }
+                      d.index = dataref.id;
+                      d.value_type = dataref.value_type;
+                      d.writable = dataref.is_writable;
+                      d.value = 0;
+                      if (d.indices != undefined) {
+                        index_list.push({"id": d.index, "index": d.indices});
+                      } else {
+                        index_list.push({"id": d.index});
+                      }
+                      DATAREF_IDS[d.index] = d;
+                      console.log(d.metric, d.dref, d.index);
+                    } else {
+                      console.log("dararef not found");
+                    }
+                  })
+                  let payload = { // request dataref value updates
+                    "req_id": request_id,
+                    "type": "dataref_subscribe_values",
+                    "params": {
+                      "datarefs": index_list
+                    }
+                  }
+                  ws.send(JSON.stringify(payload));
+                  console.log("sent", new Date(), payload);
+                }));
+              } else {
+                console.log("no dararef to fetch");
+              }
+
+              ws.onopen = (e) => {
+                console.log("WebSocket open", url);
+              };
+              ws.onmessage = (e) => {
+                let r = JSON.parse(e.data)
+                if (r.type == "dataref_update_values") {
+                  if (! got_data) {
+                    got_data = true
+                    console.log("receiving data", new Date(), r)
+                  }
+                  let metrics = {};
+                  for (const [index, value] of Object.entries(r.data)) {
+                    if (DATAREF_IDS[index].array_index != undefined && Array.isArray(value)) {
+                      metrics[DATAREF_IDS[index].metric] = value[DATAREF_IDS[index].indices[DATAREF_IDS[index].array_index]]
+                    } else {
+                      metrics[DATAREF_IDS[index].metric] = value
+                    }
+                  }
+                  metrics["toFromVOR"] = 1  // 0 = to, 1 = from
+                  metrics["radialDeviation"] = 4
+                  // metrics["radialVOR"] = 60
+                  controller({
+                    latest: 0,
+                    units: {},
+                    metrics: metrics
+                  }, transition);
+                }
+              };
+            //
+            //
+            //
+            //
+            // W E B S O C K E T
+            //
             } else {
                 // set interval to 0 or None to use server-sent event endpoint
                 let source = new EventSource(url);
@@ -10998,7 +11123,7 @@ text.g3-gauge-label, .g3-axis-labels text {
                 axisTicks().step(10).inset(2).size(5),
                 axisLabels().step(20).size(14).inset(20).format(v => v.toString().padEnd(3, '\u00A0')),
                 axisLabels({'-3': 'mph'}).inset(24).size(6),
-                gauge().metric('speed').unit('kph')
+                gauge().metric('speed').unit('km/h')
                     .measure(linear().domain([0,1.60934*160]).range([-120,120]))
                     .r(66)
                     .append(
