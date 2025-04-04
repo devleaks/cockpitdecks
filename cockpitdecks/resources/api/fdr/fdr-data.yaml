@@ -1,0 +1,149 @@
+---
+fdr:
+  # #########################
+  #
+  # ONCE
+  #
+  # #########################
+
+  # properties
+  - sim/version/xplane_internal_version
+  - sim/aircraft/view/acf_ICAO
+  - sim/aircraft/engine/acf_num_engines
+  - sim/aircraft/view/acf_tailnum
+  - sim/aircraft/weight/acf_m_empty
+  - sim/aircraft/weight/acf_m_max
+
+  # #########################
+  #
+  # REGULARLY (TBD) (60 secs?)
+  #
+  # #########################
+
+  # closest airport/navaid location need API call
+  # XPLMFindNavAid(NULL NULL &latitudeDeg &longitudeDeg NULL xplm_Nav_Airport)
+  # XPLMGetNavAidInfo(nearestAirportRef NULL NULL NULL NULL NULL NULL airportId airportName NULL
+  # nearestAirportId # nearestAirportName
+
+  # weather
+  - sim/cockpit2/gauges/indicators/wind_heading_deg_mag
+  - sim/cockpit2/gauges/indicators/wind_speed_kts
+  - sim/cockpit2/temperature/outside_air_temp_degc
+
+
+  # #########################
+  #
+  # EVERY TIME (1 Hz)
+  #
+  # #########################
+  #
+  # DATE TIME POSITION 3D orientation related (4D geometry)
+  #
+  # #########################
+
+  # time
+  - sim/time/total_flight_time_sec
+  - sim/time/zulu_time_sec
+
+  # (flight recorder xp)
+  - sim/time/is_in_replay  -   # flight recorder xp
+  - sim/time/paused  -   # flight recorder xp
+  - sim/time/total_running_time_sec  -   # flight recorder xp
+
+
+  - sim/flightmodel/position/latitude
+  - sim/flightmodel/position/longitude
+
+  # groundspeed comes in m/s
+  - sim/flightmodel/position/groundspeed  -  # * 1.9438445
+
+  # flight data
+  - sim/cockpit2/gauges/indicators/heading_vacuum_deg_mag_pilot
+  - sim/cockpit2/gauges/indicators/radio_altimeter_height_ft_pilot
+  - sim/flightmodel/misc/h_ind
+  - sim/flightmodel/position/vh_ind_fpm
+  - sim/flightmodel/position/indicated_airspeed
+  - sim/flightmodel/misc/machno
+  - sim/flightmodel/position/true_theta
+  - sim/flightmodel/position/true_phi
+  - sim/flightmodel/position/alpha
+  - sim/flightmodel/misc/g_total
+
+  # navigation data
+  - sim/flightmodel/position/hpath
+  - sim/flightmodel/position/magnetic_variation
+  # note magTrack = trueTrack + magVar
+
+
+  # #########################
+  #
+  # AIRCRAFT AVIONICS
+  #
+  # #########################
+
+  # engines
+  - sim/flightmodel/engine/ENGN_running  -   # array
+  - sim/flightmodel/engine/ENGN_thro  -   # array
+
+  # engine power
+  - sim/cockpit2/engine/indicators/power_watts  -   # array
+  - sim/cockpit2/controls/left_brake_ratio  -  # * 100
+  - sim/cockpit2/controls/right_brake_ratio  -  # * 100
+  - sim/cockpit2/controls/parking_brake_ratio  -  # * 100
+  - sim/cockpit2/controls/gear_handle_down
+  - sim/cockpit2/controls/yoke_pitch_ratio  -  # * 100
+  - sim/cockpit2/controls/yoke_roll_ratio  -  # * 100
+  - sim/cockpit2/controls/yoke_heading_ratio  -  # * 100
+
+  # control ratios
+  - sim/cockpit2/controls/flap_ratio  -  # * 100
+  - sim/cockpit2/controls/speedbrake_ratio  -  # * 100
+
+  # telemetry
+  - sim/cockpit/autopilot/autopilot_mode  -  # 2
+
+  # weights
+  - sim/flightmodel/weight/m_total
+  - sim/flightmodel/weight/m_fuel_total
+
+  # cabin
+  - sim/cockpit2/pressurization/indicators/cabin_altitude_ft
+  - sim/cockpit2/pressurization/indicators/cabin_vvi_fpm
+
+  # ILS information
+  - sim/cockpit2/radios/indicators/nav1_nav_id
+  - sim/cockpit/radios/nav1_course_degm
+  - sim/cockpit/radios/nav1_slope_degt
+  - sim/cockpit/radios/nav1_dme_dist_m
+  - sim/cockpit/radios/nav1_hdef_dot
+  - sim/cockpit/radios/nav1_vdef_dot
+
+  # elec (flight recorder xp)
+  - sim/cockpit/electrical/beacon_lights_on
+  - sim/cockpit/electrical/landing_lights_on
+  - sim/cockpit/electrical/nav_lights_on
+  - sim/cockpit/electrical/strobe_lights_on
+  - sim/cockpit/electrical/taxi_light_on
+
+  # flight model (flight recorder xp)
+  - sim/flightmodel/controls/ail_trim
+  - sim/flightmodel/controls/rud_trim
+  - sim/flightmodel/controls/slatrat
+  - sim/flightmodel/position/elevation
+  - sim/flightmodel/position/latitude
+  - sim/flightmodel/position/local_vx
+  - sim/flightmodel/position/local_vy
+  - sim/flightmodel/position/local_vz
+  - sim/flightmodel/position/local_x
+  - sim/flightmodel/position/local_y
+  - sim/flightmodel/position/local_z
+  - sim/flightmodel/position/longitude
+  - sim/flightmodel/position/phi
+  - sim/flightmodel/position/psi
+  - sim/flightmodel/position/theta
+  - sim/flightmodel2/controls/flap1_deploy_ratio
+  - sim/flightmodel2/controls/flap2_deploy_ratio
+  - sim/flightmodel2/controls/speedbrake_ratio
+  - sim/flightmodel2/controls/wingsweep_ratio
+  - sim/flightmodel2/engines/throttle_used_ratio
+  - sim/flightmodel2/gear/deploy_ratio

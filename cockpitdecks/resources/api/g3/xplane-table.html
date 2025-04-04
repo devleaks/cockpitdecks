@@ -25,7 +25,7 @@ html {
                 <th>Dataref Name</th>
                 <th>Data Type</th>
                 <th>Value</th>
-                <th>Last update</br><button type="button" id="stopButton">Stop</button></th>
+                <th>Last update</br><button type="button" id="stopButton">Stop/Start</button></th>
             </tr>
         </thead>
         <tbody id="inserthere">
@@ -80,17 +80,18 @@ function connect() {
             // console.log(result.type, result.data);
             now = new Date()
             nows = now.toISOString()
-            for (const [key, value] of Object.entries(result.data)) {
+            for (const [index, value] of Object.entries(result.data)) {
                 display = value
-                if (DATAREFS_BY_INDEX[key].value_type == "data") {
-                    display = btoa(value)
-                    console.log(display, value, btoa(value), atob(value))
+                if (DATAREFS_BY_INDEX[index].value_type == "data") {
+                    display = atob(value)
+                } else if (DATAREFS_BY_INDEX[index].array_index != undefined && Array.isArray(value)) {
+                    display = value[DATAREFS_BY_INDEX[index].indices[DATAREFS_BY_INDEX[index].array_index]]
                 }
-                DATAREFS_BY_INDEX[key].value = display;
-                e = document.getElementById(key);
+                DATAREFS_BY_INDEX[index].value = display;
+                e = document.getElementById(index);
                 e.innerHTML = display;
-                e = document.getElementById("date-" + key);
-                e.innerHTML = nows.right(13);
+                e = document.getElementById("date-" + index);
+                e.innerHTML = nows.substring(11, nows.length-1);
             }
             // console.log("received", total, local.join(","))
         }
@@ -99,116 +100,179 @@ function connect() {
 
 connect();
 
-DATAREFS_BY_NAME = {}
 DATAREFS_BY_INDEX = {}
-DATAREFS_BY_METRIC = {}
-//
-METRICS = {
-    "metrics": [
-        {
-            "metric": "zuluDemo",
-            "dref": "sim/cockpit2/clock_timer/zulu_time_seconds",
-            "unit": "second"
-        },
-        {
-            "metric": "zuluDemo",
-            "dref": "sim/aircraft/view/acf_ICAO",
-            "unit": "second"
-        }
-    ]
-}
+RUNNING = false
+FDR = [
+    "sim/version/xplane_internal_version",
+    "sim/aircraft/view/acf_ICAO",
+    "sim/aircraft/engine/acf_num_engines",
+    "sim/aircraft/view/acf_tailnum",
+    "sim/aircraft/weight/acf_m_empty",
+    "sim/aircraft/weight/acf_m_max",
+    "sim/cockpit2/gauges/indicators/wind_heading_deg_mag",
+    "sim/cockpit2/gauges/indicators/wind_speed_kts",
+    "sim/cockpit2/temperature/outside_air_temp_degc",
+    "sim/time/total_flight_time_sec",
+    "sim/time/zulu_time_sec",
+    "sim/time/is_in_replay",
+    "sim/time/paused",
+    "sim/time/total_running_time_sec",
+    "sim/flightmodel/position/latitude",
+    "sim/flightmodel/position/longitude",
+    "sim/flightmodel/position/groundspeed",
+    "sim/cockpit2/gauges/indicators/heading_vacuum_deg_mag_pilot",
+    "sim/cockpit2/gauges/indicators/radio_altimeter_height_ft_pilot",
+    "sim/flightmodel/misc/h_ind",
+    "sim/flightmodel/position/vh_ind_fpm",
+    "sim/flightmodel/position/indicated_airspeed",
+    "sim/flightmodel/misc/machno",
+    "sim/flightmodel/position/true_theta",
+    "sim/flightmodel/position/true_phi",
+    "sim/flightmodel/position/alpha",
+    "sim/flightmodel/misc/g_total",
+    "sim/flightmodel/position/hpath",
+    "sim/flightmodel/position/magnetic_variation",
+    "sim/flightmodel/engine/ENGN_running",
+    "sim/flightmodel/engine/ENGN_thro",
+    "sim/cockpit2/engine/indicators/power_watts[0]",
+    // "sim/cockpit2/engine/indicators/power_watts",
+    "sim/cockpit2/controls/left_brake_ratio",
+    "sim/cockpit2/controls/right_brake_ratio",
+    "sim/cockpit2/controls/parking_brake_ratio",
+    "sim/cockpit2/controls/gear_handle_down",
+    "sim/cockpit2/controls/yoke_pitch_ratio",
+    "sim/cockpit2/controls/yoke_roll_ratio",
+    "sim/cockpit2/controls/yoke_heading_ratio",
+    "sim/cockpit2/controls/flap_ratio",
+    "sim/cockpit2/controls/speedbrake_ratio",
+    "sim/cockpit/autopilot/autopilot_mode",
+    "sim/flightmodel/weight/m_total",
+    "sim/flightmodel/weight/m_fuel_total",
+    "sim/cockpit2/pressurization/indicators/cabin_altitude_ft",
+    "sim/cockpit2/pressurization/indicators/cabin_vvi_fpm",
+    "sim/cockpit2/radios/indicators/nav1_nav_id",
+    "sim/cockpit/radios/nav1_course_degm",
+    "sim/cockpit/radios/nav1_slope_degt",
+    "sim/cockpit/radios/nav1_dme_dist_m",
+    "sim/cockpit/radios/nav1_hdef_dot",
+    "sim/cockpit/radios/nav1_vdef_dot",
+    "sim/cockpit/electrical/beacon_lights_on",
+    "sim/cockpit/electrical/landing_lights_on",
+    "sim/cockpit/electrical/nav_lights_on",
+    "sim/cockpit/electrical/strobe_lights_on",
+    "sim/cockpit/electrical/taxi_light_on",
+    "sim/flightmodel/controls/ail_trim",
+    "sim/flightmodel/controls/rud_trim",
+    "sim/flightmodel/controls/slatrat",
+    "sim/flightmodel/position/elevation",
+    "sim/flightmodel/position/latitude",
+    "sim/flightmodel/position/local_vx",
+    "sim/flightmodel/position/local_vy",
+    "sim/flightmodel/position/local_vz",
+    "sim/flightmodel/position/local_x",
+    "sim/flightmodel/position/local_y",
+    "sim/flightmodel/position/local_z",
+    "sim/flightmodel/position/longitude",
+    "sim/flightmodel/position/phi",
+    "sim/flightmodel/position/psi",
+    "sim/flightmodel/position/theta",
+    "sim/flightmodel2/controls/flap1_deploy_ratio",
+    "sim/flightmodel2/controls/flap2_deploy_ratio",
+    "sim/flightmodel2/controls/speedbrake_ratio",
+    "sim/flightmodel2/controls/wingsweep_ratio",
+    "sim/flightmodel2/engines/throttle_used_ratio",
+    "sim/flightmodel2/gear/deploy_ratio"
+  ]
 
-Promise.resolve(METRICS).then(result => { // build request to get dataref descriptions
-    reqbody = []
-    // structure of a dataref:
-    // {
-    // I   "metric": "pitch",
-    // I   "dref": "sim/cockpit2/gauges/indicators/pitch_vacuum_deg_pilot",
-    //     "unit": "deg",
-    //   +  added from X-Plane description:
-    // I + "index": 12345
-    //   + "value_type": int, float, double, int_array, float_array, data
-    //   + "writable": false, true
-    //   + "value": 0
-    // }
-    // I = Indexed by this value: DATAREFS_BY_NAME, _METRIC, _INDEX
-    result.metrics.forEach(d => {
-        reqbody.push(["filter[name]", d.dref])
-        DATAREFS_BY_NAME[d.dref] = d
-        DATAREFS_BY_METRIC[d.metric] = d
-    });
-    return reqbody
-}).then(reqdrefs => { // request descriptions
-    let request = new Request(api_url + "?" + new URLSearchParams(reqdrefs).toString(), {
-        headers: {
-            "Content-Type": "application/json",
-        }
-    });
-    fetch(request)
-    .then(r =>  r.json().then(result => { // store descriptions, access by dataref index
-        // console.log("dataref info", result)
-        result.data.forEach(dataref => {
-            d = DATAREFS_BY_NAME[dataref.name]
-            d.index = dataref.id;
-            d.value_type = dataref.value_type;
-            d.writable = dataref.is_writable;
-            d.value = 0;
-            DATAREFS_BY_INDEX[dataref.id] = d
-            index_list.push({"id": dataref.id}) // keep list of dataref index to request
-            //
-            row = document.createElement("tr");
-            c1 = document.createElement("td");
-            c1.innerHTML = dataref.name;
-            row.appendChild(c1);
-            c2 = document.createElement("td");
-            c2.innerHTML = dataref.value_type;
-            row.appendChild(c2);
-            c3 = document.createElement("td");
-            c3.id = dataref.id;
-            c3.innerHTML = dataref.id;
-            row.appendChild(c3);
-            c4 = document.createElement("td");
-            c4.id = "date-" + dataref.id;
-            c4.innerHTML = ""
-            row.appendChild(c4);
-            ELEM.appendChild(row);
-        })
-        // console.log("datarefs", DATAREFS_BY_METRIC);
-        request_id = request_id + 1
-        ws.send(JSON.stringify({ // request dataref value updates
-            "req_id": request_id,
-            "type": "dataref_subscribe_values",
-            "params": {
-                "datarefs": index_list
-            }
-        }));
-        console.log("sent", {
-            "req_id": request_id,
-            "type": "dataref_subscribe_values",
-            "params": {
-                "datarefs": index_list
-            }
-        });
-    }))
-})
+reqbody = []
+datarefs = {}
+// structure of a dataref:
+// {
+// I   "metric": "pitch",
+// I   "dref": "sim/cockpit2/gauges/indicators/pitch_vacuum_deg_pilot",
+//     "unit": "deg",
+//   +  added from X-Plane description:
+// I + "index": 12345
+//   + "value_type": int, float, double, int_array, float_array, data
+//   + "writable": false, true
+//   + "value": 0
+// }
+// I = Indexed by this value: DATAREFS_BY_NAME, _METRIC, _INDEX
+FDR.forEach(d => {
+    let name = d;
+    if (d.indexOf("[") >= 0 && d.indexOf("]") >= 0) { // array
+      name = d.substring(0, d.indexOf("["));
+    }
+    if (datarefs[name] === undefined) {
+      datarefs[name] = {
+        name: name,
+        path: d
+      }
+    }
+    if (name != d) {
+      if (datarefs[name].indices === undefined) {
+        datarefs[name].indices = [];
+      }
+      datarefs[name].indices.push(parseInt(d.substring(d.indexOf("[")+1, d.indexOf("]"))));
+      datarefs[name].array_index = datarefs[name].indices.length - 1; // entry in above array
+    }
+
+    reqbody.push(["filter[name]", name])
+});
+
+let request = new Request(api_url + "?" + new URLSearchParams(reqbody).toString(), {
+    headers: {
+        "Content-Type": "application/json",
+    }
+});
+fetch(request)
+.then(r =>  r.json().then(result => { // store descriptions, access by dataref index
+    // console.log("dataref info", result)
+    result.data.forEach(d => {
+        let dataref = Object.assign({}, datarefs[d.name], d);
+        dataref.value = 0;
+        DATAREFS_BY_INDEX[dataref.id] = dataref
+        index_list.push({"id": dataref.id}) // keep list of dataref index to request
+        //
+        row = document.createElement("tr");
+        c1 = document.createElement("td");
+        c1.innerHTML = dataref.path;
+        row.appendChild(c1);
+        c2 = document.createElement("td");
+        c2.innerHTML = dataref.value_type;
+        row.appendChild(c2);
+        c3 = document.createElement("td");
+        c3.id = dataref.id;
+        c3.innerHTML = dataref.id;
+        row.appendChild(c3);
+        c4 = document.createElement("td");
+        c4.id = "date-" + dataref.id;
+        c4.innerHTML = ""
+        row.appendChild(c4);
+        ELEM.appendChild(row);
+    })
+    document.getElementById("stopButton").dispatchEvent(new Event('click'));
+}))
 
 
 document.getElementById("stopButton").onclick = function () {
+    action = RUNNING ? "dataref_unsubscribe_values" : "dataref_subscribe_values"
     request_id = request_id + 1
     ws.send(JSON.stringify({ // request dataref value updates
         "req_id": request_id,
-        "type": "dataref_unsubscribe_values",
+        "type": action,
         "params": {
             "datarefs": index_list
         }
     }));
     console.log("sent", {
         "req_id": request_id,
-        "type": "dataref_unsubscribe_values",
+        "type": action,
         "params": {
             "datarefs": index_list
         }
     });
+    RUNNING = ! RUNNING
 };
 
 </script>
