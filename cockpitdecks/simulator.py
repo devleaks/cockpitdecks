@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 from abc import ABC, abstractmethod
 
-from cockpitdecks import CONFIG_KW, __version__
+from cockpitdecks import __version__
 from cockpitdecks.event import Event
 from cockpitdecks.strvar import Formula
 from cockpitdecks.variable import (
@@ -46,7 +46,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def __init__(self, cockpit, environ):
         self._inited = False
         self._environ = environ
-        self._observables = None
+        self._observables: "Observables" | None = None
         self.name = type(self).__name__
         self.cockpit = cockpit
 
@@ -348,11 +348,36 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
 
     #
     # Observables
-    def get_observables(self):
-        return self._observables
+    # @property
+    # def observables(self) -> list:
+    #     # This is the collection of "permanent" observables (coded)
+    #     # and simulator observables (in <simulator base>/resources/observables.yaml)
+    #     return []
+    @property
+    def observables(self) -> list:
+        # This is the collection of "permanent" observables (coded)
+        # and simulator observables (in <simulator base>/resources/observables.yaml)
+        if self._observables is not None:
+            if hasattr(self._observables, "observables"):
+                return self._observables.observables
+            elif type(self._observables) is list:
+                return self._observables
+            else:
+                logger.warning(f"observables: {type(self._observables)} unknown")
+        return []
 
     def load_observables(self):
-        self._observables = set()
+        if self._observables is not None:
+            return
+        fn = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", RESOURCES_FOLDER, OBSERVABLES_FILE))
+        if os.path.exists(fn):
+            config = {}
+            with open(fn, "r") as fp:
+                config = yaml.load(fp)
+            self._observables = Observables(config=config, simulator=self)
+            logger.info(f"loaded {len(self._observables.observables)} simulator observables")
+        else:
+            logger.info("no simulator observables")
 
     #
     # Events

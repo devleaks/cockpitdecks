@@ -179,8 +179,8 @@ class Aircraft:
         return self._icons
 
     @property
-    def observables(self):
-        return self._observables
+    def observables(self) -> list:
+        return self._observables.observables if self._observables is not None else []
 
     # Attributes
     def get_button_value(self, name):
@@ -210,21 +210,24 @@ class Aircraft:
         if self._aircraft_variable_names is not None:
             return self._aircraft_variable_names
         ret = set()
-        if type(self.observables) is Observables:
-            obs = self.observables.get_variables()
+        if type(self._observables) is Observables:
+            obs = self._observables.get_variables()
             if len(obs) > 0:
                 ret = ret | obs
+        elif type(self._observables) is dict:
+            for obs in self._observables.values():
+                ret = ret | obs.get_variables()
         self._aircraft_variable_names = ret
         return self._aircraft_variable_names
 
     def get_events(self) -> set:
         ret = set()
-        if type(self.observables) is Observables:
-            obs = self.observables.get_events()
+        if type(self._observables) is Observables:
+            obs = self._observables.get_events()
             if len(obs) > 0:
                 ret = ret | obs
-        elif type(self.observables) is dict:
-            for obs in self.observables.values():
+        elif type(self._observables) is dict:
+            for obs in self._observables.values():
                 ret = ret | obs.get_events()
         return ret
 
@@ -404,8 +407,8 @@ class Aircraft:
             logger.info(f"loaded {len(self._observables.observables)} aircraft observables")
 
     def unload_observables(self):
-        if type(self.observables) is Observables:
-            self.observables.unload()
+        if type(self._observables) is Observables:
+            self._observables.unload()
         # monitored variables will remain monitored but observable won't listen to changes
 
     # #########################################################

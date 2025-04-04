@@ -424,7 +424,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self._fonts = {}
         self._sounds = {}
         self._icons = {}
-        self._observables = None  # loaded from file
+        self._observables: Observables | None = None  # loaded from file
 
         self._permanent_observables = {}  # Subclasses of Observables, static, fixed after extension load
 
@@ -439,7 +439,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.fonts = {}
         self.sounds = {}
         self.icons = {}
-        self.observables = {}
 
         # Database of variables
         self.variable_database = VariableDatabase()
@@ -1162,7 +1161,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         # If it exposes a variable, the variable can be used in other Observables to trigger actions/instructions.
         self._permanent_observables = {s.name(): s for s in Cockpit.all_subclasses(Observable) if not s.name().endswith("-base")}
         if len(self._permanent_observables) > 0:
-            logger.info(f"permanent observables: {', '.join(sorted(self._permanent_observables.keys()))}")
+            logger.info(f"loaded {len(self._permanent_observables)} permanent observables: {', '.join(sorted(self._permanent_observables.keys()))}")
         else:
             logger.info("no permanent observables")
 
@@ -1174,17 +1173,31 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.load_permanent_observables()
 
         # Regular, cockpitdecks-level observables
+        if self._observables is not None:  # load once
+            return
         fn = os.path.abspath(os.path.join(os.path.dirname(__file__), RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self._observables.observables)} observables")
-            if self.aircraft.observables is not None and hasattr(self.aircraft.observables, "observables"):
-                self.observables = {o.name: o for o in self._observables.observables} | {o.name: o for o in self.observables.observables}
-            else:
-                self.observables = {o.name: o for o in self._observables.observables}
+            logger.info(f"loaded {len(self._observables.observables)} cockpit observables")
+        else:
+            logger.info("no cockpit observables")
+
+    @property
+    def observables(self) -> list:
+        if self._observables is None:
+            return []
+        if type(self._observables) is Observables:
+            return self._observables.observables
+        elif type(self._observables) is dict:
+            return self._observables.values()
+        elif type(self._observables) is list:
+            return self._observables
+        else:
+            logger.warning(f"invalid type for _observables ({type(self._observables)})")
+        return {}
 
     def load_icons(self):
         # Loading default icons
@@ -1397,7 +1410,26 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         return self.deck_types.get(name)
 
     def get_observable(self, name) -> Observable | None:
-        return self.observables.get(name)
+        # First, search in Cockpit
+        if self._observables is not None:
+            obs = self._observables.get_observable(name)
+            if obs is not None:
+                return obs
+        # Then in Aircraft
+        if self.aircraft._observables is not None:
+            obs = self.aircraft._observables.get_observable(name)
+            if obs is not None:
+                return obs
+        # Then in Simulator
+        if self.sim._observables is not None:
+            obs = self.sim._observables.get_observable(name)
+            if obs is not None:
+                return obs
+        # Then in Permanent Observables
+        for obs in self.sim._permanent_observables:
+            if obs._name == name:
+                return obs
+        return None
 
     def get_icon(self, candidate_icon):
         for ext in ["", ".png", ".jpg", ".jpeg"]:
@@ -1431,12 +1463,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.sounds = self._sounds | aircraft.sounds
         logger.info(f"{len(self.sounds)} sounds available")
 
-        if self._observables is not None:
-            if aircraft.observables is not None and hasattr(aircraft.observables, "observables"):
-                self.observables = {o.name: o for o in self._observables.observables} | {o.name: o for o in aircraft.observables.observables}
-            else:
-                self.observables = {o.name: o for o in self._observables.observables}
-        logger.info(f"{len(self.observables)} observables")
+        logger.info(f"{len(self.observables) + len(self.aircraft.observables)} observables")
 
     def remove_aircraft_resources(self):
         # called from self.aircraft.terminate() to remove aircraft resources from cockpit
@@ -1455,8 +1482,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.sounds = self._sounds
         logger.info(f"{len(self.sounds)} sounds available")
 
-        if self._observables is not None:
-            self.observables = {o.name: o for o in self._observables.observables}
         logger.info(f"{len(self.observables)} observables")
 
     def start_aircraft(self, acpath: str, release: bool = False, mode: int = 0):

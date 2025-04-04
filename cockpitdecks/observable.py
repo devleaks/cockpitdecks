@@ -9,7 +9,7 @@ from cockpitdecks.value import Value
 # from cockpitdecks.deck import Deck
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 class Observables:
@@ -58,7 +58,7 @@ class Observables:
 
     def get_observable(self, name) -> Observable | None:
         for o in self.observables:
-            if o.name == name:
+            if o._name == name:
                 return o
         return None
 

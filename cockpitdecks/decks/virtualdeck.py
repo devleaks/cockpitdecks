@@ -10,7 +10,7 @@ from datetime import datetime
 
 from PIL import Image, ImageDraw
 
-from cockpitdecks import DEFAULT_PAGE_NAME
+from cockpitdecks import __version__, DEFAULT_PAGE_NAME
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.deck import DeckWithIcons
 from cockpitdecks.decks.resources.virtualdeckmanager import VirtualDeckManager
@@ -39,7 +39,7 @@ class VirtualDeck(DeckWithIcons):
     DECK_NAME = "virtualdeck"
     DRIVER_NAME = "virtualdeck"
     MIN_DRIVER_VERSION = "0.0.0"
-    DRIVER_VERSION = "1.0.0"
+    DRIVER_VERSION = __version__
     DEVICE_MANAGER = VirtualDeckManager
 
     def __init__(self, name: str, config: dict, cockpit: "Cockpit", device=None):
