@@ -58,6 +58,16 @@ class IconBase(Representation):
     def render(self):
         return self.get_image()
 
+    def get_size(self) -> tuple:
+        # Returns the icon size that fits into the available icon display of this button
+        bdef = self.button._definition
+        return (self.ICON_SIZE, self.ICON_SIZE) if bdef is None else bdef.display_size()
+
+    def get_double_size(self) -> tuple:
+        # Returns the icon size that fits into the available icon display of this button
+        sizes = self.get_size()
+        return (2 * sizes[0], 2 * sizes[1])
+
     def get_font(self, fontname: str, fontsize: int):
         """
         Helper function to get valid font, depending on button or global preferences

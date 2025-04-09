@@ -14,11 +14,12 @@ import itertools
 
 import importlib
 import pkgutil
+from cockpitdecks import instruction
 from packaging.requirements import Requirement
 
 from typing import Dict, Tuple
 
-from datetime import datetime
+from datetime import date, datetime
 from queue import Queue
 
 from PIL import Image, ImageFont
@@ -325,6 +326,47 @@ class CockpitInfoInstruction(CockpitInstruction):
         logger.info(f"Message from the Cockpit: {self.message}")
 
 
+class CockpitAccumulatorInstruction(CockpitInstruction):
+    """Instruction to tally variable values in a table"""
+
+    INSTRUCTION_NAME = "accumulator"
+
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
+        )
+        self.name2 = instruction_block.get(self.INSTRUCTION_NAME, self.name)
+        self.save = instruction_block.get("save", 300)  # seconds
+        self.variables = instruction_block.get("variables", [])
+        self.accumulator = {}
+        self.init()
+
+    def init(self):
+        for v in self.variables:
+            self.accumulator[v] = []
+        self.accumulator["_ts"] = []
+
+    def save(self):
+        fn = f"accumulator-{self.name2}.yaml"
+        with open(fn, "w") as fp:
+            yaml.dump(self.accumulator, fp)
+            logger.info(f"saved accumulator {self.name2}")
+        # fn = f"accumulator-{self.name2}.kml"
+        # with open(fn, "w") as fp:
+        #     yaml.dump(self.accumulator, fp)
+        #     logger.info(f"saved accumulator {self.name2}")
+
+    def _execute(self):
+        for v in self.variables:
+            self.accumulator[v].append(self.cockpit.get_variable_value(v))
+        self.accumulator["_ts"].append(datetime.now().timestamp())
+        logger.debug(f"accumulator ran ({len(self.accumulator['_ts'])})")
+
+
 # #################################
 # Aircraft change detection
 # Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
@@ -594,6 +636,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             intvar.add_listener(self)
             self._permanent_variables[v] = intvar
         logger.info(f"permanent variables: {', '.join([Variable.internal_variable_root_name(v) for v in self._permanent_variables.keys()])}")
+        print(">>>", [(d.name, type(d)) for d in self._permanent_variables.values()])
 
         self.all_simulators = {s.name: s for s in Cockpit.all_subclasses(Simulator)}
         logger.info(f"available simulators: {', '.join(self.all_simulators.keys())}")
@@ -854,6 +897,9 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         elif type(self.observables) is dict:
             for obs in self.observables.values():
                 ret = ret | obs.get_variables()
+        elif type(self.observables) is list:
+            for obs in self.observables:
+                ret = ret | obs.get_variables()
         ac = self.aircraft.get_variables()
         if len(ac) > 0:
             ret = ret | ac
@@ -874,7 +920,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         if self.variable_database.exists(name):
             var = self.variable_database.get(name)
             if var is not None and var.is_string != is_string:
-                logger.warning(f"varaible {name} has wrong type {var.data_type} vs. ={is_string}")
+                logger.warning(f"variable {name} has wrong type {var.data_type} vs. ={is_string}")
                 if is_string:
                     var.data_type = InternalVariableType.STRING
                     logger.warning(f"variable {name} type forced to string" + " *" * 10)
@@ -1159,7 +1205,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         # Permament observables are observables coded as subclass of Observable.
         # They take no configuration to start, they are self contained.
         # If it exposes a variable, the variable can be used in other Observables to trigger actions/instructions.
-        self._permanent_observables = {s.name(): s for s in Cockpit.all_subclasses(Observable) if not s.name().endswith("-base")}
+        self._permanent_observables = {s.name(): s for s in Cockpit.all_subclasses(Observable) if not Observable.is_internal(s.name())}
         if len(self._permanent_observables) > 0:
             logger.info(f"loaded {len(self._permanent_observables)} permanent observables: {', '.join(sorted(self._permanent_observables.keys()))}")
         else:
@@ -1181,7 +1227,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._observables = Observables(config=config, simulator=self.sim)
-            logger.info(f"loaded {len(self._observables.observables)} cockpit observables")
+            logger.info(f"loaded {len(self._observables.observables)} cockpit observables: {self._observables}")
         else:
             logger.info("no cockpit observables")
 
