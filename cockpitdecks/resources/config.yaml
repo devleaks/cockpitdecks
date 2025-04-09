@@ -46,6 +46,12 @@ dataref-fetch-frequencies:
   sim/flightmodel/position/latitude: 1
   sim/flightmodel/position/longitude: 1
 dataref-roundings:
+  # Negative rounding value
+  #
+  # IMPORTANT: Rounding is done in Python.
+  # Negative rounding can be used to round to power of ten:
+  # round(123456.789, -4) = 120000
+  #
   sim/time/zulu_time_sec: 0
   sim/cockpit/autopilot/heading_mag: 2
   sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot: 4
