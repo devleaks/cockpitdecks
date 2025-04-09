@@ -220,15 +220,15 @@ class Aircraft:
         self._aircraft_variable_names = ret
         return self._aircraft_variable_names
 
-    def get_events(self) -> set:
+    def get_activities(self) -> set:
         ret = set()
         if type(self._observables) is Observables:
-            obs = self._observables.get_events()
+            obs = self._observables.get_activities()
             if len(obs) > 0:
                 ret = ret | obs
         elif type(self._observables) is dict:
             for obs in self._observables.values():
-                ret = ret | obs.get_events()
+                ret = ret | obs.get_activities()
         return ret
 
     # Initialisation, setup

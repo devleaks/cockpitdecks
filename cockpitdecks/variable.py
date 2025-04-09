@@ -393,4 +393,4 @@ class VariableDatabase:
         drefs = {d.name: d.value for d in self.database.values()}  #  if d.is_internal
         with open(filename, "w") as fp:
             yaml.dump(drefs, fp)
-            logger.debug(f"simulator data values saved in {filename} file")
+            logger.debug(f"variables saved in {filename} file")

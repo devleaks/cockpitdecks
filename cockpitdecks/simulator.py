@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 
 from datetime import datetime
-from typing import Any
+from typing import Any, List
 from abc import ABC, abstractmethod
 
 from cockpitdecks import __version__
@@ -19,6 +19,7 @@ from cockpitdecks.variable import (
     VariableListener,
 )
 from cockpitdecks.instruction import InstructionFactory, Instruction, NoOperation, InstructionPerformer
+from cockpitdecks.activity import Activity, ActivityListener
 
 loggerSimdata = logging.getLogger("SimulatorVariable")
 # loggerSimdata.setLevel(SPAM_LEVEL)
@@ -76,7 +77,7 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     def get_variables(self) -> set:
         return set()
 
-    def get_events(self) -> set:
+    def get_activities(self) -> set:
         return set()
 
     # Simulator variable pre-processing
@@ -287,6 +288,13 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
     # ################################
     # Factories
     #
+    def activity_factory(self, name: str, creator: str = None) -> Activity:
+        """Returns data or create a new internal variable"""
+        activity = SimulatorActivity(simulator=self, name=name)
+        if creator is not None:
+            activity._creator = creator
+        return activity
+
     @abstractmethod
     def replay_event_factory(self, name: str, value):
         """Recreates an Event from data included in the value.
@@ -506,7 +514,7 @@ class SimulatorVariableListener(VariableListener):
         if isinstance(data, SimulatorVariable) or (isinstance(data, Formula) and data._has_sim_vars):  # could be a formula that has sim vars.
             self.simulator_variable_changed(data=data)
         else:
-            logger.warning(f"non simulator variable for listener ({data.name}, {type(data)}), ignored")
+            logger.warning(f"non simulator variable {data.name} for listener {self.vl_name} ({type(data)}), ignored")
 
     @abstractmethod
     def simulator_variable_changed(self, data: SimulatorVariable):
@@ -572,35 +580,6 @@ class SimulatorEvent(Event):
             logger.warning("no simulator")
 
 
-class EventListener(ABC):
-    """A VariableListener is an entity that is interested in being notified
-    when a data changes.
-    """
-    def __init__(self, name: str = "abstract-event-listener"):
-        self.el_name = name
-
-    @abstractmethod
-    def event_received(self, event: SimulatorEvent):
-        raise NotImplementedError
-
-
-class SimulatorEventListener(EventListener):
-    # To get notified when a simulator data has changed.
-
-    def __init__(self, name: str = "abstract-simulator-event-listener"):
-        EventListener.__init__(self, name=name)
-
-    def event_received(self, event: SimulatorEvent):
-        if isinstance(event, SimulatorEvent):
-            self.simulator_event_received(event=event)
-        else:
-            logger.warning(f"non simulator event for listener ({event.name}, {type(event)}), ignored")
-
-    @abstractmethod
-    def simulator_event_received(self, event: SimulatorEvent):
-        raise NotImplementedError
-
-
 class SimulatorVariableEvent(SimulatorEvent):
     """Data Update Event"""
 
@@ -651,3 +630,34 @@ class SimulatorVariableValueProvider(ABC, ValueProvider):
     @abstractmethod
     def get_simulator_variable_value(self, simulator_variable, default=None):
         pass
+
+
+# ########################################
+# SimulatorActivity
+#
+# Something happens in the simulator and it sent to Cockpitdecks for handling.
+# If someont registerd to that 'activity', it gets notified it happened.
+class SimulatorActivity(Activity):
+    """An activity is something that happened in the simulator."""
+
+    def __init__(self, simulator: Simulator, name: str, value: Any | None = None):
+        Activity.__init__(self, name=name, value=value)
+        self.sim = Simulator
+
+
+class SimulatorActivityListener(ActivityListener):
+    # To get notified when a simulator data has changed.
+
+    def __init__(self, name: str = "abstract-simulator-activity-listener"):
+        ActivityListener.__init__(self, name=name)
+
+    def activity_received(self, activity: Activity):
+        # Forward to precise, typed simulator_activity_received()
+        if isinstance(activity, SimulatorActivity):
+            self.simulator_activity_received(activity=activity)
+        else:
+            logger.warning(f"non simulator activity for listener ({activity.name}, {type(activity)}), ignored")
+
+    @abstractmethod
+    def simulator_activity_received(self, activity: SimulatorActivity):
+        raise NotImplementedError

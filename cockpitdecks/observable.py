@@ -5,13 +5,13 @@ from abc import ABC, abstractmethod
 
 from cockpitdecks.constant import CONFIG_KW, ID_SEP
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener
-from cockpitdecks.simulator import SimulatorEvent, SimulatorEventListener
+from cockpitdecks.simulator import SimulatorActivity, SimulatorActivityListener
 from cockpitdecks.instruction import MacroInstruction
 from cockpitdecks.value import Value
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class Observables:
@@ -29,10 +29,10 @@ class Observables:
     def __str__(self) -> str:
         return ", ".join([o._name for o in self.observables])
 
-    def get_events(self) -> set:
+    def get_activities(self) -> set:
         ret = set()
         for o in self.observables:
-            ret = ret | o.get_events()
+            ret = ret | o.get_activities()
         return ret
 
     def get_variables(self) -> set:
@@ -114,7 +114,7 @@ class Observable:
         if which == CONFIG_KW.REPEAT.value:
             return TimedObservable(config=config, simulator=simulator)
         if which == CONFIG_KW.EVENT.value:
-            return EventObservable(config=config, simulator=simulator)
+            return ActivityObservable(config=config, simulator=simulator)
         logger.warning(f"invalid observable type {which}, not created")
         return None
 
@@ -182,7 +182,7 @@ class Observable:
                     logger.warning(f"could not get variable {s}")
         logger.debug(f"observable {self._name}: listening to no variable")
 
-    def get_events(self) -> set:
+    def get_activities(self) -> set:
         return set()
 
     def get_variables(self) -> set:
@@ -216,33 +216,32 @@ class ConditionalObservable(Observable, SimulatorVariableListener):
             logger.debug(f"observable {self._name} condition is false ({self.value})")
 
 
-class EventObservable(Observable, SimulatorEventListener):
+class ActivityObservable(Observable, SimulatorActivityListener):
 
-    OBSERVABLE_NAME = "observable-event-base"
+    OBSERVABLE_NAME = "observable-activity-base"
 
     def __init__(self, config: dict, simulator: Simulator):
         Observable.__init__(self, config=config, simulator=simulator)
-        SimulatorVariableListener.__init__(self, name=self._name)
-        self._events = set()
-        event = config.get(CONFIG_KW.EVENT.value)
-        if event is not None:
-            self._events = self._events | {event}
-        events = config.get(CONFIG_KW.EVENTS.value)
-        if events is not None:
-            self._events = self._events | set(events)
-        if len(self._events) == 0:
-            logger.warning(f"observable {self._name} of type event has no event")
+        SimulatorActivityListener.__init__(self, name=self._name)
+        self._activities = set()
+        activity = config.get(CONFIG_KW.ACTIVITY.value)
+        if activity is not None:
+            self._activities = self._activities | {activity}
+        activities = config.get(CONFIG_KW.ACTIVITIES.value)
+        if activities is not None:
+            self._activities = self._activities | set(activities)
+        if len(self._activities) == 0:
+            logger.warning(f"observable {self._name} of type activity has no activity")
         else:
-            logger.debug(f"observable {self._name}: listening to events {self._events}")
+            logger.debug(f"observable {self._name}: listening to activities {self._activities}")
 
-    def get_events(self) -> set:
-        return self._events
+    def get_activities(self) -> set:
+        return self._activities
 
-    def simulator_event_received(self, data: SimulatorEvent):
-        if data.name not in self.get_events():
+    def simulator_activity_received(self, activity: SimulatorActivity):
+        if activity.name not in self.get_activities():
             return  # not for me, should never happen
-        logger.info(f"event received {data}")
-
+        logger.info(f"activity received {activity}")
 
 
 class OnChangeObservable(Observable, SimulatorVariableListener):
@@ -275,6 +274,7 @@ class TimedObservable(Observable, SimulatorVariableListener):
         self.repeat = config.get(CONFIG_KW.REPEAT.value, 1)
         self._timer: threading.Timer | None = None
         self._show_set_value = False
+        self._should_run = True
         Observable.__init__(self, config=config, simulator=simulator)
         SimulatorVariableListener.__init__(self, name=self._name)
 
@@ -285,6 +285,10 @@ class TimedObservable(Observable, SimulatorVariableListener):
     def simulator_variable_changed(self, data: SimulatorVariable):
         # we do nothing on var change, we use our timer
         pass
+
+    @property
+    def should_run(self) -> bool:
+        return self._should_run
 
     def enable(self):
         super().enable()
@@ -313,8 +317,9 @@ class TimedObservable(Observable, SimulatorVariableListener):
             return
         logger.debug(f"observable {self._name} executing (timed repeat)..")
         self._actions.execute()
-        self._timer = threading.Timer(self.repeat, self._execute_and_repeat)
-        self._timer.start()
         logger.debug(f"..observable {self._name} executed")
-        logger.debug(f"{self._name} will execute again in {self.repeat} secs")
+        if self.should_run:
+            self._timer = threading.Timer(self.repeat, self._execute_and_repeat)
+            self._timer.start()
+            logger.debug(f"{self._name} will execute again in {self.repeat} secs")
         return True

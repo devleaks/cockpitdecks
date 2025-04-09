@@ -3,6 +3,12 @@ ALL_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Develope
 DEV_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_ext /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm /Users/pierre/Developer/fs/cockpitdecks_sd
 TEMPDIR := $(shell mktemp -p . -d --dry-run)
 
+define git_one
+    echo "\n\n--- $1"
+    (cd  ../$1; git status)
+endef
+
+
 all: a339dev
 
 a339dev:
@@ -37,7 +43,31 @@ clean:
 	@echo cleaned
 
 black:
-	@sh blackall.sh
+	# core
+	@black ../cockpitdecks/cockpitdecks
+	# sims
+	@black ../cockpitdecks_xp/cockpitdecks_xp
+	@black ../cockpitdecks_fs/cockpitdecks_fs
+	# decks
+	@black ../cockpitdecks_ld/cockpitdecks_ld
+	@black ../cockpitdecks_sd/cockpitdecks_sd
+	@black ../cockpitdecks_bx/cockpitdecks_bx
+	# ext
+	@black ../cockpitdecks_ext/cockpitdecks_ext
+	@black ../cockpitdecks_wm/cockpitdecks_wm
+	@black ../cockpitdecks_tl/cockpitdecks_tl
+	# templates
+	@black ../cockpitdecks_dev/cockpitdecks_dev
+	@black ../cockpitdecks_wd/cockpitdecks_wd
 
 git:
-	@sh gitall.sh
+	@$(call git_one,"cockpitdecks")
+	@$(call git_one,"cockpitdecks_xp")
+	@$(call git_one,"cockpitdecks_ld")
+	@$(call git_one,"cockpitdecks_sd")
+	@$(call git_one,"cockpitdecks_bx")
+	@$(call git_one,"cockpitdecks_ext")
+	@$(call git_one,"cockpitdecks_tl")
+	@$(call git_one,"cockpitdecks_wm")
+	@$(call git_one,"cockpitdecks_dev")
+	@$(call git_one,"cockpitdecks_wd")

@@ -123,6 +123,8 @@ class ENVIRON_KW(Enum):
 class CONFIG_KW(Enum):
     ACTION = "action"
     ACTIONS = "actions"
+    ACTIVITY = "activity"
+    ACTIVITIES = "activities"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BEGIN_END = "begin-end-command"  # pressed, execution remains while pressed, then released

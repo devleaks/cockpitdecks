@@ -12,22 +12,25 @@ import pickle
 import json
 import itertools
 
+from queue import Queue
+from typing import Dict, Tuple
+from datetime import date, datetime
+
 import importlib
 import pkgutil
-from cockpitdecks import instruction
+
+# External packages
+from cockpitdecks.activity import ActivityDatabase
 from packaging.requirements import Requirement
 
-from typing import Dict, Tuple
-
-from datetime import date, datetime
-from queue import Queue
-
 from PIL import Image, ImageFont
+
 from cairosvg import svg2png
 
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_SERIAL
 
+# Internal packages
 from cockpitdecks import __version__, LOGFILE, FORMAT
 from cockpitdecks import (
     # Constants, keywords
@@ -74,6 +77,7 @@ from cockpitdecks.constant import TYPES_FOLDER
 from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.variable import Variable, VariableFactory, InternalVariable, VariableDatabase, InternalVariableType, VariableListener
+from cockpitdecks.activity import ActivityDatabase, Activity, ActivityFactory
 from cockpitdecks.simulator import Simulator, SimulatorEvent, NoSimulator
 from cockpitdecks.instruction import Instruction, InstructionFactory, InstructionPerformer
 from cockpitdecks.observable import Observables, Observable
@@ -484,6 +488,8 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
         # Database of variables
         self.variable_database = VariableDatabase()
+        # Database of activities
+        self.activity_database = ActivityDatabase()
 
         # Main event look
         self.event_loop_run = False
@@ -636,7 +642,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             intvar.add_listener(self)
             self._permanent_variables[v] = intvar
         logger.info(f"permanent variables: {', '.join([Variable.internal_variable_root_name(v) for v in self._permanent_variables.keys()])}")
-        print(">>>", [(d.name, type(d)) for d in self._permanent_variables.values()])
 
         self.all_simulators = {s.name: s for s in Cockpit.all_subclasses(Simulator)}
         logger.info(f"available simulators: {', '.join(self.all_simulators.keys())}")
@@ -873,23 +878,51 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     # #########################################################
     # Variables and Events
     #
-    def get_events(self) -> set:
+    def get_activities(self) -> set:
         ret = set()
         if type(self.observables) is Observables:
-            obs = self.observables.get_events()
+            obs = self.observables.get_activities()
             if len(obs) > 0:
                 ret = ret | obs
         elif type(self.observables) is dict:
             for obs in self.observables.values():
-                ret = ret | obs.get_events()
-        ac = self.aircraft.get_events()
+                ret = ret | obs.get_activities()
+        ac = self.aircraft.get_activities()
         if len(ac) > 0:
             ret = ret | ac
         return ret
 
+    def activity_factory(self, name: str, creator: str = None) -> Activity:
+        """Returns data or create a new internal variable"""
+        activity = Activity(name=name)
+        if creator is not None:
+            activity._creator = creator
+        return activity
+
+    def register_activity(self, activity: Activity) -> Activity:
+        return self.activity_database.register(activity)
+
+    def get_activity(self, name: str, factory: ActivityFactory) -> Activity:
+        """Returns data or create a new one, internal if path requires it"""
+        if self.activity_database.exists(name):
+            return self.activity_database.get(name)
+        return self.activity_database.register(activity=factory.activity_factory(name=name, creator=self.name))
+
+    def get_variable_value(self, name, default=None) -> Any | None:
+        """Gets the value of a Variable monitored by Cockpitdecks
+        Args:
+            simulator_variable ([type]): [description]
+            default ([type]): [description] (default: `None`)
+
+        Returns:
+            [type]: [description]
+        """
+        return self.variable_database.value_of(name, default=default)
+
     def get_variables(self) -> set:
         """Returns the list of datarefs for which the cockpit wants to be notified, including those of the aircraft."""
-        ret = self._permanent_variable_names
+        ret = {Variable.internal_variable_name(v) for v in self._permanent_variable_names}
+        # ret = {d.name for d in self._permanent_variables.values()}
         if type(self.observables) is Observables:
             obs = self.observables.get_variables()
             if len(obs) > 0:
@@ -924,6 +957,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
                 if is_string:
                     var.data_type = InternalVariableType.STRING
                     logger.warning(f"variable {name} type forced to string" + " *" * 10)
+            return var
         return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string, creator=self.name))
 
     def get_variable_value(self, name, default=None) -> Any | None:

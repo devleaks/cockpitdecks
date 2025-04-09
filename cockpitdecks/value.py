@@ -170,9 +170,18 @@ class Value(StringWithVariables):
             if type(commands) is list:
                 for command in commands:
                     if type(command) is dict:  # command "block"
-                        inst = command.get(CONFIG_KW.COMMAND.value)
-                        if inst == "cockpitdecks-accumulator":
-                            datarefs = set(command.get(CONFIG_KW.VARIABLES.value, []))
+                        # @hack
+                        # actions:
+                        #   - command: cockpitdecks-accumulator
+                        #     name: test
+                        #     save: 60
+                        #     variables:  <--------------------------------------+
+                        #       - sim/flightmodel/position/latitude              |
+                        #       - sim/flightmodel/position/longitude             |
+                        #       - sim/flightmodel2/position/pressure_altitude.   |
+                        addvars = command.get(CONFIG_KW.VARIABLES.value)  # <----+
+                        if addvars is not None:
+                            datarefs = set(addvars)
                         else:
                             datarefs = self.scan_variables(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
                         if len(datarefs) > 0:
