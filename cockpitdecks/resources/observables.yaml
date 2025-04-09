@@ -1,0 +1,26 @@
+---
+name: Cockpitdecks
+description: Observable. Experimental feature
+version: 1.0.0
+last-updated: 15-MAR-2025
+#
+# CHANGELOG
+#
+# 1.0.0  08-APR-2025  Initial version
+#
+# OBSERVABLES
+#
+observables:
+  - name: Save position
+    type: repeat
+    enabled: True
+    delay: 10
+    repeat: 5
+    actions:
+      - command: cockpitdecks-accumulator
+        name: test
+        save: 60
+        variables:
+          - sim/flightmodel/position/latitude
+          - sim/flightmodel/position/longitude
+          - sim/flightmodel2/position/pressure_altitude

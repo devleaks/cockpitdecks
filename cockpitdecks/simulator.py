@@ -572,6 +572,35 @@ class SimulatorEvent(Event):
             logger.warning("no simulator")
 
 
+class EventListener(ABC):
+    """A VariableListener is an entity that is interested in being notified
+    when a data changes.
+    """
+    def __init__(self, name: str = "abstract-event-listener"):
+        self.el_name = name
+
+    @abstractmethod
+    def event_received(self, event: SimulatorEvent):
+        raise NotImplementedError
+
+
+class SimulatorEventListener(EventListener):
+    # To get notified when a simulator data has changed.
+
+    def __init__(self, name: str = "abstract-simulator-event-listener"):
+        EventListener.__init__(self, name=name)
+
+    def event_received(self, event: SimulatorEvent):
+        if isinstance(event, SimulatorEvent):
+            self.simulator_event_received(event=event)
+        else:
+            logger.warning(f"non simulator event for listener ({event.name}, {type(event)}), ignored")
+
+    @abstractmethod
+    def simulator_event_received(self, event: SimulatorEvent):
+        raise NotImplementedError
+
+
 class SimulatorVariableEvent(SimulatorEvent):
     """Data Update Event"""
 
