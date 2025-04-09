@@ -7,6 +7,7 @@ import platform
 from typing import Callable, List
 from enum import Enum
 from datetime import datetime
+from dataclasses import dataclass
 
 import ifaddr
 
@@ -32,6 +33,16 @@ def list_my_ips() -> List[str]:
             if type(ip.ip) is str:
                 r.append(ip.ip)
     return r
+
+
+# property names match X-Plane's
+@dataclass
+class BeaconData:
+    IP: str
+    Port: int
+    hostname: str
+    XPlaneVersion: int
+    role: int
 
 
 class BEACON_DATA_KW(Enum):
@@ -74,7 +85,7 @@ class XPlaneBeacon:
         self.status = 0
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         res = BEACON_DATA_KW.IP.value in self.beacon_data.keys()
         if not res and not self._already_warned > self.MAX_WARNING:
             if self._already_warned == self.MAX_WARNING:
@@ -91,7 +102,7 @@ class XPlaneBeacon:
         if self._callback is not None:
             self._callback(connected)
 
-    def find_ip(self):
+    def find_ip(self) -> dict:
         """
         Find the IP of XPlane Host in Network.
         It takes the first one it can find.
@@ -163,6 +174,7 @@ class XPlaneBeacon:
                     self.beacon_data[BEACON_DATA_KW.HOSTNAME.value] = hostname.decode()
                     self.beacon_data[BEACON_DATA_KW.XPVERSION.value] = xplane_version_number
                     self.beacon_data[BEACON_DATA_KW.XPROLE.value] = role
+                    d = BeaconData(IP=sender[0], Port=port, hostname=hostname.decode(), XPlaneVersion=xplane_version_number, role=role)
                     logger.info(f"XPlane Beacon Version: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")
                 else:
                     logger.warning(f"XPlane Beacon Version not supported: {beacon_major_version}.{beacon_minor_version}.{application_host_id}")

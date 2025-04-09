@@ -671,12 +671,6 @@ class XPlaneREST:
         return 0.0
 
     @property
-    def ws_url(self) -> str:
-        """URL for the WebSocket API"""
-        url = self.api_url
-        return url.replace("http:", "ws:")
-
-    @property
     def api_is_available(self) -> bool:
         """Important call that checks whether API is reachable
         API may not be reachable if:
@@ -870,21 +864,16 @@ class XPlaneWebSocket(XPlaneREST):
         self._stats = {}
 
     @property
+    def ws_url(self) -> str:
+        """URL for the WebSocket API"""
+        url = self.api_url
+        return url.replace("http:", "ws:")
+
+    @property
     def next_req(self) -> int:
         """Provides request number for WebSocket requests"""
         self.req_number = self.req_number + 1
         return self.req_number
-
-    def req_stats(self):
-        stats = {}
-        for r, v in self._requests.items():
-            if v not in stats:
-                stats[v] = 1
-            else:
-                stats[v] = stats[v] + 1
-        if self._stats != stats:
-            self._stats = stats
-            logger.debug(f"requests statistics: {stats}")
 
     # ################################
     # Connection to web socket
