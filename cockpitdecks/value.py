@@ -52,6 +52,7 @@ class Value(StringWithVariables):
 
         self._formula: Formula | None = None
         self._permanent_keys: Tuple[str] = tuple()
+        self._local_warning = True
 
         StringWithVariables.__init__(self, owner=provider, name=local_name, message="")  # this allows to use get_xxx_variable_value()
 
@@ -144,35 +145,45 @@ class Value(StringWithVariables):
             base = self._config
 
         r = set()
+
+        # Direct use of datarefs:
+        #
+        # 1. Formula
         formula_str = base.get(CONFIG_KW.FORMULA.value)
         if formula_str is not None and formula_str != "":
             formula = Formula(owner=self._provider, formula=formula_str)
             r = formula.get_variables()
             logger.debug(f"value {self.name}: added formula variables {r}")
 
-        # Direct use of datarefs:
         #
-        # 1. Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
+        # 2. Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
             dataref = base.get(attribute)
             if dataref is not None and InternalVariable.may_be_non_internal_variable(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 
-        # 2. Command with potential conditions
-        for instr_cmd in [CONFIG_KW.COMMAND.value, CONFIG_KW.COMMANDS.value, CONFIG_KW.VIEW.value]:
+        # 3. Command with potential conditions
+        #    Note: actions: is list of commands in Observables. (Should be command:? @todo)
+        for instr_cmd in [CONFIG_KW.COMMAND.value, CONFIG_KW.COMMANDS.value, CONFIG_KW.VIEW.value, CONFIG_KW.ACTIONS.value]:
             commands = base.get(instr_cmd)
             if type(commands) is list:
                 for command in commands:
                     if type(command) is dict:  # command "block"
-                        datarefs = self.scan_variables(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
+                        inst = command.get(CONFIG_KW.COMMAND.value)
+                        if inst == "cockpitdecks-accumulator":
+                            datarefs = set(command.get(CONFIG_KW.VARIABLES.value, []))
+                        else:
+                            datarefs = self.scan_variables(base=command, extra_keys=[CONFIG_KW.CONDITION.value])
                         if len(datarefs) > 0:
                             r = r | datarefs
                             logger.debug(f"value {self.name}: added datarefs found in {command}: {datarefs}")
                     # else command is str, no dref to scan for
             # else: commands is string or None, no dref to scan for
 
-        # 3. In formula, text, etc.
+        # 3.a Special commands that use datarefs (as arguments)
+
+        # 4. In text, etc.
         allways_extra = [CONFIG_KW.CONDITION.value]  # , CONFIG_KW.VIEW_IF.value
         self._permanent_keys = set(extra_keys + allways_extra)
 
@@ -247,11 +258,10 @@ class Value(StringWithVariables):
         if (self._variables is not None and len(self._variables) > 1) and (
             isinstance(self._provider, SimulatorVariableValueProvider) or isinstance(self._provider, Simulator)
         ):
-            ret = {}
-            for d in self.get_variables():
-                v = self.get_simulator_variable_value(simulator_variable=d)
-                ret[d] = v
-            logger.info(f"value {self.name}: {ret} (no formula, no dataref, returning all datarefs)")
+            ret = {d: self.get_simulator_variable_value(simulator_variable=d) for d in self.get_variables()}
+            if self._local_warning:
+                logger.info(f"value {self.name}: no formula, no dataref, returning all variables: {ret}")
+                self._local_warning = False
             return ret
 
         logger.debug(f"value {self.name}: no formula, no dataref, no activation")
@@ -261,8 +271,9 @@ class Value(StringWithVariables):
             ret = self._provider._activation.get_state_variables()
             logger.debug(f"value {self.name}: {ret} (from state variables)")
             return ret
-
-        logger.info(f"value {self.name}: no local value, returning parent value {self.current_value}")
+        if self._local_warning:
+            logger.info(f"value {self.name}: no local value, returning parent value {self.current_value}")
+            self._local_warning = False
         return self.current_value  # super().value
 
     def get_rescaled_value(self, range_min: float, range_max: float, steps: int | None = None):
