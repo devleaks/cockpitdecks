@@ -60,6 +60,7 @@ dataref-roundings:
   sim/flightmodel/position/latitude: 8
   sim/flightmodel/position/longitude: 8
   sim/cockpit/misc/barometer_setting: 2
+  sim/flightmodel2/position/pressure_altitude: 1
   AirbusFBW/BatVolts[0]: 1
   AirbusFBW/BatVolts[1]: 1
   AirbusFBW/OHPLightsATA34[6]: 3

@@ -404,6 +404,8 @@ class Aircraft:
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._observables = Observables(config=config, simulator=self.sim)
+            for o in self._observables.get_observables():
+                self.cockpit.register_observable(o)
             logger.info(f"loaded {len(self._observables.observables)} aircraft observables")
 
     def unload_observables(self):

@@ -59,6 +59,9 @@ class Observables:
         if not ok:
             logger.warning(f"observable {name} not found")
 
+    def get_observables(self) -> list:
+        return self.observables
+
     def get_observable(self, name) -> Observable | None:
         for o in self.observables:
             if o._name == name:
@@ -69,6 +72,12 @@ class Observables:
         for o in self.observables:
             o.disable()
             o.remove_listener()
+        logger.debug("observables unloaded")
+
+    def terminate(self):
+        for o in self.observables:
+            o.terminate()
+        logger.debug("observables terminated")
 
 
 class Observable:
@@ -191,6 +200,10 @@ class Observable:
     def describe(self) -> str:
         return ". ".join(["to do"])
 
+    def terminate(self):
+        self.disable()
+        self.remove_listener()
+
 
 class ConditionalObservable(Observable, SimulatorVariableListener):
 
@@ -309,6 +322,12 @@ class TimedObservable(Observable, SimulatorVariableListener):
             self._timer.cancel()
             self._timer = None
             logger.debug(f"{self._name} timer cancelled")
+
+    def terminate(self):
+        super().terminate()
+        self.stop()
+        logger.debug(f"{self._name} terminated")
+
 
     def _execute_and_repeat(self):
         self.stop()

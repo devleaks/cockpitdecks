@@ -491,6 +491,8 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         # Database of activities
         self.activity_database = ActivityDatabase()
 
+        self.observable_database = {}
+
         # Main event look
         self.event_loop_run = False
         self.event_loop_thread = None
@@ -1261,6 +1263,8 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._observables = Observables(config=config, simulator=self.sim)
+            for o in self._observables.get_observables():
+                self.register_observable(o)
             logger.info(f"loaded {len(self._observables.observables)} cockpit observables: {self._observables}")
         else:
             logger.info("no cockpit observables")
@@ -1278,6 +1282,15 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         else:
             logger.warning(f"invalid type for _observables ({type(self._observables)})")
         return {}
+
+    def register_observable(self, observable: Observable):
+        if observable._name not in self.observable_database:
+            self.observable_database[observable._name] = observable
+            print(">>>", observable._name)
+
+    def terminate_observables(self):
+        for o in self.observable_database.values():
+            o.terminate()
 
     def load_icons(self):
         # Loading default icons
@@ -2017,6 +2030,8 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             logger.info("cockpit not running")
             return
         logger.info("terminating cockpit..")
+        self.terminate_observables()
+        logger.info("..observable terminated..")
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
