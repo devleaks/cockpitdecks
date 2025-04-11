@@ -36,6 +36,9 @@ keep:
 	@mv events.json datarefs.json webapi-commands.json webapi-datarefs.json webapi.log variable-database-dump.yaml $(TEMPDIR)
 	@echo saved in $(TEMPDIR)
 
+autoreload:
+	@nodemon -w aircrafts/*/deckconfig/resources/decks/types -e yaml --exec curl "http://127.0.0.1:7777/reload-decks"
+
 clean:
 	@rm -f events.json variable-database-dump.yaml 
 	@rm -f commands.json datarefs.json webapi-datarefs.json webapi-commands.json webapi.log

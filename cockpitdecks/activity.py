@@ -25,6 +25,11 @@ class Activity:
         self._creator: str | None = None
 
     def activate(self, value, cascade: bool = True):
+        # For now, activity only reports it occured.
+        # If part of a Observable, the observable will take care
+        # of carrying out the associated "actions".
+        # Here, we only inform that it occured.
+        logger.info(f"{self.name} activating value={value}, cascade={cascade}")
         self.value = value
         if cascade:
             self.notify()
@@ -82,9 +87,6 @@ class ActivityDatabase:
     def register(self, activity: Activity) -> Activity:
         if activity.name is None:
             logger.warning(f"invalid activity name {activity.name}, not stored")
-            return activity
-        if Activity.is_state_activity(activity.name):
-            logger.warning(f"invalid activity name {activity.name}, this is a state, not stored")
             return activity
         if activity.name not in self.database:
             self.database[activity.name] = activity

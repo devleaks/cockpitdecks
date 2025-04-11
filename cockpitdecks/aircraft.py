@@ -272,7 +272,6 @@ class Aircraft:
     def load_resources(self):
         # currently, nothing is not with this config, but it is loaded if it exists
         self.load_livery_config()
-        self.load_deck_types()
         self.load_fonts()
         self.load_icons()
         self.load_sounds()
@@ -468,7 +467,7 @@ class Aircraft:
             self.theme = theme
         elif self.theme in ["", "default", "cockpit"]:
             self.theme = theme
-        logger.info(f"theme is {self.theme} (was {before})")
+        logger.info(f"theme is {self.theme}{f' (was {before})' if before is not None else ''}")
 
         sn = os.path.join(self.acpath, CONFIG_FOLDER, SECRET_FILE)
         serial_numbers = Config(sn)

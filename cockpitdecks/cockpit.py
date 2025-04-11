@@ -486,12 +486,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.sounds = {}
         self.icons = {}
 
-        # Database of variables
+        # Databases
         self.variable_database = VariableDatabase()
-        # Database of activities
         self.activity_database = ActivityDatabase()
-
-        self.observable_database = {}
+        self.observable_database: Dict[str, Observable] = {}
 
         # Main event look
         self.event_loop_run = False
@@ -1194,12 +1192,12 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     # Cockpit data caches
     #
     def load_resources(self):
-        self.load_fonts()
         self.load_icons()
         self.load_sounds()
+        self.load_fonts()
+        self.load_defaults()
         self.load_observables()
         self.load_deck_types()
-        self.load_defaults()
 
     def load_deck_types(self):
         # 1. "System" types
@@ -1286,7 +1284,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     def register_observable(self, observable: Observable):
         if observable._name not in self.observable_database:
             self.observable_database[observable._name] = observable
-            print(">>>", observable._name)
 
     def terminate_observables(self):
         for o in self.observable_database.values():
@@ -1329,12 +1326,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
                     logger.info(f"{len(self._icons)} icons loaded")
 
         self.icons = self._icons | self.aircraft.icons
-
-        dftname = self.get_attribute("icon-name")
-        if dftname in self._icons.keys():
-            logger.info(f"default icon name {dftname} found")
-        else:
-            logger.warning(f"default icon name {dftname} not found in default icons")
 
     def load_fonts(self):
         # Loading fonts.
@@ -2043,17 +2034,19 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         if self.sim is not None:
             logger.info("..terminating connection to simulator..")
             self.sim.terminate()
-            logger.info("..connection to simulator terminated..")
+            logger.debug("..connection to simulator terminated..")
             logger.debug("..deleting connection to simulator..")
             del self.sim
             logger.debug("..connection to simulator deleted..")
             self.sim = NoSimulator(cockpit=self, environ=self._environ)
             logger.debug("..no simulator installed..")
         logger.info("..terminating devices..")
+        logger.info("..stopping usb monitoring..")
         self.usb_monitor.stop_monitoring()
-        logger.info("..usb monitoring stopped..")
+        logger.debug("..usb monitoring stopped..")
         self.terminate_devices()
-        logger.info("..done")
+        logger.info("..cockpit terminated")
+
         nt = threading.enumerate()
         if len(nt) > 1:
             logger.error(f"{len(nt)} threads remaining")
@@ -2061,7 +2054,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             # os._exit(0)
         else:
             logger.info("no pending thread")
-        logger.info("..cockpit terminated")
         self.running = False
 
     # ###############################################################

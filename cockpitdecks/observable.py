@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import threading
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from cockpitdecks.constant import CONFIG_KW, ID_SEP
 from cockpitdecks.simulator import Simulator, SimulatorVariable, SimulatorVariableListener
@@ -80,7 +80,7 @@ class Observables:
         logger.debug("observables terminated")
 
 
-class Observable:
+class Observable(ABC):
     """An Observable is a Value that is monitored for changes.
        When the data changes, associated Instructions are performed (in sequence).
     Executes actions in list.
@@ -122,7 +122,7 @@ class Observable:
             return OnChangeObservable(config=config, simulator=simulator)
         if which == CONFIG_KW.REPEAT.value:
             return TimedObservable(config=config, simulator=simulator)
-        if which == CONFIG_KW.EVENT.value:
+        if which == CONFIG_KW.ACTIVITY.value:
             return ActivityObservable(config=config, simulator=simulator)
         logger.warning(f"invalid observable type {which}, not created")
         return None
@@ -179,6 +179,13 @@ class Observable:
         else:
             logger.debug(f"observable {self._name}: listening to variables {v}")
         # logger.debug(f"observable {self._name} inited")
+        activities = self.get_activities()
+        if len(activities) > 0:
+            for a in activities:
+                self.sim.cockpit.register_activity(SimulatorActivity(simulator=self.sim, name=a))
+            logger.debug(f"observable {self._name}: listening to activities {activities}")
+        else:
+            logger.debug(f"observable {self._name}: listening to no activity")
 
     def remove_listener(self):
         variables = self.get_variables()
@@ -229,34 +236,6 @@ class ConditionalObservable(Observable, SimulatorVariableListener):
             logger.debug(f"observable {self._name} condition is false ({self.value})")
 
 
-class ActivityObservable(Observable, SimulatorActivityListener):
-
-    OBSERVABLE_NAME = "observable-activity-base"
-
-    def __init__(self, config: dict, simulator: Simulator):
-        Observable.__init__(self, config=config, simulator=simulator)
-        SimulatorActivityListener.__init__(self, name=self._name)
-        self._activities = set()
-        activity = config.get(CONFIG_KW.ACTIVITY.value)
-        if activity is not None:
-            self._activities = self._activities | {activity}
-        activities = config.get(CONFIG_KW.ACTIVITIES.value)
-        if activities is not None:
-            self._activities = self._activities | set(activities)
-        if len(self._activities) == 0:
-            logger.warning(f"observable {self._name} of type activity has no activity")
-        else:
-            logger.debug(f"observable {self._name}: listening to activities {self._activities}")
-
-    def get_activities(self) -> set:
-        return self._activities
-
-    def simulator_activity_received(self, activity: SimulatorActivity):
-        if activity.name not in self.get_activities():
-            return  # not for me, should never happen
-        logger.info(f"activity received {activity}")
-
-
 class OnChangeObservable(Observable, SimulatorVariableListener):
 
     OBSERVABLE_NAME = "observable-onchange-base"
@@ -276,6 +255,36 @@ class OnChangeObservable(Observable, SimulatorVariableListener):
             logger.debug(f"..observable {self._name} executed")
         else:
             logger.debug(f"observable {self._name} value unchanged ({self.value})")
+
+
+class ActivityObservable(Observable, SimulatorActivityListener):
+
+    OBSERVABLE_NAME = "observable-activity-base"
+
+    def __init__(self, config: dict, simulator: Simulator):
+        self._activities = set()
+        activity = config.get(CONFIG_KW.ACTIVITY.value)
+        if activity is not None:
+            self._activities = self._activities | {activity}
+        activities = config.get(CONFIG_KW.ACTIVITIES.value)
+        if activities is not None:
+            self._activities = self._activities | set(activities)
+        if len(self._activities) == 0:
+            logger.warning(f"observable {self._name} of type activity has no activity")
+        # else:
+        #     for a in self._activities:
+        #         simulator.cockpit.activity_database.register(SimulatorActivity(simulator=simulator, name=a))
+        #     logger.debug(f"observable {self._name}: listening to activities {self._activities}")
+        Observable.__init__(self, config=config, simulator=simulator)
+        SimulatorActivityListener.__init__(self, name=self._name)
+
+    def get_activities(self) -> set:
+        return self._activities
+
+    def simulator_activity_received(self, activity: SimulatorActivity):
+        if activity.name not in self.get_activities():
+            return  # not for me, should never happen
+        logger.info(f"activity received {activity}")
 
 
 class TimedObservable(Observable, SimulatorVariableListener):
@@ -327,7 +336,6 @@ class TimedObservable(Observable, SimulatorVariableListener):
         super().terminate()
         self.stop()
         logger.debug(f"{self._name} terminated")
-
 
     def _execute_and_repeat(self):
         self.stop()

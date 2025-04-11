@@ -103,7 +103,9 @@ class Activation(VariableListener):
         view = self._config.get(CONFIG_KW.VIEW.value)
         if view is not None:  # a "view" is just a command...
             logger.log(DEPRECATION_LEVEL, f"{self.button_name}: {self.name()}: usage of view is deprecated")
-            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block={CONFIG_KW.COMMAND.value: view})
+            if type(view) is str:
+                view = {CONFIG_KW.COMMAND.value: view}
+            self._view = self.sim.instruction_factory(name=cmdname + ":view", instruction_block=view)
             self._view.button = self.button  # set button to evalute conditional
 
         # Vibrate on press, or emit/play sound (mp3 or wav only for web compatibility

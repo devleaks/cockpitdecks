@@ -55,7 +55,9 @@ class Push(Activation):
         cmd = button._config.get(CONFIG_KW.COMMAND.value)
         if cmd is not None:
             cmdname = ":".join([self.button.get_id(), type(self).__name__])
-            self._command = self.sim.instruction_factory(name=cmdname, instruction_block={CONFIG_KW.COMMAND.value: cmd})
+            if type(cmd) is str:
+                cmd = {CONFIG_KW.COMMAND.value: cmd}
+            self._command = self.sim.instruction_factory(name=cmdname, instruction_block=cmd)
 
         # Working variables
         self.pressed = False  # True while the button is pressed, False when released

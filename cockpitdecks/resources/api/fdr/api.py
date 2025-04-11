@@ -1356,10 +1356,10 @@ class XPlaneWebSocket(XPlaneREST):
 
     def stop(self):
         if not self.ws_event.is_set():
-            if self.all_datarefs is not None:
-                self.all_datarefs.save("datarefs.json")
-            if self.all_commands is not None:
-                self.all_commands.save("commands.json")
+            # if self.all_datarefs is not None:
+            #     self.all_datarefs.save("datarefs.json")
+            # if self.all_commands is not None:
+            #     self.all_commands.save("commands.json")
             self.ws_event.set()
             if self.ws_thread is not None and self.ws_thread.is_alive():
                 logger.debug("stopping websocket listener..")
