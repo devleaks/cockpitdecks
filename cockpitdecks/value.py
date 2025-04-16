@@ -209,7 +209,7 @@ class Value(StringWithVariables):
             datarefs = re.findall(PATTERN_DOLCB, text)
             # datarefs = set(filter(lambda x: InternalVariable.may_be_non_internal_variable(x), datarefs))
             if len(datarefs) > 0:
-                r = r | datarefs
+                r = r | set(datarefs)
                 logger.debug(f"value {self.name}: added datarefs found in {key}: {datarefs}")
 
         # Clean up
