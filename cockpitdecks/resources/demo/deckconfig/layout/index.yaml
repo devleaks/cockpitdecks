@@ -49,8 +49,8 @@ buttons:
       B1:
         text: "ON"
         color: deepskyblue
-        text-font: D-DIN-Bold.otf
-        text-size: 72
+        text-font: D-DINExp-Bold.otf
+        text-size: 80
         framed: true
         formula: ${state:activation_count} 2 mod
     command: none

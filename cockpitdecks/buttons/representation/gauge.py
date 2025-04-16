@@ -393,17 +393,9 @@ class GaugeIcon(DrawBase):
             return a
 
         if self._gauge is None:  # do backgroud image
-            image, draw = self.double_icon(width=ICON_SIZE, height=ICON_SIZE)  # annunciator text and leds , color=(0, 0, 0, 0)
-            inside = round(0.04 * image.width + 0.5)
-            gauge_size = ICON_SIZE / 2
+            image, draw = self.simple_icon()  # annunciator text and leds , color=(0, 0, 0, 0)
             num_ticks = self.num_ticks + 1
             self.angular_step = int(self.angle / self.num_ticks)
-
-            # Values on arc
-            tick_color = "yellow"
-            tick_font = "D-DIN"
-            tick_size = 60
-            font = self.get_font(tick_font, tick_size)
 
             # Ticks
             tick_start = self.gauge_size / 2 + self.tick_space
@@ -481,11 +473,23 @@ class GaugeIcon(DrawBase):
                 width=self.needle_width,
             )
 
+            # Value
+            range_val = self.tick_to - self.tick_from
+            self.scale = range_val / self.num_ticks
+            self.offset = self.tick_from
+
         value = self.button.value
+        print("value", self.button._value.value, self.button._value.get_variables(), self.button.get_variables())
+
         if value is None:
             value = 0
         rotation = self.offset + self.scale * value
-        rotated_needle = self._needle.rotate(rotation, resample=Image.Resampling.NEAREST, center=self.center)
+        print(value, self.scale, rotation, self.tick_from, self.tick_to)
+        if rotation < self.tick_from:
+            rotation = self.tick_from
+        if rotation > self.tick_to:
+            rotation = self.tick_to
+        rotated_needle = self._needle.rotate(-rotation, resample=Image.Resampling.NEAREST, center=self.center)
 
         bg = self._gauge.copy()
         bg.alpha_composite(rotated_needle)

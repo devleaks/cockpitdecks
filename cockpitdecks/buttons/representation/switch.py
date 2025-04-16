@@ -153,6 +153,8 @@ class CircularSwitch(SwitchBase):
 
         self.tick_from = self.switch.get("tick-from", 90)
         self.tick_to = self.switch.get("tick-to", 270)
+        self.tick_mode = self.switch.get("tick-mode", "normal")
+        self.tick_off_color = self.switch.get("tick-off-color", self.tick_color)
         if hasattr(self.button._activation, "stops"):
             self.tick_steps = self.button._activation.stops
             logger.debug(f"button {self.button.name}: button has {self.tick_steps} steps")
@@ -201,6 +203,15 @@ class CircularSwitch(SwitchBase):
         tick_lbl = tick_end + self.tick_label_space
 
         label_anchors = []
+
+        orient = -1 if self.needle_tip == "arri" else 1
+        tip = (
+            (3 * self.needle_tip_size, 0),
+            (0, 4 * self.needle_tip_size * orient),
+            (-3 * self.needle_tip_size, 0),
+            (3 * self.needle_tip_size, 0),
+        )
+
         for i in range(self.tick_steps):
             a = red(self.tick_from + i * self.angular_step)
             x0 = center[0] - tick_start * math.sin(math.radians(a))
@@ -210,9 +221,25 @@ class CircularSwitch(SwitchBase):
             x2 = center[0] - tick_lbl * math.sin(math.radians(a))
             y2 = center[1] + tick_lbl * math.cos(math.radians(a))
             # print(f"===> ({x0},{y0}) ({x1},{y1}) a=({x2},{y2})")
+
             label_anchors.append([a, x2, y2])
+
             if self.tick_width > 0:
-                draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
+                if self.needle_tip is not None and self.needle_tip.startswith("arr") and self.tick_mode == "arrow":
+                    tip_image, tip_draw = self.double_icon()
+                    tip_moved = list(((center[0] + x[0], center[1] + x[1]) for x in tip))
+                    tip_draw.polygon(tip_moved, fill=self.tick_off_color)
+                    tip_image = tip_image.rotate(
+                        red(-a),
+                        translate=(
+                            - self.needle_start * math.sin(math.radians(a)),
+                            self.needle_start * math.cos(math.radians(a)),
+                        ),
+                    )  # ;-)
+                    image.alpha_composite(tip_image)
+                else:
+                    draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
+
 
         # Tick run mark
         if self.tick_underline_width > 0:

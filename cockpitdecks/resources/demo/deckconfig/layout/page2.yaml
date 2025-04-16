@@ -62,7 +62,7 @@ buttons:
     name: MASTER WARNING
     type: push
     command: none
-    sound: sonar-ping.wav
+    sound: seatbelt.wav
     annunciator-animate:
       formula: ${state:activation_count} 2 mod 0 eq
       text: |-
@@ -119,12 +119,14 @@ buttons:
       maximum: 360
       rule-position: bottom
   - index: 5
+    name: Sample Gauge
     type: none
     gauge:
       tick-from: -120
       tick-to: 120
       ticks: 8
       gauge-offset: 20
+      needle-color: lime
     dataref: data:encoder0
   - index: 6
     type: onoff
@@ -171,10 +173,12 @@ buttons:
       tick-from: 90
       tick-to: 315
       tick-space: 40
-      tick-width: 0
+      tick-width: 1
       tick-underline-width: 0
-      tick-color: lightblue
+      tick-color: white
       tick-underline-color: white
+      tick-mode: arrow
+      tick-off-color: grey
       needle-underline-width: 0
       needle-color: lime
       needle-start: 90

@@ -6,7 +6,7 @@ import logging
 
 from PIL import Image
 
-from .icon import IconBase
+from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -21,7 +21,7 @@ NO_ICON = "no-icon"
 #
 # GENERIC
 #
-class HardwareRepresentation(IconBase):
+class HardwareRepresentation(DrawBase):
     """Uniform color or texture icon
 
     Attributes:
@@ -32,7 +32,7 @@ class HardwareRepresentation(IconBase):
 
     def __init__(self, button: "Button"):
         button._config[NO_ICON] = True
-        IconBase.__init__(self, button=button)
+        DrawBase.__init__(self, button=button)
 
         self.hardware = self.button._definition.hardware_representation
         self.highlight_color = self.hardware.get("highlight-color", "#ffffff10")

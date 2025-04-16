@@ -1,0 +1,64 @@
+---
+aircraft: Toliss A321neo
+description: Encoders common to both pages
+version: 1.0.0
+last-updated: 03-APR-2024
+#
+# CHANGELOG
+#
+# 1.0.0  03-APR-2023  Initial version
+#
+# PAGE
+#
+buttons:
+  - index: mc
+    # display only
+    type: none
+    virtual-xtm-mcled: true
+    # cheat: mc mode always "on" for serial access protocol
+    formula: 1
+  - index: e0
+    name: encoder0
+    type: encoder-value
+    step: 1
+    value: 0
+    value-min: 0
+    value-max: 13
+    dataref: data:_enc0
+    set-dataref: data:_enc0
+    formula: ${data:_enc0}
+    encoder-leds: 0
+  - index: e1
+    name: encoder1
+    type: encoder-value
+    step: 1
+    value: 0
+    value-min: 0
+    value-max: 13
+    dataref: data:_enc0
+    set-dataref: data:_enc0
+    formula: ${data:_enc0}
+    encoder-leds: 1
+  - index: e2
+    name: encoder2
+    type: encoder-value
+    step: 1
+    value: 0
+    value-min: 0
+    value-max: 13
+    dataref: data:_enc0
+    set-dataref: data:_enc0
+    formula: ${data:_enc0}
+    encoder-leds: 2
+  - index: e3
+    name: encoder3
+    type: encoder-value
+    step: 1
+    value: 0
+    value-min: 0
+    value-max: 6
+    dataref: data:_enc0
+    set-dataref: data:_enc0
+    formula: ${data:_enc0}
+    encoder-leds: 3
+#
