@@ -296,7 +296,6 @@ class TimedObservable(Observable, SimulatorVariableListener):
         self.repeat = config.get(CONFIG_KW.REPEAT.value, 1)
         self._timer: threading.Timer | None = None
         self._show_set_value = False
-        self._should_run = True
         Observable.__init__(self, config=config, simulator=simulator)
         SimulatorVariableListener.__init__(self, name=self._name)
 
@@ -310,7 +309,7 @@ class TimedObservable(Observable, SimulatorVariableListener):
 
     @property
     def should_run(self) -> bool:
-        return self._should_run
+        return self._enabled
 
     def enable(self):
         super().enable()

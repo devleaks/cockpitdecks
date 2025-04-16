@@ -30,7 +30,7 @@ dependencies = [
     "Flask~=3.1.0",
     "jsonlines~=4.0.0",
     "packaging~=24.0",
-    "pillow~=11.1.0",
+    "pillow~=11.2.0",
     "py3rtree @ git+https://github.com/drwelby/py3rtree",
     "requests~=2.32.3",
     "ruamel.yaml~=0.18.8",

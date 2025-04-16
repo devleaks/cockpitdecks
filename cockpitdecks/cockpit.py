@@ -343,8 +343,9 @@ class CockpitAccumulatorInstruction(CockpitInstruction):
             delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
             condition=instruction_block.get(CONFIG_KW.CONDITION.value),
         )
-        self.name2 = instruction_block.get(self.INSTRUCTION_NAME, self.name)
+        self.name_alt = name
         self.save = instruction_block.get("save", 300)  # seconds
+        self.format = instruction_block.get("format", "yaml")  # yaml,json,kml
         self.variables = instruction_block.get("variables", [])
         self.accumulator = {}
         self.init()
@@ -355,7 +356,7 @@ class CockpitAccumulatorInstruction(CockpitInstruction):
         self.accumulator["_ts"] = []
 
     def save(self):
-        fn = f"accumulator-{self.name2}.yaml"
+        fn = f"accumulator-{self.name_alt}.yaml"
         with open(fn, "w") as fp:
             yaml.dump(self.accumulator, fp)
             logger.info(f"saved accumulator {self.name2}")
@@ -365,6 +366,9 @@ class CockpitAccumulatorInstruction(CockpitInstruction):
         #     logger.info(f"saved accumulator {self.name2}")
 
     def _execute(self):
+        # curframe = inspect.currentframe()
+        # calframe = inspect.getouterframes(curframe, 2)
+        # print('caller name:', calframe[1][3])
         for v in self.variables:
             self.accumulator[v].append(self.cockpit.get_variable_value(v))
         self.accumulator["_ts"].append(datetime.now().timestamp())
@@ -977,6 +981,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     def instruction_factory(self, name: str, instruction_block: dict) -> Instruction:
         # Should be the top-most instruction factory.
         # Delegates to simulator if not capable of building instruction
+        # print(">>>", name, instruction_block)
         instruction = name
         if instruction_block is not None:
             if type(instruction_block) is str:

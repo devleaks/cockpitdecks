@@ -2,7 +2,6 @@ import logging
 import re
 import math
 from typing import Tuple
-import traceback
 
 # from ruamel.yaml.comments import CommentedMap, CommentedSeq
 

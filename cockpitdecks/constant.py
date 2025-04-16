@@ -9,6 +9,7 @@ import logging
 from typing import List
 from collections.abc import MutableMapping
 from enum import Enum
+
 import ruamel
 from ruamel.yaml import YAML
 
@@ -123,8 +124,8 @@ class ENVIRON_KW(Enum):
 class CONFIG_KW(Enum):
     ACTION = "action"
     ACTIONS = "actions"
-    ACTIVITY = "activity"
     ACTIVITIES = "activities"
+    ACTIVITY = "activity"
     ANNUNCIATOR_MODEL = "model"
     BACKPAGE = "back"
     BEGIN_END = "begin-end-command"  # pressed, execution remains while pressed, then released
@@ -185,13 +186,20 @@ class CONFIG_KW(Enum):
     VIEW = "view"
     VIEW_IF = "view-if"
     WALLPAPER = "wallpaper"
+#.  New names
+    ACTIVATION = "activation"
+    INSTRUCTION = "instruction"
+    REPRESENTATION = "representation"
+    SET_VARIABLE = "set-variable"
+    VARIABLE = "variable"
 
 
 class CONFIG_KW_ALIASES(Enum):
-    SIM_VARIABLE = {"dataref", "simvar", "simdata"}
-    SET_VARIABLE = {"set-dataref", "set-simvar"}
-    INSTRUCTION = {"command", "view", "begin-end", "instruction"}
     FORMULA = {"formula", "condition", "view-if"}
+    INSTRUCTION = {"command", "view", "begin-end", "instruction"}
+    SET_VARIABLE = {"set-dataref", "set-simvar", "set-variable"}
+    SIM_VARIABLE = {"dataref", "simvar", "simdata"}
+    VARIABLE = {"variable"}
 
 
 class ACTIVATION_KW(Enum):

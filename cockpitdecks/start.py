@@ -20,6 +20,7 @@ import urllib.parse
 import argparse
 import subprocess
 import shutil
+import webbrowser
 
 # import filecmp
 import socket
@@ -61,7 +62,6 @@ class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
     FIXED = 2
-
 
 #
 # Utility functions
@@ -161,6 +161,7 @@ parser.add_argument(
     "--template", metavar="template_file", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder"
 )
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
+parser.add_argument("-w", "--web", action="store_true", help="open web application in new browser window")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 parser.add_argument("-p", "--packages", nargs="+", help="lookup for optional packages")
 # parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
@@ -688,6 +689,10 @@ def main():
                 logger.warning("no web deck, starting application server for designer")
             logger.info("starting application server..")
             appsrvstarted = True
+            if args.web:
+                url = f"http://{APP_HOST[0]}:{APP_HOST[1]}"
+                logger.info(f"..opening browser window ({url})..")
+                webbrowser.open(url)
             app.run(host="0.0.0.0", port=APP_HOST[1])
         else:
             logger.warning("no web deck, no request for designer")
@@ -709,9 +714,7 @@ def main():
                 time.sleep(0.1)
 
         logger.info("terminating (please wait)..")
-        thread = threading.Thread(target=spin)
-        thread.daemon = True
-        thread.name = "spinner"
+        thread = threading.Thread(target=spin, name="spinner", daemon=True)
         thread.start()
 
         if cockpit is not None:
