@@ -479,12 +479,10 @@ class GaugeIcon(DrawBase):
             self.offset = self.tick_from
 
         value = self.button.value
-        print("value", self.button._value.value, self.button._value.get_variables(), self.button.get_variables())
 
         if value is None:
             value = 0
         rotation = self.offset + self.scale * value
-        print(value, self.scale, rotation, self.tick_from, self.tick_to)
         if rotation < self.tick_from:
             rotation = self.tick_from
         if rotation > self.tick_to:
