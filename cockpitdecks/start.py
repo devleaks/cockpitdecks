@@ -704,6 +704,7 @@ def main():
             logger.info("..application server terminated")
         cockpit.terminate_all(threads=1)  # [MainThread]
         logger.info(f"..{cockpit.get_aircraft_name()} terminated.")
+        # os._exit(0)
 
     except KeyboardInterrupt:
 

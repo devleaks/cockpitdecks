@@ -29,7 +29,7 @@ dependencies = [
     "CairoSVG~=2.7.1",
     "Flask~=3.1.0",
     "jsonlines~=4.0.0",
-    "packaging~=24.0",
+    "packaging~=25.0",
     "pillow~=11.2.0",
     "py3rtree @ git+https://github.com/drwelby/py3rtree",
     "requests~=2.32.3",

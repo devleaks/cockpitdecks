@@ -14,13 +14,12 @@ import itertools
 
 from queue import Queue
 from typing import Dict, Tuple
-from datetime import date, datetime
+from datetime import datetime
 
 import importlib
 import pkgutil
 
 # External packages
-from cockpitdecks.activity import ActivityDatabase
 from packaging.requirements import Requirement
 
 from PIL import Image, ImageFont
@@ -2019,15 +2018,21 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             logger.info(f"serving {self.get_aircraft_name()} (released)")
         else:
             logger.warning("no deck")
-            self.terminate_all()
+            # self.terminate_all()
 
     def terminate_all(self, threads: int = 1):
-        if not self.running:
-            logger.info("cockpit not running")
-            return
         logger.info("terminating cockpit..")
         self.terminate_observables()
         logger.info("..observable terminated..")
+        if not self.running:
+            logger.info("cockpit not running")
+            nt = threading.enumerate()
+            if len(nt) > 1:
+                logger.error(f"{len(nt)} threads remaining")
+                logger.error(f"{[t.name for t in nt]}")
+                # os._exit(0)
+            logger.info("..cockpit terminated")
+            return
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
