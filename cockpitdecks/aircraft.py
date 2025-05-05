@@ -22,6 +22,7 @@ from cockpitdecks import (
     DECKS_FOLDER,
     DEFAULT_FREQUENCY,
     DEFAULT_LAYOUT,
+    DESIGNER_CONFIG_FILE,
     EXCLUDE_DECKS,
     FONTS_FOLDER,
     ICONS_FOLDER,
@@ -303,7 +304,7 @@ class Aircraft:
         added = []
         for deck_type in DeckType.list(aircraft_deck_types):
             b = os.path.basename(deck_type)
-            if b in [CONFIG_FILE, "designer.yaml"]:
+            if b in [CONFIG_FILE, DESIGNER_CONFIG_FILE]:
                 continue
             try:
                 data = DeckType(deck_type)
@@ -313,7 +314,7 @@ class Aircraft:
                     self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
                 added.append(data.name)
             except ValueError:
-                logger.warning(f"could not load deck type {deck_type}, ignoring")
+                logger.warning(f"could not load deck type {deck_type}, ignoring")  #, exc_info=True)
         logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
 
     def load_icons(self):
@@ -650,7 +651,8 @@ class Aircraft:
         if self.is_running:
             self.terminate()
 
-        logger.info(f"starting aircraft {os.path.basename(acpath)} " + "✈ " * 30)  # unicode ✈ (U+2708)
+        a = f"starting aircraft {os.path.basename(acpath)}.. "
+        logger.info(a + "✈ " * (60 - len(a))) # unicode ✈ (U+2708)
         self.acpath = None
 
         # Note: Unfortunately, on first start, we cannot install a livery
@@ -695,9 +697,11 @@ class Aircraft:
     def terminate(self):
         if not self.is_running():
             logger.debug("no aircraft running or aircraft not running, no termination necessary")
+            if self.acpath is not None:
+                a = f"..aircraft {os.path.basename(self.acpath)} terminated "
+                logger.info(a + "✈ " * (60 - len(a)))
             return
         logger.info("terminating aircraft..")
-        self.cockpit.variable_database.dump()
         logger.info("..terminating decks..")
         self._running = False
         for deck in self.decks.values():

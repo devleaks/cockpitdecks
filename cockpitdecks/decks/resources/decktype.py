@@ -155,11 +155,11 @@ class DeckButton:
             return None
         wallpaper = self._button_block.get_resized_wallpaper()
         if wallpaper is None:
-            loggerButtonType.warning(f"no wallpaper")
+            loggerButtonType.warning("no wallpaper")
             return None
         portion = self.get_corners()
         if portion is None:
-            loggerButtonType.warning(f"no corners")
+            loggerButtonType.warning("no corners")
             return None
         offset = self._button_block.offset
         portion2 = (portion[0] - offset[0], portion[1] - offset[1], portion[2] - offset[0], portion[3] - offset[1])
@@ -169,7 +169,7 @@ class DeckButton:
         return self.position is not None and self.dimension is not None
 
     def has_hardware_representation(self):
-        return self.hardware_representation is not None and len(self.hardware_representation) > 0
+        return self.hardware_representation is not None and type(self.hardware_representation) is dict and len(self.hardware_representation) > 0
 
     def get_hardware_representation(self):
         if self.has_hardware_representation():

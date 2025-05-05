@@ -1,6 +1,7 @@
 #
 ALL_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_ext /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm /Users/pierre/Developer/fs/cockpitdecks_sd /Users/pierre/Developer/fs/cockpitdecks_ld /Users/pierre/Developer/fs/cockpitdecks_bx
 DEV_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_ext /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm /Users/pierre/Developer/fs/cockpitdecks_sd
+MIN_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm
 TEMPDIR := $(shell mktemp -p . -d --dry-run)
 
 define git_one
@@ -13,23 +14,27 @@ all: a339dev
 
 a339dev:
 	clear
-	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p $(DEV_PACKAGES)
+	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p $(DEV_PACKAGES) --designer
+
+a339min:
+	clear
+	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p $(MIN_PACKAGES) --designer
+
+a339:
+	clear
+	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p $(ALL_PACKAGES)
 
 a321dev:
 	clear
 	@cockpitdecks-cli aircrafts/ToLiss\ A321 -p $(DEV_PACKAGES)
 
-test:
-	clear
-	@cockpitdecks-cli aircrafts/tests --fixed -p $(DEV_PACKAGES)
-
 a321:
 	clear
 	@cockpitdecks-cli aircrafts/ToLiss\ A321 -p $(ALL_PACKAGES)
 
-a339:
+test:
 	clear
-	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p $(ALL_PACKAGES)
+	@cockpitdecks-cli aircrafts/tests --fixed -p $(DEV_PACKAGES)
 
 demo:
 	clear

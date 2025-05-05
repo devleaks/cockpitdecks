@@ -37,7 +37,7 @@ from ruamel.yaml import YAML
 from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
 
 from cockpitdecks import LOGFILE, FORMAT
-from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER
+from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER, DESIGNER_CONFIG_FILE
 from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
 from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
 
@@ -164,6 +164,7 @@ parser.add_argument("-f", "--fixed", action="store_true", help="does not automat
 parser.add_argument("-w", "--web", action="store_true", help="open web application in new browser window")
 parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 parser.add_argument("-p", "--packages", nargs="+", help="lookup for optional packages")
+parser.add_argument("--designer", action="store_true", help="start designer")
 # parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
 
@@ -443,8 +444,6 @@ logger.info("..initialized\n")
 #
 AIRCRAFT_ASSET_FOLDER = os.path.join(AIRCRAFT_HOME, CONFIG_FOLDER, RESOURCES_FOLDER)
 AIRCRAFT_DECK_TYPES = os.path.join(AIRCRAFT_ASSET_FOLDER, DECKS_FOLDER, DECK_TYPES)
-DESIGNER_CONFIG_FILE = "designer.yaml"
-DESIGNER = False
 CODE = "code"
 WEBDECK_DEFAULTS = "presentation-default"
 WEBDECK_WSURL = "ws_url"
@@ -682,9 +681,9 @@ def main():
             logger.info(
                 f"(starting in demonstration mode but will load aircraft if {SIMULATOR_NAME} is running and aircraft with Cockpitdecks {CONFIG_FOLDER} loaded)"
             )
-        cockpit.start_aircraft(acpath=AIRCRAFT_HOME, release=True, mode=mode.value)
+        cockpit.start_aircraft(acpath=AIRCRAFT_HOME, release=args.designer, mode=mode.value)
         logger.info(f"..{AIRCRAFT_DESC} running..")
-        if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and DESIGNER):
+        if cockpit.has_web_decks() or (len(cockpit.get_deck_background_images()) > 0 and args.designer):
             if not cockpit.has_web_decks():
                 logger.warning("no web deck, starting application server for designer")
             logger.info("starting application server..")
@@ -703,7 +702,7 @@ def main():
         if appsrvstarted:
             logger.info("..application server terminated")
         cockpit.terminate_all(threads=1)  # [MainThread]
-        logger.info(f"..{cockpit.get_aircraft_name()} terminated.")
+        logger.info(f"..{cockpit.get_aircraft_name()} terminated")
         # os._exit(0)
 
     except KeyboardInterrupt:

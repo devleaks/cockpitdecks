@@ -11,10 +11,8 @@ last-updated: 03-APR-2024
 #
 buttons:
 - index: mc
-    # display only
   type: none
   virtual-xtm-mcled: true
-    # cheat: mc mode always "on" for serial access protocol
   formula: 1
 - index: e0
   name: encoder0
@@ -24,9 +22,9 @@ buttons:
   value-min: 0
   value-max: 13
   dataref: data:_enc0
-  set-dataref: data:_enc0
   formula: ${data:_enc0}
   encoder-leds: 0
+  set-variable: data:_enc0
 - index: e1
   name: encoder1
   type: encoder-value
@@ -35,9 +33,9 @@ buttons:
   value-min: 0
   value-max: 13
   dataref: data:_enc0
-  set-dataref: data:_enc0
   formula: ${data:_enc0}
   encoder-leds: 1
+  set-variable: data:_enc0
 - index: e2
   name: encoder2
   type: encoder-value
@@ -46,9 +44,9 @@ buttons:
   value-min: 0
   value-max: 13
   dataref: data:_enc0
-  set-dataref: data:_enc0
   formula: ${data:_enc0}
   encoder-leds: 2
+  set-variable: data:_enc0
 - index: e3
   name: encoder3
   type: encoder-value
@@ -57,7 +55,6 @@ buttons:
   value-min: 0
   value-max: 6
   dataref: data:_enc0
-  set-dataref: data:_enc0
   formula: ${data:_enc0}
   encoder-leds: 3
-#
+  set-variable: data:_enc0

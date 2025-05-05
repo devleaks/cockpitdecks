@@ -374,6 +374,28 @@ class CockpitAccumulatorInstruction(CockpitInstruction):
         logger.debug(f"accumulator ran ({len(self.accumulator['_ts'])})")
 
 
+class CockpitPlaySoundInstruction(CockpitInstruction):
+    """Instruction to reload all decks from initialisation (full unload/reload)"""
+
+    INSTRUCTION_NAME = "play-os-sound"
+
+    def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+        CockpitInstruction.__init__(
+            self,
+            name=self.INSTRUCTION_NAME,
+            cockpit=cockpit,
+            delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+            condition=instruction_block.get(CONFIG_KW.CONDITION.value),
+        )
+        self.sound = instruction_block.get("sound")
+
+    def _execute(self):
+        if self.sound is not None:
+            os.system(self.sound)
+        else:
+            logger.warning("no sound to play")
+
+
 # #################################
 # Aircraft change detection
 # Why livery? because this dataref is an o.s. PATH! So it contains not only the livery
@@ -1290,8 +1312,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             self.observable_database[observable._name] = observable
 
     def terminate_observables(self):
+        logger.info("terminating observable..")
         for o in self.observable_database.values():
             o.terminate()
+        logger.info("..observable terminated")
 
     def load_icons(self):
         # Loading default icons
@@ -1431,7 +1455,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.set_logging_level(__name__)
 
         if self.sim is not None:
-            self.sim.set_simulator_variable_roundings(self._resources_config.get("dataref-roundings", {}))
+            self.sim.set_simulator_variable_roundings(simulator_variable_roundings=self._resources_config.get("dataref-roundings", {}))
             self.sim.set_simulator_variable_frequencies(simulator_variable_frequencies=self._resources_config.get("dataref-fetch-frequencies", {}))
 
         # XXX
@@ -1457,7 +1481,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             else:
                 logger.debug(f"default label font is {default_label_font}")
         else:
-            logger.warning("no default label font specified")
+            logger.warning("no default label font")
 
         default_system_font = self.get_attribute("system-font")
         if default_system_font is not None:
@@ -1474,7 +1498,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             else:
                 logger.debug(f"default system font is {default_system_font}")
         else:
-            logger.warning("no default system font specified")
+            logger.warning("no default system font")
 
         # rebuild font list
         self.fonts = self._fonts | self.aircraft.fonts
@@ -1724,11 +1748,11 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             return
 
         # We try to see if we have a new livery as well
-        liveryvalue = self.get_variable_value(LIVERY_PATH_VARIABLE)
+        liveryvalue = self.get_variable_value(name=Variable.internal_variable_name(LIVERY_CHANGE_MONITORING))
         if liveryvalue is None or type(liveryvalue) is not str:
             logger.warning(f"{LIVERY_CHANGE_MONITORING} has invalid value {liveryvalue}, ignoring livery change")
         else:
-            logger.info(f"new livery path {value}")
+            logger.info(f"new livery path {liveryvalue}")
             self.aircraft.change_livery(path=value)  # changing the livery now will not change is aircraft is changed (to do!)
 
         logger.info(f"aircraft changed to {acname}, {acpath}, starting..")
@@ -1990,7 +2014,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             logger.info(f"usb device {device_id}{serial} not part of Cockpitdecks (registered serial numbers are: {', '.join(inv.keys())})")
 
     def run(self, release: bool = False):
-        if len(self.decks) > 0:
+        # release means this function has to return to its caller
+        if len(self.decks) > 0 or len(self.observable_database) > 0:
+            if len(self.decks) == 0:
+                logger.info(f"no decks, {len(self.observable_database)} observables")
             # Each deck should have been started
             # Start reload loop
             logger.info("starting cockpit..")
@@ -2007,7 +2034,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
             logger.info("..cockpit started")
             self.running = True
-            if not release or not self.has_web_decks():
+            if not release:
                 logger.info(f"serving {self.get_aircraft_name()}")
                 for t in threading.enumerate():
                     try:
@@ -2023,20 +2050,28 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     def terminate_all(self, threads: int = 1):
         logger.info("terminating cockpit..")
         self.terminate_observables()
-        logger.info("..observable terminated..")
+        # logger.info("..observable terminated..")
         if not self.running:
             logger.info("cockpit not running")
+
+            self.aircraft.terminate()
+            logger.info("..aircraft terminated..")
+
             nt = threading.enumerate()
             if len(nt) > 1:
                 logger.error(f"{len(nt)} threads remaining")
                 logger.error(f"{[t.name for t in nt]}")
                 # os._exit(0)
+            # Terminate decks
             logger.info("..cockpit terminated")
             return
         # Stop processing events
         if self.event_loop_run:
             self.stop_event_loop()
             logger.info("..event loop stopped..")
+        #
+        self.variable_database.dump()
+        logger.info("..variables dumped..")
         # Terminate decks
         self.aircraft.terminate()
         logger.info("..aircraft terminated..")

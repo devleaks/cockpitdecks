@@ -31,6 +31,7 @@ ENVIRON_FILE = "environ.yaml"
 CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 OBSERVABLES_FILE = "observables.yaml"
+DESIGNER_CONFIG_FILE = "designer.yaml"
 
 CONFIG_FOLDER = "deckconfig"
 RESOURCES_FOLDER = "resources"

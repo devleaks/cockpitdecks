@@ -24,3 +24,10 @@ observables:
           - sim/flightmodel/position/latitude
           - sim/flightmodel/position/longitude
           - sim/flightmodel2/position/pressure_altitude
+  - name: Aircraft initilisation
+    type: onchange
+    enabled: True
+    dataref: data:aircraft-name
+    actions:
+      - command: cockpitdecks-info
+        message: Aircraft initialized
