@@ -84,6 +84,8 @@ class DeckButton:
 
         self.position = config.get(DECK_KW.POSITION.value)  # for web decks drawing
         self.dimension = config.get(DECK_KW.DIMENSION.value)
+        if self.dimension is not None and type(self.dimension) is list:
+            self.dimension = tuple(self.dimension)
 
         self.options = config.get(DECK_KW.OPTIONS.value)
 

@@ -270,15 +270,16 @@ class Variable(ABC):
     def notify(self):
         for lsnr in self.listeners:
             lsnr.variable_changed(self)
+            lsnr_name = lsnr.vl_name if hasattr(lsnr, "vl_name") else f"no listener name for {self.name} ({type(lsnr)})"
             if hasattr(lsnr, "page") and lsnr.page is not None:
                 logger.log(
                     SPAM_LEVEL,
-                    f"{self.name}: notified {lsnr.page.name}/{lsnr.name}",
+                    f"{self.name}: notified {lsnr.page.name}/{lsnr_name}",
                 )
             else:
                 logger.log(
                     SPAM_LEVEL,
-                    f"{self.name}: notified {lsnr.name} (not on an page)",
+                    f"{self.name}: notified {lsnr_name} (not on an page)",
                 )
 
     def save(self):

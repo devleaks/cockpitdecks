@@ -2015,37 +2015,40 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
     def run(self, release: bool = False):
         # release means this function has to return to its caller
-        if len(self.decks) > 0 or len(self.observable_database) > 0:
-            if len(self.decks) == 0:
-                logger.info(f"no decks, {len(self.observable_database)} observables")
-            # Each deck should have been started
-            # Start reload loop
-            logger.info("starting cockpit..")
-            self.sim.connect(reload_cache=True)
-            logger.info("..simulator monitoring started..")
-            self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
-            logger.info("..usb monitoring started..")
-            self.start_event_loop()
-            logger.info("..event loop started..")
-            if self.has_web_decks():
-                self.handle_code(code=4, name="init")  # wake up proxy
-            logger.info(f"{len(threading.enumerate())} threads")
-            logger.info(f"{[t.name for t in threading.enumerate()]}")
-            logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
-            logger.info("..cockpit started")
-            self.running = True
-            if not release:
-                logger.info(f"serving {self.get_aircraft_name()}")
-                for t in threading.enumerate():
-                    try:
-                        t.join()
-                    except RuntimeError:
-                        pass
-                logger.info("terminated")
+        if len(self.decks) == 0:
+            if len(self.observable_database) == 0:
+                logger.warning("no deck, no observables")
+                return
+            logger.info(f"no decks, {len(self.observable_database)} observables")
+        # Each deck should have been started
+        # Start reload loop
+        logger.info("starting cockpit..")
+        self.sim.connect(reload_cache=True)
+        logger.info("..simulator monitoring started..")
+        self.usb_monitor.start_monitoring(on_connect=self.on_usb_connect, on_disconnect=self.on_usb_disconnect, check_every_seconds=2.0)
+        logger.info("..usb monitoring started..")
+        self.start_event_loop()
+        logger.info("..event loop started..")
+        if self.has_web_decks():
+            self.handle_code(code=4, name="init")  # wake up proxy
+        logger.info(f"{len(threading.enumerate())} threads")
+        logger.info(f"{[t.name for t in threading.enumerate()]}")
+        logger.info("(note: threads named 'Thread-? (_read)' are Elgato Stream Deck serial port readers, one per deck)")
+        logger.info("..cockpit started")
+        self.running = True
+
+        if release or self.has_web_decks():  # need to start web server, we release (return)
             logger.info(f"serving {self.get_aircraft_name()} (released)")
-        else:
-            logger.warning("no deck")
-            # self.terminate_all()
+            return
+
+        # No web server to start, we stay here until the end
+        logger.info(f"serving {self.get_aircraft_name()}")
+        for t in threading.enumerate():
+            try:
+                t.join()
+            except RuntimeError:
+                pass
+        logger.info("terminated")
 
     def terminate_all(self, threads: int = 1):
         logger.info("terminating cockpit..")

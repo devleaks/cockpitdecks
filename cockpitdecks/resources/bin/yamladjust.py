@@ -11,13 +11,12 @@ yaml = ruamel.yaml.YAML()  # defaults to round-trip
 
 ifile = "encoders.yaml"
 
-CHANGES = {
-    "set-dataref": "set-variable"
-}
+CHANGES = {"set-dataref": "set-variable"}
 
 data = {}
 with open(ifile, "r") as fp:
     data = yaml.load(fp)
+
 
 def chk(ind, kb, ka):
     out = ind.copy()
@@ -44,6 +43,7 @@ def chk(ind, kb, ka):
             else:
                 out[k] = v
     return out
+
 
 out = data
 for k, v in CHANGES.items():

@@ -254,6 +254,7 @@ class VirtualDeck(DeckWithIcons):
         if rc is not None:
             image = add_corners(image, int(rc))
         width, height = image.size
+
         img_byte_arr = io.BytesIO()
         # transformed = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)  # ?!
         image.save(img_byte_arr, format="PNG")
@@ -301,6 +302,7 @@ class VirtualDeck(DeckWithIcons):
         content = img_byte_arr.getvalue()
         meta = {"ts": datetime.now().timestamp()}  # dummy
         payload = {"code": 0, "deck": self.name, "key": key, "image": base64.encodebytes(content).decode("ascii"), "meta": meta}
+        # print(">>>>>", {"code": 0, "deck": self.name, "key": key, "image": image, "meta": meta})
         self.cockpit.send(deck=self.name, payload=payload)
 
     def _set_key_image(self, button: Button):  # idx: int, image: str, label: str = None):
@@ -332,14 +334,11 @@ class VirtualDeck(DeckWithIcons):
             logger.warning("no device")
             return
 
-        representation = button._hardware_representation
         image = button.get_hardware_representation()
         if image is None:
             logger.warning("button returned no hardware image")
             return
-
         metadata = button.get_hardware_representation_metadata()
-
         self._send_hardware_key_image_to_device(button.index, image, metadata)
 
     def print_page(self, page: Page):

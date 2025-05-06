@@ -314,7 +314,7 @@ class Aircraft:
                     self.virtual_deck_types[data.name] = data.get_virtual_deck_layout()
                 added.append(data.name)
             except ValueError:
-                logger.warning(f"could not load deck type {deck_type}, ignoring")  #, exc_info=True)
+                logger.warning(f"could not load deck type {deck_type}, ignoring")  # , exc_info=True)
         logger.info(f"added {len(added)} aircraft deck types ({', '.join(added)})")
 
     def load_icons(self):
@@ -652,7 +652,7 @@ class Aircraft:
             self.terminate()
 
         a = f"starting aircraft {os.path.basename(acpath)}.. "
-        logger.info(a + "✈ " * (60 - len(a))) # unicode ✈ (U+2708)
+        logger.info(a + "✈ " * (60 - len(a)))  # unicode ✈ (U+2708)
         self.acpath = None
 
         # Note: Unfortunately, on first start, we cannot install a livery

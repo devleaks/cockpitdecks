@@ -187,7 +187,7 @@ class CONFIG_KW(Enum):
     VIEW = "view"
     VIEW_IF = "view-if"
     WALLPAPER = "wallpaper"
-#.  New names
+    # .  New names
     ACTIVATION = "activation"
     INSTRUCTION = "instruction"
     REPRESENTATION = "representation"

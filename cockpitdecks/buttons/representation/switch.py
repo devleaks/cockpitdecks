@@ -232,14 +232,13 @@ class CircularSwitch(SwitchBase):
                     tip_image = tip_image.rotate(
                         red(-a),
                         translate=(
-                            - self.needle_start * math.sin(math.radians(a)),
+                            -self.needle_start * math.sin(math.radians(a)),
                             self.needle_start * math.cos(math.radians(a)),
                         ),
                     )  # ;-)
                     image.alpha_composite(tip_image)
                 else:
                     draw.line([(x0, y0), (x1, y1)], width=self.tick_width, fill=self.tick_color)
-
 
         # Tick run mark
         if self.tick_underline_width > 0:

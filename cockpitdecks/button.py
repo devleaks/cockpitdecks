@@ -490,6 +490,14 @@ class Button(VariableListener, SimulatorVariableValueProvider, StateVariableValu
                 self._value.add_variables(r, reason="representation")
                 logger.debug(f"button {self.name}: added representation datarefs {r}")
 
+        # Hardware Representation datarefs
+        if self._hardware_representation is not None:
+            r = self._hardware_representation.get_variables()
+            if r is not None and len(r) > 0:
+                datarefs = datarefs | r
+                self._value.add_variables(r, reason="hardware representation")
+                logger.debug(f"button {self.name}: added hardware representation datarefs {r}")
+
         return datarefs
 
     def get_variable(self, name: str, is_string: bool = False) -> InternalVariable | SimulatorVariable:

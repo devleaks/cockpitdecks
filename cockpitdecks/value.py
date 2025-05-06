@@ -158,7 +158,7 @@ class Value(StringWithVariables):
         # 2. Single datarefs in attributes, yes we monotor the set-dataref as well in case someone is using it.
         for attribute in [CONFIG_KW.SIM_VARIABLE.value, CONFIG_KW.SET_SIM_VARIABLE.value]:
             dataref = base.get(attribute)
-            if dataref is not None: # and InternalVariable.may_be_non_internal_variable(dataref):
+            if dataref is not None:  # and InternalVariable.may_be_non_internal_variable(dataref):
                 r.add(dataref)
                 logger.debug(f"value {self.name}: added single dataref {dataref}")
 

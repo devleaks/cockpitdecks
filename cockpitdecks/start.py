@@ -22,7 +22,6 @@ import subprocess
 import shutil
 import webbrowser
 
-# import filecmp
 import socket
 import ipaddress
 
@@ -34,11 +33,10 @@ from simple_websocket import Server, ConnectionClosed
 import ruamel
 from ruamel.yaml import YAML
 
-from cockpitdecks import Cockpit, __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config
-
-from cockpitdecks import LOGFILE, FORMAT
+from cockpitdecks import __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config, LOGFILE, FORMAT
 from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER, DESIGNER_CONFIG_FILE
 from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks.cockpit import Cockpit
 from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
 
 
@@ -62,6 +60,7 @@ class CD_MODE(Enum):
     NORMAL = 0
     DEMO = 1
     FIXED = 2
+
 
 #
 # Utility functions

@@ -45,6 +45,7 @@ class StringWithVariables(Variable, VariableListener):
             key = StringWithVariables.mk_uuid(message=str(message))
             name = f"{owner.get_id()}|{key}"  # one owner may have several formulas like annunciators that can have up to 4
         Variable.__init__(self, name=name, data_type=data_type)
+        VariableListener.__init__(self, name=name)
         self.owner = owner
         self.message = message if message is not None else ""
 
