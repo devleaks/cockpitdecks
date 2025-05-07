@@ -946,12 +946,10 @@ class Deck {
     // Building deck from buttons
     //
     build() {
-        console.log("build start", this.deck_type.buttons)
         this.deck_type.buttons.forEach((button) => {
             // decide which shape to use
             // shape selected here will be an interactor only
 
-            console.log("doing ", button)
             if (button.actions.indexOf("encoder") > -1) {
                 console.log("encoder", button)
                 this.add(new Encoder(button, this.container))
@@ -987,7 +985,6 @@ class Deck {
                 console.log("not building", button)
             }
         });
-        console.log("build end", this.buttons)
     }
 
     add(button) {
@@ -1030,10 +1027,18 @@ class Deck {
             console.log("no shape", key);
             return ;
         }
-        if (checkNested(shape.config, "layout", "hardware", "type")) {
-            if (shape.config.dimension != undefined && shape.config.dimension.constructor == Number) {
-                offset = {x: -shape.radius(), y: -shape.radius()}
-            }
+        // if (checkNested(shape.config, "layout", "hardware", "type")) {
+        //     if (shape.config.dimension != undefined && shape.config.dimension.constructor == Number) {
+        //         offset = {x: -shape.radius(), y: -shape.radius()}
+        //     }
+        // } else if (shape.config.dimension != undefined && shape.config.dimension.constructor == Number) {
+        //     // THIS MUST BE CHECKED
+        //     console.log("offset", shape.name, shape.radius())
+        //     offset = {x: -shape.radius(), y: -shape.radius()}
+        // }
+        if (shape.config.dimension != undefined && shape.config.dimension.constructor == Number) {
+            console.log("offset", shape.name, shape.radius())
+            offset = {x: -shape.radius(), y: -shape.radius()}
         }
         var that = this
         let buttonImage = new Image();
