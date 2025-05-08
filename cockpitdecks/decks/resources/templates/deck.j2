@@ -11,9 +11,28 @@ body {
     padding: 0;
     font-family: sans-serif;
 }
+
+#deck {
+  position: relative;
+  border: 1px solid #9C9898;
+}
+
+#buttonWrapper {
+  position: absolute;
+  width: 62px;
+  top: 2px;
+  right: 2px;
+}
+
+input[type="button"] {
+  padding: 5px;
+  width: 30px;
+  margin: 0px 0px 2px 0px;
+}
 </style>
 </head>
 <body>
+
 <script src="/assets/js/konva.js" type="text/javascript"></script>
 <script src="/assets/js/deck.js" type="text/javascript"></script>
 <script type="text/javascript">
@@ -23,17 +42,33 @@ body {
 //
 // create and add <div id="deck"></div> with proper styling, add to document
 const DEBUG = false
+const NO_ZOOM = false
 
 DECK_ELEMID = "deck"
 
 var deck_elem = document.createElement("div");
 deck_elem.setAttribute("id", DECK_ELEMID);
 deck_elem.setAttribute("width", "inherit");
-deck_elem.setAttribute("height", "inherit");
+deck_elem.setAttribute("height", "100%");
 deck_elem.setAttribute("display", "block");
 deck_elem.setAttribute("padding", 0);
 deck_elem.setAttribute("marging", 0);
 document.getElementsByTagName("body")[0].appendChild(deck_elem)
+
+var zoom_elem = document.createElement("div");
+zoom_elem.setAttribute("id", "buttonWrapper");
+var plus_elem = document.createElement("input");
+plus_elem.setAttribute("type", "button");
+plus_elem.setAttribute("id", "plus");
+plus_elem.setAttribute("value", "+");
+var minus_elem = document.createElement("input");
+minus_elem.setAttribute("type", "button");
+minus_elem.setAttribute("id", "minus");
+minus_elem.setAttribute("value", "-");
+zoom_elem.appendChild(plus_elem)
+zoom_elem.appendChild(minus_elem)
+
+// ☀ ☾ for night/day, light/dark
 
 // create stage
 var stage = new Konva.Stage({
@@ -41,6 +76,47 @@ var stage = new Konva.Stage({
     width: window.innerWidth,
     height: window.innerHeight,
 });
+
+if (! NO_ZOOM) {
+    document.getElementsByTagName("body")[0].appendChild(zoom_elem)
+
+    var scale = 1
+    var scale_delta = 0.1
+    var SIZE_MIN = 300  // px
+    var SIZE_MAX = 2000  // px
+    var original_width = window.innerWidth
+    var original_height = window.innerHeight
+
+    function rescale() {
+        a = Math.min(original_width * scale, original_height * scale)
+        if (a < SIZE_MIN) {
+            console.log("too small", a, scale)
+            scale = scale + scale_delta
+            return
+        }
+        a = Math.max(original_width * scale, original_height * scale)
+        if (a > SIZE_MAX) {
+            console.log("too large", a, scale)
+            scale = scale - scale_delta
+            return
+        }
+        stage.scale({x: scale, y: scale});
+        let resize = Math.round(scale*100) + "% " + Math.round(scale*100) + "%";
+        console.log("scale", scale, stage.scale(), resize, original_width, original_height, original_height * scale)
+        deck_elem.style.height = Math.round(original_height * scale) + "px";
+        window.resizeTo(original_width * scale, original_height * scale);
+    }
+
+    plus_elem.addEventListener("click", function() {
+        scale = scale + scale_delta
+        rescale();
+    }, false);
+
+    minus_elem.addEventListener("click", function() {
+        scale = scale - scale_delta
+        rescale();
+    }, false);
+}
 
 // create layers to cleanly separate content by function
 var background_layer = new Konva.Layer({name: "background"});   // Background image or iniform color
@@ -78,6 +154,7 @@ const WS_CONNECT_RETRY_TIME = 5000
 const BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
 deck_elem.style.backgroundImage = "url("+BACKGROUND_IMAGE_PATH+")";
 deck_elem.style.backgroundRepeat = "no-repeat";
+deck_elem.style.backgroundSize = "100% auto";
 
 
 deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
