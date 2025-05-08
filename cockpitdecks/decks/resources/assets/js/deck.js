@@ -878,6 +878,7 @@ class Deck {
             stage.width(width);
             stage.height(height);
             window.resizeTo(width,height + extra_space);
+            console.log("set_default_size", width,height + extra_space)
         }
 
         this.background_layer = layer
@@ -916,6 +917,9 @@ class Deck {
             stage.width(deckImage.naturalWidth);
             stage.height(deckImage.naturalHeight);
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
+            console.log("deckImage.onload", deckImage.naturalWidth,deckImage.naturalHeight + extra_space)
+            original_width = deckImage.naturalWidth
+            original_height = deckImage.naturalHeight + extra_space
             // layer.add(deckbg);
         };
         deckImage.src = BACKGROUND_IMAGE_PATH;
@@ -951,34 +955,34 @@ class Deck {
             // shape selected here will be an interactor only
 
             if (button.actions.indexOf("encoder") > -1) {
-                console.log("encoder", button)
+                // console.log("encoder", button)
                 this.add(new Encoder(button, this.container))
 
             } else if (button.actions.indexOf("push") > -1 && button.actions.indexOf("encoder") == -1) {
 
                 if (button.dimension != undefined && button.dimension.constructor == Array) {
-                    console.log("key", button)
+                    // console.log("key", button)
                     this.add(new Key(button, this.container))
 
                 } else {
-                    console.log("keyround", button)
+                    // console.log("keyround", button)
                     this.add(new KeyRound(button, this.container))
                 }
 
             } else if (button.actions.indexOf("swipe") > -1) {
-                console.log("touchscreen", button)
+                // console.log("touchscreen", button)
                 this.add(new Touchscreen(button, this.container))
 
             } else if (button.actions.indexOf("cursor") > -1) {
-                console.log("slider", button)
+                // console.log("slider", button)
                 this.add(new Slider(button, this.container))
 
             } else if (button.actions.length == 0 && button.feedbacks.indexOf("led") > -1) {
-                console.log("led", button)
+                // console.log("led", button)
                 this.add(new LED(button, this.container))
 
             } else if (button.actions.length == 0 && button.feedbacks.indexOf("image") > -1) {
-                console.log("screen", button)
+                // console.log("screen", button)
                 this.add(new Screen(button, this.container))
 
             } else {
