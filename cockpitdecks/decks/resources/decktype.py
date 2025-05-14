@@ -297,6 +297,7 @@ class DeckTypeBase:
         self.buttons: Dict[str | int, DeckButton] = {}
         self.background = self._config.get(DECK_KW.BACKGROUND.value)
         self.background_image: str | None = None  # full path to background image
+        self.background_alternate: str | None = None  # full path to background image
         self._special_displays = None  # cache
         self._map = None  # display layout (RTree)
         self.count = 0
@@ -599,6 +600,7 @@ class DeckTypeBase:
             DECK_KW.DRIVER.value: self.driver,
             DECK_KW.BACKGROUND.value: self.background,
             DECK_KW.BACKGROUND_IMAGE_PATH.value: self.background_image,
+            DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value: self.background_alternate,
             DECK_KW.BUTTONS.value: buttons,
             "aircraft": self._aircraft,
         }
@@ -635,6 +637,10 @@ class DeckType(DeckTypeBase):
     def background_image_name(self):
         return None if self.background is None else self.background.get(DECK_KW.IMAGE.value)
 
+    @property
+    def background_alternate_name(self):
+        return None if self.background is None else self.background.get(DECK_KW.IMAGE_ALTERNATE.value)
+
     def load_background(self, filename: str):
         if (image := self.background_image_name) is None:
             return
@@ -642,6 +648,12 @@ class DeckType(DeckTypeBase):
         if not os.path.exists(bgfn):
             loggerDeckType.warning(f"web deck background image {bgfn} not found")
         self.background_image = bgfn
+        if (image := self.background_alternate_name) is None:
+            return
+        bgfn = os.path.abspath(os.path.join(os.path.split(filename)[0], "..", DECK_IMAGES, image))
+        if not os.path.exists(bgfn):
+            loggerDeckType.warning(f"web deck background image {bgfn} not found")
+        self.background_alternate = bgfn
 
     def get(self, what: str):
         return self._config.get(what)

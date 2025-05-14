@@ -2169,7 +2169,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         else:
             logger.warning(f"path not found")
 
-    def err_clear(self):
+    def clear_virtual_deck_errors(self):
         self.vd_errs = []
 
     def register_deck(self, deck: str, websocket):

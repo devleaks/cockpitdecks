@@ -19,7 +19,7 @@ body {
 
 #buttonWrapper {
   position: absolute;
-  width: 62px;
+  width: 93px;
   top: 2px;
   right: 2px;
 }
@@ -42,7 +42,8 @@ input[type="button"] {
 //
 // create and add <div id="deck"></div> with proper styling, add to document
 const DEBUG = false
-const NO_ZOOM = false
+const ZOOM = true
+const DARK = true
 
 DECK_ELEMID = "deck"
 
@@ -55,20 +56,9 @@ deck_elem.setAttribute("padding", 0);
 deck_elem.setAttribute("marging", 0);
 document.getElementsByTagName("body")[0].appendChild(deck_elem)
 
-var zoom_elem = document.createElement("div");
-zoom_elem.setAttribute("id", "buttonWrapper");
-var plus_elem = document.createElement("input");
-plus_elem.setAttribute("type", "button");
-plus_elem.setAttribute("id", "plus");
-plus_elem.setAttribute("value", "+");
-var minus_elem = document.createElement("input");
-minus_elem.setAttribute("type", "button");
-minus_elem.setAttribute("id", "minus");
-minus_elem.setAttribute("value", "-");
-zoom_elem.appendChild(plus_elem)
-zoom_elem.appendChild(minus_elem)
-
-// ☀ ☾ for night/day, light/dark
+var btns_elem = document.createElement("div");
+btns_elem.setAttribute("id", "buttonWrapper");
+btns_elem.setAttribute("data-theme", "light");
 
 // create stage
 var stage = new Konva.Stage({
@@ -77,9 +67,7 @@ var stage = new Konva.Stage({
     height: window.innerHeight,
 });
 
-if (! NO_ZOOM) {
-    document.getElementsByTagName("body")[0].appendChild(zoom_elem)
-
+if (ZOOM) {
     var scale = 1
     var scale_delta = 0.1
     var SIZE_MIN = 300  // px
@@ -102,20 +90,31 @@ if (! NO_ZOOM) {
         }
         stage.scale({x: scale, y: scale});
         let resize = Math.round(scale*100) + "% " + Math.round(scale*100) + "%";
-        console.log("scale", scale, stage.scale(), resize, original_width, original_height, original_height * scale)
+        console.log("scale", stage.scale())
         deck_elem.style.height = Math.round(original_height * scale) + "px";
         window.resizeTo(original_width * scale, original_height * scale);
     }
 
+    var plus_elem = document.createElement("input");
+    plus_elem.setAttribute("type", "button");
+    plus_elem.setAttribute("id", "plus");
+    plus_elem.setAttribute("value", "+");
     plus_elem.addEventListener("click", function() {
         scale = scale + scale_delta
         rescale();
     }, false);
 
+    var minus_elem = document.createElement("input");
+    minus_elem.setAttribute("type", "button");
+    minus_elem.setAttribute("id", "minus");
+    minus_elem.setAttribute("value", "-");
     minus_elem.addEventListener("click", function() {
         scale = scale - scale_delta
         rescale();
     }, false);
+
+    btns_elem.appendChild(plus_elem)
+    btns_elem.appendChild(minus_elem)
 }
 
 // create layers to cleanly separate content by function
@@ -164,6 +163,30 @@ deck.set_background_layer(background_layer);
 deck.set_interaction_layer(interaction_layer);
 deck.set_hardware_image_layer(hardware_layer);
 deck.set_image_layer(image_layer);
+
+if (DARK) {
+    var dark_mode = false // start light, may be wrong?
+    var dark_elem = document.createElement("input");
+    dark_elem.setAttribute("type", "button");
+    dark_elem.setAttribute("id", "dark");
+    dark_elem.setAttribute("value", "☾"); // ☾ or ☀
+    dark_elem.addEventListener("click", function() {
+        dark_mode = ! dark_mode;
+        dark_elem.setAttribute("value", dark_mode ? "☀" : "☾" );
+        btns_elem.setAttribute("data-theme", dark_mode ? "dark" : "light" );
+        let bg_image = BACKGROUND_IMAGE_PATH
+        if (dark_mode) {
+            bg_image = bg_image + "/alternate/night"
+        }
+        console.log("dark", dark_mode, bg_image)
+        deck_elem.style.backgroundImage = "url("+bg_image+")";
+    }, false);
+    btns_elem.appendChild(dark_elem)
+}
+
+if (btns_elem.firstChild) { // if it has at least one child
+    document.getElementsByTagName("body")[0].appendChild(btns_elem)
+}
 
 if (DEBUG) {
     var debug_elem = document.createElement("div");

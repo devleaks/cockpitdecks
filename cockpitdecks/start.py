@@ -609,8 +609,9 @@ def deck(name: str):
     return render_template("deck.j2", deck=deck_desc)
 
 
-@app.route("/deck-bg/<name>")
-def deck_bg(name: str):
+@app.route("/deck-bg/<name>", defaults={"alternate": None})
+@app.route("/deck-bg/<name>/alternate/<alternate>")
+def deck_bg(name: str, alternate: str = None):
     if name is None or name == "":
         app.logger.debug(f"no deck name")
         abort(404)
@@ -623,13 +624,22 @@ def deck_bg(name: str):
     if deck_flat is None:
         app.logger.debug(f"no {DECK_TYPE_DESCRIPTION} in description")
         abort(404)
-    deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_PATH.value)  # can be "background-image": None
-    if deck_img is None:
-        app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
-        abort(404)
-    if deck_img == "":
-        app.logger.debug(f"no background image for {uname}")
-        abort(404)
+    if alternate is None:
+        deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_PATH.value)  # can be "background-image": None
+        if deck_img is None:
+            app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
+            abort(404)
+        if deck_img == "":
+            app.logger.debug(f"no background image for {uname}")
+            abort(404)
+    else:
+        deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value)  # can be "background-image": None
+        if deck_img is None:
+            app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
+            abort(404)
+        if deck_img == "":
+            app.logger.debug(f"no background alternate image for {uname}")
+            abort(404)
     return send_file(deck_img, mimetype="image/png")
 
 
