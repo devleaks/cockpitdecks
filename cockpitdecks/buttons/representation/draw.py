@@ -25,6 +25,8 @@ class DrawBase(IconBase):
 
     REPRESENTATION_NAME = "draw-base"
 
+    ICON_SIZE = ICON_SIZE
+
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
 
