@@ -604,6 +604,7 @@ def deck(name: str):
     if type(deck_desc) is dict:
         deck_desc[WEBDECK_WSURL] = f"ws://{APP_HOST[0]}:{APP_HOST[1]}/cockpit"
         deck_desc[WEBDECK_DEFAULTS] = cockpit.get_virtual_deck_defaults()
+        deck_desc["dark_mode"] = cockpit.sim.is_night()
     else:
         app.logger.debug(f"deck desc is not a dict {deck_desc}")
     return render_template("deck.j2", deck=deck_desc)
@@ -611,7 +612,7 @@ def deck(name: str):
 
 @app.route("/deck-bg/<name>", defaults={"alternate": None})
 @app.route("/deck-bg/<name>/alternate/<alternate>")
-def deck_bg(name: str, alternate: str = None):
+def deck_bg(name: str, alternate: str | None = None):
     if name is None or name == "":
         app.logger.debug(f"no deck name")
         abort(404)
@@ -638,7 +639,7 @@ def deck_bg(name: str, alternate: str = None):
             app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
             abort(404)
         if deck_img == "":
-            app.logger.debug(f"no background alternate image for {uname}")
+            app.logger.debug(f"no alternate background image for {uname}")
             abort(404)
     return send_file(deck_img, mimetype="image/png")
 

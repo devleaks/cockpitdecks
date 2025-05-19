@@ -4,6 +4,17 @@
     <title>Cockpitdecks - {{ deck.name }} </title>
     <meta name="apple-mobile-web-app-capable" content="yes">
 <style type="text/css">
+/* dark grey on light blue */
+:root {
+    --font-color: #424242;
+    --bg-color: #A8B7E6;
+}
+/* light orange on dark grey */
+[data-theme="dark"] {
+    --font-color: #FECC66;
+    --bg-color: #333333;
+}
+
 body {
     width: 100%;
     height: 100%;
@@ -14,20 +25,23 @@ body {
 
 #deck {
   position: relative;
-  border: 1px solid #9C9898;
 }
 
 #buttonWrapper {
   position: absolute;
-  width: 93px;
+  width: 86px;
   top: 2px;
   right: 2px;
 }
 
 input[type="button"] {
-  padding: 5px;
-  width: 30px;
-  margin: 0px 0px 2px 0px;
+  padding: 2px;
+  width: 26px;
+  border: 1px solid var(--bg-color);
+  margin: 1px;
+  border-radius: 6px;
+  color: var(--font-color);
+  background-color: var(--bg-color);
 }
 </style>
 </head>
@@ -38,14 +52,22 @@ input[type="button"] {
 <script type="text/javascript">
 //
 //
+// Load deck info (contains options, etc.)
+//
+const DECK = {{ deck|tojson(indent=2) }};
+const DECK_TYPE_DESCRIPTION = "deck-type-flat"
+
+const DEBUG = DECK[DECK_TYPE_DESCRIPTION].debug != undefined ? DECK[DECK_TYPE_DESCRIPTION].debug : false;
+const ZOOM = DECK[DECK_TYPE_DESCRIPTION].zoom != undefined ? DECK[DECK_TYPE_DESCRIPTION].zoom : true;
+const DARK = DECK[DECK_TYPE_DESCRIPTION].background.alternate != undefined
+const HAS_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image != undefined
+//
+//
 // Konva layout set up and initialisation
 //
 // create and add <div id="deck"></div> with proper styling, add to document
-const DEBUG = false
-const ZOOM = true
-const DARK = true
 
-DECK_ELEMID = "deck"
+const DECK_ELEMID = "deck"
 
 var deck_elem = document.createElement("div");
 deck_elem.setAttribute("id", DECK_ELEMID);
@@ -67,13 +89,16 @@ var stage = new Konva.Stage({
     height: window.innerHeight,
 });
 
+var original_width = window.innerWidth
+var original_height = window.innerHeight
+var original_ratio = window.innerWidth / window.innerHeight
+console.log("ratio", window.innerWidth, window.innerHeight, original_ratio)
+
 if (ZOOM) {
     var scale = 1
     var scale_delta = 0.1
     var SIZE_MIN = 300  // px
     var SIZE_MAX = 2000  // px
-    var original_width = window.innerWidth
-    var original_height = window.innerHeight
 
     function rescale() {
         a = Math.min(original_width * scale, original_height * scale)
@@ -145,16 +170,13 @@ function getQueryVariable(variable) {
   alert('Query Variable ' + variable + ' not found');
 }
 
-const DECK = {{ deck|tojson(indent=2) }};
-const DECK_TYPE_DESCRIPTION = "deck-type-flat"
-const WS_CONNECT_RETRY_TIME = 5000
-
 // assumes location of type host:8080/deck/deckname
+// if (HAS_BACKGROUND_IMAGE) ..
 const BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
 deck_elem.style.backgroundImage = "url("+BACKGROUND_IMAGE_PATH+")";
 deck_elem.style.backgroundRepeat = "no-repeat";
 deck_elem.style.backgroundSize = "100% auto";
-
+// else uniform color
 
 deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
 
@@ -164,29 +186,43 @@ deck.set_interaction_layer(interaction_layer);
 deck.set_hardware_image_layer(hardware_layer);
 deck.set_image_layer(image_layer);
 
+// does it have a dark image (later: check for dark background color as well)
 if (DARK) {
-    var dark_mode = false // start light, may be wrong?
+    var dark_mode = DECK.dark_mode == undefined ? false : DECK.dark_mode // start light, may be wrong?
     var dark_elem = document.createElement("input");
     dark_elem.setAttribute("type", "button");
     dark_elem.setAttribute("id", "dark");
-    dark_elem.setAttribute("value", "☾"); // ☾ or ☀
+    dark_elem.setAttribute("value", dark_mode ? "☀" : "☾"); // ☾ or ☀
     dark_elem.addEventListener("click", function() {
         dark_mode = ! dark_mode;
         dark_elem.setAttribute("value", dark_mode ? "☀" : "☾" );
         btns_elem.setAttribute("data-theme", dark_mode ? "dark" : "light" );
-        let bg_image = BACKGROUND_IMAGE_PATH
-        if (dark_mode) {
-            bg_image = bg_image + "/alternate/night"
-        }
+        let bg_image = dark_mode ? BACKGROUND_IMAGE_PATH + "/alternate/night" : BACKGROUND_IMAGE_PATH
         console.log("dark", dark_mode, bg_image)
         deck_elem.style.backgroundImage = "url("+bg_image+")";
     }, false);
     btns_elem.appendChild(dark_elem)
+
+    console.log("dark init", dark_mode)
+    if (dark_mode) {
+        deck_elem.style.backgroundImage = "url(" + BACKGROUND_IMAGE_PATH + "/alternate/night)";
+    }
 }
 
 if (btns_elem.firstChild) { // if it has at least one child
     document.getElementsByTagName("body")[0].appendChild(btns_elem)
 }
+
+// function win_resize() {
+//     console.log(window.innerWidth, window.innerHeight);
+//     let scale = original_width / window.innerWidth
+//     console.log("new scale", scale)
+//     stage.scale({x: scale, y: scale});
+//     let resize = Math.round(scale*100) + "% " + Math.round(scale*100) + "%";
+//     deck_elem.style.height = Math.round(original_height * scale) + "px";
+// }
+// window.addEventListener("resize", win_resize);
+
 
 if (DEBUG) {
     var debug_elem = document.createElement("div");
@@ -200,6 +236,8 @@ if (DEBUG) {
 //
 // WebSocket initialisation and setup
 //
+const WS_CONNECT_RETRY_TIME = 5000
+
 if (DECK.ws_url == undefined) {
     console.error("No WebSocket address. Please start Cockpitdecks first.")
 }

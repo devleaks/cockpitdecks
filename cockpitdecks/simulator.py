@@ -433,6 +433,11 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         instruction.execute(self)
 
     @abstractmethod
+    def is_night(self) -> bool:
+        """Returns whether simulator is night time"""
+        return False
+
+    @abstractmethod
     def same_host(self) -> bool:
         """Returns whether Cockpitdecks runs on the same computer as the Simulator software"""
         return False
@@ -478,6 +483,9 @@ class NoSimulator(Simulator):
 
     def same_host(self) -> bool:
         return True
+
+    def is_night(self) -> bool:
+        return False
 
     def connect(self, reload_cache: bool = False):
         logger.info("simulator connected")

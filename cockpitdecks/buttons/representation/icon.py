@@ -34,9 +34,6 @@ class IconBase(Representation):
 
     PARAMETERS = {}
 
-    ICON_SIZE = 256  # "global", standard size for LCD icon, used by drawing methods to pixelize vector drawings and size fonts
-    TRANSPARENT_PNG_COLOR = (255, 255, 255, 0)  # white
-
     def __init__(self, button: "Button"):
         self._label = None
         Representation.__init__(self, button=button)
@@ -57,16 +54,6 @@ class IconBase(Representation):
 
     def render(self):
         return self.get_image()
-
-    def get_size(self) -> tuple:
-        # Returns the icon size that fits into the available icon display of this button
-        bdef = self.button._definition
-        return (self.ICON_SIZE, self.ICON_SIZE) if bdef is None else bdef.display_size()
-
-    def get_double_size(self) -> tuple:
-        # Returns the icon size that fits into the available icon display of this button
-        sizes = self.get_size()
-        return (2 * sizes[0], 2 * sizes[1])
 
     def get_font(self, fontname: str, fontsize: int):
         """
@@ -267,6 +254,10 @@ class Icon(IconBase):
                 return True
             logger.warning(f"button {self.button_name}: {type(self).__name__}: no icon and no icon color")
         return False
+
+    def clean_cache(self):
+        self._icon_cache = None
+        super().clean_cache()
 
     def get_image_for_icon(self):
         deck = self.button.deck

@@ -108,7 +108,7 @@ class SwitchBase(DrawBase):
         self.tick_underline_width = self.get_attribute("tick-underline-width", default=4)
 
         # Labels
-        self.tick_labels = self.switch.get("tick-labels", {})
+        self.tick_labels = self.switch.get("tick-labels", {})  # len(self.tick_labels) == 0 means no label
         self.tick_label_space = self.get_attribute("tick-label-space", default=10)
         self.tick_label_font = self.get_attribute("tick-label-font", default=self.get_attribute("label-font"))
         self.tick_label_size = self.get_attribute("tick-label-size", default=50)
@@ -165,7 +165,7 @@ class CircularSwitch(SwitchBase):
             self.tick_steps = 2
         logger.debug(f"button {self.button.name}: {self.tick_steps} steps")
         self.angular_step = (self.tick_to - self.tick_from) / (self.tick_steps - 1)
-        if len(self.tick_labels) < self.tick_steps:
+        if len(self.tick_labels) > 0 and len(self.tick_labels) < self.tick_steps:
             logger.warning(f"button {self.button.name}: not enough label ({len(self.tick_labels)}/{self.tick_steps})")
 
     def get_image_for_icon(self):

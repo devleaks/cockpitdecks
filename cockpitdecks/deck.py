@@ -10,7 +10,7 @@ from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
 from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT, DEFAULT_ATTRIBUTE_PREFIX
-from cockpitdecks.decks.resources.decktype import DeckButton
+from cockpitdecks.decks.resources.decktype import ButtonType
 from cockpitdecks.resources.color import convert_color
 
 from cockpitdecks.decks.resources import DeckType
@@ -106,14 +106,14 @@ class Deck(ABC):
     def is_virtual_deck(self) -> bool:
         return self.deck_type.is_virtual_deck()
 
-    def get_deck_button_definition(self, idx) -> DeckButton:
+    def get_deck_button_definition(self, idx) -> ButtonType:
         """Returns a deck's button definition from the deck type.
 
         Args:
             idx ([strıint]): Button index on deck
 
         Returns:
-            [DeckButton | None]: The button type at index.
+            [ButtonType | None]: The button type at index.
         """
         return self.deck_type.get_button_definition(idx)
 

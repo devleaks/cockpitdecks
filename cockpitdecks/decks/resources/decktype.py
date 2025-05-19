@@ -63,7 +63,7 @@ class ButtonBlock:
         return self.resized_wallpaper
 
 
-class DeckButton:
+class ButtonType:
     """Defines a button on a deck, its capabilities, its representation.
 
     For web decks, adds position and sizes information.
@@ -294,7 +294,7 @@ class DeckTypeBase:
         self._config = config
         self.name = self._config.get(DECK_KW.NAME.value)
         self.driver = self._config.get(DECK_KW.DRIVER.value)
-        self.buttons: Dict[str | int, DeckButton] = {}
+        self.buttons: Dict[str | int, ButtonType] = {}
         self.background = self._config.get(DECK_KW.BACKGROUND.value)
         self.background_image: str | None = None  # full path to background image
         self.background_alternate: str | None = None  # full path to background image
@@ -348,10 +348,10 @@ class DeckTypeBase:
         # with open(self.name+".json", "w") as fd:
         #     json.dump(self.desc(), fd, indent=2)
 
-    def parse_deck_button_block(self, button_block) -> Dict[str | int, DeckButton]:
+    def parse_deck_button_block(self, button_block) -> Dict[str | int, ButtonType]:
         """Parses a deck button definition block
 
-        A DeckButton block defines either a single deck button (no repeat attribute)
+        A ButtonType block defines either a single deck button (no repeat attribute)
         or a collection of similar buttons if there is a repeat attribute.
         """
         button_block[DECK_KW.INT_NAME.value] = "NO_NAME_" + str(self.count)  # assign technical name
@@ -374,7 +374,7 @@ class DeckTypeBase:
         # this definition is for a single button
         if repeat is None or repeat == [1, 1]:
             name = f"{prefix}{start}"
-            db = DeckButton(
+            db = ButtonType(
                 config={
                     DECK_KW.NAME.value: name,
                     DECK_KW.INDEX.value: start,
@@ -415,7 +415,7 @@ class DeckTypeBase:
                 position = [0, 0]
                 position[0] = offset[0] + x * (sizes[0] + spacing[0])
                 position[1] = offset[1] + y * (sizes[1] + spacing[1])
-                button_types[name] = DeckButton(
+                button_types[name] = ButtonType(
                     config={
                         DECK_KW.NAME.value: name,
                         DECK_KW.INDEX.value: idx,
@@ -482,7 +482,7 @@ class DeckTypeBase:
     # Is the deck's button capable (from its definition)
     # to satify the button's definition.
     #
-    def get_button_definition(self, index) -> DeckButton | None:
+    def get_button_definition(self, index) -> ButtonType | None:
         if type(index) is int:
             index = str(index)
         # 1. search in all mosaic first...
@@ -605,7 +605,7 @@ class DeckTypeBase:
             "aircraft": self._aircraft,
         }
 
-    def get_button(self, x: int, y: int) -> DeckButton | None:
+    def get_button(self, x: int, y: int) -> ButtonType | None:
         # Don't force it. Use a bigger hammer. (/usr/bin/fortune, circa 1980, a motto of mine.)
         if self._map is None:
             # make map
