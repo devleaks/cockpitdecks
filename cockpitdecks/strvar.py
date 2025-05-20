@@ -460,6 +460,7 @@ class TextWithVariables(StringWithVariables):
         self.size = None
         self.color = None
         self.position = None
+        self.line_spacing = None
 
         self.framed = None
 
@@ -550,6 +551,7 @@ class TextWithVariables(StringWithVariables):
             logger.warning(f"variable {self.display_name}: {type(self).__name__}: invalid vertical label position code {invalid}, using default")
 
         # print(f">>>> {self.owner.get_id()}:{self.prefix}", dflt_text_font, dflt_text_size, dflt_text_color, dflt_text_position)
+        self.line_spacing = self._config.get(f"{self.prefix}-line-spacing", 4)
 
         if self.message is not None and not isinstance(self.message, str):
             logger.warning(f"variable {self.display_name}: converting text {self.message} to string (type {type(self.message)})")

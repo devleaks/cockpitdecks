@@ -206,7 +206,8 @@ class IconBase(Representation):
         elif text.position[1] == "b":
             h = image.height - inside - text_size / 2
         # logger.debug(f"position {(w, h)}")
-        draw.multiline_text((w, h), text=message, font=font, anchor=p + "m", align=a, fill=text.color)  # (image.width / 2, 15)
+        ls = text.line_spacing if hasattr(text, "line_spacing") else 4
+        draw.multiline_text((w, h), text=message, font=font, anchor=p + "m", align=a, fill=text.color, spacing=ls)  # (image.width / 2, 15)
         return image
 
     def clean(self):
