@@ -352,6 +352,19 @@ class Encoder extends Konva.Circle {
             // sendEvent(DECK.name, this.name, 0, {x: 0, y: 0})
         });
 
+        this.on("wheel", function (e) {
+            const step = 4
+            const pos = this.getRelativePointerCoordinates(); // unused, but supplied...
+            // console.log("wheel", e, e.evt.deltaY)
+            if (e.evt.deltaY > step) {
+                // console.log("up")
+                sendEvent(DECK.name, this.name, 2, {x: pos.x, y: pos.y, ts: Date.now()});
+            } else if (e.evt.deltaY < (- step)) {
+                // console.log("down")
+                sendEvent(DECK.name, this.name, 3, {x: pos.x, y: pos.y, ts: Date.now()});
+            }
+        });
+
     }
 
     value() {
@@ -873,20 +886,20 @@ class Deck {
 
         function set_default_size(container, sizes, color) {
             container.style["border"] = "1px solid "+color;
-            const width = sizes == undefined || (sizes.constructor != Array) ? DEFAULT_WIDTH : sizes[0]
-            const height = sizes == undefined || (sizes.constructor != Array) ? DEFAULT_HEIGHT : sizes[1]
+            const width = sizes == undefined || (sizes.constructor != Array) ? DEFAULT_WIDTH : sizes[0];
+            const height = sizes == undefined || (sizes.constructor != Array) ? DEFAULT_HEIGHT : sizes[1];
             stage.width(width);
             stage.height(height);
             window.resizeTo(width,height + extra_space);
-            console.log("set_default_size", width,height + extra_space)
+            console.log("set_default_size", width,height + extra_space);
         }
 
         this.background_layer = layer
 
         const background = this.deck_type.background
         if (background == undefined || background == null) {
-            console.log("no background", this.deck_type)
-            set_default_size(this.container, 100, 100, "red")
+            console.log("no background", this.deck_type);
+            set_default_size(this.container, 100, 100, "red");
             return;
         }
 
@@ -894,19 +907,20 @@ class Deck {
 
         const bgcolor = background.color
         if (bgcolor != undefined) {
-            this.container.style["background-color"] = bgcolor
+            this.container.style["background-color"] = "var(--deck-background-color)";
         }
 
         const background_image = background.image;
         if (background_image == undefined || background_image == null) {
-            console.log("no background image", this.deck_type)
-            set_default_size(this.container, sizes, "orange")
+            console.log("no background image", this.deck_type);
+            set_default_size(this.container, sizes, "orange");
             return;
         }
 
         let deckImage = new Image();
         deckImage.onerror = function() {
-            set_default_size(this.container, sizes, "red")
+            console.log("backgroud image not found", BACKGROUND_IMAGE_PATH);
+            set_default_size(this.container, sizes, "red");
         }
         deckImage.onload = function () {
             let deckbg = new Konva.Image({
@@ -917,9 +931,9 @@ class Deck {
             stage.width(deckImage.naturalWidth);
             stage.height(deckImage.naturalHeight);
             window.resizeTo(deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
-            console.log("deckImage.onload", deckImage.naturalWidth,deckImage.naturalHeight + extra_space)
-            original_width = deckImage.naturalWidth
-            original_height = deckImage.naturalHeight + extra_space
+            console.log("deckImage.onload", deckImage.naturalWidth,deckImage.naturalHeight + extra_space);
+            original_width = deckImage.naturalWidth;
+            original_height = deckImage.naturalHeight + extra_space;
             // layer.add(deckbg);
         };
         deckImage.src = BACKGROUND_IMAGE_PATH;
@@ -942,7 +956,7 @@ class Deck {
     }
 
     set_image_layer(layer) {
-        this.image_layer = layer
+        this.image_layer = layer;
         // console.log("set_image_layer", this.buttons)
     }
 

@@ -8,6 +8,8 @@
 :root {
     --font-color: #424242;
     --bg-color: #A8B7E6;
+    --background-color: #DDDDDD;
+    --deck-background-color: #DDDDDD;
 }
 /* light orange on dark grey */
 [data-theme="dark"] {
@@ -21,6 +23,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: sans-serif;
+    background-color: var(--background-color);
 }
 
 #deck {
@@ -55,12 +58,20 @@ input[type="button"] {
 // Load deck info (contains options, etc.)
 //
 const DECK = {{ deck|tojson(indent=2) }};
+
 const DECK_TYPE_DESCRIPTION = "deck-type-flat"
+const DEFAULT_BACKGROUND_COLOR = "#DDDDDD"
+const DEFAULT_BACKGROUND_COLOR_ALT = "#333333"
 
 const DEBUG = DECK[DECK_TYPE_DESCRIPTION].debug != undefined ? DECK[DECK_TYPE_DESCRIPTION].debug : false;
 const ZOOM = DECK[DECK_TYPE_DESCRIPTION].zoom != undefined ? DECK[DECK_TYPE_DESCRIPTION].zoom : true;
-const DARK = DECK[DECK_TYPE_DESCRIPTION].background.alternate != undefined
-const HAS_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image != undefined
+const DARK = (DECK[DECK_TYPE_DESCRIPTION].background.alternate != undefined)
+          || (DECK[DECK_TYPE_DESCRIPTION].background.alt_color != undefined);
+const HAS_BACKGROUND_IMAGE = DECK[DECK_TYPE_DESCRIPTION].background.image != undefined;
+const BACKGROUND_COLOR = DECK[DECK_TYPE_DESCRIPTION].background.color != undefined ?
+                         DECK[DECK_TYPE_DESCRIPTION].background.color : DEFAULT_BACKGROUND_COLOR;
+const BACKGROUND_COLOR_ALT = DECK[DECK_TYPE_DESCRIPTION].background.alt_color != undefined ?
+                             DECK[DECK_TYPE_DESCRIPTION].background.alt_color : DEFAULT_BACKGROUND_COLOR_ALT;
 //
 //
 // Konva layout set up and initialisation
@@ -76,7 +87,7 @@ deck_elem.setAttribute("height", "100%");
 deck_elem.setAttribute("display", "block");
 deck_elem.setAttribute("padding", 0);
 deck_elem.setAttribute("marging", 0);
-document.getElementsByTagName("body")[0].appendChild(deck_elem)
+document.getElementsByTagName("body")[0].appendChild(deck_elem);
 
 var btns_elem = document.createElement("div");
 btns_elem.setAttribute("id", "buttonWrapper");
@@ -172,11 +183,28 @@ function getQueryVariable(variable) {
 
 // assumes location of type host:8080/deck/deckname
 // if (HAS_BACKGROUND_IMAGE) ..
-const BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
-deck_elem.style.backgroundImage = "url("+BACKGROUND_IMAGE_PATH+")";
-deck_elem.style.backgroundRepeat = "no-repeat";
-deck_elem.style.backgroundSize = "100% auto";
-// else uniform color
+function change_background(image_url, alt_color) {
+    fetch(image_url, {method: 'HEAD'})
+        .then(res => {
+            if (res.status === 200) {
+                console.log("background image", image_url);
+                deck_elem.style.backgroundImage = "url("+image_url+")";
+                deck_elem.style.backgroundRepeat = "no-repeat";
+                deck_elem.style.backgroundSize = "100% auto";
+                return;
+            }
+            console.log("background image not found", image_url);
+            let r = document.querySelector(':root');
+            r.style.setProperty('--deck-background-color', alt_color);
+            console.log("set deck background color", alt_color);
+        })
+        .catch(err => {
+            console.log("issue changing background", err);
+        })
+}
+
+var BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
+change_background(BACKGROUND_IMAGE_PATH, BACKGROUND_COLOR);
 
 deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
 
@@ -197,15 +225,17 @@ if (DARK) {
         dark_mode = ! dark_mode;
         dark_elem.setAttribute("value", dark_mode ? "☀" : "☾" );
         btns_elem.setAttribute("data-theme", dark_mode ? "dark" : "light" );
+
         let bg_image = dark_mode ? BACKGROUND_IMAGE_PATH + "/alternate/night" : BACKGROUND_IMAGE_PATH
-        console.log("dark", dark_mode, bg_image)
-        deck_elem.style.backgroundImage = "url("+bg_image+")";
+        let alt_color = dark_mode ? BACKGROUND_COLOR_ALT : BACKGROUND_COLOR;
+        console.log("dark", dark_mode, bg_image, alt_color);
+        change_background(bg_image, alt_color);
     }, false);
     btns_elem.appendChild(dark_elem)
 
-    console.log("dark init", dark_mode)
     if (dark_mode) {
-        deck_elem.style.backgroundImage = "url(" + BACKGROUND_IMAGE_PATH + "/alternate/night)";
+        console.log("dark init", dark_mode)
+        change_background(BACKGROUND_IMAGE_PATH + "/alternate/night", BACKGROUND_COLOR_ALT);
     }
 }
 
