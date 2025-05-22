@@ -26,6 +26,7 @@ class DrawBase(IconBase):
     REPRESENTATION_NAME = "draw-base"
 
     ICON_SIZE = ICON_SIZE
+    TRANSPARENT_PNG_COLOR = TRANSPARENT_PNG_COLOR
 
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
