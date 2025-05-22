@@ -33,6 +33,7 @@ default-icon-name: none.png
 # ##################################################
 # Rendez-vous variables to trigger events in Cockpit
 #
+# debug: Streamdeck[name=XPDeck]
 permenant-variable-names:
   - aircraft-name
   - aircraft-icao

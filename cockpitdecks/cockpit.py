@@ -407,8 +407,7 @@ class CockpitBase:
     """As used in Simulator"""
 
     def __init__(self):
-        self._debug = ROOT_DEBUG.split(",")  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
-        pass
+        self._debug = set(ROOT_DEBUG.split(","))  # comma separated list of module names like cockpitdecks.page or cockpitdeck.button_ext
 
     def set_logging_level(self, name):
         if name in self._debug:
@@ -418,6 +417,17 @@ class CockpitBase:
                 mylog.info(f"set_logging_level: {name} set to debug")
             else:
                 logger.warning(f"logger {name} not found")
+
+    def add_debug(self, pkgs: set):
+        self._debug = self._debug | pkgs
+        logger.info(f"debug packages {self._debug}")
+
+    def set_level(self, objlog, obj):
+        name = obj.name if hasattr(obj, "name") else ""
+        q = f"{type(obj).__name__}[name={name}]"
+        if q in self._debug:
+            objlog.setLevel(logging.DEBUG)
+            objlog.info(f"set_level: {q} set to debug")
 
     def reload_pages(self):
         pass
@@ -1451,8 +1461,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         if not self._resources_config.is_valid():
             logger.error(f"configuration file {fn} is not valid")
 
-        self._debug = self._resources_config.get("debug", ",".join(self._debug)).split(",")
-        self.set_logging_level(__name__)
+        more_debug = self._resources_config.get("debug")
+        if more_debug is not None:
+            self.add_debug(set(more_debug.split(",")))
+            self.set_logging_level(__name__)
 
         if self.sim is not None:
             self.sim.set_simulator_variable_roundings(simulator_variable_roundings=self._resources_config.get("dataref-roundings", {}))

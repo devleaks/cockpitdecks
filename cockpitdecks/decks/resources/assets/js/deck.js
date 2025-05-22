@@ -917,9 +917,12 @@ class Deck {
             return;
         }
 
+        // this loads the image and sets the size of the window to the size of the image
+        // if the image loading fails, the suplied background size is set (if available
+        // otherwise a default value is used.)
         let deckImage = new Image();
         deckImage.onerror = function() {
-            console.log("backgroud image not found", BACKGROUND_IMAGE_PATH);
+            console.log("deckImage.onerror: backgroud image not found", BACKGROUND_IMAGE_PATH);
             set_default_size(this.container, sizes, "red");
         }
         deckImage.onload = function () {

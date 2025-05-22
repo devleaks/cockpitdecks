@@ -484,6 +484,11 @@ class Aircraft:
             self.sim.set_simulator_variable_frequencies(simulator_variable_frequencies=self._config.get("dataref-fetch-frequencies", {}))
             self.sim.DEFAULT_REQ_FREQUENCY = self._config.get("dataref-fetch-frequency", DEFAULT_FREQUENCY)
 
+        more_debug = self._config.get("debug")
+        if more_debug is not None:
+            self.cockpit, add_debug(set(more_debug).split(","))
+            self.cockpit.set_logging_level(__name__)
+
         # 2. Create decks
         decks = self._config.get(CONFIG_KW.DECKS.value)
         if decks is None:

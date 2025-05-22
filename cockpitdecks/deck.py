@@ -46,6 +46,8 @@ class Deck(ABC):
         self.name = name
         self.device = device
 
+        self.cockpit.set_level(logger, self)
+
         self.serial = config.get("serial")
         if self.serial is None:
             logger.warning(f"{self.name}: has no serial number")

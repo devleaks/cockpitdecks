@@ -181,8 +181,6 @@ function getQueryVariable(variable) {
   alert('Query Variable ' + variable + ' not found');
 }
 
-// assumes location of type host:8080/deck/deckname
-// if (HAS_BACKGROUND_IMAGE) ..
 function change_background(image_url, alt_color) {
     fetch(image_url, {method: 'HEAD'})
         .then(res => {
@@ -203,7 +201,9 @@ function change_background(image_url, alt_color) {
         })
 }
 
-var BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
+// assumes location of image is host:8080/deck-bg/deckname
+const BACKGROUND_IMAGE_PATH = window.location.pathname.replace("/deck/", "/deck-bg/")
+
 change_background(BACKGROUND_IMAGE_PATH, BACKGROUND_COLOR);
 
 deck = new Deck(DECK, stage);  // we need to pass the div element to style it (cursor)
