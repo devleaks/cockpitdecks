@@ -53,3 +53,12 @@ cockpitdecks_cli --demo'
 ```
 
 Fly safely.
+
+
+## Developer note
+
+Recompilation of rt-midi on MacOS < 15 may require the specification of
+
+export CPLUS_INCLUDE_PATH=/opt/homebrew/Caskroom/miniforge/base/include/c++/v1
+
+

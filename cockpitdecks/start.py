@@ -155,14 +155,14 @@ SIMULATOR_HOST = None
 #
 parser = argparse.ArgumentParser(description="Start Cockpitdecks")
 parser.add_argument("--version", action="store_true", help="show version information and exit")
+parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
 parser.add_argument("-d", "--demo", action="store_true", help="start demo mode")
-parser.add_argument(
-    "--template", metavar="template_file", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder"
-)
 parser.add_argument("-f", "--fixed", action="store_true", help="does not automatically switch aircraft")
 parser.add_argument("-w", "--web", action="store_true", help="open web application in new browser window")
-parser.add_argument("-v", "--verbose", action="store_true", help="show startup information")
-parser.add_argument("-p", "--packages", nargs="+", help="lookup for optional packages")
+parser.add_argument("-p", "--packages", nargs="+", help="lookup and load additional packages")
+parser.add_argument(
+    "--template", metavar="aircraft folder", type=str, nargs=1, help="create deckconfig and add template files to start in supplied aircraft folder"
+)
 parser.add_argument("--designer", action="store_true", help="start designer")
 # parser.add_argument("--install-plugin", action="store_true", help="install Cockpitdecks plugin in X-Plane/XPPython3")
 parser.add_argument("aircraft_folder", metavar="aircraft_folder", type=str, nargs="?", help="aircraft folder for non automatic start")
@@ -625,15 +625,7 @@ def deck_bg(name: str, alternate: str | None = None):
     if deck_flat is None:
         app.logger.debug(f"no {DECK_TYPE_DESCRIPTION} in description")
         abort(404)
-    if alternate is None:
-        deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_PATH.value)  # can be "background-image": None
-        if deck_img is None:
-            app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
-            abort(404)
-        if deck_img == "":
-            app.logger.debug(f"no background image for {uname}")
-            abort(404)
-    else:
+    if alternate is not None:
         deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value)  # can be "background-image": None
         if deck_img is None:
             app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
@@ -641,6 +633,22 @@ def deck_bg(name: str, alternate: str | None = None):
         if deck_img == "":
             app.logger.debug(f"no alternate background image for {uname}")
             abort(404)
+        if not os.path.exists(deck_img):
+            app.logger.debug(f"alternate background image not found {deck_img}")
+            abort(404)
+        return send_file(deck_img, mimetype="image/png")
+
+    deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_PATH.value)  # can be "background-image": None
+    if deck_img is None:
+        app.logger.debug(f"no {DECK_KW.BACKGROUND_IMAGE_PATH.value} in {DECK_TYPE_DESCRIPTION}")
+        abort(404)
+    if deck_img == "":
+        app.logger.debug(f"no background image for {uname}")
+        abort(404)
+        deck_img = deck_flat.get(DECK_KW.BACKGROUND_IMAGE_ALTERNATE_PATH.value)  # can be "background-image": None
+    if not os.path.exists(deck_img):
+        app.logger.debug(f"background image not found {deck_img}")
+        abort(404)
     return send_file(deck_img, mimetype="image/png")
 
 
