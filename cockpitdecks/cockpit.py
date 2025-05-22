@@ -1758,6 +1758,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         logger.info(f"aircraft changed to {acname}, {acpath}, starting..")
         with self.reload_operation:
             self.aircraft.start(acpath=acpath)
+            self.sim.aircraft_changed()
         logger.info("..started")
 
     def load_pages(self):

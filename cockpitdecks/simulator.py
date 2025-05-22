@@ -433,6 +433,10 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         instruction.execute(self)
 
     @abstractmethod
+    def aircraft_changed(self):
+        pass
+
+    @abstractmethod
     def is_night(self) -> bool:
         """Returns whether simulator is night time"""
         return False
@@ -489,6 +493,9 @@ class NoSimulator(Simulator):
 
     def connect(self, reload_cache: bool = False):
         logger.info("simulator connected")
+
+    def aircraft_changed(self):
+        pass
 
     def start(self):
         logger.info("simulator started")
