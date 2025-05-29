@@ -428,9 +428,13 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
 
     #
     # Instructions
-    def execute(self, instruction: Instruction):
-        """Executes a SimulatorInstruction"""
-        instruction.execute(self)
+    # def execute(self, instruction: Instruction):
+    #     """Executes a SimulatorInstruction"""
+    #     instruction.execute(self)
+
+    # def execute_instruction(self, instruction: Instruction):
+    #     """Executes a SimulatorInstruction"""
+    #     instruction.execute(self)
 
     @abstractmethod
     def aircraft_changed(self):
@@ -630,7 +634,7 @@ class SimulatorVariableEvent(SimulatorEvent):
                 self.handled()
                 logger.debug(f"..updated")
             except:
-                logger.warning(f"..updated with error", exc_info=True)
+                logger.warning(f"..updated with error ({self.name}={self.value} ({self.cascade}))", exc_info=True)
                 return False
         else:
             self.enqueue()
