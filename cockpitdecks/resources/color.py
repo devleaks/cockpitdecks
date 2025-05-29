@@ -20,6 +20,8 @@ def grey(i: int):
 
 
 def is_integer(s) -> bool:
+    if type(s) not in [str, int, float]:
+        return False
     try:
         int(s)
     except ValueError:
@@ -27,9 +29,11 @@ def is_integer(s) -> bool:
     return True
 
 
-def is_float(n):
+def is_float(s):
+    if type(s) not in [str, int, float]:
+        return False
     try:
-        float(n)
+        float(s)
     except ValueError:
         return False
     return True

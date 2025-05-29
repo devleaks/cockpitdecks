@@ -710,6 +710,7 @@ class Aircraft:
         logger.info("..terminating decks..")
         self._running = False
         for deck in self.decks.values():
+            logger.debug(f"..terminating {deck.name}..")
             deck.terminate()
         logger.info("..terminating web decks..")
         self.remove_web_decks()
