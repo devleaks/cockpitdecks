@@ -1,4 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 # Remove JS as main language
-cockpitdecks/resources/*.js linguist-vendored
+cockpitdecks/resources/**.js linguist-vendored
