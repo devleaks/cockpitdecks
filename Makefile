@@ -59,6 +59,7 @@ black:
 	@black ../cockpitdecks/cockpitdecks
 	# sims
 	@black ../cockpitdecks_xp/cockpitdecks_xp
+	@black ../xplane-webapi/xpwebapi
 	@black ../cockpitdecks_fs/cockpitdecks_fs
 	# decks
 	@black ../cockpitdecks_ld/cockpitdecks_ld
