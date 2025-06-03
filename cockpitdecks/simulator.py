@@ -186,10 +186,10 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         """Registers a SimulatorVariable to be monitored by Cockpitdecks.
 
         Args:
-            simulator_variable ([type]): [description]
+            variable (Variable): Variable to register
 
         Returns:
-            [type]: [description]
+            Variable: Registered variable
         """
         if variable.name is None:
             logger.warning(f"invalid variable name {variable.name}")
