@@ -62,8 +62,8 @@ class COCKPITDECKS_INTVAR(Enum):
     INTDREF_CONNECTION_STATUS = "_connection_status"
     # Status value:
     # 0: Nothing running
-    # 1: Connection monitor running
-    # 2: Connection to X-Plane but no more
+    # 1: Beacon monitor running
+    # 2: Beacon monitor detects beacon
     # 3: Data receiver/listener running (no timeout)
     # 4: Event forwarder running
 
