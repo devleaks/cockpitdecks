@@ -231,11 +231,11 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
             t.data_type = InternalVariableType.STRING
         return t
 
-    def get_simulator_variable_value(self, simulator_variable, default=None) -> Any | None:
+    def get_simulator_variable_value(self, simulator_variable: SimulatorVariable, default=None) -> Any | None:
         """Gets the value of a SimulatorVariable monitored by Cockpitdecks
         Args:
-            simulator_variable ([type]): [description]
-            default ([type]): [description] (default: `None`)
+            simulator_variable (SimulatorVariable): Variable to get the value from.
+            default (Any): DEfault value if variable value is None.
 
         Returns:
             [type]: [description]
@@ -300,8 +300,8 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         """Recreates an Event from data included in the value.
 
         Args:
-            name (str): [description]
-            value ([type]): [description]
+            name (str): Name of event to replay
+            value (Any): value of event to replay
         """
         pass
 
