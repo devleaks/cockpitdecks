@@ -446,11 +446,6 @@ class Simulator(ABC, InstructionFactory, InstructionPerformer, VariableFactory, 
         return False
 
     @abstractmethod
-    def same_host(self) -> bool:
-        """Returns whether Cockpitdecks runs on the same computer as the Simulator software"""
-        return False
-
-    @abstractmethod
     def start(self):
         """Starts Cockpitdecks Simulator class, that is start data monitoring and instruction
         execution if instructed to do so.
@@ -488,9 +483,6 @@ class NoSimulator(Simulator):
 
     def replay_event_factory(self, name: str, value):
         pass
-
-    def same_host(self) -> bool:
-        return True
 
     def is_night(self) -> bool:
         return False

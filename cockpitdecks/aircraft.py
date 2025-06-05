@@ -404,9 +404,11 @@ class Aircraft:
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
             self._observables = Observables(config=config, simulator=self.sim)
+            names = []
             for o in self._observables.get_observables():
                 self.cockpit.register_observable(o)
-            logger.info(f"loaded {len(self._observables.observables)} aircraft observables")
+                names.append(o._name)
+            logger.info(f"loaded {len(self._observables.observables)} aircraft observables: {', '.join(sorted(names))}")
 
     def unload_observables(self):
         if type(self._observables) is Observables:
@@ -460,7 +462,7 @@ class Aircraft:
         # Named colors
         self.named_colors.update(self._config.get(CONFIG_KW.NAMED_COLORS.value, {}))
         if (n := len(self.named_colors)) > 0:
-            logger.info(f"{n} named colors ({', '.join(self.named_colors)})")
+            logger.info(f"{n} named colors: {', '.join(self.named_colors)}")
         # Theme(s)
         before = self.theme
         theme = self.get_attribute(CONFIG_KW.COCKPIT_THEME.value)
