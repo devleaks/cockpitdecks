@@ -18,7 +18,6 @@ from typing import Tuple
 from simple_websocket import Client, ConnectionClosed
 
 
-
 parser = argparse.ArgumentParser(description="Replay Cockpitdecks event log")
 parser.add_argument("logfile", type=str, nargs="?", help="file with logged events (jsonlines format)")
 parser.add_argument("-f", "--fast", action="store_true", help="does not respect timing")
@@ -34,6 +33,8 @@ if args.logfile is None:
     sys.exit(1)
 
 need_flush = False
+
+
 def flush():
     global need_flush
     if need_flush:
@@ -54,6 +55,7 @@ if not args.info:
         print("no connection")
 elif not args.silent:
     print("no connection")
+
 
 # Event codes:
 #  0 = Push/press RELEASE
@@ -81,7 +83,7 @@ def get_event(event) -> Tuple[int | None, dict]:
     # TouchEvent
 
     event_code = event.get("rawcode", -1)
-    if event_code == -1: # need to recontruct it
+    if event_code == -1:  # need to recontruct it
         if event_type == "PushEvent":
             if event["pressed"]:
                 if event["pulled"] > 0:
@@ -98,25 +100,15 @@ def get_event(event) -> Tuple[int | None, dict]:
                 code = 10
             else:
                 code = 11
-            data = {
-                "x": event["pos_x"],
-                "y": event["pos_y"],
-                "ts": event["cli_ts"]
-            }
+            data = {"x": event["pos_x"], "y": event["pos_y"], "ts": event["cli_ts"]}
         elif event_type == "SlideEvent":
             code = 9
-            data = {
-                "value": event["value"]
-            }
+            data = {"value": event["value"]}
         elif event_type == "DatarefEvent":
             if args.xplane:
                 path = event["path"]
                 if path is not None and (args.internal or not path.startswith(INTERNAL_VARIABLE_PREFIX)):
-                    data = {
-                        "code": 99,
-                        "path": path,
-                        "value": event["value"]
-                    }
+                    data = {"code": 99, "path": path, "value": event["value"]}
                     return -1, data
             if not args.silent:
                 print(".", end="", flush=True)
@@ -130,6 +122,7 @@ def get_event(event) -> Tuple[int | None, dict]:
 
     return code, data | {"_replay": True}
 
+
 MIN_TIME = 0.01  # secs between 2 send
 tot_time = 0
 try:
@@ -139,7 +132,7 @@ try:
     with jsonlines.open(args.logfile) as reader:
         for obj in reader:
             if last is not None:
-                delta = datetime.fromisoformat(obj["ts"]).timestamp() -  datetime.fromisoformat(last["ts"]).timestamp()
+                delta = datetime.fromisoformat(obj["ts"]).timestamp() - datetime.fromisoformat(last["ts"]).timestamp()
             tot_time = tot_time + delta
             time.sleep(MIN_TIME if args.fast else max(MIN_TIME, delta))
             code, data = get_event(obj["event"])
@@ -147,13 +140,17 @@ try:
             if code is None:
                 tot_time = tot_time + delta
                 continue
-            new_event = data if code == -1 else {
+            new_event = (
+                data
+                if code == -1
+                else {
                     "code": 99,  # special code for replay
                     "deck": obj["event"]["deck"].split("/")[1],
                     "key": obj["event"]["button"],
                     "event": code,
-                    "data": data
-            }
+                    "data": data,
+                }
+            )
             if not args.silent or args.info:
                 flush()
                 print("replay", f"{tot_time:5.3f}", new_event)

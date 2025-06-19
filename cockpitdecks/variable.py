@@ -284,8 +284,7 @@ class Variable(ABC):
 
     def save(self):
         # raise NotImplementedError
-        # logger.warning(f"{self.name} nothing to save")
-        pass
+        logger.warning(f"{type(self)}: {self.name} save not implemented for variable")
 
 
 class VariableListener(ABC):

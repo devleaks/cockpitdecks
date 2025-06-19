@@ -69,8 +69,10 @@ class WeatherData(ABC):
     def station(self, station: Any):
         if self.station is None:
             self._station = station
+            logger.debug(f"{self.name}: new station {station}")
             self.station_changed()
         elif self._station != station:
+            logger.debug(f"{self.name}: station changed {self._station} -> {station}")
             self._station = station
             self.station_changed()
 
