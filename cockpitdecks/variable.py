@@ -374,7 +374,8 @@ class VariableDatabase:
         if v is None:
             logger.warning(f"{name} not found")
             return None
-        return v.current_value if v.current_value is not None else default
+        value = v.value
+        return value if value is not None else default
 
     def show_all(self, word: str = None):
         for k in self.database:

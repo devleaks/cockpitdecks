@@ -204,7 +204,7 @@ class StringWithVariables(Variable, VariableListener):
             value = self.owner.get_simulator_variable_value(simulator_variable=simulator_variable, default=default)
             logger.debug(f"{simulator_variable} = {value} (owner={self.owner.name}, {type(self.owner)})")
             return value
-        logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable}")
+        logger.warning(f"formula {self.display_name}: no get_simulator_variable_value for {simulator_variable} owner {self.owner}")
         return None
 
     def get_state_variable_value(self, state_variable, default: str = "0.0"):
