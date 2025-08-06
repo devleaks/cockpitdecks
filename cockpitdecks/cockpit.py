@@ -159,9 +159,12 @@ class CockpitInstruction(Instruction):
     def cockpit_instruction_root_name(instruction: str) -> str:
         return instruction.replace(CockpitInstruction.PREFIX, "")
 
-    def _check_condition(self):
+    def _check_condition(self) -> bool:
         # condition checked in each individual instruction
-        return True
+        if self.condition is None:
+            return True
+        print("check condition", self.name, self._condition, self._condition.value)
+        return self._condition.value != 0
 
     def _execute(self):
         raise NotImplementedError(f"Please implement CockpitInstruction._execute method ({self.name})")

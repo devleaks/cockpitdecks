@@ -32,6 +32,10 @@ a321:
 	clear
 	@cockpitdecks-cli aircrafts/ToLiss\ A321 -p $(ALL_PACKAGES)
 
+a21n:
+	clear
+	@cockpitdecks-cli aircrafts/ToLiss\ A321 -p $(ALL_PACKAGES)
+
 test:
 	clear
 	@cockpitdecks-cli aircrafts/tests --fixed -p $(DEV_PACKAGES)

@@ -46,6 +46,7 @@ class Instruction(ABC):
         self.factory = factory
         self.delay = delay
         self.condition = condition
+        self._condition = None
 
         self._timer: threading.Timer | None = None
 
@@ -96,13 +97,11 @@ class Instruction(ABC):
 
     @abstractmethod
     def _execute(self) -> bool:
-        if self.performer is not None and (hasattr(self.performer, "execute") or isinstance(self.performer, InstructionPerformer)):
-            return self.performer.execute(instruction=self)
-        return True
+        raise NotImplementedError
 
     @abstractmethod
     def _check_condition(self) -> bool:
-        return True
+        raise NotImplementedError
 
     def clean_timer(self):
         if self._timer is not None:
@@ -156,9 +155,12 @@ class MacroInstruction(Instruction):
         else:
             logger.warning(f"{self.name} has no performer")
 
-    def _check_condition(self):
+    def _check_condition(self) -> bool:
         # condition checked in each individual instruction
-        return True
+        if self.condition is None:
+            return True
+        return self._condition.value != 0
+
 
     def _execute(self):
         for instruction in self._instructions:
