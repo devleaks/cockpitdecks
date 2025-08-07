@@ -179,6 +179,7 @@ class CONFIG_KW(Enum):
     TOGGLE = "toggle"
     TRIGGER = "trigger"  # obervable.type
     TYPE = "type"
+    VALUE = "value"
     VALUE_COUNT = "value-count"
     VALUE_INC = "value-inc"
     VALUE_MAX = "value-max"

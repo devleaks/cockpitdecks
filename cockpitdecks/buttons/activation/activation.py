@@ -125,12 +125,14 @@ class Activation(VariableListener):
         # to the value of the activatiuon but it will NOT write it to X-Plane.
         # Therefore, here, it is not a SetDataref instruction that is built,
         # but rather a explicit "on-demand" write when necessary.
+        self.activation_requires_modification_set_dataref = False
         self._set_sim_data = None
         set_dataref_path = self._config.get(CONFIG_KW.SET_SIM_VARIABLE.value)
         if set_dataref_path is not None:
             self._set_sim_data = self.button.sim.get_variable(set_dataref_path)
             self._set_sim_data.add_listener(self)
-        self.activation_requires_modification_set_dataref = True
+            self._set_sim_data_value = self._config.get(CONFIG_KW.VALUE.value)  # static value for now, could be a Formula! (to do)
+        self.activation_requires_modification_set_dataref = True  # always for now
 
         # Working variables, internal state
         self._last_event = None
@@ -362,6 +364,10 @@ class Activation(VariableListener):
     def set_dataref(self):
         # Writes the "raw" activation value to set-dataref as produced by the activation
         if self._set_sim_data is None:
+            return
+        if self._set_sim_data_value is not None:  # set to static value
+            self._set_sim_data.update_value(new_value=self._set_sim_data_value, cascade=True)
+            logger.debug(f"button {self.button_name}: {type(self).__name__} set-dataref {self._set_sim_data.name} to static value {self._set_sim_data_value}")
             return
         value = self.get_activation_value()
         if value is None:
