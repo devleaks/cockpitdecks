@@ -161,7 +161,6 @@ class MacroInstruction(Instruction):
             return True
         return self._condition.value != 0
 
-
     def _execute(self):
         for instruction in self._instructions:
             instruction.execute()
