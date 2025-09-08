@@ -624,13 +624,13 @@ class SimulatorVariableEvent(SimulatorEvent):
                 self.handling()
                 data.update_value(self.value, cascade=self.cascade)
                 self.handled()
-                logger.debug(f"..updated")
+                logger.debug("..updated")
             except:
                 logger.warning(f"..updated with error ({self.name}={self.value} ({self.cascade}))", exc_info=True)
                 return False
         else:
             self.enqueue()
-            logger.debug(f"enqueued")
+            logger.debug("enqueued")
         return True
 
 
