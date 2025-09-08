@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 #
 #
 NO_ICON = "no-icon"
-
+VU = "VU"
 
 class IconBase(Representation):
     """Abstract icon class
@@ -42,6 +42,8 @@ class IconBase(Representation):
         # from hierarchy.
         if self._config.get(CONFIG_KW.LABEL.value) is not None:
             self._label = TextWithVariables(owner=button, config=self._config, prefix=CONFIG_KW.LABEL.value)
+
+        self.label_vu = self._config.get(VU.lower())
 
         self.cockpit_color = button.get_attribute("cockpit-color")
         self.cockpit_color = convert_color(self.cockpit_color)
@@ -208,6 +210,9 @@ class IconBase(Representation):
         # logger.debug(f"position {(w, h)}")
         ls = text.line_spacing if hasattr(text, "line_spacing") else 4
         draw.multiline_text((w, h), text=message, font=font, anchor=p + "m", align=a, fill=text.color, spacing=ls)  # (image.width / 2, 15)
+        # VU label, use same font as label above, force cyan color, placed in top right of image
+        if text.prefix == CONFIG_KW.LABEL.value and self.label_vu is not None:
+            draw.text((image.width - inside, inside+text_size), text=str(self.label_vu)+VU, font=font, anchor="rb", align="r", fill="cyan")
         return image
 
     def clean(self):
