@@ -43,7 +43,8 @@ class IconBase(Representation):
         if self._config.get(CONFIG_KW.LABEL.value) is not None:
             self._label = TextWithVariables(owner=button, config=self._config, prefix=CONFIG_KW.LABEL.value)
 
-        self.label_vu = self._config.get(VU.lower())
+        self.label_vu = self._config.get("vu")
+        self.label_vu_position = self._config.get("vu-position", "tr") # t/b, l/r
 
         self.cockpit_color = button.get_attribute("cockpit-color")
         self.cockpit_color = convert_color(self.cockpit_color)
@@ -212,7 +213,18 @@ class IconBase(Representation):
         draw.multiline_text((w, h), text=message, font=font, anchor=p + "m", align=a, fill=text.color, spacing=ls)  # (image.width / 2, 15)
         # VU label, use same font as label above, force cyan color, placed in top right of image
         if text.prefix == CONFIG_KW.LABEL.value and self.label_vu is not None:
-            draw.text((image.width - inside, inside+text_size), text=str(self.label_vu)+VU, font=font, anchor="rb", align="r", fill="cyan")
+            txt = str(self.label_vu)+VU
+            y = inside+text_size
+            if "b" in self.label_vu_position:
+                y = image.height-inside-text_size
+            x = image.width - inside
+            a = "r"
+            t = "rb"
+            if "l" in self.label_vu_position[1]:
+                x = inside
+                a = "l"
+                t = "lb"
+            draw.text((x, y), text=txt, font=font, anchor=t, align=a, fill="cyan")
         return image
 
     def clean(self):
