@@ -398,6 +398,7 @@ class CockpitPlaySoundInstruction(CockpitInstruction):
         else:
             logger.warning("no sound to play")
 
+
 # class SetVariable(CockpitInstruction):
 #     """
 #     Instruction to update the value of a dataref in X-Plane simulator.
