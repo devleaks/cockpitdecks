@@ -44,6 +44,10 @@ demo:
 	clear
 	@cockpitdecks-cli --demo --fixed -p $(DEV_PACKAGES)
 
+flight:
+	clear
+	@cockpitdecks-cli -p $(DEV_PACKAGES)
+
 keep:
 	@mkdir $(TEMPDIR)
 	@mv events.json datarefs.json webapi-commands.json webapi-datarefs.json webapi.log variable-database-dump.yaml $(TEMPDIR)

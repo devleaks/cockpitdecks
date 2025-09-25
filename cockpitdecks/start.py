@@ -366,9 +366,11 @@ if ENV_PATH is not None:
     COCKPITDECKS_PATH = add_env(COCKPITDECKS_PATH, ENV_PATH)
 
 # Append X-Plane regular aircraft paths
+AIRCRAFT_FOLDERS = ["Laminar Research", "Extra Aircraft", "Airbus"]
+
 if SIMULATOR_HOME is not None and SIMULATOR_NAME == "X-Plane":
     COCKPITDECKS_PATH = add_env(
-        COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", "Extra Aircraft"), os.path.join(SIMULATOR_HOME, "Aircraft", "Laminar Research")]
+        COCKPITDECKS_PATH, [os.path.join(SIMULATOR_HOME, "Aircraft", d) for d in AIRCRAFT_FOLDERS]
     )
 
 environment[ENVIRON_KW.COCKPITDECKS_PATH.value] = COCKPITDECKS_PATH

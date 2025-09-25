@@ -122,7 +122,7 @@ class Activation(VariableListener):
 
         # Datarefs
         # Note on set-dataref: The activation will set the dataref value
-        # to the value of the activatiuon but it will NOT write it to X-Plane.
+        # to the value of the activation but it will NOT write it to X-Plane.
         # Therefore, here, it is not a SetDataref instruction that is built,
         # but rather a explicit "on-demand" write when necessary.
         self.activation_requires_modification_set_dataref = False

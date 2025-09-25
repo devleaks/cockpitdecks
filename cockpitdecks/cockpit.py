@@ -120,7 +120,7 @@ LOG_SIMULATOR_VARIABLE_EVENTS = False  # Do not log dataref events (numerous, ca
 
 class CockpitInstruction(Instruction):
     """
-    An Instruction to be performed by Cockpitdekcs itself like:
+    An Instruction to be performed by Cockpitdecks itself like:
     - Change page
     - Reload decks
     - Stop
@@ -398,6 +398,76 @@ class CockpitPlaySoundInstruction(CockpitInstruction):
         else:
             logger.warning("no sound to play")
 
+# class SetVariable(CockpitInstruction):
+#     """
+#     Instruction to update the value of a dataref in X-Plane simulator.
+
+#     We only use XPlaneInstruction._execute().
+#     """
+
+#     INSTRUCTION_NAME = "set-variable"
+
+#     def __init__(self, cockpit: Cockpit, name: str, instruction_block: dict) -> None:
+#         CockpitInstruction.__init__(
+#             self,
+#             name=self.INSTRUCTION_NAME,
+#             cockpit=cockpit,
+#             delay=instruction_block.get(CONFIG_KW.DELAY.value, 0.0),
+#             condition=instruction_block.get(CONFIG_KW.CONDITION.value),
+#         )
+
+#         # 1. Variable to set
+#         self.path = path  # some/dataref/to/set
+#         self._variable = cockpit.get_variable(path, factory=cockpit)
+
+#         # 2. Value to set
+#         # Case 1: Generic, non computed static fixed value
+#         self._value = value
+
+#         # Case 2: Formula for numeric value
+#         self._formula = formula
+#         self.formula = None
+#         if self._formula is not None:
+#             self.formula = Formula(owner=cockpit, formula=formula)  # no button, no formula?
+
+#         # Case 3: Text value for string
+#         self._text_value = text_value
+#         self.text_value = None
+#         if self._text_value is not None:
+#             self.text_value = StringWithVariables(owner=cockpit, message=self._text_value, name=f"{type(self).__name__}({self.path})")
+
+#         if self.formula is not None and self.text_value is not None:
+#             logger.warning(f"{type(self).__name__} for {self.path} has both formula and text value")
+
+#     def __str__(self) -> str:
+#         return "set-variable: " + self.name
+
+#     @property
+#     def value(self):
+#         if self.formula is not None:
+#             if self.text_value is not None:
+#                 logger.warning(f"{type(self).__name__} for {self.path} has both formula and text value, returning formula (text value ignored)")
+#             return self.formula.value
+#         if self.text_value is not None:
+#             return self.text_value.value
+#         return self._value
+
+#     @value.setter
+#     def value(self, value):
+#         # Set static value
+#         self._value = value
+
+#     @property
+#     def valid(self) -> bool:
+#         return isinstance(self._variable, Variable)
+
+#     def _execute(self) -> bool:
+#         """Execute command through API supplied at creation"""
+#         if not self.valid:
+#             logger.error(f"set dataref command is invalid ({self.path})")
+#             return False
+#         self._variable.value = self.value
+#         return True
 
 # #################################
 # Aircraft change detection

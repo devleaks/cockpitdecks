@@ -289,7 +289,8 @@ class StringWithVariables(Variable, VariableListener):
             value = default
             varname = token[2:-1]  # ${X} -> X
 
-            if token == f"${{{CONFIG_KW.FORMULA.value}}}":  # ${formula} gets replaced by the result of the formula:
+            # ${formula} gets replaced by the result of the formula:
+            if token == f"${{{CONFIG_KW.FORMULA.value}}}":
                 value = self.get_formula_result(default=default)
             elif Variable.is_internal_variable(varname):
                 value = self.get_internal_variable_value(varname, default=default)
