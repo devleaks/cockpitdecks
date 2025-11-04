@@ -36,7 +36,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
 
     PARAMETERS = {
         "speed": {"type": "integer", "prompt": "Refresh weather (seconds)"},
-        "Refresh location": {"type": "integer", "prompt": "Refresh location (seconds)"},
+        "refresh-location": {"type": "integer", "prompt": "Refresh location (seconds)"},
     }
 
     def __init__(self, button: "Button"):

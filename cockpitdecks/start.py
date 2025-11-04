@@ -27,6 +27,7 @@ import ipaddress
 
 from enum import Enum
 
+from cockpitdecks import constant
 from flask import Flask, render_template, send_from_directory, send_file, request, abort
 from simple_websocket import Server, ConnectionClosed
 
@@ -524,6 +525,14 @@ def button_definition():
     page = request.args.get("page")
     index = request.args.get("index")
     return cockpit.load_button(deck, layout, page, index)
+
+
+# Button designer - SVELTE
+#
+@app.route("/capabilities", methods=("GET", "POST"))
+def capabilities():
+    l = cockpit.get_capabilities()
+    return l
 
 
 # Deck designer

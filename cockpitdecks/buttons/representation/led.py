@@ -22,6 +22,10 @@ class LED(Representation):
     REPRESENTATION_NAME = "led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.LED
 
+    PARAMETERS = {
+        "led": {"type": "string", "prompt": "LED", "default-value": "single"},
+    }
+
     def __init__(self, button: "Button"):
         Representation.__init__(self, button=button)
 

@@ -13,13 +13,14 @@ import json
 import itertools
 
 from queue import Queue
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Set
 from datetime import datetime
 
 import importlib
 import pkgutil
 
 # External packages
+from cockpitdecks.buttons import representation
 from packaging.requirements import Requirement
 
 from PIL import Image, ImageFont
@@ -688,7 +689,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
                         logger.info(f"loading package {package}")
                     package = importlib.import_module(package)
                 except ModuleNotFoundError:
-                    logger.warning(f"package {package} not found, ignored")
+                    logger.warning(f"package {package} not found, ignored (may be path to module was not supplied or is not correct?)")
                     return {}
 
             results = {}
@@ -742,7 +743,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         """
         Loads extensions, then build lists of available resources (simulators, decks, etc.)
         """
-        show_details = self._environ.verbose
+        show_details = True  # self._environ.verbose
 
         self.add_extensions(trace_ext_loading=show_details)
 
@@ -1726,6 +1727,12 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         logger.info(f"no livery path for aircraft {self.aircraft._path}")
         return None
 
+    def scan_for_aircrafts(self) -> Set:
+        ac = set()
+        for d in self.cockpitdecks_path:
+            ac = ac.union(set(glob.glob(os.path.join(d, "**", CONFIG_FOLDER), recursive=True)))
+        return ac
+
     def variable_changed(self, data: Variable):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
@@ -2321,8 +2328,8 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         )
 
     def refresh_deck(self, deck):
-        payload = {"code": 1, "deck": name, "meta": {"ts": datetime.now().timestamp()}}
-        self.send(deck=name, payload=payload)
+        payload = {"code": 1, "deck": deck, "meta": {"ts": datetime.now().timestamp()}}
+        self.send(deck=deck, payload=payload)
 
     def refresh_all_decks(self):
         for name in self.virtual_decks:
@@ -2409,6 +2416,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     def get_button_details(self, deck, index):
         deck = self.decks.get(deck)
         if deck is None:
+            logger.warning(f"not a valid deck {deck}")
+            return {}
+        if index not in deck.deck_type.valid_indices():
+            logger.warning(f"not a valid index {index} for {deck}")
             return {}
         return {
             "deck": deck.name,
@@ -2417,6 +2428,90 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             "activations": list(deck.deck_type.valid_activations(index, source=self)),
             "representations": list(deck.deck_type.valid_representations(index, source=self)),
         }
+
+    def get_capabilities(self):
+        cap = {}
+
+        # Activations: name: {param: paramdesc}
+        a = {}
+        for k in self.all_activations:
+            a[k] = self.all_activations.get(k).parameters()
+        cap["activations"] = a
+
+        # Representations: name: {param: paramdesc}
+        a = {}
+        for k in self.all_representations:
+            a[k] = self.all_representations.get(k).parameters()
+        cap["representations"] = a
+        for k in self.all_representations:
+            a[k] = self.all_representations.get(k).parameters()
+
+        # Resources (for LOV)
+        cap["fonts"] = list(self.fonts.keys())
+        cap["icons"] = list(self.icons.keys())
+        cap["sounds"] = list(self.sounds.keys())
+
+        # Decks
+        d = {}
+        for k, v in self.aircraft.decks.items():
+            # doing pages
+            p = {}
+            for pk, pv in v.pages.items():
+                # doing buttons
+                b = {}
+                for bk, bv in pv.buttons.items():
+                    b[bk] = bv._config
+                p[pk] = b
+            d[k] = {
+                "name": v.name,
+                "type": v.deck_type.name,
+                "layout": v.layout,
+                "default_page": v.home_page_name,  # list(v.pages.keys()),
+                "pages": p,  # list(v.pages.keys()),
+                "virtual": v.is_virtual_deck(),
+            }
+        cap["decks"] = d
+
+        # Deck types
+        d = {}
+        for k, v in self.aircraft.deck_types.items():
+            if type(v) is DeckType:
+                # doing buttons
+                b = {}
+                for bt in v.valid_indices():
+                    b[bt] = {
+                        "activations": list(v.valid_activations(bt, source=self)),
+                        "representations": list(v.valid_representations(bt, source=self)),
+                    }
+                d[k] = {
+                    "name": v.name,
+                    "indices": v.valid_indices(),
+                    "buttons": b,
+                    # per button:
+                    # - valid_activation
+                    # - valid_representation
+                }
+        for k, v in self.aircraft.virtual_deck_types.items():
+            if type(v) is DeckType:
+                # doing buttons
+                b = {}
+                for bt in v.valid_indices():
+                    b[bt] = {
+                        "activations": list(v.valid_activations(bt, source=self)),
+                        "representations": list(v.valid_representations(bt, source=self)),
+                    }
+                d[k] = {
+                    "name": v.name,
+                    "indices": v.valid_indices(),
+                    "buttons": b,
+                    # per button:
+                    # - valid_activation
+                    # - valid_representation
+                }
+        cap["deck_types"] = d
+        # with open("a.yaml", "w") as fp:
+        #     yaml.dump(cap, fp)
+        return cap
 
     def get_activation_parameters(self, name, index=None):
         return self.all_activations.get(name).parameters()

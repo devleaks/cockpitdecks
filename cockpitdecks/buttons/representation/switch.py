@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 
 from cockpitdecks.resources.color import convert_color, grey
 from .draw import DrawBase, ICON_SIZE  # explicit Icon from file to avoid circular import
+from .parameters import PARAM_BTN_COMMON, PARAM_BTN_SWITCH, PARAM_BTN_CIRCULAR_SWITCH, PARAM_BTN_PUSH, PARAM_BTN_KNOB
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -56,6 +57,8 @@ LABEL_COLOR = grey(255)
 class SwitchBase(DrawBase):
 
     REPRESENTATION_NAME = "switch-base"
+
+    PARAMETERS = DrawBase.PARAMETERS | PARAM_BTN_COMMON
 
     def __init__(self, button: "Button", switch_type: str):
         DrawBase.__init__(self, button=button)
@@ -143,6 +146,8 @@ class SwitchBase(DrawBase):
 class CircularSwitch(SwitchBase):
 
     REPRESENTATION_NAME = "circular-switch"
+
+    PARAMETERS = SwitchBase.PARAMETERS | PARAM_BTN_CIRCULAR_SWITCH
 
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="circular-switch")
@@ -441,6 +446,8 @@ class CircularSwitch(SwitchBase):
 class Switch(SwitchBase):
 
     REPRESENTATION_NAME = "switch"
+
+    PARAMETERS = SwitchBase.PARAMETERS | PARAM_BTN_SWITCH
 
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="switch")
@@ -1027,6 +1034,8 @@ class PushSwitch(SwitchBase):
 
     REPRESENTATION_NAME = "push-switch"
 
+    PARAMETERS = SwitchBase.PARAMETERS | PARAM_BTN_PUSH
+
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="push-switch")
 
@@ -1093,6 +1102,8 @@ class PushSwitch(SwitchBase):
 class Knob(SwitchBase):
 
     REPRESENTATION_NAME = "knob"
+
+    PARAMETERS = PushSwitch.PARAMETERS | PARAM_BTN_KNOB
 
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="knob")

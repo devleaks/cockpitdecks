@@ -11,6 +11,7 @@ from cockpitdecks import ID_SEP, CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREF
 from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider, Variable, VariableListener
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
+from .parameters import PARAM_DESCRIPTION, PARAM_DECK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -56,7 +57,7 @@ class ActivationBase(ABC):
 # ##########################################
 # ACTIVATION
 #
-class Activation(VariableListener):
+class Activation(ActivationBase, VariableListener):
     """
     Base class for all activation mechanism.
     Can be used for no-operation activation on display-only button.
@@ -66,10 +67,15 @@ class Activation(VariableListener):
     REQUIRED_DECK_ACTIONS: DECK_ACTIONS | List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
     # One cannot request an activiation from a deck button that does not have the capability of the action
     # requested by the activation.
-    PARAMETERS = {}
+
+    # Parameters of base class Activation (name "none") contains global parameters, common to all buttons.
+    # They are called the General or Global or Descriptive parameters.
+    PARAMETERS = ActivationBase.PARAMETERS | PARAM_DESCRIPTION | PARAM_DECK
 
     @classmethod
     def parameters(cls) -> dict:
+        # See https://stackoverflow.com/questions/1817183/using-super-with-a-class-method
+        # To merge parent class + this class
         return cls.PARAMETERS
 
     @classmethod
@@ -86,6 +92,7 @@ class Activation(VariableListener):
 
         self.button = button
         self.button.deck.cockpit.set_logging_level(__name__)
+        ActivationBase.__init__(self)
         VariableListener.__init__(self, name=self.name())
         if type(self.REQUIRED_DECK_ACTIONS) not in [list, tuple]:
             self.REQUIRED_DECK_ACTIONS = [self.REQUIRED_DECK_ACTIONS]

@@ -324,6 +324,7 @@ class GaugeIcon(DrawBase):
 
     PARAMETERS = {
         "top-line-color": {"type": "string", "prompt": "Top line color"},
+        "gauge-size": {"label": "Gauge Size", "type": "int"},
     }
 
     def __init__(self, button: "Button"):

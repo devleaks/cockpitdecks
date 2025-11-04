@@ -25,7 +25,7 @@ class DrawAnimation(DrawBase):
 
     REPRESENTATION_NAME = "draw-animation"
 
-    PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
+    PARAMETERS = DrawBase.PARAMETERS | {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)

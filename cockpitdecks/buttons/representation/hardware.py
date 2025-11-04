@@ -30,6 +30,12 @@ class HardwareRepresentation(DrawBase):
 
     REPRESENTATION_NAME = "hardware-icon"
 
+    PARAMETERS = DrawBase.PARAMETERS | {
+        "highlight-color": {"type": "color", "prompt": "Highlight Color"},
+        "flash-color": {"type": "color", "prompt": "Flash Color"},
+        "flash-duration": {"type": "int", "prompt": "Flash Duration (msecs)"},
+    }
+
     def __init__(self, button: "Button"):
         button._config[NO_ICON] = True
         DrawBase.__init__(self, button=button)
@@ -67,6 +73,16 @@ class VirtualEncoder(HardwareRepresentation):
     """
 
     REPRESENTATION_NAME = "virtual-encoder"
+
+    PARAMETERS = {
+        "rotation-start": {"type": "int", "prompt": "Rotation start (°)"},
+        "rotation-step": {"type": "int", "prompt": "Rotation steps"},
+        "knob-fill-color": {"type": "color", "prompt": "Knob fill color"},
+        "knob-stroke-color": {"type": "color", "prompt": "Knob stroke color"},
+        "knob-stroke-width": {"type": "int", "prompt": "Knob stroke width"},
+        "mark-fill-color": {"type": "color", "prompt": "Mark fsill color"},
+        "mark-size": {"type": "int", "prompt": "Mark size"},
+    }
 
     def __init__(self, button: "Button"):
         HardwareRepresentation.__init__(self, button=button)
@@ -122,6 +138,11 @@ class VirtualLED(HardwareRepresentation):
     """
 
     REPRESENTATION_NAME = "virtual-led"
+
+    PARAMETERS = {
+        "color": {"type": "color", "prompt": "Color"},
+        "off-color": {"type": "color", "prompt": "OFF color"},
+    }
 
     def __init__(self, button: "Button"):
         HardwareRepresentation.__init__(self, button=button)

@@ -14,6 +14,7 @@ from cockpitdecks.variable import Variable, VariableListener
 from .draw import DrawBase, ICON_SIZE
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
+from .parameters import PARAM_CHART_DATA
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -256,7 +257,8 @@ class ChartIcon(DrawAnimation):
     REPRESENTATION_NAME = "chart"
 
     PARAMETERS = {
-        "data": {"type": "string", "prompt": "Data"},
+        "rule-height": {"type": "integer", "prompt": "Rule height"},
+        "charts": {"type": "sub", "list": PARAM_CHART_DATA, "prompt": "Data", "min": 1, "max": 3},
     }
 
     MIN_UPDATE_TIME = 0.5  # sec

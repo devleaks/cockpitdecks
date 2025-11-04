@@ -28,6 +28,13 @@ class DrawBase(IconBase):
     ICON_SIZE = ICON_SIZE
     TRANSPARENT_PNG_COLOR = TRANSPARENT_PNG_COLOR
 
+    PARAMETERS = IconBase.PARAMETERS | {
+        "up": {"type": "integer", "prompt": "Up"},
+        "down": {"type": "integer", "prompt": "Down"},
+        "Left": {"type": "integer", "prompt": "Left"},
+        "Right": {"type": "integer", "prompt": "Right"},
+    }
+
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
 
@@ -117,10 +124,19 @@ DECOR = {
     "N": "T right",
 }
 
+DECOR_TYPES = ["line", "segment"]
+
 
 class Decor(DrawBase):
 
     REPRESENTATION_NAME = "decor"
+
+    PARAMETERS = DrawBase.PARAMETERS | {
+        "type": {"type": "string", "prompt": "Type", "lov": DECOR_TYPES},
+        "code": {"type": "string", "prompt": "Code"},
+        "width": {"type": "integer", "prompt": "Width"},
+        "color": {"type": "color", "prompt": "Color"},
+    }
 
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
@@ -494,8 +510,6 @@ class Decor(DrawBase):
         s = int(r * math.sin(math.radians(45)))
         tl = [cw - r, ch - r]
         br = [cw + r, ch + r]
-
-        DECOR_TYPES = ["line", "segment"]
 
         if self.type not in DECOR_TYPES:
             draw.line([(0, ch), (FULL_WIDTH, ch)], fill="red", width=int(ICON_SIZE / 2))

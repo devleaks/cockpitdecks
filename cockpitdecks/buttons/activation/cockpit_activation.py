@@ -7,7 +7,7 @@ import random
 import subprocess
 
 from cockpitdecks.event import PushEvent
-from cockpitdecks import DECK_ACTIONS, CONFIG_KW, ID_SEP, instruction
+from cockpitdecks import DECK_ACTIONS, CONFIG_KW, ID_SEP
 from .activation import Activation
 
 # from ...cockpit import CockpitInstruction
@@ -18,6 +18,19 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 INSTRUCTION_PREFIX = "cockpitdecks-"
+
+
+class CockpitActivation(Activation):
+    """
+    Base class for all deck activations.
+    """
+
+    ACTIVATION_NAME = "cockpit"
+
+    PARAMETERS = Activation.PARAMETERS
+
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
 
 class LoadPage(Activation):
@@ -32,7 +45,7 @@ class LoadPage(Activation):
 
     PARAMETERS = {
         "page": {"type": "string", "prompt": "Page", "default-value": "back", "mandatory": True},
-        "deck": {"type": "string", "prompt": "Remote deck", "optional": True},
+        "deck": {"type": "string", "prompt": "Remote deck"},
     }
 
     def __init__(self, button: "Button"):
@@ -165,10 +178,10 @@ class Inspect(Activation):
 
     PARAMETERS = {
         "what": {
-            "type": "choice",
+            "type": "string",
             "prompt": "What to inspect",
             "default-value": "status",
-            "choices": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"],
+            "lov": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"],
         }
     }
 
@@ -273,7 +286,7 @@ class StartSimulator(Activation):
 
 class Obs(Activation):
     """
-    Stops all decks.
+    Execute observable instruction (to enable, disable)
     """
 
     ACTIVATION_NAME = "obs"
@@ -285,10 +298,10 @@ class Obs(Activation):
             "prompt": "Observable",
         },
         "action": {
-            "type": "choice",
+            "type": "string",
             "prompt": "Action",
             "default-value": "toggle",
-            "choices": ["toggle", "enable", "disable"],
+            "lov": ["toggle", "enable", "disable"],
         },
     }
 
@@ -324,38 +337,38 @@ class Obs(Activation):
         return "\n\r".join(["The button enable, disable, or toggle (enable/disable) an observable."])
 
 
-class Random(Activation):
-    """
-    Set the value of the button to a float random number between 0 and 1..
-    """
+# class Random(Activation):
+#     """
+#     Set the value of the button to a float random number between 0 and 1..
+#     """
 
-    ACTIVATION_NAME = "random"
-    REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH, DECK_ACTIONS.ENCODER]
+#     ACTIVATION_NAME = "random"
+#     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH, DECK_ACTIONS.ENCODER]
 
-    PARAMETERS = {}
+#     PARAMETERS = {}
 
-    def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+#     def __init__(self, button: "Button"):
+#         Activation.__init__(self, button=button)
 
-        # Activation arguments
-        self.random_value = 0.0
+#         # Activation arguments
+#         self.random_value = 0.0
 
-    def activate(self, event) -> bool:
-        if not self.can_handle(event):
-            return False
-        if event.pressed:
-            self.random_value = random.random()
-        return True  # normal termination
+#     def activate(self, event) -> bool:
+#         if not self.can_handle(event):
+#             return False
+#         if event.pressed:
+#             self.random_value = random.random()
+#         return True  # normal termination
 
-    def get_state_variables(self) -> dict:
-        s = super().get_state_variables()
-        if s is None:
-            s = {}
-        s = s | {"random": self.random_value}
-        return s
+#     def get_state_variables(self) -> dict:
+#         s = super().get_state_variables()
+#         if s is None:
+#             s = {}
+#         s = s | {"random": self.random_value}
+#         return s
 
-    def describe(self) -> str:
-        """
-        Describe what the button does in plain English
-        """
-        return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])
+#     def describe(self) -> str:
+#         """
+#         Describe what the button does in plain English
+#         """
+#         return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])

@@ -10,6 +10,7 @@ from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 from .representation import Representation
 from cockpitdecks.strvar import TextWithVariables
+from .parameters import PARAM_TEXT
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 #
 #
 NO_ICON = "no-icon"
-VU = "VU"
+VU = "VU"  # virtual unit code number
 
 
 class IconBase(Representation):
@@ -33,7 +34,7 @@ class IconBase(Representation):
     REPRESENTATION_NAME = "icon-base-do-not-use"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
-    PARAMETERS = {}
+    PARAMETERS = {"cockpit-color": {"type": "color", "prompt": "Cockpit color"}, "cockpit-texture": {"type": "icon", "prompt": "Cockpit Texture"}}
 
     def __init__(self, button: "Button"):
         self._label = None
@@ -44,7 +45,7 @@ class IconBase(Representation):
         if self._config.get(CONFIG_KW.LABEL.value) is not None:
             self._label = TextWithVariables(owner=button, config=self._config, prefix=CONFIG_KW.LABEL.value)
 
-        self.label_vu = self._config.get("vu")
+        self.label_vu = self._config.get(VU.lower())
         self.label_vu_position = self._config.get("vu-position", "tr")  # t/b, l/r
 
         self.cockpit_color = button.get_attribute("cockpit-color")
@@ -245,7 +246,7 @@ class Icon(IconBase):
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
     # PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
-    PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}}
+    PARAMETERS = IconBase.PARAMETERS | {"icon": {"type": "icon", "prompt": "Icon"}}
 
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
@@ -399,7 +400,7 @@ class IconColor(IconBase):
 
     REPRESENTATION_NAME = "icon-color"
 
-    PARAMETERS = {"color": {"type": "string", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
+    PARAMETERS = IconBase.PARAMETERS | {"color": {"type": "string", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
 
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
@@ -420,13 +421,7 @@ class IconText(IconColor):
 
     REPRESENTATION_NAME = "text"
 
-    PARAMETERS = {
-        "text": {"type": "string", "prompt": "Text"},
-        "text-font": {"type": "font", "prompt": "Font"},
-        "text-size": {"type": "integer", "prompt": "Size"},
-        "text-color": {"type": "string", "prompt": "Color"},
-        "text-position": {"type": "choice", "prompt": "Position", "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
-    }
+    PARAMETERS = IconBase.PARAMETERS | PARAM_TEXT
 
     def __init__(self, button: "Button"):
         text_config = button._config.get(CONFIG_KW.TEXT.value)  # where to get text from
@@ -495,19 +490,7 @@ class MultiTexts(IconText):
 
     REPRESENTATION_NAME = "multi-texts"
 
-    PARAMETERS = {
-        "multi-texts": {
-            "type": "multi",
-            "multi": {
-                "text": {"type": "string", "prompt": "Text"},
-                "text-font": {"type": "font", "prompt": "Font"},
-                "text-size": {"type": "integer", "prompt": "Size"},
-                "text-color": {"type": "string", "prompt": "Color"},
-                "text-position": {"type": "choice", "prompt": "Position", "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
-            },
-            "prompt": "Text list",
-        }
-    }
+    PARAMETERS = IconBase.PARAMETERS | {"multi-texts": {"type": "sub", "list": PARAM_TEXT, "min": 1, "max": 0, "prompt": "Texts"}}
 
     def __init__(self, button: "Button"):
         IconText.__init__(self, button=button)
@@ -574,7 +557,7 @@ class MultiIcons(Icon):
 
     REPRESENTATION_NAME = "multi-icons"
 
-    PARAMETERS = {"multi-icon": {"type": "multi", "multi": {"texture": {"type": "icon", "prompt": "Icon"}}, "prompt": "Icon list"}}
+    PARAMETERS = {"multi-icons": {"type": "sub", "list": {"icon": {"type": "icon", "prompt": "Icon"}}, "min": 1, "max": 0, "prompt": "Icons"}}
 
     def __init__(self, button: "Button"):
         Icon.__init__(self, button=button)

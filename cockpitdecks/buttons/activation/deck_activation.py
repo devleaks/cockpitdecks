@@ -12,10 +12,25 @@ from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .activation import Activation
 
+from .parameters import PARAM_DECK, PARAM_INITIAL_VALUE, PARAM_PUSH_AUTOREPEAT, PARAM_COMMAND_BLOCK
+
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
 # logger.setLevel(SPAM_LEVEL)
 # logger.setLevel(logging.DEBUG)
+
+
+class DeckActivation(Activation):
+    """
+    Base class for all deck activations.
+    """
+
+    ACTIVATION_NAME = "deck"
+
+    PARAMETERS = Activation.PARAMETERS | PARAM_DECK
+
+    def __init__(self, button: "Button"):
+        Activation.__init__(self, button=button)
 
 
 #
@@ -23,7 +38,7 @@ logger = logging.getLogger(__name__)
 # PUSH-BUTTON TYPE ACTIVATIONS
 #
 #
-class Push(Activation):
+class Push(DeckActivation):
     """
     Defines a Push activation.
     The supplied command is executed each time a button is pressed.
@@ -32,23 +47,14 @@ class Push(Activation):
     ACTIVATION_NAME = "push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {"type": "string", "prompt": "Command", "mandatory": True},
-        "auto-repeat": {"type": "boolean", "prompt": "Auto-repeat"},
-        "auto-repeat-delay": {"type": "float", "prompt": "Auto-repeat delay", "hint": "Delay after press before repeat"},
-        "auto-repeat-speed": {"type": "float", "prompt": "Auto-repeat speed", "hint": "Speed of repeat"},
-        "initial-value": {
-            "type": "integer",
-            "prompt": "Initial value",
-        },
-    }
+    PARAMETERS = DeckActivation.PARAMETERS | PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
     AUTO_REPEAT_SPEED = 0.2  # seconds
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        DeckActivation.__init__(self, button=button)
 
         # Activation arguments
         # Command
@@ -262,13 +268,15 @@ class OnOff(Activation):
     ACTIVATION_NAME = "onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {"type": "string", "prompts": ["Command to turn on", "Command to turn off"], "mandatory": True, "repeat": 2},
-        "initial-value": {
-            "type": "integer",
-            "prompt": "Initial value",
-        },
-    }
+    PARAMETERS = PARAM_INITIAL_VALUE | {"commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2}}
+
+    # PARAMETERS = PARAM_INITIAL_VALUE | {
+    #     "commands": {"type": "sub", "list": [
+    #             {"name": "command1", "type": "string", "prompt": "Command to turn on", "mandatory": True},
+    #             {"name": "command2", "type": "string", "prompt": "Command to turn off", "mandatory": True},
+    #         ]
+    #     }
+    # }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -404,8 +412,9 @@ class ShortOrLongpress(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {
-        "command short": {"type": "string", "prompt": "Command", "mandatory": True},
-        "command long": {"type": "string", "prompt": "Command", "mandatory": True},
+        "command-short": {"type": "string", "prompt": "Command short press", "mandatory": True},
+        "command-long": {"type": "string", "prompt": "Command long press", "mandatory": True},
+        "long-time": {"type": "float", "prompt": "Time"},
     }
 
     def __init__(self, button: "Button"):
@@ -452,7 +461,7 @@ class ShortOrLongpress(Activation):
             [
                 f"The button executes {self._commands[0]} when it is activated shortly (pressed).",
                 f"The button ends command {self._commands[1]} when it is de-activated after a long press (released after more than {self.long_time}secs.).",
-                f"(Begin and end command is a special terminology (phase of execution of a command) of X-Plane.)",
+                "(Begin and end command is a special terminology (phase of execution of a command) of X-Plane.)",
             ]
         )
 
@@ -468,13 +477,9 @@ class UpDown(Activation):
     ACTIVATION_NAME = "updown"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {"type": "string", "prompts": ["Command up", "Command down"], "mandatory": True, "repeat": 2},
+    PARAMETERS = PARAM_INITIAL_VALUE | {
+        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2},
         "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
-        "initial-value": {
-            "type": "integer",
-            "prompt": "Initial value",
-        },
     }
 
     def __init__(self, button: "Button"):
@@ -666,7 +671,10 @@ class Encoder(Activation, EncoderProperties):
     ACTIVATION_NAME = "encoder"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
-    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 2}}
+    PARAMETERS = PARAM_INITIAL_VALUE | {
+        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2},
+        "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
+    }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -740,7 +748,9 @@ class EncoderPush(Push, EncoderProperties):
     ACTIVATION_NAME = "encoder-push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 3}}
+    PARAMETERS = PARAM_INITIAL_VALUE | {
+        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 3, "max": 3},
+    }
 
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
@@ -871,7 +881,9 @@ class EncoderOnOff(OnOff, EncoderProperties):
     ACTIVATION_NAME = "encoder-onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4}}
+    PARAMETERS = PARAM_INITIAL_VALUE | {
+        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
+    }
 
     def __init__(self, button: "Button"):
         OnOff.__init__(self, button=button)
@@ -989,12 +1001,8 @@ class EncoderValue(OnOff, EncoderProperties):
     ACTIVATION_NAME = "encoder-value"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4},
-        "initial-value": {
-            "type": "integer",
-            "prompt": "Initial value",
-        },
+    PARAMETERS = PARAM_INITIAL_VALUE | {
+        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
 
     def __init__(self, button: "Button"):
@@ -1380,6 +1388,8 @@ class Swipe(Activation):
     ACTIVATION_NAME = "swipe"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
+    PARAMETERS = PARAM_COMMAND_BLOCK
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
@@ -1416,7 +1426,9 @@ class EncoderToggle(Activation, EncoderProperties):
     ACTIVATION_NAME = "encoder-toggle"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True, "repeat": 4}}
+    PARAMETERS = PARAM_INITIAL_VALUE | {
+        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
+    }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -1522,16 +1534,7 @@ class Mosaic(Activation):
     ACTIVATION_NAME = "mosaic"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.SWIPE, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command": {"type": "string", "prompt": "Command", "mandatory": True},
-        "auto-repeat": {"type": "boolean", "prompt": "Auto-repeat"},
-        "auto-repeat-delay": {"type": "float", "prompt": "Auto-repeat delay", "hint": "Delay after press before repeat"},
-        "auto-repeat-speed": {"type": "float", "prompt": "Auto-repeat speed", "hint": "Speed of repeat"},
-        "initial-value": {
-            "type": "integer",
-            "prompt": "Initial value",
-        },
-    }
+    PARAMETERS = PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds

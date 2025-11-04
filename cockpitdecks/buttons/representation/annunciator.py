@@ -366,21 +366,28 @@ class Annunciator(DrawBase):
 
     PARAMETERS = {
         "icon": {"type": "icon", "prompt": "Icon"},
-        "type": {"type": "choice", "prompt": "Type", "choices": ["A", "B", "C", "D", "E", "F"]},
-        "style": {"type": "choice", "prompt": "Style", "choices": ["Korry", "Vivisun"]},
-        "color": {"type": "string", "prompt": "Background color"},
-        "texture": {"type": "icon", "prompt": "Background texture"},
+        "type": {"type": "string", "prompt": "Type", "lov": ["A", "B", "C", "D", "E", "F"]},
+        # "style": {"type": "string", "prompt": "Style", "lov": ["Korry", "Vivisun"]},
+        # "color": {"type": "string", "prompt": "Background color"},
+        # "texture": {"type": "icon", "prompt": "Background texture"},
+        "annunciator-color": {"label": "Annunciator Color", "type": "color"},
+        "annunciator-style": {"label": "Annunciator Style", "type": "string"},
+        "annunciator-texture": {"label": "Annunciator Texture", "type": "icon"},
+        "light-off-intensity": {"label": "Light Off Intensity", "type": "string"},
         "annunciator-parts": {
-            "type": "multi",
-            "multi": {
+            "type": "sub",
+            "list": {
+                "name": {"type": "string", "prompt": "Name", "lov": list(AnnunciatorPart.ANNUNCIATOR_PARTS.keys())},
                 "led": {"type": "boolean", "prompt": "LED"},
                 "text": {"type": "string", "prompt": "Text"},
                 "text-font": {"type": "font", "prompt": "Font"},
                 "text-size": {"type": "integer", "prompt": "Size"},
                 "text-color": {"type": "string", "prompt": "Color"},
-                "text-position": {"type": "choice", "prompt": "Position", "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
+                "text-position": {"type": "choice", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
                 "framed": {"type": "boolean", "prompt": "Frame"},
             },
+            "min": 1,
+            "max": 6,
             "prompt": "Parts",
         },
     }
