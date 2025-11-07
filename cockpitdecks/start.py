@@ -529,10 +529,25 @@ def button_definition():
 
 # Button designer - SVELTE
 #
+@app.route("/aircraft-list", methods=("GET", "POST"))
+def aircraft_list():
+    print("yup")
+    l = cockpit.get_aircraft_list()
+    print("yup2", l)
+    return l
+
+
 @app.route("/capabilities", methods=("GET", "POST"))
 def capabilities():
     l = cockpit.get_capabilities()
     return l
+
+
+@app.route("/preview", methods=("GET", "POST"))  # alias to button-designer
+def preview():
+    if request.method == "POST":
+        return cockpit.render_button(request.json)
+    return {"error": "use POST requests only"}
 
 
 # Deck designer

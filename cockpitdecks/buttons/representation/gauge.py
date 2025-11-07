@@ -38,7 +38,7 @@ class TapeIcon(DrawBase):
     REPRESENTATION_NAME = "tape"
 
     PARAMETERS = {
-        "top-line-color": {"type": "string", "prompt": "Top line color"},
+        "top-line-color": {"type": "color", "prompt": "Top line color"},
     }
 
     def __init__(self, button: "Button"):
@@ -323,7 +323,7 @@ class GaugeIcon(DrawBase):
     REPRESENTATION_NAME = "gauge"
 
     PARAMETERS = {
-        "top-line-color": {"type": "string", "prompt": "Top line color"},
+        "top-line-color": {"type": "color", "prompt": "Top line color"},
         "gauge-size": {"label": "Gauge Size", "type": "int"},
     }
 

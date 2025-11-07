@@ -400,7 +400,7 @@ class IconColor(IconBase):
 
     REPRESENTATION_NAME = "icon-color"
 
-    PARAMETERS = IconBase.PARAMETERS | {"color": {"type": "string", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
+    PARAMETERS = IconBase.PARAMETERS | {"color": {"type": "color", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
 
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
@@ -490,7 +490,7 @@ class MultiTexts(IconText):
 
     REPRESENTATION_NAME = "multi-texts"
 
-    PARAMETERS = IconBase.PARAMETERS | {"multi-texts": {"type": "sub", "list": PARAM_TEXT, "min": 1, "max": 0, "prompt": "Texts"}}
+    PARAMETERS = IconBase.PARAMETERS | {"-texts": {"type": "sub", "list": PARAM_TEXT, "min": 1, "max": 0, "prompt": "Texts"}}
 
     def __init__(self, button: "Button"):
         IconText.__init__(self, button=button)
@@ -557,7 +557,7 @@ class MultiIcons(Icon):
 
     REPRESENTATION_NAME = "multi-icons"
 
-    PARAMETERS = {"multi-icons": {"type": "sub", "list": {"icon": {"type": "icon", "prompt": "Icon"}}, "min": 1, "max": 0, "prompt": "Icons"}}
+    PARAMETERS = {"multi-icons": {"type": "sub", "list": {"-icon": {"type": "icon", "prompt": "Icon"}}, "min": 1, "max": 0, "prompt": "Icons"}}
 
     def __init__(self, button: "Button"):
         Icon.__init__(self, button=button)

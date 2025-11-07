@@ -9,7 +9,7 @@ PARAM_TEXT = {
     "text": {"type": "string", "prompt": "Text"},
     "text-font": {"type": "font", "prompt": "Font"},
     "text-size": {"type": "integer", "prompt": "Size"},
-    "text-color": {"type": "string", "prompt": "Color"},
+    "text-color": {"type": "color", "prompt": "Color"},
     "text-position": {"type": "choice", "prompt": "Position", "choices": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
 }
 
@@ -55,6 +55,7 @@ PARAM_BTN_COMMON = {
     "top-stroke-width": {"label": "Top Stroke Width", "type": "int"},
     "tick-color": {"label": "Tick Color", "type": "color"},
     "tick-from": {"label": "Tick From", "type": "string"},
+    "tick-labels": {"type": "sub", "list": {"-label": {"type": "string", "label": "Lbl txt"}}, "min": 1, "max": 0},
     "tick-label-color": {"label": "Tick Label Color", "type": "color"},
     "tick-label-size": {"label": "Tick Label Size", "type": "int"},
     "tick-label-space": {"label": "Tick Label Space", "type": "string"},

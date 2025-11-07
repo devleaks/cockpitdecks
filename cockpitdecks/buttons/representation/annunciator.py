@@ -364,11 +364,11 @@ class Annunciator(DrawBase):
 
     REPRESENTATION_NAME = "annunciator"
 
-    PARAMETERS = {
+    PARAMETERS_ORIG = {
         "icon": {"type": "icon", "prompt": "Icon"},
         "type": {"type": "string", "prompt": "Type", "lov": ["A", "B", "C", "D", "E", "F"]},
         # "style": {"type": "string", "prompt": "Style", "lov": ["Korry", "Vivisun"]},
-        # "color": {"type": "string", "prompt": "Background color"},
+        # "color": {"type": "color", "prompt": "Background color"},
         # "texture": {"type": "icon", "prompt": "Background texture"},
         "annunciator-color": {"label": "Annunciator Color", "type": "color"},
         "annunciator-style": {"label": "Annunciator Style", "type": "string"},
@@ -382,7 +382,7 @@ class Annunciator(DrawBase):
                 "text": {"type": "string", "prompt": "Text"},
                 "text-font": {"type": "font", "prompt": "Font"},
                 "text-size": {"type": "integer", "prompt": "Size"},
-                "text-color": {"type": "string", "prompt": "Color"},
+                "text-color": {"type": "color", "prompt": "Color"},
                 "text-position": {"type": "choice", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
                 "framed": {"type": "boolean", "prompt": "Frame"},
             },
@@ -390,6 +390,47 @@ class Annunciator(DrawBase):
             "max": 6,
             "prompt": "Parts",
         },
+    }
+
+    PARAMETERS = {
+        "icon": {"type": "icon", "prompt": "Icon"},
+        "type": {"type": "string", "prompt": "Type", "lov": ["A", "B", "C", "D", "E", "F"]},
+        # "style": {"type": "string", "prompt": "Style", "lov": ["Korry", "Vivisun"]},
+        # "color": {"type": "color", "prompt": "Background color"},
+        # "texture": {"type": "icon", "prompt": "Background texture"},
+        "annunciator-color": {"label": "Annunciator Color", "type": "color"},
+        "annunciator-style": {"label": "Annunciator Style", "type": "string"},
+        "annunciator-texture": {"label": "Annunciator Texture", "type": "icon"},
+        "light-off-intensity": {"label": "Light Off Intensity", "type": "string"},
+        "annunciator-parts": {
+            "label": "Parts",
+            "type": "sub",
+            "min": 1,
+            "max": 6,
+            "prompt": "Parts",
+            "list": {  # array 1-6 parts
+                # elements in each part
+                "name": {"type": "string", "label": "Part name"},  # LOV of possible parts accoring to name
+                "part-content": {
+                    "name": "part-content",
+                    "label": "Part content",
+                    "type": "sel",
+                    "list": {  # choices of part content
+                        "led": {
+                            "led": {"type": "string", "prompt": "LED", "lov": [l.value for l in ANNUNCIATOR_LED]},
+                        },  # part type LED
+                        "text": {
+                            "text": {"type": "string", "prompt": "Text"},
+                            "text-font": {"type": "font", "prompt": "Font"},
+                            "text-size": {"type": "integer", "prompt": "Size"},
+                            "text-color": {"type": "color", "prompt": "Color"},
+                            "text-position": {"type": "choice", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
+                            "framed": {"type": "boolean", "prompt": "Frame"},
+                        },  # part type TEXT
+                    },
+                },
+            },  # part
+        },  # annunciator-parts
     }
 
     def __init__(self, button: "Button"):

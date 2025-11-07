@@ -1727,12 +1727,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         logger.info(f"no livery path for aircraft {self.aircraft._path}")
         return None
 
-    def scan_for_aircrafts(self) -> Set:
-        ac = set()
-        for d in self.cockpitdecks_path:
-            ac = ac.union(set(glob.glob(os.path.join(d, "**", CONFIG_FOLDER), recursive=True)))
-        return ac
-
     def variable_changed(self, data: Variable):
         """
         This gets called when dataref AIRCRAFT_CHANGE_MONITORING_DATAREF is changed, hence a new aircraft has been loaded.
@@ -2343,6 +2337,27 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     # ###############################################################
     # Button designer (supporting web api)
     #
+    def list_of_aircrafts(self) -> Set:
+        ac = set()
+        for d in self.cockpitdecks_path.split(":"):
+            if d == "/":
+                continue
+            ac = ac.union(set(glob.glob(os.path.join(d, "**", CONFIG_FOLDER), recursive=True)))
+        return ac
+
+    def get_aircraft_list(self) -> dict:
+        ac = self.list_of_aircrafts()
+        ret = []
+        for d in ac:
+            d1 = d[:-11]  # remove /deckconfig
+            i = d1.rindex("/")  # UNIX ONLY, adjust for windows os.sep?
+            if i > 0:
+                d2 = d1[i + 1 :]
+                j = max(0, i - 16)
+                d3 = ".." + d1[j:i]
+                ret.append((d2, d, d3))
+        return ret
+
     def get_assets(self):
         """Collects all assets for button designer
 
@@ -2431,6 +2446,10 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
     def get_capabilities(self):
         cap = {}
+
+        # Aircraft list
+        cap["aircraft-list"] = self.get_aircraft_list()
+        cap["current-aircraft"] = os.path.abspath(os.path.join(self.aircraft.acpath, CONFIG_FOLDER))
 
         # Activations: name: {param: paramdesc}
         a = {}
@@ -2663,9 +2682,9 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
                 exc_info=True,
             )
         if button is None:
-            return {"image": "", "meta": {"error": "no button"}}
+            return {"image": "", "meta": {"error": "failed to create button"}}
         if image is None:
-            return {"image": "", "meta": {"error": "no image"}}
+            return {"image": "", "meta": {"error": "failed to create button representation"}}
         width, height = image.size
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format="PNG")

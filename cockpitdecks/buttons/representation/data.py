@@ -23,25 +23,25 @@ class DataIcon(DrawBase):
     REPRESENTATION_NAME = "data"
 
     PARAMETERS = {
-        "top-line-color": {"type": "string", "prompt": "Top line color"},
+        "top-line-color": {"type": "color", "prompt": "Top line color"},
         "top-line-width": {"type": "string", "prompt": "Top line width"},
         "icon": {"type": "string", "prompt": "Icon name"},
         "icon-size": {"type": "integer", "prompt": "Icon size"},
-        "icon-color": {"type": "string", "prompt": "Icon color"},
+        "icon-color": {"type": "color", "prompt": "Icon color"},
         "data": {"type": "string", "prompt": "Data"},
         "data-format": {"type": "string", "prompt": "Data format (python style)"},
-        "data-font": {"type": "string", "prompt": "Data font"},
+        "data-font": {"type": "font", "prompt": "Data font"},
         "data-size": {"type": "integer", "prompt": "Data font size"},
-        "data-color": {"type": "string", "prompt": "Data color"},
+        "data-color": {"type": "color", "prompt": "Data color"},
         "data-unit": {"type": "string", "prompt": "Data unit"},
         "formula": {"type": "string", "prompt": "Formula"},
         "bottomline": {"type": "string", "prompt": "Bottom line"},
         "bottomline-size": {"type": "integer", "prompt": "Bottom line font size"},
-        "bottomline-color": {"type": "string", "prompt": "Bottom line color"},
+        "bottomline-color": {"type": "color", "prompt": "Bottom line color"},
         "mark": {"type": "string", "prompt": "Mark"},
         "mark-size": {"type": "integer", "prompt": "Mark size"},
-        "mark-font": {"type": "string", "prompt": "Mark font"},
-        "mark-color": {"type": "string", "prompt": "Mark color"},
+        "mark-font": {"type": "font", "prompt": "Mark font"},
+        "mark-color": {"type": "color", "prompt": "Mark color"},
     }
 
     def __init__(self, button: "Button"):

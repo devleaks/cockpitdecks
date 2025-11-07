@@ -6,18 +6,19 @@
 PARAM_DESCRIPTION = {
     "name": {"type": "string", "label": "Name"},
     "label": {"type": "string", "label": "Label"},
-    "label-size": {"type": "string", "label": "Lbl size"},
-    "label-font": {"type": "string", "label": "Lbl font"},
-    "label-position": {"type": "lov", "label": "Lbl position", "lov": ["tl", "tc", "tr", "ml", "mc", "mr", "bl", "bc", "br"]},
-    "label-color": {"type": "string", "label": "Lbl color"},
+    "label-size": {"type": "int", "label": "Lbl size"},
+    "label-font": {"type": "font", "label": "Lbl font", "default": "DIN.ttf"},
+    "label-position": {"type": "lov", "label": "Lbl position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
+    "label-color": {"type": "color", "label": "Lbl color"},
 }
 
 PARAM_INITIAL_VALUE = {
     "initial-value": {"type": "integer", "label": "Initial value"},
+    "option": {"type": "string", "label": "Options (!coded string!)"},
 }
 
 PARAM_DECK = {
-    "sound": {"label": "Sound", "type": "string"},
+    "sound": {"label": "Sound", "type": "sound"},
     "vibrate": {"label": "Vibrate", "type": "string"},
 }
 
