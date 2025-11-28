@@ -1,4 +1,7 @@
 #
+#
+# export COCKPITDECKS_PATH="`pwd`/aircrafts"
+#
 ALL_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_ext /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm /Users/pierre/Developer/fs/cockpitdecks_sd /Users/pierre/Developer/fs/cockpitdecks_ld /Users/pierre/Developer/fs/cockpitdecks_bx
 DEV_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_ext /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm /Users/pierre/Developer/fs/cockpitdecks_sd
 MIN_PACKAGES = /Users/pierre/Developer/fs/cockpitdecks_xp /Users/pierre/Developer/fs/cockpitdecks_tl /Users/pierre/Developer/fs/cockpitdecks_wm

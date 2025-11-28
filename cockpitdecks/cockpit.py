@@ -11,6 +11,7 @@ import threading
 import pickle
 import json
 import itertools
+import re
 
 from queue import Queue
 from typing import Dict, Tuple, Set
@@ -51,6 +52,7 @@ from cockpitdecks import (
     DECKS_FOLDER,
     DEFAULT_ATTRIBUTE_NAME,
     DEFAULT_ATTRIBUTE_PREFIX,
+    DESIGNER_EXTENSION,
     COCKPITDECKS_INTERNAL_EXTENSIONS,
     ENVIRON_KW,
     EXCLUDE_DECKS,
@@ -621,6 +623,8 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         self.default_pages = None  # current pages on decks when reloading
         self.client_list = None
         self.mode = 0  # CD_MODE: NORMAL = 0 (normal operation), DEMO = 1 (no aircraft, do not change aircraft), FIXED = 2 (do not change aircraft)
+
+        self.activate_designer = False
 
         self.init()  # this will install all available simulators
 
@@ -2446,7 +2450,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
     def get_capabilities(self):
         cap = {}
-
+        cap["version"] = __version__
         # Aircraft list
         cap["aircraft-list"] = self.get_aircraft_list()
         cap["current-aircraft"] = os.path.abspath(os.path.join(self.aircraft.acpath, CONFIG_FOLDER))
@@ -2605,22 +2609,29 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             with open(fn, "r") as fp:
                 page_config = yaml.load(fp)
                 if page_config is not None:
-                    if "buttons" in page_config:
-                        page_config["buttons"] = list(
+                    if CONFIG_KW.BUTTONS.value in page_config:
+                        page_config[CONFIG_KW.BUTTONS.value] = list(
                             filter(
-                                lambda b: b["index"] != button_config["index"],
-                                page_config["buttons"],
+                                lambda b: b[CONFIG_KW.INDEX.value] != button_config[CONFIG_KW.INDEX.value],
+                                page_config[CONFIG_KW.BUTTONS.value],
                             )
                         )
                     else:
-                        page_config["buttons"] = []
+                        page_config[CONFIG_KW.BUTTONS.value] = []
         if page_config is None:
-            page_config = {"buttons": [button_config]}
+            page_config = {CONFIG_KW.BUTTONS.value: [button_config]}
         else:
-            page_config["buttons"].append(button_config)
-        with open(fn, "w") as fp:
-            yaml.dump(page_config, fp)
-            logger.info(f"button saved ({fn})")
+            page_config[CONFIG_KW.BUTTONS.value].append(button_config)
+        # New file name for save, we don't touch the original
+        orig = fn
+        fn = fn + DESIGNER_EXTENSION # re.sub(r"\.(y[a]?ml)$", ".bd.\\1", fn)
+        if orig != fn:
+            with open(fn, "w") as fp:
+                yaml.dump(page_config, fp)
+                logger.info(f"button saved (in {fn}, original preserved)")
+            self.reload_deck(deck_name=deck)
+        else:
+            logger.info(f"button not saved, cannot overwrite original {orig}")
 
     def load_button(self, deck, layout, page, index):
         deck_name = self.decks.get(deck)
@@ -2659,6 +2670,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         # testing. returns random icon
         action = data.get("action")
         if action is not None and action == "save":
+            self.activate_designer = True
             self.save_button(data)
         deck_name = data.get("deck")
         if deck_name is None or deck_name == "":

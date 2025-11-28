@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from PIL import Image
 
 from cockpitdecks import CONFIG_FOLDER, CONFIG_FILE, RESOURCES_FOLDER, ICONS_FOLDER
-from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT, DEFAULT_ATTRIBUTE_PREFIX
+from cockpitdecks import Config, ID_SEP, CONFIG_KW, DEFAULT_LAYOUT, DEFAULT_ATTRIBUTE_PREFIX, DESIGNER_EXTENSION
 from cockpitdecks.decks.resources.decktype import ButtonType
 from cockpitdecks.resources.color import convert_color
 
@@ -270,7 +270,16 @@ class Deck(ABC):
 
             fn = os.path.join(dn, p)
             # if os.path.exists(fn):  # we know the file should exists...
-            page_config = Config(fn)
+
+            page_config = None
+            fn2 = fn + DESIGNER_EXTENSION
+            if os.path.exists(fn2):
+                logger.warning(f"deck {self.name}: button design active, using temporary file {fn2} {'!<'*10}")
+                page_config = Config(fn2)
+
+            if page_config is None:
+                page_config = Config(fn)
+
             if not page_config.is_valid():
                 logger.warning(f"file {p} not found or invalid")
                 continue

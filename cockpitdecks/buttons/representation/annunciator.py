@@ -410,22 +410,25 @@ class Annunciator(DrawBase):
             "prompt": "Parts",
             "list": {  # array 1-6 parts
                 # elements in each part
-                "name": {"type": "string", "label": "Part name"},  # LOV of possible parts accoring to name
-                "part-content": {
-                    "name": "part-content",
-                    "label": "Part content",
+                "name": {"type": "string", "label": "Name"},  # LOV of possible parts accoring to name
+                "-part-content": {
+                    "label": "Content",
                     "type": "sel",
                     "list": {  # choices of part content
-                        "led": {
-                            "led": {"type": "string", "prompt": "LED", "lov": [l.value for l in ANNUNCIATOR_LED]},
-                        },  # part type LED
+                        "led": {"type": "string", "prompt": "LED type", "lov": [l.value for l in ANNUNCIATOR_LED]},
                         "text": {
-                            "text": {"type": "string", "prompt": "Text"},
-                            "text-font": {"type": "font", "prompt": "Font"},
-                            "text-size": {"type": "integer", "prompt": "Size"},
-                            "text-color": {"type": "color", "prompt": "Color"},
-                            "text-position": {"type": "choice", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
-                            "framed": {"type": "boolean", "prompt": "Frame"},
+                            "type": "sub",
+                            "min": 1,
+                            "max": 1,
+                            "prompt": "Text",
+                            "list": {
+                                "text": {"type": "string", "prompt": "Text"},
+                                "text-font": {"type": "font", "prompt": "Font"},
+                                "text-size": {"type": "integer", "prompt": "Size"},
+                                "text-color": {"type": "color", "prompt": "Color"},
+                                "text-position": {"type": "choice", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
+                                "framed": {"type": "boolean", "prompt": "Frame"},
+                            },
                         },  # part type TEXT
                     },
                 },
