@@ -415,7 +415,6 @@ class Annunciator(DrawBase):
                     "label": "Content",
                     "type": "sel",
                     "list": {  # choices of part content
-                        "led": {"type": "string", "prompt": "LED type", "lov": [l.value for l in ANNUNCIATOR_LED]},
                         "text": {
                             "type": "sub",
                             "min": 1,
@@ -430,6 +429,7 @@ class Annunciator(DrawBase):
                                 "framed": {"type": "boolean", "prompt": "Frame"},
                             },
                         },  # part type TEXT
+                        "led": {"type": "string", "prompt": "LED type", "lov": [l.value for l in ANNUNCIATOR_LED]},
                     },
                 },
             },  # part

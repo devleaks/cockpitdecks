@@ -175,7 +175,7 @@ if args.verbose:
     startup_logger.debug(f"{os.path.basename(sys.argv[0])} {__version__} configuring startup..")
     # startup_logger.debug(args)
 else:
-    startup_logger.info(f"{os.path.basename(sys.argv[0])} {__version__}")
+    startup_logger.info(f"python {sys.version[0:sys.version.index(' ')]}, {os.path.basename(sys.argv[0])} {__version__}")
 
 # Run git if available to collect info
 #
