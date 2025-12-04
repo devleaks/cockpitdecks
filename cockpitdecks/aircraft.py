@@ -13,6 +13,7 @@ from cairosvg import svg2png
 from cockpitdecks import (
     # Constants, keywords
     AIRCRAFT_ASSET_PATH,
+    AUTOSAVE_FILE,
     COCKPITDECKS_ASSET_PATH,
     CONFIG_FILE,
     CONFIG_FOLDER,
@@ -304,7 +305,7 @@ class Aircraft:
         added = []
         for deck_type in DeckType.list(aircraft_deck_types):
             b = os.path.basename(deck_type)
-            if b in [CONFIG_FILE, DESIGNER_CONFIG_FILE]:
+            if b in [CONFIG_FILE, DESIGNER_CONFIG_FILE, AUTOSAVE_FILE]:
                 continue
             try:
                 data = DeckType(deck_type)

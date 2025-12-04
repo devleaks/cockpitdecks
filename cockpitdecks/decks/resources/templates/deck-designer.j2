@@ -523,11 +523,11 @@ document.getElementById("label").addEventListener(
     false,
 );
 
-autosave = setInterval(function() {
+let autosave = setInterval(function() {
     code = stage.toJSON();
     yaml = reset_transforms();
     out = {code: JSON.parse(code), deckconfig: yaml}
-    out.deckconfig.name = "autosave"
+    out.deckconfig.name = "autosave" // autosave is hardcoded keywork in python (start.button_designer_io())
 
     fetch("/deck-designer-io", {
       method: "POST",

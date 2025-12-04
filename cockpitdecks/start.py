@@ -36,7 +36,7 @@ from ruamel.yaml import YAML
 
 from cockpitdecks import __NAME__, __version__, __COPYRIGHT__, __DESCRIPTION__, Config, LOGFILE, FORMAT
 from cockpitdecks.constant import CONFIG_FOLDER, RESOURCES_FOLDER, DESIGNER_CONFIG_FILE
-from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER
+from cockpitdecks.constant import ENVIRON_KW, CONFIG_KW, DECK_KW, DECKS_FOLDER, DECK_TYPES, TEMPLATE_FOLDER, ASSET_FOLDER, AUTOSAVE_FILE
 from cockpitdecks.cockpit import Cockpit
 from cockpitdecks.aircraft import DECK_TYPE_DESCRIPTION
 
@@ -587,7 +587,8 @@ def button_designer_io():
             json.dump(data[CODE], fp, indent=2)
             logger.info(f"Konva saved ({fn})")
 
-        ln = os.path.join(AIRCRAFT_DECK_TYPES, name + ".yaml")
+        savename = AUTOSAVE_FILE if name == "autosave" else name + ".yaml"  # autosave is hardcoded keywork in javascript deck designer
+        ln = os.path.join(AIRCRAFT_DECK_TYPES, savename )
         with open(ln, "w") as fp:
             yaml.dump(data[CONFIG_FOLDER], fp)
             logger.info(f"layout saved ({ln})")

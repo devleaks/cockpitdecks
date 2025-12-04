@@ -32,6 +32,7 @@ CONFIG_FILE = "config.yaml"
 SECRET_FILE = "secret.yaml"
 OBSERVABLES_FILE = "observables.yaml"
 DESIGNER_CONFIG_FILE = "designer.yaml"
+AUTOSAVE_FILE = "autosave.yaml"
 DESIGNER_EXTENSION = ".cdbd"
 
 CONFIG_FOLDER = "deckconfig"
