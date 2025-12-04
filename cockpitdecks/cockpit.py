@@ -747,7 +747,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
         """
         Loads extensions, then build lists of available resources (simulators, decks, etc.)
         """
-        show_details = True  # self._environ.verbose
+        show_details = False  # self._environ.verbose
 
         self.add_extensions(trace_ext_loading=show_details)
 

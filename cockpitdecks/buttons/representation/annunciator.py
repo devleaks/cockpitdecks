@@ -411,6 +411,7 @@ class Annunciator(DrawBase):
             "list": {  # array 1-6 parts
                 # elements in each part
                 "name": {"type": "string", "label": "Name"},  # LOV of possible parts accoring to name
+                "formula": {"type": "string", "label": "Formula"},
                 "-part-content": {
                     "label": "Content",
                     "type": "sel",
