@@ -1,4 +1,4 @@
-""" Virtual Deck Manager.
+"""Virtual Deck Manager.
 
 Discover virtual web decks
 """

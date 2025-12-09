@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 from cockpitdecks.resources.color import convert_color, grey
 from .draw import DrawBase, ICON_SIZE  # explicit Icon from file to avoid circular import
 from .parameters import PARAM_BTN_COMMON, PARAM_BTN_SWITCH, PARAM_BTN_CIRCULAR_SWITCH, PARAM_BTN_PUSH, PARAM_BTN_KNOB
+from .schemas import SCHEMA_BTN_COMMON, SCHEMA_BTN_SWITCH, SCHEMA_BTN_CIRCULAR_SWITCH, SCHEMA_BTN_PUSH, SCHEMA_BTN_KNOB
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -59,6 +60,8 @@ class SwitchBase(DrawBase):
     REPRESENTATION_NAME = "switch-base"
 
     PARAMETERS = DrawBase.PARAMETERS | PARAM_BTN_COMMON
+
+    SCHEMA = DrawBase.SCHEMA | SCHEMA_BTN_COMMON
 
     def __init__(self, button: "Button", switch_type: str):
         DrawBase.__init__(self, button=button)
@@ -148,6 +151,8 @@ class CircularSwitch(SwitchBase):
     REPRESENTATION_NAME = "circular-switch"
 
     PARAMETERS = SwitchBase.PARAMETERS | PARAM_BTN_CIRCULAR_SWITCH
+
+    SCHEMA = SwitchBase.SCHEMA | SCHEMA_BTN_CIRCULAR_SWITCH
 
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="circular-switch")
@@ -448,6 +453,8 @@ class Switch(SwitchBase):
     REPRESENTATION_NAME = "switch"
 
     PARAMETERS = SwitchBase.PARAMETERS | PARAM_BTN_SWITCH
+
+    SCHEMA = SwitchBase.SCHEMA | SCHEMA_BTN_SWITCH
 
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="switch")
@@ -1036,6 +1043,8 @@ class PushSwitch(SwitchBase):
 
     PARAMETERS = SwitchBase.PARAMETERS | PARAM_BTN_PUSH
 
+    SCHEMA = SwitchBase.SCHEMA | SCHEMA_BTN_PUSH
+
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="push-switch")
 
@@ -1104,6 +1113,8 @@ class Knob(SwitchBase):
     REPRESENTATION_NAME = "knob"
 
     PARAMETERS = PushSwitch.PARAMETERS | PARAM_BTN_KNOB
+
+    SCHEMA = PushSwitch.SCHEMA | SCHEMA_BTN_KNOB
 
     def __init__(self, button: "Button"):
         SwitchBase.__init__(self, button=button, switch_type="knob")

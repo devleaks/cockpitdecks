@@ -4,11 +4,13 @@
 
 class FileNoFound(Exception):
     "file not found"
+
     pass
 
 
 class InvalidYamlFile(Exception):
     "YAML file is badly formatted and do not parse"
+
     pass
 
 
@@ -44,6 +46,7 @@ class InvalidYamlFile(Exception):
 # Activation runtime error
 class ButtonGuarded(Exception):
     "Raised when the button is guarded"
+
     pass
 
 

@@ -29,6 +29,14 @@ class Representation:
         # "vibrate": {"label": "Vibrate", "type": "string"},
     }
 
+    SCHEMA = {}
+
+    @classmethod
+    def schema(cls) -> dict:
+        # See https://stackoverflow.com/questions/1817183/using-super-with-a-class-method
+        # To merge parent class + this class
+        return cls.SCHEMA
+
     @classmethod
     def parameters(cls) -> dict:
         return cls.PARAMETERS

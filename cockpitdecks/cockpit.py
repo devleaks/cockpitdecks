@@ -2461,13 +2461,23 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             a[k] = self.all_activations.get(k).parameters()
         cap["activations"] = a
 
+        # Activations: name: {<CERBERUS schema>}
+        a = {}
+        for k in self.all_activations:
+            a[k] = self.all_activations.get(k).schema()
+        cap["activation-schemas"] = a
+
         # Representations: name: {param: paramdesc}
         a = {}
         for k in self.all_representations:
             a[k] = self.all_representations.get(k).parameters()
         cap["representations"] = a
+
+        # representation-schemas: name: {<CERBERUS schema>}
+        a = {}
         for k in self.all_representations:
-            a[k] = self.all_representations.get(k).parameters()
+            a[k] = self.all_representations.get(k).schema()
+        cap["representation-schemas"] = a
 
         # Resources (for LOV)
         cap["fonts"] = list(self.fonts.keys())
@@ -2624,7 +2634,7 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             page_config[CONFIG_KW.BUTTONS.value].append(button_config)
         # New file name for save, we don't touch the original
         orig = fn
-        fn = fn + DESIGNER_EXTENSION # re.sub(r"\.(y[a]?ml)$", ".bd.\\1", fn)
+        fn = fn + DESIGNER_EXTENSION  # re.sub(r"\.(y[a]?ml)$", ".bd.\\1", fn)
         if orig != fn:
             with open(fn, "w") as fp:
                 yaml.dump(page_config, fp)

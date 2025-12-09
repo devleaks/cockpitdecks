@@ -1,6 +1,4 @@
-"""An Activity is something that happened in the simulator  (or elsewhere)
-
-"""
+"""An Activity is something that happened in the simulator  (or elsewhere)"""
 
 from __future__ import annotations
 import logging

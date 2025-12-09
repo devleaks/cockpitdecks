@@ -39,6 +39,11 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         "refresh-location": {"type": "integer", "prompt": "Refresh location (seconds)"},
     }
 
+    SCHEMA = {
+        "speed": {"type": "integer", "meta": {"label": "Refresh weather (seconds)"}},
+        "refresh-location": {"type": "integer", "meta": {"label": "Refresh location (seconds)"}},
+    }
+
     def __init__(self, button: "Button"):
         self.weather = button._config.get(self.REPRESENTATION_NAME)  # Weather specific config
         if self.weather is not None and isinstance(self.weather, dict):  # Add animation parameters for automatic update

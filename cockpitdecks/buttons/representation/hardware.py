@@ -36,6 +36,12 @@ class HardwareRepresentation(DrawBase):
         "flash-duration": {"type": "int", "prompt": "Flash Duration (msecs)"},
     }
 
+    SCHEMA = DrawBase.SCHEMA | {
+        "highlight-color": {"type": "color", "meta": {"label": "Highlight Color"}},
+        "flash-color": {"type": "color", "meta": {"label": "Flash Color"}},
+        "flash-duration": {"type": "int", "meta": {"label": "Flash Duration (msecs)"}},
+    }
+
     def __init__(self, button: "Button"):
         button._config[NO_ICON] = True
         DrawBase.__init__(self, button=button)
@@ -82,6 +88,16 @@ class VirtualEncoder(HardwareRepresentation):
         "knob-stroke-width": {"type": "int", "prompt": "Knob stroke width"},
         "mark-fill-color": {"type": "color", "prompt": "Mark fsill color"},
         "mark-size": {"type": "int", "prompt": "Mark size"},
+    }
+
+    SCHEMA = {
+        "rotation-start": {"type": "int", "meta": {"label": "Rotation start (°)"}},
+        "rotation-step": {"type": "int", "meta": {"label": "Rotation steps"}},
+        "knob-fill-color": {"type": "color", "meta": {"label": "Knob fill color"}},
+        "knob-stroke-color": {"type": "color", "meta": {"label": "Knob stroke color"}},
+        "knob-stroke-width": {"type": "int", "meta": {"label": "Knob stroke width"}},
+        "mark-fill-color": {"type": "color", "meta": {"label": "Mark fsill color"}},
+        "mark-size": {"type": "int", "meta": {"label": "Mark size"}},
     }
 
     def __init__(self, button: "Button"):
@@ -142,6 +158,11 @@ class VirtualLED(HardwareRepresentation):
     PARAMETERS = {
         "color": {"type": "color", "prompt": "Color"},
         "off-color": {"type": "color", "prompt": "OFF color"},
+    }
+
+    SCHEMA = {
+        "color": {"type": "color", "meta": {"label": "Color"}},
+        "off-color": {"type": "color", "meta": {"label": "OFF color"}},
     }
 
     def __init__(self, button: "Button"):

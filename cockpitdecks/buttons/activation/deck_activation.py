@@ -13,6 +13,7 @@ from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .activation import Activation
 
 from .parameters import PARAM_DECK, PARAM_INITIAL_VALUE, PARAM_PUSH_AUTOREPEAT, PARAM_COMMAND_BLOCK
+from .schemas import SCHEMA_DECK, SCHEMA_INITIAL_VALUE, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -28,6 +29,8 @@ class DeckActivation(Activation):
     ACTIVATION_NAME = "deck"
 
     PARAMETERS = Activation.PARAMETERS | PARAM_DECK
+
+    SCHEMA = Activation.SCHEMA | SCHEMA_DECK
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -48,6 +51,8 @@ class Push(DeckActivation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = DeckActivation.PARAMETERS | PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
+
+    SCHEMA = DeckActivation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_INITIAL_VALUE | SCHEMA_COMMAND_BLOCK
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
@@ -212,6 +217,8 @@ class BeginEndPress(Push):
 
     PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
 
+    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
+
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
 
@@ -269,6 +276,8 @@ class OnOff(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = PARAM_INITIAL_VALUE | {"commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2}}
+
+    SCHEMA = SCHEMA_INITIAL_VALUE | {"commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2}}
 
     # PARAMETERS = PARAM_INITIAL_VALUE | {
     #     "commands": {"type": "sub", "list": [
@@ -417,6 +426,12 @@ class ShortOrLongpress(Activation):
         "long-time": {"type": "float", "prompt": "Time"},
     }
 
+    SCHEMA = {
+        "command-short": {"type": "string", "meta": {"label": "Command short press"}, "required": True},
+        "command-long": {"type": "string", "meta": {"label": "Command long press"}, "required": True},
+        "long-time": {"type": "float", "meta": {"label": "Time"}},
+    }
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
@@ -480,6 +495,11 @@ class UpDown(Activation):
     PARAMETERS = PARAM_INITIAL_VALUE | {
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2},
         "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
+    }
+
+    SCHEMA = SCHEMA_INITIAL_VALUE | {
+        "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
+        "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
     }
 
     def __init__(self, button: "Button"):
@@ -676,6 +696,11 @@ class Encoder(Activation, EncoderProperties):
         "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
     }
 
+    SCHEMA = SCHEMA_INITIAL_VALUE | {
+        "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
+        "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
+    }
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
         EncoderProperties.__init__(self, button=button)
@@ -750,6 +775,11 @@ class EncoderPush(Push, EncoderProperties):
 
     PARAMETERS = PARAM_INITIAL_VALUE | {
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 3, "max": 3},
+    }
+
+    SCHEMA = SCHEMA_INITIAL_VALUE | {
+        "commands": {"type": "list", "schema": {'type': 'string'}, "minlength": 3, "maxlength": 3},
+        "long-press": {"type": "string", "meta": {"label": "Long Press"}},
     }
 
     def __init__(self, button: "Button"):
@@ -885,6 +915,16 @@ class EncoderOnOff(OnOff, EncoderProperties):
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
 
+    SCHEMA = SCHEMA_INITIAL_VALUE | {
+        "commands": {
+            "type": "list",
+            "schema": {"type": "string"},
+            "minlength": 4,
+            "maxlength": 4,
+            "meta": {"label": "Commands"},
+        },
+    }
+
     def __init__(self, button: "Button"):
         OnOff.__init__(self, button=button)
         EncoderProperties.__init__(self, button=button)
@@ -1003,6 +1043,35 @@ class EncoderValue(OnOff, EncoderProperties):
 
     PARAMETERS = PARAM_INITIAL_VALUE | {
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
+    }
+
+    SCHEMA = SCHEMA_INITIAL_VALUE | {
+        "commands": {
+            "type": "list",
+            "schema": {"type": "string"},
+            "minlength": 2,
+            "maxlength": 4,
+            "meta": {"label": "Commands"},
+        },
+        "value-min": {
+            "type": "float",
+            "meta": {"label": "Minimum value"},
+        },
+        "value-max": {
+            "type": "float",
+            "meta": {"label": "Maximum value"},
+        },
+        "step": {
+            "type": "float",
+            "meta": {"label": "Step value"},
+        },
+        "stepxl": {
+            "type": "float",
+            "meta": {"label": "Large step value"},
+        },
+        "set-dataref": {"type": "string", "meta": {"label": "Dataref to set"}},
+        "dataref": {"type": "string", "meta": {"label": "Dataref"}},
+        "value": {"type": "float", "meta": {"label": "Value"}},
     }
 
     def __init__(self, button: "Button"):
@@ -1147,6 +1216,26 @@ class EncoderValueExtended(OnOff, EncoderProperties):
             "prompt": "Large step value",
         },
         "set-dataref": {"type": "string", "prompt": "Dataref"},
+    }
+
+    SCHEMA = {
+        "value-min": {
+            "type": "float",
+            "meta": {"label": "Minimum value"},
+        },
+        "value-max": {
+            "type": "float",
+            "meta": {"label": "Maximum value"},
+        },
+        "step": {
+            "type": "float",
+            "meta": {"label": "Step value"},
+        },
+        "step-xl": {
+            "type": "float",
+            "meta": {"label": "Large step value"},
+        },
+        "set-dataref": {"type": "string", "meta": {"label": "Dataref"}},
     }
 
     def __init__(self, button: "Button"):
@@ -1321,6 +1410,22 @@ class Slider(Activation):  # Cursor?
         "set-dataref": {"type": "string", "prompt": "Dataref"},
     }
 
+    SCHEMA = {
+        "value-min": {
+            "type": "float",
+            "meta": {"label": "Minimum value"},
+        },
+        "value-max": {
+            "type": "float",
+            "meta": {"label": "Maximum value"},
+        },
+        "step": {
+            "type": "float",
+            "meta": {"label": "Step value"},
+        },
+        "set-dataref": {"type": "string", "meta": {"label": "Dataref"}},
+    }
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
@@ -1390,6 +1495,8 @@ class Swipe(Activation):
 
     PARAMETERS = PARAM_COMMAND_BLOCK
 
+    SCHEMA = SCHEMA_COMMAND_BLOCK
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
@@ -1429,6 +1536,8 @@ class EncoderToggle(Activation, EncoderProperties):
     PARAMETERS = PARAM_INITIAL_VALUE | {
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
+
+    SCHEMA = SCHEMA_INITIAL_VALUE | {"commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 4, "maxlength": 4}}
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -1535,6 +1644,8 @@ class Mosaic(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.SWIPE, DECK_ACTIONS.PUSH]
 
     PARAMETERS = PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
+
+    SCHEMA = SCHEMA_PUSH_AUTOREPEAT | SCHEMA_INITIAL_VALUE | SCHEMA_COMMAND_BLOCK
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds

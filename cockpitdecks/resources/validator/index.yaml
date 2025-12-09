@@ -1,0 +1,272 @@
+---
+aircraft: ToLiss A339
+version: 1.0.0
+last-updated: 31-OCT-2024
+#
+# CHANGELOG
+#
+# 31-OCT-2024: 1.0.0: Initial release (adapted from ToLiss A321)
+#
+# This complement the minicockpit with part of the EFIS control.
+#
+# PAGE
+#
+buttons:
+  - index: e0
+    name: HUD Brightness
+    type: encoder-value
+    commands:
+      - AirbusFBW/StowHUD1
+      - AirbusFBW/PullHUD1Down
+    step: 0.1
+    # ToLiss use to set avg brightness to 0.8
+    value: 0.8
+    value-min: 0
+    value-max: 1
+    set-dataref: AirbuFBW/HUDBrightnessRheo[0]
+    # THERE IS A TYPO IN NAME! AirbuFBW not AirbusFBW
+    # Due to a problem with value, value must be >= 1 to be true
+    # Value between 0 and < 1 are considered false.
+    # To activate on true, turn encoder until value >= 1.
+  - index: e1
+    name: ND MODE ENCODER
+    type: encoder-value
+    value-min: 0
+    value-max: 5
+    set-dataref: AirbusFBW/NDmodeCapt
+    options: modulo
+  - index: e2
+    name: ND RANGE ENCODER
+    type: encoder-onoff
+    commands:
+      - none
+      - none
+      - sim/instruments/map_zoom_in
+      - sim/instruments/map_zoom_out
+    options: modulo
+  - index: e3
+    name: FCU Baro
+    type: encoder-onoff
+    commands:
+      - toliss_airbus/capt_baro_push
+      - toliss_airbus/capt_baro_pull
+      - sim/instruments/barometer_up
+      - sim/instruments/barometer_down
+    options: modulo
+  ## Buttons
+  - index: 0
+    type: push
+    command: AirbusFBW/HUD1Declutter
+    label: DECLUTTER
+    label-size: 10
+    label-font: DIN
+    label-color: black
+    sound: sonar-ping.wav
+    push-switch:
+      button-size: 120
+      button-fill-color: black
+      button-stroke-width: 0
+      witness-size: 0
+      down: 36
+  - index: 1
+    name: ND MODE
+    type: updown
+    stops: 6
+    initial-value: 2
+    circular-switch:
+      button-size: 50
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 315
+      tick-space: 40
+      tick-underline-width: 8
+      needle-color: white
+      needle-length: 30
+      tick-label-size: 28
+      tick-labels:
+        - LS
+        - VOR
+        - NAV
+        - ARC
+        - PLAN
+        - ENG
+    commands:
+      - sim/instruments/EFIS_mode_up
+      - sim/instruments/EFIS_mode_dn
+    dataref: AirbusFBW/NDmodeCapt
+  - index: 2
+    name: ND RANGE
+    type: updown
+    stops: 6
+    initial-value: 2
+    circular-switch:
+      button-size: 50
+      switch-style: medium
+      down: 30
+      tick-from: 90
+      tick-to: 315
+      tick-space: 40
+      tick-underline-width: 8
+      tick-label-color: AIRBUS_BACKLIGHT
+      tick-underline-color: AIRBUS_BACKLIGHT
+      needle-color: white
+      needle-length: 30
+      tick-label-size: 28
+      tick-labels:
+        - "10"
+        - "20"
+        - "40"
+        - "80"
+        - "160"
+        - "320"
+    commands:
+      - sim/instruments/map_zoom_out
+      - sim/instruments/map_zoom_in
+    dataref: AirbusFBW/NDrangeCapt
+  - index: 3
+    name: INORMB
+    type: updown
+    stops: 2
+    circular-switch:
+      button-size: 100
+      switch-style: none
+      down: 30
+      tick-from: 140
+      tick-to: 220
+      tick-space: 10
+      tick-underline-width: 8
+      needle-color: white
+      needle-length: 50
+      tick-label-size: 36
+      tick-label-font: D-DIN-Bold.otf
+      tick-labels:
+        - inHg
+        - hPa
+    set-dataref: AirbusFBW/BaroUnitCapt
+    dataref: AirbusFBW/BaroUnitCapt
+  - index: 4
+    name: HUD MODE
+    type: onoff
+    switch:
+      switch-width: 20
+      button-fill-color: black
+      button-underline-width: 4
+      tick-labels:
+        - NORM
+        - X-WIND
+      tick-width: 0
+      tick-space: 10
+      tick-label-size: 30
+      tick-label-font: DIN Bold
+    options: hexa,invert
+    set-dataref: AirbusFBW/HUDModeSwitch[0]
+  - index: 5
+    name: FD 1
+    type: push
+    annunciator:
+      size: medium
+      model: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          formula: ${AirbusFBW/FD1Engage}
+        B1:
+          text: FD
+          color: white
+          text-size: 64
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/fd1_push
+  - index: 6
+    name: LS 1
+    type: push
+    annunciator:
+      size: medium
+      model: B
+      parts:
+        B0:
+          color: lime
+          led: bars
+          formula: ${AirbusFBW/ILSonCapt}
+        B1:
+          text: LS
+          color: white
+          text-size: 64
+          text-font: DIN Bold
+          formula: "1"
+    command: toliss_airbus/dispcommands/CaptLSButtonPush
+    view: SRS/X-Camera/Select_View_ID_1
+  - index: 7
+    type: onoff
+    # label: QNH
+    # label-color: khaki
+    # label-position: rt
+    # label-size: 10
+    commands:
+      - toliss_airbus/capt_baro_push
+      - toliss_airbus/capt_baro_pull
+    # does not work because button value = formula is always > 0
+    formula: ${AirbusFBW/BaroUnitCapt} ${AirbusFBW/BaroStdCapt} 2 * +
+    multi-texts:
+      - text: ${formula}
+        text-format: '{:4.2f}'
+        text-color: khaki
+        text-size: 48
+        text-font: Segment7Standard.otf
+        text-bg-color: (40, 40, 40)
+        formula: ${sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot}
+        # Pressure in inHg
+      - text: ${formula}
+        text-format: '{:4.0f}'
+        text-color: khaki
+        text-size: 48
+        text-font: Segment7Standard.otf
+        text-bg-color: (40, 40, 40)
+        formula: ${sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot} 33.86389 * round
+        # Pressure in mBar or hPascal
+      - text: Std
+        text-color: khaki
+        text-size: 48
+        text-font: Segment7Standard.otf
+        text-bg-color: (40, 40, 40)
+        # Std
+      - text: Std
+        text-color: khaki
+        text-size: 48
+        text-font: Segment7Standard.otf
+        text-bg-color: (40, 40, 40)
+        # Std
+  - index: touchscreen
+    name: FMA_DISPLAY
+    type: page
+    page: fcu
+    fma:
+      label-mode: 0
+      text-size: 60
+      text-font: B612-Bold
+  # - index: 3
+  #   name: RELOAD
+  #   type: reload
+  #   text:
+  #     text: ${fa:rotate-right}
+  #     text-font: fontawesome.otf
+  #     text-size: 60
+  #     text-position: cm
+  #     text-color: lime
+  # - index: 4
+  #   name: DATAREF
+  #   type: inspect
+  #   icon: COCKPITDECKS
+  #   label: |-
+  #     BUTTON
+  #     DATAREFS
+  #   label-color: red
+  #   label-position: cm
+  #   what: dataref
+
+  
+
+        # - command: AirbusFBW/PopUpSD
+        # condition: ${AirbusFBW/PopUpStateArray[7]} not

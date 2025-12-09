@@ -44,6 +44,28 @@ class DataIcon(DrawBase):
         "mark-color": {"type": "color", "prompt": "Mark color"},
     }
 
+    SCHEMA = {
+        "top-line-color": {"type": "color", "meta": {"label": "Top line color"}},
+        "top-line-width": {"type": "string", "meta": {"label": "Top line width"}},
+        "icon": {"type": "string", "meta": {"label": "Icon name"}},
+        "icon-size": {"type": "integer", "meta": {"label": "Icon size"}},
+        "icon-color": {"type": "color", "meta": {"label": "Icon color"}},
+        "data": {"type": "string", "meta": {"label": "Data"}},
+        "data-format": {"type": "string", "meta": {"label": "Data format (python style)"}},
+        "data-font": {"type": "font", "meta": {"label": "Data font"}},
+        "data-size": {"type": "integer", "meta": {"label": "Data font size"}},
+        "data-color": {"type": "color", "meta": {"label": "Data color"}},
+        "data-unit": {"type": "string", "meta": {"label": "Data unit"}},
+        "formula": {"type": "string", "meta": {"label": "Formula"}},
+        "bottomline": {"type": "string", "meta": {"label": "Bottom line"}},
+        "bottomline-size": {"type": "integer", "meta": {"label": "Bottom line font size"}},
+        "bottomline-color": {"type": "color", "meta": {"label": "Bottom line color"}},
+        "mark": {"type": "string", "meta": {"label": "Mark"}},
+        "mark-size": {"type": "integer", "meta": {"label": "Mark size"}},
+        "mark-font": {"type": "font", "meta": {"label": "Mark font"}},
+        "mark-color": {"type": "color", "meta": {"label": "Mark color"}},
+    }
+
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
         self.data = self._config.get(self.REPRESENTATION_NAME)

@@ -26,6 +26,10 @@ class LED(Representation):
         "led": {"type": "string", "prompt": "LED", "default-value": "single"},
     }
 
+    SCHEMA = {
+        "led": {"type": "string", "meta": {"label": "LED", "default": "single"}},
+    }
+
     def __init__(self, button: "Button"):
         Representation.__init__(self, button=button)
 

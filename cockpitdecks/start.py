@@ -588,7 +588,7 @@ def button_designer_io():
             logger.info(f"Konva saved ({fn})")
 
         savename = AUTOSAVE_FILE if name == "autosave" else name + ".yaml"  # autosave is hardcoded keywork in javascript deck designer
-        ln = os.path.join(AIRCRAFT_DECK_TYPES, savename )
+        ln = os.path.join(AIRCRAFT_DECK_TYPES, savename)
         with open(ln, "w") as fp:
             yaml.dump(data[CONFIG_FOLDER], fp)
             logger.info(f"layout saved ({ln})")

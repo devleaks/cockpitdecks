@@ -30,6 +30,13 @@ class TextPageIcon(DrawBase):
         "page-number": {"type": "bool", "prompt": "Page number"},
     }
 
+    SCHEMA = {
+        "textpages": {"type": "string", "meta": {"label": "Text (pages)"}},
+        "width": {"type": "integer", "meta": {"label": "Width"}},
+        "lines": {"type": "integer", "meta": {"label": "Lines"}},
+        "page-number": {"type": "bool", "meta": {"label": "Page number"}},
+    }
+
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
         self._textpage = TextWithVariables(

@@ -27,6 +27,11 @@ class DrawAnimation(DrawBase):
 
     PARAMETERS = DrawBase.PARAMETERS | {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
+    SCHEMA = DrawBase.SCHEMA | {
+        "speed": {"type": "integer", "meta": {"label": "Speed (seconds)"}},
+        "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}},
+    }
+
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
 
@@ -137,6 +142,8 @@ class DrawAnimationFTG(DrawAnimation):
     REPRESENTATION_NAME = "ftg"
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}}
+
+    SCHEMA = {"speed": {"type": "integer", "meta": {"label": "Speed (seconds)"}}}
 
     def __init__(self, button: "Button"):
         DrawAnimation.__init__(self, button=button)

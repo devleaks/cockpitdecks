@@ -122,6 +122,10 @@ class SolariIcon(DrawAnimation):
         "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
     }
 
+    SCHEMA = {
+        "text": {"type": "string", "meta": {"label": f"Characters (up to {NUM_LINES * NUM_CHARS})"}},
+    }
+
     def __init__(self, button: "Button"):
 
         DrawAnimation.__init__(self, button=button)

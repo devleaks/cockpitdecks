@@ -29,6 +29,8 @@ class CockpitActivation(Activation):
 
     PARAMETERS = Activation.PARAMETERS
 
+    SCHEMA = Activation.SCHEMA
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
@@ -46,6 +48,11 @@ class LoadPage(Activation):
     PARAMETERS = {
         "page": {"type": "string", "prompt": "Page", "default-value": "back", "mandatory": True},
         "deck": {"type": "string", "prompt": "Remote deck"},
+    }
+
+    SCHEMA = {
+        "page": {"type": "string", "required": True, "meta": {"label": "Page", "default": "back"}},
+        "deck": {"type": "string", "meta": {"label": "Remote deck"}},
     }
 
     def __init__(self, button: "Button"):
@@ -97,6 +104,10 @@ class Reload(Activation):
         }
     }
 
+    SCHEMA = {
+        "deck": {"type": "string", "meta": {"label": "Deck"}},
+    }
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
         self.deck = self._config.get("deck")
@@ -137,6 +148,10 @@ class ChangeTheme(Activation):
             "type": "string",
             "prompt": "Theme",
         }
+    }
+
+    SCHEMA = {
+        "theme": {"type": "string", "meta": {"label": "Theme"}},
     }
 
     def __init__(self, button: "Button"):
@@ -185,6 +200,14 @@ class Inspect(Activation):
         }
     }
 
+    SCHEMA = {
+        "what": {
+            "type": "string",
+            "allowed": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"],
+            "meta": {"label": "What to inspect", "default": "status"},
+        },
+    }
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
 
@@ -222,6 +245,8 @@ class Stop(Activation):
 
     PARAMETERS = {}
 
+    SCHEMA = {}
+
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
         self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + self.ACTIVATION_NAME, instruction_block={})
@@ -256,6 +281,8 @@ class StartSimulator(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     PARAMETERS = {}
+
+    SCHEMA = {}
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -302,6 +329,18 @@ class Obs(Activation):
             "prompt": "Action",
             "default-value": "toggle",
             "lov": ["toggle", "enable", "disable"],
+        },
+    }
+
+    SCHEMA = {
+        "observable": {
+            "type": "string",
+            "meta": {"label": "Observable"},
+        },
+        "action": {
+            "type": "string",
+            "allowed": ["toggle", "enable", "disable"],
+            "meta": {"label": "Action", "value": "toggle"},
         },
     }
 

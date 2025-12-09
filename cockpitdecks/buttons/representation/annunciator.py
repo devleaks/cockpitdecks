@@ -14,6 +14,7 @@ from cockpitdecks.strvar import TextWithVariables
 from cockpitdecks.value import Value
 
 from .draw import DrawBase, ICON_SIZE
+from .schemas import SCHEMA_TEXT
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -57,6 +58,15 @@ class AnnunciatorPart:
         "F2": [0.25, 0.75],
         "F3": [0.75, 0.75],
     }
+
+    ANNUN_LED_SCHEMA = {"led": {"type": "string", "allowed": [l.value for l in ANNUNCIATOR_LED]}}
+
+    ANNUN_TEXT_SCHEMA = SCHEMA_TEXT | {
+        "formula": {"type": "string", "meta": {"label": "Formula"}},
+        "framed": {"type": "boolean", "meta": {"label": "Framed"}},
+    }
+
+    ANNUN_PART_SCHEMA = {"part": {"type": "dict", "oneof": [{"schema": ANNUN_LED_SCHEMA}, {"schema": ANNUN_TEXT_SCHEMA}]}}
 
     def __init__(self, name: str, config: dict, annunciator: "Annunciator"):
         self.name = name
@@ -437,6 +447,35 @@ class Annunciator(DrawBase):
         },  # annunciator-parts
     }
 
+    SCHEMA = {
+        "icon": {"type": "icon", "meta": {"label": "Icon"}},
+        "type": {"type": "string", "meta": {"label": "Type"}, "lov": ["A", "B", "C", "D", "E", "F"]},
+        # "style": {"type": "string", "meta": {"label": "Style"}, "lov": ["Korry", "Vivisun"]},
+        # "color": {"type": "color", "meta": {"label": "Background color"}},
+        # "texture": {"type": "icon", "meta": {"label": "Background texture"}},
+        "annunciator-color": {"meta": {"label": "Annunciator Color"}, "type": "color"},
+        "annunciator-style": {"meta": {"label": "Annunciator Style"}, "type": "string"},
+        "annunciator-texture": {"meta": {"label": "Annunciator Texture"}, "type": "icon"},
+        "light-off-intensity": {"meta": {"label": "Light Off Intensity"}, "type": "string"},
+        "annunciator-parts": {
+            "meta": {"label": "Parts"},
+            "type": "list",
+            "minlength": 1,
+            "maxlength": 6,
+            "schema": {  # array 1-6 parts of this dict:
+                # elements in each part
+                "name": {"type": "string", "label": "Name"},  # LOV of possible parts accoring to name
+                "formula": {"type": "string", "label": "Formula"},
+                "part-content": {
+                    "meta": {"label": "Content", "hidden": True},
+                    "type": "dict",
+                    "oneof": [{"schema": AnnunciatorPart.ANNUN_LED_SCHEMA}, {"schema": AnnunciatorPart.ANNUN_TEXT_SCHEMA}
+                    ],
+                },
+            },  # part
+        },  # annunciator-parts
+    }
+
     def __init__(self, button: "Button"):
         self.button = button  # we need the reference before we call Icon.__init__()...
         self.icon = button._config.get("icon")
@@ -747,6 +786,8 @@ class AnnunciatorAnimate(Annunciator):
     REPRESENTATION_NAME = "annunciator-animate"
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
+
+    SCHEMA = {"speed": {"type": "integer", "meta": {"label": "Speed (seconds)"}}, "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}}}
 
     def __init__(self, button: "Button"):
         button._config["annunciator"] = button._config.get("annunciator-animate")

@@ -69,6 +69,35 @@ class WeatherStationPlot(WeatherBaseIcon):
         "plot-disabled-color": {"type": "color", "prompt": "disabled color"},
     }
 
+    SCHEMA = WeatherBaseIcon.SCHEMA | {
+        "plot-style": {
+            "type": "string",
+            "meta": {"label": "Style"},
+            "lov": [
+                "bw",
+            ],
+        },
+        "plot-text-font": {"type": "font", "meta": {"label": "Text font"}},
+        "plot-symbol-font": {"type": "font", "meta": {"label": "Symbol font"}},
+        "plot-color": {"type": "color", "meta": {"label": "Plot color"}},
+        "plot-wind-barb-color": {"type": "color", "meta": {"label": "Wind barb color"}},
+        "plot-text-color": {"type": "color", "meta": {"label": "Text color"}},
+        "plot-text-alt-color": {"type": "color", "meta": {"label": "Text alt color"}},
+        "plot-text-past-color": {"type": "color", "meta": {"label": "Text past color"}},
+        "plot-inverse-color": {"type": "color", "meta": {"label": "Plot inverse color"}},
+        "plot-info-color": {"type": "color", "meta": {"label": "info color"}},
+        "plot-secondary-color": {"type": "color", "meta": {"label": "secondary color"}},
+        "plot-success-color": {"type": "color", "meta": {"label": "success color"}},
+        "plot-danger-color": {"type": "color", "meta": {"label": "danger color"}},
+        "plot-warning-color": {"type": "color", "meta": {"label": "warning color"}},
+        "plot-light-color": {"type": "color", "meta": {"label": "light color"}},
+        "plot-dark-color": {"type": "color", "meta": {"label": "dark color"}},
+        "plot-muted-color": {"type": "color", "meta": {"label": "muted color"}},
+        "plot-white-color": {"type": "color", "meta": {"label": "white color"}},
+        "plot-alert-color": {"type": "color", "meta": {"label": "alert color"}},
+        "plot-disabled-color": {"type": "color", "meta": {"label": "disabled color"}},
+    }
+
     def __init__(self, button: "Button"):
         WeatherBaseIcon.__init__(self, button=button)
 

@@ -35,6 +35,13 @@ class DrawBase(IconBase):
         "Right": {"type": "integer", "prompt": "Right"},
     }
 
+    SCHEMA = IconBase.SCHEMA | {
+        "up": {"type": "integer", "meta": {"label": "Up"}},
+        "down": {"type": "integer", "meta": {"label": "Down"}},
+        "Left": {"type": "integer", "meta": {"label": "Left"}},
+        "Right": {"type": "integer", "meta": {"label": "Right"}},
+    }
+
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
 
@@ -136,6 +143,13 @@ class Decor(DrawBase):
         "code": {"type": "string", "prompt": "Code"},
         "width": {"type": "integer", "prompt": "Width"},
         "color": {"type": "color", "prompt": "Color"},
+    }
+
+    SCHEMA = DrawBase.SCHEMA | {
+        "type": {"type": "string", "meta": {"label": "Type"}, "lov": DECOR_TYPES},
+        "code": {"type": "string", "meta": {"label": "Code"}},
+        "width": {"type": "integer", "meta": {"label": "Width"}},
+        "color": {"type": "color", "meta": {"label": "Color"}},
     }
 
     def __init__(self, button: "Button"):

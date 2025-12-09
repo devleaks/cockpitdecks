@@ -11,6 +11,7 @@ from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 from .representation import Representation
 from cockpitdecks.strvar import TextWithVariables
 from .parameters import PARAM_TEXT
+from .schemas import SCHEMA_TEXT
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -35,6 +36,8 @@ class IconBase(Representation):
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
     PARAMETERS = {"cockpit-color": {"type": "color", "prompt": "Cockpit color"}, "cockpit-texture": {"type": "icon", "prompt": "Cockpit Texture"}}
+
+    SCHEMA = {"cockpit-color": {"type": "color", "meta": {"label": "Cockpit color"}}, "cockpit-texture": {"type": "icon", "meta": {"label": "Cockpit Texture"}}}
 
     def __init__(self, button: "Button"):
         self._label = None
@@ -248,6 +251,8 @@ class Icon(IconBase):
     # PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
     PARAMETERS = IconBase.PARAMETERS | {"icon": {"type": "icon", "prompt": "Icon"}}
 
+    SCHEMA = IconBase.SCHEMA | {"icon": {"type": "icon", "meta": {"label": "Icon"}}}
+
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
 
@@ -402,6 +407,8 @@ class IconColor(IconBase):
 
     PARAMETERS = IconBase.PARAMETERS | {"color": {"type": "color", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
 
+    SCHEMA = IconBase.SCHEMA | {"color": {"type": "color", "meta": {"label": "Color"}}, "texture": {"type": "icon", "meta": {"label": "Texture"}}}
+
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
 
@@ -422,6 +429,8 @@ class IconText(IconColor):
     REPRESENTATION_NAME = "text"
 
     PARAMETERS = IconBase.PARAMETERS | PARAM_TEXT
+
+    SCHEMA = IconBase.SCHEMA | SCHEMA_TEXT
 
     def __init__(self, button: "Button"):
         text_config = button._config.get(CONFIG_KW.TEXT.value)  # where to get text from
@@ -492,6 +501,8 @@ class MultiTexts(IconText):
 
     PARAMETERS = IconBase.PARAMETERS | {"-texts": {"type": "sub", "list": PARAM_TEXT, "min": 1, "max": 0, "prompt": "Texts"}}
 
+    SCHEMA = IconBase.SCHEMA | {"texts": {"type": "list", "schema": PARAM_TEXT, "minlength": 1, "maxlength": 0, "meta": {"label": "Texts", "hidden": True}}}
+
     def __init__(self, button: "Button"):
         IconText.__init__(self, button=button)
         multi_texts = self._config.get("multi-texts", [])
@@ -558,6 +569,16 @@ class MultiIcons(Icon):
     REPRESENTATION_NAME = "multi-icons"
 
     PARAMETERS = {"multi-icons": {"type": "sub", "list": {"-icon": {"type": "icon", "prompt": "Icon"}}, "min": 1, "max": 0, "prompt": "Icons"}}
+
+    SCHEMA = {
+        "multi-icons": {
+            "type": "list",
+            "schema": {"icon": {"type": "icon", "meta": {"label": "Icon", "hidden": True}}},
+            "minlength": 1,
+            "maxlength": 0,
+            "meta": {"label": "Icons"},
+        }
+    }
 
     def __init__(self, button: "Button"):
         Icon.__init__(self, button=button)

@@ -12,13 +12,6 @@ from PIL import ImageColor
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_COLOR = (128, 128, 128)
-
-
-def grey(i: int):
-    return (i, i, i)
-
-
 def is_integer(s) -> bool:
     if type(s) not in [str, int, float]:
         return False
@@ -41,6 +34,30 @@ def is_float(s):
 
 def is_number(n):
     return is_integer(n) or is_float(n)
+
+
+def has_ext(name: str, ext: str) -> bool:
+    return name.endswith("." + ext.lstrip("."))
+
+
+def add_ext(name: str, ext: str) -> str:
+    rext = ext.lstrip(".")
+    narr = name.split(".")
+    if len(narr) < 2:  # has no extension
+        return name + "." + rext
+    # remove old extension
+    namenoext = ".".join(narr[:-1])
+    namenoext.rstrip(".")
+    # add new extension
+    return namenoext + "." + rext  # force extension to what is should
+    # If no need to remove old ext use name = name.rstrip(".") + "." + ext
+
+
+DEFAULT_COLOR = (128, 128, 128)
+
+
+def grey(i: int):
+    return (i, i, i)
 
 
 def convert_color(instr: str | tuple | list | None) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
@@ -95,21 +112,82 @@ def light_off(color: str | Tuple[int, int, int], lightness: float = 0.10) -> Tup
     return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
 
 
-def has_ext(name: str, ext: str) -> bool:
-    return name.endswith("." + ext.lstrip("."))
+class Color:
 
+    DEFAULT_COLOR = (128, 128, 128)  # Color.grey(128)
 
-def add_ext(name: str, ext: str) -> str:
-    rext = ext.lstrip(".")
-    narr = name.split(".")
-    if len(narr) < 2:  # has no extension
-        return name + "." + rext
-    # remove old extension
-    namenoext = ".".join(narr[:-1])
-    namenoext.rstrip(".")
-    # add new extension
-    return namenoext + "." + rext  # force extension to what is should
-    # If no need to remove old ext use name = name.rstrip(".") + "." + ext
+    def __init__(self, instr, default=DEFAULT_COLOR, info: str = "") -> None:
+        self._instr = instr  # raw, has entered
+        self._source = info
+        self._value = self.convert_color(default if instr is None else instr)
+
+    @staticmethod
+    def grey(i: int):
+        return (i, i, i)
+
+    @staticmethod
+    def convert_color(instr: str | tuple | list | None) -> Tuple[int, int, int] | Tuple[int, int, int, int]:
+        # process either a color name or a color tuple as a string "(1, 2, 3)"
+        # and returns a tuple of 3 or 4 integers in range [0,255].
+        # If case of failure to convert, returns middle DEFAULT_COLOR values.
+        if instr is None:
+            return DEFAULT_COLOR
+
+        if type(instr) in [tuple, list]:
+            return tuple(instr)
+
+        if type(instr) != str:
+            logger.debug(f"color {instr} ({type(instr)}) not found, using {DEFAULT_COLOR}")
+            return DEFAULT_COLOR
+
+        # is it a single number? in which case we assume it is a color hue
+        try:
+            val = float(instr)
+            if val > 1:  # assume 0-255
+                val = val / 256
+            return tuple([int(c * 256) for c in colorsys.hls_to_rgb(val, 0.5, 1)])  # returns [0, 1] values
+        except:
+            pass
+
+        # it's a string...
+        instr = instr.strip()
+        if "," in instr and instr.startswith("("):  # "(255, 7, 2)"
+            a = instr.replace("(", "").replace(")", "").split(",")
+            return tuple([int(e) for e in a])
+        else:  # it may be a color name...
+            try:
+                color = ImageColor.getrgb(instr)
+            except ValueError:
+                logger.debug(f"fail to convert color {instr} ({type(instr)}), using {DEFAULT_COLOR}")
+                color = DEFAULT_COLOR
+            return tuple(color)
+        logger.debug(f"not a string {instr} ({type(instr)}), using {DEFAULT_COLOR}")
+        return DEFAULT_COLOR
+
+    @property
+    def value(self) -> Tuple:
+        return self._value
+
+    @property
+    def hls(self) -> Tuple:
+        return colorsys.rgb_to_hls(*self._value[0:3])
+
+    @property
+    def alpha(self) -> float:
+        return self._value[3] if len(self._value) > 3 else 1
+
+    def light_off(self, lightness: float = 0.1) -> Tuple:
+        # Darkens (or lighten) a color
+        temp_color = self._value[:3]
+        a = list(colorsys.rgb_to_hls(*[c / 255 for c in temp_color]))
+        a[1] = lightness
+        return tuple([int(c * 256) for c in colorsys.hls_to_rgb(*a)])
+
+    def lighter(self) -> Tuple:
+        return tuple()
+
+    def darker(self) -> Tuple:
+        return tuple()
 
 
 # # https://stackoverflow.com/questions/66837477/pillow-how-to-gradient-fill-drawn-shapes

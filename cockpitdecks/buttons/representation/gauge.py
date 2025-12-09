@@ -41,6 +41,10 @@ class TapeIcon(DrawBase):
         "top-line-color": {"type": "color", "prompt": "Top line color"},
     }
 
+    SCHEMA = {
+        "top-line-color": {"type": "color", "meta": {"label": "Top line color"}},
+    }
+
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
         self.tape = self._config[self.REPRESENTATION_NAME]
@@ -327,6 +331,11 @@ class GaugeIcon(DrawBase):
         "gauge-size": {"label": "Gauge Size", "type": "int"},
     }
 
+    SCHEMA = {
+        "top-line-color": {"type": "color", "meta": {"label": "Top line color"}},
+        "gauge-size": {"label": "Gauge Size", "type": "int"},
+    }
+
     def __init__(self, button: "Button"):
         DrawBase.__init__(self, button=button)
         self.gauge = self._config[self.REPRESENTATION_NAME]
@@ -502,6 +511,10 @@ class CompassIcon(GaugeIcon):
 
     PARAMETERS = {
         "compass-mode": {"type": "string", "prompt": "Compass Mode"},
+    }
+
+    SCHEMA = {
+        "compass-mode": {"type": "string", "meta": {"label": "Compass Mode"}},
     }
 
     def __init__(self, button: "Button"):

@@ -12,6 +12,7 @@ from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider, Variable, VariableListener
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .parameters import PARAM_DESCRIPTION, PARAM_DECK
+from .schemas import SCHEMA_LABEL, SCHEMA_DECK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -31,6 +32,8 @@ class ActivationBase(ABC):
     # One cannot request an activiation from a deck button that does not have the capability of the action
     # requested by the activation.
     PARAMETERS = {}
+
+    SCHEMA = {}
 
     @classmethod
     def parameters(cls) -> dict:
@@ -71,6 +74,14 @@ class Activation(ActivationBase, VariableListener):
     # Parameters of base class Activation (name "none") contains global parameters, common to all buttons.
     # They are called the General or Global or Descriptive parameters.
     PARAMETERS = ActivationBase.PARAMETERS | PARAM_DESCRIPTION | PARAM_DECK
+
+    SCHEMA = ActivationBase.SCHEMA
+
+    @classmethod
+    def schema(cls) -> dict:
+        # See https://stackoverflow.com/questions/1817183/using-super-with-a-class-method
+        # To merge parent class + this class
+        return cls.SCHEMA
 
     @classmethod
     def parameters(cls) -> dict:

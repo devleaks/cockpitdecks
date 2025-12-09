@@ -261,6 +261,11 @@ class ChartIcon(DrawAnimation):
         "charts": {"type": "sub", "list": PARAM_CHART_DATA, "prompt": "Data", "min": 1, "max": 3},
     }
 
+    SCHEMA = {
+        "rule-height": {"type": "integer", "meta": {"label": "Rule height"}},
+        "charts": {"type": "list", "schema": PARAM_CHART_DATA, "meta": {"label": "Data"}, "minlength": 1, "maxlength": 3},
+    }
+
     MIN_UPDATE_TIME = 0.5  # sec
     DEFAULT_TIME_WIDTH = 60  # sec
 
