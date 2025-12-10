@@ -4,7 +4,7 @@ from pprint import pprint
 import cerberus
 import ruamel
 from ruamel.yaml import YAML
-
+from ruamel.yaml.compat import StringIO
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -14,6 +14,34 @@ ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
 yaml.sort_keys = False
+
+
+def beatiful(data_in):
+    def tr(n):
+        v = data_in.get(n)
+        if v is not None:
+            data[n] = v
+
+    data = {}
+    # 1. General, index, name, etc.
+    for attr in ["index", "name", "type"]:
+        tr(attr)
+
+    # 2. Activation
+    # Type copied above...
+    activation = data_in["type"]
+    activation_schema = ACTIVATION_SCHEMAS[activation]
+    for attr in activation_schema.keys():
+        tr(attr)
+
+    # 3. Representation
+    for attr in ["label", "label-font", "label-color", "label-size", "label-position"]:
+        tr(attr)
+
+    # output yaml string
+    stream = StringIO()
+    yaml.dump(data, stream)
+    return stream.getvalue()
 
 
 def check_font(field, value, error):
@@ -176,7 +204,6 @@ parts:
                 type: string
             led:
                 type: string
-                excludes: text
             formula:
                 type: string
       - schema:
@@ -184,7 +211,6 @@ parts:
                 type: string
             text:
                 type: string
-                excludes: led
             text-font:
                 type: string
             text-size:
@@ -239,6 +265,9 @@ for b in document["buttons"]:
         print("index", b["index"], v.errors)
     else:
         print("index", b["index"], "validate ok")
+        print("---")
+        print(beatiful(v.normalized(b)))
+        print("---")
         # pprint(v.normalized(b))
         # print(v.normalized(document))
     if representation in b:

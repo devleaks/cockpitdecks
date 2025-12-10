@@ -5,13 +5,14 @@ import logging
 from typing import Dict
 
 from cockpitdecks import ID_SEP, DEFAULT_ATTRIBUTE_PREFIX
+from cockpitdecks.buttons import activation
 from cockpitdecks.constant import CONFIG_KW
 from cockpitdecks.decks.resources.decktype import DeckType
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from cockpitdecks.simulator import SimulatorVariable
 from cockpitdecks.variable import InternalVariableType, Variable
 from .button import Button
-from .validator import ButtonValidator, cerberus_validate
+from .validator import ButtonValidator
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -35,6 +36,8 @@ class Page:
         self.simulator_variables: Dict[str, SimulatorVariable] = {}
 
         self.fill_empty_keys = config.get("fill-empty-keys", True)
+
+        self.button_validator = ButtonValidator(cockpit=self.deck.cockpit, deck=self.deck, page=self)
 
     def get_id(self):
         return ID_SEP.join([self.deck.get_id(), self.name])
@@ -145,10 +148,15 @@ class Page:
                 if rty == "none":
                     logger.debug(f"page {self.name}: button has no representation but it is ok")
 
-                info = f"validating {self.deck.name} / {self.deck.layout} / {self.name} / {button_config.get(CONFIG_KW.INDEX.value)}..."
-                r = cerberus_validate(cockpit=self.deck.cockpit, deck_type=self.deck.deck_type, button=button_config, info=info)
-                if not r:
-                    os._exit(1)
+                # EXPERIMENTAL
+                #
+                #
+                #
+                r = self.validate(button_config=button_config, activation=aty, representation=rty)
+                #
+                #
+                #
+                # EXPERIMENTAL
 
                 button = Button(config=button_config, page=self)
                 if button is not None:
@@ -159,6 +167,22 @@ class Page:
             except:
                 logger.warning(f"page {self.name}: could not add button button ({button_config}), ignored", exc_info=True)
         return built
+
+    def validate(self, button_config, activation, representation) -> bool:
+        r = False
+        try:
+            r = self.button_validator.validate(button_config=button_config, activation=activation, representation=representation)
+            if not r:
+                logger.warning(
+                    f"experimental: problem validating button config {'::'.join([self.deck.name, self.deck.layout, self.name, str(button_config.get(CONFIG_KW.INDEX.value, '-no index-'))])}"
+                )
+                os._exit(1)
+        except:
+            logger.warning(
+                f"experimental: problem validating button config {'::'.join([self.deck.name, self.deck.layout, self.name, str(button_config.get(CONFIG_KW.INDEX.value, '-no index-'))])}",
+                exc_info=True,
+            )
+        return r
 
     def inspect(self, what: str | None = None):
         """

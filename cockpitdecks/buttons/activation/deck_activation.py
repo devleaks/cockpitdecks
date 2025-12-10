@@ -13,7 +13,7 @@ from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .activation import Activation
 
 from .parameters import PARAM_DECK, PARAM_INITIAL_VALUE, PARAM_PUSH_AUTOREPEAT, PARAM_COMMAND_BLOCK
-from .schemas import SCHEMA_DECK, SCHEMA_INITIAL_VALUE, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
+from .schemas import SCHEMA_DECK, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -52,7 +52,7 @@ class Push(DeckActivation):
 
     PARAMETERS = DeckActivation.PARAMETERS | PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
 
-    SCHEMA = DeckActivation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_INITIAL_VALUE | SCHEMA_COMMAND_BLOCK
+    SCHEMA = DeckActivation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_COMMAND_BLOCK
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
@@ -277,7 +277,10 @@ class OnOff(Activation):
 
     PARAMETERS = PARAM_INITIAL_VALUE | {"commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2}}
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {"commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2}}
+    SCHEMA = Activation.SCHEMA | {
+        "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
+        "dataref": {"type": "string", "meta": {"label": "Dataref"}},
+    }
 
     # PARAMETERS = PARAM_INITIAL_VALUE | {
     #     "commands": {"type": "sub", "list": [
@@ -497,7 +500,7 @@ class UpDown(Activation):
         "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
     }
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {
+    SCHEMA = Activation.SCHEMA | {
         "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
         "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
     }
@@ -696,7 +699,7 @@ class Encoder(Activation, EncoderProperties):
         "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
     }
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {
+    SCHEMA = Activation.SCHEMA | {
         "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
         "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
     }
@@ -777,8 +780,8 @@ class EncoderPush(Push, EncoderProperties):
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 3, "max": 3},
     }
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {
-        "commands": {"type": "list", "schema": {'type': 'string'}, "minlength": 3, "maxlength": 3},
+    SCHEMA = Activation.SCHEMA | {
+        "commands": {"type": "list", "schema": {"type": "string"}, "minlength": 3, "maxlength": 3},
         "long-press": {"type": "string", "meta": {"label": "Long Press"}},
     }
 
@@ -915,7 +918,7 @@ class EncoderOnOff(OnOff, EncoderProperties):
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {
+    SCHEMA = Activation.SCHEMA | {
         "commands": {
             "type": "list",
             "schema": {"type": "string"},
@@ -1045,7 +1048,7 @@ class EncoderValue(OnOff, EncoderProperties):
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {
+    SCHEMA = Activation.SCHEMA | {
         "commands": {
             "type": "list",
             "schema": {"type": "string"},
@@ -1537,7 +1540,7 @@ class EncoderToggle(Activation, EncoderProperties):
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
 
-    SCHEMA = SCHEMA_INITIAL_VALUE | {"commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 4, "maxlength": 4}}
+    SCHEMA = Activation.SCHEMA | {"commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 4, "maxlength": 4}}
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -1645,7 +1648,7 @@ class Mosaic(Activation):
 
     PARAMETERS = PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
 
-    SCHEMA = SCHEMA_PUSH_AUTOREPEAT | SCHEMA_INITIAL_VALUE | SCHEMA_COMMAND_BLOCK
+    SCHEMA = Activation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_COMMAND_BLOCK
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds

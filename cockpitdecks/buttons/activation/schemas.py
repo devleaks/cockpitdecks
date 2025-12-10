@@ -3,11 +3,6 @@
 # ######################
 # COMMON
 #
-SCHEMA_INITIAL_VALUE = {
-    "initial-value": {"type": "integer", "meta": {"label": "Initial value"}},
-    "option": {"type": "string", "meta": {"label": "Options (!coded string!)"}},
-}
-
 SCHEMA_LABEL = {
     "label": {"type": "string", "meta": {"label": "Label"}},
     "label-size": {"type": "integer", "meta": {"label": "Lbl size"}},

@@ -12,7 +12,6 @@ from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider, Variable, VariableListener
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .parameters import PARAM_DESCRIPTION, PARAM_DECK
-from .schemas import SCHEMA_LABEL, SCHEMA_DECK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -75,7 +74,11 @@ class Activation(ActivationBase, VariableListener):
     # They are called the General or Global or Descriptive parameters.
     PARAMETERS = ActivationBase.PARAMETERS | PARAM_DESCRIPTION | PARAM_DECK
 
-    SCHEMA = ActivationBase.SCHEMA
+    SCHEMA = ActivationBase.SCHEMA | {
+        "initial-value": {"type": "integer", "meta": {"label": "Initial value"}},
+        "set-dataref": {"type": "string", "meta": {"label": "Dataref to set"}},
+        "options": {"type": "string", "meta": {"label": "Options (!coded string!)"}},
+    }
 
     @classmethod
     def schema(cls) -> dict:
