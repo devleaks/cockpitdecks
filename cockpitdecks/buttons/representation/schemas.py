@@ -65,11 +65,12 @@ SCHEMA_BTN_COMMON = {
     "tick-color": {"meta": {"label": "Tick Color"}, "type": "color"},
     "tick-from": {"meta": {"label": "Tick From"}, "type": "integer"},
     "tick-labels": {"type": "list", "schema": {"type": "string", "meta": {"label": "Lbl txt"}}, "minlength": 1},
+    "tick-label-font": {"meta": {"label": "Tick Label Font"}, "type": "font"},
     "tick-label-color": {"meta": {"label": "Tick Label Color"}, "type": "color"},
     "tick-label-size": {"meta": {"label": "Tick Label Size"}, "type": "integer"},
     "tick-label-space": {"meta": {"label": "Tick Label Space"}, "type": "string"},
     "tick-length": {"meta": {"label": "Tick Length"}, "type": "integer"},
-    "tick-space": {"meta": {"label": "Tick Space"}, "type": "string"},
+    "tick-space": {"meta": {"label": "Tick Space"}, "type": "integer"},
     "tick-to": {"meta": {"label": "Tick To"}, "type": "integer"},
     "tick-underline-color": {"meta": {"label": "Tick Underline Color"}, "type": "color"},
     "tick-underline-width": {"meta": {"label": "Tick Underline Width"}, "type": "integer"},
@@ -90,7 +91,9 @@ SCHEMA_BTN_SWITCH = {
     "switch-width": {"meta": {"label": "Switch Width"}, "type": "integer"},
 }
 
-SCHEMA_BTN_CIRCULAR_SWITCH = {}
+SCHEMA_BTN_CIRCULAR_SWITCH = {
+    "switch-style": {"meta": {"label": "Switch Style"}, "type": "string"},
+}
 
 SCHEMA_BTN_PUSH = {
     "witness-fill-color": {"meta": {"label": "Witness Fill Color"}, "type": "color"},

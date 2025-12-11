@@ -11,15 +11,28 @@ SCHEMA_LABEL = {
     "label-color": {"type": "color", "meta": {"label": "Lbl color"}},
 }
 
-SCHEMA_DECK = {
-    "sound": {"type": "sound", "meta": {"label": "Sound"}},
-    "vibrate": {"type": "string", "meta": {"label": "Vibrate"}},
-}
-
 # ######################
 # ACTIVATION
 #
 # COMMON BLOCKS
+
+SCHEMA_COMMANDS = {
+    "type": "list",
+    "schema": {
+        "oneof": [
+            {"type": "string"},
+            {
+                "type": "dict",
+                "schema": {
+                    "command": {"type": "string"},
+                    "condition": {"type": "string"},
+                    "delay":{"type": ["integer", "float"]}
+                }
+            }
+        ]
+    }
+}
+
 
 SCHEMA_COMMAND_BLOCK = {
     "command": {"type": "string", "meta": {"label": "Command"}},

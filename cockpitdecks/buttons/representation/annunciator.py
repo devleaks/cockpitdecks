@@ -476,8 +476,9 @@ class Annunciator(DrawBase):
                     },
                     {  # schema for TEXT part, like ON, OFF, DISCH...
                         "schema": {
-                            "formula": {"type": "string"},
-                            "dataref": {"type": "string"},
+                            "formula": {"type": "string", "meta": {"label": "Formula"}},
+                            "dataref": {"type": "string", "meta": {"label": "Dataref"}},
+                            "color": {"type": "color", "meta": {"label": "Color"}},
                             "text": {"type": "string", "meta": {"label": "Text"}},
                             "text-font": {"type": "font", "meta": {"label": "Font"}},
                             "text-size": {"type": "integer", "meta": {"label": "Size"}},
@@ -807,7 +808,10 @@ class AnnunciatorAnimate(Annunciator):
 
     PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
 
-    SCHEMA = {"speed": {"type": "integer", "meta": {"label": "Speed (seconds)"}}, "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}}}
+    SCHEMA = Annunciator.SCHEMA | {
+        "animation-speed": {"type": "float", "meta": {"label": "Speed (seconds)"}},
+        "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}}
+    }
 
     def __init__(self, button: "Button"):
         button._config["annunciator"] = button._config.get("annunciator-animate")

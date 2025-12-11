@@ -76,8 +76,10 @@ class Activation(ActivationBase, VariableListener):
 
     SCHEMA = ActivationBase.SCHEMA | {
         "initial-value": {"type": "integer", "meta": {"label": "Initial value"}},
+        "formula": {"type": "string", "meta": {"label": "Formula"}},
         "set-dataref": {"type": "string", "meta": {"label": "Dataref to set"}},
         "options": {"type": "string", "meta": {"label": "Options (!coded string!)"}},
+        "view": {"type": "string", "meta": {"label": "View command"}}, # Obsolete, to be replaced by Macro
     }
 
     @classmethod

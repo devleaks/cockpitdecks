@@ -13,7 +13,7 @@ from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
 from .activation import Activation
 
 from .parameters import PARAM_DECK, PARAM_INITIAL_VALUE, PARAM_PUSH_AUTOREPEAT, PARAM_COMMAND_BLOCK
-from .schemas import SCHEMA_DECK, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
+from .schemas import SCHEMA_COMMANDS, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -30,7 +30,10 @@ class DeckActivation(Activation):
 
     PARAMETERS = Activation.PARAMETERS | PARAM_DECK
 
-    SCHEMA = Activation.SCHEMA | SCHEMA_DECK
+    SCHEMA = Activation.SCHEMA | {
+        "sound": {"type": "sound", "meta": {"label": "Sound"}},
+        "vibrate": {"type": "string", "meta": {"label": "Vibrate"}},
+    }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -278,8 +281,8 @@ class OnOff(Activation):
     PARAMETERS = PARAM_INITIAL_VALUE | {"commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2}}
 
     SCHEMA = Activation.SCHEMA | {
-        "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
         "dataref": {"type": "string", "meta": {"label": "Dataref"}},
+        "commands": SCHEMA_COMMANDS
     }
 
     # PARAMETERS = PARAM_INITIAL_VALUE | {
@@ -501,9 +504,11 @@ class UpDown(Activation):
     }
 
     SCHEMA = Activation.SCHEMA | {
-        "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
+        "dataref": {"type": "string", "meta": {"label": "Dataref"}},
         "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
+        "commands": SCHEMA_COMMANDS
     }
+
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -700,8 +705,8 @@ class Encoder(Activation, EncoderProperties):
     }
 
     SCHEMA = Activation.SCHEMA | {
-        "commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 2, "maxlength": 2},
         "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
+        "commands": SCHEMA_COMMANDS
     }
 
     def __init__(self, button: "Button"):
@@ -781,8 +786,8 @@ class EncoderPush(Push, EncoderProperties):
     }
 
     SCHEMA = Activation.SCHEMA | {
-        "commands": {"type": "list", "schema": {"type": "string"}, "minlength": 3, "maxlength": 3},
         "long-press": {"type": "string", "meta": {"label": "Long Press"}},
+        "commands": SCHEMA_COMMANDS
     }
 
     def __init__(self, button: "Button"):
@@ -919,13 +924,7 @@ class EncoderOnOff(OnOff, EncoderProperties):
     }
 
     SCHEMA = Activation.SCHEMA | {
-        "commands": {
-            "type": "list",
-            "schema": {"type": "string"},
-            "minlength": 4,
-            "maxlength": 4,
-            "meta": {"label": "Commands"},
-        },
+        "commands": SCHEMA_COMMANDS
     }
 
     def __init__(self, button: "Button"):
@@ -1049,13 +1048,6 @@ class EncoderValue(OnOff, EncoderProperties):
     }
 
     SCHEMA = Activation.SCHEMA | {
-        "commands": {
-            "type": "list",
-            "schema": {"type": "string"},
-            "minlength": 2,
-            "maxlength": 4,
-            "meta": {"label": "Commands"},
-        },
         "value-min": {
             "type": "float",
             "meta": {"label": "Minimum value"},
@@ -1075,6 +1067,7 @@ class EncoderValue(OnOff, EncoderProperties):
         "set-dataref": {"type": "string", "meta": {"label": "Dataref to set"}},
         "dataref": {"type": "string", "meta": {"label": "Dataref"}},
         "value": {"type": "float", "meta": {"label": "Value"}},
+        "commands": SCHEMA_COMMANDS
     }
 
     def __init__(self, button: "Button"):
@@ -1540,7 +1533,9 @@ class EncoderToggle(Activation, EncoderProperties):
         "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
     }
 
-    SCHEMA = Activation.SCHEMA | {"commands": {"type": "list", "schema": SCHEMA_COMMAND_BLOCK, "minlength": 4, "maxlength": 4}}
+    SCHEMA = Activation.SCHEMA | {
+        "commands": SCHEMA_COMMANDS
+    }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
