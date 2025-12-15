@@ -30,12 +30,6 @@ class HardwareRepresentation(DrawBase):
 
     REPRESENTATION_NAME = "hardware-icon"
 
-    PARAMETERS = DrawBase.PARAMETERS | {
-        "highlight-color": {"type": "color", "prompt": "Highlight Color"},
-        "flash-color": {"type": "color", "prompt": "Flash Color"},
-        "flash-duration": {"type": "int", "prompt": "Flash Duration (msecs)"},
-    }
-
     SCHEMA = DrawBase.SCHEMA | {
         "highlight-color": {"type": "color", "meta": {"label": "Highlight Color"}},
         "flash-color": {"type": "color", "meta": {"label": "Flash Color"}},
@@ -79,16 +73,6 @@ class VirtualEncoder(HardwareRepresentation):
     """
 
     REPRESENTATION_NAME = "virtual-encoder"
-
-    PARAMETERS = {
-        "rotation-start": {"type": "int", "prompt": "Rotation start (°)"},
-        "rotation-step": {"type": "int", "prompt": "Rotation steps"},
-        "knob-fill-color": {"type": "color", "prompt": "Knob fill color"},
-        "knob-stroke-color": {"type": "color", "prompt": "Knob stroke color"},
-        "knob-stroke-width": {"type": "int", "prompt": "Knob stroke width"},
-        "mark-fill-color": {"type": "color", "prompt": "Mark fsill color"},
-        "mark-size": {"type": "int", "prompt": "Mark size"},
-    }
 
     SCHEMA = {
         "rotation-start": {"type": "int", "meta": {"label": "Rotation start (°)"}},
@@ -154,11 +138,6 @@ class VirtualLED(HardwareRepresentation):
     """
 
     REPRESENTATION_NAME = "virtual-led"
-
-    PARAMETERS = {
-        "color": {"type": "color", "prompt": "Color"},
-        "off-color": {"type": "color", "prompt": "OFF color"},
-    }
 
     SCHEMA = {
         "color": {"type": "color", "meta": {"label": "Color"}},

@@ -22,10 +22,6 @@ class LED(Representation):
     REPRESENTATION_NAME = "led"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.LED
 
-    PARAMETERS = {
-        "led": {"type": "string", "prompt": "LED", "default-value": "single"},
-    }
-
     SCHEMA = {
         "led": {"type": "string", "meta": {"label": "LED", "default": "single"}},
     }

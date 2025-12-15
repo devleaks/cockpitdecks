@@ -118,10 +118,6 @@ class SolariIcon(DrawAnimation):
 
     SPEED = 0.005
 
-    PARAMETERS = {
-        "text": {"type": "string", "prompt": f"Characters (up to {NUM_LINES * NUM_CHARS})"},
-    }
-
     SCHEMA = {
         "text": {"type": "string", "meta": {"label": f"Characters (up to {NUM_LINES * NUM_CHARS})"}},
     }

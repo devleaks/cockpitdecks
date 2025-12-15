@@ -23,12 +23,6 @@ class Representation:
     REPRESENTATION_NAME = "none"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.NONE
 
-    PARAMETERS = {
-        # this is activation
-        # "sound": {"label": "Sound", "type": "string"},
-        # "vibrate": {"label": "Vibrate", "type": "string"},
-    }
-
     SCHEMA = {}
 
     @classmethod
@@ -39,7 +33,7 @@ class Representation:
 
     @classmethod
     def parameters(cls) -> dict:
-        return cls.PARAMETERS
+        return {}
 
     @classmethod
     def name(cls) -> str:

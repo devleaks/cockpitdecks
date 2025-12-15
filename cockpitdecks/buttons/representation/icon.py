@@ -10,8 +10,7 @@ from cockpitdecks.resources.color import convert_color, has_ext, add_ext
 from cockpitdecks import CONFIG_KW, DECK_FEEDBACK
 from .representation import Representation
 from cockpitdecks.strvar import TextWithVariables
-from .parameters import PARAM_TEXT
-from .schemas import SCHEMA_TEXT
+from cockpitdecks.resources.validator.schemas.representations import SCHEMA_TEXT, SCHEMA_VALUE
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -34,8 +33,6 @@ class IconBase(Representation):
 
     REPRESENTATION_NAME = "icon-base-do-not-use"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
-
-    PARAMETERS = {"cockpit-color": {"type": "color", "prompt": "Cockpit color"}, "cockpit-texture": {"type": "icon", "prompt": "Cockpit Texture"}}
 
     SCHEMA = {"cockpit-color": {"type": "color", "meta": {"label": "Cockpit color"}}, "cockpit-texture": {"type": "icon", "meta": {"label": "Cockpit Texture"}}}
 
@@ -248,10 +245,31 @@ class Icon(IconBase):
     REPRESENTATION_NAME = "icon"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
-    # PARAMETERS = {"icon": {"type": "icon", "prompt": "Icon"}, "frame": {"type": "icon", "prompt": "Frame"}}
-    PARAMETERS = IconBase.PARAMETERS | {"icon": {"type": "icon", "prompt": "Icon"}}
-
-    SCHEMA = IconBase.SCHEMA | {"icon": {"type": "icon", "meta": {"label": "Icon"}}}
+    SCHEMA = IconBase.SCHEMA | {
+        "icon": {
+            "oneof": [
+                {
+                    "type": "string",
+                    "meta": {"label": "Icon"},
+                },
+                {
+                    "type": "dict",
+                    "schema": {
+                        "name": {"meta": {"label": "Icon"}, "type": "string"},
+                        "frame": {
+                            "schema": {
+                                "frame": {"type": "string"},
+                                "frame-size": {"schema": {"type": "integer"}, "type": "list"},
+                                "content-offset": {"schema": {"type": "integer"}, "type": "list"},
+                                "content-size": {"schema": {"type": "integer"}, "type": "list"},
+                            },
+                            "type": "dict",
+                        },
+                    },
+                },
+            ]
+        }
+    }
 
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
@@ -405,8 +423,6 @@ class IconColor(IconBase):
 
     REPRESENTATION_NAME = "icon-color"
 
-    PARAMETERS = IconBase.PARAMETERS | {"color": {"type": "color", "prompt": "Color"}, "texture": {"type": "icon", "prompt": "Texture"}}
-
     SCHEMA = IconBase.SCHEMA | {"color": {"type": "color", "meta": {"label": "Color"}}, "texture": {"type": "icon", "meta": {"label": "Texture"}}}
 
     def __init__(self, button: "Button"):
@@ -428,9 +444,7 @@ class IconText(IconColor):
 
     REPRESENTATION_NAME = "text"
 
-    PARAMETERS = IconBase.PARAMETERS | PARAM_TEXT
-
-    SCHEMA = IconBase.SCHEMA | SCHEMA_TEXT
+    SCHEMA = IconBase.SCHEMA | SCHEMA_TEXT | SCHEMA_VALUE
 
     def __init__(self, button: "Button"):
         text_config = button._config.get(CONFIG_KW.TEXT.value)  # where to get text from
@@ -499,9 +513,14 @@ class MultiTexts(IconText):
 
     REPRESENTATION_NAME = "multi-texts"
 
-    PARAMETERS = IconBase.PARAMETERS | {"-texts": {"type": "sub", "list": PARAM_TEXT, "min": 1, "max": 0, "prompt": "Texts"}}
-
-    SCHEMA = IconBase.SCHEMA | {"texts": {"type": "list", "schema": PARAM_TEXT, "minlength": 1, "maxlength": 0, "meta": {"label": "Texts", "hidden": True}}}
+    SCHEMA = IconBase.SCHEMA | {
+        "multi-texts": {
+            "type": "list",
+            "schema": {"type": "dict", "schema": SCHEMA_TEXT | SCHEMA_VALUE | {"notify": {"type": "string", "meta": {"label": "Notification"}}}},
+            "minlength": 1,
+            "meta": {"label": "Texts", "hidden": True},
+        }
+    }
 
     def __init__(self, button: "Button"):
         IconText.__init__(self, button=button)
@@ -568,14 +587,11 @@ class MultiIcons(Icon):
 
     REPRESENTATION_NAME = "multi-icons"
 
-    PARAMETERS = {"multi-icons": {"type": "sub", "list": {"-icon": {"type": "icon", "prompt": "Icon"}}, "min": 1, "max": 0, "prompt": "Icons"}}
-
     SCHEMA = {
         "multi-icons": {
             "type": "list",
-            "schema": {"icon": {"type": "icon", "meta": {"label": "Icon", "hidden": True}}},
+            "schema": {"type": "icon"},
             "minlength": 1,
-            "maxlength": 0,
             "meta": {"label": "Icons"},
         }
     }

@@ -1,0 +1,106 @@
+# Cerberus schema for deckconfig configuration files (config.yaml)
+#
+# Version 1.0.0
+#
+# Changelog:
+#
+# 2025-12-13: Version initiale
+#
+#
+---
+aircraft:
+  type: string
+aircraft-version:
+  type: string
+icao:
+  type: string
+  minlength: 3
+  maxlength: 4
+model:
+  type: string
+favourite livery:
+  type: string
+description:
+  type: string
+version:
+  type: string
+last-updated:
+  type: string
+decks:
+  type: list
+  schema:
+    type: dict
+    schema:
+      name:
+        type: string
+      type:
+        type: string
+      layout:
+        type: string
+      brightness:
+        type: float
+      light-off:
+        type: integer
+      disabled:
+        type: boolean
+#
+named-colors:
+  type: dict
+#
+# COCKPIT
+##
+default-icon-color:
+  type: string
+#
+virtual-deck-defaults:
+  type: dict
+#
+dataref-roundings:
+  type: dict
+#
+default-label-size:
+  type: integer
+default-label-font:
+  type: string
+default-annunciator-style:
+  type: string
+  allowed: [k, v]
+default-label-color:
+  type: string
+default-icon-name:
+  type: string
+default-tick-color:
+  type: string
+default-tick-label-color:
+  type: string
+default-tick-underline-color:
+  type: string
+default-button-underline-color:
+  type: string
+default-text-color:
+  type: string
+#
+dataref-fetch-frequencies:
+  type: dict
+#
+dataref-fetch-frequency:
+  type: integer
+#
+cockpit-texture:
+  type: string
+cockpit-color:
+  type: string
+
+# barbie-cockpit-color:
+# barbie-cockpit-texture:
+# barbie-default-label-font:
+# barbie-default-label-color:
+# barbie-default-text-font:
+# barbie-default-icon-color:
+# barbie-default-text-color:
+# barbie-default-text-position:
+# barbie-default-tick-color:
+# barbie-default-tick-label-color:
+# barbie-default-tick-underline-color:
+# barbie-default-light-off-intensity:
+# barbie-default-button-underline-color:

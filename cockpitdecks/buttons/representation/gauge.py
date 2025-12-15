@@ -37,10 +37,6 @@ class TapeIcon(DrawBase):
 
     REPRESENTATION_NAME = "tape"
 
-    PARAMETERS = {
-        "top-line-color": {"type": "color", "prompt": "Top line color"},
-    }
-
     SCHEMA = {
         "top-line-color": {"type": "color", "meta": {"label": "Top line color"}},
     }
@@ -326,11 +322,6 @@ class GaugeIcon(DrawBase):
 
     REPRESENTATION_NAME = "gauge"
 
-    PARAMETERS = {
-        "top-line-color": {"type": "color", "prompt": "Top line color"},
-        "gauge-size": {"label": "Gauge Size", "type": "int"},
-    }
-
     SCHEMA = {
         "top-line-color": {"type": "color", "meta": {"label": "Top line color"}},
         "gauge-size": {"label": "Gauge Size", "type": "int"},
@@ -508,10 +499,6 @@ class CompassIcon(GaugeIcon):
     """A Compass is a circular gauge (360°)"""
 
     REPRESENTATION_NAME = "compass"
-
-    PARAMETERS = {
-        "compass-mode": {"type": "string", "prompt": "Compass Mode"},
-    }
 
     SCHEMA = {
         "compass-mode": {"type": "string", "meta": {"label": "Compass Mode"}},

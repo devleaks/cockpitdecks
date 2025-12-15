@@ -22,31 +22,9 @@ class DataIcon(DrawBase):
 
     REPRESENTATION_NAME = "data"
 
-    PARAMETERS = {
-        "top-line-color": {"type": "color", "prompt": "Top line color"},
-        "top-line-width": {"type": "string", "prompt": "Top line width"},
-        "icon": {"type": "string", "prompt": "Icon name"},
-        "icon-size": {"type": "integer", "prompt": "Icon size"},
-        "icon-color": {"type": "color", "prompt": "Icon color"},
-        "data": {"type": "string", "prompt": "Data"},
-        "data-format": {"type": "string", "prompt": "Data format (python style)"},
-        "data-font": {"type": "font", "prompt": "Data font"},
-        "data-size": {"type": "integer", "prompt": "Data font size"},
-        "data-color": {"type": "color", "prompt": "Data color"},
-        "data-unit": {"type": "string", "prompt": "Data unit"},
-        "formula": {"type": "string", "prompt": "Formula"},
-        "bottomline": {"type": "string", "prompt": "Bottom line"},
-        "bottomline-size": {"type": "integer", "prompt": "Bottom line font size"},
-        "bottomline-color": {"type": "color", "prompt": "Bottom line color"},
-        "mark": {"type": "string", "prompt": "Mark"},
-        "mark-size": {"type": "integer", "prompt": "Mark size"},
-        "mark-font": {"type": "font", "prompt": "Mark font"},
-        "mark-color": {"type": "color", "prompt": "Mark color"},
-    }
-
     SCHEMA = {
         "top-line-color": {"type": "color", "meta": {"label": "Top line color"}},
-        "top-line-width": {"type": "string", "meta": {"label": "Top line width"}},
+        "top-line-width": {"type": "integer", "meta": {"label": "Top line width"}},
         "icon": {"type": "string", "meta": {"label": "Icon name"}},
         "icon-size": {"type": "integer", "meta": {"label": "Icon size"}},
         "icon-color": {"type": "color", "meta": {"label": "Icon color"}},
@@ -54,9 +32,10 @@ class DataIcon(DrawBase):
         "data-format": {"type": "string", "meta": {"label": "Data format (python style)"}},
         "data-font": {"type": "font", "meta": {"label": "Data font"}},
         "data-size": {"type": "integer", "meta": {"label": "Data font size"}},
+        "data-progress": {"type": "float", "meta": {"label": "Data font size"}},
         "data-color": {"type": "color", "meta": {"label": "Data color"}},
         "data-unit": {"type": "string", "meta": {"label": "Data unit"}},
-        "formula": {"type": "string", "meta": {"label": "Formula"}},
+        "formula": {"type": ["string", "integer", "float", "boolean"], "meta": {"label": "Formula"}},
         "bottomline": {"type": "string", "meta": {"label": "Bottom line"}},
         "bottomline-size": {"type": "integer", "meta": {"label": "Bottom line font size"}},
         "bottomline-color": {"type": "color", "meta": {"label": "Bottom line color"}},

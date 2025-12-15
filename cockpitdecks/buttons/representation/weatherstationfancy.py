@@ -40,40 +40,11 @@ class WeatherStationPlot(WeatherBaseIcon):
 
     DEFAULT_STATION = "EBBR"
 
-    PARAMETERS = WeatherBaseIcon.PARAMETERS | {
-        "plot-style": {
-            "type": "string",
-            "prompt": "Style",
-            "lov": [
-                "bw",
-            ],
-        },
-        "plot-text-font": {"type": "font", "prompt": "Text font"},
-        "plot-symbol-font": {"type": "font", "prompt": "Symbol font"},
-        "plot-color": {"type": "color", "prompt": "Plot color"},
-        "plot-wind-barb-color": {"type": "color", "prompt": "Wind barb color"},
-        "plot-text-color": {"type": "color", "prompt": "Text color"},
-        "plot-text-alt-color": {"type": "color", "prompt": "Text alt color"},
-        "plot-text-past-color": {"type": "color", "prompt": "Text past color"},
-        "plot-inverse-color": {"type": "color", "prompt": "Plot inverse color"},
-        "plot-info-color": {"type": "color", "prompt": "info color"},
-        "plot-secondary-color": {"type": "color", "prompt": "secondary color"},
-        "plot-success-color": {"type": "color", "prompt": "success color"},
-        "plot-danger-color": {"type": "color", "prompt": "danger color"},
-        "plot-warning-color": {"type": "color", "prompt": "warning color"},
-        "plot-light-color": {"type": "color", "prompt": "light color"},
-        "plot-dark-color": {"type": "color", "prompt": "dark color"},
-        "plot-muted-color": {"type": "color", "prompt": "muted color"},
-        "plot-white-color": {"type": "color", "prompt": "white color"},
-        "plot-alert-color": {"type": "color", "prompt": "alert color"},
-        "plot-disabled-color": {"type": "color", "prompt": "disabled color"},
-    }
-
     SCHEMA = WeatherBaseIcon.SCHEMA | {
         "plot-style": {
             "type": "string",
             "meta": {"label": "Style"},
-            "lov": [
+            "allowed": [
                 "bw",
             ],
         },

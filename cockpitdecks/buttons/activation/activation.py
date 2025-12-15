@@ -11,7 +11,6 @@ from cockpitdecks import ID_SEP, CONFIG_KW, DECK_ACTIONS, DEFAULT_ATTRIBUTE_PREF
 from cockpitdecks.event import PushEvent
 from cockpitdecks.variable import InternalVariable, ValueProvider, Variable, VariableListener
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
-from .parameters import PARAM_DESCRIPTION, PARAM_DECK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -30,17 +29,19 @@ class ActivationBase(ABC):
     REQUIRED_DECK_ACTIONS: DECK_ACTIONS | List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
     # One cannot request an activiation from a deck button that does not have the capability of the action
     # requested by the activation.
-    PARAMETERS = {}
-
     SCHEMA = {}
-
-    @classmethod
-    def parameters(cls) -> dict:
-        return cls.PARAMETERS
 
     @classmethod
     def name(cls) -> str:
         return cls.ACTIVATION_NAME
+
+    @classmethod
+    def parameters(cls) -> dict:
+        return {}
+
+    @classmethod
+    def schema(cls) -> dict:
+        return cls.SCHEMA
 
     @classmethod
     def get_required_capability(cls) -> list | tuple:
@@ -66,37 +67,18 @@ class Activation(ActivationBase, VariableListener):
     """
 
     ACTIVATION_NAME = "none"
-    REQUIRED_DECK_ACTIONS: DECK_ACTIONS | List[DECK_ACTIONS] = DECK_ACTIONS.NONE  # List of deck capabilities required to do the activation
-    # One cannot request an activiation from a deck button that does not have the capability of the action
-    # requested by the activation.
 
     # Parameters of base class Activation (name "none") contains global parameters, common to all buttons.
     # They are called the General or Global or Descriptive parameters.
-    PARAMETERS = ActivationBase.PARAMETERS | PARAM_DESCRIPTION | PARAM_DECK
-
     SCHEMA = ActivationBase.SCHEMA | {
-        "initial-value": {"type": "integer", "meta": {"label": "Initial value"}},
-        "formula": {"type": "string", "meta": {"label": "Formula"}},
+        "dataref": {"type": "string", "meta": {"label": "Dataref"}},
+        "initial-value": {"type": ["integer", "float", "boolean"], "meta": {"label": "Initial value"}},
+        "formula": {"type": ["string", "integer", "float", "boolean"], "meta": {"label": "Formula"}},
         "set-dataref": {"type": "string", "meta": {"label": "Dataref to set"}},
         "options": {"type": "string", "meta": {"label": "Options (!coded string!)"}},
-        "view": {"type": "string", "meta": {"label": "View command"}}, # Obsolete, to be replaced by Macro
+        "view": {"type": "string", "meta": {"label": "View command"}},  # Obsolete, to be replaced by Macro
+        "guard": {"type": "dict", "schema": {"color": {"type": "color"}, "dataref": {"type": "string"}, "model": {"type": "string", "allowed": ["grid"]}}},
     }
-
-    @classmethod
-    def schema(cls) -> dict:
-        # See https://stackoverflow.com/questions/1817183/using-super-with-a-class-method
-        # To merge parent class + this class
-        return cls.SCHEMA
-
-    @classmethod
-    def parameters(cls) -> dict:
-        # See https://stackoverflow.com/questions/1817183/using-super-with-a-class-method
-        # To merge parent class + this class
-        return cls.PARAMETERS
-
-    @classmethod
-    def name(cls) -> str:
-        return cls.ACTIVATION_NAME
 
     @classmethod
     def get_required_capability(cls) -> list | tuple:

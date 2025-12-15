@@ -15,6 +15,10 @@ endef
 
 all: a339dev
 
+validate:
+	clear
+	@python cd.py aircrafts/ToLiss\ A339 -p $(ALL_PACKAGES)
+
 a339dev:
 	clear
 	@cockpitdecks-cli aircrafts/ToLiss\ A339 -p $(DEV_PACKAGES) --designer

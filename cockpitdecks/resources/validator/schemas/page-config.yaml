@@ -1,0 +1,27 @@
+# Cerberus schema for deckconfig/layout/page configuration files
+#
+# Version 1.0.0
+#
+# Changelog:
+#
+# 2025-12-13: Version initiale
+#
+#
+---
+aircraft:
+  type: string
+description:
+  type: string
+version:
+  type: string
+last-updated:
+  type: string
+default-label-size:
+  type: integer
+default-label-font:
+  type: string
+default-annunciator-style:
+  type: string
+  allowed: [k, v]
+home-page-name:
+  type: string

@@ -14,7 +14,7 @@ from cockpitdecks.variable import Variable, VariableListener
 from .draw import DrawBase, ICON_SIZE
 from .draw_animation import DrawAnimation
 from cockpitdecks.value import Value
-from .parameters import PARAM_CHART_DATA
+from cockpitdecks.resources.validator.schemas.representations import SCHEMA_CHART_DATA
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -248,22 +248,24 @@ class ChartIcon(DrawAnimation):
 
     Attributes:
         REPRESENTATION_NAME: [description]
-        PARAMETERS: [description]
-        }: [description]
         MIN_UPDATE_TIME: [description]
         DEFAULT_TIME_WIDTH: [description]
     """
 
     REPRESENTATION_NAME = "chart"
 
-    PARAMETERS = {
-        "rule-height": {"type": "integer", "prompt": "Rule height"},
-        "charts": {"type": "sub", "list": PARAM_CHART_DATA, "prompt": "Data", "min": 1, "max": 3},
-    }
-
     SCHEMA = {
         "rule-height": {"type": "integer", "meta": {"label": "Rule height"}},
-        "charts": {"type": "list", "schema": PARAM_CHART_DATA, "meta": {"label": "Data"}, "minlength": 1, "maxlength": 3},
+        "charts": {
+            "type": "list",
+            "schema": {
+                "type": "dict",  # each element is a dict of attributes
+                # "schema": SCHEMA_CHART_DATA,
+            },
+            "meta": {"label": "Data"},
+            "minlength": 1,
+            "maxlength": 3,
+        },
     }
 
     MIN_UPDATE_TIME = 0.5  # sec

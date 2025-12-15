@@ -34,14 +34,17 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
 
     DEFAULT_STATION = "EBBR"  # LFBO for Airbus?
 
-    PARAMETERS = {
-        "speed": {"type": "integer", "prompt": "Refresh weather (seconds)"},
-        "refresh-location": {"type": "integer", "prompt": "Refresh location (seconds)"},
-    }
-
     SCHEMA = {
+        "station": {"type": "string", "meta": {"label": "Station"}},
+        "mode": {"type": "string", "meta": {"label": "Mode"}, "allowed": ["Aircraft", "Region"]},
+        "width": {"type": "integer", "meta": {"label": "Width"}},
+        "weather-font": {"type": "font", "meta": {"label": "Font"}},
+        "weather-size": {"type": "integer", "meta": {"label": "Size"}},
+        "weather-color": {"type": "string", "meta": {"label": "Color"}},
         "speed": {"type": "integer", "meta": {"label": "Refresh weather (seconds)"}},
         "refresh-location": {"type": "integer", "meta": {"label": "Refresh location (seconds)"}},
+        "dataref": {"type": "string", "meta": {"label": "Dataref"}},
+        "taf": {"type": "boolean", "meta": {"label": "TAF"}},
     }
 
     def __init__(self, button: "Button"):

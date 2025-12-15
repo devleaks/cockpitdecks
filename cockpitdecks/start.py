@@ -27,7 +27,6 @@ import ipaddress
 
 from enum import Enum
 
-from cockpitdecks import constant
 from flask import Flask, render_template, send_from_directory, send_file, request, abort
 from simple_websocket import Server, ConnectionClosed
 

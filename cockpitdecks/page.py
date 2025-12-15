@@ -152,26 +152,30 @@ class Page:
                 #
                 #
                 #
-                r = self.validate(button_config=button_config, activation=aty, representation=rty)
+                # MAKE SUTRE VALIDATE RETURNS True TO IGNORE VALIDATE RESULT
+                # IN DEVELOPER MODE VALIDATE RETURN FALSE TO PREVENT PAGE CREATION
+                #
+                r = self.validate(button_config=button_config)
                 #
                 #
                 #
                 # EXPERIMENTAL
 
-                button = Button(config=button_config, page=self)
-                if button is not None:
-                    if add_to_page:
-                        self.add_button(idx, button)
-                    built.append(button)
-                    logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
+                if r:
+                    button = Button(config=button_config, page=self)
+                    if button is not None:
+                        if add_to_page:
+                            self.add_button(idx, button)
+                        built.append(button)
+                        logger.debug(f"..page {self.name}: added button index {idx} {button.name} ({aty}, {rty})..")
             except:
                 logger.warning(f"page {self.name}: could not add button button ({button_config}), ignored", exc_info=True)
         return built
 
-    def validate(self, button_config, activation, representation) -> bool:
+    def validate(self, button_config) -> bool:
         r = False
         try:
-            r = self.button_validator.validate(button_config=button_config, activation=activation, representation=representation)
+            r = self.button_validator.validate(button_config=button_config)
             if not r:
                 logger.warning(
                     f"experimental: problem validating button config {'::'.join([self.deck.name, self.deck.layout, self.name, str(button_config.get(CONFIG_KW.INDEX.value, '-no index-'))])}"
@@ -182,7 +186,7 @@ class Page:
                 f"experimental: problem validating button config {'::'.join([self.deck.name, self.deck.layout, self.name, str(button_config.get(CONFIG_KW.INDEX.value, '-no index-'))])}",
                 exc_info=True,
             )
-        return r
+        return False
 
     def inspect(self, what: str | None = None):
         """

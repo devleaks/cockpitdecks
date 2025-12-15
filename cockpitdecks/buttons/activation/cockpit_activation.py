@@ -3,7 +3,6 @@ Button action and activation abstraction
 """
 
 import logging
-import random
 import subprocess
 
 from cockpitdecks.event import PushEvent
@@ -27,8 +26,6 @@ class CockpitActivation(Activation):
 
     ACTIVATION_NAME = "cockpit"
 
-    PARAMETERS = Activation.PARAMETERS
-
     SCHEMA = Activation.SCHEMA
 
     def __init__(self, button: "Button"):
@@ -44,11 +41,6 @@ class LoadPage(Activation):
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
     KW_BACKPAGE = "back"
-
-    PARAMETERS = {
-        "page": {"type": "string", "prompt": "Page", "default-value": "back", "mandatory": True},
-        "deck": {"type": "string", "prompt": "Remote deck"},
-    }
 
     SCHEMA = {
         "page": {"type": "string", "required": True, "meta": {"label": "Page", "default": "back"}},
@@ -97,13 +89,6 @@ class Reload(Activation):
     ACTIVATION_NAME = "reload"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "deck": {
-            "type": "string",
-            "prompt": "Deck",
-        }
-    }
-
     SCHEMA = {
         "deck": {"type": "string", "meta": {"label": "Deck"}},
     }
@@ -142,13 +127,6 @@ class ChangeTheme(Activation):
 
     ACTIVATION_NAME = "theme"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
-
-    PARAMETERS = {
-        "theme": {
-            "type": "string",
-            "prompt": "Theme",
-        }
-    }
 
     SCHEMA = {
         "theme": {"type": "string", "meta": {"label": "Theme"}},
@@ -191,19 +169,24 @@ class Inspect(Activation):
     ACTIVATION_NAME = "inspect"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "what": {
-            "type": "string",
-            "prompt": "What to inspect",
-            "default-value": "status",
-            "lov": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"],
-        }
-    }
-
     SCHEMA = {
         "what": {
             "type": "string",
-            "allowed": ["thread", "datarefs", "monitored", "print", "invalid", "status", "config", "valid", "desc", "dataref", "desc"],
+            "allowed": [
+                "thread",
+                "datarefs",
+                "monitored",
+                "print",
+                "invalid",
+                "status",
+                "config",
+                "valid",
+                "desc",
+                "dataref",
+                "desc",
+                "datarefs-listener",
+                "threads",
+            ],
             "meta": {"label": "What to inspect", "default": "status"},
         },
     }
@@ -243,8 +226,6 @@ class Stop(Activation):
     ACTIVATION_NAME = "stop"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {}
-
     SCHEMA = {}
 
     def __init__(self, button: "Button"):
@@ -279,8 +260,6 @@ class StartSimulator(Activation):
 
     ACTIVATION_NAME = "simulator"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
-
-    PARAMETERS = {}
 
     SCHEMA = {}
 
@@ -318,19 +297,6 @@ class Obs(Activation):
 
     ACTIVATION_NAME = "obs"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
-
-    PARAMETERS = {
-        "observable": {
-            "type": "string",
-            "prompt": "Observable",
-        },
-        "action": {
-            "type": "string",
-            "prompt": "Action",
-            "default-value": "toggle",
-            "lov": ["toggle", "enable", "disable"],
-        },
-    }
 
     SCHEMA = {
         "observable": {
@@ -383,8 +349,6 @@ class Obs(Activation):
 
 #     ACTIVATION_NAME = "random"
 #     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH, DECK_ACTIONS.ENCODER]
-
-#     PARAMETERS = {}
 
 #     def __init__(self, button: "Button"):
 #         Activation.__init__(self, button=button)

@@ -1,4 +1,4 @@
-# PARAMETERS
+# Schema for Cerberus Validator
 
 # ######################
 # REPRESENTATIONS
@@ -19,7 +19,13 @@ SCHEMA_TEXT = {
     "text-size": {"type": "integer", "meta": {"label": "Size"}},
     "text-color": {"type": "color", "meta": {"label": "Color"}},
     "text-bg-color": {"type": "color", "meta": {"label": "Background color"}},
+    "text-bg-texture": {"type": "color", "meta": {"label": "Background texture"}},
     "text-position": {"type": "string", "meta": {"label": "Position"}, "allowed": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
+}
+
+SCHEMA_VALUE = {
+    "formula": {"type": ["string", "integer", "float", "boolean"], "meta": {"label": "Formula"}},
+    "text-format": {"type": "string", "meta": {"label": "Value format"}},
 }
 
 SCHEMA_CHART_DATA = {
@@ -96,6 +102,7 @@ SCHEMA_BTN_CIRCULAR_SWITCH = {
 }
 
 SCHEMA_BTN_PUSH = {
+    "witness-color": {"meta": {"label": "Witness Color"}, "type": "color"},
     "witness-fill-color": {"meta": {"label": "Witness Fill Color"}, "type": "color"},
     "witness-fill-off-color": {"meta": {"label": "Witness Fill Off Color"}, "type": "color"},
     "witness-size": {"meta": {"label": "Witness Size"}, "type": "integer"},
@@ -227,6 +234,7 @@ REPRESENTATION_ATTRIBUTES = [
     "update",
     "value-max",
     "value-min",
+    "witness-color",
     "witness-fill-color",
     "witness-fill-off-color",
     "witness-size",

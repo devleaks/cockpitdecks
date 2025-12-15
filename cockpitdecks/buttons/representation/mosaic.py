@@ -11,8 +11,6 @@ class MultiButtons(IconBase):
 
     REPRESENTATION_NAME = "multi-buttons"
 
-    PARAMETERS = {}
-
     SCHEMA = {}
 
     def __init__(self, button: "Button"):
@@ -65,8 +63,6 @@ class Mosaic(MultiButtons):
     """A Mosaic is an icon that is split into several smaller icon"""
 
     REPRESENTATION_NAME = "mosaic"
-
-    PARAMETERS = {}
 
     SCHEMA = {}
 

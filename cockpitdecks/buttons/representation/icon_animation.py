@@ -27,7 +27,7 @@ class IconAnimation(MultiIcons):
 
     REPRESENTATION_NAME = "icon-animation"
 
-    PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
+    SCHEMA = {"speed": {"type": "integer", "meta": {"label": "Speed (seconds)"}}, "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}}}
 
     def __init__(self, button: "Button"):
         MultiIcons.__init__(self, button=button)
@@ -51,7 +51,7 @@ class IconAnimation(MultiIcons):
             self.counter = self.counter + 1
             self.button.value = self.counter  # get_current_value() will fetch self.counter value
             self.exit.wait(self.speed)
-        logger.debug(f"exited")
+        logger.debug("exited")
 
     def should_run(self) -> bool:
         """

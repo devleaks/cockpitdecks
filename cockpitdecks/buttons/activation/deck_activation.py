@@ -10,10 +10,9 @@ from cockpitdecks.event import EncoderEvent, PushEvent, TouchEvent
 from cockpitdecks.resources.color import is_integer
 from cockpitdecks import CONFIG_KW, DECK_KW, DECK_ACTIONS
 from cockpitdecks.resources.intvariables import COCKPITDECKS_INTVAR
+from cockpitdecks.resources.validator.schemas.activations import SCHEMA_COMMANDS, SCHEMA_COMMAND_WITH_MACRO, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
 from .activation import Activation
 
-from .parameters import PARAM_DECK, PARAM_INITIAL_VALUE, PARAM_PUSH_AUTOREPEAT, PARAM_COMMAND_BLOCK
-from .schemas import SCHEMA_COMMANDS, SCHEMA_PUSH_AUTOREPEAT, SCHEMA_COMMAND_BLOCK
 
 logger = logging.getLogger(__name__)
 # from cockpitdecks import SPAM
@@ -27,8 +26,6 @@ class DeckActivation(Activation):
     """
 
     ACTIVATION_NAME = "deck"
-
-    PARAMETERS = Activation.PARAMETERS | PARAM_DECK
 
     SCHEMA = Activation.SCHEMA | {
         "sound": {"type": "sound", "meta": {"label": "Sound"}},
@@ -53,9 +50,7 @@ class Push(DeckActivation):
     ACTIVATION_NAME = "push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = DeckActivation.PARAMETERS | PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
-
-    SCHEMA = DeckActivation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_COMMAND_BLOCK
+    SCHEMA = DeckActivation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_COMMAND_WITH_MACRO
 
     # Default values
     AUTO_REPEAT_DELAY = 1  # seconds
@@ -218,9 +213,7 @@ class BeginEndPress(Push):
     ACTIVATION_NAME = "begin-end-command"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
-
-    PARAMETERS = {"command": {"type": "string", "prompt": "Command", "mandatory": True}}
+    SCHEMA = {"command": {"type": "string", "meta": {"label": "Command"}, "required": True}}
 
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
@@ -278,20 +271,7 @@ class OnOff(Activation):
     ACTIVATION_NAME = "onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {"commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2}}
-
-    SCHEMA = Activation.SCHEMA | {
-        "dataref": {"type": "string", "meta": {"label": "Dataref"}},
-        "commands": SCHEMA_COMMANDS
-    }
-
-    # PARAMETERS = PARAM_INITIAL_VALUE | {
-    #     "commands": {"type": "sub", "list": [
-    #             {"name": "command1", "type": "string", "prompt": "Command to turn on", "mandatory": True},
-    #             {"name": "command2", "type": "string", "prompt": "Command to turn off", "mandatory": True},
-    #         ]
-    #     }
-    # }
+    SCHEMA = Activation.SCHEMA | {"dataref": {"type": "string", "meta": {"label": "Dataref"}}, "commands": SCHEMA_COMMANDS}
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -426,12 +406,6 @@ class ShortOrLongpress(Activation):
     ACTIVATION_NAME = "short-or-long-press"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = {
-        "command-short": {"type": "string", "prompt": "Command short press", "mandatory": True},
-        "command-long": {"type": "string", "prompt": "Command long press", "mandatory": True},
-        "long-time": {"type": "float", "prompt": "Time"},
-    }
-
     SCHEMA = {
         "command-short": {"type": "string", "meta": {"label": "Command short press"}, "required": True},
         "command-long": {"type": "string", "meta": {"label": "Command long press"}, "required": True},
@@ -498,17 +472,11 @@ class UpDown(Activation):
     ACTIVATION_NAME = "updown"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {
-        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2},
-        "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
-    }
-
     SCHEMA = Activation.SCHEMA | {
         "dataref": {"type": "string", "meta": {"label": "Dataref"}},
         "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
-        "commands": SCHEMA_COMMANDS
+        "commands": SCHEMA_COMMANDS,
     }
-
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -699,15 +667,7 @@ class Encoder(Activation, EncoderProperties):
     ACTIVATION_NAME = "encoder"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {
-        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 2, "max": 2},
-        "stops": {"type": "integer", "prompt": "Number of stops", "default-value": 2},
-    }
-
-    SCHEMA = Activation.SCHEMA | {
-        "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
-        "commands": SCHEMA_COMMANDS
-    }
+    SCHEMA = Activation.SCHEMA | {"stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}}, "commands": SCHEMA_COMMANDS}
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -781,14 +741,7 @@ class EncoderPush(Push, EncoderProperties):
     ACTIVATION_NAME = "encoder-push"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {
-        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 3, "max": 3},
-    }
-
-    SCHEMA = Activation.SCHEMA | {
-        "long-press": {"type": "string", "meta": {"label": "Long Press"}},
-        "commands": SCHEMA_COMMANDS
-    }
+    SCHEMA = Activation.SCHEMA | {"long-press": {"type": "string", "meta": {"label": "Long Press"}}, "commands": SCHEMA_COMMANDS}
 
     def __init__(self, button: "Button"):
         Push.__init__(self, button=button)
@@ -919,13 +872,7 @@ class EncoderOnOff(OnOff, EncoderProperties):
     ACTIVATION_NAME = "encoder-onoff"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {
-        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
-    }
-
-    SCHEMA = Activation.SCHEMA | {
-        "commands": SCHEMA_COMMANDS
-    }
+    SCHEMA = Activation.SCHEMA | {"commands": SCHEMA_COMMANDS}
 
     def __init__(self, button: "Button"):
         OnOff.__init__(self, button=button)
@@ -1043,10 +990,6 @@ class EncoderValue(OnOff, EncoderProperties):
     ACTIVATION_NAME = "encoder-value"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {
-        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
-    }
-
     SCHEMA = Activation.SCHEMA | {
         "value-min": {
             "type": "float",
@@ -1067,7 +1010,7 @@ class EncoderValue(OnOff, EncoderProperties):
         "set-dataref": {"type": "string", "meta": {"label": "Dataref to set"}},
         "dataref": {"type": "string", "meta": {"label": "Dataref"}},
         "value": {"type": "float", "meta": {"label": "Value"}},
-        "commands": SCHEMA_COMMANDS
+        "commands": SCHEMA_COMMANDS,
     }
 
     def __init__(self, button: "Button"):
@@ -1193,26 +1136,6 @@ class EncoderValueExtended(OnOff, EncoderProperties):
 
     ACTIVATION_NAME = "encoder-value-extended"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
-
-    PARAMETERS = {
-        "value-min": {
-            "type": "float",
-            "prompt": "Minimum value",
-        },
-        "value-max": {
-            "type": "float",
-            "prompt": "Maximum value",
-        },
-        "step": {
-            "type": "float",
-            "prompt": "Step value",
-        },
-        "step-xl": {
-            "type": "float",
-            "prompt": "Large step value",
-        },
-        "set-dataref": {"type": "string", "prompt": "Dataref"},
-    }
 
     SCHEMA = {
         "value-min": {
@@ -1390,22 +1313,6 @@ class Slider(Activation):  # Cursor?
     SLIDER_MAX = 100
     SLIDER_MIN = -100
 
-    PARAMETERS = {
-        "value-min": {
-            "type": "float",
-            "prompt": "Minimum value",
-        },
-        "value-max": {
-            "type": "float",
-            "prompt": "Maximum value",
-        },
-        "step": {
-            "type": "float",
-            "prompt": "Step value",
-        },
-        "set-dataref": {"type": "string", "prompt": "Dataref"},
-    }
-
     SCHEMA = {
         "value-min": {
             "type": "float",
@@ -1489,8 +1396,6 @@ class Swipe(Activation):
     ACTIVATION_NAME = "swipe"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.SWIPE
 
-    PARAMETERS = PARAM_COMMAND_BLOCK
-
     SCHEMA = SCHEMA_COMMAND_BLOCK
 
     def __init__(self, button: "Button"):
@@ -1529,13 +1434,7 @@ class EncoderToggle(Activation, EncoderProperties):
     ACTIVATION_NAME = "encoder-toggle"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.ENCODER, DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    PARAMETERS = PARAM_INITIAL_VALUE | {
-        "commands": {"type": "sub", "list": PARAM_COMMAND_BLOCK, "min": 4, "max": 4},
-    }
-
-    SCHEMA = Activation.SCHEMA | {
-        "commands": SCHEMA_COMMANDS
-    }
+    SCHEMA = Activation.SCHEMA | {"commands": SCHEMA_COMMANDS}
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -1640,8 +1539,6 @@ class Mosaic(Activation):
 
     ACTIVATION_NAME = "mosaic"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.SWIPE, DECK_ACTIONS.PUSH]
-
-    PARAMETERS = PARAM_PUSH_AUTOREPEAT | PARAM_INITIAL_VALUE | PARAM_COMMAND_BLOCK
 
     SCHEMA = Activation.SCHEMA | SCHEMA_PUSH_AUTOREPEAT | SCHEMA_COMMAND_BLOCK
 

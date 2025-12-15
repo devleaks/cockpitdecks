@@ -23,13 +23,6 @@ class TextPageIcon(DrawBase):
 
     REPRESENTATION_NAME = "textpage"
 
-    PARAMETERS = {
-        "textpages": {"type": "string", "prompt": "Text (pages)"},
-        "width": {"type": "integer", "prompt": "Width"},
-        "lines": {"type": "integer", "prompt": "Lines"},
-        "page-number": {"type": "bool", "prompt": "Page number"},
-    }
-
     SCHEMA = {
         "textpages": {"type": "string", "meta": {"label": "Text (pages)"}},
         "width": {"type": "integer", "meta": {"label": "Width"}},

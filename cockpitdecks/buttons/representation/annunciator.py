@@ -12,9 +12,9 @@ from cockpitdecks.resources.color import convert_color, light_off, is_number
 from cockpitdecks.simulator import SimulatorVariable
 from cockpitdecks.strvar import TextWithVariables
 from cockpitdecks.value import Value
+from cockpitdecks.resources.validator.schemas.representations import SCHEMA_TEXT
 
 from .draw import DrawBase, ICON_SIZE
-from .schemas import SCHEMA_TEXT
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -375,79 +375,6 @@ class Annunciator(DrawBase):
 
     REPRESENTATION_NAME = "annunciator"
 
-    PARAMETERS_ORIG = {
-        "icon": {"type": "icon", "prompt": "Icon"},
-        "type": {"type": "string", "prompt": "Type", "lov": ["A", "B", "C", "D", "E", "F"]},
-        # "style": {"type": "string", "prompt": "Style", "lov": ["Korry", "Vivisun"]},
-        # "color": {"type": "color", "prompt": "Background color"},
-        # "texture": {"type": "icon", "prompt": "Background texture"},
-        "annunciator-color": {"label": "Annunciator Color", "type": "color"},
-        "annunciator-style": {"label": "Annunciator Style", "type": "string"},
-        "annunciator-texture": {"label": "Annunciator Texture", "type": "icon"},
-        "light-off-intensity": {"label": "Light Off Intensity", "type": "string"},
-        "annunciator-parts": {
-            "type": "sub",
-            "list": {
-                "name": {"type": "string", "prompt": "Name", "lov": list(AnnunciatorPart.ANNUNCIATOR_PARTS.keys())},
-                "led": {"type": "boolean", "prompt": "LED"},
-                "text": {"type": "string", "prompt": "Text"},
-                "text-font": {"type": "font", "prompt": "Font"},
-                "text-size": {"type": "integer", "prompt": "Size"},
-                "text-color": {"type": "color", "prompt": "Color"},
-                "text-position": {"type": "string", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
-                "framed": {"type": "boolean", "prompt": "Frame"},
-            },
-            "min": 1,
-            "max": 6,
-            "prompt": "Parts",
-        },
-    }
-
-    PARAMETERS = {
-        "icon": {"type": "icon", "prompt": "Icon"},
-        "type": {"type": "string", "prompt": "Type", "lov": ["A", "B", "C", "D", "E", "F"]},
-        # "style": {"type": "string", "prompt": "Style", "lov": ["Korry", "Vivisun"]},
-        # "color": {"type": "color", "prompt": "Background color"},
-        # "texture": {"type": "icon", "prompt": "Background texture"},
-        "annunciator-color": {"label": "Annunciator Color", "type": "color"},
-        "annunciator-style": {"label": "Annunciator Style", "type": "string"},
-        "annunciator-texture": {"label": "Annunciator Texture", "type": "icon"},
-        "light-off-intensity": {"label": "Light Off Intensity", "type": "string"},
-        "annunciator-parts": {
-            "label": "Parts",
-            "type": "sub",
-            "min": 1,
-            "max": 6,
-            "prompt": "Parts",
-            "list": {  # array 1-6 parts
-                # elements in each part
-                "name": {"type": "string", "label": "Name"},  # LOV of possible parts accoring to name
-                "formula": {"type": "string", "label": "Formula"},
-                "-part-content": {
-                    "label": "Content",
-                    "type": "sel",
-                    "list": {  # choices of part content
-                        "text": {
-                            "type": "sub",
-                            "min": 1,
-                            "max": 1,
-                            "prompt": "Text",
-                            "list": {
-                                "text": {"type": "string", "prompt": "Text"},
-                                "text-font": {"type": "font", "prompt": "Font"},
-                                "text-size": {"type": "integer", "prompt": "Size"},
-                                "text-color": {"type": "color", "prompt": "Color"},
-                                "text-position": {"type": "string", "prompt": "Position", "lov": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
-                                "framed": {"type": "boolean", "prompt": "Frame"},
-                            },
-                        },  # part type TEXT
-                        "led": {"type": "string", "prompt": "LED type", "lov": [l.value for l in ANNUNCIATOR_LED]},
-                    },
-                },
-            },  # part
-        },  # annunciator-parts
-    }
-
     SCHEMA = {
         "icon": {"type": "icon", "meta": {"label": "Icon"}},
         "model": {"type": "string", "meta": {"label": "Type"}, "allowed": ["A", "B", "C", "D", "E", "F"]},
@@ -468,7 +395,7 @@ class Annunciator(DrawBase):
                 "oneof": [
                     {  # schema for LED part: Bar, block, landing gear triangle...
                         "schema": {
-                            "formula": {"type": "string"},
+                            "formula": {"type": ["string", "integer", "float", "boolean"], "meta": {"label": "Formula"}},
                             "dataref": {"type": "string"},
                             "color": {"type": "color"},
                             "led": {"type": "string", "allowed": [l.value for l in ANNUNCIATOR_LED]},
@@ -476,7 +403,7 @@ class Annunciator(DrawBase):
                     },
                     {  # schema for TEXT part, like ON, OFF, DISCH...
                         "schema": {
-                            "formula": {"type": "string", "meta": {"label": "Formula"}},
+                            "formula": {"type": ["string", "integer", "float", "boolean"], "meta": {"label": "Formula"}},
                             "dataref": {"type": "string", "meta": {"label": "Dataref"}},
                             "color": {"type": "color", "meta": {"label": "Color"}},
                             "text": {"type": "string", "meta": {"label": "Text"}},
@@ -806,11 +733,9 @@ class AnnunciatorAnimate(Annunciator):
 
     REPRESENTATION_NAME = "annunciator-animate"
 
-    PARAMETERS = {"speed": {"type": "integer", "prompt": "Speed (seconds)"}, "icon-off": {"type": "icon", "prompt": "Icon when off"}}
-
     SCHEMA = Annunciator.SCHEMA | {
         "animation-speed": {"type": "float", "meta": {"label": "Speed (seconds)"}},
-        "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}}
+        "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}},
     }
 
     def __init__(self, button: "Button"):

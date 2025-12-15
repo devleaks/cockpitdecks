@@ -28,18 +28,11 @@ class DrawBase(IconBase):
     ICON_SIZE = ICON_SIZE
     TRANSPARENT_PNG_COLOR = TRANSPARENT_PNG_COLOR
 
-    PARAMETERS = IconBase.PARAMETERS | {
-        "up": {"type": "integer", "prompt": "Up"},
-        "down": {"type": "integer", "prompt": "Down"},
-        "Left": {"type": "integer", "prompt": "Left"},
-        "Right": {"type": "integer", "prompt": "Right"},
-    }
-
     SCHEMA = IconBase.SCHEMA | {
         "up": {"type": "integer", "meta": {"label": "Up"}},
         "down": {"type": "integer", "meta": {"label": "Down"}},
-        "Left": {"type": "integer", "meta": {"label": "Left"}},
-        "Right": {"type": "integer", "meta": {"label": "Right"}},
+        "left": {"type": "integer", "meta": {"label": "Left"}},
+        "right": {"type": "integer", "meta": {"label": "Right"}},
     }
 
     def __init__(self, button: "Button"):
@@ -138,17 +131,10 @@ class Decor(DrawBase):
 
     REPRESENTATION_NAME = "decor"
 
-    PARAMETERS = DrawBase.PARAMETERS | {
-        "type": {"type": "string", "prompt": "Type", "lov": DECOR_TYPES},
-        "code": {"type": "string", "prompt": "Code"},
-        "width": {"type": "integer", "prompt": "Width"},
-        "color": {"type": "color", "prompt": "Color"},
-    }
-
     SCHEMA = DrawBase.SCHEMA | {
-        "type": {"type": "string", "meta": {"label": "Type"}, "lov": DECOR_TYPES},
+        "type": {"type": "string", "meta": {"label": "Type"}, "allowed": DECOR_TYPES},
         "code": {"type": "string", "meta": {"label": "Code"}},
-        "width": {"type": "integer", "meta": {"label": "Width"}},
+        "width": {"type": ["integer", "string"], "meta": {"label": "Width"}},
         "color": {"type": "color", "meta": {"label": "Color"}},
     }
 

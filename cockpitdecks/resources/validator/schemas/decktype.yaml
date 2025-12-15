@@ -1,0 +1,121 @@
+driver:
+  type: string
+name:
+  type: string
+description:
+  type: string
+background:
+  type: dict
+  schema:
+    image:
+      type: string
+    alternate:
+      type: string
+    color:
+      type: string
+    overlays:
+      type: list
+
+      # schema:
+      #   oneof:
+      #   - schema:
+      #       type: dict
+      #       schema:
+      #         text:
+      #           type: string
+      #         font:
+      #           type: string
+      #         size:
+      #           type: integer
+      #         color:
+      #           type: string
+      #         position:
+      #           type: list
+      #           schema:
+      #             tpye: integer
+      #   - schema:
+      #       type: dict
+      #       schema:
+      #         image:
+      #           type: string
+      #         position:
+      #           type: list
+      #           schema:
+      #             tpye: integer
+
+  # overlays:
+  #   - text: LoupedeckLive
+  #     font: museo-sans
+  #     size: 20
+  #     color: white
+  #     position:
+  #       - 840
+  #       - 40
+  #   - image: loupedecklive-logo-transparent.png
+  #     position:
+  #       - 840
+  #       - 40
+
+
+buttons:
+  type: list
+  schema:
+    type: dict
+    schema:
+      name:
+        type:
+          - string
+          - integer
+      prefix:
+        type: string
+      repeat:
+        oneof:
+          - type: integer
+          - type: list
+            schema:
+              type: integer
+      action:
+        oneof:
+          - type: string
+            allowed: [none,push,press,longpress,encoder,cursor,swipe]
+          - type: list
+            schema:
+              type: string
+              allowed: [none,push,press,longpress,encoder,cursor,swipe]
+      feedback:
+        oneof:
+          - type: string
+            allowed: [none,image,colored-led,led,encoder-leds,vibrate,sound]
+          - type: list
+            schema:
+              type: string
+              allowed: [none,image,colored-led,led,encoder-leds,vibrate,sound]
+      dimension:
+        oneof:
+          - type: list
+            schema:
+              type: integer
+          - type: float
+      layout:
+        type: dict
+        schema:
+          hardware:
+            type: dict
+            schema:
+              type:
+                type: string
+          offset:
+            type: list
+            schema:
+              type: [integer, float]
+          spacing:
+            type: list
+            schema:
+              type: [integer, float]
+      options:
+        type: string
+      mosaic:
+        type: list
+      sub-buttons:
+        type: dict
+      # Should repeat button schema

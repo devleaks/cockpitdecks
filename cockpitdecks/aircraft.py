@@ -182,7 +182,7 @@ class Aircraft:
 
     @property
     def observables(self) -> list:
-        return self._observables.observables if self._observables is not None else []
+        return self._observables.observables if type(self._observables) is Observables else []
 
     # Attributes
     def get_button_value(self, name):
@@ -271,13 +271,13 @@ class Aircraft:
     # #########################################################
     # Aircraft resources
     #
-    def load_resources(self):
+    def load_resources(self, start_observables: bool = True):
         # currently, nothing is not with this config, but it is loaded if it exists
         self.load_livery_config()
         self.load_fonts()
         self.load_icons()
         self.load_sounds()
-        self.load_observables()
+        self.load_observables(start_observables=start_observables)
         self.cockpit.add_resources(aircraft=self)
 
     def load_livery_config(self):
@@ -398,18 +398,22 @@ class Aircraft:
 
         logger.info(f"{len(self._sounds)} aircraft sounds loaded")
 
-    def load_observables(self):
+    def load_observables(self, start_observables: bool = True):
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            self._observables = Observables(config=config, simulator=self.sim)
-            names = []
-            for o in self._observables.get_observables():
-                self.cockpit.register_observable(o)
-                names.append(o._name)
-            logger.info(f"loaded {len(self._observables.observables)} aircraft observables: {', '.join(sorted(names))}")
+            if start_observables:
+                self._observables = Observables(config=config, simulator=self.sim)
+                names = []
+                for o in self._observables.get_observables():
+                    self.cockpit.register_observable(o)
+                    names.append(o._name)
+                logger.info(f"loaded {len(self._observables.observables)} aircraft observables: {', '.join(sorted(names))}")
+            else:
+                self._observables = config
+                logger.info(f"loaded {len(self._observables)} aircraft observables.")
 
     def unload_observables(self):
         if type(self._observables) is Observables:
@@ -647,7 +651,7 @@ class Aircraft:
         for name, deck in self.decks.items():
             deck.reload_page()
 
-    def start(self, acpath: str):
+    def start(self, acpath: str, start_observables: bool = True):
         """
         Loads decks for aircraft in supplied path.
         First unloads a previously loaded aircraft if any
@@ -688,8 +692,10 @@ class Aircraft:
                 logger.warning("no device")
                 return
 
-            self.load_resources()
+            self.load_resources(start_observables=start_observables)
             self.create_decks()
+            if self.cockpit.name == "CockpitdecksLoader":
+                return
             self.load_pages()
             self._running = True
         else:
