@@ -380,7 +380,7 @@ class CockpitdecksLoader(CockpitBase):
         if show_details:
             logger.info(f"available hardware representations: {', '.join(self.all_hardware_representations.keys())}")
 
-        self.load_resources(start_observables=False)
+        self.load_resources()
         self.scan_devices()
 
     # #########################################################
@@ -856,12 +856,12 @@ class CockpitdecksLoader(CockpitBase):
     # #########################################################
     # Cockpit data caches
     #
-    def load_resources(self, start_observables: bool = True):
+    def load_resources(self):
         self.load_icons()
         self.load_sounds()
         self.load_fonts()
         self.load_defaults()
-        self.load_observables(start_observables=start_observables)
+        self.load_observables()
         self.load_deck_types()
 
     def load_deck_types(self):
@@ -913,7 +913,7 @@ class CockpitdecksLoader(CockpitBase):
     def get_permanent_observables(self):
         return self._permanent_observables.values()
 
-    def load_observables(self, start_observables: bool = True):
+    def load_observables(self):
         # Permanent observables are "coded" observables
         self.load_permanent_observables()
 
@@ -925,7 +925,7 @@ class CockpitdecksLoader(CockpitBase):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            if start_observables:
+            if self.name == "Cockpit":
                 self._observables = Observables(config=config, simulator=self.sim)
                 for o in self._observables.get_observables():
                     self.register_observable(o)
@@ -1247,7 +1247,7 @@ class CockpitdecksLoader(CockpitBase):
         """
         self.mode = mode
         with self.reload_operation:
-            self.aircraft.start(acpath, start_observables=False)
+            self.aircraft.start(acpath)
 
     # #########################################################
     # Start/Stop engines

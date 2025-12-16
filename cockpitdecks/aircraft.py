@@ -271,13 +271,13 @@ class Aircraft:
     # #########################################################
     # Aircraft resources
     #
-    def load_resources(self, start_observables: bool = True):
+    def load_resources(self):
         # currently, nothing is not with this config, but it is loaded if it exists
         self.load_livery_config()
         self.load_fonts()
         self.load_icons()
         self.load_sounds()
-        self.load_observables(start_observables=start_observables)
+        self.load_observables()
         self.cockpit.add_resources(aircraft=self)
 
     def load_livery_config(self):
@@ -398,13 +398,13 @@ class Aircraft:
 
         logger.info(f"{len(self._sounds)} aircraft sounds loaded")
 
-    def load_observables(self, start_observables: bool = True):
+    def load_observables(self):
         fn = os.path.abspath(os.path.join(self.acpath, CONFIG_FOLDER, RESOURCES_FOLDER, OBSERVABLES_FILE))
         if os.path.exists(fn):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            if start_observables:
+            if self.cockpit.name == "Cockpit":
                 self._observables = Observables(config=config, simulator=self.sim)
                 names = []
                 for o in self._observables.get_observables():
@@ -651,7 +651,7 @@ class Aircraft:
         for name, deck in self.decks.items():
             deck.reload_page()
 
-    def start(self, acpath: str, start_observables: bool = True):
+    def start(self, acpath: str):
         """
         Loads decks for aircraft in supplied path.
         First unloads a previously loaded aircraft if any
@@ -692,7 +692,7 @@ class Aircraft:
                 logger.warning("no device")
                 return
 
-            self.load_resources(start_observables=start_observables)
+            self.load_resources()
             self.create_decks()
             if self.cockpit.name == "CockpitdecksLoader":
                 return
