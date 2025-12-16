@@ -4,10 +4,9 @@ from pprint import pprint
 
 import cerberus
 
-from cockpitdecks.buttons.representation import representation
 from cockpitdecks.resources.validator.schemas.button import SCHEMA_BUTTON
 from cockpitdecks.resources.validator.schemas.activations import ACTIVATION_ATTRIBUTES
-from cockpitdecks.resources.validator.schemas.representations import SCHEMA_LABEL, REPRESENTATION_NAMES, REPRESENTATION_ATTRIBUTES
+from cockpitdecks.resources.validator.schemas.representations import REPRESENTATION_NAMES, REPRESENTATION_ATTRIBUTES
 from cockpitdecks.constant import yaml
 
 yaml.sort_keys = False
