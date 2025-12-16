@@ -58,8 +58,8 @@ dataref-roundings:
   sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot: 4
   sim/weather/barometer_current_inhg: 4
   # used in Weather button 3 or 4 decimals sufficient...
-  sim/flightmodel/position/latitude: 8
-  sim/flightmodel/position/longitude: 8
+  sim/flightmodel/position/latitude: 4
+  sim/flightmodel/position/longitude: 4
   sim/cockpit/misc/barometer_setting: 2
   sim/flightmodel2/position/pressure_altitude: 1
   AirbusFBW/BatVolts[0]: 1
@@ -140,3 +140,7 @@ dataref-roundings:
   sim/weather/aircraft/wind_now_z_msc: 1
   sim/weather/aircraft/wind_speed_kts[*]: 1
   sim/weather/aircraft/wind_speed_msc: 1
+  sim/cockpit2/gauges/indicators/ground_track_mag_pilot: 1
+  sim/cockpit2/gauges/indicators/compass_heading_deg_mag: 1
+  sim/flightmodel2/position/groundspeed: 2
+  sim/flightmodel/position/y_agl: 2

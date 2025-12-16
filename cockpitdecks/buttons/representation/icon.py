@@ -277,10 +277,10 @@ class Icon(IconBase):
         self.icon = None
         self.frame = None
         config_icon = self._representation_config.get(self.REPRESENTATION_NAME)
-        if type(config_icon) is str: # icon: filename
+        if type(config_icon) is str:  # icon: filename
             self.icon = deck.cockpit.get_icon(config_icon)
             self.frame = self._config.get(CONFIG_KW.FRAME.value)
-        elif type(config_icon) is dict: # icon: {name: ..., frame: ...}
+        elif type(config_icon) is dict:  # icon: {name: ..., frame: ...}
             candidate_icon = config_icon.get(CONFIG_KW.NAME.value)
             if candidate_icon is not None:
                 self.icon = deck.cockpit.get_icon(candidate_icon)

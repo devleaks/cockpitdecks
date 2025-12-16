@@ -1218,4 +1218,3 @@ class CockpitdecksLoader(CockpitBase):
 
     def get_virtual_deck_defaults(self):
         return self.get_attribute("web-deck-defaults")
-
