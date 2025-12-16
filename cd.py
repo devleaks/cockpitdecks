@@ -6,6 +6,7 @@ import os
 import logging
 import argparse
 import subprocess
+import threading
 
 from enum import Enum
 
@@ -330,6 +331,10 @@ def main():
     logger.info(f"Loading {AIRCRAFT_DESC}..")
     cockpit.load_aircraft(acpath=args.aircraft_folder)
     logger.info(f"..{AIRCRAFT_DESC} loaded")
+    logger.info("stopping decks..")
+    cockpit.terminate_devices()
+    logger.info("..decks stopped")
+
     # os._exit(0)
 
 # Run if unwrapped

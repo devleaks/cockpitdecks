@@ -51,6 +51,8 @@ TEMPLATES_FOLDER = "templates"
 DEFAULT_LAYOUT = "default"
 DEFAULT_PAGE_NAME = "Default Page"
 
+LOADER_ONLY = "CockpitdecksLoader"
+
 # the following extensions are supposed to always be available
 # although they strictly are not mandatory for Cockpitdecks to run.
 #

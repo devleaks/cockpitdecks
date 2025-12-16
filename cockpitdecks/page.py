@@ -180,13 +180,13 @@ class Page:
                 logger.warning(
                     f"experimental: problem validating button config {'::'.join([self.deck.name, self.deck.layout, self.name, str(button_config.get(CONFIG_KW.INDEX.value, '-no index-'))])}"
                 )
-                os._exit(1)
+                # os._exit(1)
         except:
             logger.warning(
                 f"experimental: problem validating button config {'::'.join([self.deck.name, self.deck.layout, self.name, str(button_config.get(CONFIG_KW.INDEX.value, '-no index-'))])}",
                 exc_info=True,
             )
-        return False
+        return self.deck.cockpit.name != "CockpitdecksLoader"
 
     def inspect(self, what: str | None = None):
         """

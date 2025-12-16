@@ -404,7 +404,7 @@ class Aircraft:
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            if self.cockpit.name == "Cockpit":
+            if self.cockpit.name != "CockpitdecksLoader":
                 self._observables = Observables(config=config, simulator=self.sim)
                 names = []
                 for o in self._observables.get_observables():

@@ -1074,17 +1074,6 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
             return var
         return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string, creator=self.name))
 
-    def get_variable_value(self, name, default=None) -> Any | None:
-        """Gets the value of a Variable monitored by Cockpitdecks
-        Args:
-            simulator_variable ([type]): [description]
-            default ([type]): [description] (default: `None`)
-
-        Returns:
-            [type]: [description]
-        """
-        return self.variable_database.value_of(name, default=default)
-
     # #########################################################
     # Instruction
     #

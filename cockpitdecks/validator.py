@@ -1,7 +1,7 @@
 import logging
-from io import StringIO
 from pprint import pprint
 
+from ruamel.yaml.compat import StringIO
 import cerberus
 
 from cockpitdecks.resources.validator.schemas.button import SCHEMA_BUTTON
@@ -9,7 +9,8 @@ from cockpitdecks.resources.validator.schemas.activations import ACTIVATION_ATTR
 from cockpitdecks.resources.validator.schemas.representations import REPRESENTATION_NAMES, REPRESENTATION_ATTRIBUTES
 from cockpitdecks.constant import yaml
 
-yaml.sort_keys = False
+
+yaml.sort_base_mapping_type_on_output = False
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

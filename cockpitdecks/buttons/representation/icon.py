@@ -273,20 +273,22 @@ class Icon(IconBase):
 
     def __init__(self, button: "Button"):
         IconBase.__init__(self, button=button)
-
-        self.frame = self._config.get(CONFIG_KW.FRAME.value)
-
-        self.icon = None
         deck = self.button.deck
-
-        candidate_icon = self._config.get("icon")
-        if candidate_icon is not None:
-            self.icon = deck.cockpit.get_icon(candidate_icon)
+        self.icon = None
+        self.frame = None
+        config_icon = self._representation_config.get(self.REPRESENTATION_NAME)
+        if type(config_icon) is str: # icon: filename
+            self.icon = deck.cockpit.get_icon(config_icon)
+            self.frame = self._config.get(CONFIG_KW.FRAME.value)
+        elif type(config_icon) is dict: # icon: {name: ..., frame: ...}
+            candidate_icon = config_icon.get(CONFIG_KW.NAME.value)
+            if candidate_icon is not None:
+                self.icon = deck.cockpit.get_icon(candidate_icon)
+            self.frame = config_icon.get(CONFIG_KW.FRAME.value)
 
         if self.icon is None:
             if self._config.get(NO_ICON, False):
                 logger.debug(f"button {self.button_name}: requested to no do icon")
-
         self._icon_cache = None
 
     def is_valid(self):

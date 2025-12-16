@@ -9,7 +9,7 @@ from ruamel.yaml.compat import StringIO
 ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
 yaml = YAML(typ="safe", pure=True)
 yaml.default_flow_style = False
-yaml.sort_keys = False
+yaml.sort_base_mapping_type_on_output = False
 
 parser = argparse.ArgumentParser(description="Check Yaml document against Cerberus schema")
 parser.add_argument("files", metavar="files", type=str, nargs=2, help="document schema")

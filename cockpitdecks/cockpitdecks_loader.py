@@ -11,7 +11,6 @@ import threading
 import pickle
 import json
 import itertools
-import re
 
 from queue import Queue
 from typing import Dict, Tuple, Set
@@ -560,15 +559,6 @@ class CockpitdecksLoader(CockpitBase):
         logger.warning(f"deck with driver {req_driver} and serial '{req_serial}' not found")
         return None
 
-    def terminate_devices(self):
-        for deck in self.devices:
-            deck_driver = deck.get(CONFIG_KW.DRIVER.value)
-            if deck_driver not in self.all_deck_drivers.keys():
-                logger.warning(f"invalid deck type {deck_driver}, ignoring")
-                continue
-            device = deck[CONFIG_KW.DEVICE.value]
-            self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
-
     # #########################################################
     # Variables and Events
     #
@@ -653,17 +643,6 @@ class CockpitdecksLoader(CockpitBase):
                     logger.warning(f"variable {name} type forced to string" + " *" * 10)
             return var
         return self.variable_database.register(variable=factory.variable_factory(name=name, is_string=is_string, creator=self.name))
-
-    def get_variable_value(self, name, default=None) -> Any | None:
-        """Gets the value of a Variable monitored by Cockpitdecks
-        Args:
-            simulator_variable ([type]): [description]
-            default ([type]): [description] (default: `None`)
-
-        Returns:
-            [type]: [description]
-        """
-        return self.variable_database.value_of(name, default=default)
 
     # #########################################################
     # Attribute defaults
@@ -820,39 +799,6 @@ class CockpitdecksLoader(CockpitBase):
         if self.sim is not None:
             self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
 
-    def inspect(self, what: str | None = None):
-        """
-        This function is called on all instances of Deck.
-        """
-        logger.info(f"Cockpitdecks Rel. {__version__} -- {what}")
-
-        if what is not None and "thread" in what:
-            logger.info(f"{[(t.name,t.isDaemon(),t.is_alive()) for t in threading.enumerate()]}")
-        elif what is not None and what.startswith("datarefs"):
-            self.inspect_variables(what)
-        elif what == "monitored":
-            self.inspect_monitored(what)
-        else:
-            self.aircraft.inspect(what)
-
-    def inspect_variables(self, what: str | None = None):
-        if what is not None and what.startswith("datarefs"):
-            for dref in self.variable_database.database.values():
-                logger.info(f"{dref.name} = {dref.value} ({len(dref.listeners)} lsnrs)")
-                if what.endswith("listener"):
-                    for l in dref.listeners:
-                        logger.info(f"  {l.name}")
-        else:
-            logger.info("to do")
-
-    def inspect_monitored(self, what: str | None = None):
-        logger.info("Monitored datarefs:")
-        for dref in self.sim.simulator_variable_to_monitor.values():
-            logger.info(f"{dref}")
-        logger.info("Monitored events:")
-        for evt in self.sim.simulator_event_to_monitor.values():
-            logger.info(f"{evt}")
-
     # #########################################################
     # Cockpit data caches
     #
@@ -925,14 +871,8 @@ class CockpitdecksLoader(CockpitBase):
             config = {}
             with open(fn, "r") as fp:
                 config = yaml.load(fp)
-            if self.name == "Cockpit":
-                self._observables = Observables(config=config, simulator=self.sim)
-                for o in self._observables.get_observables():
-                    self.register_observable(o)
-                logger.info(f"loaded {len(self._observables.observables)} cockpit observables: {self._observables}")
-            else:
-                self._observables = config
-                logger.info(f"loaded {len(self._observables)} cockpit observables.")
+            self._observables = config
+            logger.info(f"loaded {len(self._observables)} cockpit observables.")
         else:
             logger.info("no cockpit observables")
 
@@ -949,16 +889,6 @@ class CockpitdecksLoader(CockpitBase):
         else:
             logger.warning(f"invalid type for _observables ({type(self._observables)})")
         return {}
-
-    def register_observable(self, observable: Observable):
-        if observable._name not in self.observable_database:
-            self.observable_database[observable._name] = observable
-
-    def terminate_observables(self):
-        logger.info("terminating observable..")
-        for o in self.observable_database.values():
-            o.terminate()
-        logger.info("..observable terminated")
 
     def load_icons(self):
         # Loading default icons
@@ -1265,6 +1195,15 @@ class CockpitdecksLoader(CockpitBase):
         if serial_in == "1.0.1":
             return "X-TOUCH MINI"
 
+    def terminate_devices(self):
+        for deck in self.devices:
+            deck_driver = deck.get(CONFIG_KW.DRIVER.value)
+            if deck_driver not in self.all_deck_drivers.keys():
+                logger.warning(f"invalid deck type {deck_driver}, ignoring")
+                continue
+            device = deck[CONFIG_KW.DEVICE.value]
+            self.all_deck_drivers[deck_driver][0].terminate_device(device, deck[CONFIG_KW.SERIAL.value])
+
     # ###############################################################
     # Web/Virtual decks
     #
@@ -1280,500 +1219,3 @@ class CockpitdecksLoader(CockpitBase):
     def get_virtual_deck_defaults(self):
         return self.get_attribute("web-deck-defaults")
 
-    def handle_code(self, code: int, name: str):
-        logger.debug(f"received code {name}:{code}")
-        if code == 1:
-            deck = self.decks.get(name)
-            if deck is None:
-                logger.warning(f"handle code: deck {name} not found (code {code})")
-                return
-            deck.add_client()
-            logger.debug(f"{name} opened")
-            deck.reload_page()
-            logger.debug(f"{name} reloaded")
-        if code == 2:
-            deck = self.decks.get(name)
-            if deck is None:
-                logger.warning(f"handle code: deck {name} not found (code {code})")
-                return
-            deck.remove_client()
-            logger.debug(f"{name} closed")
-        elif code in [4, 5]:
-            payload = {
-                "code": code,
-                "deck": name,
-                "meta": {"ts": datetime.now().timestamp()},
-            }
-            self.send(deck=self.name, payload=payload)
-
-    def process_event(self, deck_name, key, event, data, replay: bool = False):
-        deck = self.decks.get(deck_name)
-        logger.debug(f"received {deck_name}: key={key}, event={event}")
-        if deck is None:
-            logger.warning(f"handle event: deck {deck_name} not found")
-            return
-        if not replay:
-            if deck.deck_type.is_virtual_deck():
-                deck.key_change_callback(key=key, state=event, data=data)
-            else:
-                deck.key_change_callback(deck=deck.device, key=key, state=event)
-            return
-        deck.replay(key=key, state=event, data=data)
-
-    def replay_sim_event(self, data: dict):
-        path = data.get("path")
-        if path is not None:
-            if not self.sim.is_internal_simulator(path):
-                e = self.sim.create_replay_event(name=path, value=data.get("value"))
-                e._replay = True
-                e.run()  # enqueue after setting the reply flag
-        else:
-            logger.warning(f"path not found")
-
-    def clear_virtual_deck_errors(self):
-        self.vd_errs = []
-
-    def register_deck(self, deck: str, websocket):
-        if deck not in self.vd_ws_conn:
-            self.vd_ws_conn[deck] = []
-            logger.debug(f"{deck}: new registration")
-        self.vd_ws_conn[deck].append(websocket)
-        logger.debug(f"{deck}: registration added ({len(self.vd_ws_conn[deck])})")
-        logger.info(f"registered deck {deck}")
-
-    def is_closed(self, ws):
-        return ws.__dict__.get("environ").get("werkzeug.socket").fileno() < 0  # there must be a better way to do this...
-
-    def remove_client(self, websocket):
-        # we unfortunately have to scan all decks to find the ws to remove
-        #
-        for deck in self.vd_ws_conn:
-            remove = []
-            for ws in self.vd_ws_conn[deck]:
-                if ws == websocket:
-                    remove.append(websocket)
-            for ws in remove:
-                self.vd_ws_conn[deck].remove(ws)
-        remove = []
-        for deck in self.vd_ws_conn:
-            if len(self.vd_ws_conn[deck]) == 0:
-                self.handle_code(code=2, name=deck)
-                remove.append(deck)
-                logger.info(f"unregistered deck {deck}")
-        for deck in remove:
-            del self.vd_ws_conn[deck]
-
-    def send(self, deck, payload) -> bool:
-        sent = False
-        client_list = self.vd_ws_conn.get(deck)
-        closed_ws = []
-        if client_list is not None:
-            for ws in client_list:  # send to each instance of this deck connected to this websocket server
-                if self.is_closed(ws):
-                    closed_ws.append(ws)
-                    continue
-                ws.send(json.dumps(payload))
-                logger.debug(f"sent for {deck}")
-                sent = True
-            if len(closed_ws) > 0:
-                for ws in closed_ws:
-                    client_list.remove(ws)
-        else:
-            if deck not in self.vd_errs:
-                logger.debug(f"no client for {deck}")  # warning
-                self.vd_errs.append(deck)
-        return sent
-
-    def probe(self, deck):
-        return self.send(
-            deck=deck,
-            payload={
-                "code": 99,
-                "deck": deck,
-                "meta": {"ts": datetime.now().timestamp()},
-            },
-        )
-
-    def refresh_deck(self, deck):
-        payload = {"code": 1, "deck": deck, "meta": {"ts": datetime.now().timestamp()}}
-        self.send(deck=deck, payload=payload)
-
-    def refresh_all_decks(self):
-        for name in self.virtual_decks:
-            payload = {
-                "code": 1,
-                "deck": name,
-                "meta": {"ts": datetime.now().timestamp()},
-            }
-            self.send(deck=name, payload=payload)
-
-    # ###############################################################
-    # Button designer (supporting web api)
-    #
-    def list_of_aircrafts(self) -> Set:
-        ac = set()
-        for d in self.cockpitdecks_path.split(":"):
-            if d == "/":
-                continue
-            ac = ac.union(set(glob.glob(os.path.join(d, "**", CONFIG_FOLDER), recursive=True)))
-        return ac
-
-    def get_aircraft_list(self) -> dict:
-        ac = self.list_of_aircrafts()
-        ret = []
-        for d in ac:
-            d1 = d[:-11]  # remove /deckconfig
-            i = d1.rindex("/")  # UNIX ONLY, adjust for windows os.sep?
-            if i > 0:
-                d2 = d1[i + 1 :]
-                j = max(0, i - 16)
-                d3 = ".." + d1[j:i]
-                ret.append((d2, d, d3))
-        return ret
-
-    def get_assets(self):
-        """Collects all assets for button designer
-
-        Returns:
-            dict: Assets
-        """
-        decks = [{"name": k, "type": v.deck_type.name} for k, v in self.decks.items()]
-        return {
-            "decks": decks,
-            "fonts": list(self.fonts.keys()),
-            "icons": list(self.icons.keys()),
-            "activations": list(self.all_activations.keys()),
-            "representations": list(self.all_representations.keys()),
-        }
-
-    def get_deck_background_images(self):
-        # Located either in cockpitdecks/decks/resources/assets/decks/images
-        # or <aircraft>/deckconfig/resources/decks/images.
-        ASSET_FOLDER = os.path.abspath(os.path.join("cockpitdecks", DECKS_FOLDER, RESOURCES_FOLDER, ASSETS_FOLDER))
-        AIRCRAFT_ASSET_FOLDER = os.path.abspath(os.path.join(self.aircraft.acpath, CONFIG_FOLDER, RESOURCES_FOLDER))
-        INTERNAL_DESIGN = False
-        folders = [AIRCRAFT_ASSET_FOLDER]
-        if INTERNAL_DESIGN:
-            folders.append(ASSET_FOLDER)
-        deckimages = {}
-        for base in folders:
-            dn = os.path.join(base, DECKS_FOLDER, DECK_IMAGES)
-            if os.path.isdir(dn):
-                files = []
-                for ext in ["png", "jpg"]:
-                    files = files + glob.glob(os.path.join(dn, f"*.{ext}"))
-                for f in files:
-                    fn = os.path.basename(f)
-                    if fn in deckimages:
-                        logger.warning(f"duplicate deck background image {fn}, ignoring {f}")
-                    else:
-                        if fn.startswith("/"):
-                            fn = fn[1:]
-                        if base == AIRCRAFT_ASSET_FOLDER:
-                            deckimages[fn] = AIRCRAFT_ASSET_PATH + fn
-                        else:
-                            deckimages[fn] = COCKPITDECKS_ASSET_PATH + fn
-        return deckimages
-
-    def locate_image(self, filename):
-        if filename is None:
-            return None
-        places = [
-            os.path.join(os.path.abspath(self.aircraft.acpath), CONFIG_FOLDER, RESOURCES_FOLDER),
-            os.path.join(os.path.abspath(self.aircraft.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, ICONS_FOLDER),
-            os.path.join(os.path.abspath(self.aircraft.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER),
-            os.path.join(os.path.abspath(self.aircraft.acpath), CONFIG_FOLDER, RESOURCES_FOLDER, DECKS_FOLDER, "images"),
-            os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER)),
-            os.path.abspath(os.path.join("cockpitdecks", RESOURCES_FOLDER, ICONS_FOLDER)),
-        ]
-        for directory in places:
-            fn = os.path.abspath(os.path.join(directory, filename))
-            logger.debug(f"trying {fn}")
-            if os.path.exists(fn):
-                logger.debug(f"file {filename} in {fn}")
-                return fn
-        logger.warning(f"file {filename} not found")
-        return None
-
-    def get_deck_indices(self, name):
-        deck = self.decks.get(name)
-        if deck is None:
-            return {"index": []}
-        return {"indices": deck.deck_type.valid_indices(with_icon=True)}
-
-    def get_button_details(self, deck, index):
-        deck = self.decks.get(deck)
-        if deck is None:
-            logger.warning(f"not a valid deck {deck}")
-            return {}
-        if index not in deck.deck_type.valid_indices():
-            logger.warning(f"not a valid index {index} for {deck}")
-            return {}
-        return {
-            "deck": deck.name,
-            "deck_type": deck.deck_type.name,
-            "index": index,
-            "activations": list(deck.deck_type.valid_activations(index, source=self)),
-            "representations": list(deck.deck_type.valid_representations(index, source=self)),
-        }
-
-    def get_capabilities(self):
-        cap = {}
-        cap["version"] = __version__
-        # Aircraft list
-        cap["aircraft-list"] = self.get_aircraft_list()
-        cap["current-aircraft"] = os.path.abspath(os.path.join(self.aircraft.acpath, CONFIG_FOLDER))
-
-        # Activations: name: {<CERBERUS schema>}
-        a = {}
-        for k in self.all_activations:
-            a[k] = self.all_activations.get(k).schema()
-        cap["activation-schemas"] = a
-
-        # representation-schemas: name: {<CERBERUS schema>}
-        a = {}
-        for k in self.all_representations:
-            a[k] = self.all_representations.get(k).schema()
-        cap["representation-schemas"] = a
-
-        # Resources (for LOV)
-        cap["fonts"] = list(self.fonts.keys())
-        cap["icons"] = list(self.icons.keys())
-        cap["sounds"] = list(self.sounds.keys())
-
-        # Decks
-        d = {}
-        for k, v in self.aircraft.decks.items():
-            # doing pages
-            p = {}
-            for pk, pv in v.pages.items():
-                # doing buttons
-                b = {}
-                for bk, bv in pv.buttons.items():
-                    b[bk] = bv._config
-                p[pk] = b
-            d[k] = {
-                "name": v.name,
-                "type": v.deck_type.name,
-                "layout": v.layout,
-                "default_page": v.home_page_name,  # list(v.pages.keys()),
-                "pages": p,  # list(v.pages.keys()),
-                "virtual": v.is_virtual_deck(),
-            }
-        cap["decks"] = d
-
-        # Deck types
-        d = {}
-        for k, v in self.aircraft.deck_types.items():
-            if type(v) is DeckType:
-                # doing buttons
-                b = {}
-                for bt in v.valid_indices():
-                    b[bt] = {
-                        "activations": list(v.valid_activations(bt, source=self)),
-                        "representations": list(v.valid_representations(bt, source=self)),
-                    }
-                d[k] = {
-                    "name": v.name,
-                    "indices": v.valid_indices(),
-                    "buttons": b,
-                    # per button:
-                    # - valid_activation
-                    # - valid_representation
-                }
-        for k, v in self.aircraft.virtual_deck_types.items():
-            if type(v) is DeckType:
-                # doing buttons
-                b = {}
-                for bt in v.valid_indices():
-                    b[bt] = {
-                        "activations": list(v.valid_activations(bt, source=self)),
-                        "representations": list(v.valid_representations(bt, source=self)),
-                    }
-                d[k] = {
-                    "name": v.name,
-                    "indices": v.valid_indices(),
-                    "buttons": b,
-                    # per button:
-                    # - valid_activation
-                    # - valid_representation
-                }
-        cap["deck_types"] = d
-        # with open("a.yaml", "w") as fp:
-        #     yaml.dump(cap, fp)
-        return cap
-
-    def get_activation_schema(self, name, index=None):
-        return self.all_activations.get(name).schema()
-
-    def get_representation_schema(self, name, index=None):
-        return self.all_representations.get(name).schema()
-
-    def save_deck(self, deck):
-        fn = os.path.join(self.aircraft.acpath, CONFIG_FOLDER, CONFIG_FILE)
-        current_config = Config(fn)
-        decks = current_config[CONFIG_KW.DECKS.value]
-        found = False
-        i = 0
-        while not found and i < len(decks):
-            found = decks[i][CONFIG_KW.NAME.value] == deck
-            i = i + 1
-        if not found:
-            # create it, save it
-            decks.append({"name": deck, "type": deck})  # default layout will be 'default'
-            with open(fn, "w") as fp:
-                if CONFIG_FILENAME in current_config.store:
-                    del current_config.store[CONFIG_FILENAME]
-                yaml.dump(current_config.store, fp)
-                logger.info(f"added deck {deck} to config file")
-            # create/save serial as well
-            sn = os.path.join(self.aircraft.acpath, CONFIG_FOLDER, SECRET_FILE)
-            serial_numbers = Config(sn)
-            if not deck in serial_numbers.store:
-                serial_numbers.store[deck] = deck
-            with open(sn, "w") as fp:
-                if CONFIG_FILENAME in serial_numbers.store:
-                    del serial_numbers.store[CONFIG_FILENAME]
-                yaml.dump(serial_numbers.store, fp)
-                logger.info(f"added deck {deck} to secret file")
-
-            if self.event_loop_run:
-                logger.info(f"reloading decks..")
-                self.reload_decks()
-            else:
-                logger.info(f"starting..")
-                self.start_aircraft(self.aircraft.acpath)
-                self.refresh_all_decks()
-        else:
-            logger.debug(f"deck {deck} already exists in config file")
-
-    def save_button(self, data):
-        acpath = self.aircraft.acpath
-        if acpath is None:
-            acpath = "output"  # will save in current dir
-
-        deck = data.get("deck", "")
-        # if deck != "":
-        #     self.save_deck(deck)
-
-        layout = data.get("layout", "")
-        if layout == "":
-            layout = "default"
-        dn = os.path.join(acpath, CONFIG_FOLDER, layout)
-        if not os.path.exists(dn):
-            os.makedirs(dn, exist_ok=True)
-
-        page = data.get("page", "")
-        if page == "":
-            page = "index.yaml"
-        if not page.endswith(".yaml"):
-            page = page + ".yaml"
-        fn = os.path.join(dn, page)
-
-        page_config = None
-        button_config = yaml.load(data["code"])
-        if os.path.exists(fn):
-            with open(fn, "r") as fp:
-                page_config = yaml.load(fp)
-                if page_config is not None:
-                    if CONFIG_KW.BUTTONS.value in page_config:
-                        page_config[CONFIG_KW.BUTTONS.value] = list(
-                            filter(
-                                lambda b: b[CONFIG_KW.INDEX.value] != button_config[CONFIG_KW.INDEX.value],
-                                page_config[CONFIG_KW.BUTTONS.value],
-                            )
-                        )
-                    else:
-                        page_config[CONFIG_KW.BUTTONS.value] = []
-        if page_config is None:
-            page_config = {CONFIG_KW.BUTTONS.value: [button_config]}
-        else:
-            page_config[CONFIG_KW.BUTTONS.value].append(button_config)
-        # New file name for save, we don't touch the original
-        orig = fn
-        fn = fn + DESIGNER_EXTENSION  # re.sub(r"\.(y[a]?ml)$", ".bd.\\1", fn)
-        if orig != fn:
-            with open(fn, "w") as fp:
-                yaml.dump(page_config, fp)
-                logger.info(f"button saved (in {fn}, original preserved)")
-            self.reload_deck(deck_name=deck)
-        else:
-            logger.info(f"button not saved, cannot overwrite original {orig}")
-
-    def load_button(self, deck, layout, page, index):
-        deck_name = self.decks.get(deck)
-        if deck_name is None or deck_name == "":
-            return {"code": "", "meta": {"error": f"no deck {deck}"}}
-
-        if layout == "":
-            layout = "default"
-        dn = os.path.join(self.aircraft.acpath, CONFIG_FOLDER, layout)
-        if not os.path.exists(dn):
-            return {"code": "", "meta": {"error": f"no layout {layout}"}}
-
-        if page == "":  # page name cannot be in name: attribute0
-            page = "index"
-        fn = os.path.join(dn, page + ".yaml")
-        if not os.path.exists(dn):
-            return {"code": "", "meta": {"error": f"no page {page}"}}
-
-        this_page = Config(fn)
-        if CONFIG_KW.BUTTONS.value not in this_page.store:
-            return {"code": "", "meta": {"error": f"no buttons in {page}"}}
-
-        for b in this_page.store.get(CONFIG_KW.BUTTONS.value):
-            idx = b.get(CONFIG_KW.INDEX.value)
-            if idx is not None and ((idx == index) or (str(idx) == str(index))):
-                buf = io.BytesIO()
-                yaml.dump(b, buf)
-                ret = buf.getvalue().decode("utf-8")
-                return {
-                    "code": ret,
-                    "meta": {"error": f"no buttons in {page}"},
-                }  # there might be yaml parser garbage in b
-        return {"code": "", "meta": {"error": f"no button index {index}"}}
-
-    def render_button(self, data):
-        # testing. returns random icon
-        action = data.get("action")
-        if action is not None and action == "save":
-            self.activate_designer = True
-            self.save_button(data)
-        deck_name = data.get("deck")
-        if deck_name is None or deck_name == "":
-            return {"image": "", "meta": {"error": "no deck name"}}
-        deck = self.decks.get(deck_name)
-        if deck is None:
-            return {"image": "", "meta": {"error": f"deck {deck_name} not found"}}
-        config = yaml.load(data["code"])
-        if config is None or len(config) == 0:
-            return {"image": "", "meta": {"error": "no button configuration"}}
-        button = None
-        image = None
-        try:
-            button = deck.make_button(config=config)
-            if button is None:
-                return {"image": "", "meta": {"error": "button not created"}}
-            image = button.get_representation()
-        except:
-            logger.warning(
-                f"error generating button or image\ndata: {data}\nconfig: {json.dumps(config, indent=2)}",
-                exc_info=True,
-            )
-        if button is None:
-            return {"image": "", "meta": {"error": "failed to create button"}}
-        if image is None:
-            return {"image": "", "meta": {"error": "failed to create button representation"}}
-        width, height = image.size
-        img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format="PNG")
-        content = img_byte_arr.getvalue()
-        meta = {  # later: return also is_valid() and errors
-            "error": "ok",
-            "activation-valid": button._activation.is_valid(),
-            "representation-valid": button._representation.is_valid(),
-            "activation-desc": button._activation.describe(),
-            "representation-desc": button._representation.describe(),
-        }
-        payload = {"image": base64.encodebytes(content).decode("ascii"), "meta": meta}
-        return payload
